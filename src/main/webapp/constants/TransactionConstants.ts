@@ -420,14 +420,16 @@ export const TransactionUtils = {
    * Get previous transaction for F3 exit
    */
   getPreviousTransaction(currentTransaction: TransactionCode): TransactionCode {
-    return TRANSACTION_FLOW.RETURN_PATTERNS.EXIT_PATTERNS[currentTransaction] || TRANSACTION_CODES.COMEN01;
+    const exitPatterns = TRANSACTION_FLOW.RETURN_PATTERNS.EXIT_PATTERNS;
+    return (exitPatterns as any)[currentTransaction] || TRANSACTION_CODES.COMEN01;
   },
 
   /**
    * Get cancel transaction for F12 cancel
    */
   getCancelTransaction(currentTransaction: TransactionCode): TransactionCode {
-    return TRANSACTION_FLOW.RETURN_PATTERNS.CANCEL_PATTERNS[currentTransaction] || TRANSACTION_CODES.COMEN01;
+    const cancelPatterns = TRANSACTION_FLOW.RETURN_PATTERNS.CANCEL_PATTERNS;
+    return (cancelPatterns as any)[currentTransaction] || TRANSACTION_CODES.COMEN01;
   },
 } as const;
 
