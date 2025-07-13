@@ -1,0 +1,658 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Parent POM Configuration for CardDemo Multi-Module Spring Boot Project -->
+    <groupId>com.carddemo</groupId>
+    <artifactId>carddemo-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>CardDemo Parent</name>
+    <description>
+        Maven parent POM for CardDemo mainframe-to-cloud transformation project.
+        Manages dependencies and build configuration for 36 Spring Boot microservices
+        converted from COBOL programs with Java 21 and cloud-native architecture.
+    </description>
+
+    <!-- Project Properties Configuration -->
+    <properties>
+        <!-- Java and Encoding Configuration -->
+        <java.version>21</java.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <!-- Spring Framework Versions -->
+        <spring-boot.version>3.2.0</spring-boot.version>
+        <spring-cloud.version>2023.0.0</spring-cloud.version>
+        <spring-security.version>6.2.0</spring-security.version>
+        <spring-batch.version>5.1.0</spring-batch.version>
+        <spring-session.version>3.2.0</spring-session.version>
+
+        <!-- Database and Persistence Versions -->
+        <postgresql.version>42.7.1</postgresql.version>
+        <hikaricp.version>5.1.0</hikaricp.version>
+        <liquibase.version>4.25.1</liquibase.version>
+        <redis.version>7.0.15</redis.version>
+        <lettuce.version>6.3.0.RELEASE</lettuce.version>
+
+        <!-- Build and Development Tool Versions -->
+        <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
+        <maven-surefire-plugin.version>3.2.2</maven-surefire-plugin.version>
+        <maven-failsafe-plugin.version>3.2.2</maven-failsafe-plugin.version>
+        <jib-maven-plugin.version>3.4.0</jib-maven-plugin.version>
+        <jacoco-maven-plugin.version>0.8.11</jacoco-maven-plugin.version>
+
+        <!-- Utility Library Versions -->
+        <commons-lang3.version>3.14.0</commons-lang3.version>
+        <jackson.version>2.16.0</jackson.version>
+        <micrometer.version>1.12.0</micrometer.version>
+        <logback.version>1.4.14</logback.version>
+
+        <!-- Testing Framework Versions -->
+        <junit.version>5.10.1</junit.version>
+        <testcontainers.version>1.19.3</testcontainers.version>
+        <mockito.version>5.8.0</mockito.version>
+        <assertj.version>3.24.2</assertj.version>
+
+        <!-- Documentation and API Versions -->
+        <openapi.version>2.3.0</openapi.version>
+        <jakarta.validation.version>3.0.2</jakarta.validation.version>
+
+        <!-- Container and Cloud-Native Configuration -->
+        <jib.from.image>eclipse-temurin:21-jre-alpine</jib.from.image>
+        <jib.to.image.prefix>carddemo</jib.to.image.prefix>
+
+        <!-- Performance and Quality Configuration -->
+        <maven.test.failure.ignore>false</maven.test.failure.ignore>
+        <jacoco.coverage.minimum>0.80</jacoco.coverage.minimum>
+        <skipTests>false</skipTests>
+        <skipITs>false</skipITs>
+    </properties>
+
+    <!-- Module Configuration for Multi-Module Project -->
+    <modules>
+        <!-- Core Application Services (24 Interactive Microservices) -->
+        <module>carddemo-auth-service</module>
+        <module>carddemo-menu-service</module>
+        <module>carddemo-account-view-service</module>
+        <module>carddemo-account-update-service</module>
+        <module>carddemo-card-list-service</module>
+        <module>carddemo-card-selection-service</module>
+        <module>carddemo-card-update-service</module>
+        <module>carddemo-bill-payment-service</module>
+        <module>carddemo-transaction-service</module>
+        <module>carddemo-transaction-add-service</module>
+        <module>carddemo-transaction-view-service</module>
+        <module>carddemo-user-management-service</module>
+        
+        <!-- Batch Processing Services (12 Batch Applications) -->
+        <module>carddemo-daily-transaction-posting</module>
+        <module>carddemo-interest-calculation</module>
+        <module>carddemo-statement-generation</module>
+        <module>carddemo-account-processing</module>
+        <module>carddemo-transaction-validation</module>
+        <module>carddemo-transaction-report</module>
+        <module>carddemo-card-report</module>
+        <module>carddemo-account-report</module>
+        
+        <!-- Infrastructure and Common Components -->
+        <module>carddemo-common</module>
+        <module>carddemo-gateway</module>
+        <module>carddemo-config-server</module>
+        <module>carddemo-eureka-server</module>
+        
+        <!-- Frontend Application -->
+        <module>carddemo-webapp</module>
+    </modules>
+
+    <!-- Parent Spring Boot Dependency Management -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.2.0</version>
+        <relativePath/>
+    </parent>
+
+    <!-- Dependency Management for All Modules -->
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Cloud BOM for Cloud-Native Dependencies -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Database and Persistence Dependencies -->
+            <dependency>
+                <groupId>org.postgresql</groupId>
+                <artifactId>postgresql</artifactId>
+                <version>${postgresql.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.zaxxer</groupId>
+                <artifactId>HikariCP</artifactId>
+                <version>${hikaricp.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.liquibase</groupId>
+                <artifactId>liquibase-core</artifactId>
+                <version>${liquibase.version}</version>
+            </dependency>
+
+            <!-- Redis and Session Management -->
+            <dependency>
+                <groupId>io.lettuce</groupId>
+                <artifactId>lettuce-core</artifactId>
+                <version>${lettuce.version}</version>
+            </dependency>
+
+            <!-- Utility Libraries -->
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${commons-lang3.version}</version>
+            </dependency>
+
+            <!-- API Documentation -->
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${openapi.version}</version>
+            </dependency>
+
+            <!-- Monitoring and Observability -->
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-registry-prometheus</artifactId>
+                <version>${micrometer.version}</version>
+            </dependency>
+
+            <!-- Test Dependencies -->
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-bom</artifactId>
+                <version>${testcontainers.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>${mockito.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.assertj</groupId>
+                <artifactId>assertj-core</artifactId>
+                <version>${assertj.version}</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <!-- Common Dependencies for All Modules -->
+    <dependencies>
+        <!-- Spring Boot Starter Dependencies -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- Spring Cloud Dependencies -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-config</artifactId>
+        </dependency>
+
+        <!-- Monitoring and Observability -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+
+        <!-- Common Test Dependencies -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <!-- Build Configuration -->
+    <build>
+        <pluginManagement>
+            <plugins>
+                <!-- Maven Compiler Plugin for Java 21 -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${maven-compiler-plugin.version}</version>
+                    <configuration>
+                        <source>21</source>
+                        <target>21</target>
+                        <release>21</release>
+                        <compilerArgs>
+                            <arg>--enable-preview</arg>
+                        </compilerArgs>
+                        <parameters>true</parameters>
+                    </configuration>
+                </plugin>
+
+                <!-- Spring Boot Maven Plugin -->
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring-boot.version}</version>
+                    <configuration>
+                        <layers>
+                            <enabled>true</enabled>
+                        </layers>
+                        <image>
+                            <name>${jib.to.image.prefix}/${project.artifactId}:${project.version}</name>
+                            <publish>false</publish>
+                        </image>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>repackage</goal>
+                                <goal>build-info</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <!-- Jib Maven Plugin for Containerization -->
+                <plugin>
+                    <groupId>com.google.cloud.tools</groupId>
+                    <artifactId>jib-maven-plugin</artifactId>
+                    <version>${jib-maven-plugin.version}</version>
+                    <configuration>
+                        <from>
+                            <image>${jib.from.image}</image>
+                            <platforms>
+                                <platform>
+                                    <architecture>amd64</architecture>
+                                    <os>linux</os>
+                                </platform>
+                                <platform>
+                                    <architecture>arm64</architecture>
+                                    <os>linux</os>
+                                </platform>
+                            </platforms>
+                        </from>
+                        <to>
+                            <image>${jib.to.image.prefix}/${project.artifactId}</image>
+                            <tags>
+                                <tag>${project.version}</tag>
+                                <tag>latest</tag>
+                            </tags>
+                        </to>
+                        <container>
+                            <jvmFlags>
+                                <jvmFlag>-XX:+UseG1GC</jvmFlag>
+                                <jvmFlag>-XX:MaxGCPauseMillis=200</jvmFlag>
+                                <jvmFlag>-XX:+HeapDumpOnOutOfMemoryError</jvmFlag>
+                                <jvmFlag>-XX:HeapDumpPath=/tmp/heapdump.hprof</jvmFlag>
+                                <jvmFlag>-XX:+ExitOnOutOfMemoryError</jvmFlag>
+                                <jvmFlag>-Djava.security.egd=file:/dev/./urandom</jvmFlag>
+                                <jvmFlag>-Dspring.profiles.active=prod</jvmFlag>
+                            </jvmFlags>
+                            <ports>
+                                <port>8080</port>
+                                <port>8081</port>
+                            </ports>
+                            <user>1000:1000</user>
+                            <format>OCI</format>
+                        </container>
+                    </configuration>
+                </plugin>
+
+                <!-- Maven Surefire Plugin for Unit Tests -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven-surefire-plugin.version}</version>
+                    <configuration>
+                        <argLine>
+                            @{argLine} --enable-preview 
+                            -Xms512m -Xmx2048m
+                        </argLine>
+                        <excludes>
+                            <exclude>**/*IntegrationTest.java</exclude>
+                            <exclude>**/*IT.java</exclude>
+                        </excludes>
+                        <parallel>methods</parallel>
+                        <threadCount>4</threadCount>
+                    </configuration>
+                </plugin>
+
+                <!-- Maven Failsafe Plugin for Integration Tests -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>${maven-failsafe-plugin.version}</version>
+                    <configuration>
+                        <argLine>
+                            @{argLine} --enable-preview 
+                            -Xms1024m -Xmx4096m
+                        </argLine>
+                        <includes>
+                            <include>**/*IntegrationTest.java</include>
+                            <include>**/*IT.java</include>
+                        </includes>
+                        <systemPropertyVariables>
+                            <spring.profiles.active>integration</spring.profiles.active>
+                        </systemPropertyVariables>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>integration-test</goal>
+                                <goal>verify</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <!-- JaCoCo Maven Plugin for Code Coverage -->
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>${jacoco-maven-plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <id>prepare-agent</id>
+                            <goals>
+                                <goal>prepare-agent</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>prepare-agent-integration</id>
+                            <goals>
+                                <goal>prepare-agent-integration</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>report</id>
+                            <phase>test</phase>
+                            <goals>
+                                <goal>report</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>report-integration</id>
+                            <phase>post-integration-test</phase>
+                            <goals>
+                                <goal>report-integration</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>merge-results</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>merge</goal>
+                            </goals>
+                            <configuration>
+                                <fileSets>
+                                    <fileSet>
+                                        <directory>${project.build.directory}</directory>
+                                        <includes>
+                                            <include>*.exec</include>
+                                        </includes>
+                                    </fileSet>
+                                </fileSets>
+                                <destFile>${project.build.directory}/jacoco-merged.exec</destFile>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>check</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                            <configuration>
+                                <dataFile>${project.build.directory}/jacoco-merged.exec</dataFile>
+                                <rules>
+                                    <rule>
+                                        <element>BUNDLE</element>
+                                        <limits>
+                                            <limit>
+                                                <counter>INSTRUCTION</counter>
+                                                <value>COVEREDRATIO</value>
+                                                <minimum>${jacoco.coverage.minimum}</minimum>
+                                            </limit>
+                                            <limit>
+                                                <counter>BRANCH</counter>
+                                                <value>COVEREDRATIO</value>
+                                                <minimum>${jacoco.coverage.minimum}</minimum>
+                                            </limit>
+                                        </limits>
+                                    </rule>
+                                </rules>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <!-- Default Plugin Configuration -->
+        <plugins>
+            <!-- Maven Compiler Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+
+            <!-- Spring Boot Maven Plugin -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+
+            <!-- JaCoCo Code Coverage -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+            </plugin>
+
+            <!-- Maven Surefire Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+
+            <!-- Maven Failsafe Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+    <!-- Build Profiles -->
+    <profiles>
+        <!-- Development Profile -->
+        <profile>
+            <id>dev</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <spring.profiles.active>dev</spring.profiles.active>
+                <maven.test.skip>false</maven.test.skip>
+            </properties>
+        </profile>
+
+        <!-- Production Profile -->
+        <profile>
+            <id>prod</id>
+            <properties>
+                <spring.profiles.active>prod</spring.profiles.active>
+                <maven.test.skip>false</maven.test.skip>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.google.cloud.tools</groupId>
+                        <artifactId>jib-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>build</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Integration Test Profile -->
+        <profile>
+            <id>integration</id>
+            <properties>
+                <spring.profiles.active>integration</spring.profiles.active>
+                <skipITs>false</skipITs>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.testcontainers</groupId>
+                    <artifactId>postgresql</artifactId>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.testcontainers</groupId>
+                    <artifactId>junit-jupiter</artifactId>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!-- Container Build Profile -->
+        <profile>
+            <id>container</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.google.cloud.tools</groupId>
+                        <artifactId>jib-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>build</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Performance Testing Profile -->
+        <profile>
+            <id>performance</id>
+            <properties>
+                <spring.profiles.active>performance</spring.profiles.active>
+                <jacoco.coverage.minimum>0.70</jacoco.coverage.minimum>
+            </properties>
+        </profile>
+    </profiles>
+
+    <!-- Distribution Management -->
+    <distributionManagement>
+        <repository>
+            <id>carddemo-releases</id>
+            <name>CardDemo Release Repository</name>
+            <url>https://nexus.carddemo.local/repository/maven-releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>carddemo-snapshots</id>
+            <name>CardDemo Snapshot Repository</name>
+            <url>https://nexus.carddemo.local/repository/maven-snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
+
+    <!-- Project Information -->
+    <organization>
+        <name>CardDemo</name>
+        <url>https://github.com/carddemo-org</url>
+    </organization>
+
+    <developers>
+        <developer>
+            <id>blitzy-agent</id>
+            <name>Blitzy Development Agent</name>
+            <email>blitzy-agent@carddemo.local</email>
+            <organization>CardDemo</organization>
+            <roles>
+                <role>Blitzy Agent</role>
+                <role>COBOL-to-Java Transformation Specialist</role>
+            </roles>
+        </developer>
+    </developers>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <scm>
+        <connection>scm:git:https://github.com/carddemo-org/carddemo.git</connection>
+        <developerConnection>scm:git:https://github.com/carddemo-org/carddemo.git</developerConnection>
+        <url>https://github.com/carddemo-org/carddemo</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/carddemo-org/carddemo/issues</url>
+    </issueManagement>
+</project>
