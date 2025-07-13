@@ -14,6 +14,7 @@
 
 package com.carddemo.batch;
 
+import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
@@ -103,7 +104,7 @@ public class TransactionDataItemWriter implements ItemWriter<TransactionRecord> 
      * Performs bulk insert operations with transaction boundary management
      * and comprehensive error handling.
      * 
-     * @param chunk List of TransactionRecord objects to persist
+     * @param chunk Chunk of TransactionRecord objects to persist
      * @throws Exception If database operation fails or validation errors occur
      */
     @Override
@@ -112,7 +113,7 @@ public class TransactionDataItemWriter implements ItemWriter<TransactionRecord> 
         isolation = Isolation.SERIALIZABLE,
         rollbackFor = Exception.class
     )
-    public void write(List<? extends TransactionRecord> chunk) throws Exception {
+    public void write(Chunk<? extends TransactionRecord> chunk) throws Exception {
         logger.info("Processing transaction data chunk with {} records", chunk.size());
         
         if (chunk.isEmpty()) {
@@ -121,17 +122,20 @@ public class TransactionDataItemWriter implements ItemWriter<TransactionRecord> 
         }
 
         try {
+            // Extract items from chunk for processing
+            List<? extends TransactionRecord> transactions = chunk.getItems();
+            
             // Validate all transaction data before insertion
-            validateTransactionData(chunk);
+            validateTransactionData(transactions);
             
             // Perform bulk insert operation with partition awareness
-            insertIntoPartition(chunk);
+            insertIntoPartition(transactions);
             
             logger.info("Successfully inserted {} transaction records", chunk.size());
             
         } catch (Exception e) {
             logger.error("Failed to process transaction data chunk", e);
-            handlePartitionError(chunk, e);
+            handlePartitionError(chunk.getItems(), e);
             throw e; // Re-throw to trigger Spring Batch retry/skip logic
         }
     }
