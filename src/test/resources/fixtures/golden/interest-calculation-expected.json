@@ -1,0 +1,436 @@
+{
+  "goldenFileMetadata": {
+    "description": "Golden file containing expected interest calculation outputs for validating exact BigDecimal precision equivalence with legacy COBOL COMP-3 calculations",
+    "purpose": "Ensures financial accuracy mandates are met through systematic validation of Java microservice outputs against legacy mainframe processing",
+    "precision": "DECIMAL128 context with exact penny-perfect accuracy equivalent to COBOL COMP-3 packed decimal fields",
+    "created": "2024-12-19T10:30:00Z",
+    "version": "1.0.0",
+    "testFramework": "Spring Boot with Testcontainers PostgreSQL validation harness",
+    "complianceStandards": [
+      "PCI DSS financial calculation accuracy",
+      "Section 0.5.1 business logic preservation requirements",
+      "BigDecimal DECIMAL128 context validation per Summary of Changes precision mandates"
+    ],
+    "validationCriteria": {
+      "precision": 15,
+      "scale": 2,
+      "roundingMode": "HALF_EVEN",
+      "mathContext": "DECIMAL128"
+    }
+  },
+  "interestCalculationTestCases": [
+    {
+      "testCaseId": "IC_001_SIMPLE_DAILY_INTEREST",
+      "description": "Basic daily interest calculation with standard rate",
+      "inputData": {
+        "accountId": "00000000001",
+        "currentBalance": "1940.00",
+        "creditLimit": "2020.00",
+        "availableCredit": "1020.00",
+        "annualInterestRate": "0.1899",
+        "daysInPeriod": 30,
+        "calculationDate": "2024-01-31"
+      },
+      "expectedOutput": {
+        "dailyInterestRate": "0.000520273972602740",
+        "interestCharged": "30.19",
+        "newBalance": "1970.19",
+        "interestCalculationDetails": {
+          "principalAmount": "1940.00",
+          "dailyRate": "0.000520273972602740",
+          "daysAccrued": 30,
+          "interestAccrued": "30.19043835616438",
+          "interestRounded": "30.19"
+        },
+        "precisionValidation": {
+          "exactDecimalValue": "30.19043835616438",
+          "roundedValue": "30.19",
+          "precision": 15,
+          "scale": 2
+        }
+      }
+    },
+    {
+      "testCaseId": "IC_002_COMPOUND_MONTHLY_INTEREST",
+      "description": "Monthly compound interest calculation with balance fluctuation",
+      "inputData": {
+        "accountId": "00000000002",
+        "currentBalance": "6130.00",
+        "creditLimit": "6130.00", 
+        "annualInterestRate": "0.2199",
+        "compoundingPeriod": "MONTHLY",
+        "calculationDate": "2024-02-29"
+      },
+      "expectedOutput": {
+        "monthlyInterestRate": "0.018325000000000000",
+        "compoundedInterest": "112.39",
+        "newBalance": "6242.39",
+        "interestCalculationDetails": {
+          "principalAmount": "6130.00",
+          "monthlyRate": "0.018325000000000000",
+          "periodsCompounded": 1,
+          "compoundedAmount": "6242.38575000000000",
+          "interestAccrued": "112.38575000000000",
+          "interestRounded": "112.39"
+        },
+        "precisionValidation": {
+          "exactDecimalValue": "112.38575000000000",
+          "roundedValue": "112.39",
+          "precision": 15,
+          "scale": 2
+        }
+      }
+    },
+    {
+      "testCaseId": "IC_003_PROMO_RATE_CALCULATION",
+      "description": "Promotional interest rate calculation with rate change",
+      "inputData": {
+        "accountId": "00000000003",
+        "currentBalance": "4909.00",
+        "creditLimit": "4909.00",
+        "promotionalRate": "0.0000",
+        "standardRate": "0.2399",
+        "promoPeriodDays": 90,
+        "totalDays": 120,
+        "calculationDate": "2024-03-31"
+      },
+      "expectedOutput": {
+        "promoInterest": "0.00",
+        "standardInterest": "97.39",
+        "totalInterest": "97.39",
+        "newBalance": "5006.39",
+        "interestCalculationDetails": {
+          "promoRateDays": 90,
+          "standardRateDays": 30,
+          "promoInterestAccrued": "0.00000000000000",
+          "standardInterestAccrued": "97.38904109589041",
+          "totalInterestAccrued": "97.38904109589041",
+          "interestRounded": "97.39"
+        },
+        "precisionValidation": {
+          "exactDecimalValue": "97.38904109589041",
+          "roundedValue": "97.39",
+          "precision": 15,
+          "scale": 2
+        }
+      }
+    },
+    {
+      "testCaseId": "IC_004_CASH_ADVANCE_INTEREST",
+      "description": "Cash advance interest calculation with different rate structure",
+      "inputData": {
+        "accountId": "00000000004",
+        "purchaseBalance": "1500.00",
+        "cashAdvanceBalance": "500.00",
+        "purchaseRate": "0.1899",
+        "cashAdvanceRate": "0.2499",
+        "daysInPeriod": 31,
+        "calculationDate": "2024-04-30"
+      },
+      "expectedOutput": {
+        "purchaseInterest": "24.26",
+        "cashAdvanceInterest": "10.63",
+        "totalInterest": "34.89",
+        "newPurchaseBalance": "1524.26",
+        "newCashAdvanceBalance": "510.63",
+        "totalNewBalance": "2034.89",
+        "interestCalculationDetails": {
+          "purchaseInterestAccrued": "24.26301369863014",
+          "cashAdvanceInterestAccrued": "10.63219178082192",
+          "totalInterestAccrued": "34.89520547945206",
+          "interestRounded": "34.90"
+        },
+        "precisionValidation": {
+          "exactDecimalValue": "34.89520547945206",
+          "roundedValue": "34.90",
+          "precision": 15,
+          "scale": 2
+        }
+      }
+    },
+    {
+      "testCaseId": "IC_005_MINIMUM_PAYMENT_CALCULATION",
+      "description": "Minimum payment calculation including interest and fees",
+      "inputData": {
+        "accountId": "00000000005",
+        "currentBalance": "8420.00",
+        "creditLimit": "8420.00",
+        "annualInterestRate": "0.2199",
+        "lateFee": "35.00",
+        "overlimitFee": "0.00",
+        "minimumPaymentRate": "0.02",
+        "calculationDate": "2024-05-31"
+      },
+      "expectedOutput": {
+        "interestCharged": "153.96",
+        "feesCharged": "35.00",
+        "newBalance": "8608.96",
+        "minimumPayment": "172.18",
+        "interestCalculationDetails": {
+          "principalAmount": "8420.00",
+          "interestAccrued": "153.96273972602740",
+          "totalFeesAccrued": "35.00000000000000",
+          "balanceAfterCharges": "8608.96273972602740",
+          "minimumPaymentCalculated": "172.17925479452055",
+          "minimumPaymentRounded": "172.18"
+        },
+        "precisionValidation": {
+          "exactDecimalValue": "172.17925479452055",
+          "roundedValue": "172.18",
+          "precision": 15,
+          "scale": 2
+        }
+      }
+    },
+    {
+      "testCaseId": "IC_006_LEAP_YEAR_CALCULATION",
+      "description": "Interest calculation accounting for leap year (366 days)",
+      "inputData": {
+        "accountId": "00000000006",
+        "currentBalance": "3500.00",
+        "creditLimit": "5000.00",
+        "annualInterestRate": "0.1999",
+        "year": 2024,
+        "isLeapYear": true,
+        "daysInYear": 366,
+        "daysInPeriod": 29,
+        "calculationDate": "2024-02-29"
+      },
+      "expectedOutput": {
+        "dailyInterestRate": "0.000546174863387978",
+        "interestCharged": "45.88",
+        "newBalance": "3545.88",
+        "interestCalculationDetails": {
+          "leapYearAdjustment": true,
+          "adjustedDailyRate": "0.000546174863387978",
+          "daysAccrued": 29,
+          "interestAccrued": "45.87704918032787",
+          "interestRounded": "45.88"
+        },
+        "precisionValidation": {
+          "exactDecimalValue": "45.87704918032787",
+          "roundedValue": "45.88",
+          "precision": 15,
+          "scale": 2
+        }
+      }
+    },
+    {
+      "testCaseId": "IC_007_PAYMENT_ALLOCATION_INTEREST",
+      "description": "Interest calculation after payment allocation to different balance segments",
+      "inputData": {
+        "accountId": "00000000007",
+        "balanceSegments": {
+          "purchases": "2000.00",
+          "cashAdvances": "800.00",
+          "balanceTransfers": "1200.00"
+        },
+        "interestRates": {
+          "purchases": "0.1899",
+          "cashAdvances": "0.2499",
+          "balanceTransfers": "0.0699"
+        },
+        "paymentAmount": "500.00",
+        "paymentAllocation": "LOWEST_RATE_FIRST",
+        "daysInPeriod": 30,
+        "calculationDate": "2024-06-30"
+      },
+      "expectedOutput": {
+        "postPaymentBalances": {
+          "purchases": "2000.00",
+          "cashAdvances": "800.00", 
+          "balanceTransfers": "700.00"
+        },
+        "interestBySegment": {
+          "purchases": "31.19",
+          "cashAdvances": "16.43",
+          "balanceTransfers": "14.30"
+        },
+        "totalInterest": "61.92",
+        "newTotalBalance": "4061.92",
+        "interestCalculationDetails": {
+          "purchaseInterestAccrued": "31.18630136986301",
+          "cashAdvanceInterestAccrued": "16.43287671232877",
+          "balanceTransferInterestAccrued": "14.29863013698630",
+          "totalInterestAccrued": "61.91780821917808",
+          "interestRounded": "61.92"
+        },
+        "precisionValidation": {
+          "exactDecimalValue": "61.91780821917808",
+          "roundedValue": "61.92",
+          "precision": 15,
+          "scale": 2
+        }
+      }
+    },
+    {
+      "testCaseId": "IC_008_TIER_RATE_CALCULATION",
+      "description": "Tiered interest rate calculation based on balance ranges",
+      "inputData": {
+        "accountId": "00000000008",
+        "currentBalance": "12500.00",
+        "creditLimit": "15000.00",
+        "tierRates": [
+          {"minBalance": "0.00", "maxBalance": "5000.00", "rate": "0.1699"},
+          {"minBalance": "5000.01", "maxBalance": "10000.00", "rate": "0.1899"},
+          {"minBalance": "10000.01", "maxBalance": "999999.99", "rate": "0.2199"}
+        ],
+        "daysInPeriod": 31,
+        "calculationDate": "2024-07-31"
+      },
+      "expectedOutput": {
+        "interestByTier": [
+          {"tier": 1, "balance": "5000.00", "rate": "0.1699", "interest": "72.23"},
+          {"tier": 2, "balance": "5000.00", "rate": "0.1899", "interest": "80.73"},
+          {"tier": 3, "balance": "2500.00", "rate": "0.2199", "interest": "46.87"}
+        ],
+        "totalInterest": "199.83",
+        "newBalance": "12699.83",
+        "interestCalculationDetails": {
+          "tier1Interest": "72.22876712328767",
+          "tier2Interest": "80.73424657534247",
+          "tier3Interest": "46.86849315068493",
+          "totalInterestAccrued": "199.83150684931507",
+          "interestRounded": "199.83"
+        },
+        "precisionValidation": {
+          "exactDecimalValue": "199.83150684931507",
+          "roundedValue": "199.83",
+          "precision": 15,
+          "scale": 2
+        }
+      }
+    },
+    {
+      "testCaseId": "IC_009_NEGATIVE_BALANCE_REFUND",
+      "description": "Interest calculation with negative balance (credit balance)",
+      "inputData": {
+        "accountId": "00000000009",
+        "currentBalance": "-125.50",
+        "creditLimit": "3000.00",
+        "creditInterestRate": "0.0000",
+        "calculationDate": "2024-08-31"
+      },
+      "expectedOutput": {
+        "interestCharged": "0.00",
+        "creditInterestEarned": "0.00",
+        "newBalance": "-125.50",
+        "interestCalculationDetails": {
+          "creditBalance": true,
+          "creditBalanceAmount": "125.50",
+          "creditInterestAccrued": "0.00000000000000",
+          "interestRounded": "0.00"
+        },
+        "precisionValidation": {
+          "exactDecimalValue": "0.00000000000000",
+          "roundedValue": "0.00",
+          "precision": 15,
+          "scale": 2
+        }
+      }
+    },
+    {
+      "testCaseId": "IC_010_PRECISION_EDGE_CASE",
+      "description": "High precision calculation with complex decimal operations",
+      "inputData": {
+        "accountId": "00000000010",
+        "currentBalance": "999999.99",
+        "creditLimit": "1000000.00",
+        "annualInterestRate": "0.299999",
+        "daysInPeriod": 31,
+        "calculationDate": "2024-09-30"
+      },
+      "expectedOutput": {
+        "dailyInterestRate": "0.000821917808219178",
+        "interestCharged": "25475.25",
+        "newBalance": "1025475.24",
+        "interestCalculationDetails": {
+          "principalAmount": "999999.99",
+          "dailyRate": "0.000821917808219178",
+          "daysAccrued": 31,
+          "interestAccrued": "25475.24931506849315",
+          "interestRounded": "25475.25"
+        },
+        "precisionValidation": {
+          "exactDecimalValue": "25475.24931506849315",
+          "roundedValue": "25475.25",
+          "precision": 15,
+          "scale": 2
+        }
+      }
+    }
+  ],
+  "batchProcessingTestCases": [
+    {
+      "testCaseId": "BATCH_001_DAILY_INTEREST_ACCRUAL",
+      "description": "Batch processing of daily interest accrual across multiple accounts",
+      "processingDate": "2024-12-31",
+      "accountsProcessed": 50000,
+      "totalInterestAccrued": "1247891.67",
+      "processingStatistics": {
+        "totalPrincipalAmount": "125000000.00",
+        "averageInterestRate": "0.1999",
+        "totalInterestCalculated": "1247891.66958904110",
+        "interestRounded": "1247891.67",
+        "processingTimeMs": 3456,
+        "accountsPerSecond": 14467
+      },
+      "precisionValidation": {
+        "exactDecimalValue": "1247891.66958904110",
+        "roundedValue": "1247891.67",
+        "precision": 15,
+        "scale": 2
+      }
+    },
+    {
+      "testCaseId": "BATCH_002_MONTHLY_STATEMENT_GENERATION",
+      "description": "Monthly statement generation with interest calculations",
+      "processingDate": "2024-11-30",
+      "accountsProcessed": 75000,
+      "totalInterestBilled": "2156734.23",
+      "totalMinimumPayments": "4313468.46",
+      "processingStatistics": {
+        "statementsGenerated": 75000,
+        "totalInterestCalculated": "2156734.22876712329",
+        "totalMinPaymentCalculated": "4313468.45753424658",
+        "processingTimeMs": 14256,
+        "statementsPerSecond": 5263
+      },
+      "precisionValidation": {
+        "exactDecimalValue": "2156734.22876712329",
+        "roundedValue": "2156734.23",
+        "precision": 15,
+        "scale": 2
+      }
+    }
+  ],
+  "validationFramework": {
+    "goldenFileComparison": {
+      "toleranceLevel": "ZERO_TOLERANCE",
+      "comparisonMethod": "EXACT_DECIMAL_MATCH",
+      "precisionValidation": "BIGDECIMAL_EQUALITY",
+      "expectedPrecision": 15,
+      "expectedScale": 2,
+      "mathContextValidation": "DECIMAL128"
+    },
+    "testExecution": {
+      "framework": "JUnit 5 with Spring Boot Test",
+      "testContainers": "PostgreSQL 15+ with test data",
+      "parallelExecution": "Enabled with thread safety",
+      "coverageTarget": "100% interest calculation paths"
+    },
+    "complianceChecks": [
+      "PCI DSS financial calculation accuracy",
+      "COBOL COMP-3 decimal precision equivalence", 
+      "Spring Boot BigDecimal DECIMAL128 context validation",
+      "PostgreSQL NUMERIC(12,2) storage precision verification"
+    ]
+  },
+  "usageInstructions": {
+    "testImplementation": "src/test/java/com/carddemo/batch/InterestCalculationJobTest.java",
+    "goldenFileLoader": "src/test/java/com/carddemo/util/GoldenFileTestUtil.java",
+    "precisionAssertion": "src/test/java/com/carddemo/assertion/BigDecimalAssertions.java",
+    "integrationPattern": "Load expected results from this golden file and compare against actual microservice outputs using exact BigDecimal comparison",
+    "failureHandling": "Any deviation from expected values triggers immediate test failure with detailed precision analysis report"
+  }
+}
