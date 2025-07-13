@@ -4,7 +4,7 @@
     "source": "Converted from app/data/ASCII/trancatg.txt for Spring Boot microservices testing",
     "version": "1.0",
     "lastUpdated": "2024-01-15T00:00:00Z",
-    "totalCategories": 25,
+    "totalCategories": 18,
     "cacheEnabled": true,
     "cacheConfiguration": {
       "ttl": 86400,
