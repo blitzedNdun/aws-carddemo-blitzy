@@ -131,7 +131,7 @@ public @interface ValidCardNumber {
      * 
      * @return true if Luhn validation should be performed, false otherwise
      */
-    boolean validateLuhn() default true;
+    boolean enableLuhnCheck() default true;
     
     /**
      * Custom error message for null values.
