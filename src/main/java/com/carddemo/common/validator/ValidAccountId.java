@@ -159,5 +159,5 @@ public @interface ValidAccountId {
      * 
      * @return true to enable database existence validation, false for format-only validation
      */
-    boolean validateExistence() default false;
+    boolean checkExistence() default false;
 }
