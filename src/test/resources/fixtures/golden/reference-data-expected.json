@@ -1,0 +1,429 @@
+{
+  "transactionTypes": [
+    {
+      "transactionType": "01",
+      "typeDescription": "Purchase",
+      "debitCreditIndicator": true
+    },
+    {
+      "transactionType": "02", 
+      "typeDescription": "Payment",
+      "debitCreditIndicator": false
+    },
+    {
+      "transactionType": "03",
+      "typeDescription": "Credit", 
+      "debitCreditIndicator": false
+    },
+    {
+      "transactionType": "04",
+      "typeDescription": "Authorization",
+      "debitCreditIndicator": true
+    },
+    {
+      "transactionType": "05",
+      "typeDescription": "Refund",
+      "debitCreditIndicator": false
+    },
+    {
+      "transactionType": "06", 
+      "typeDescription": "Reversal",
+      "debitCreditIndicator": false
+    },
+    {
+      "transactionType": "07",
+      "typeDescription": "Adjustment",
+      "debitCreditIndicator": true
+    }
+  ],
+  "transactionCategories": [
+    {
+      "transactionCategory": "0100",
+      "categoryDescription": "Regular Sales Draft",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0101",
+      "categoryDescription": "Regular Cash Advance", 
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0102",
+      "categoryDescription": "Convenience Check Debit",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0103",
+      "categoryDescription": "ATM Cash Advance",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0104",
+      "categoryDescription": "Interest Amount",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0200",
+      "categoryDescription": "Cash payment",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0201",
+      "categoryDescription": "Electronic payment",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0202",
+      "categoryDescription": "Check payment",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0300",
+      "categoryDescription": "Credit to Account",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0301",
+      "categoryDescription": "Credit to Purchase balance",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0302",
+      "categoryDescription": "Credit to Cash balance",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0400",
+      "categoryDescription": "Zero dollar authorization",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0401",
+      "categoryDescription": "Online purchase authorization",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0402",
+      "categoryDescription": "Travel booking authorization",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0500",
+      "categoryDescription": "Refund credit",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0600",
+      "categoryDescription": "Fraud reversal",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0601",
+      "categoryDescription": "Non-fraud reversal",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0700",
+      "categoryDescription": "Sales draft credit adjustment",
+      "activeStatus": true
+    }
+  ],
+  "disclosureGroups": [
+    {
+      "groupId": "A000000001",
+      "disclosureText": "Standard Interest Rate Group A - Category 01 - Variable APR based on creditworthiness and market conditions. Rate subject to change with 30-day notice.",
+      "interestRate": "0.0150",
+      "effectiveDate": "2024-01-01T00:00:00"
+    },
+    {
+      "groupId": "A000000002", 
+      "disclosureText": "Standard Interest Rate Group A - Category 02 - Variable APR based on creditworthiness and market conditions. Rate subject to change with 30-day notice.",
+      "interestRate": "0.0250",
+      "effectiveDate": "2024-01-01T00:00:00"
+    },
+    {
+      "groupId": "A000000003",
+      "disclosureText": "Standard Interest Rate Group A - Category 03 - Variable APR based on creditworthiness and market conditions. Rate subject to change with 30-day notice.",
+      "interestRate": "0.0250", 
+      "effectiveDate": "2024-01-01T00:00:00"
+    },
+    {
+      "groupId": "A000000004",
+      "disclosureText": "Standard Interest Rate Group A - Category 04 - Variable APR based on creditworthiness and market conditions. Rate subject to change with 30-day notice.",
+      "interestRate": "0.0250",
+      "effectiveDate": "2024-01-01T00:00:00"
+    },
+    {
+      "groupId": "A000000005",
+      "disclosureText": "Standard Interest Rate Group A - Category 05 - No interest charged on this transaction type.",
+      "interestRate": "0.0000",
+      "effectiveDate": "2024-01-01T00:00:00"
+    },
+    {
+      "groupId": "A000000006",
+      "disclosureText": "Standard Interest Rate Group A - Category 06 - No interest charged on this transaction type.", 
+      "interestRate": "0.0000",
+      "effectiveDate": "2024-01-01T00:00:00"
+    },
+    {
+      "groupId": "A000000007",
+      "disclosureText": "Standard Interest Rate Group A - Category 07 - No interest charged on this transaction type.",
+      "interestRate": "0.0000",
+      "effectiveDate": "2024-01-01T00:00:00"
+    },
+    {
+      "groupId": "A000000008",
+      "disclosureText": "Standard Interest Rate Group A - Category 08 - No interest charged on this transaction type.",
+      "interestRate": "0.0000",
+      "effectiveDate": "2024-01-01T00:00:00"
+    },
+    {
+      "groupId": "A000000009",
+      "disclosureText": "Standard Interest Rate Group A - Category 09 - No interest charged on this transaction type.",
+      "interestRate": "0.0000",
+      "effectiveDate": "2024-01-01T00:00:00"
+    },
+    {
+      "groupId": "A000000010",
+      "disclosureText": "Standard Interest Rate Group A - Category 10 - No interest charged on this transaction type.",
+      "interestRate": "0.0000",
+      "effectiveDate": "2024-01-01T00:00:00"
+    },
+    {
+      "groupId": "A000000011",
+      "disclosureText": "Standard Interest Rate Group A - Category 11 - Variable APR based on creditworthiness and market conditions. Rate subject to change with 30-day notice.",
+      "interestRate": "0.0150",
+      "effectiveDate": "2024-01-01T00:00:00"
+    },
+    {
+      "groupId": "A000000012",
+      "disclosureText": "Standard Interest Rate Group A - Category 12 - Variable APR based on creditworthiness and market conditions. Rate subject to change with 30-day notice.",
+      "interestRate": "0.0150",
+      "effectiveDate": "2024-01-01T00:00:00"
+    },
+    {
+      "groupId": "A000000013",
+      "disclosureText": "Standard Interest Rate Group A - Category 13 - Variable APR based on creditworthiness and market conditions. Rate subject to change with 30-day notice.", 
+      "interestRate": "0.0150",
+      "effectiveDate": "2024-01-01T00:00:00"
+    },
+    {
+      "groupId": "A000000014",
+      "disclosureText": "Standard Interest Rate Group A - Category 14 - Variable APR based on creditworthiness and market conditions. Rate subject to change with 30-day notice.",
+      "interestRate": "0.0150",
+      "effectiveDate": "2024-01-01T00:00:00"
+    },
+    {
+      "groupId": "A000000015",
+      "disclosureText": "Standard Interest Rate Group A - Category 15 - Variable APR based on creditworthiness and market conditions. Rate subject to change with 30-day notice.",
+      "interestRate": "0.0150",
+      "effectiveDate": "2024-01-01T00:00:00"
+    },
+    {
+      "groupId": "A000000016",
+      "disclosureText": "Standard Interest Rate Group A - Category 16 - Variable APR based on creditworthiness and market conditions. Rate subject to change with 30-day notice.",
+      "interestRate": "0.0150",
+      "effectiveDate": "2024-01-01T00:00:00"
+    },
+    {
+      "groupId": "A000000017",
+      "disclosureText": "Standard Interest Rate Group A - Category 17 - Variable APR based on creditworthiness and market conditions. Rate subject to change with 30-day notice.",
+      "interestRate": "0.0150",
+      "effectiveDate": "2024-01-01T00:00:00"
+    },
+    {
+      "groupId": "DEFAULT",
+      "disclosureText": "Default Interest Rate Group - Category 01 - Standard variable APR for general purpose transactions. Rate subject to change with 30-day notice.",
+      "interestRate": "0.0150",
+      "effectiveDate": "2024-01-01T00:00:00"
+    },
+    {
+      "groupId": "ZEROAPR",
+      "disclosureText": "Zero APR Promotional Group - All Categories - 0% introductory APR for qualified cardholders. Promotional period terms apply.",
+      "interestRate": "0.0000", 
+      "effectiveDate": "2024-01-01T00:00:00"
+    }
+  ],
+  "cacheValidationData": {
+    "redis": {
+      "transactionTypes": {
+        "cacheKey": "reference:transaction-types",
+        "ttlSeconds": 86400,
+        "expectedCount": 7,
+        "hashFields": [
+          "01:Purchase:true",
+          "02:Payment:false", 
+          "03:Credit:false",
+          "04:Authorization:true",
+          "05:Refund:false",
+          "06:Reversal:false",
+          "07:Adjustment:true"
+        ]
+      },
+      "transactionCategories": {
+        "cacheKey": "reference:transaction-categories",
+        "ttlSeconds": 86400,
+        "expectedCount": 18,
+        "hashFields": [
+          "0100:Regular Sales Draft:true",
+          "0101:Regular Cash Advance:true",
+          "0102:Convenience Check Debit:true",
+          "0103:ATM Cash Advance:true",
+          "0104:Interest Amount:true",
+          "0200:Cash payment:true",
+          "0201:Electronic payment:true",
+          "0202:Check payment:true",
+          "0300:Credit to Account:true",
+          "0301:Credit to Purchase balance:true",
+          "0302:Credit to Cash balance:true",
+          "0400:Zero dollar authorization:true",
+          "0401:Online purchase authorization:true",
+          "0402:Travel booking authorization:true",
+          "0500:Refund credit:true",
+          "0600:Fraud reversal:true",
+          "0601:Non-fraud reversal:true",
+          "0700:Sales draft credit adjustment:true"
+        ]
+      },
+      "disclosureGroups": {
+        "cacheKey": "reference:disclosure-groups",
+        "ttlSeconds": 86400,
+        "expectedCount": 19,
+        "hashFields": [
+          "A000000001:0.0150",
+          "A000000002:0.0250",
+          "A000000003:0.0250", 
+          "A000000004:0.0250",
+          "A000000005:0.0000",
+          "A000000006:0.0000",
+          "A000000007:0.0000",
+          "A000000008:0.0000",
+          "A000000009:0.0000",
+          "A000000010:0.0000",
+          "A000000011:0.0150",
+          "A000000012:0.0150",
+          "A000000013:0.0150",
+          "A000000014:0.0150",
+          "A000000015:0.0150",
+          "A000000016:0.0150",
+          "A000000017:0.0150",
+          "DEFAULT:0.0150",
+          "ZEROAPR:0.0000"
+        ]
+      }
+    }
+  },
+  "entityMappingData": {
+    "asciiToEntity": {
+      "transactionTypes": {
+        "fieldMappings": [
+          {
+            "asciiField": "positions 1-2",
+            "entityField": "transactionType",
+            "transformation": "trim whitespace"
+          },
+          {
+            "asciiField": "positions 3-52",
+            "entityField": "typeDescription", 
+            "transformation": "trim whitespace"
+          },
+          {
+            "asciiField": "derived from type",
+            "entityField": "debitCreditIndicator",
+            "transformation": "business rule mapping"
+          }
+        ],
+        "businessRules": {
+          "debitCreditMapping": {
+            "01": true,
+            "02": false,
+            "03": false,
+            "04": true,
+            "05": false,
+            "06": false,
+            "07": true
+          }
+        }
+      },
+      "transactionCategories": {
+        "fieldMappings": [
+          {
+            "asciiField": "positions 1-6",
+            "entityField": "transactionCategory",
+            "transformation": "extract first 4 characters"
+          },
+          {
+            "asciiField": "positions 7-54",
+            "entityField": "categoryDescription",
+            "transformation": "trim whitespace"
+          },
+          {
+            "asciiField": "default value",
+            "entityField": "activeStatus",
+            "transformation": "set to true"
+          }
+        ]
+      },
+      "disclosureGroups": {
+        "fieldMappings": [
+          {
+            "asciiField": "positions 1-10",
+            "entityField": "groupId",
+            "transformation": "trim whitespace"
+          },
+          {
+            "asciiField": "positions 17-20",
+            "entityField": "interestRate",
+            "transformation": "convert to decimal: divide by 10000"
+          },
+          {
+            "asciiField": "generated text",
+            "entityField": "disclosureText",
+            "transformation": "template based on group and rate"
+          },
+          {
+            "asciiField": "system date",
+            "entityField": "effectiveDate",
+            "transformation": "set to 2024-01-01T00:00:00"
+          }
+        ],
+        "rateConversion": {
+          "sourceFormat": "4-digit integer (0150 = 1.50%)",
+          "targetFormat": "BigDecimal with scale 4 (0.0150)",
+          "conversionFormula": "asciiValue / 10000"
+        }
+      }
+    },
+    "dataIntegrityChecks": {
+      "transactionTypes": {
+        "uniqueConstraints": ["transactionType"],
+        "requiredFields": ["transactionType", "typeDescription", "debitCreditIndicator"],
+        "fieldLengths": {
+          "transactionType": 2,
+          "typeDescription": 60
+        }
+      },
+      "transactionCategories": {
+        "uniqueConstraints": ["transactionCategory"],
+        "requiredFields": ["transactionCategory", "categoryDescription", "activeStatus"],
+        "fieldLengths": {
+          "transactionCategory": 4,
+          "categoryDescription": 60
+        }
+      },
+      "disclosureGroups": {
+        "uniqueConstraints": ["groupId"],
+        "requiredFields": ["groupId", "interestRate"],
+        "fieldLengths": {
+          "groupId": 10
+        },
+        "decimalPrecision": {
+          "interestRate": {
+            "precision": 5,
+            "scale": 4
+          }
+        }
+      }
+    }
+  }
+}
