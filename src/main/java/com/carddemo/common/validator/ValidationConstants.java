@@ -1,6 +1,7 @@
 package com.carddemo.common.validator;
 
 import java.math.RoundingMode;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -30,7 +31,7 @@ public final class ValidationConstants {
      * Valid North American phone area codes from NANPA
      * Source: CSLKPCDY.cpy VALID-PHONE-AREA-CODE values
      */
-    public static final Set<String> VALID_AREA_CODES = new HashSet<String>() {{
+    public static final Set<String> VALID_AREA_CODES = Collections.unmodifiableSet(new HashSet<String>() {{
         // Valid general purpose area codes
         add("201"); add("202"); add("203"); add("204"); add("205"); add("206"); add("207"); add("208"); add("209"); add("210");
         add("212"); add("213"); add("214"); add("215"); add("216"); add("217"); add("218"); add("219"); add("220"); add("223");
@@ -73,7 +74,7 @@ public final class ValidationConstants {
         add("931"); add("934"); add("936"); add("937"); add("938"); add("939"); add("940"); add("941"); add("943"); add("945");
         add("947"); add("948"); add("949"); add("951"); add("952"); add("954"); add("956"); add("959"); add("970"); add("971");
         add("972"); add("973"); add("978"); add("979"); add("980"); add("983"); add("984"); add("985"); add("986"); add("989");
-    }};
+    }});
     
     // ========================================================================
     // US STATE CODES
@@ -84,7 +85,7 @@ public final class ValidationConstants {
      * Valid US state codes including territories
      * Source: CSLKPCDY.cpy VALID-US-STATE-CODE values
      */
-    public static final Set<String> VALID_STATE_CODES = new HashSet<String>() {{
+    public static final Set<String> VALID_STATE_CODES = Collections.unmodifiableSet(new HashSet<String>() {{
         // Standard US states
         add("AL"); add("AK"); add("AZ"); add("AR"); add("CA"); add("CO"); add("CT"); add("DE"); add("FL"); add("GA");
         add("HI"); add("ID"); add("IL"); add("IN"); add("IA"); add("KS"); add("KY"); add("LA"); add("ME"); add("MD");
@@ -93,7 +94,7 @@ public final class ValidationConstants {
         add("SD"); add("TN"); add("TX"); add("UT"); add("VT"); add("VA"); add("WA"); add("WV"); add("WI"); add("WY");
         // Federal districts and territories
         add("DC"); add("AS"); add("GU"); add("MP"); add("PR"); add("VI");
-    }};
+    }});
     
     // ========================================================================
     // STATE-ZIP CODE COMBINATIONS
@@ -104,7 +105,7 @@ public final class ValidationConstants {
      * Valid US state and first 2 digits of ZIP code combinations
      * Source: CSLKPCDY.cpy VALID-US-STATE-ZIP-CD2-COMBO values
      */
-    public static final Set<String> VALID_STATE_ZIP_COMBINATIONS = new HashSet<String>() {{
+    public static final Set<String> VALID_STATE_ZIP_COMBINATIONS = Collections.unmodifiableSet(new HashSet<String>() {{
         add("AA34"); add("AE90"); add("AE91"); add("AE92"); add("AE93"); add("AE94"); add("AE95"); add("AE96"); add("AE97"); add("AE98");
         add("AK99"); add("AL35"); add("AL36"); add("AP96"); add("AR71"); add("AR72"); add("AS96"); add("AZ85"); add("AZ86");
         add("CA90"); add("CA91"); add("CA92"); add("CA93"); add("CA94"); add("CA95"); add("CA96");
@@ -130,7 +131,7 @@ public final class ValidationConstants {
         add("VA20"); add("VA22"); add("VA23"); add("VA24"); add("VI80"); add("VI82"); add("VI83"); add("VI84"); add("VI85");
         add("VT50"); add("VT51"); add("VT52"); add("VT53"); add("VT54"); add("VT56"); add("VT57"); add("VT58"); add("VT59");
         add("WA98"); add("WA99"); add("WI53"); add("WI54"); add("WV24"); add("WV25"); add("WV26"); add("WY82"); add("WY83");
-    }};
+    }});
     
     // ========================================================================
     // FIELD VALIDATION PATTERNS
@@ -196,7 +197,7 @@ public final class ValidationConstants {
      * Date format patterns for validation
      * Source: CSUTLDPY.cpy date validation procedures
      */
-    public static final Set<String> DATE_PATTERNS = new HashSet<String>() {{
+    public static final Set<String> DATE_PATTERNS = Collections.unmodifiableSet(new HashSet<String>() {{
         add("CCYYMMDD");  // Century, year, month, day format
         add("YYYYMMDD");  // Year, month, day format
         add("MMDDYYYY");  // Month, day, year format
@@ -204,7 +205,7 @@ public final class ValidationConstants {
         add("MM/DD/YYYY"); // US format with slashes
         add("DD/MM/YYYY"); // European format with slashes
         add("YYYY-MM-DD"); // ISO format with dashes
-    }};
+    }});
     
     // ========================================================================
     // BUSINESS RULE CONSTANTS
