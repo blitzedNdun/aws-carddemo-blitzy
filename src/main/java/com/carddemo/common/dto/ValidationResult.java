@@ -1,5 +1,6 @@
 package com.carddemo.common.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
@@ -168,6 +169,7 @@ public class ValidationResult {
      * 
      * @return true if error messages exist, false otherwise
      */
+    @JsonIgnore
     public boolean hasErrors() {
         return !errorMessages.isEmpty();
     }
@@ -178,6 +180,7 @@ public class ValidationResult {
      * 
      * @return Number of error messages in the result
      */
+    @JsonIgnore
     public int getErrorCount() {
         return errorMessages.size();
     }
