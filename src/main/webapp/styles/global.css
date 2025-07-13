@@ -1,0 +1,809 @@
+/**
+ * CardDemo React Application - Global CSS Styles
+ * 
+ * This file provides foundational styling, typography, accessibility enhancements,
+ * and cross-browser normalization for the entire CardDemo React application.
+ * 
+ * Implements BMS-to-React transformation requirements:
+ * - Consistent visual hierarchy for all React components
+ * - Typography with monospace fonts for financial data display
+ * - Accessibility standards with WCAG 2.1 AA compliance
+ * - Cross-browser compatibility through CSS normalization
+ * - Spacing system aligned with Material-UI theme specifications
+ * 
+ * Based on mainframe BMS maps: COSGN00.bms, COMEN01.bms
+ * Maintains character alignment and positioning for financial data display
+ */
+
+/* ===================================================================
+ * EXTERNAL DEPENDENCIES
+ * ===================================================================
+ */
+
+/* CSS Reset and Normalization - normalize.css v8.0.1 */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css');
+
+/* Google Fonts - Monospace fonts for financial data display */
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;700&family=Source+Code+Pro:wght@300;400;500;600;700&display=swap');
+
+/* ===================================================================
+ * GLOBAL RESET AND NORMALIZATION
+ * ===================================================================
+ */
+
+/* Universal box-sizing for consistent layout calculations */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* HTML5 element reset and foundational styles */
+html {
+  line-height: 1.15;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth;
+  font-size: 16px; /* Base font size for rem calculations */
+}
+
+/* Body base styles matching BMS screen characteristics */
+body {
+  font-family: 'Roboto Mono', 'Source Code Pro', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #ffffff;
+  background-color: #000000;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  min-height: 100vh;
+  /* Maintain fixed-width layout characteristic of mainframe terminals */
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Form element normalization for consistent appearance */
+input,
+button,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+  margin: 0;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+}
+
+/* Remove default button styling */
+button {
+  cursor: pointer;
+  background: none;
+  border: none;
+  outline: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: none;
+}
+
+/* List element reset */
+ul,
+ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Link element reset */
+a {
+  color: inherit;
+  text-decoration: none;
+  background-color: transparent;
+}
+
+/* Table element reset */
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  width: 100%;
+}
+
+/* ===================================================================
+ * TYPOGRAPHY SYSTEM
+ * ===================================================================
+ */
+
+/* Monospace font family definitions for financial data display */
+:root {
+  --font-family-monospace: 'Roboto Mono', 'Source Code Pro', 'Courier New', monospace;
+  --font-family-display: 'Roboto Mono', 'Source Code Pro', 'Courier New', monospace;
+}
+
+/* Financial data display typography - maintains character alignment */
+.financial-data,
+.numeric-display,
+.currency-display,
+.account-number,
+.card-number,
+.transaction-id {
+  font-family: var(--font-family-monospace);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Character alignment utilities for mainframe data display */
+.char-align-left {
+  text-align: left;
+  padding-right: 0.5em;
+}
+
+.char-align-center {
+  text-align: center;
+  padding: 0 0.5em;
+}
+
+.char-align-right {
+  text-align: right;
+  padding-left: 0.5em;
+}
+
+/* Responsive font sizing maintaining readability */
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+  
+  body {
+    font-size: 12px;
+  }
+  
+  .financial-data {
+    font-size: 11px;
+  }
+}
+
+@media (min-width: 1200px) {
+  html {
+    font-size: 18px;
+  }
+  
+  body {
+    font-size: 16px;
+  }
+  
+  .financial-data {
+    font-size: 14px;
+  }
+}
+
+/* ===================================================================
+ * ACCESSIBILITY ENHANCEMENTS - WCAG 2.1 AA COMPLIANCE
+ * ===================================================================
+ */
+
+/* High contrast ratios for accessibility */
+:root {
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #e0e0e0;
+  --color-text-disabled: #999999;
+  --color-background-primary: #000000;
+  --color-background-secondary: #1a1a1a;
+  --color-accent-blue: #00bfff;
+  --color-accent-green: #00ff00;
+  --color-accent-yellow: #ffff00;
+  --color-accent-red: #ff0000;
+  --color-accent-turquoise: #00ffff;
+  --color-focus: #00bfff;
+  --color-error: #ff4444;
+  --color-success: #00ff00;
+  --color-warning: #ffaa00;
+}
+
+/* Keyboard navigation support and focus indicators */
+*:focus {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(0, 191, 255, 0.3);
+}
+
+/* Skip links for screen readers */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: var(--color-focus);
+  color: var(--color-background-primary);
+  padding: 8px;
+  text-decoration: none;
+  z-index: 1000;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.skip-link:focus {
+  top: 6px;
+}
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --color-text-primary: #ffffff;
+    --color-background-primary: #000000;
+    --color-focus: #ffffff;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Color scheme indicators for error states */
+.error-state {
+  color: var(--color-error);
+  background-color: rgba(255, 68, 68, 0.1);
+  border: 1px solid var(--color-error);
+}
+
+.success-state {
+  color: var(--color-success);
+  background-color: rgba(0, 255, 0, 0.1);
+  border: 1px solid var(--color-success);
+}
+
+.warning-state {
+  color: var(--color-warning);
+  background-color: rgba(255, 170, 0, 0.1);
+  border: 1px solid var(--color-warning);
+}
+
+/* ===================================================================
+ * SPACING SYSTEM - MATERIAL-UI THEME ALIGNMENT
+ * ===================================================================
+ */
+
+/* Consistent margin scales following Material-UI 8px base unit */
+:root {
+  --spacing-xs: 4px;    /* 0.5 * 8px */
+  --spacing-sm: 8px;    /* 1 * 8px */
+  --spacing-md: 16px;   /* 2 * 8px */
+  --spacing-lg: 24px;   /* 3 * 8px */
+  --spacing-xl: 32px;   /* 4 * 8px */
+  --spacing-xxl: 48px;  /* 6 * 8px */
+  --spacing-xxxl: 64px; /* 8 * 8px */
+}
+
+/* Padding utilities matching Material-UI spacing */
+.p-xs { padding: var(--spacing-xs); }
+.p-sm { padding: var(--spacing-sm); }
+.p-md { padding: var(--spacing-md); }
+.p-lg { padding: var(--spacing-lg); }
+.p-xl { padding: var(--spacing-xl); }
+.p-xxl { padding: var(--spacing-xxl); }
+.p-xxxl { padding: var(--spacing-xxxl); }
+
+/* Margin utilities matching Material-UI spacing */
+.m-xs { margin: var(--spacing-xs); }
+.m-sm { margin: var(--spacing-sm); }
+.m-md { margin: var(--spacing-md); }
+.m-lg { margin: var(--spacing-lg); }
+.m-xl { margin: var(--spacing-xl); }
+.m-xxl { margin: var(--spacing-xxl); }
+.m-xxxl { margin: var(--spacing-xxxl); }
+
+/* Responsive spacing breakpoints */
+@media (max-width: 600px) {
+  :root {
+    --spacing-xs: 2px;
+    --spacing-sm: 4px;
+    --spacing-md: 8px;
+    --spacing-lg: 12px;
+    --spacing-xl: 16px;
+    --spacing-xxl: 24px;
+    --spacing-xxxl: 32px;
+  }
+}
+
+@media (min-width: 1200px) {
+  :root {
+    --spacing-xs: 6px;
+    --spacing-sm: 12px;
+    --spacing-md: 24px;
+    --spacing-lg: 36px;
+    --spacing-xl: 48px;
+    --spacing-xxl: 72px;
+    --spacing-xxxl: 96px;
+  }
+}
+
+/* ===================================================================
+ * VISUAL HIERARCHY - APPLICATION-WIDE STYLING FOUNDATION
+ * ===================================================================
+ */
+
+/* Application-wide styling foundation matching BMS screen structure */
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-background-primary);
+  color: var(--color-text-primary);
+}
+
+/* Component styling base for BMS transformation */
+.bms-screen {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-md);
+  font-family: var(--font-family-monospace);
+  background-color: var(--color-background-primary);
+  color: var(--color-text-primary);
+}
+
+/* Header styling matching BMS screen headers */
+.bms-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-accent-blue);
+  margin-bottom: var(--spacing-md);
+}
+
+.bms-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.bms-header-right {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  text-align: right;
+}
+
+.bms-title {
+  color: var(--color-accent-yellow);
+  font-weight: 500;
+  text-align: center;
+  font-size: 1.2em;
+}
+
+/* Input field styling matching BMS attributes */
+.bms-input {
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-accent-green);
+  color: var(--color-accent-green);
+  padding: var(--spacing-xs);
+  font-family: var(--font-family-monospace);
+  font-size: inherit;
+}
+
+.bms-input:focus {
+  outline: none;
+  border-bottom-color: var(--color-focus);
+  color: var(--color-focus);
+}
+
+.bms-input.protected {
+  border-bottom-color: var(--color-accent-blue);
+  color: var(--color-accent-blue);
+  cursor: not-allowed;
+}
+
+.bms-input.error {
+  border-bottom-color: var(--color-error);
+  color: var(--color-error);
+}
+
+/* Label styling matching BMS field labels */
+.bms-label {
+  color: var(--color-accent-turquoise);
+  font-weight: 400;
+  margin-right: var(--spacing-sm);
+  white-space: nowrap;
+}
+
+/* Error message styling */
+.bms-error-message {
+  color: var(--color-error);
+  font-weight: 500;
+  padding: var(--spacing-sm);
+  text-align: center;
+  background-color: rgba(255, 68, 68, 0.1);
+  border: 1px solid var(--color-error);
+  border-radius: 4px;
+  margin: var(--spacing-sm) 0;
+}
+
+/* Function key styling matching BMS function key display */
+.bms-function-keys {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--color-background-secondary);
+  color: var(--color-accent-yellow);
+  padding: var(--spacing-sm);
+  text-align: center;
+  border-top: 1px solid var(--color-accent-blue);
+  font-family: var(--font-family-monospace);
+  font-size: 0.9em;
+}
+
+/* Cross-browser consistency utilities */
+.text-monospace {
+  font-family: var(--font-family-monospace);
+}
+
+.text-nowrap {
+  white-space: nowrap;
+}
+
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Print styles for report generation */
+@media print {
+  body {
+    background-color: white;
+    color: black;
+    font-size: 12pt;
+  }
+  
+  .bms-screen {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .bms-function-keys {
+    display: none;
+  }
+  
+  .no-print {
+    display: none;
+  }
+}
+
+/* ===================================================================
+ * ANIMATION AND TRANSITION SUPPORT
+ * ===================================================================
+ */
+
+/* Smooth transitions for interactive elements */
+.transition-default {
+  transition: all 0.2s ease-in-out;
+}
+
+.transition-slow {
+  transition: all 0.3s ease-in-out;
+}
+
+.transition-fast {
+  transition: all 0.1s ease-in-out;
+}
+
+/* Hover effects for interactive elements */
+.hover-highlight:hover {
+  background-color: rgba(0, 191, 255, 0.1);
+  border-color: var(--color-focus);
+}
+
+.hover-underline:hover {
+  text-decoration: underline;
+}
+
+/* ===================================================================
+ * UTILITY CLASSES
+ * ===================================================================
+ */
+
+/* Visibility utilities */
+.hidden {
+  display: none !important;
+}
+
+.invisible {
+  visibility: hidden;
+}
+
+.visible {
+  visibility: visible;
+}
+
+/* Flex utilities */
+.flex {
+  display: flex;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+
+.flex-row {
+  flex-direction: row;
+}
+
+.flex-center {
+  justify-content: center;
+  align-items: center;
+}
+
+.flex-between {
+  justify-content: space-between;
+}
+
+.flex-around {
+  justify-content: space-around;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+/* Width utilities */
+.w-full {
+  width: 100%;
+}
+
+.w-half {
+  width: 50%;
+}
+
+.w-quarter {
+  width: 25%;
+}
+
+.w-auto {
+  width: auto;
+}
+
+/* Height utilities */
+.h-full {
+  height: 100%;
+}
+
+.h-screen {
+  height: 100vh;
+}
+
+.h-auto {
+  height: auto;
+}
+
+/* Position utilities */
+.relative {
+  position: relative;
+}
+
+.absolute {
+  position: absolute;
+}
+
+.fixed {
+  position: fixed;
+}
+
+.sticky {
+  position: sticky;
+}
+
+/* Z-index utilities */
+.z-10 {
+  z-index: 10;
+}
+
+.z-20 {
+  z-index: 20;
+}
+
+.z-30 {
+  z-index: 30;
+}
+
+.z-40 {
+  z-index: 40;
+}
+
+.z-50 {
+  z-index: 50;
+}
+
+/* ===================================================================
+ * COMPONENT-SPECIFIC OVERRIDES
+ * ===================================================================
+ */
+
+/* Material-UI component overrides for BMS styling consistency */
+.MuiButton-root {
+  font-family: var(--font-family-monospace);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.MuiTextField-root {
+  font-family: var(--font-family-monospace);
+}
+
+.MuiTypography-root {
+  font-family: var(--font-family-monospace);
+}
+
+/* React component base styling */
+.react-component {
+  font-family: var(--font-family-monospace);
+  background-color: var(--color-background-primary);
+  color: var(--color-text-primary);
+}
+
+/* ===================================================================
+ * RESPONSIVE DESIGN BREAKPOINTS
+ * ===================================================================
+ */
+
+/* Mobile-first responsive design */
+@media (max-width: 600px) {
+  .bms-screen {
+    padding: var(--spacing-sm);
+  }
+  
+  .bms-header {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+  
+  .bms-header-left,
+  .bms-header-right {
+    text-align: center;
+  }
+  
+  .bms-function-keys {
+    font-size: 0.8em;
+  }
+}
+
+/* Tablet breakpoint */
+@media (min-width: 601px) and (max-width: 1024px) {
+  .bms-screen {
+    padding: var(--spacing-md);
+  }
+}
+
+/* Desktop breakpoint */
+@media (min-width: 1025px) {
+  .bms-screen {
+    padding: var(--spacing-lg);
+  }
+}
+
+/* Large desktop breakpoint */
+@media (min-width: 1440px) {
+  .bms-screen {
+    padding: var(--spacing-xl);
+  }
+}
+
+/* ===================================================================
+ * DARK MODE SUPPORT
+ * ===================================================================
+ */
+
+/* Dark mode preferences */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #e0e0e0;
+    --color-background-primary: #000000;
+    --color-background-secondary: #1a1a1a;
+  }
+}
+
+/* Light mode override (if needed for accessibility) */
+@media (prefers-color-scheme: light) {
+  .light-mode {
+    --color-text-primary: #000000;
+    --color-text-secondary: #333333;
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f5f5f5;
+  }
+}
+
+/* ===================================================================
+ * PERFORMANCE OPTIMIZATIONS
+ * ===================================================================
+ */
+
+/* GPU acceleration for smooth animations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Optimize font rendering */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Optimize layout calculations */
+.layout-optimized {
+  contain: layout;
+}
+
+/* ===================================================================
+ * COMPATIBILITY FIXES
+ * ===================================================================
+ */
+
+/* Internet Explorer compatibility */
+@media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) {
+  .bms-screen {
+    display: block;
+  }
+}
+
+/* Safari compatibility */
+@supports (-webkit-appearance: none) {
+  .bms-input {
+    -webkit-appearance: none;
+  }
+}
+
+/* Firefox compatibility */
+@-moz-document url-prefix() {
+  .bms-screen {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-accent-blue) var(--color-background-secondary);
+  }
+}
+
+/* ===================================================================
+ * END OF GLOBAL STYLES
+ * ===================================================================
+ */
