@@ -14,15 +14,14 @@ import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern as RegexPattern;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +55,7 @@ import org.springframework.batch.item.file.transform.FieldSet;
  */
 @Component
 @Validated
-public class CardDataItemReader extends FlatFileItemReader<CardRecord> {
+public class CardDataItemReader extends FlatFileItemReader<CardDataItemReader.CardRecord> {
 
     private static final Logger logger = LoggerFactory.getLogger(CardDataItemReader.class);
     
@@ -71,10 +70,10 @@ public class CardDataItemReader extends FlatFileItemReader<CardRecord> {
     // FILLER X(59) positions 92-150 - not mapped
     
     // Validation patterns for card data integrity
-    private static final RegexPattern CARD_NUMBER_PATTERN = RegexPattern.compile("^[0-9]{16}$");
-    private static final RegexPattern ACCOUNT_ID_PATTERN = RegexPattern.compile("^[0-9]{11}$");
-    private static final RegexPattern CVV_PATTERN = RegexPattern.compile("^[0-9]{3}$");
-    private static final RegexPattern ACTIVE_STATUS_PATTERN = RegexPattern.compile("^[YN]$");
+    private static final Pattern CARD_NUMBER_PATTERN = Pattern.compile("^[0-9]{16}$");
+    private static final Pattern ACCOUNT_ID_PATTERN = Pattern.compile("^[0-9]{11}$");
+    private static final Pattern CVV_PATTERN = Pattern.compile("^[0-9]{3}$");
+    private static final Pattern ACTIVE_STATUS_PATTERN = Pattern.compile("^[YN]$");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     
     // Statistics for audit logging
@@ -155,9 +154,9 @@ public class CardDataItemReader extends FlatFileItemReader<CardRecord> {
      * @throws NonTransientResourceException if file access fails
      */
     @Override
-    public CardRecord read() throws Exception, UnexpectedInputException, ParseException, 
+    public CardDataItemReader.CardRecord read() throws Exception, UnexpectedInputException, ParseException, 
                                   NonTransientResourceException {
-        CardRecord cardRecord = super.read();
+        CardDataItemReader.CardRecord cardRecord = super.read();
         
         if (cardRecord != null) {
             totalRecordsProcessed++;
@@ -196,9 +195,9 @@ public class CardDataItemReader extends FlatFileItemReader<CardRecord> {
      * @return CardRecord DTO with mapped field values
      * @throws ParseException if field parsing fails
      */
-    public CardRecord parseCardRecord(@NotNull FieldSet fieldSet) throws ParseException {
+    public CardDataItemReader.CardRecord parseCardRecord(@NotNull FieldSet fieldSet) throws ParseException {
         try {
-            CardRecord cardRecord = new CardRecord();
+            CardDataItemReader.CardRecord cardRecord = new CardDataItemReader.CardRecord();
             
             // Map fields from COBOL layout with data type conversion
             cardRecord.setCardNumber(fieldSet.readString("cardNumber").trim());
@@ -269,7 +268,7 @@ public class CardDataItemReader extends FlatFileItemReader<CardRecord> {
      * @param cardRecord CardRecord to validate
      * @throws CardValidationException if validation fails
      */
-    private void validateCardRecord(@NotNull CardRecord cardRecord) throws CardValidationException {
+    private void validateCardRecord(@NotNull CardDataItemReader.CardRecord cardRecord) throws CardValidationException {
         
         // Validate card number with Luhn algorithm
         validateCardNumber(cardRecord.getCardNumber());
@@ -386,10 +385,10 @@ public class CardDataItemReader extends FlatFileItemReader<CardRecord> {
     /**
      * Custom FieldSetMapper for converting FieldSet to CardRecord.
      */
-    private class CardRecordFieldSetMapper implements FieldSetMapper<CardRecord> {
+    private class CardRecordFieldSetMapper implements FieldSetMapper<CardDataItemReader.CardRecord> {
         
         @Override
-        public CardRecord mapFieldSet(@NotNull FieldSet fieldSet) throws org.springframework.validation.BindException {
+        public CardDataItemReader.CardRecord mapFieldSet(@NotNull FieldSet fieldSet) throws org.springframework.validation.BindException {
             try {
                 return parseCardRecord(fieldSet);
             } catch (ParseException e) {
@@ -421,15 +420,15 @@ public class CardDataItemReader extends FlatFileItemReader<CardRecord> {
     public static class CardRecord {
         
         @NotNull
-        @Pattern(regexp = "^[0-9]{16}$", message = "Card number must be 16 digits")
+        @jakarta.validation.constraints.Pattern(regexp = "^[0-9]{16}$", message = "Card number must be 16 digits")
         private String cardNumber;
         
         @NotNull
-        @Pattern(regexp = "^[0-9]{11}$", message = "Account ID must be 11 digits")
+        @jakarta.validation.constraints.Pattern(regexp = "^[0-9]{11}$", message = "Account ID must be 11 digits")
         private String accountId;
         
         @NotNull
-        @Pattern(regexp = "^[0-9]{3}$", message = "CVV code must be 3 digits")
+        @jakarta.validation.constraints.Pattern(regexp = "^[0-9]{3}$", message = "CVV code must be 3 digits")
         private String cvvCode;
         
         @NotNull
@@ -437,11 +436,11 @@ public class CardDataItemReader extends FlatFileItemReader<CardRecord> {
         private String embossedName;
         
         @NotNull
-        @Pattern(regexp = "^[0-9]{4}-[0-9]{2}-[0-9]{2}$", message = "Date must be YYYY-MM-DD format")
+        @jakarta.validation.constraints.Pattern(regexp = "^[0-9]{4}-[0-9]{2}-[0-9]{2}$", message = "Date must be YYYY-MM-DD format")
         private String expirationDate;
         
         @NotNull
-        @Pattern(regexp = "^[YN]$", message = "Active status must be Y or N")
+        @jakarta.validation.constraints.Pattern(regexp = "^[YN]$", message = "Active status must be Y or N")
         private String activeStatus;
 
         // Default constructor
