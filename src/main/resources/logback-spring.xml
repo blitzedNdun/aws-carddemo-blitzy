@@ -120,7 +120,7 @@
         <file>logs/carddemo-application.log</file>
         
         <!-- Rolling policy for log file management -->
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>logs/archived/carddemo-application.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
             <maxFileSize>100MB</maxFileSize>
             <maxHistory>90</maxHistory> <!-- 90-day retention for regulatory compliance -->
@@ -161,7 +161,7 @@
         <file>logs/carddemo-audit.log</file>
         
         <!-- Audit-specific rolling policy with extended retention -->
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>logs/audit/carddemo-audit.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
             <maxFileSize>50MB</maxFileSize>
             <maxHistory>2555</maxHistory> <!-- 7-year retention for SOX compliance -->
@@ -209,7 +209,7 @@
         <file>logs/carddemo-security.log</file>
         
         <!-- Security-specific rolling policy -->
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>logs/security/carddemo-security.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
             <maxFileSize>25MB</maxFileSize>
             <maxHistory>365</maxHistory> <!-- 1-year retention for security analysis -->
@@ -256,7 +256,7 @@
         <file>logs/carddemo-performance.log</file>
         
         <!-- Performance-specific rolling policy -->
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>logs/performance/carddemo-performance.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
             <maxFileSize>100MB</maxFileSize>
             <maxHistory>30</maxHistory> <!-- 30-day retention for performance analysis -->
