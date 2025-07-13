@@ -595,16 +595,7 @@ public enum PhoneAreaCode {
         return Optional.empty();
     }
     
-    /**
-     * Returns all valid PhoneAreaCode enum values. This method provides access
-     * to the complete set of valid area codes for use in validation frameworks,
-     * dropdown lists, and data validation routines.
-     * 
-     * @return Array of all PhoneAreaCode enum values
-     */
-    public static PhoneAreaCode[] values() {
-        return PhoneAreaCode.values();
-    }
+
     
     /**
      * Returns the string representation of this PhoneAreaCode, which is the
