@@ -66,7 +66,7 @@ public class CardNumberValidator implements ConstraintValidator<ValidCardNumber,
     /**
      * Configuration flag for performing Luhn algorithm validation.
      */
-    private boolean validateLuhn;
+    private boolean enableLuhnCheck;
     
     /**
      * Custom error message for null values.
@@ -97,7 +97,7 @@ public class CardNumberValidator implements ConstraintValidator<ValidCardNumber,
         this.allowNull = constraintAnnotation.allowNull();
         this.ignoreFormatting = constraintAnnotation.ignoreFormatting();
         this.expectedLength = constraintAnnotation.expectedLength();
-        this.validateLuhn = constraintAnnotation.validateLuhn();
+        this.enableLuhnCheck = constraintAnnotation.enableLuhnCheck();
         this.nullMessage = constraintAnnotation.nullMessage();
         this.formatMessage = constraintAnnotation.formatMessage();
         this.luhnMessage = constraintAnnotation.luhnMessage();
@@ -137,7 +137,7 @@ public class CardNumberValidator implements ConstraintValidator<ValidCardNumber,
         }
         
         // Perform Luhn algorithm validation if enabled
-        if (validateLuhn && !isValidLuhn(normalizedValue)) {
+        if (enableLuhnCheck && !isValidLuhn(normalizedValue)) {
             addCustomErrorMessage(context, luhnMessage);
             return false;
         }
