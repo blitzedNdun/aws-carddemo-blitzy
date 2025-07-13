@@ -257,7 +257,7 @@ public class SecurityConfig {
                 .contentTypeOptions().and()         // Prevent MIME type sniffing
                 .httpStrictTransportSecurity(hsts -> hsts
                     .maxAgeInSeconds(31536000)      // 1 year HSTS
-                    .includeSubdomains(true)        // Apply to subdomains
+                    .includeSubDomains(true)        // Apply to subdomains
                     .preload(true)                  // Enable HSTS preload
                 )
             )
