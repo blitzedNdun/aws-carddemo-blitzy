@@ -1,0 +1,821 @@
+{
+  "metadata": {
+    "description": "Transaction category reference data for comprehensive category validation, balance tracking, and Redis cache testing",
+    "source": "Converted from app/data/ASCII/trancatg.txt for Spring Boot microservices testing",
+    "version": "1.0",
+    "lastUpdated": "2024-01-15T00:00:00Z",
+    "totalCategories": 25,
+    "cacheEnabled": true,
+    "cacheConfiguration": {
+      "ttl": 86400,
+      "refreshStrategy": "CACHE_ASIDE",
+      "evictionPolicy": "LRU"
+    }
+  },
+  "transactionCategories": [
+    {
+      "categoryCode": "0001",
+      "categoryId": "010001",
+      "categoryDescription": "Regular Sales Draft",
+      "categoryType": "SALES_DRAFT",
+      "categoryGroup": "01",
+      "categoryGroupDescription": "Sales and Charges",
+      "activeStatus": true,
+      "balanceImpact": "DEBIT",
+      "balanceImpactDirection": "INCREASE_BALANCE",
+      "requiresAuthorization": true,
+      "allowsReversals": true,
+      "interestBearing": true,
+      "statementCategory": "PURCHASES",
+      "effectiveDate": "2020-01-01",
+      "lastModified": "2024-01-01T00:00:00Z",
+      "businessRules": {
+        "minAmount": "0.01",
+        "maxAmount": "99999.99",
+        "dailyLimit": "50000.00",
+        "requiresMerchantInfo": true,
+        "allowsPartialReversals": true
+      },
+      "testScenarios": {
+        "validationTests": ["positive_amount", "merchant_required", "auth_validation"],
+        "balanceTests": ["debit_increase", "statement_posting", "interest_calculation"],
+        "cacheTests": ["category_lookup", "validation_cache", "balance_cache_update"]
+      }
+    },
+    {
+      "categoryCode": "0002",
+      "categoryId": "010002",
+      "categoryDescription": "Regular Cash Advance",
+      "categoryType": "CASH_ADVANCE",
+      "categoryGroup": "01",
+      "categoryGroupDescription": "Sales and Charges",
+      "activeStatus": true,
+      "balanceImpact": "DEBIT",
+      "balanceImpactDirection": "INCREASE_BALANCE",
+      "requiresAuthorization": true,
+      "allowsReversals": true,
+      "interestBearing": true,
+      "statementCategory": "CASH_ADVANCES",
+      "effectiveDate": "2020-01-01",
+      "lastModified": "2024-01-01T00:00:00Z",
+      "businessRules": {
+        "minAmount": "20.00",
+        "maxAmount": "5000.00",
+        "dailyLimit": "1000.00",
+        "requiresMerchantInfo": false,
+        "allowsPartialReversals": false
+      },
+      "testScenarios": {
+        "validationTests": ["cash_limit_validation", "daily_limit_check", "auth_validation"],
+        "balanceTests": ["cash_balance_debit", "interest_accrual", "fee_calculation"],
+        "cacheTests": ["limit_cache_lookup", "balance_type_cache", "fee_cache_validation"]
+      }
+    },
+    {
+      "categoryCode": "0003",
+      "categoryId": "010003",
+      "categoryDescription": "Convenience Check Debit",
+      "categoryType": "CONVENIENCE_CHECK",
+      "categoryGroup": "01",
+      "categoryGroupDescription": "Sales and Charges",
+      "activeStatus": true,
+      "balanceImpact": "DEBIT",
+      "balanceImpactDirection": "INCREASE_BALANCE",
+      "requiresAuthorization": false,
+      "allowsReversals": true,
+      "interestBearing": true,
+      "statementCategory": "PURCHASES",
+      "effectiveDate": "2020-01-01",
+      "lastModified": "2024-01-01T00:00:00Z",
+      "businessRules": {
+        "minAmount": "25.00",
+        "maxAmount": "10000.00",
+        "dailyLimit": "2500.00",
+        "requiresMerchantInfo": false,
+        "allowsPartialReversals": true
+      },
+      "testScenarios": {
+        "validationTests": ["check_number_validation", "amount_limits", "no_auth_required"],
+        "balanceTests": ["purchase_balance_debit", "statement_posting", "interest_calculation"],
+        "cacheTests": ["check_validation_cache", "amount_limit_cache", "balance_update_cache"]
+      }
+    },
+    {
+      "categoryCode": "0004",
+      "categoryId": "010004",
+      "categoryDescription": "ATM Cash Advance",
+      "categoryType": "ATM_CASH_ADVANCE",
+      "categoryGroup": "01",
+      "categoryGroupDescription": "Sales and Charges",
+      "activeStatus": true,
+      "balanceImpact": "DEBIT",
+      "balanceImpactDirection": "INCREASE_BALANCE",
+      "requiresAuthorization": true,
+      "allowsReversals": true,
+      "interestBearing": true,
+      "statementCategory": "CASH_ADVANCES",
+      "effectiveDate": "2020-01-01",
+      "lastModified": "2024-01-01T00:00:00Z",
+      "businessRules": {
+        "minAmount": "20.00",
+        "maxAmount": "1000.00",
+        "dailyLimit": "500.00",
+        "requiresMerchantInfo": false,
+        "allowsPartialReversals": false
+      },
+      "testScenarios": {
+        "validationTests": ["atm_limit_validation", "pin_verification", "daily_limit_check"],
+        "balanceTests": ["cash_balance_debit", "atm_fee_calculation", "interest_accrual"],
+        "cacheTests": ["atm_limit_cache", "fee_calculation_cache", "daily_limit_cache"]
+      }
+    },
+    {
+      "categoryCode": "0005",
+      "categoryId": "010005",
+      "categoryDescription": "Interest Amount",
+      "categoryType": "INTEREST_CHARGE",
+      "categoryGroup": "01",
+      "categoryGroupDescription": "Sales and Charges",
+      "activeStatus": true,
+      "balanceImpact": "DEBIT",
+      "balanceImpactDirection": "INCREASE_BALANCE",
+      "requiresAuthorization": false,
+      "allowsReversals": false,
+      "interestBearing": false,
+      "statementCategory": "INTEREST_CHARGES",
+      "effectiveDate": "2020-01-01",
+      "lastModified": "2024-01-01T00:00:00Z",
+      "businessRules": {
+        "minAmount": "0.01",
+        "maxAmount": "9999.99",
+        "dailyLimit": "9999.99",
+        "requiresMerchantInfo": false,
+        "allowsPartialReversals": false
+      },
+      "testScenarios": {
+        "validationTests": ["interest_calculation", "cycle_validation", "rate_validation"],
+        "balanceTests": ["interest_balance_debit", "compound_interest", "statement_posting"],
+        "cacheTests": ["rate_cache_lookup", "calculation_cache", "cycle_cache_validation"]
+      }
+    },
+    {
+      "categoryCode": "0006",
+      "categoryId": "020001",
+      "categoryDescription": "Cash Payment",
+      "categoryType": "CASH_PAYMENT",
+      "categoryGroup": "02",
+      "categoryGroupDescription": "Payments",
+      "activeStatus": true,
+      "balanceImpact": "CREDIT",
+      "balanceImpactDirection": "DECREASE_BALANCE",
+      "requiresAuthorization": false,
+      "allowsReversals": true,
+      "interestBearing": false,
+      "statementCategory": "PAYMENTS",
+      "effectiveDate": "2020-01-01",
+      "lastModified": "2024-01-01T00:00:00Z",
+      "businessRules": {
+        "minAmount": "1.00",
+        "maxAmount": "50000.00",
+        "dailyLimit": "50000.00",
+        "requiresMerchantInfo": false,
+        "allowsPartialReversals": false
+      },
+      "testScenarios": {
+        "validationTests": ["payment_amount_validation", "cash_handling", "deposit_validation"],
+        "balanceTests": ["credit_decrease", "payment_allocation", "overpayment_handling"],
+        "cacheTests": ["payment_cache_lookup", "allocation_cache", "balance_update_cache"]
+      }
+    },
+    {
+      "categoryCode": "0007",
+      "categoryId": "020002",
+      "categoryDescription": "Electronic Payment",
+      "categoryType": "ELECTRONIC_PAYMENT",
+      "categoryGroup": "02",
+      "categoryGroupDescription": "Payments",
+      "activeStatus": true,
+      "balanceImpact": "CREDIT",
+      "balanceImpactDirection": "DECREASE_BALANCE",
+      "requiresAuthorization": false,
+      "allowsReversals": true,
+      "interestBearing": false,
+      "statementCategory": "PAYMENTS",
+      "effectiveDate": "2020-01-01",
+      "lastModified": "2024-01-01T00:00:00Z",
+      "businessRules": {
+        "minAmount": "1.00",
+        "maxAmount": "100000.00",
+        "dailyLimit": "25000.00",
+        "requiresMerchantInfo": false,
+        "allowsPartialReversals": false
+      },
+      "testScenarios": {
+        "validationTests": ["ach_validation", "routing_number_check", "account_verification"],
+        "balanceTests": ["electronic_credit", "payment_processing", "settlement_timing"],
+        "cacheTests": ["ach_validation_cache", "routing_cache", "settlement_cache"]
+      }
+    },
+    {
+      "categoryCode": "0008",
+      "categoryId": "020003",
+      "categoryDescription": "Check Payment",
+      "categoryType": "CHECK_PAYMENT",
+      "categoryGroup": "02",
+      "categoryGroupDescription": "Payments",
+      "activeStatus": true,
+      "balanceImpact": "CREDIT",
+      "balanceImpactDirection": "DECREASE_BALANCE",
+      "requiresAuthorization": false,
+      "allowsReversals": true,
+      "interestBearing": false,
+      "statementCategory": "PAYMENTS",
+      "effectiveDate": "2020-01-01",
+      "lastModified": "2024-01-01T00:00:00Z",
+      "businessRules": {
+        "minAmount": "1.00",
+        "maxAmount": "75000.00",
+        "dailyLimit": "75000.00",
+        "requiresMerchantInfo": false,
+        "allowsPartialReversals": false
+      },
+      "testScenarios": {
+        "validationTests": ["check_number_validation", "memo_field_validation", "endorsement_check"],
+        "balanceTests": ["check_credit", "hold_period", "cleared_payment_posting"],
+        "cacheTests": ["check_validation_cache", "hold_period_cache", "clearing_cache"]
+      }
+    },
+    {
+      "categoryCode": "0009",
+      "categoryId": "030001",
+      "categoryDescription": "Credit to Account",
+      "categoryType": "ACCOUNT_CREDIT",
+      "categoryGroup": "03",
+      "categoryGroupDescription": "Credits",
+      "activeStatus": true,
+      "balanceImpact": "CREDIT",
+      "balanceImpactDirection": "DECREASE_BALANCE",
+      "requiresAuthorization": true,
+      "allowsReversals": true,
+      "interestBearing": false,
+      "statementCategory": "CREDITS",
+      "effectiveDate": "2020-01-01",
+      "lastModified": "2024-01-01T00:00:00Z",
+      "businessRules": {
+        "minAmount": "0.01",
+        "maxAmount": "10000.00",
+        "dailyLimit": "10000.00",
+        "requiresMerchantInfo": false,
+        "allowsPartialReversals": true
+      },
+      "testScenarios": {
+        "validationTests": ["credit_authorization", "reason_code_validation", "manager_approval"],
+        "balanceTests": ["account_credit", "credit_allocation", "statement_posting"],
+        "cacheTests": ["authorization_cache", "reason_code_cache", "allocation_cache"]
+      }
+    },
+    {
+      "categoryCode": "0010",
+      "categoryId": "030002",
+      "categoryDescription": "Credit to Purchase Balance",
+      "categoryType": "PURCHASE_CREDIT",
+      "categoryGroup": "03",
+      "categoryGroupDescription": "Credits",
+      "activeStatus": true,
+      "balanceImpact": "CREDIT",
+      "balanceImpactDirection": "DECREASE_BALANCE",
+      "requiresAuthorization": true,
+      "allowsReversals": true,
+      "interestBearing": false,
+      "statementCategory": "CREDITS",
+      "effectiveDate": "2020-01-01",
+      "lastModified": "2024-01-01T00:00:00Z",
+      "businessRules": {
+        "minAmount": "0.01",
+        "maxAmount": "5000.00",
+        "dailyLimit": "5000.00",
+        "requiresMerchantInfo": false,
+        "allowsPartialReversals": true
+      },
+      "testScenarios": {
+        "validationTests": ["purchase_balance_validation", "credit_reason", "authorization_check"],
+        "balanceTests": ["purchase_credit", "balance_allocation", "interest_adjustment"],
+        "cacheTests": ["balance_type_cache", "allocation_strategy_cache", "interest_cache"]
+      }
+    },
+    {
+      "categoryCode": "0011",
+      "categoryId": "030003",
+      "categoryDescription": "Credit to Cash Balance",
+      "categoryType": "CASH_CREDIT",
+      "categoryGroup": "03",
+      "categoryGroupDescription": "Credits",
+      "activeStatus": true,
+      "balanceImpact": "CREDIT",
+      "balanceImpactDirection": "DECREASE_BALANCE",
+      "requiresAuthorization": true,
+      "allowsReversals": true,
+      "interestBearing": false,
+      "statementCategory": "CREDITS",
+      "effectiveDate": "2020-01-01",
+      "lastModified": "2024-01-01T00:00:00Z",
+      "businessRules": {
+        "minAmount": "0.01",
+        "maxAmount": "2500.00",
+        "dailyLimit": "2500.00",
+        "requiresMerchantInfo": false,
+        "allowsPartialReversals": true
+      },
+      "testScenarios": {
+        "validationTests": ["cash_balance_validation", "credit_authorization", "fee_adjustment"],
+        "balanceTests": ["cash_credit", "cash_balance_allocation", "fee_reversal"],
+        "cacheTests": ["cash_balance_cache", "fee_calculation_cache", "reversal_cache"]
+      }
+    },
+    {
+      "categoryCode": "0012",
+      "categoryId": "040001",
+      "categoryDescription": "Zero Dollar Authorization",
+      "categoryType": "ZERO_DOLLAR_AUTH",
+      "categoryGroup": "04",
+      "categoryGroupDescription": "Authorizations",
+      "activeStatus": true,
+      "balanceImpact": "NONE",
+      "balanceImpactDirection": "NO_CHANGE",
+      "requiresAuthorization": true,
+      "allowsReversals": true,
+      "interestBearing": false,
+      "statementCategory": "AUTHORIZATIONS",
+      "effectiveDate": "2020-01-01",
+      "lastModified": "2024-01-01T00:00:00Z",
+      "businessRules": {
+        "minAmount": "0.00",
+        "maxAmount": "0.00",
+        "dailyLimit": "0.00",
+        "requiresMerchantInfo": true,
+        "allowsPartialReversals": false
+      },
+      "testScenarios": {
+        "validationTests": ["zero_amount_validation", "merchant_verification", "card_validation"],
+        "balanceTests": ["no_balance_impact", "authorization_tracking", "settlement_monitoring"],
+        "cacheTests": ["auth_tracking_cache", "merchant_cache", "card_validation_cache"]
+      }
+    },
+    {
+      "categoryCode": "0013",
+      "categoryId": "040002",
+      "categoryDescription": "Online Purchase Authorization",
+      "categoryType": "ONLINE_AUTH",
+      "categoryGroup": "04",
+      "categoryGroupDescription": "Authorizations",
+      "activeStatus": true,
+      "balanceImpact": "PENDING",
+      "balanceImpactDirection": "AUTHORIZE_AMOUNT",
+      "requiresAuthorization": true,
+      "allowsReversals": true,
+      "interestBearing": false,
+      "statementCategory": "AUTHORIZATIONS",
+      "effectiveDate": "2020-01-01",
+      "lastModified": "2024-01-01T00:00:00Z",
+      "businessRules": {
+        "minAmount": "0.01",
+        "maxAmount": "25000.00",
+        "dailyLimit": "15000.00",
+        "requiresMerchantInfo": true,
+        "allowsPartialReversals": true
+      },
+      "testScenarios": {
+        "validationTests": ["online_validation", "cvv_verification", "merchant_category_check"],
+        "balanceTests": ["authorization_hold", "available_credit_reduction", "settlement_posting"],
+        "cacheTests": ["auth_hold_cache", "merchant_category_cache", "settlement_cache"]
+      }
+    },
+    {
+      "categoryCode": "0014",
+      "categoryId": "040003",
+      "categoryDescription": "Travel Booking Authorization",
+      "categoryType": "TRAVEL_AUTH",
+      "categoryGroup": "04",
+      "categoryGroupDescription": "Authorizations",
+      "activeStatus": true,
+      "balanceImpact": "PENDING",
+      "balanceImpactDirection": "AUTHORIZE_AMOUNT",
+      "requiresAuthorization": true,
+      "allowsReversals": true,
+      "interestBearing": false,
+      "statementCategory": "AUTHORIZATIONS",
+      "effectiveDate": "2020-01-01",
+      "lastModified": "2024-01-01T00:00:00Z",
+      "businessRules": {
+        "minAmount": "1.00",
+        "maxAmount": "50000.00",
+        "dailyLimit": "50000.00",
+        "requiresMerchantInfo": true,
+        "allowsPartialReversals": true
+      },
+      "testScenarios": {
+        "validationTests": ["travel_notification", "merchant_category_validation", "amount_validation"],
+        "balanceTests": ["travel_authorization_hold", "extended_hold_period", "settlement_variance"],
+        "cacheTests": ["travel_notification_cache", "hold_period_cache", "variance_cache"]
+      }
+    },
+    {
+      "categoryCode": "0015",
+      "categoryId": "050001",
+      "categoryDescription": "Refund Credit",
+      "categoryType": "REFUND",
+      "categoryGroup": "05",
+      "categoryGroupDescription": "Refunds",
+      "activeStatus": true,
+      "balanceImpact": "CREDIT",
+      "balanceImpactDirection": "DECREASE_BALANCE",
+      "requiresAuthorization": false,
+      "allowsReversals": true,
+      "interestBearing": false,
+      "statementCategory": "REFUNDS",
+      "effectiveDate": "2020-01-01",
+      "lastModified": "2024-01-01T00:00:00Z",
+      "businessRules": {
+        "minAmount": "0.01",
+        "maxAmount": "25000.00",
+        "dailyLimit": "25000.00",
+        "requiresMerchantInfo": true,
+        "allowsPartialReversals": true
+      },
+      "testScenarios": {
+        "validationTests": ["original_transaction_validation", "refund_time_limit", "merchant_validation"],
+        "balanceTests": ["refund_credit", "original_transaction_matching", "overpayment_handling"],
+        "cacheTests": ["transaction_matching_cache", "refund_limit_cache", "merchant_validation_cache"]
+      }
+    },
+    {
+      "categoryCode": "0016",
+      "categoryId": "060001",
+      "categoryDescription": "Fraud Reversal",
+      "categoryType": "FRAUD_REVERSAL",
+      "categoryGroup": "06",
+      "categoryGroupDescription": "Reversals",
+      "activeStatus": true,
+      "balanceImpact": "CREDIT",
+      "balanceImpactDirection": "DECREASE_BALANCE",
+      "requiresAuthorization": true,
+      "allowsReversals": false,
+      "interestBearing": false,
+      "statementCategory": "REVERSALS",
+      "effectiveDate": "2020-01-01",
+      "lastModified": "2024-01-01T00:00:00Z",
+      "businessRules": {
+        "minAmount": "0.01",
+        "maxAmount": "50000.00",
+        "dailyLimit": "50000.00",
+        "requiresMerchantInfo": false,
+        "allowsPartialReversals": false
+      },
+      "testScenarios": {
+        "validationTests": ["fraud_case_validation", "authorization_requirement", "investigation_status"],
+        "balanceTests": ["fraud_credit", "interest_reversal", "fee_reversal"],
+        "cacheTests": ["fraud_case_cache", "investigation_cache", "reversal_calculation_cache"]
+      }
+    },
+    {
+      "categoryCode": "0017",
+      "categoryId": "060002",
+      "categoryDescription": "Non-Fraud Reversal",
+      "categoryType": "NON_FRAUD_REVERSAL",
+      "categoryGroup": "06",
+      "categoryGroupDescription": "Reversals",
+      "activeStatus": true,
+      "balanceImpact": "CREDIT",
+      "balanceImpactDirection": "DECREASE_BALANCE",
+      "requiresAuthorization": true,
+      "allowsReversals": false,
+      "interestBearing": false,
+      "statementCategory": "REVERSALS",
+      "effectiveDate": "2020-01-01",
+      "lastModified": "2024-01-01T00:00:00Z",
+      "businessRules": {
+        "minAmount": "0.01",
+        "maxAmount": "10000.00",
+        "dailyLimit": "10000.00",
+        "requiresMerchantInfo": false,
+        "allowsPartialReversals": true
+      },
+      "testScenarios": {
+        "validationTests": ["reversal_reason_validation", "time_limit_check", "authorization_check"],
+        "balanceTests": ["reversal_credit", "partial_reversal_handling", "statement_adjustment"],
+        "cacheTests": ["reason_validation_cache", "time_limit_cache", "adjustment_cache"]
+      }
+    },
+    {
+      "categoryCode": "0018",
+      "categoryId": "070001",
+      "categoryDescription": "Sales Draft Credit Adjustment",
+      "categoryType": "SALES_ADJUSTMENT",
+      "categoryGroup": "07",
+      "categoryGroupDescription": "Adjustments",
+      "activeStatus": true,
+      "balanceImpact": "CREDIT",
+      "balanceImpactDirection": "DECREASE_BALANCE",
+      "requiresAuthorization": true,
+      "allowsReversals": true,
+      "interestBearing": false,
+      "statementCategory": "ADJUSTMENTS",
+      "effectiveDate": "2020-01-01",
+      "lastModified": "2024-01-01T00:00:00Z",
+      "businessRules": {
+        "minAmount": "0.01",
+        "maxAmount": "5000.00",
+        "dailyLimit": "5000.00",
+        "requiresMerchantInfo": true,
+        "allowsPartialReversals": true
+      },
+      "testScenarios": {
+        "validationTests": ["adjustment_reason", "original_transaction_link", "authorization_check"],
+        "balanceTests": ["adjustment_credit", "transaction_linking", "statement_impact"],
+        "cacheTests": ["adjustment_reason_cache", "transaction_link_cache", "statement_cache"]
+      }
+    }
+  ],
+  "categoryGroups": [
+    {
+      "groupCode": "01",
+      "groupName": "Sales and Charges",
+      "groupDescription": "Transaction categories for sales drafts, cash advances, and other charges",
+      "balanceImpact": "DEBIT",
+      "defaultInterestBearing": true,
+      "categories": ["010001", "010002", "010003", "010004", "010005"]
+    },
+    {
+      "groupCode": "02",
+      "groupName": "Payments",
+      "groupDescription": "Transaction categories for various payment types",
+      "balanceImpact": "CREDIT",
+      "defaultInterestBearing": false,
+      "categories": ["020001", "020002", "020003"]
+    },
+    {
+      "groupCode": "03",
+      "groupName": "Credits",
+      "groupDescription": "Transaction categories for account and balance credits",
+      "balanceImpact": "CREDIT",
+      "defaultInterestBearing": false,
+      "categories": ["030001", "030002", "030003"]
+    },
+    {
+      "groupCode": "04",
+      "groupName": "Authorizations",
+      "groupDescription": "Transaction categories for authorization and pre-authorization transactions",
+      "balanceImpact": "PENDING",
+      "defaultInterestBearing": false,
+      "categories": ["040001", "040002", "040003"]
+    },
+    {
+      "groupCode": "05",
+      "groupName": "Refunds",
+      "groupDescription": "Transaction categories for refund transactions",
+      "balanceImpact": "CREDIT",
+      "defaultInterestBearing": false,
+      "categories": ["050001"]
+    },
+    {
+      "groupCode": "06",
+      "groupName": "Reversals",
+      "groupDescription": "Transaction categories for reversal transactions",
+      "balanceImpact": "CREDIT",
+      "defaultInterestBearing": false,
+      "categories": ["060001", "060002"]
+    },
+    {
+      "groupCode": "07",
+      "groupName": "Adjustments",
+      "groupDescription": "Transaction categories for account adjustments",
+      "balanceImpact": "CREDIT",
+      "defaultInterestBearing": false,
+      "categories": ["070001"]
+    }
+  ],
+  "balanceImpactTypes": [
+    {
+      "impactType": "DEBIT",
+      "description": "Increases account balance - customer owes more",
+      "direction": "INCREASE_BALANCE",
+      "interestCalculation": true,
+      "statementDisplay": "CHARGE"
+    },
+    {
+      "impactType": "CREDIT",
+      "description": "Decreases account balance - customer owes less",
+      "direction": "DECREASE_BALANCE",
+      "interestCalculation": false,
+      "statementDisplay": "PAYMENT_CREDIT"
+    },
+    {
+      "impactType": "PENDING",
+      "description": "Authorizes amount reducing available credit",
+      "direction": "AUTHORIZE_AMOUNT",
+      "interestCalculation": false,
+      "statementDisplay": "PENDING_CHARGE"
+    },
+    {
+      "impactType": "NONE",
+      "description": "No balance impact - verification only",
+      "direction": "NO_CHANGE",
+      "interestCalculation": false,
+      "statementDisplay": "AUTHORIZATION"
+    }
+  ],
+  "validationRules": {
+    "categoryCodeFormat": {
+      "pattern": "^\\d{6}$",
+      "description": "Category code must be exactly 6 digits",
+      "examples": ["010001", "020002", "030003"]
+    },
+    "categoryGroupMapping": {
+      "01": "Sales and Charges",
+      "02": "Payments",
+      "03": "Credits",
+      "04": "Authorizations",
+      "05": "Refunds",
+      "06": "Reversals",
+      "07": "Adjustments"
+    },
+    "businessRuleValidation": {
+      "amountLimits": {
+        "minAmount": "Must be greater than or equal to configured minimum",
+        "maxAmount": "Must be less than or equal to configured maximum",
+        "dailyLimit": "Cumulative daily amount cannot exceed limit"
+      },
+      "authorizationRequirements": {
+        "requiresAuth": "Transaction must have valid authorization",
+        "noAuthRequired": "Transaction processes without authorization"
+      },
+      "reversalRules": {
+        "allowsReversals": "Category supports reversal transactions",
+        "noReversals": "Category does not support reversals",
+        "partialReversals": "Category supports partial amount reversals"
+      }
+    }
+  },
+  "cacheTestingScenarios": {
+    "redisConfiguration": {
+      "host": "localhost",
+      "port": 6379,
+      "database": 0,
+      "keyPrefix": "carddemo:category:",
+      "ttl": 86400,
+      "maxMemory": "256mb",
+      "evictionPolicy": "LRU"
+    },
+    "testScenarios": [
+      {
+        "scenarioName": "Category Lookup Cache Test",
+        "description": "Test Redis cache for transaction category lookups",
+        "testData": {
+          "categoryCode": "010001",
+          "expectedCacheKey": "carddemo:category:010001",
+          "cacheValue": {
+            "categoryCode": "010001",
+            "categoryDescription": "Regular Sales Draft",
+            "balanceImpact": "DEBIT",
+            "activeStatus": true
+          }
+        },
+        "testSteps": [
+          "Cache miss - load from database",
+          "Cache hit - return from Redis",
+          "Cache expiration - reload from database",
+          "Cache eviction - LRU policy test"
+        ]
+      },
+      {
+        "scenarioName": "Category Validation Cache Test",
+        "description": "Test Redis cache for category business rule validation",
+        "testData": {
+          "categoryCode": "010002",
+          "validationKey": "carddemo:category:validation:010002",
+          "validationRules": {
+            "minAmount": "20.00",
+            "maxAmount": "5000.00",
+            "requiresAuthorization": true,
+            "balanceImpact": "DEBIT"
+          }
+        },
+        "testSteps": [
+          "Load validation rules into cache",
+          "Validate transaction against cached rules",
+          "Update cache on rule changes",
+          "Handle cache consistency"
+        ]
+      },
+      {
+        "scenarioName": "Balance Impact Cache Test",
+        "description": "Test Redis cache for balance impact calculations",
+        "testData": {
+          "categoryGroup": "01",
+          "balanceImpactKey": "carddemo:category:balance:01",
+          "impactConfiguration": {
+            "balanceImpact": "DEBIT",
+            "interestBearing": true,
+            "statementCategory": "PURCHASES"
+          }
+        },
+        "testSteps": [
+          "Cache balance impact configuration",
+          "Apply cached rules to transactions",
+          "Test cache coherency across services",
+          "Validate cache performance metrics"
+        ]
+      },
+      {
+        "scenarioName": "Category Group Cache Test",
+        "description": "Test Redis cache for category group operations",
+        "testData": {
+          "groupCode": "02",
+          "groupCacheKey": "carddemo:category:group:02",
+          "groupData": {
+            "groupName": "Payments",
+            "defaultBalanceImpact": "CREDIT",
+            "categories": ["020001", "020002", "020003"]
+          }
+        },
+        "testSteps": [
+          "Cache category group metadata",
+          "Batch load related categories",
+          "Test group-level operations",
+          "Validate cache invalidation strategies"
+        ]
+      }
+    ],
+    "performanceMetrics": {
+      "cacheHitRatio": ">95%",
+      "averageResponseTime": "<5ms",
+      "maxCacheSize": "10000 keys",
+      "memoryUsage": "<256MB"
+    },
+    "monitoringPoints": [
+      "Cache hit/miss ratios",
+      "Redis memory usage",
+      "Key expiration rates",
+      "Cache operation latency",
+      "Error rates and timeouts"
+    ]
+  },
+  "integrationTestData": {
+    "sampleTransactions": [
+      {
+        "transactionId": "TXN001",
+        "categoryCode": "010001",
+        "amount": "150.75",
+        "description": "Test Regular Sales Draft",
+        "expectedBalanceImpact": "DEBIT",
+        "expectedValidation": "PASS"
+      },
+      {
+        "transactionId": "TXN002",
+        "categoryCode": "020001",
+        "amount": "500.00",
+        "description": "Test Cash Payment",
+        "expectedBalanceImpact": "CREDIT",
+        "expectedValidation": "PASS"
+      },
+      {
+        "transactionId": "TXN003",
+        "categoryCode": "040001",
+        "amount": "0.00",
+        "description": "Test Zero Dollar Authorization",
+        "expectedBalanceImpact": "NONE",
+        "expectedValidation": "PASS"
+      },
+      {
+        "transactionId": "TXN004",
+        "categoryCode": "010002",
+        "amount": "15.00",
+        "description": "Test Cash Advance Below Minimum",
+        "expectedBalanceImpact": "DEBIT",
+        "expectedValidation": "FAIL",
+        "expectedError": "AMOUNT_BELOW_MINIMUM"
+      }
+    ],
+    "edgeCaseTests": [
+      {
+        "testName": "Invalid Category Code",
+        "categoryCode": "999999",
+        "expectedResult": "CATEGORY_NOT_FOUND"
+      },
+      {
+        "testName": "Inactive Category",
+        "categoryCode": "010001",
+        "activeStatus": false,
+        "expectedResult": "CATEGORY_INACTIVE"
+      },
+      {
+        "testName": "Amount Validation Edge Cases",
+        "scenarios": [
+          {"amount": "0.00", "categoryCode": "010001", "expected": "AMOUNT_TOO_LOW"},
+          {"amount": "100000.00", "categoryCode": "010001", "expected": "AMOUNT_TOO_HIGH"},
+          {"amount": "0.01", "categoryCode": "010001", "expected": "VALID"}
+        ]
+      }
+    ]
+  }
+}
