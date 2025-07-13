@@ -184,8 +184,10 @@ export function convertCommareaToJson(commareaBuffer, fieldMap) {
 
       // Extract field data from buffer
       let fieldData = '';
-      if (commareaBuffer.length > offset + length) {
+      if (commareaBuffer.length >= offset + length) {
         fieldData = commareaBuffer.substring(offset, offset + length);
+      } else if (commareaBuffer.length > offset) {
+        fieldData = commareaBuffer.substring(offset);
       }
 
       // Convert based on COBOL type
@@ -502,14 +504,20 @@ export function convertZonedDecimal(zonedValue, precision = 31, scale = 0) {
 
     // Check last character for COBOL zoned decimal sign
     const lastChar = value.charAt(value.length - 1);
-    const lastCharCode = lastChar.charCodeAt(0);
-
+    
     // COBOL zoned decimal sign conventions
-    if (lastCharCode >= 0x70 && lastCharCode <= 0x79) { // }pqrstuvwx = -0 to -9
+    // Positive: {ABCDEFGHI} represent +0 to +9
+    // Negative: }JKLMNOPQR represent -0 to -9
+    if (lastChar === '{') {
+      value = value.substring(0, value.length - 1) + '0';
+    } else if (lastChar >= 'A' && lastChar <= 'I') {
+      value = value.substring(0, value.length - 1) + String.fromCharCode(lastChar.charCodeAt(0) - 'A'.charCodeAt(0) + '1'.charCodeAt(0));
+    } else if (lastChar === '}') {
       isNegative = true;
-      value = value.substring(0, value.length - 1) + String.fromCharCode(lastCharCode - 0x70 + 0x30);
-    } else if (lastCharCode >= 0x7B && lastCharCode <= 0x7D) { // {ABCDEFGHI = +0 to +9
-      value = value.substring(0, value.length - 1) + String.fromCharCode(lastCharCode - 0x7B + 0x30);
+      value = value.substring(0, value.length - 1) + '0';
+    } else if (lastChar >= 'J' && lastChar <= 'R') {
+      isNegative = true;
+      value = value.substring(0, value.length - 1) + String.fromCharCode(lastChar.charCodeAt(0) - 'J'.charCodeAt(0) + '1'.charCodeAt(0));
     }
 
     // Apply scale
@@ -545,10 +553,24 @@ export function convertPackedDecimal(packedValue, precision = 31, scale = 0) {
 
     let bytes;
     if (typeof packedValue === 'string') {
-      // Assume hex string representation
-      bytes = [];
-      for (let i = 0; i < packedValue.length; i += 2) {
-        bytes.push(parseInt(packedValue.substr(i, 2), 16));
+      // Check if this looks like a hex string or regular decimal
+      const isHexLike = /^[0-9A-Fa-f]+$/.test(packedValue);
+      
+      if (isHexLike) {
+        // For hex string representation like "1234C", interpret as packed decimal
+        // Special handling: if string ends with C/D (common COBOL signs), parse accordingly
+        if (packedValue.length % 2 === 1) {
+          // Odd length: pad with leading zero
+          packedValue = '0' + packedValue;
+        }
+        
+        bytes = [];
+        for (let i = 0; i < packedValue.length; i += 2) {
+          bytes.push(parseInt(packedValue.substr(i, 2), 16));
+        }
+      } else {
+        // Fallback: try to parse as regular decimal
+        return parseCobolDecimal(packedValue.toString(), precision, scale);
       }
     } else if (packedValue instanceof ArrayBuffer) {
       bytes = new Uint8Array(packedValue);
@@ -569,8 +591,10 @@ export function convertPackedDecimal(packedValue, precision = 31, scale = 0) {
       const lowNibble = byte & 0x0F;
 
       if (i === bytes.length - 1) {
-        // Last byte: high nibble is digit, low nibble is sign
-        result += highNibble.toString();
+        // Last byte: high nibble is last digit, low nibble is sign
+        if (highNibble <= 9) {
+          result += highNibble.toString();
+        }
         isNegative = (lowNibble === 0x0D || lowNibble === 0x0B); // D or B = negative
       } else {
         // Regular byte: both nibbles are digits
@@ -583,7 +607,7 @@ export function convertPackedDecimal(packedValue, precision = 31, scale = 0) {
       const integerPart = result.substring(0, result.length - scale);
       const decimalPart = result.substring(result.length - scale);
       result = integerPart + '.' + decimalPart;
-    } else if (scale > 0) {
+    } else if (scale > 0 && result.length > 0) {
       result = '0.' + result.padStart(scale, '0');
     }
 
