@@ -28,7 +28,6 @@ package com.carddemo.common.validator;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import java.util.Set;
-import java.util.HashSet;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
@@ -65,59 +64,7 @@ import java.util.regex.Matcher;
  */
 public class PhoneNumberValidator implements ConstraintValidator<ValidPhoneNumber, String> {
     
-    /**
-     * Set of valid North American area codes from COBOL copybook CSLKPCDY.cpy
-     * This corresponds to the VALID-PHONE-AREA-CODE condition in the copybook.
-     */
-    private static final Set<String> VALID_AREA_CODES = new HashSet<>();
-    
-    static {
-        // Initialize valid area codes from CSLKPCDY.cpy VALID-PHONE-AREA-CODE condition
-        // These are the actual area codes from the COBOL copybook
-        VALID_AREA_CODES.addAll(Set.of(
-            "201", "202", "203", "204", "205", "206", "207", "208", "209", "210",
-            "212", "213", "214", "215", "216", "217", "218", "219", "220", "223",
-            "224", "225", "226", "228", "229", "231", "234", "236", "239", "240",
-            "242", "246", "248", "249", "250", "251", "252", "253", "254", "256",
-            "260", "262", "264", "267", "268", "269", "270", "272", "276", "279",
-            "281", "284", "289", "301", "302", "303", "304", "305", "306", "307",
-            "308", "309", "310", "312", "313", "314", "315", "316", "317", "318",
-            "319", "320", "321", "323", "325", "326", "330", "331", "332", "334",
-            "336", "337", "339", "340", "341", "343", "345", "346", "347", "351",
-            "352", "360", "361", "364", "365", "367", "368", "380", "385", "386",
-            "401", "402", "403", "404", "405", "406", "407", "408", "409", "410",
-            "412", "413", "414", "415", "416", "417", "418", "419", "423", "424",
-            "425", "430", "431", "432", "434", "435", "437", "438", "440", "441",
-            "442", "443", "445", "447", "448", "450", "458", "463", "464", "469",
-            "470", "473", "474", "475", "478", "479", "480", "484", "501", "502",
-            "503", "504", "505", "506", "507", "508", "509", "510", "512", "513",
-            "514", "515", "516", "517", "518", "519", "520", "530", "531", "534",
-            "539", "540", "541", "548", "551", "559", "561", "562", "563", "564",
-            "567", "570", "571", "572", "573", "574", "575", "579", "580", "581",
-            "582", "585", "586", "587", "601", "602", "603", "604", "605", "606",
-            "607", "608", "609", "610", "612", "613", "614", "615", "616", "617",
-            "618", "619", "620", "623", "626", "628", "629", "630", "631", "636",
-            "639", "640", "641", "646", "647", "649", "650", "651", "656", "657",
-            "658", "659", "660", "661", "662", "664", "667", "669", "670", "671",
-            "672", "678", "680", "681", "682", "683", "684", "689", "701", "702",
-            "703", "704", "705", "706", "707", "708", "709", "712", "713", "714",
-            "715", "716", "717", "718", "719", "720", "721", "724", "725", "726",
-            "727", "731", "732", "734", "737", "740", "742", "743", "747", "753",
-            "754", "757", "758", "760", "762", "763", "765", "767", "769", "770",
-            "771", "772", "773", "774", "775", "778", "779", "780", "781", "782",
-            "784", "785", "786", "787", "801", "802", "803", "804", "805", "806",
-            "807", "808", "809", "810", "812", "813", "814", "815", "816", "817",
-            "818", "819", "820", "825", "826", "828", "829", "830", "831", "832",
-            "838", "839", "840", "843", "845", "847", "848", "849", "850", "854",
-            "856", "857", "858", "859", "860", "862", "863", "864", "865", "867",
-            "868", "869", "870", "872", "873", "876", "878", "901", "902", "903",
-            "904", "905", "906", "907", "908", "909", "910", "912", "913", "914",
-            "915", "916", "917", "918", "919", "920", "925", "928", "929", "930",
-            "931", "934", "936", "937", "938", "939", "940", "941", "943", "945",
-            "947", "948", "949", "951", "952", "954", "956", "959", "970", "971",
-            "972", "973", "978", "979", "980", "983", "984", "985", "986", "989"
-        ));
-    }
+
     
     /**
      * Regular expression pattern for matching various phone number formats.
@@ -177,6 +124,13 @@ public class PhoneNumberValidator implements ConstraintValidator<ValidPhoneNumbe
             return allowEmpty;
         }
         
+        // First, check if the format generally matches a phone number pattern
+        Matcher formatMatcher = PHONE_PATTERN.matcher(value.trim());
+        if (!formatMatcher.matches()) {
+            buildConstraintViolation(context, "Phone number format is invalid");
+            return false;
+        }
+        
         // Extract digits from the phone number
         String digitsOnly = DIGITS_ONLY_PATTERN.matcher(value.trim()).replaceAll("");
         
@@ -220,16 +174,9 @@ public class PhoneNumberValidator implements ConstraintValidator<ValidPhoneNumbe
         }
         
         // Validate area code against lookup table if strict validation is enabled
-        if (strictAreaCodeValidation && !VALID_AREA_CODES.contains(areaCode)) {
+        if (strictAreaCodeValidation && !ValidationConstants.VALID_AREA_CODES.contains(areaCode)) {
             buildConstraintViolation(context, 
                 String.format("Area code %s is not a valid North American area code", areaCode));
-            return false;
-        }
-        
-        // Additional format validation using regex
-        Matcher matcher = PHONE_PATTERN.matcher(value.trim());
-        if (!matcher.matches()) {
-            buildConstraintViolation(context, "Phone number format is invalid");
             return false;
         }
         
@@ -257,7 +204,7 @@ public class PhoneNumberValidator implements ConstraintValidator<ValidPhoneNumbe
     public static boolean isValidAreaCode(String areaCode) {
         return areaCode != null && 
                areaCode.length() == 3 && 
-               VALID_AREA_CODES.contains(areaCode);
+               ValidationConstants.VALID_AREA_CODES.contains(areaCode);
     }
     
     /**
@@ -266,7 +213,7 @@ public class PhoneNumberValidator implements ConstraintValidator<ValidPhoneNumbe
      * @return an immutable set of valid area codes
      */
     public static Set<String> getValidAreaCodes() {
-        return Set.copyOf(VALID_AREA_CODES);
+        return ValidationConstants.VALID_AREA_CODES;
     }
     
     /**
