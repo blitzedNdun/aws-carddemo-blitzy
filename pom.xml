@@ -42,7 +42,7 @@
         <lettuce.version>6.3.0.RELEASE</lettuce.version>
 
         <!-- Build and Development Tool Versions -->
-        <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
+        <maven-compiler-plugin.version>3.12.1</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.2.2</maven-surefire-plugin.version>
         <maven-failsafe-plugin.version>3.2.2</maven-failsafe-plugin.version>
         <jib-maven-plugin.version>3.4.0</jib-maven-plugin.version>
