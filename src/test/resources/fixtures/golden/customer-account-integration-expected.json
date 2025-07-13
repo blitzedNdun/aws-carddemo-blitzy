@@ -1,0 +1,510 @@
+{
+  "testMetadata": {
+    "description": "Golden file for customer-account-card integration testing during VSAM-to-PostgreSQL migration",
+    "purpose": "Validates data relationship preservation and referential integrity maintenance",
+    "version": "1.0.0",
+    "lastUpdated": "2024-01-15T10:30:00Z",
+    "testFramework": "Spring Boot Test with Testcontainers PostgreSQL",
+    "validationScope": [
+      "Customer-account relationship validation",
+      "Account-card linkage verification", 
+      "Cross-reference data integrity testing",
+      "PostgreSQL foreign key constraint validation",
+      "VSAM relationship pattern preservation"
+    ]
+  },
+  "expectedDataRelationships": {
+    "customerAccountRelationships": [
+      {
+        "customerId": "000000001",
+        "customerName": {
+          "firstName": "Immanuel",
+          "middleName": "Madeline", 
+          "lastName": "Kessler"
+        },
+        "accountId": "00053581756",
+        "relationshipType": "PRIMARY_ACCOUNT_HOLDER",
+        "accountStatus": "Y",
+        "creditScore": 274,
+        "dateOfBirth": "1961-06-08",
+        "address": {
+          "line1": "618 Deshaun Route",
+          "line2": "Apt. 802",
+          "city": "Altenwerthshire",
+          "state": "NC",
+          "country": "USA",
+          "zipCode": "12546"
+        },
+        "contactInfo": {
+          "phone1": "(908)119-8310",
+          "phone2": "(373)693-8684"
+        },
+        "ssn": "020973888",
+        "expectedValidations": {
+          "customerIdExists": true,
+          "accountIdExists": true,
+          "foreignKeyIntegrity": true,
+          "dataTypeMapping": "VSAM_CHAR_to_PostgreSQL_VARCHAR",
+          "precisionPreservation": true
+        }
+      },
+      {
+        "customerId": "000000002", 
+        "customerName": {
+          "firstName": "Enrico",
+          "middleName": "April",
+          "lastName": "Rosenbaum"
+        },
+        "accountId": "00069194009",
+        "relationshipType": "PRIMARY_ACCOUNT_HOLDER",
+        "accountStatus": "Y",
+        "creditScore": 268,
+        "dateOfBirth": "1961-10-08",
+        "address": {
+          "line1": "4917 Myrna Flats",
+          "line2": "Apt. 453", 
+          "city": "West Bernita",
+          "state": "IN",
+          "country": "USA",
+          "zipCode": "22770"
+        },
+        "contactInfo": {
+          "phone1": "(429)706-9510",
+          "phone2": "(744)950-5272"
+        },
+        "ssn": "587518382",
+        "expectedValidations": {
+          "customerIdExists": true,
+          "accountIdExists": true,
+          "foreignKeyIntegrity": true,
+          "dataTypeMapping": "VSAM_CHAR_to_PostgreSQL_VARCHAR",
+          "precisionPreservation": true
+        }
+      },
+      {
+        "customerId": "000000003",
+        "customerName": {
+          "firstName": "Larry",
+          "middleName": "Cody", 
+          "lastName": "Homenick"
+        },
+        "accountId": "00006465789",
+        "relationshipType": "PRIMARY_ACCOUNT_HOLDER",
+        "accountStatus": "Y",
+        "creditScore": 616,
+        "dateOfBirth": "1987-11-30",
+        "address": {
+          "line1": "362 Esta Parks",
+          "line2": "Apt. 390",
+          "city": "New Gladys", 
+          "state": "GA",
+          "country": "USA",
+          "zipCode": "19852-6716"
+        },
+        "contactInfo": {
+          "phone1": "(950)396-9024",
+          "phone2": "(685)168-8826"
+        },
+        "ssn": "317460867",
+        "expectedValidations": {
+          "customerIdExists": true,
+          "accountIdExists": true,
+          "foreignKeyIntegrity": true,
+          "dataTypeMapping": "VSAM_CHAR_to_PostgreSQL_VARCHAR",
+          "precisionPreservation": true
+        }
+      }
+    ],
+    "accountCardRelationships": [
+      {
+        "accountId": "00053581756",
+        "customerId": "000000001",
+        "cardNumber": "9680294154603697",
+        "cardHolderName": "Immanuel Kessler",
+        "expiryDate": "2025-05-20",
+        "cardStatus": "Y",
+        "relationshipValidation": {
+          "accountToCardForeignKey": true,
+          "customerToCardForeignKey": true,
+          "cardNumberUniqueness": true,
+          "crossReferenceConsistency": true
+        },
+        "expectedDatabaseConstraints": {
+          "cardNumberPrimaryKey": "VARCHAR(16) NOT NULL",
+          "accountIdForeignKey": "VARCHAR(11) REFERENCES accounts(account_id)",
+          "customerIdForeignKey": "VARCHAR(9) REFERENCES customers(customer_id)",
+          "cardStatusCheck": "VARCHAR(1) CHECK (active_status IN ('Y', 'N'))"
+        }
+      },
+      {
+        "accountId": "00069194009", 
+        "customerId": "000000002",
+        "cardNumber": "0923877193247330",
+        "cardHolderName": "Enrico Rosenbaum",
+        "expiryDate": "2024-08-11",
+        "cardStatus": "Y",
+        "relationshipValidation": {
+          "accountToCardForeignKey": true,
+          "customerToCardForeignKey": true,
+          "cardNumberUniqueness": true,
+          "crossReferenceConsistency": true
+        },
+        "expectedDatabaseConstraints": {
+          "cardNumberPrimaryKey": "VARCHAR(16) NOT NULL",
+          "accountIdForeignKey": "VARCHAR(11) REFERENCES accounts(account_id)",
+          "customerIdForeignKey": "VARCHAR(9) REFERENCES customers(customer_id)",
+          "cardStatusCheck": "VARCHAR(1) CHECK (active_status IN ('Y', 'N'))"
+        }
+      },
+      {
+        "accountId": "00006465789",
+        "customerId": "000000003", 
+        "cardNumber": "3999169246375885",
+        "cardHolderName": "Larry Homenick",
+        "expiryDate": "2024-01-10",
+        "cardStatus": "Y",
+        "relationshipValidation": {
+          "accountToCardForeignKey": true,
+          "customerToCardForeignKey": true,
+          "cardNumberUniqueness": true,
+          "crossReferenceConsistency": true
+        },
+        "expectedDatabaseConstraints": {
+          "cardNumberPrimaryKey": "VARCHAR(16) NOT NULL",
+          "accountIdForeignKey": "VARCHAR(11) REFERENCES accounts(account_id)",
+          "customerIdForeignKey": "VARCHAR(9) REFERENCES customers(customer_id)",
+          "cardStatusCheck": "VARCHAR(1) CHECK (active_status IN ('Y', 'N'))"
+        }
+      }
+    ],
+    "crossReferenceValidation": [
+      {
+        "cardNumber": "0500024453765740",
+        "customerId": "000000050",
+        "accountId": "00074883577",
+        "crossReferenceKey": "0500024453765740-000000050-00074883577",
+        "relationshipValidation": {
+          "cardExists": true,
+          "customerExists": true,
+          "accountExists": true,
+          "uniqueConstraintValid": true,
+          "foreignKeyIntegrity": true
+        },
+        "vsamEquivalence": {
+          "originalCrossRefRecord": "050002445376574000000005000000000050",
+          "parsedComponents": {
+            "cardNumber": "0500024453765740",
+            "customerId": "000000050", 
+            "accountId": "00000000050"
+          },
+          "postgresqlMapping": {
+            "compositePrimaryKey": "(card_number, customer_id, account_id)",
+            "foreignKeyConstraints": [
+              "FOREIGN KEY (card_number) REFERENCES cards(card_number)",
+              "FOREIGN KEY (customer_id) REFERENCES customers(customer_id)",
+              "FOREIGN KEY (account_id) REFERENCES accounts(account_id)"
+            ]
+          }
+        }
+      },
+      {
+        "cardNumber": "0683586198171516",
+        "customerId": "000000027",
+        "accountId": "00050024139",
+        "crossReferenceKey": "0683586198171516-000000027-00050024139",
+        "relationshipValidation": {
+          "cardExists": true,
+          "customerExists": true,
+          "accountExists": true,
+          "uniqueConstraintValid": true,
+          "foreignKeyIntegrity": true
+        },
+        "vsamEquivalence": {
+          "originalCrossRefRecord": "068358619817151600000002700000000027",
+          "parsedComponents": {
+            "cardNumber": "0683586198171516",
+            "customerId": "000000027",
+            "accountId": "00000000027"
+          },
+          "postgresqlMapping": {
+            "compositePrimaryKey": "(card_number, customer_id, account_id)",
+            "foreignKeyConstraints": [
+              "FOREIGN KEY (card_number) REFERENCES cards(card_number)",
+              "FOREIGN KEY (customer_id) REFERENCES customers(customer_id)",
+              "FOREIGN KEY (account_id) REFERENCES accounts(account_id)"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "testScenarios": [
+    {
+      "scenarioName": "Customer Account Lookup Validation",
+      "description": "Validate customer can retrieve associated account information",
+      "testType": "INTEGRATION_TEST",
+      "expectedBehavior": {
+        "inputCustomerId": "000000001",
+        "expectedAccountId": "00053581756",
+        "expectedCustomerName": "Immanuel Madeline Kessler",
+        "expectedAccountStatus": "Y",
+        "databaseQuery": "SELECT a.account_id, a.active_status FROM accounts a JOIN customers c ON a.customer_id = c.customer_id WHERE c.customer_id = ?",
+        "expectedResultCount": 1,
+        "foreignKeyValidation": true
+      }
+    },
+    {
+      "scenarioName": "Account Card Relationship Validation",
+      "description": "Validate account can retrieve associated card information",
+      "testType": "INTEGRATION_TEST", 
+      "expectedBehavior": {
+        "inputAccountId": "00053581756",
+        "expectedCardNumbers": ["9680294154603697"],
+        "expectedCardStatuses": ["Y"],
+        "databaseQuery": "SELECT card_number, active_status FROM cards WHERE account_id = ?",
+        "expectedResultCount": 1,
+        "foreignKeyValidation": true
+      }
+    },
+    {
+      "scenarioName": "Cross Reference Integrity Validation",
+      "description": "Validate cross-reference table maintains VSAM relationship patterns",
+      "testType": "INTEGRATION_TEST",
+      "expectedBehavior": {
+        "testCases": [
+          {
+            "cardNumber": "0500024453765740",
+            "expectedCustomerId": "000000050",
+            "expectedAccountId": "00074883577",
+            "databaseQuery": "SELECT customer_id, account_id FROM card_account_customer_xref WHERE card_number = ?",
+            "expectedResultCount": 1
+          },
+          {
+            "cardNumber": "0683586198171516", 
+            "expectedCustomerId": "000000027",
+            "expectedAccountId": "00050024139",
+            "databaseQuery": "SELECT customer_id, account_id FROM card_account_customer_xref WHERE card_number = ?",
+            "expectedResultCount": 1
+          }
+        ],
+        "compositePrimaryKeyValidation": true,
+        "foreignKeyConstraintValidation": true
+      }
+    },
+    {
+      "scenarioName": "Data Type Precision Validation",
+      "description": "Validate COBOL data types map correctly to PostgreSQL with exact precision",
+      "testType": "DATA_PRECISION_TEST",
+      "expectedBehavior": {
+        "customerIdMapping": {
+          "vsamType": "PIC 9(9)",
+          "postgresqlType": "VARCHAR(9)",
+          "validationRule": "Exactly 9 digits, zero-padded"
+        },
+        "accountIdMapping": {
+          "vsamType": "PIC 9(11)",
+          "postgresqlType": "VARCHAR(11)", 
+          "validationRule": "Exactly 11 digits, zero-padded"
+        },
+        "cardNumberMapping": {
+          "vsamType": "PIC 9(16)",
+          "postgresqlType": "VARCHAR(16)",
+          "validationRule": "Exactly 16 digits"
+        },
+        "nameFieldMapping": {
+          "vsamType": "PIC X(20)",
+          "postgresqlType": "VARCHAR(20)",
+          "validationRule": "Character data, trimmed"
+        }
+      }
+    },
+    {
+      "scenarioName": "Referential Integrity Constraint Testing",
+      "description": "Validate PostgreSQL foreign key constraints prevent orphaned records",
+      "testType": "CONSTRAINT_TEST",
+      "expectedBehavior": {
+        "orphanedCardTest": {
+          "action": "INSERT_CARD_WITH_INVALID_ACCOUNT",
+          "expectedResult": "FOREIGN_KEY_VIOLATION",
+          "constraintName": "cards_account_id_fkey"
+        },
+        "orphanedAccountTest": {
+          "action": "INSERT_ACCOUNT_WITH_INVALID_CUSTOMER",
+          "expectedResult": "FOREIGN_KEY_VIOLATION", 
+          "constraintName": "accounts_customer_id_fkey"
+        },
+        "cascadeDeleteTest": {
+          "action": "DELETE_CUSTOMER_WITH_DEPENDENT_RECORDS",
+          "expectedResult": "FOREIGN_KEY_VIOLATION_OR_CASCADE",
+          "dependentTables": ["accounts", "cards"]
+        }
+      }
+    }
+  ],
+  "performanceValidation": {
+    "indexOptimization": [
+      {
+        "indexName": "idx_accounts_customer_id",
+        "tableName": "accounts",
+        "columns": ["customer_id"],
+        "indexType": "B-TREE",
+        "expectedPerformance": {
+          "customerAccountLookupTime": "< 5ms",
+          "indexScanType": "INDEX_SCAN",
+          "vsamEquivalence": "ACCTDAT alternate index performance"
+        }
+      },
+      {
+        "indexName": "idx_cards_account_id",
+        "tableName": "cards", 
+        "columns": ["account_id", "active_status"],
+        "indexType": "B-TREE",
+        "expectedPerformance": {
+          "accountCardLookupTime": "< 5ms",
+          "indexScanType": "INDEX_SCAN",
+          "vsamEquivalence": "CARDDAT alternate index performance"
+        }
+      },
+      {
+        "indexName": "idx_cards_customer_id",
+        "tableName": "cards",
+        "columns": ["customer_id"],
+        "indexType": "B-TREE", 
+        "expectedPerformance": {
+          "customerCardLookupTime": "< 5ms",
+          "indexScanType": "INDEX_SCAN",
+          "vsamEquivalence": "Cross-reference file performance"
+        }
+      }
+    ],
+    "queryPerformanceTargets": {
+      "customerAccountJoin": {
+        "maxExecutionTime": "10ms",
+        "expectedPlan": "NESTED_LOOP_JOIN with index scans"
+      },
+      "accountCardJoin": {
+        "maxExecutionTime": "15ms",
+        "expectedPlan": "HASH_JOIN with index scans"
+      },
+      "threeWayJoin": {
+        "maxExecutionTime": "25ms",
+        "expectedPlan": "HASH_JOIN cascaded with index access"
+      }
+    }
+  },
+  "complianceValidation": {
+    "dataPrivacy": {
+      "ssnEncryption": {
+        "required": true,
+        "encryptionMethod": "AES-256",
+        "fieldMasking": "XXX-XX-XXXX format for display"
+      },
+      "piiDataHandling": {
+        "customerNames": "Encrypted at rest",
+        "addresses": "Encrypted at rest",
+        "phoneNumbers": "Encrypted at rest"
+      }
+    },
+    "auditRequirements": {
+      "dataAccessLogging": {
+        "required": true,
+        "logLevel": "INFO",
+        "captureFields": ["user_id", "timestamp", "action", "record_id"]
+      },
+      "dataModificationTracking": {
+        "required": true,
+        "triggerBased": true,
+        "beforeAfterImages": true
+      }
+    }
+  },
+  "testDataGeneration": {
+    "syntheticDataRules": {
+      "customerGeneration": {
+        "customerIdPattern": "^[0-9]{9}$",
+        "nameGeneration": "Faker library with deterministic seed",
+        "addressGeneration": "Valid US addresses with proper state codes",
+        "phoneGeneration": "Valid US phone number format"
+      },
+      "accountGeneration": {
+        "accountIdPattern": "^[0-9]{11}$", 
+        "statusValues": ["Y", "N"],
+        "creditScoreRange": [300, 850]
+      },
+      "cardGeneration": {
+        "cardNumberPattern": "^[0-9]{16}$",
+        "luhnValidation": true,
+        "expiryDateRange": ["2024-01-01", "2026-12-31"]
+      }
+    },
+    "dataVolumeTargets": {
+      "development": {
+        "customers": 1000,
+        "accounts": 1200,
+        "cards": 1500,
+        "crossReferences": 1500
+      },
+      "integration": {
+        "customers": 10000,
+        "accounts": 12000,
+        "cards": 15000,
+        "crossReferences": 15000
+      },
+      "uat": {
+        "customers": 50000,
+        "accounts": 60000,
+        "cards": 75000,
+        "crossReferences": 75000
+      }
+    }
+  },
+  "validationRules": {
+    "dataIntegrityChecks": [
+      {
+        "ruleName": "Customer Account One-to-Many",
+        "description": "Each customer can have multiple accounts",
+        "validationQuery": "SELECT customer_id, COUNT(*) as account_count FROM accounts GROUP BY customer_id HAVING COUNT(*) > 0",
+        "expectedResult": "All customers have at least one account"
+      },
+      {
+        "ruleName": "Account Card One-to-Many",
+        "description": "Each account can have multiple cards",
+        "validationQuery": "SELECT account_id, COUNT(*) as card_count FROM cards GROUP BY account_id HAVING COUNT(*) > 0",
+        "expectedResult": "All accounts have at least one card"
+      },
+      {
+        "ruleName": "Cross Reference Completeness", 
+        "description": "All cards have corresponding cross-reference entries",
+        "validationQuery": "SELECT c.card_number FROM cards c LEFT JOIN card_account_customer_xref x ON c.card_number = x.card_number WHERE x.card_number IS NULL",
+        "expectedResult": "No orphaned cards without cross-reference entries"
+      }
+    ],
+    "businessRuleValidation": [
+      {
+        "ruleName": "Active Card Validation",
+        "description": "Only active cards should be processed",
+        "validationLogic": "card.active_status = 'Y' AND card.expiry_date > CURRENT_DATE",
+        "testCases": [
+          {
+            "cardNumber": "9680294154603697",
+            "expectedActive": true,
+            "reason": "Status Y and future expiry date"
+          }
+        ]
+      },
+      {
+        "ruleName": "Customer Age Validation",
+        "description": "Customers must be at least 18 years old",
+        "validationLogic": "CURRENT_DATE - date_of_birth >= INTERVAL '18 years'",
+        "testCases": [
+          {
+            "customerId": "000000001",
+            "dateOfBirth": "1961-06-08",
+            "expectedValid": true,
+            "reason": "Customer over 18 years old"
+          }
+        ]
+      }
+    ]
+  }
+}
