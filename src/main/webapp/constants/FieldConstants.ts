@@ -401,7 +401,15 @@ export const ATTRIBUTE_MAPPINGS = {
  * Format patterns extracted from BMS PICIN and PICOUT definitions.
  * Provides input validation and output formatting for field data.
  */
-export const FORMAT_PATTERNS = {
+export const FORMAT_PATTERNS: {
+  readonly INPUT_PATTERNS: Record<string, FormatPattern>;
+  readonly OUTPUT_PATTERNS: Record<string, FormatPattern>;
+  readonly VALIDATION_UTILS: {
+    readonly validateInput: (value: string, patternKey: string) => boolean;
+    readonly formatOutput: (value: any, patternKey: string) => string;
+    readonly applyMask: (value: string, mask: string) => string;
+  };
+} = {
   /**
    * Input patterns from BMS PICIN definitions for field validation.
    */
@@ -529,8 +537,12 @@ export const FORMAT_PATTERNS = {
     // Right-justified numeric
     NUMERIC_RIGHT: {
       pattern: 'ZZZ,ZZZ,ZZ9',
-      formatter: (value: number) => 
-        value.toLocaleString('en-US').padStart(10),
+      formatter: (value: number) => {
+        const formatted = value.toLocaleString('en-US');
+        const paddingLength = Math.max(0, 10 - formatted.length);
+        const padding = new Array(paddingLength + 1).join(' ');
+        return padding + formatted;
+      },
     },
     
     // Date formatting
@@ -564,17 +576,19 @@ export const FORMAT_PATTERNS = {
     /**
      * Validate input against BMS PICIN pattern
      */
-    validateInput: (value: string, patternKey: keyof typeof FORMAT_PATTERNS.INPUT_PATTERNS) => {
-      const pattern = FORMAT_PATTERNS.INPUT_PATTERNS[patternKey];
-      return pattern.regex.test(value);
+    validateInput: (value: string, patternKey: string) => {
+      const patterns = FORMAT_PATTERNS.INPUT_PATTERNS as Record<string, FormatPattern>;
+      const pattern = patterns[patternKey];
+      return pattern?.regex?.test(value) || false;
     },
     
     /**
      * Format value according to BMS PICOUT pattern
      */
-    formatOutput: (value: any, patternKey: keyof typeof FORMAT_PATTERNS.OUTPUT_PATTERNS) => {
-      const pattern = FORMAT_PATTERNS.OUTPUT_PATTERNS[patternKey];
-      return pattern.formatter(value);
+    formatOutput: (value: any, patternKey: string) => {
+      const patterns = FORMAT_PATTERNS.OUTPUT_PATTERNS as Record<string, FormatPattern>;
+      const pattern = patterns[patternKey];
+      return pattern?.formatter?.(value) || String(value);
     },
     
     /**
