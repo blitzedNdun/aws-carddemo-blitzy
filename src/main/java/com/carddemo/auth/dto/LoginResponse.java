@@ -29,6 +29,7 @@ package com.carddemo.auth.dto;
 import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Data Transfer Object for authentication response containing JWT token,
@@ -364,6 +365,7 @@ public class LoginResponse {
      * 
      * @return Formatted "firstName lastName" or userId if names unavailable
      */
+    @JsonIgnore
     public String getFullName() {
         if (firstName != null && lastName != null) {
             return firstName.trim() + " " + lastName.trim();
@@ -384,6 +386,7 @@ public class LoginResponse {
      * 
      * @return true if user type is 'A' (Administrator)
      */
+    @JsonIgnore
     public boolean isAdmin() {
         return "A".equals(userType) || "ROLE_ADMIN".equals(role);
     }
@@ -396,6 +399,7 @@ public class LoginResponse {
      * 
      * @return true if token, userId, userType, and role are all non-null
      */
+    @JsonIgnore
     public boolean isValid() {
         return token != null && !token.trim().isEmpty() &&
                userId != null && !userId.trim().isEmpty() &&
