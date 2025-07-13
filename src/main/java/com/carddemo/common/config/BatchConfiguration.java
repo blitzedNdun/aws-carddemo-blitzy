@@ -1,19 +1,18 @@
 package com.carddemo.common.config;
 
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
-import org.springframework.batch.core.JobRepository;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
-import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
-import org.springframework.batch.core.launch.support.SimpleJobLauncher;
-import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.core.launch.support.TaskExecutorJobLauncher;
 import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
 import org.springframework.batch.core.step.skip.SkipPolicy;
 import org.springframework.batch.core.step.skip.LimitCheckingItemSkipPolicy;
-import org.springframework.batch.retry.RetryPolicy;
-import org.springframework.batch.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.RetryPolicy;
+import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.batch.core.listener.JobExecutionListenerSupport;
 import org.springframework.batch.core.listener.StepExecutionListenerSupport;
 import org.springframework.batch.core.JobExecution;
@@ -166,7 +165,7 @@ public class BatchConfiguration {
     public JobLauncher jobLauncher() throws Exception {
         logger.info("Configuring Spring Batch JobLauncher with async execution");
         
-        SimpleJobLauncher jobLauncher = new SimpleJobLauncher();
+        TaskExecutorJobLauncher jobLauncher = new TaskExecutorJobLauncher();
         jobLauncher.setJobRepository(jobRepository());
         jobLauncher.setTaskExecutor(taskExecutor());
         jobLauncher.afterPropertiesSet();
@@ -179,29 +178,29 @@ public class BatchConfiguration {
     }
     
     /**
-     * Creates StepBuilderFactory for building optimized batch processing steps
-     * with chunk-oriented processing and error handling capabilities.
+     * Creates JobBuilder for building comprehensive batch jobs
+     * with parameter validation and restart capabilities using Spring Batch 5.x approach.
      * 
-     * @return StepBuilderFactory for step construction
-     * @throws Exception if step builder factory creation fails
+     * @return JobBuilder configured for job construction
+     * @throws Exception if job builder creation fails
      */
     @Bean
-    public StepBuilderFactory stepBuilderFactory() throws Exception {
-        logger.info("Creating StepBuilderFactory for batch step construction");
-        return new StepBuilderFactory(jobRepository(), transactionManager);
+    public JobBuilder jobBuilder() throws Exception {
+        logger.info("Creating JobBuilder for batch job construction");
+        return new JobBuilder("defaultJob", jobRepository());
     }
     
     /**
-     * Creates JobBuilderFactory for building comprehensive batch jobs
-     * with parameter validation and restart capabilities.
+     * Creates StepBuilder for building optimized batch processing steps
+     * with chunk-oriented processing and error handling capabilities using Spring Batch 5.x approach.
      * 
-     * @return JobBuilderFactory for job construction
-     * @throws Exception if job builder factory creation fails
+     * @return StepBuilder configured for step construction
+     * @throws Exception if step builder creation fails
      */
     @Bean
-    public JobBuilderFactory jobBuilderFactory() throws Exception {
-        logger.info("Creating JobBuilderFactory for batch job construction");
-        return new JobBuilderFactory(jobRepository());
+    public StepBuilder stepBuilder() throws Exception {
+        logger.info("Creating StepBuilder for batch step construction");
+        return new StepBuilder("defaultStep", jobRepository());
     }
     
     /**
@@ -255,10 +254,9 @@ public class BatchConfiguration {
         logger.info("Setting batch chunk size to {} records for optimal processing", defaultChunkSize);
         
         // Register chunk size as a gauge metric
-        Gauge.builder("batch.chunk.size")
+        Gauge.builder("batch.chunk.size", this, (config) -> defaultChunkSize)
              .description("Configured chunk size for batch processing")
-             .register(meterRegistry)
-             .set(defaultChunkSize);
+             .register(meterRegistry);
         
         return defaultChunkSize;
     }
@@ -476,24 +474,21 @@ public class BatchConfiguration {
                        .register(meterRegistry)
                        .increment();
                 
-                Gauge.builder("batch.step.read.count")
+                Gauge.builder("batch.step.read.count", stepExecution, StepExecution::getReadCount)
                      .tag("step.name", stepName)
                      .description("Number of items read in batch step")
-                     .register(meterRegistry)
-                     .set(stepExecution.getReadCount());
+                     .register(meterRegistry);
                 
-                Gauge.builder("batch.step.write.count")
+                Gauge.builder("batch.step.write.count", stepExecution, StepExecution::getWriteCount)
                      .tag("step.name", stepName)
                      .description("Number of items written in batch step")
-                     .register(meterRegistry)
-                     .set(stepExecution.getWriteCount());
+                     .register(meterRegistry);
                 
                 if (stepExecution.getSkipCount() > 0) {
-                    Gauge.builder("batch.step.skip.count")
+                    Gauge.builder("batch.step.skip.count", stepExecution, StepExecution::getSkipCount)
                          .tag("step.name", stepName)
                          .description("Number of items skipped in batch step")
-                         .register(meterRegistry)
-                         .set(stepExecution.getSkipCount());
+                         .register(meterRegistry);
                 }
                 
                 return exitStatus;
@@ -540,10 +535,9 @@ public class BatchConfiguration {
     // Private methods for metrics registration
     
     private void registerJobRepositoryMetrics() {
-        Gauge.builder("batch.repository.active")
+        Gauge.builder("batch.repository.active", this, (config) -> 0.0)
              .description("Number of active job executions in repository")
-             .register(meterRegistry)
-             .set(0);
+             .register(meterRegistry);
     }
     
     private void registerJobLauncherMetrics() {
@@ -553,17 +547,18 @@ public class BatchConfiguration {
     }
     
     private void registerTaskExecutorMetrics(ThreadPoolTaskExecutor executor) {
-        Gauge.builder("batch.executor.active.threads")
+        Gauge.builder("batch.executor.active.threads", executor, ThreadPoolTaskExecutor::getActiveCount)
              .description("Number of active threads in batch executor")
-             .register(meterRegistry, e -> e.getActiveCount());
+             .register(meterRegistry);
         
-        Gauge.builder("batch.executor.pool.size")
+        Gauge.builder("batch.executor.pool.size", executor, ThreadPoolTaskExecutor::getPoolSize)
              .description("Current pool size of batch executor")
-             .register(meterRegistry, e -> e.getPoolSize());
+             .register(meterRegistry);
         
-        Gauge.builder("batch.executor.queue.size")
+        Gauge.builder("batch.executor.queue.size", executor, 
+                     e -> (double) e.getThreadPoolExecutor().getQueue().size())
              .description("Current queue size of batch executor")
-             .register(meterRegistry, e -> e.getThreadPoolExecutor().getQueue().size());
+             .register(meterRegistry);
     }
     
     private void registerRetryPolicyMetrics() {
@@ -579,16 +574,19 @@ public class BatchConfiguration {
     }
     
     private void registerConnectionPoolMetrics(HikariDataSource dataSource) {
-        Gauge.builder("batch.datasource.active.connections")
+        Gauge.builder("batch.datasource.active.connections", dataSource, 
+                     ds -> (double) ds.getHikariPoolMXBean().getActiveConnections())
              .description("Number of active connections in batch pool")
-             .register(meterRegistry, ds -> ds.getHikariPoolMXBean().getActiveConnections());
+             .register(meterRegistry);
         
-        Gauge.builder("batch.datasource.idle.connections")
+        Gauge.builder("batch.datasource.idle.connections", dataSource,
+                     ds -> (double) ds.getHikariPoolMXBean().getIdleConnections())
              .description("Number of idle connections in batch pool")
-             .register(meterRegistry, ds -> ds.getHikariPoolMXBean().getIdleConnections());
+             .register(meterRegistry);
         
-        Gauge.builder("batch.datasource.total.connections")
+        Gauge.builder("batch.datasource.total.connections", dataSource,
+                     ds -> (double) ds.getHikariPoolMXBean().getTotalConnections())
              .description("Total number of connections in batch pool")
-             .register(meterRegistry, ds -> ds.getHikariPoolMXBean().getTotalConnections());
+             .register(meterRegistry);
     }
 }
