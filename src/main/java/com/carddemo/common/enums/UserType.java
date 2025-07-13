@@ -13,7 +13,7 @@ import java.util.Optional;
  * 
  * This enum implements the original COBOL 88-level conditions:
  * - CDEMO-USRTYP-ADMIN VALUE 'A' (Admin user type)
- * - CDEMO-USRTYP-USER VALUE 'U' (Regular user type)
+ * - CDEMO-USRTYP-USER VALUE 'R' (Regular user type)
  * 
  * Integrated with Spring Security for role-based access control and JWT token generation.
  * Maintains exact functional equivalence with original CICS RACF user profile patterns.
@@ -36,11 +36,11 @@ public enum UserType implements GrantedAuthority {
     ADMIN("A", "Administrator", "ROLE_ADMIN"),
     
     /**
-     * Regular user type - equivalent to CDEMO-USRTYP-USER VALUE 'U'
+     * Regular user type - equivalent to CDEMO-USRTYP-USER VALUE 'R'
      * Provides standard transaction processing access with restricted administrative functions.
      * Maps to Spring Security ROLE_USER authority.
      */
-    USER("U", "Regular User", "ROLE_USER");
+    USER("R", "Regular User", "ROLE_USER");
     
     // Private fields matching COBOL structure
     private final String code;
@@ -64,7 +64,7 @@ public enum UserType implements GrantedAuthority {
      * Parse user type from COBOL character code with null-safe handling.
      * Replicates original COBOL conditional logic for user role authorization.
      * 
-     * @param code Single character code ('A' for Admin, 'U' for User)
+     * @param code Single character code ('A' for Admin, 'R' for User)
      * @return Optional containing the matching UserType, or empty if invalid
      */
     public static Optional<UserType> fromCode(String code) {
@@ -87,7 +87,7 @@ public enum UserType implements GrantedAuthority {
     /**
      * Get the COBOL-compatible single character code.
      * 
-     * @return Single character code ('A' for Admin, 'U' for User)
+     * @return Single character code ('A' for Admin, 'R' for User)
      */
     public String getCode() {
         return code;
@@ -163,7 +163,7 @@ public enum UserType implements GrantedAuthority {
         }
         
         throw new IllegalArgumentException(
-            "Invalid user type code: '" + code + "'. Expected 'A' for Admin or 'U' for User."
+            "Invalid user type code: '" + code + "'. Expected 'A' for Admin or 'R' for User."
         );
     }
     
