@@ -1,0 +1,49 @@
+# CardDemo Application Configuration
+# Minimal configuration for Spring Boot application startup and validation
+# This configuration supports the CardDemoApplication main class validation
+
+spring:
+  application:
+    name: carddemo-application
+  
+  # Profile Configuration
+  profiles:
+    active: dev
+    
+  # Eureka Service Discovery Configuration (for @EnableDiscoveryClient)
+  cloud:
+    config:
+      enabled: false  # Disable for basic validation
+      
+eureka:
+  client:
+    enabled: false  # Disable for basic validation
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    hostname: localhost
+
+# Server Configuration
+server:
+  port: 8080
+  
+# Management and Actuator Configuration  
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+      
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.carddemo: DEBUG
+    org.springframework.cloud: WARN
+    com.netflix.eureka: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
