@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Data Transfer Object for authentication login request.
@@ -116,6 +117,7 @@ public class LoginRequest {
      * 
      * @return true if both fields contain non-blank values
      */
+    @JsonIgnore
     public boolean isValid() {
         return username != null && !username.trim().isEmpty() &&
                password != null && !password.trim().isEmpty();
