@@ -5,78 +5,89 @@ import jakarta.validation.ConstraintValidatorContext;
 import java.util.regex.Pattern;
 
 /**
- * Validator implementation for the {@link ValidSSN} annotation.
+ * Jakarta Bean Validation implementation for Social Security Number validation.
  * <p>
- * This validator implements the actual SSN validation logic that enforces the same business
- * rules as the original COBOL programs COACTVWC and COACTUPC. The validation logic is based
- * on the COBOL paragraph 1265-EDIT-US-SSN which validates SSN parts according to U.S. SSN
- * format requirements.
+ * This validator implements the exact SSN validation logic from the COBOL programs COACTVWC and 
+ * COACTUPC, maintaining functional equivalence with the original mainframe application. The 
+ * validation replicates the 1265-EDIT-US-SSN paragraph from COACTUPC.cbl with identical business 
+ * rules and error conditions.
  * </p>
  * 
- * <h3>Validation Algorithm:</h3>
+ * <h3>COBOL-Equivalent Validation Rules:</h3>
+ * <ul>
+ *   <li><strong>Format Acceptance:</strong> Supports both formatted (XXX-XX-XXXX) and unformatted (XXXXXXXXX) input</li>
+ *   <li><strong>Input Normalization:</strong> Removes hyphens and spaces for validation, preserving COBOL input handling</li>
+ *   <li><strong>9-Digit Requirement:</strong> Must be exactly 9 digits after normalization (CUST-SSN PIC 9(09))</li>
+ *   <li><strong>Part 1 Validation:</strong> First 3 digits cannot be 000, 666, or 900-999 (INVALID-SSN-PART1)</li>
+ *   <li><strong>Part 2 Validation:</strong> Middle 2 digits must be 01-99 (cannot be 00)</li>
+ *   <li><strong>Part 3 Validation:</strong> Last 4 digits must be 0001-9999 (cannot be 0000)</li>
+ * </ul>
+ * 
+ * <h3>Input Processing:</h3>
+ * <p>
+ * The validator normalizes input by removing common formatting characters (hyphens and spaces),
+ * allowing users to enter SSNs in either formatted or unformatted style. This matches the
+ * flexible input handling in the COBOL screen processing logic.
+ * </p>
+ * 
+ * <h3>Validation Flow:</h3>
  * <ol>
- *   <li>Normalize input by removing formatting characters (hyphens)</li>
- *   <li>Validate that the result is exactly 9 digits</li>
- *   <li>Apply COBOL-equivalent business rules for each SSN part</li>
- *   <li>Return validation result with appropriate error context</li>
+ *   <li>Check for null/empty values based on annotation configuration</li>
+ *   <li>Normalize input by removing hyphens and spaces</li>
+ *   <li>Validate 9-digit numeric pattern using ValidationConstants.SSN_PATTERN</li>
+ *   <li>Apply three-part business rule validation matching COBOL logic</li>
+ *   <li>Return detailed error messages for specific validation failures</li>
  * </ol>
  * 
- * <h3>COBOL Compatibility:</h3>
- * <p>
- * This implementation replicates the validation logic from COACTUPC.cbl lines 2431-2491,
- * ensuring exact compatibility with the original mainframe application's validation behavior.
- * The validation rules match the COBOL 88-level conditions and edit routines.
- * </p>
+ * <h3>COBOL Source Mapping:</h3>
+ * <pre>
+ * COBOL Code (COACTUPC.cbl lines 2431-2491):
+ * 1265-EDIT-US-SSN.
+ *   Format xxx-xx-xxxx
+ *   Part1: should have 3 digits, not 000, 666, or 900-999
+ *   Part2: should have 2 digits from 01 to 99  
+ *   Part3: should have 4 digits from 0001 to 9999
+ * </pre>
  * 
  * @author Blitzy CardDemo Platform
  * @version 1.0
  * @since 1.0
  * 
  * @see ValidSSN
+ * @see ValidationConstants#SSN_PATTERN
  */
 public class SSNValidator implements ConstraintValidator<ValidSSN, String> {
     
     /**
-     * Pattern for validating formatted SSN input (XXX-XX-XXXX).
-     * This pattern ensures the input matches the standard U.S. SSN format with hyphens.
+     * Pattern for formatted SSN input (XXX-XX-XXXX)
      */
     private static final Pattern FORMATTED_SSN_PATTERN = Pattern.compile("^\\d{3}-\\d{2}-\\d{4}$");
     
     /**
-     * Pattern for validating unformatted SSN input (XXXXXXXXX).
-     * This pattern ensures the input is exactly 9 digits without any formatting.
+     * Pattern to remove formatting characters for normalization
      */
-    private static final Pattern UNFORMATTED_SSN_PATTERN = Pattern.compile("^\\d{9}$");
+    private static final Pattern FORMATTING_CHARS_PATTERN = Pattern.compile("[\\s\\-]");
     
     /**
-     * Pattern for extracting digits from formatted SSN input.
-     * This pattern removes all non-digit characters to normalize the input.
-     */
-    private static final Pattern DIGIT_EXTRACTION_PATTERN = Pattern.compile("[^0-9]");
-    
-    /**
-     * Configuration flag indicating whether formatted input is required.
-     * Set during initialization based on the annotation configuration.
+     * Configuration flag indicating if formatted input is required
      */
     private boolean requireFormatted;
     
     /**
-     * Configuration flag indicating whether null values are allowed.
-     * Set during initialization based on the annotation configuration.
+     * Configuration flag indicating if null values are allowed
      */
     private boolean allowNull;
     
     /**
-     * Configuration flag indicating whether empty strings are allowed.
-     * Set during initialization based on the annotation configuration.
+     * Configuration flag indicating if empty strings are allowed
      */
     private boolean allowEmpty;
     
     /**
      * Initializes the validator with configuration from the ValidSSN annotation.
      * <p>
-     * This method is called by the validation framework to configure the validator
-     * instance with the parameters specified in the annotation.
+     * This method is called by the Jakarta Bean Validation framework to configure
+     * the validator instance based on the annotation parameters.
      * </p>
      * 
      * @param constraintAnnotation the ValidSSN annotation instance containing configuration
@@ -89,207 +100,108 @@ public class SSNValidator implements ConstraintValidator<ValidSSN, String> {
     }
     
     /**
-     * Validates the provided SSN value according to COBOL business rules.
+     * Validates the SSN value according to COBOL-equivalent business rules.
      * <p>
-     * This method implements the core validation logic that replicates the behavior
-     * of the COBOL 1265-EDIT-US-SSN paragraph. It performs comprehensive validation
-     * of the SSN format and business rules.
+     * This method implements the complete validation logic from the COBOL 1265-EDIT-US-SSN
+     * paragraph, ensuring functional equivalence with the original mainframe validation.
+     * The validation maintains exact compatibility with COBOL processing patterns.
      * </p>
      * 
-     * @param value the SSN value to validate (may be null)
-     * @param context the validation context for error reporting
-     * @return true if the SSN is valid according to business rules, false otherwise
+     * @param value the SSN value to validate (may be null or empty)
+     * @param context the constraint validator context for custom error messages
+     * @return true if the SSN is valid according to all business rules, false otherwise
      */
     @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
-        // Handle null values according to configuration
+        // Handle null values based on configuration
         if (value == null) {
             return allowNull;
         }
         
-        // Handle empty strings according to configuration
-        if (value.isEmpty()) {
+        // Handle empty values based on configuration
+        if (value.trim().isEmpty()) {
             return allowEmpty;
         }
         
-        // Trim whitespace to handle padded input
-        String trimmedValue = value.trim();
-        if (trimmedValue.isEmpty()) {
-            return allowEmpty;
-        }
-        
-        // Validate input format before processing
-        if (!isValidFormat(trimmedValue)) {
-            addViolation(context, "SSN format must be XXX-XX-XXXX or XXXXXXXXX");
+        // Check formatted input requirement
+        if (requireFormatted && !FORMATTED_SSN_PATTERN.matcher(value).matches()) {
+            setCustomErrorMessage(context, "SSN must be in formatted XXX-XX-XXXX pattern");
             return false;
         }
         
-        // Normalize the input to remove formatting characters
-        String normalizedSSN = normalizeSSN(trimmedValue);
+        // Normalize input by removing formatting characters (hyphens and spaces)
+        String normalizedSSN = FORMATTING_CHARS_PATTERN.matcher(value.trim()).replaceAll("");
         
-        // Validate that normalized SSN is exactly 9 digits
-        if (!UNFORMATTED_SSN_PATTERN.matcher(normalizedSSN).matches()) {
-            addViolation(context, "SSN must contain exactly 9 digits");
+        // Validate 9-digit numeric pattern using ValidationConstants
+        if (!ValidationConstants.SSN_PATTERN.matcher(normalizedSSN).matches()) {
+            setCustomErrorMessage(context, "SSN must be exactly 9 digits");
             return false;
         }
         
-        // Apply COBOL business rules validation
-        return validateBusinessRules(normalizedSSN, context);
+        // Apply COBOL-equivalent three-part validation
+        return validateSSNParts(normalizedSSN, context);
     }
     
     /**
-     * Validates the input format according to configuration requirements.
+     * Validates SSN parts according to COBOL business rules.
      * <p>
-     * This method checks whether the input matches the expected format based on
-     * the requireFormatted configuration flag.
+     * This method implements the exact validation logic from COACTUPC.cbl, including
+     * the INVALID-SSN-PART1 condition and the validation rules for each part of the SSN.
      * </p>
      * 
-     * @param value the SSN value to validate format for
-     * @return true if the format is valid, false otherwise
+     * @param normalizedSSN the normalized 9-digit SSN string
+     * @param context the constraint validator context for custom error messages
+     * @return true if all parts pass validation, false otherwise
      */
-    private boolean isValidFormat(String value) {
-        if (requireFormatted) {
-            // Only accept formatted input (XXX-XX-XXXX)
-            return FORMATTED_SSN_PATTERN.matcher(value).matches();
-        } else {
-            // Accept both formatted and unformatted input
-            return FORMATTED_SSN_PATTERN.matcher(value).matches() || 
-                   UNFORMATTED_SSN_PATTERN.matcher(value).matches();
-        }
-    }
-    
-    /**
-     * Normalizes the SSN input by removing all non-digit characters.
-     * <p>
-     * This method strips out hyphens and other formatting characters to create
-     * a consistent 9-digit string for validation processing.
-     * </p>
-     * 
-     * @param value the SSN value to normalize
-     * @return the normalized SSN containing only digits
-     */
-    private String normalizeSSN(String value) {
-        return DIGIT_EXTRACTION_PATTERN.matcher(value).replaceAll("");
-    }
-    
-    /**
-     * Validates SSN business rules based on COBOL validation logic.
-     * <p>
-     * This method implements the same validation rules as the COBOL program
-     * COACTUPC.cbl paragraph 1265-EDIT-US-SSN, ensuring compatibility with
-     * the original application's business logic.
-     * </p>
-     * 
-     * @param normalizedSSN the 9-digit normalized SSN
-     * @param context the validation context for error reporting
-     * @return true if all business rules pass, false otherwise
-     */
-    private boolean validateBusinessRules(String normalizedSSN, ConstraintValidatorContext context) {
-        // Extract SSN parts for validation (matching COBOL structure)
+    private boolean validateSSNParts(String normalizedSSN, ConstraintValidatorContext context) {
+        // Extract the three parts as in COBOL WS-EDIT-US-SSN structure
         String part1 = normalizedSSN.substring(0, 3);  // First 3 digits
-        String part2 = normalizedSSN.substring(3, 5);  // Middle 2 digits
+        String part2 = normalizedSSN.substring(3, 5);  // Middle 2 digits  
         String part3 = normalizedSSN.substring(5, 9);  // Last 4 digits
         
-        // Validate Part 1 (Area Number) - replicating COBOL INVALID-SSN-PART1 logic
-        if (!validateSSNPart1(part1, context)) {
+        // Convert to integers for validation
+        int part1Int = Integer.parseInt(part1);
+        int part2Int = Integer.parseInt(part2);
+        int part3Int = Integer.parseInt(part3);
+        
+        // Validate Part 1: INVALID-SSN-PART1 validation from COBOL
+        // VALUES 0, 666, 900 THRU 999 are invalid
+        if (part1Int == 0 || part1Int == 666 || (part1Int >= 900 && part1Int <= 999)) {
+            setCustomErrorMessage(context, 
+                "SSN first 3 digits cannot be 000, 666, or between 900 and 999");
             return false;
         }
         
-        // Validate Part 2 (Group Number) - must be 01-99
-        if (!validateSSNPart2(part2, context)) {
+        // Validate Part 2: Middle 2 digits must be 01-99 (cannot be 00)
+        if (part2Int == 0) {
+            setCustomErrorMessage(context, 
+                "SSN middle 2 digits must be between 01 and 99");
             return false;
         }
         
-        // Validate Part 3 (Serial Number) - must be 0001-9999
-        if (!validateSSNPart3(part3, context)) {
+        // Validate Part 3: Last 4 digits must be 0001-9999 (cannot be 0000)
+        if (part3Int == 0) {
+            setCustomErrorMessage(context, 
+                "SSN last 4 digits must be between 0001 and 9999");
             return false;
         }
         
+        // All validations passed
         return true;
     }
     
     /**
-     * Validates SSN Part 1 (Area Number) according to COBOL business rules.
+     * Sets a custom error message in the validation context.
      * <p>
-     * This method implements the COBOL validation logic for the first 3 digits
-     * of the SSN, replicating the INVALID-SSN-PART1 88-level condition validation.
+     * This method disables the default constraint violation and adds a custom message,
+     * allowing for specific error feedback that matches COBOL validation message patterns.
      * </p>
      * 
-     * @param part1 the first 3 digits of the SSN
-     * @param context the validation context for error reporting
-     * @return true if Part 1 is valid, false otherwise
+     * @param context the constraint validator context
+     * @param message the custom error message to set
      */
-    private boolean validateSSNPart1(String part1, ConstraintValidatorContext context) {
-        int area = Integer.parseInt(part1);
-        
-        // COBOL validation: INVALID-SSN-PART1 VALUES 0, 666, 900 THRU 999
-        if (area == 0 || area == 666 || (area >= 900 && area <= 999)) {
-            addViolation(context, "SSN first 3 digits cannot be 000, 666, or between 900-999");
-            return false;
-        }
-        
-        return true;
-    }
-    
-    /**
-     * Validates SSN Part 2 (Group Number) according to COBOL business rules.
-     * <p>
-     * This method validates that the middle 2 digits are not 00, matching
-     * the COBOL validation requirements for the group number portion.
-     * </p>
-     * 
-     * @param part2 the middle 2 digits of the SSN
-     * @param context the validation context for error reporting
-     * @return true if Part 2 is valid, false otherwise
-     */
-    private boolean validateSSNPart2(String part2, ConstraintValidatorContext context) {
-        int group = Integer.parseInt(part2);
-        
-        // Group number cannot be 00 (must be 01-99)
-        if (group == 0) {
-            addViolation(context, "SSN middle 2 digits cannot be 00");
-            return false;
-        }
-        
-        return true;
-    }
-    
-    /**
-     * Validates SSN Part 3 (Serial Number) according to COBOL business rules.
-     * <p>
-     * This method validates that the last 4 digits are not 0000, matching
-     * the COBOL validation requirements for the serial number portion.
-     * </p>
-     * 
-     * @param part3 the last 4 digits of the SSN
-     * @param context the validation context for error reporting
-     * @return true if Part 3 is valid, false otherwise
-     */
-    private boolean validateSSNPart3(String part3, ConstraintValidatorContext context) {
-        int serial = Integer.parseInt(part3);
-        
-        // Serial number cannot be 0000 (must be 0001-9999)
-        if (serial == 0) {
-            addViolation(context, "SSN last 4 digits cannot be 0000");
-            return false;
-        }
-        
-        return true;
-    }
-    
-    /**
-     * Adds a custom validation violation message to the context.
-     * <p>
-     * This method disables the default constraint violation and adds a custom
-     * message with specific details about the validation failure.
-     * </p>
-     * 
-     * @param context the validation context
-     * @param message the custom error message to add
-     */
-    private void addViolation(ConstraintValidatorContext context, String message) {
+    private void setCustomErrorMessage(ConstraintValidatorContext context, String message) {
         context.disableDefaultConstraintViolation();
-        context.buildConstraintViolationWithTemplate(message)
-               .addConstraintViolation();
+        context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
     }
 }
