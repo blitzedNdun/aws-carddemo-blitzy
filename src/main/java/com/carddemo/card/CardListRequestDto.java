@@ -5,6 +5,7 @@ import com.carddemo.common.validator.ValidAccountId;
 import com.carddemo.common.validator.ValidCardNumber;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Size;
@@ -416,6 +417,7 @@ public class CardListRequestDto extends BaseRequestDto {
      * 
      * @return true if request is valid for processing, false otherwise
      */
+    @JsonIgnore
     public boolean isValidForProcessing() {
         return isValidRequestContext() && 
                userRole != null && !userRole.trim().isEmpty() &&
@@ -429,6 +431,7 @@ public class CardListRequestDto extends BaseRequestDto {
      * 
      * @return true if filters are applied, false for unrestricted listing
      */
+    @JsonIgnore
     public boolean hasFilters() {
         return (accountId != null && !accountId.trim().isEmpty()) ||
                (cardNumber != null && !cardNumber.trim().isEmpty()) ||
@@ -441,6 +444,7 @@ public class CardListRequestDto extends BaseRequestDto {
      * 
      * @return true if inactive cards should be included, false otherwise
      */
+    @JsonIgnore
     public boolean shouldIncludeInactive() {
         return includeInactive != null && includeInactive;
     }
@@ -451,6 +455,7 @@ public class CardListRequestDto extends BaseRequestDto {
      * 
      * @return true if user has admin role, false otherwise
      */
+    @JsonIgnore
     public boolean isAdminUser() {
         return "ADMIN".equals(userRole);
     }
@@ -461,6 +466,7 @@ public class CardListRequestDto extends BaseRequestDto {
      * 
      * @return true if user has regular user role, false otherwise
      */
+    @JsonIgnore
     public boolean isRegularUser() {
         return "USER".equals(userRole);
     }
@@ -471,6 +477,7 @@ public class CardListRequestDto extends BaseRequestDto {
      * 
      * @return true if user has manager role, false otherwise
      */
+    @JsonIgnore
     public boolean isManagerUser() {
         return "MANAGER".equals(userRole);
     }
@@ -481,6 +488,7 @@ public class CardListRequestDto extends BaseRequestDto {
      * 
      * @return Pageable object configured with request parameters
      */
+    @JsonIgnore
     public org.springframework.data.domain.Pageable toPageable() {
         org.springframework.data.domain.Sort.Direction direction = 
             "DESC".equals(sortDirection) ? 
