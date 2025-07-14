@@ -21,8 +21,8 @@
  * Technology transformation: COBOL/CICS/BMS → Java/Spring Boot/React
  */
 
-import { FormFieldAttributes, FormValidationSchema } from './CommonTypes';
-import { FormValidationSchema as ValidationSchema } from './ValidationTypes';
+import { FormFieldAttributes } from './CommonTypes';
+import { FormValidationSchema } from './ValidationTypes';
 
 /**
  * Report type enumeration matching business requirements
@@ -333,16 +333,6 @@ export const REPORT_CONSTANTS = {
 
 /**
  * Export all types for external consumption
- * Provides clean import interface for components using report types
+ * Note: Types are already exported above with their declarations
+ * This section is for documentation purposes only
  */
-export type {
-  ReportType,
-  ReportGenerationStatus,
-  ReportParametersData,
-  ReportGenerationRequest,
-  ReportResultData,
-  ReportScheduleData,
-  ReportValidationSchema,
-  ReportFormState,
-  ReportGenerationProgress,
-};
