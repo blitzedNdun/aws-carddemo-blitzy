@@ -107,27 +107,27 @@ export interface ApiRequest<T = any> {
  */
 export interface ApiResponse<T = any> {
   /** Response payload data (generic type for flexibility) */
-  data: T & {
-    /** BMS header fields for screen-based responses */
-    screenData?: {
-      /** Transaction name (4 characters) - equivalent to BMS TRNNAME field */
-      trnname: string;
-      
-      /** Program name (8 characters) - equivalent to BMS PGMNAME field */
-      pgmname: string;
-      
-      /** Current date (8 characters, format: mm/dd/yy) - equivalent to BMS CURDATE field */
-      curdate: string;
-      
-      /** Current time (9 characters, format: hh:mm:ss) - equivalent to BMS CURTIME field */
-      curtime: string;
-      
-      /** Primary title line (40 characters) - equivalent to BMS TITLE01 field */
-      title01: string;
-      
-      /** Secondary title line (40 characters) - equivalent to BMS TITLE02 field */
-      title02: string;
-    };
+  data: T;
+  
+  /** BMS header fields for screen-based responses (optional) */
+  screenData?: {
+    /** Transaction name (4 characters) - equivalent to BMS TRNNAME field */
+    trnname: string;
+    
+    /** Program name (8 characters) - equivalent to BMS PGMNAME field */
+    pgmname: string;
+    
+    /** Current date (8 characters, format: mm/dd/yy) - equivalent to BMS CURDATE field */
+    curdate: string;
+    
+    /** Current time (9 characters, format: hh:mm:ss) - equivalent to BMS CURTIME field */
+    curtime: string;
+    
+    /** Primary title line (40 characters) - equivalent to BMS TITLE01 field */
+    title01: string;
+    
+    /** Secondary title line (40 characters) - equivalent to BMS TITLE02 field */
+    title02: string;
   };
   
   /** Business status code mapping COMMAREA status patterns */
@@ -235,43 +235,10 @@ export interface PaginationInfo {
  */
 export interface PaginatedResponse<T = any> extends ApiResponse<T[]> {
   /** Array of data items for the current page */
-  data: T[] & {
-    /** BMS header fields for screen-based responses */
-    screenData?: {
-      /** Transaction name (4 characters) - equivalent to BMS TRNNAME field */
-      trnname: string;
-      
-      /** Program name (8 characters) - equivalent to BMS PGMNAME field */
-      pgmname: string;
-      
-      /** Current date (8 characters, format: mm/dd/yy) - equivalent to BMS CURDATE field */
-      curdate: string;
-      
-      /** Current time (9 characters, format: hh:mm:ss) - equivalent to BMS CURTIME field */
-      curtime: string;
-      
-      /** Primary title line (40 characters) - equivalent to BMS TITLE01 field */
-      title01: string;
-      
-      /** Secondary title line (40 characters) - equivalent to BMS TITLE02 field */
-      title02: string;
-    };
-  };
+  data: T[];
   
   /** Comprehensive pagination metadata */
   pagination: PaginationInfo;
-  
-  /** Business status code (inherited from ApiResponse) */
-  status: BusinessStatusCode;
-  
-  /** Status message (inherited from ApiResponse) */
-  message: string;
-  
-  /** Response timestamp (inherited from ApiResponse) */
-  timestamp: Date;
-  
-  /** Correlation ID (inherited from ApiResponse) */
-  correlationId: string;
 }
 
 /**
