@@ -142,11 +142,16 @@ public class FicoScoreValidator implements ConstraintValidator<ValidFicoScore, I
         }
         
         // Handle zero values according to business rules
-        if (value == 0 && !allowZero) {
-            // Provide business-appropriate error message for zero values
-            buildCustomErrorMessage(context, 
-                "FICO score cannot be zero - use null for customers without credit history");
-            return false;
+        if (value == 0) {
+            if (!allowZero) {
+                // Provide business-appropriate error message for zero values
+                buildCustomErrorMessage(context, 
+                    "FICO score cannot be zero - use null for customers without credit history");
+                return false;
+            } else {
+                // Zero is explicitly allowed, pass validation without range check
+                return true;
+            }
         }
         
         // Validate range boundaries
