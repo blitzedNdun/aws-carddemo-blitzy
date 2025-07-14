@@ -1,0 +1,468 @@
+# ============================================================================
+# Spring Batch FlatFileItemReader Configuration: card-data-reader.yml
+# Description: ItemReader configuration for loading card data from carddata.txt
+# Author: Blitzy agent
+# Version: CardDemo_v1.0-15-g27d6c6f-68
+# Dependencies: Card.java entity, V4__create_cards_table.sql
+# ============================================================================
+
+# Card Data Reader Configuration
+# Processes 50 card records from carddata.txt with 150-character fixed-width format
+# Maintains card-to-account linkage, Luhn validation, and PCI compliance requirements
+cardDataReader:
+  # Spring Batch FlatFileItemReader configuration for card data processing
+  itemReader:
+    # Resource configuration for carddata.txt ASCII file processing
+    resource:
+      # Source file location for card data ASCII file
+      location: "classpath:data/ASCII/carddata.txt"
+      # File encoding for proper character handling
+      encoding: "UTF-8"
+      # Resource description for logging and monitoring
+      description: "Card data ASCII file with 150-character fixed-width records"
+    
+    # Line mapper configuration for 150-character fixed-width parsing
+    lineMapper:
+      # Fixed-length tokenizer for precise field positioning
+      tokenizer:
+        type: "fixedLength"
+        # Field range definitions matching carddata.txt 150-character structure
+        ranges:
+          # Card number field: positions 1-16 (16-digit card number)
+          - name: "cardNumber"
+            start: 1
+            end: 16
+            # Luhn algorithm validation will be applied in ItemProcessor
+            validation: "luhn_required"
+          
+          # Account ID field: positions 17-26 (10-character account identifier)
+          - name: "accountId"
+            start: 17
+            end: 26
+            # Zero-padding removal and format validation
+            format: "zero_padded_numeric"
+            # Foreign key constraint to accounts table
+            foreignKey: "accounts.account_id"
+          
+          # Customer ID field: positions 27-32 (6-character customer identifier)
+          - name: "customerId"
+            start: 27
+            end: 32
+            # Zero-padding removal and format validation
+            format: "zero_padded_numeric"
+            # Foreign key constraint to customers table
+            foreignKey: "customers.customer_id"
+          
+          # Embossed name field: positions 33-82 (50-character cardholder name)
+          - name: "embossedName"
+            start: 33
+            end: 82
+            # Trim whitespace and validate non-empty
+            format: "trimmed_string"
+            validation: "non_empty_required"
+          
+          # Expiration date field: positions 83-92 (10-character date YYYY-MM-DD)
+          - name: "expirationDate"
+            start: 83
+            end: 92
+            # Date format parsing and validation
+            format: "date_yyyy_mm_dd"
+            validation: "future_date_required"
+          
+          # Active status field: position 93 (1-character Y/N indicator)
+          - name: "activeStatus"
+            start: 93
+            end: 93
+            # Boolean conversion from Y/N to true/false
+            format: "boolean_yn"
+            validation: "valid_status_required"
+          
+          # Padding field: positions 94-150 (57-character padding - ignored)
+          - name: "padding"
+            start: 94
+            end: 150
+            # Padding field ignored during processing
+            ignore: true
+    
+    # Field set mapper configuration for Card entity mapping
+    fieldSetMapper:
+      # Bean wrapper field set mapper for Card entity
+      type: "beanWrapper"
+      # Target class for field mapping
+      targetType: "com.carddemo.common.entity.Card"
+      # Custom field mappings for proper data type conversion
+      fieldMappings:
+        # Card number mapping with Luhn validation
+        cardNumber:
+          # Direct string mapping - validation handled in entity
+          type: "string"
+          # Luhn algorithm validation reference
+          validator: "luhnAlgorithmValidator"
+          # PCI compliance processing reference
+          pciCompliance: true
+          # Required field validation
+          required: true
+        
+        # Account ID mapping with foreign key validation
+        accountId:
+          # String mapping with zero-padding removal
+          type: "string"
+          # Convert from 10-char padded to 11-char format expected by entity
+          converter: "accountIdPaddingConverter"
+          # Foreign key constraint enforcement
+          foreignKeyValidation: "accounts.account_id"
+          required: true
+        
+        # Customer ID mapping with foreign key validation
+        customerId:
+          # String mapping with zero-padding removal
+          type: "string"
+          # Convert from 6-char padded to 9-char format expected by entity
+          converter: "customerIdPaddingConverter"
+          # Foreign key constraint enforcement
+          foreignKeyValidation: "customers.customer_id"
+          required: true
+        
+        # CVV code mapping (generated since not in carddata.txt)
+        cvvCode:
+          # Generate CVV code for PCI compliance
+          type: "generated"
+          # CVV code generation strategy
+          generator: "secureRandomCvvGenerator"
+          # 3-digit numeric format
+          format: "numeric_3_digit"
+          # PCI compliance requirements
+          pciCompliance: true
+          required: true
+        
+        # Embossed name mapping with trimming
+        embossedName:
+          # String mapping with whitespace trimming
+          type: "string"
+          # Trim leading/trailing whitespace
+          converter: "trimmingConverter"
+          # Non-empty validation
+          validation: "non_empty_string"
+          required: true
+        
+        # Expiration date mapping with date conversion
+        expirationDate:
+          # LocalDate mapping from string
+          type: "localDate"
+          # Date format converter
+          converter: "dateConverter"
+          # Date format pattern
+          pattern: "yyyy-MM-dd"
+          # Future date validation
+          validation: "future_date"
+          required: true
+        
+        # Active status mapping with boolean conversion
+        activeStatus:
+          # String mapping maintaining Y/N format for entity compatibility
+          type: "string"
+          # Y/N to string converter (entity expects String, not boolean)
+          converter: "ynStatusConverter"
+          # Valid status validation
+          validation: "valid_status_yn"
+          required: true
+    
+    # Error handling configuration for robust processing
+    errorHandling:
+      # Skip policy for handling invalid records
+      skipPolicy:
+        # Skip invalid records but log errors
+        skipLimit: 5
+        # Skippable exceptions for data quality issues
+        skippableExceptions:
+          - "org.springframework.batch.item.file.FlatFileParseException"
+          - "java.time.format.DateTimeParseException"
+          - "java.lang.NumberFormatException"
+        # Fatal exceptions that should stop processing
+        fatalExceptions:
+          - "java.io.IOException"
+          - "java.sql.SQLException"
+      
+      # Logging configuration for error tracking
+      errorLogging:
+        # Log all skipped records for audit trail
+        logSkippedRecords: true
+        # Log level for error tracking
+        logLevel: "WARN"
+        # Error log file location
+        errorLogFile: "logs/card-data-errors.log"
+    
+    # Validation configuration for business rule enforcement
+    validation:
+      # Luhn algorithm validation for card numbers
+      luhnAlgorithmValidator:
+        # Enable Luhn validation for all card numbers
+        enabled: true
+        # Validation implementation reference
+        implementation: "com.carddemo.common.validation.LuhnValidator"
+        # Error message for invalid card numbers
+        errorMessage: "Card number fails Luhn algorithm validation"
+      
+      # CVV code validation for security compliance
+      cvvCodeValidator:
+        # 3-digit numeric validation
+        pattern: "^[0-9]{3}$"
+        # Error message for invalid CVV codes
+        errorMessage: "CVV code must be exactly 3 digits"
+      
+      # Expiration date validation for lifecycle management
+      expirationDateValidator:
+        # Must be future date
+        futureDate: true
+        # Must be within reasonable range (10 years)
+        maxYearsFromNow: 10
+        # Error message for invalid expiration dates
+        errorMessage: "Expiration date must be a future date within 10 years"
+      
+      # Foreign key validation for referential integrity
+      foreignKeyValidator:
+        # Account ID validation
+        accountIdExists: true
+        # Customer ID validation
+        customerIdExists: true
+        # Account-customer relationship validation
+        accountCustomerRelationshipValid: true
+        # Error message for foreign key violations
+        errorMessage: "Invalid foreign key relationship detected"
+    
+    # Performance optimization configuration
+    performance:
+      # Chunk size for batch processing
+      chunkSize: 10
+      # Thread safety configuration
+      threadSafe: true
+      # Connection pool settings for database operations
+      connectionPool:
+        # Initial pool size
+        initialSize: 5
+        # Maximum pool size
+        maxSize: 20
+        # Connection timeout
+        timeout: 30000
+      
+      # Caching configuration for foreign key lookups
+      caching:
+        # Enable caching for account lookups
+        accountCache: true
+        # Enable caching for customer lookups
+        customerCache: true
+        # Cache TTL in seconds
+        cacheTtl: 300
+    
+    # PCI compliance configuration
+    pciCompliance:
+      # CVV code handling
+      cvvCodeHandling:
+        # Generate secure CVV codes
+        generateSecureCvv: true
+        # Use secure random generator
+        secureRandomGenerator: true
+        # CVV code encryption at rest
+        encryptAtRest: true
+        # CVV code encryption in transit
+        encryptInTransit: true
+      
+      # Card number handling
+      cardNumberHandling:
+        # Luhn validation required
+        luhnValidationRequired: true
+        # Mask card numbers in logs
+        maskInLogs: true
+        # Audit trail for card access
+        auditTrail: true
+      
+      # Security audit configuration
+      securityAudit:
+        # Enable security auditing
+        enabled: true
+        # Audit log file location
+        auditLogFile: "logs/card-security-audit.log"
+        # Log sensitive operations
+        logSensitiveOperations: true
+    
+    # Data quality configuration
+    dataQuality:
+      # Record count validation
+      recordCountValidation:
+        # Expected record count from carddata.txt
+        expectedCount: 50
+        # Allow tolerance for record count
+        tolerance: 0
+        # Error on count mismatch
+        errorOnMismatch: true
+      
+      # Duplicate detection
+      duplicateDetection:
+        # Check for duplicate card numbers
+        checkDuplicateCardNumbers: true
+        # Error on duplicate detection
+        errorOnDuplicate: true
+        # Log duplicate records
+        logDuplicates: true
+      
+      # Data consistency validation
+      dataConsistency:
+        # Validate account-customer relationships
+        validateAccountCustomerRelationship: true
+        # Validate card number uniqueness
+        validateCardNumberUniqueness: true
+        # Validate active status consistency
+        validateActiveStatusConsistency: true
+    
+    # Integration configuration
+    integration:
+      # Database integration settings
+      database:
+        # Schema name for card operations
+        schema: "carddemo"
+        # Table name for card data
+        table: "cards"
+        # Batch insert optimization
+        batchInsert: true
+        # Transaction isolation level
+        isolationLevel: "SERIALIZABLE"
+      
+      # Spring Batch integration settings
+      springBatch:
+        # Job name for card data loading
+        jobName: "cardDataLoadJob"
+        # Step name for card data processing
+        stepName: "cardDataLoadStep"
+        # Restart capability
+        restartable: true
+        # Transaction manager reference
+        transactionManager: "transactionManager"
+      
+      # Monitoring integration
+      monitoring:
+        # Enable metrics collection
+        metricsEnabled: true
+        # Metrics prefix
+        metricsPrefix: "carddemo.batch.card"
+        # Health check endpoint
+        healthCheckEnabled: true
+        # Progress reporting
+        progressReporting: true
+
+# Configuration metadata for Spring Boot auto-configuration
+spring:
+  batch:
+    # Enable batch processing
+    job:
+      enabled: true
+    # Initialize schema automatically
+    initialize-schema: always
+    # Table prefix for batch metadata
+    table-prefix: "BATCH_"
+  
+  # Database configuration for card data operations
+  datasource:
+    # Connection pool configuration
+    hikari:
+      # Connection pool size for batch operations
+      maximum-pool-size: 20
+      # Connection timeout
+      connection-timeout: 30000
+      # Idle timeout
+      idle-timeout: 600000
+      # Maximum lifetime
+      max-lifetime: 1800000
+      # Connection validation query
+      connection-test-query: "SELECT 1"
+    
+    # Transaction configuration
+    transaction:
+      # Default timeout for card operations
+      default-timeout: 300
+      # Rollback on unchecked exceptions
+      rollback-on-commit-failure: true
+  
+  # JPA configuration for entity mapping
+  jpa:
+    # Show SQL for debugging
+    show-sql: false
+    # Hibernate configuration
+    hibernate:
+      # DDL auto mode
+      ddl-auto: validate
+      # Naming strategy
+      naming:
+        # Physical naming strategy
+        physical-strategy: "org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl"
+    
+    # Database dialect
+    database-platform: "org.hibernate.dialect.PostgreSQLDialect"
+    
+    # Properties for optimization
+    properties:
+      hibernate:
+        # Batch size for inserts
+        jdbc.batch_size: 10
+        # Order inserts for efficiency
+        order_inserts: true
+        # Order updates for efficiency
+        order_updates: true
+        # Batch versioned data
+        batch_versioned_data: true
+
+# Logging configuration for card data processing
+logging:
+  level:
+    # Spring Batch logging
+    org.springframework.batch: INFO
+    # Card data processing logging
+    com.carddemo.batch.card: DEBUG
+    # Database logging
+    org.springframework.jdbc: WARN
+    # Hibernate logging
+    org.hibernate: WARN
+  
+  # Log file configuration
+  file:
+    # Log file location
+    name: "logs/card-data-processing.log"
+    # Log rotation
+    max-size: "10MB"
+    # Log retention
+    max-history: 30
+  
+  # Console logging pattern
+  pattern:
+    # Console pattern with card data context
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    # File pattern with detailed context
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Management endpoints for monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        # Expose batch and health endpoints
+        include: "health,batch,metrics"
+  
+  # Health check configuration
+  health:
+    # Database health indicator
+    db:
+      enabled: true
+    # Batch health indicator
+    batch:
+      enabled: true
+  
+  # Metrics configuration
+  metrics:
+    # Enable batch metrics
+    batch:
+      enabled: true
+    # Export to monitoring systems
+    export:
+      # Prometheus metrics
+      prometheus:
+        enabled: true
+        step: 60s
