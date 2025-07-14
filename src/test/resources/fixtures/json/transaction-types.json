@@ -1,0 +1,620 @@
+{
+  "metadata": {
+    "description": "Transaction Type reference data fixture for Redis cache testing and transaction validation",
+    "version": "1.0.0",
+    "sourceFile": "app/data/ASCII/trantype.txt",
+    "lastUpdated": "2024-01-01T00:00:00Z",
+    "testingSupport": [
+      "Redis cache integration testing per Section 6.2.4.2",
+      "Spring Cache abstraction validation with TTL configuration",
+      "Transaction type validation and business logic testing",
+      "TransactionType entity JPA operations testing",
+      "TransactionTypeRepository query method validation"
+    ],
+    "cacheConfiguration": {
+      "cacheName": "transactionTypes",
+      "ttl": "24 hours",
+      "evictionPolicy": "LRU",
+      "refreshCycle": "daily",
+      "keyPattern": "transactionType:{{transactionType}}"
+    }
+  },
+
+  "transactionTypeTestData": {
+    "description": "Core transaction type reference data supporting Redis cache testing and lookup validation",
+    "cacheTestingScenarios": {
+      "cacheHit": "Validates Redis cache retrieval for frequently accessed transaction types",
+      "cacheMiss": "Tests database fallback when cache key expires or is unavailable",
+      "cacheWarmUp": "Supports cache population during application startup",
+      "cacheEviction": "Tests LRU eviction policies and cache invalidation strategies"
+    },
+    "data": [
+      {
+        "transactionType": "01",
+        "typeDescription": "Purchase",
+        "debitCreditIndicator": true,
+        "businessRules": {
+          "accountBalanceImpact": "DEBIT - Reduces account balance",
+          "authorizationRequired": true,
+          "merchantRequired": true,
+          "typicalScenarios": ["POS transactions", "Online purchases", "ATM withdrawals"]
+        },
+        "validationRules": {
+          "codeFormat": "Exactly 2 digits",
+          "descriptionMaxLength": 60,
+          "debitCreditRequired": true
+        },
+        "cacheMetadata": {
+          "accessFrequency": "HIGH",
+          "expectedHitRate": "95%",
+          "cacheKey": "transactionType:01"
+        }
+      },
+      {
+        "transactionType": "02",
+        "typeDescription": "Payment",
+        "debitCreditIndicator": false,
+        "businessRules": {
+          "accountBalanceImpact": "CREDIT - Increases account balance",
+          "authorizationRequired": false,
+          "merchantRequired": false,
+          "typicalScenarios": ["Account payments", "Balance transfers", "Credit adjustments"]
+        },
+        "validationRules": {
+          "codeFormat": "Exactly 2 digits",
+          "descriptionMaxLength": 60,
+          "debitCreditRequired": true
+        },
+        "cacheMetadata": {
+          "accessFrequency": "HIGH",
+          "expectedHitRate": "90%",
+          "cacheKey": "transactionType:02"
+        }
+      },
+      {
+        "transactionType": "03",
+        "typeDescription": "Credit",
+        "debitCreditIndicator": false,
+        "businessRules": {
+          "accountBalanceImpact": "CREDIT - Increases account balance",
+          "authorizationRequired": false,
+          "merchantRequired": false,
+          "typicalScenarios": ["Refund credits", "Promotional credits", "Interest credits"]
+        },
+        "validationRules": {
+          "codeFormat": "Exactly 2 digits",
+          "descriptionMaxLength": 60,
+          "debitCreditRequired": true
+        },
+        "cacheMetadata": {
+          "accessFrequency": "MEDIUM",
+          "expectedHitRate": "85%",
+          "cacheKey": "transactionType:03"
+        }
+      },
+      {
+        "transactionType": "04",
+        "typeDescription": "Authorization",
+        "debitCreditIndicator": true,
+        "businessRules": {
+          "accountBalanceImpact": "DEBIT - Reduces available balance (pending)",
+          "authorizationRequired": true,
+          "merchantRequired": true,
+          "typicalScenarios": ["Pre-authorization holds", "Pending transactions", "Hotel/rental deposits"]
+        },
+        "validationRules": {
+          "codeFormat": "Exactly 2 digits",
+          "descriptionMaxLength": 60,
+          "debitCreditRequired": true
+        },
+        "cacheMetadata": {
+          "accessFrequency": "HIGH",
+          "expectedHitRate": "92%",
+          "cacheKey": "transactionType:04"
+        }
+      },
+      {
+        "transactionType": "05",
+        "typeDescription": "Refund",
+        "debitCreditIndicator": false,
+        "businessRules": {
+          "accountBalanceImpact": "CREDIT - Increases account balance",
+          "authorizationRequired": false,
+          "merchantRequired": true,
+          "typicalScenarios": ["Merchant refunds", "Dispute resolutions", "Return processing"]
+        },
+        "validationRules": {
+          "codeFormat": "Exactly 2 digits",
+          "descriptionMaxLength": 60,
+          "debitCreditRequired": true
+        },
+        "cacheMetadata": {
+          "accessFrequency": "MEDIUM",
+          "expectedHitRate": "80%",
+          "cacheKey": "transactionType:05"
+        }
+      },
+      {
+        "transactionType": "06",
+        "typeDescription": "Reversal",
+        "debitCreditIndicator": false,
+        "businessRules": {
+          "accountBalanceImpact": "CREDIT - Reverses previous debit transaction",
+          "authorizationRequired": false,
+          "merchantRequired": false,
+          "typicalScenarios": ["Transaction reversals", "System corrections", "Authorization releases"]
+        },
+        "validationRules": {
+          "codeFormat": "Exactly 2 digits",
+          "descriptionMaxLength": 60,
+          "debitCreditRequired": true
+        },
+        "cacheMetadata": {
+          "accessFrequency": "LOW",
+          "expectedHitRate": "70%",
+          "cacheKey": "transactionType:06"
+        }
+      },
+      {
+        "transactionType": "07",
+        "typeDescription": "Adjustment",
+        "debitCreditIndicator": true,
+        "businessRules": {
+          "accountBalanceImpact": "DEBIT - Reduces account balance (adjustments)",
+          "authorizationRequired": false,
+          "merchantRequired": false,
+          "typicalScenarios": ["Fee adjustments", "Interest charges", "Administrative corrections"]
+        },
+        "validationRules": {
+          "codeFormat": "Exactly 2 digits",
+          "descriptionMaxLength": 60,
+          "debitCreditRequired": true
+        },
+        "cacheMetadata": {
+          "accessFrequency": "LOW",
+          "expectedHitRate": "65%",
+          "cacheKey": "transactionType:07"
+        }
+      }
+    ]
+  },
+
+  "transactionTypeValidationScenarios": {
+    "description": "Comprehensive validation scenarios for transaction type testing and business logic validation",
+    
+    "purchaseTransactionTypeTesting": {
+      "validScenarios": [
+        {
+          "transactionType": "01",
+          "typeDescription": "Purchase",
+          "debitCreditIndicator": true,
+          "expectedResult": "VALID",
+          "businessLogicValidation": {
+            "balanceCheck": true,
+            "authorizationRequired": true,
+            "merchantValidation": true
+          }
+        }
+      ],
+      "invalidScenarios": [
+        {
+          "transactionType": "1",
+          "typeDescription": "Purchase",
+          "debitCreditIndicator": true,
+          "expectedResult": "INVALID",
+          "validationError": "Transaction type code must be exactly 2 characters"
+        },
+        {
+          "transactionType": "01",
+          "typeDescription": "",
+          "debitCreditIndicator": true,
+          "expectedResult": "INVALID",
+          "validationError": "Transaction type description is required"
+        },
+        {
+          "transactionType": "01",
+          "typeDescription": "Purchase",
+          "debitCreditIndicator": null,
+          "expectedResult": "INVALID",
+          "validationError": "Debit/Credit indicator is required"
+        }
+      ]
+    },
+
+    "paymentTransactionTypeTesting": {
+      "validScenarios": [
+        {
+          "transactionType": "02",
+          "typeDescription": "Payment",
+          "debitCreditIndicator": false,
+          "expectedResult": "VALID",
+          "businessLogicValidation": {
+            "balanceCheck": false,
+            "authorizationRequired": false,
+            "merchantValidation": false
+          }
+        }
+      ],
+      "cacheTestingScenarios": [
+        {
+          "scenario": "Cache hit validation",
+          "transactionType": "02",
+          "expectedCacheKey": "transactionType:02",
+          "expectedTTL": "24 hours",
+          "expectedResult": "CACHE_HIT"
+        },
+        {
+          "scenario": "Cache miss simulation",
+          "transactionType": "02",
+          "cacheState": "EXPIRED",
+          "expectedResult": "DATABASE_FALLBACK"
+        }
+      ]
+    },
+
+    "creditTransactionTypeTesting": {
+      "validScenarios": [
+        {
+          "transactionType": "03",
+          "typeDescription": "Credit",
+          "debitCreditIndicator": false,
+          "expectedResult": "VALID",
+          "businessLogicValidation": {
+            "balanceCheck": false,
+            "authorizationRequired": false,
+            "merchantValidation": false
+          }
+        }
+      ],
+      "redisIntegrationTesting": {
+        "cacheKey": "transactionType:03",
+        "cacheName": "transactionTypes",
+        "ttlSeconds": 86400,
+        "evictionPolicy": "LRU"
+      }
+    },
+
+    "authorizationTransactionTypeTesting": {
+      "validScenarios": [
+        {
+          "transactionType": "04",
+          "typeDescription": "Authorization",
+          "debitCreditIndicator": true,
+          "expectedResult": "VALID",
+          "businessLogicValidation": {
+            "balanceCheck": true,
+            "authorizationRequired": true,
+            "merchantValidation": true,
+            "pendingTransactionHandling": true
+          }
+        }
+      ],
+      "performanceTestingScenarios": {
+        "highVolumeAccess": {
+          "transactionType": "04",
+          "expectedAccessFrequency": "HIGH",
+          "targetResponseTime": "< 5ms",
+          "concurrentRequests": 1000
+        }
+      }
+    },
+
+    "refundTransactionTypeTesting": {
+      "validScenarios": [
+        {
+          "transactionType": "05",
+          "typeDescription": "Refund",
+          "debitCreditIndicator": false,
+          "expectedResult": "VALID",
+          "businessLogicValidation": {
+            "balanceCheck": false,
+            "authorizationRequired": false,
+            "merchantValidation": true,
+            "originalTransactionRequired": true
+          }
+        }
+      ]
+    },
+
+    "reversalTransactionTypeTesting": {
+      "validScenarios": [
+        {
+          "transactionType": "06",
+          "typeDescription": "Reversal",
+          "debitCreditIndicator": false,
+          "expectedResult": "VALID",
+          "businessLogicValidation": {
+            "balanceCheck": false,
+            "authorizationRequired": false,
+            "merchantValidation": false,
+            "originalTransactionRequired": true,
+            "reversalTimeLimit": "24 hours"
+          }
+        }
+      ]
+    },
+
+    "adjustmentTransactionTypeTesting": {
+      "validScenarios": [
+        {
+          "transactionType": "07",
+          "typeDescription": "Adjustment",
+          "debitCreditIndicator": true,
+          "expectedResult": "VALID",
+          "businessLogicValidation": {
+            "balanceCheck": true,
+            "authorizationRequired": false,
+            "merchantValidation": false,
+            "adminApprovalRequired": true
+          }
+        }
+      ]
+    },
+
+    "typeCodeFormatValidation": {
+      "validFormats": [
+        {"code": "01", "expectedResult": "VALID"},
+        {"code": "02", "expectedResult": "VALID"},
+        {"code": "07", "expectedResult": "VALID"},
+        {"code": "99", "expectedResult": "VALID"}
+      ],
+      "invalidFormats": [
+        {"code": "1", "expectedResult": "INVALID", "error": "Must be exactly 2 characters"},
+        {"code": "001", "expectedResult": "INVALID", "error": "Must be exactly 2 characters"},
+        {"code": "A1", "expectedResult": "INVALID", "error": "Must be numeric"},
+        {"code": "", "expectedResult": "INVALID", "error": "Cannot be empty"},
+        {"code": null, "expectedResult": "INVALID", "error": "Cannot be null"}
+      ]
+    },
+
+    "descriptionLengthValidation": {
+      "validDescriptions": [
+        {"description": "Purchase", "expectedResult": "VALID"},
+        {"description": "A", "expectedResult": "VALID"},
+        {"description": "Very Long Transaction Type Description That Is Still Valid", "expectedResult": "VALID"}
+      ],
+      "invalidDescriptions": [
+        {"description": "", "expectedResult": "INVALID", "error": "Cannot be empty"},
+        {"description": null, "expectedResult": "INVALID", "error": "Cannot be null"},
+        {"description": "This is an extremely long transaction type description that exceeds the maximum allowed length of 60 characters and should be rejected", "expectedResult": "INVALID", "error": "Exceeds maximum length of 60 characters"}
+      ]
+    },
+
+    "debitCreditIndicatorValidation": {
+      "validIndicators": [
+        {"indicator": true, "expectedResult": "VALID", "meaning": "Debit transaction"},
+        {"indicator": false, "expectedResult": "VALID", "meaning": "Credit transaction"}
+      ],
+      "invalidIndicators": [
+        {"indicator": null, "expectedResult": "INVALID", "error": "Cannot be null"},
+        {"indicator": "true", "expectedResult": "INVALID", "error": "Must be boolean"},
+        {"indicator": 1, "expectedResult": "INVALID", "error": "Must be boolean"}
+      ]
+    }
+  },
+
+  "repositoryTestingScenarios": {
+    "description": "Test scenarios for TransactionTypeRepository method validation and Redis cache integration",
+    
+    "findByTransactionTypeTests": {
+      "validCases": [
+        {
+          "methodCall": "findByTransactionType('01')",
+          "expectedResult": "Optional<TransactionType> with Purchase data",
+          "cacheExpectation": "CACHE_HIT after first call",
+          "cacheKey": "transactionType:01"
+        },
+        {
+          "methodCall": "findByTransactionType('02')",
+          "expectedResult": "Optional<TransactionType> with Payment data",
+          "cacheExpectation": "CACHE_MISS on first call, CACHE_HIT on subsequent calls",
+          "cacheKey": "transactionType:02"
+        }
+      ],
+      "invalidCases": [
+        {
+          "methodCall": "findByTransactionType('99')",
+          "expectedResult": "Optional.empty()",
+          "cacheExpectation": "CACHE_MISS",
+          "cacheKey": "transactionType:99"
+        },
+        {
+          "methodCall": "findByTransactionType(null)",
+          "expectedResult": "IllegalArgumentException",
+          "cacheExpectation": "NO_CACHE_INTERACTION"
+        }
+      ]
+    },
+
+    "findByDebitCreditIndicatorTests": {
+      "debitTransactionTypes": {
+        "methodCall": "findByDebitCreditIndicator(true)",
+        "expectedResults": [
+          {"transactionType": "01", "typeDescription": "Purchase"},
+          {"transactionType": "04", "typeDescription": "Authorization"},
+          {"transactionType": "07", "typeDescription": "Adjustment"}
+        ],
+        "cacheExpectation": "CACHE_HIT after first call",
+        "cacheKey": "transactionTypesByIndicator:true"
+      },
+      "creditTransactionTypes": {
+        "methodCall": "findByDebitCreditIndicator(false)",
+        "expectedResults": [
+          {"transactionType": "02", "typeDescription": "Payment"},
+          {"transactionType": "03", "typeDescription": "Credit"},
+          {"transactionType": "05", "typeDescription": "Refund"},
+          {"transactionType": "06", "typeDescription": "Reversal"}
+        ],
+        "cacheExpectation": "CACHE_HIT after first call",
+        "cacheKey": "transactionTypesByIndicator:false"
+      }
+    },
+
+    "findAllActiveTests": {
+      "methodCall": "findAllActive()",
+      "expectedResults": [
+        {"transactionType": "01", "typeDescription": "Purchase", "debitCreditIndicator": true},
+        {"transactionType": "02", "typeDescription": "Payment", "debitCreditIndicator": false},
+        {"transactionType": "03", "typeDescription": "Credit", "debitCreditIndicator": false},
+        {"transactionType": "04", "typeDescription": "Authorization", "debitCreditIndicator": true},
+        {"transactionType": "05", "typeDescription": "Refund", "debitCreditIndicator": false},
+        {"transactionType": "06", "typeDescription": "Reversal", "debitCreditIndicator": false},
+        {"transactionType": "07", "typeDescription": "Adjustment", "debitCreditIndicator": true}
+      ],
+      "cacheExpectation": "CACHE_HIT after first call",
+      "cacheKey": "activeTransactionTypes:active",
+      "orderBy": "transactionType ASC"
+    }
+  },
+
+  "springCacheAbstractionTests": {
+    "description": "Test scenarios for Spring Cache abstraction validation with Redis backend",
+    
+    "cacheableAnnotationTests": {
+      "transactionTypeLookup": {
+        "cacheName": "transactionTypes",
+        "keyExpression": "#transactionType",
+        "ttlConfiguration": "24 hours",
+        "testScenarios": [
+          {
+            "scenario": "First call - Cache miss",
+            "transactionType": "01",
+            "expectedCacheState": "MISS",
+            "expectedDatabaseCall": true,
+            "expectedCacheUpdate": true
+          },
+          {
+            "scenario": "Second call - Cache hit",
+            "transactionType": "01",
+            "expectedCacheState": "HIT",
+            "expectedDatabaseCall": false,
+            "expectedCacheUpdate": false
+          }
+        ]
+      }
+    },
+
+    "cacheEvictTests": {
+      "manualEviction": {
+        "cacheName": "transactionTypes",
+        "evictionKey": "transactionType:01",
+        "expectedResult": "Cache entry removed",
+        "nextCallExpectation": "CACHE_MISS"
+      },
+      "ttlExpiration": {
+        "cacheName": "transactionTypes",
+        "ttlDuration": "24 hours",
+        "expectedBehavior": "Automatic eviction after TTL",
+        "testApproach": "Fast-forward time or adjust TTL for testing"
+      }
+    },
+
+    "cachePerformanceTests": {
+      "responseTimeTargets": {
+        "cacheHit": "< 1ms",
+        "cacheMiss": "< 50ms (including database lookup)",
+        "cacheUpdate": "< 5ms"
+      },
+      "throughputTargets": {
+        "cacheHitThroughput": "10,000+ operations/second",
+        "cacheMissThroughput": "1,000 operations/second",
+        "concurrentAccess": "Support for 100+ concurrent threads"
+      }
+    }
+  },
+
+  "businessLogicValidationData": {
+    "description": "Data supporting business logic validation and financial processing rules",
+    
+    "transactionClassificationRules": {
+      "debitTransactions": {
+        "transactionTypes": ["01", "04", "07"],
+        "balanceImpact": "DECREASE",
+        "authorizationRequired": ["01", "04"],
+        "merchantRequired": ["01", "04"],
+        "businessRules": {
+          "01": "Requires sufficient available balance and merchant validation",
+          "04": "Creates pending authorization, reduces available balance",
+          "07": "Administrative adjustment, may bypass normal authorization"
+        }
+      },
+      "creditTransactions": {
+        "transactionTypes": ["02", "03", "05", "06"],
+        "balanceImpact": "INCREASE",
+        "authorizationRequired": [],
+        "merchantRequired": ["05"],
+        "businessRules": {
+          "02": "Account payment, immediate balance credit",
+          "03": "Promotional or interest credit, immediate balance credit",
+          "05": "Merchant-initiated refund, requires original transaction reference",
+          "06": "System reversal, requires original transaction reference"
+        }
+      }
+    },
+
+    "financialProcessingRules": {
+      "decimalPrecision": {
+        "storageFormat": "DECIMAL(12,2)",
+        "javaMapping": "BigDecimal",
+        "roundingMode": "HALF_EVEN",
+        "mathContext": "DECIMAL128"
+      },
+      "transactionValidation": {
+        "amountValidation": "Must be positive for all transaction types",
+        "balanceValidation": "Required for debit transactions (01, 04, 07)",
+        "merchantValidation": "Required for transaction types 01, 04, 05",
+        "authorizationValidation": "Required for transaction types 01, 04"
+      }
+    }
+  },
+
+  "redisIntegrationTestSupport": {
+    "description": "Supporting data for Redis cache integration testing per Section 6.2.4.2",
+    
+    "cacheConfiguration": {
+      "cacheName": "transactionTypes",
+      "keyPrefix": "transactionType:",
+      "ttlSeconds": 86400,
+      "evictionPolicy": "LRU",
+      "maxMemoryPercentage": "10%",
+      "serializationFormat": "JSON"
+    },
+
+    "cacheWarmupData": {
+      "description": "Data for cache warm-up during application startup",
+      "transactionTypes": [
+        {"transactionType": "01", "typeDescription": "Purchase", "debitCreditIndicator": true},
+        {"transactionType": "02", "typeDescription": "Payment", "debitCreditIndicator": false},
+        {"transactionType": "03", "typeDescription": "Credit", "debitCreditIndicator": false},
+        {"transactionType": "04", "typeDescription": "Authorization", "debitCreditIndicator": true},
+        {"transactionType": "05", "typeDescription": "Refund", "debitCreditIndicator": false},
+        {"transactionType": "06", "typeDescription": "Reversal", "debitCreditIndicator": false},
+        {"transactionType": "07", "typeDescription": "Adjustment", "debitCreditIndicator": true}
+      ]
+    },
+
+    "cacheLoadTestingData": {
+      "description": "Data for cache performance and load testing",
+      "testScenarios": [
+        {
+          "scenario": "High-frequency access pattern",
+          "transactionTypes": ["01", "02", "04"],
+          "accessFrequency": "HIGH",
+          "expectedHitRate": "95%"
+        },
+        {
+          "scenario": "Medium-frequency access pattern",
+          "transactionTypes": ["03", "05"],
+          "accessFrequency": "MEDIUM",
+          "expectedHitRate": "85%"
+        },
+        {
+          "scenario": "Low-frequency access pattern",
+          "transactionTypes": ["06", "07"],
+          "accessFrequency": "LOW",
+          "expectedHitRate": "70%"
+        }
+      ]
+    }
+  }
+}
