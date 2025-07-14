@@ -61,13 +61,13 @@ import java.lang.annotation.*;
  *   <li>EDIT-DATE-LE - Final date validation using equivalent logic</li>
  * </ul>
  * 
- * @see ValidCCYYMMDDValidator
+ * @see CCYYMMDDValidator
  * @author Blitzy Platform
  * @version 1.0
  * @since 2024-01-01
  */
 @Documented
-@Constraint(validatedBy = ValidCCYYMMDDValidator.class)
+@Constraint(validatedBy = CCYYMMDDValidator.class)
 @Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.TYPE_USE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ValidCCYYMMDD {
@@ -177,7 +177,7 @@ public @interface ValidCCYYMMDD {
      * 
      * @return true if leap year validation is enabled, false otherwise
      */
-    boolean validateLeapYear() default true;
+    boolean checkLeapYear() default true;
     
     /**
      * Flag to enable month/day combination validation.
@@ -186,7 +186,7 @@ public @interface ValidCCYYMMDD {
      * 
      * @return true if month/day validation is enabled, false otherwise
      */
-    boolean validateMonthDay() default true;
+    boolean checkMonthDay() default true;
     
     /**
      * Defines several {@link ValidCCYYMMDD} annotations on the same element.
