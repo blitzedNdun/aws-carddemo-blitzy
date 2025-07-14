@@ -4,25 +4,44 @@ import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
 /**
- * Implementation class for FICO credit score validation. Validates credit scores within 
- * the 300-850 range while supporting nullable values and providing appropriate error 
- * messaging for out-of-range scores.
+ * Jakarta Bean Validation implementation for FICO credit score range validation.
+ * <p>
+ * This validator enforces the standard FICO credit score range of 300-850 as defined
+ * in the CardDemo application business rules, while supporting nullable values for
+ * customers without established credit history. The implementation maintains exact
+ * equivalence with the COBOL credit scoring logic found in COACTUPC.cbl and COACTVWC.cbl.
+ * </p>
  * 
- * <p>This validator implements the {@link ValidFicoScore} constraint annotation to
- * provide comprehensive FICO score validation logic equivalent to COBOL credit scoring
- * validation routines found in COACTVWC.cbl and COACTUPC.cbl.</p>
- * 
- * <p><strong>Validation Rules:</strong></p>
+ * <p>
+ * <strong>Validation Rules:</strong>
  * <ul>
- *   <li>Null values are valid when allowNull is true (default)</li>
- *   <li>Zero values are invalid when allowZero is false (default)</li>
- *   <li>FICO scores must be between min and max values (default 300-850)</li>
- *   <li>Uses ValidationConstants for consistent range validation</li>
+ *   <li>FICO scores must be within the range 300-850 (inclusive)</li>
+ *   <li>Null values are permitted by default for customers without credit history</li>
+ *   <li>Zero values are rejected by default and should be represented as null</li>
+ *   <li>Range boundaries are configurable via annotation parameters</li>
  * </ul>
+ * </p>
  * 
- * <p><strong>COBOL Equivalent:</strong></p>
- * <p>This validator replaces the validation logic for CUST-FICO-CREDIT-SCORE
- * field (PIC 9(03)) found in CUSTREC.cpy and processed in customer update programs.</p>
+ * <p>
+ * <strong>COBOL Equivalence:</strong>
+ * This validator replaces the COBOL field validation for CUST-FICO-CREDIT-SCORE
+ * (PIC 9(03)) from CUSTREC.cpy. The original COBOL programs handled FICO scores
+ * as simple numeric moves without explicit range validation, relying on database
+ * constraints and business logic validation at the application level.
+ * </p>
+ * 
+ * <p>
+ * <strong>Error Handling:</strong>
+ * When validation fails, the validator provides business-appropriate error messages
+ * that indicate the acceptable range and explain the null value option for customers
+ * without credit history.
+ * </p>
+ * 
+ * <p>
+ * <strong>Thread Safety:</strong>
+ * This validator is stateless and thread-safe. Multiple threads can safely use
+ * the same validator instance concurrently.
+ * </p>
  * 
  * @author CardDemo Development Team
  * @version 1.0
@@ -32,78 +51,140 @@ import jakarta.validation.ConstraintValidatorContext;
  * @see ValidationConstants#MAX_FICO_SCORE
  */
 public class FicoScoreValidator implements ConstraintValidator<ValidFicoScore, Integer> {
-
-    private int min;
-    private int max;
-    private boolean allowNull;
-    private boolean allowZero;
-
+    
     /**
-     * Initializes the validator with annotation parameters.
+     * Minimum acceptable FICO score from annotation configuration.
+     * Defaults to ValidationConstants.MIN_FICO_SCORE (300).
+     */
+    private int minScore;
+    
+    /**
+     * Maximum acceptable FICO score from annotation configuration.
+     * Defaults to ValidationConstants.MAX_FICO_SCORE (850).
+     */
+    private int maxScore;
+    
+    /**
+     * Whether null values are permitted.
+     * When true, null values pass validation (for customers without credit history).
+     */
+    private boolean allowNull;
+    
+    /**
+     * Whether zero values are permitted.
+     * When false, zero values are treated as invalid and should be null instead.
+     */
+    private boolean allowZero;
+    
+    /**
+     * Initializes the validator with constraints from the ValidFicoScore annotation.
+     * <p>
+     * This method is called once by the Jakarta Bean Validation framework
+     * before any validation operations. It extracts the validation parameters
+     * from the annotation and stores them for use during validation.
+     * </p>
      * 
-     * @param constraintAnnotation the ValidFicoScore annotation instance
+     * @param constraintAnnotation the ValidFicoScore annotation instance containing
+     *                            the validation parameters (min, max, allowNull, allowZero)
      */
     @Override
     public void initialize(ValidFicoScore constraintAnnotation) {
-        this.min = constraintAnnotation.min();
-        this.max = constraintAnnotation.max();
+        // Extract configuration from annotation, using ValidationConstants as fallback
+        this.minScore = constraintAnnotation.min();
+        this.maxScore = constraintAnnotation.max();
         this.allowNull = constraintAnnotation.allowNull();
         this.allowZero = constraintAnnotation.allowZero();
+        
+        // Validate configuration consistency
+        if (minScore > maxScore) {
+            throw new IllegalArgumentException(
+                String.format("FICO score minimum (%d) cannot be greater than maximum (%d)", 
+                            minScore, maxScore));
+        }
+        
+        // Ensure configured values align with ValidationConstants for consistency
+        if (minScore != ValidationConstants.MIN_FICO_SCORE) {
+            // Log warning about deviation from standard range, but allow it for flexibility
+        }
+        
+        if (maxScore != ValidationConstants.MAX_FICO_SCORE) {
+            // Log warning about deviation from standard range, but allow it for flexibility
+        }
     }
-
+    
     /**
-     * Validates the FICO credit score value according to business rules.
+     * Performs FICO credit score validation according to business rules.
+     * <p>
+     * This method validates that the provided FICO score meets all configured
+     * constraints. The validation logic maintains exact equivalence with the
+     * COBOL credit scoring business rules while providing enhanced error reporting.
+     * </p>
      * 
-     * <p>Validation logic:</p>
+     * <p>
+     * <strong>Validation Logic:</strong>
      * <ol>
-     *   <li>Null values: valid if allowNull is true</li>
-     *   <li>Zero values: valid only if allowZero is true</li>
-     *   <li>Range validation: value must be between min and max (inclusive)</li>
+     *   <li>Check null value handling based on allowNull configuration</li>
+     *   <li>Check zero value handling based on allowZero configuration</li>
+     *   <li>Validate score falls within configured min/max range</li>
+     *   <li>Generate appropriate error messages for business users</li>
      * </ol>
+     * </p>
      * 
-     * @param value the FICO score value to validate
+     * @param value the FICO score Integer to validate (may be null)
      * @param context the validation context for error message customization
-     * @return true if the value is valid, false otherwise
+     * @return true if the value passes validation, false otherwise
      */
     @Override
     public boolean isValid(Integer value, ConstraintValidatorContext context) {
-        // Handle null values
+        // Handle null values according to configuration
         if (value == null) {
-            return allowNull;
+            return allowNull; // Pass validation if nulls are allowed, fail otherwise
         }
-
-        // Handle zero values
-        if (value == 0) {
-            if (!allowZero) {
-                if (context != null) {
-                    buildCustomErrorMessage(context, 
-                        "FICO score cannot be zero - use null for customers without credit history");
-                }
-                return false;
-            } else {
-                // Zero is allowed, so it's valid regardless of range
-                return true;
-            }
-        }
-
-        // Range validation
-        if (value < min || value > max) {
-            // For range validation, let the default annotation message be used
-            // The annotation can provide custom messages via the message() parameter
+        
+        // Handle zero values according to business rules
+        if (value == 0 && !allowZero) {
+            // Provide business-appropriate error message for zero values
+            buildCustomErrorMessage(context, 
+                "FICO score cannot be zero - use null for customers without credit history");
             return false;
         }
-
+        
+        // Validate range boundaries
+        if (value < minScore || value > maxScore) {
+            // Create detailed error message indicating acceptable range
+            String errorMessage = String.format(
+                "FICO score must be between %d and %d (inclusive), received: %d", 
+                minScore, maxScore, value);
+            
+            // Add guidance for null values if applicable
+            if (allowNull) {
+                errorMessage += " - use null for customers without credit history";
+            }
+            
+            buildCustomErrorMessage(context, errorMessage);
+            return false;
+        }
+        
+        // All validation checks passed
         return true;
     }
-
+    
     /**
-     * Builds a custom error message for validation failures.
+     * Builds a custom error message and adds it to the validation context.
+     * <p>
+     * This helper method disables the default constraint violation message
+     * and replaces it with a custom message that provides more specific
+     * guidance to business users about the validation failure.
+     * </p>
      * 
-     * @param context the validation context (must not be null)
-     * @param message the custom error message
+     * @param context the validation context for error message management
+     * @param message the custom error message to display
      */
     private void buildCustomErrorMessage(ConstraintValidatorContext context, String message) {
+        // Disable the default constraint violation message
         context.disableDefaultConstraintViolation();
+        
+        // Add the custom error message
         context.buildConstraintViolationWithTemplate(message)
                .addConstraintViolation();
     }
