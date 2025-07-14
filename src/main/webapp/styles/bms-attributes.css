@@ -19,8 +19,15 @@
  * @author Blitzy Platform
  */
 
-/* Import theme variables for consistent color palette and spacing */
-@import url('./theme.js');
+/* 
+ * Color palette based on BMS terminal mappings from theme.js:
+ * - DFHGREEN → #00ff00 (success.main) - normal data display, input fields
+ * - DFHRED → #ff0000 (error.main) - error messages, validation failures  
+ * - DFHYELLOW → #ffff00 (warning.main) - highlighted fields, initial cursor
+ * - DFHBLUE → #00ffff (info.main) - numeric fields, focus indicators
+ * 
+ * All colors are defined inline for maximum compatibility
+ */
 
 /* ============================================================================
  * ASKIP (Auto-Skip Protected) Field Attribute Implementation
