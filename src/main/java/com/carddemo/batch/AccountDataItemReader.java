@@ -198,7 +198,12 @@ public class AccountDataItemReader extends FlatFileItemReader<Account> {
         fieldSetMapper.setStrict(false);
         
         // Register custom property editors for data type conversion
-        fieldSetMapper.afterPropertiesSet();
+        try {
+            fieldSetMapper.afterPropertiesSet();
+        } catch (Exception e) {
+            logger.error("Failed to initialize field set mapper", e);
+            throw new RuntimeException("Field set mapper initialization failed", e);
+        }
         
         return fieldSetMapper;
     }
