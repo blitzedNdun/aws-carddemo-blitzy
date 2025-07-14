@@ -102,7 +102,7 @@ import java.math.BigDecimal;
  */
 @Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Constraint(validatedBy = ValidCurrencyValidator.class)
+@Constraint(validatedBy = CurrencyValidator.class)
 @Documented
 @ReportAsSingleViolation
 public @interface ValidCurrency {
@@ -231,7 +231,7 @@ public @interface ValidCurrency {
      * 
      * @return the validation context identifier
      */
-    String validationContext() default "DEFAULT";
+    String context() default "DEFAULT";
     
     /**
      * List of acceptable currencies for multi-currency validation.
