@@ -454,9 +454,8 @@ public class CardConfig extends BaseConfig {
         transactionManager.setFailEarlyOnGlobalRollbackOnly(true);
         
         // SERIALIZABLE isolation for VSAM behavior replication
-        transactionManager.setDefaultIsolationLevel(
-            org.springframework.transaction.TransactionDefinition.ISOLATION_SERIALIZABLE
-        );
+        // Note: Isolation level is set via @Transactional annotation on individual methods
+        // as JpaTransactionManager doesn't support setDefaultIsolationLevel in Spring 6.x
         
         // Support for nested transactions in complex card operations
         transactionManager.setNestedTransactionAllowed(true);
@@ -511,8 +510,18 @@ public class CardConfig extends BaseConfig {
      */
     
     private org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
-        // Inherit CORS configuration from SecurityConfig
-        return super.corsConfigurationSource();
+        // Configure CORS for React frontend integration
+        org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
+        configuration.setAllowedOriginPatterns(java.util.List.of("http://localhost:3000", "https://*.carddemo.com"));
+        configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(java.util.List.of("*"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+        
+        org.springframework.web.cors.UrlBasedCorsConfigurationSource source = 
+            new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/card/**", configuration);
+        return source;
     }
     
     private org.springframework.security.oauth2.jwt.JwtDecoder jwtDecoder() {
@@ -557,7 +566,7 @@ public class CardConfig extends BaseConfig {
     
     private org.springframework.security.web.AuthenticationEntryPoint cardAuthenticationEntryPoint() {
         return (request, response, authException) -> {
-            response.setStatus(javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED);
+            response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
             response.getWriter().write("{\"error\":\"Unauthorized access to card operations\"}");
         };
@@ -565,7 +574,7 @@ public class CardConfig extends BaseConfig {
     
     private org.springframework.security.web.access.AccessDeniedHandler cardAccessDeniedHandler() {
         return (request, response, accessDeniedException) -> {
-            response.setStatus(javax.servlet.http.HttpServletResponse.SC_FORBIDDEN);
+            response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("application/json");
             response.getWriter().write("{\"error\":\"Access denied to card operations\"}");
         };
