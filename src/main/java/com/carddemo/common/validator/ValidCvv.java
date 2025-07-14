@@ -90,7 +90,7 @@ import java.lang.annotation.Target;
  * @see ValidCvvValidator
  */
 @Documented
-@Constraint(validatedBy = ValidCvvValidator.class)
+@Constraint(validatedBy = CvvValidator.class)
 @Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ValidCvv {
