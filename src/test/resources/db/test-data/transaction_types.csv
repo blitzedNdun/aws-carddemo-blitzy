@@ -1,0 +1,8 @@
+transaction_type,type_description,debit_credit_indicator
+01,Purchase,true
+02,Payment,false
+03,Credit,false
+04,Authorization,true
+05,Refund,false
+06,Reversal,false
+07,Adjustment,true
