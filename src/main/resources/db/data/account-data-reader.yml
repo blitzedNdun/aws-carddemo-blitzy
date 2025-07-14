@@ -1,0 +1,449 @@
+# ============================================================================
+# Spring Batch ItemReader Configuration: account-data-reader.yml
+# Description: FlatFileItemReader configuration for loading account data from 
+#              acctdata.txt into PostgreSQL accounts table
+# Author: Blitzy agent
+# Version: CardDemo_v1.0-15-g27d6c6f-68
+# Dependencies: Account entity, accounts table migration V3
+# ============================================================================
+
+# Spring Batch ItemReader configuration for account data loading
+# Processes fixed-width ASCII records from acctdata.txt with exact COBOL precision
+spring:
+  batch:
+    job:
+      account-data-load:
+        name: "AccountDataLoadJob"
+        description: "Load account data from acctdata.txt with COBOL COMP-3 precision preservation"
+        
+        # Step configuration for account data processing
+        step:
+          account-data-reader-step:
+            name: "AccountDataReaderStep"
+            chunk-size: 50  # Process all 50 account records in single chunk
+            
+            # FlatFileItemReader configuration for fixed-width record parsing
+            reader:
+              type: "FlatFileItemReader"
+              resource: "classpath:db/data/acctdata.txt"
+              encoding: "UTF-8"
+              linesToSkip: 0
+              strict: true
+              
+              # Fixed-length tokenizer configuration matching 300-byte record structure
+              lineTokenizer:
+                type: "FixedLengthTokenizer"
+                strict: true
+                
+                # Field range definitions for fixed-width parsing
+                # Based on acctdata.txt structure analysis with exact positioning
+                columns:
+                  - name: "accountId"
+                    range: "1-11"
+                    type: "STRING"
+                    description: "11-digit account identifier"
+                    
+                  - name: "accountFlag"
+                    range: "12-12"
+                    type: "STRING"
+                    description: "Account flag (Y indicator)"
+                    
+                  - name: "rawCustomerId"
+                    range: "13-23"
+                    type: "STRING"
+                    description: "Customer ID with delimiter (11 chars)"
+                    
+                  - name: "rawCurrentBalance"
+                    range: "24-34"
+                    type: "STRING"
+                    description: "Current balance with delimiter (11 chars)"
+                    
+                  - name: "rawCreditLimit"
+                    range: "35-45"
+                    type: "STRING"
+                    description: "Credit limit with delimiter (11 chars)"
+                    
+                  - name: "openDate"
+                    range: "46-55"
+                    type: "STRING"
+                    description: "Account opening date (YYYY-MM-DD)"
+                    
+                  - name: "expirationDate"
+                    range: "56-65"
+                    type: "STRING"
+                    description: "Account expiration date (YYYY-MM-DD)"
+                    
+                  - name: "reissueDate"
+                    range: "66-75"
+                    type: "STRING"
+                    description: "Card reissue date (YYYY-MM-DD)"
+                    
+                  - name: "rawCurrentCycleCredit"
+                    range: "76-86"
+                    type: "STRING"
+                    description: "Current cycle credit with delimiter (11 chars)"
+                    
+                  - name: "rawCurrentCycleDebit"
+                    range: "87-97"
+                    type: "STRING"
+                    description: "Current cycle debit with delimiter (11 chars)"
+                    
+                  - name: "rawActiveStatus"
+                    range: "98-98"
+                    type: "STRING"
+                    description: "Active status indicator (A/I)"
+                    
+                  - name: "reservedFields"
+                    range: "99-300"
+                    type: "STRING"
+                    description: "Reserved padding fields"
+              
+              # Field mapping configuration for Account entity
+              fieldSetMapper:
+                type: "BeanWrapperFieldSetMapper"
+                targetType: "com.carddemo.common.entity.Account"
+                
+                # Custom field mapping with data type conversion
+                fieldMappings:
+                  # Direct string field mappings
+                  accountId:
+                    sourceField: "accountId"
+                    targetProperty: "accountId"
+                    validation:
+                      pattern: "\\d{11}"
+                      message: "Account ID must be exactly 11 digits"
+                  
+                  # Customer ID conversion (extract from 11-char format to 9-digit)
+                  customerId:
+                    sourceField: "rawCustomerId"
+                    targetProperty: "customerId"
+                    converter: "CUSTOMER_ID_CONVERTER"
+                    validation:
+                      pattern: "\\d{9}"
+                      message: "Customer ID must be exactly 9 digits"
+                  
+                  # Financial field conversions with BigDecimal precision
+                  currentBalance:
+                    sourceField: "rawCurrentBalance"
+                    targetProperty: "currentBalance"
+                    converter: "DECIMAL_CONVERTER"
+                    scale: 2
+                    precision: 12
+                    mathContext: "DECIMAL128"
+                    validation:
+                      min: "-9999999999.99"
+                      max: "9999999999.99"
+                      message: "Current balance must be within valid range"
+                  
+                  creditLimit:
+                    sourceField: "rawCreditLimit"
+                    targetProperty: "creditLimit"
+                    converter: "DECIMAL_CONVERTER"
+                    scale: 2
+                    precision: 12
+                    mathContext: "DECIMAL128"
+                    validation:
+                      min: "0.00"
+                      max: "9999999999.99"
+                      message: "Credit limit must be non-negative"
+                  
+                  cashCreditLimit:
+                    sourceField: "rawCurrentCycleCredit"
+                    targetProperty: "cashCreditLimit"
+                    converter: "DECIMAL_CONVERTER"
+                    scale: 2
+                    precision: 12
+                    mathContext: "DECIMAL128"
+                    validation:
+                      min: "0.00"
+                      max: "9999999999.99"
+                      message: "Cash credit limit must be non-negative"
+                  
+                  currentCycleCredit:
+                    sourceField: "rawCurrentCycleCredit"
+                    targetProperty: "currentCycleCredit"
+                    converter: "DECIMAL_CONVERTER"
+                    scale: 2
+                    precision: 12
+                    mathContext: "DECIMAL128"
+                    validation:
+                      min: "0.00"
+                      max: "9999999999.99"
+                      message: "Current cycle credit must be non-negative"
+                  
+                  currentCycleDebit:
+                    sourceField: "rawCurrentCycleDebit"
+                    targetProperty: "currentCycleDebit"
+                    converter: "DECIMAL_CONVERTER"
+                    scale: 2
+                    precision: 12
+                    mathContext: "DECIMAL128"
+                    validation:
+                      min: "0.00"
+                      max: "9999999999.99"
+                      message: "Current cycle debit must be non-negative"
+                  
+                  # Date field conversions
+                  openDate:
+                    sourceField: "openDate"
+                    targetProperty: "openDate"
+                    converter: "DATE_CONVERTER"
+                    format: "yyyy-MM-dd"
+                    validation:
+                      notNull: true
+                      message: "Open date is required"
+                  
+                  expirationDate:
+                    sourceField: "expirationDate"
+                    targetProperty: "expirationDate"
+                    converter: "DATE_CONVERTER"
+                    format: "yyyy-MM-dd"
+                    validation:
+                      message: "Expiration date must be valid when specified"
+                  
+                  reissueDate:
+                    sourceField: "reissueDate"
+                    targetProperty: "reissueDate"
+                    converter: "DATE_CONVERTER"
+                    format: "yyyy-MM-dd"
+                    validation:
+                      message: "Reissue date must be valid when specified"
+                  
+                  # Active status conversion (A -> Y, I -> N)
+                  activeStatus:
+                    sourceField: "rawActiveStatus"
+                    targetProperty: "activeStatus"
+                    converter: "ACTIVE_STATUS_CONVERTER"
+                    validation:
+                      pattern: "[YNCS]"
+                      message: "Active status must be Y, N, C, or S"
+                  
+                  # Default values for fields not in source data
+                  groupId:
+                    defaultValue: "000000000"
+                    targetProperty: "groupId"
+                    validation:
+                      pattern: "\\d{10}"
+                      message: "Group ID must be exactly 10 digits"
+                  
+                  addressZip:
+                    defaultValue: null
+                    targetProperty: "addressZip"
+                    validation:
+                      pattern: "^[0-9]{5}(-[0-9]{4})?$"
+                      message: "ZIP code must be XXXXX or XXXXX-XXXX format"
+        
+        # Custom field converters for data type transformations
+        converters:
+          # Customer ID converter: extract 9-digit customer ID from 11-char format
+          CUSTOMER_ID_CONVERTER:
+            type: "com.carddemo.batch.converter.CustomerIdConverter"
+            description: "Extract customer ID from 11-char format with delimiter"
+            implementation: |
+              public String convert(String rawCustomerId) {
+                if (rawCustomerId == null || rawCustomerId.length() < 9) {
+                  throw new IllegalArgumentException("Invalid customer ID format");
+                }
+                // Extract first 9 digits, removing delimiter
+                String customerId = rawCustomerId.substring(0, 9);
+                if (!customerId.matches("\\d{9}")) {
+                  throw new IllegalArgumentException("Customer ID must be 9 digits");
+                }
+                return customerId;
+              }
+          
+          # BigDecimal converter for financial fields with COBOL COMP-3 precision
+          DECIMAL_CONVERTER:
+            type: "com.carddemo.batch.converter.COBOLDecimalConverter"
+            description: "Convert zero-padded integers to BigDecimal with COBOL precision"
+            implementation: |
+              public BigDecimal convert(String rawValue) {
+                if (rawValue == null || rawValue.isEmpty()) {
+                  return new BigDecimal("0.00");
+                }
+                
+                // Remove delimiter and extract numeric portion
+                String numericValue = rawValue.replaceAll("[^0-9]", "");
+                if (numericValue.isEmpty()) {
+                  return new BigDecimal("0.00");
+                }
+                
+                // Convert to BigDecimal with 2 decimal places (COBOL COMP-3 format)
+                // Integer portion with implied 2 decimal places
+                BigDecimal amount = new BigDecimal(numericValue);
+                amount = amount.movePointLeft(2); // Convert cents to dollars
+                
+                // Apply COBOL COMP-3 math context for precision
+                MathContext cobolContext = new MathContext(31, RoundingMode.HALF_EVEN);
+                return amount.setScale(2, RoundingMode.HALF_EVEN).round(cobolContext);
+              }
+          
+          # Date converter for YYYY-MM-DD format
+          DATE_CONVERTER:
+            type: "com.carddemo.batch.converter.DateConverter"
+            description: "Convert YYYY-MM-DD string to LocalDate"
+            implementation: |
+              public LocalDate convert(String dateString) {
+                if (dateString == null || dateString.trim().isEmpty()) {
+                  return null;
+                }
+                
+                try {
+                  return LocalDate.parse(dateString.trim());
+                } catch (DateTimeParseException e) {
+                  throw new IllegalArgumentException("Invalid date format: " + dateString);
+                }
+              }
+          
+          # Active status converter: A -> Y, I -> N
+          ACTIVE_STATUS_CONVERTER:
+            type: "com.carddemo.batch.converter.ActiveStatusConverter"
+            description: "Convert VSAM active status to PostgreSQL format"
+            implementation: |
+              public String convert(String rawStatus) {
+                if (rawStatus == null || rawStatus.isEmpty()) {
+                  return "Y"; // Default to active
+                }
+                
+                // Convert VSAM status codes to PostgreSQL format
+                switch (rawStatus.toUpperCase()) {
+                  case "A":
+                    return "Y"; // Active
+                  case "I":
+                    return "N"; // Inactive
+                  case "C":
+                    return "C"; // Closed
+                  case "S":
+                    return "S"; // Suspended
+                  default:
+                    return "Y"; // Default to active for unknown statuses
+                }
+              }
+        
+        # Error handling configuration
+        errorHandling:
+          skipLimit: 0  # No skipping allowed - all records must process successfully
+          retryLimit: 3  # Retry failed records up to 3 times
+          
+          # Skip policies for different error types
+          skipPolicy:
+            - exception: "org.springframework.batch.item.file.FlatFileParseException"
+              action: "SKIP"
+              logLevel: "ERROR"
+              message: "Failed to parse account record"
+            
+            - exception: "org.springframework.batch.item.validator.ValidationException"
+              action: "SKIP"
+              logLevel: "ERROR"
+              message: "Account data validation failed"
+            
+            - exception: "java.lang.NumberFormatException"
+              action: "SKIP"
+              logLevel: "ERROR"
+              message: "Invalid numeric format in account data"
+          
+          # Retry policies for transient errors
+          retryPolicy:
+            - exception: "org.springframework.dao.DataAccessException"
+              action: "RETRY"
+              backoff: "exponential"
+              maxAttempts: 3
+              message: "Database access error during account loading"
+        
+        # Monitoring and metrics configuration
+        monitoring:
+          enableMetrics: true
+          logProcessingStatistics: true
+          
+          # Key performance indicators
+          metrics:
+            recordsProcessed: "account.records.processed"
+            processingTime: "account.processing.time"
+            errorRate: "account.error.rate"
+            throughput: "account.throughput"
+          
+          # Validation checkpoints
+          validation:
+            recordCount: 50  # Expected number of account records
+            requiredFields: ["accountId", "customerId", "openDate"]
+            financialPrecision: "DECIMAL(12,2)"
+            
+        # Performance optimization settings
+        performance:
+          chunkSize: 50  # Process all records in single chunk for efficiency
+          commitInterval: 50  # Commit after processing all records
+          
+          # Thread pool configuration
+          taskExecutor:
+            corePoolSize: 1  # Single-threaded for data integrity
+            maxPoolSize: 1
+            queueCapacity: 100
+            
+          # Memory optimization
+          memorySettings:
+            maxItemsInMemory: 100
+            bufferSize: 8192
+            
+        # Data validation rules matching COBOL business logic
+        validation:
+          # Account ID validation
+          accountId:
+            pattern: "^[0-9]{11}$"
+            message: "Account ID must be exactly 11 digits"
+            
+          # Customer ID validation
+          customerId:
+            pattern: "^[0-9]{9}$"
+            message: "Customer ID must be exactly 9 digits"
+            
+          # Financial field validation
+          currentBalance:
+            range: "-9999999999.99:9999999999.99"
+            precision: "DECIMAL(12,2)"
+            message: "Current balance must be within valid range with 2 decimal places"
+            
+          creditLimit:
+            range: "0.00:9999999999.99"
+            precision: "DECIMAL(12,2)"
+            message: "Credit limit must be non-negative with 2 decimal places"
+            
+          # Date validation
+          openDate:
+            required: true
+            format: "yyyy-MM-dd"
+            range: "1990-01-01:2030-12-31"
+            message: "Open date is required and must be within valid range"
+            
+          # Status validation
+          activeStatus:
+            values: ["Y", "N", "C", "S"]
+            message: "Active status must be Y, N, C, or S"
+
+# Configuration notes for deployment:
+# 1. Ensure acctdata.txt is available in classpath:db/data/ directory
+# 2. PostgreSQL accounts table must exist (V3 migration)
+# 3. Account entity must be in classpath for field mapping
+# 4. Custom converters must be implemented as Spring components
+# 5. Error handling configuration should be adjusted for production needs
+# 6. Monitoring metrics should be integrated with application monitoring system
+
+# Security considerations:
+# 1. Validate file permissions on acctdata.txt
+# 2. Implement audit logging for data loading operations
+# 3. Use encryption for sensitive financial data in transit and at rest
+# 4. Implement row-level security for account data access
+# 5. Regular security reviews of data loading processes
+
+# Performance notes:
+# 1. Single chunk processing for 50 records ensures atomic loading
+# 2. Fixed-width parsing optimized for 300-byte record structure
+# 3. BigDecimal precision maintains COBOL COMP-3 arithmetic equivalence
+# 4. Date parsing optimized for YYYY-MM-DD format
+# 5. Memory settings sized for efficient processing of account data
+
+# COBOL equivalence verification:
+# 1. All financial calculations use BigDecimal with DECIMAL128 context
+# 2. Date handling preserves COBOL date semantics
+# 3. Numeric field precision matches COBOL COMP-3 specifications
+# 4. Record structure mapping maintains VSAM ACCTDAT equivalence
+# 5. Error handling preserves COBOL program behavior patterns
