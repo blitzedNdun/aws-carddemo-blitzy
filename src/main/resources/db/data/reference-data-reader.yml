@@ -1,0 +1,484 @@
+# Spring Batch MultiResourceItemReader Configuration for CardDemo Reference Data Loading
+# 
+# This configuration defines ItemReader configurations for loading reference data from
+# 5 ASCII files into PostgreSQL tables, maintaining exact COBOL field mappings and
+# BigDecimal precision for financial calculations per Section 0.3.2 requirements.
+#
+# Key Features:
+# - MultiResourceItemReader for parallel processing of reference data files
+# - DECIMAL(5,4) precision handling for disclosure group interest rates
+# - Composite primary key support for transaction category balances
+# - Proper constraint validation and foreign key enforcement
+# - Redis cache warming for frequently accessed reference data
+#
+# Reference Data Files:
+# - discgrp.txt: Disclosure group interest rate configuration
+# - trantype.txt: Transaction type classification codes
+# - trancatg.txt: Transaction category definitions
+# - tcatbal.txt: Transaction category balance tracking
+# - cardxref.txt: Card cross-reference data
+#
+# @author Blitzy agent
+# @version CardDemo_v1.0-15-g27d6c6f-68
+
+spring:
+  batch:
+    reference-data:
+      # Configuration for disclosure group reference data loading
+      disclosure-groups:
+        reader:
+          type: "FlatFileItemReader"
+          resource: "classpath:db/data/ASCII/discgrp.txt"
+          line-mapper:
+            type: "DelimitedLineTokenizer"
+            delimiter: ""
+            strict: false
+            names:
+              - "groupId"
+              - "interestRateData"
+              - "padding"
+            field-set-mapper:
+              type: "BeanWrapperFieldSetMapper"
+              target-type: "com.carddemo.common.entity.DisclosureGroup"
+              custom-editors:
+                # Custom field parsing for disclosure group data
+                groupId:
+                  type: "string"
+                  start: 0
+                  length: 10
+                  trim: true
+                  validation:
+                    - "notNull"
+                    - "size(min=1, max=10)"
+                
+                # Interest rate parsing with DECIMAL(5,4) precision
+                interestRate:
+                  type: "bigDecimal"
+                  start: 27
+                  length: 4
+                  scale: 4
+                  precision: 5
+                  math-context: "DECIMAL128"
+                  rounding-mode: "HALF_EVEN"
+                  validation:
+                    - "decimalMin(0.0001)"
+                    - "decimalMax(9.9999)"
+                
+                # Effective date for rate tracking
+                effectiveDate:
+                  type: "localDateTime"
+                  default: "now"
+                  format: "yyyy-MM-dd HH:mm:ss"
+                
+                # Disclosure text placeholder
+                disclosureText:
+                  type: "string"
+                  default: "Standard disclosure text for interest rate group"
+                  validation:
+                    - "size(max=1000)"
+          
+          skip-policy:
+            skip-limit: 10
+            skippable-exceptions:
+              - "NumberFormatException"
+              - "ValidationException"
+      
+      # Configuration for transaction type reference data loading
+      transaction-types:
+        reader:
+          type: "FlatFileItemReader"
+          resource: "classpath:db/data/ASCII/trantype.txt"
+          line-mapper:
+            type: "DelimitedLineTokenizer"
+            delimiter: ""
+            strict: false
+            names:
+              - "transactionType"
+              - "typeDescription"
+              - "padding"
+            field-set-mapper:
+              type: "BeanWrapperFieldSetMapper"
+              target-type: "com.carddemo.common.entity.TransactionType"
+              custom-editors:
+                # Transaction type code parsing
+                transactionType:
+                  type: "string"
+                  start: 0
+                  length: 2
+                  trim: true
+                  validation:
+                    - "notNull"
+                    - "size(min=2, max=2)"
+                    - "pattern(\\d{2})"
+                
+                # Type description parsing
+                typeDescription:
+                  type: "string"
+                  start: 2
+                  length: 50
+                  trim: true
+                  validation:
+                    - "notNull"
+                    - "size(min=1, max=60)"
+                
+                # Debit/Credit indicator derived from transaction type
+                debitCreditIndicator:
+                  type: "boolean"
+                  derived: true
+                  logic: |
+                    # Debit transactions: 01 (Purchase), 04 (Authorization), 05 (Refund)
+                    # Credit transactions: 02 (Payment), 03 (Credit), 06 (Reversal), 07 (Adjustment)
+                    switch(transactionType) {
+                      case "01", "04", "05": return true;
+                      case "02", "03", "06", "07": return false;
+                      default: return false;
+                    }
+          
+          skip-policy:
+            skip-limit: 5
+            skippable-exceptions:
+              - "ValidationException"
+      
+      # Configuration for transaction category reference data loading
+      transaction-categories:
+        reader:
+          type: "FlatFileItemReader"
+          resource: "classpath:db/data/ASCII/trancatg.txt"
+          line-mapper:
+            type: "DelimitedLineTokenizer"
+            delimiter: ""
+            strict: false
+            names:
+              - "transactionCategory"
+              - "categoryDescription"
+              - "padding"
+            field-set-mapper:
+              type: "BeanWrapperFieldSetMapper"
+              target-type: "com.carddemo.common.entity.TransactionCategory"
+              custom-editors:
+                # Transaction category code parsing
+                transactionCategory:
+                  type: "string"
+                  start: 0
+                  length: 4
+                  trim: true
+                  validation:
+                    - "notNull"
+                    - "size(min=4, max=4)"
+                    - "pattern(\\d{4})"
+                
+                # Category description parsing
+                categoryDescription:
+                  type: "string"
+                  start: 6
+                  length: 50
+                  trim: true
+                  validation:
+                    - "notNull"
+                    - "size(min=1, max=60)"
+                
+                # Active status default
+                activeStatus:
+                  type: "boolean"
+                  default: true
+                  validation:
+                    - "notNull"
+          
+          skip-policy:
+            skip-limit: 5
+            skippable-exceptions:
+              - "ValidationException"
+      
+      # Configuration for transaction category balance data loading
+      transaction-category-balances:
+        reader:
+          type: "FlatFileItemReader"
+          resource: "classpath:db/data/ASCII/tcatbal.txt"
+          line-mapper:
+            type: "DelimitedLineTokenizer"
+            delimiter: ""
+            strict: false
+            names:
+              - "compositeKey"
+              - "categoryBalance"
+              - "padding"
+            field-set-mapper:
+              type: "BeanWrapperFieldSetMapper"
+              target-type: "com.carddemo.common.entity.TransactionCategoryBalance"
+              custom-editors:
+                # Composite primary key parsing
+                id:
+                  type: "composite"
+                  target-type: "com.carddemo.common.entity.TransactionCategoryBalance$TransactionCategoryBalanceId"
+                  fields:
+                    accountId:
+                      type: "string"
+                      start: 0
+                      length: 11
+                      trim: true
+                      validation:
+                        - "notNull"
+                        - "size(min=11, max=11)"
+                        - "pattern(\\d{11})"
+                    
+                    transactionType:
+                      type: "string"
+                      start: 11
+                      length: 2
+                      trim: true
+                      validation:
+                        - "notNull"
+                        - "size(min=2, max=2)"
+                        - "pattern(\\d{2})"
+                    
+                    transactionCategory:
+                      type: "string"
+                      start: 13
+                      length: 4
+                      trim: true
+                      validation:
+                        - "notNull"
+                        - "size(min=4, max=4)"
+                        - "pattern(\\d{4})"
+                
+                # Category balance with exact decimal precision
+                categoryBalance:
+                  type: "bigDecimal"
+                  start: 17
+                  length: 10
+                  scale: 2
+                  precision: 12
+                  math-context: "DECIMAL128"
+                  rounding-mode: "HALF_EVEN"
+                  validation:
+                    - "decimalMin(-9999999999.99)"
+                
+                # Last updated timestamp
+                lastUpdated:
+                  type: "localDateTime"
+                  default: "now"
+                  format: "yyyy-MM-dd HH:mm:ss"
+                  validation:
+                    - "notNull"
+          
+          skip-policy:
+            skip-limit: 100
+            skippable-exceptions:
+              - "NumberFormatException"
+              - "ValidationException"
+      
+      # Configuration for card cross-reference data loading
+      card-cross-reference:
+        reader:
+          type: "FlatFileItemReader"
+          resource: "classpath:db/data/ASCII/cardxref.txt"
+          line-mapper:
+            type: "DelimitedLineTokenizer"
+            delimiter: ""
+            strict: false
+            names:
+              - "cardNumber"
+              - "accountId"
+              - "customerId"
+            field-set-mapper:
+              type: "BeanWrapperFieldSetMapper"
+              target-type: "com.carddemo.common.entity.Card"
+              custom-editors:
+                # Card number parsing
+                cardNumber:
+                  type: "string"
+                  start: 0
+                  length: 16
+                  trim: true
+                  validation:
+                    - "notNull"
+                    - "size(min=16, max=16)"
+                    - "pattern(\\d{16})"
+                
+                # Account ID parsing
+                accountId:
+                  type: "string"
+                  start: 16
+                  length: 11
+                  trim: true
+                  validation:
+                    - "notNull"
+                    - "size(min=11, max=11)"
+                    - "pattern(\\d{11})"
+                
+                # Customer ID parsing
+                customerId:
+                  type: "string"
+                  start: 27
+                  length: 9
+                  trim: true
+                  validation:
+                    - "notNull"
+                    - "size(min=9, max=9)"
+                    - "pattern(\\d{9})"
+                
+                # Active status default
+                activeStatus:
+                  type: "string"
+                  default: "Y"
+                  validation:
+                    - "notNull"
+                    - "pattern([YN])"
+          
+          skip-policy:
+            skip-limit: 50
+            skippable-exceptions:
+              - "ValidationException"
+      
+      # Multi-resource processing configuration
+      multi-resource:
+        # Processing order for reference data loading
+        # Must load in dependency order to satisfy foreign key constraints
+        processing-order:
+          1: "disclosure-groups"
+          2: "transaction-types"
+          3: "transaction-categories"
+          4: "transaction-category-balances"
+          5: "card-cross-reference"
+        
+        # Parallel processing configuration
+        parallel:
+          enabled: true
+          core-pool-size: 3
+          max-pool-size: 5
+          queue-capacity: 100
+          thread-name-prefix: "reference-data-"
+        
+        # Chunk processing configuration
+        chunk:
+          size: 1000
+          commit-interval: 1000
+          retry-limit: 3
+          skip-limit: 100
+        
+        # Transaction management
+        transaction:
+          isolation-level: "READ_COMMITTED"
+          timeout: 300
+          rollback-for:
+            - "ValidationException"
+            - "DataIntegrityViolationException"
+        
+        # Cache warming configuration
+        cache:
+          enabled: true
+          warm-after-load: true
+          cache-names:
+            - "transactionTypes"
+            - "transactionCategories"
+            - "disclosureGroups"
+          redis:
+            enabled: true
+            ttl: 86400  # 24 hours
+            key-prefix: "carddemo:reference:"
+        
+        # Foreign key constraint validation
+        constraints:
+          enforce-foreign-keys: true
+          validate-before-insert: true
+          cascade-failures: false
+          
+          # Foreign key mappings
+          foreign-key-mappings:
+            transaction-category-balances:
+              - source-field: "id.accountId"
+                target-table: "accounts"
+                target-field: "account_id"
+                required: true
+              - source-field: "id.transactionType"
+                target-table: "transaction_types"
+                target-field: "transaction_type"
+                required: true
+              - source-field: "id.transactionCategory"
+                target-table: "transaction_categories"
+                target-field: "transaction_category"
+                required: true
+            
+            card-cross-reference:
+              - source-field: "accountId"
+                target-table: "accounts"
+                target-field: "account_id"
+                required: true
+              - source-field: "customerId"
+                target-table: "customers"
+                target-field: "customer_id"
+                required: true
+        
+        # Error handling and monitoring
+        error-handling:
+          max-retry-attempts: 3
+          retry-delay: 1000
+          circuit-breaker:
+            enabled: true
+            failure-threshold: 10
+            recovery-timeout: 30000
+          
+          # Error logging
+          logging:
+            log-skipped-items: true
+            log-validation-errors: true
+            log-constraint-violations: true
+            log-level: "WARN"
+        
+        # Performance optimization
+        performance:
+          batch-size: 1000
+          fetch-size: 1000
+          use-bulk-insert: true
+          connection-pool:
+            initial-size: 5
+            max-active: 10
+            max-idle: 5
+            max-wait: 10000
+        
+        # Data validation rules
+        validation:
+          strict-mode: true
+          validate-all-fields: true
+          fail-on-first-error: false
+          
+          # Custom validation rules
+          custom-rules:
+            disclosure-groups:
+              - rule: "interestRate != null && interestRate.scale() == 4"
+                message: "Interest rate must have exactly 4 decimal places"
+              - rule: "groupId != null && groupId.length() <= 10"
+                message: "Group ID must not exceed 10 characters"
+            
+            transaction-category-balances:
+              - rule: "categoryBalance != null && categoryBalance.scale() == 2"
+                message: "Category balance must have exactly 2 decimal places"
+              - rule: "id != null && id.accountId != null && id.transactionType != null && id.transactionCategory != null"
+                message: "All composite key fields are required"
+        
+        # Monitoring and metrics
+        monitoring:
+          enabled: true
+          metrics:
+            - "items-read"
+            - "items-processed"
+            - "items-written"
+            - "items-skipped"
+            - "processing-time"
+            - "error-rate"
+          
+          # Health checks
+          health-checks:
+            - "database-connection"
+            - "redis-connection"
+            - "file-accessibility"
+            - "memory-usage"
+          
+          # Alerts
+          alerts:
+            - condition: "error-rate > 0.05"
+              action: "log-warning"
+            - condition: "processing-time > 300000"
+              action: "log-warning"
+            - condition: "items-skipped > 100"
+              action: "log-error"
