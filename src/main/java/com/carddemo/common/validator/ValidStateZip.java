@@ -81,7 +81,7 @@ import java.lang.annotation.Target;
  * @since 1.0
  */
 @Documented
-@Constraint(validatedBy = ValidStateZipValidator.class)
+@Constraint(validatedBy = StateZipValidator.class)
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ValidStateZip {
