@@ -1,6 +1,7 @@
 package com.carddemo.common.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.UUID;
@@ -227,6 +228,7 @@ public abstract class BaseRequestDto implements Serializable {
      * 
      * @return true if request has valid context for processing
      */
+    @JsonIgnore
     public boolean isValidRequestContext() {
         return correlationId != null && !correlationId.trim().isEmpty()
                 && requestTimestamp != null;
@@ -238,6 +240,7 @@ public abstract class BaseRequestDto implements Serializable {
      * 
      * @return true if request has authenticated user context
      */
+    @JsonIgnore
     public boolean hasAuthenticatedUser() {
         return userId != null && !userId.trim().isEmpty();
     }
@@ -248,6 +251,7 @@ public abstract class BaseRequestDto implements Serializable {
      * 
      * @return true if request has valid session context
      */
+    @JsonIgnore
     public boolean hasValidSession() {
         return sessionId != null && !sessionId.trim().isEmpty();
     }
