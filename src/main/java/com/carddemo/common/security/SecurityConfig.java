@@ -253,8 +253,8 @@ public class SecurityConfig {
             
             // Configure security headers
             .headers(headers -> headers
-                .frameOptions().deny()              // Prevent clickjacking
-                .contentTypeOptions().and()         // Prevent MIME type sniffing
+                .frameOptions(frameOptions -> frameOptions.deny())              // Prevent clickjacking
+                .contentTypeOptions(contentTypeOptions -> {})         // Prevent MIME type sniffing
                 .httpStrictTransportSecurity(hsts -> hsts
                     .maxAgeInSeconds(31536000)      // 1 year HSTS
                     .includeSubDomains(true)        // Apply to subdomains
