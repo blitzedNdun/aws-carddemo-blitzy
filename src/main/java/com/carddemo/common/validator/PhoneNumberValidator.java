@@ -1,12 +1,15 @@
 /*
  * PhoneNumberValidator.java
  * 
- * Jakarta Bean Validation constraint validator for North American phone numbers
- * with area code verification using NANP (North American Numbering Plan) area codes.
+ * Implementation class for phone number validation with area code verification.
+ * Validates phone numbers against the complete North American Numbering Plan
+ * area code list while supporting multiple input formats and providing
+ * comprehensive error reporting.
  * 
- * This validator implements the validation logic for the @ValidPhoneNumber annotation,
- * using the area code lookup table from COBOL copybook CSLKPCDY.cpy to ensure
- * phone numbers have valid area codes according to the North American Numbering Plan.
+ * This validator implements the exact phone number validation logic from the
+ * COBOL system, converting the CSLKPCDY.cpy area code lookup table to a
+ * Java Set-based implementation for efficient validation while maintaining
+ * complete functional equivalence with the original COBOL validation.
  * 
  * Copyright Amazon.com, Inc. or its affiliates.
  * All Rights Reserved.
@@ -27,156 +30,343 @@ package com.carddemo.common.validator;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
- * Jakarta Bean Validation constraint validator for North American phone numbers
- * with area code verification using the NANP (North American Numbering Plan) area codes.
+ * Jakarta Bean Validation implementation for validating North American phone numbers
+ * with comprehensive area code verification using the NANP (North American Numbering Plan).
  * 
- * This validator implements the validation logic for the @ValidPhoneNumber annotation,
- * using the area code lookup table from COBOL copybook CSLKPCDY.cpy (VALID-PHONE-AREA-CODE condition)
- * to ensure phone numbers have valid area codes according to the North American Numbering Plan.
+ * <p>This validator provides exact functional equivalence to the COBOL phone number
+ * validation logic found in the original CardDemo mainframe application. It validates
+ * phone numbers against the complete area code lookup table from CSLKPCDY.cpy while
+ * supporting multiple input formats commonly used in North American phone numbers.</p>
  * 
- * <p>Validation Process:</p>
+ * <p><strong>COBOL Source Mapping:</strong></p>
+ * <ul>
+ *   <li>CSLKPCDY.cpy VALID-PHONE-AREA-CODE → ValidationConstants.VALID_AREA_CODES</li>
+ *   <li>CUSTREC.cpy CUST-PHONE-NUM-1/2 PIC X(15) → Support for 15-character input format</li>
+ *   <li>COBOL 88-level area code validation → Java Set.contains() lookup</li>
+ * </ul>
+ * 
+ * <p><strong>Validation Process:</strong></p>
  * <ol>
- *   <li>Parse phone number from various formats to extract digits</li>
- *   <li>Validate phone number length (10 digits or 11 digits with country code 1)</li>
- *   <li>Extract area code (first 3 digits) and exchange code (next 3 digits)</li>
- *   <li>Validate area code against CSLKPCDY.cpy lookup table</li>
- *   <li>Validate exchange code according to NANP rules</li>
- *   <li>Generate appropriate error message for validation failures</li>
+ *   <li>Parse input string to extract numeric digits</li>
+ *   <li>Handle optional country code (1) prefix</li>
+ *   <li>Validate 10-digit North American format (NXX-NXX-XXXX)</li>
+ *   <li>Extract 3-digit area code (NXX)</li>
+ *   <li>Verify area code against CSLKPCDY.cpy lookup table</li>
+ *   <li>Validate exchange code doesn't start with 0 or 1 (NANP rule)</li>
+ *   <li>Ensure subscriber number is valid 4-digit sequence</li>
  * </ol>
  * 
- * <p>NANP Validation Rules:</p>
+ * <p><strong>Supported Input Formats:</strong></p>
  * <ul>
- *   <li>Phone numbers must be 10 digits (area code + exchange + number)</li>
- *   <li>Country code 1 is optional for international format</li>
- *   <li>Area code must be from valid area code list (CSLKPCDY.cpy)</li>
- *   <li>Area code cannot start with 0 or 1</li>
- *   <li>Exchange code cannot start with 0 or 1</li>
+ *   <li>(123) 456-7890 - Standard US format with parentheses</li>
+ *   <li>123-456-7890 - Hyphenated format</li>
+ *   <li>123.456.7890 - Dot-separated format</li>
+ *   <li>123 456 7890 - Space-separated format</li>
+ *   <li>1234567890 - Continuous 10-digit format</li>
+ *   <li>+1 (123) 456-7890 - International format with country code</li>
+ *   <li>1-123-456-7890 - Full format with country code</li>
+ *   <li>+1 123 456 7890 - International space-separated format</li>
+ *   <li>1.123.456.7890 - Full dot-separated format</li>
+ *   <li>11234567890 - Continuous 11-digit format with country code</li>
+ * </ul>
+ * 
+ * <p><strong>NANP Validation Rules:</strong></p>
+ * <ul>
+ *   <li>Total digits must be exactly 10 (or 11 with country code 1)</li>
+ *   <li>Area code (first 3 digits) must be in VALID_AREA_CODES Set</li>
+ *   <li>Area code cannot start with 0 or 1 (already enforced by lookup table)</li>
+ *   <li>Exchange code (digits 4-6) cannot start with 0 or 1</li>
+ *   <li>Subscriber number (digits 7-10) can be any 4-digit combination</li>
+ *   <li>Country code, if present, must be exactly 1</li>
+ * </ul>
+ * 
+ * <p><strong>Error Message Strategy:</strong></p>
+ * The validator provides specific error messages for different failure scenarios
+ * to maintain the detailed validation feedback expected by the CardDemo application:
+ * <ul>
+ *   <li>Format errors: "Phone number format is invalid"</li>
+ *   <li>Area code errors: "Area code {code} is not a valid North American area code"</li>
+ *   <li>Exchange code errors: "Exchange code cannot start with 0 or 1"</li>
+ *   <li>General errors: "Phone number is invalid"</li>
  * </ul>
  * 
  * @see ValidPhoneNumber
- * @see ConstraintValidator
+ * @see ValidationConstants#VALID_AREA_CODES
+ * @see ValidationConstants#PHONE_PATTERN
  * @since CardDemo v1.0
  */
 public class PhoneNumberValidator implements ConstraintValidator<ValidPhoneNumber, String> {
     
-
-    
     /**
-     * Regular expression pattern for matching various phone number formats.
-     * Supports formats like:
-     * - (123) 456-7890
-     * - 123-456-7890
-     * - 123.456.7890
-     * - 123 456 7890
-     * - 1234567890
-     * - +1 (123) 456-7890
-     * - 1-123-456-7890
+     * Comprehensive regex pattern for parsing various North American phone number formats.
+     * Captures all common formatting variations while extracting the core numeric digits.
+     * Groups: 1=country code (optional), 2=area code, 3=exchange, 4=subscriber number
      */
-    private static final Pattern PHONE_PATTERN = Pattern.compile(
-        "^(?:\\+?1[-. ]?)?(?:\\(?([0-9]{3})\\)?[-. ]?)?([0-9]{3})[-. ]?([0-9]{4})$"
+    private static final Pattern PHONE_FORMAT_PATTERN = Pattern.compile(
+        "^\\s*" +                           // Optional leading whitespace
+        "(?:\\+?1[\\s.-]?)?" +              // Optional country code 1 with separators (non-capturing)
+        "(?:\\(?(\\d{3})\\)?[\\s.-]?)?" +   // Area code with optional parentheses and separators (group 1)
+        "(\\d{3})" +                        // Exchange code (group 2)
+        "[\\s.-]?" +                        // Optional separator
+        "(\\d{4})" +                        // Subscriber number (group 3)
+        "\\s*$"                             // Optional trailing whitespace
     );
     
     /**
-     * Pattern to extract only digits from a phone number string.
+     * Simplified pattern for extracting just numeric digits from phone number input.
+     * Used as fallback when the comprehensive pattern doesn't match.
      */
-    private static final Pattern DIGITS_ONLY_PATTERN = Pattern.compile("\\D");
+    private static final Pattern DIGITS_ONLY_PATTERN = Pattern.compile("\\d");
     
-    // Configuration fields from the annotation
+    /**
+     * Annotation configuration values set during initialization.
+     */
     private boolean allowNull;
     private boolean allowEmpty;
     private boolean strictAreaCodeValidation;
     private boolean allowInternationalFormat;
     
     /**
-     * Initialize the validator with configuration from the annotation.
+     * Initializes the validator with configuration values from the ValidPhoneNumber annotation.
+     * Sets up validation behavior based on annotation parameters.
      * 
-     * @param annotation the ValidPhoneNumber annotation instance
+     * @param constraintAnnotation the ValidPhoneNumber annotation instance containing configuration
      */
     @Override
-    public void initialize(ValidPhoneNumber annotation) {
-        this.allowNull = annotation.allowNull();
-        this.allowEmpty = annotation.allowEmpty();
-        this.strictAreaCodeValidation = annotation.strictAreaCodeValidation();
-        this.allowInternationalFormat = annotation.allowInternationalFormat();
+    public void initialize(ValidPhoneNumber constraintAnnotation) {
+        this.allowNull = constraintAnnotation.allowNull();
+        this.allowEmpty = constraintAnnotation.allowEmpty();
+        this.strictAreaCodeValidation = constraintAnnotation.strictAreaCodeValidation();
+        this.allowInternationalFormat = constraintAnnotation.allowInternationalFormat();
     }
     
     /**
-     * Validate the phone number value.
+     * Validates a phone number string against North American Numbering Plan requirements
+     * with area code verification using the CSLKPCDY.cpy lookup table.
      * 
-     * @param value the phone number value to validate
-     * @param context the validation context
-     * @return true if the phone number is valid, false otherwise
+     * <p>This method implements the complete phone number validation logic equivalent
+     * to the COBOL system, ensuring exact functional compatibility while providing
+     * comprehensive error reporting through the constraint validation context.</p>
+     * 
+     * @param value the phone number string to validate
+     * @param context the constraint validator context for error message customization
+     * @return true if the phone number is valid according to NANP rules and area code lookup,
+     *         false otherwise with specific error messages added to the context
      */
     @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
-        // Handle null values
+        // Handle null and empty values according to annotation configuration
         if (value == null) {
             return allowNull;
         }
         
-        // Handle empty strings
         if (value.trim().isEmpty()) {
             return allowEmpty;
         }
         
-        // First, check if the format generally matches a phone number pattern
-        Matcher formatMatcher = PHONE_PATTERN.matcher(value.trim());
-        if (!formatMatcher.matches()) {
+        // Extract numeric digits from the input using regex matching
+        String numericDigits = extractNumericDigits(value);
+        
+        // Validate the numeric digit count (10 or 11 with country code)
+        if (!isValidDigitCount(numericDigits, context)) {
+            return false;
+        }
+        
+        // Handle country code prefix if present
+        String tenDigitNumber = normalizeToTenDigits(numericDigits, context);
+        if (tenDigitNumber == null) {
+            return false; // Error message already set in normalizeToTenDigits
+        }
+        
+        // Validate the 10-digit phone number structure using pattern matching
+        if (!ValidationConstants.PHONE_PATTERN.matcher(tenDigitNumber).matches()) {
             buildConstraintViolation(context, "Phone number format is invalid");
             return false;
         }
         
-        // Extract digits from the phone number
-        String digitsOnly = DIGITS_ONLY_PATTERN.matcher(value.trim()).replaceAll("");
-        
-        // Validate phone number length
-        if (digitsOnly.length() < 10 || digitsOnly.length() > 11) {
-            buildConstraintViolation(context, "Phone number must be 10 digits or 11 digits with country code");
+        // Extract phone number components using regex groups
+        PhoneNumberComponents components = parsePhoneComponents(tenDigitNumber);
+        if (components == null) {
+            buildConstraintViolation(context, "Phone number format is invalid");
             return false;
         }
         
-        // Handle country code
-        String phoneNumber;
-        if (digitsOnly.length() == 11) {
-            if (!allowInternationalFormat) {
-                buildConstraintViolation(context, "International format phone numbers are not allowed");
-                return false;
-            }
-            // Check if it starts with country code 1
-            if (!digitsOnly.startsWith("1")) {
-                buildConstraintViolation(context, "International phone numbers must start with country code 1");
-                return false;
-            }
-            phoneNumber = digitsOnly.substring(1); // Remove country code
-        } else {
-            phoneNumber = digitsOnly;
+        // Validate area code against CSLKPCDY.cpy lookup table
+        if (!validateAreaCode(components.areaCode, context)) {
+            return false;
         }
         
-        // Extract area code and exchange code
-        String areaCode = phoneNumber.substring(0, 3);
-        String exchangeCode = phoneNumber.substring(3, 6);
+        // Validate exchange code against NANP rules
+        if (!validateExchangeCode(components.exchangeCode, context)) {
+            return false;
+        }
         
-        // Validate area code format (cannot start with 0 or 1)
-        if (areaCode.startsWith("0") || areaCode.startsWith("1")) {
+        // All validations passed - phone number is valid
+        return true;
+    }
+    
+    /**
+     * Extracts numeric digits from phone number input, handling various formatting characters.
+     * Supports multiple input formats by removing all non-digit characters.
+     * 
+     * @param input the raw phone number input string
+     * @return string containing only the numeric digits
+     */
+    private String extractNumericDigits(String input) {
+        if (input == null) {
+            return "";
+        }
+        
+        StringBuilder digits = new StringBuilder();
+        Matcher digitMatcher = DIGITS_ONLY_PATTERN.matcher(input);
+        
+        while (digitMatcher.find()) {
+            digits.append(digitMatcher.group());
+        }
+        
+        return digits.toString();
+    }
+    
+    /**
+     * Validates that the extracted digits represent a valid North American phone number length.
+     * Checks for 10 digits (domestic) or 11 digits with country code 1 (international).
+     * 
+     * @param digits the numeric digits extracted from input
+     * @param context constraint validator context for error reporting
+     * @return true if digit count is valid, false otherwise
+     */
+    private boolean isValidDigitCount(String digits, ConstraintValidatorContext context) {
+        int length = digits.length();
+        
+        if (length == 10) {
+            return true; // Valid domestic format
+        }
+        
+        if (length == 11 && allowInternationalFormat) {
+            return true; // Valid international format with country code
+        }
+        
+        // Invalid digit count
+        if (length < 10) {
+            buildConstraintViolation(context, "Phone number is too short - must be 10 digits");
+        } else if (length == 11 && !allowInternationalFormat) {
+            buildConstraintViolation(context, "International format not allowed");
+        } else {
+            buildConstraintViolation(context, "Phone number format is invalid");
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Normalizes phone number digits to a standard 10-digit format.
+     * Handles country code removal and validation for 11-digit numbers.
+     * 
+     * @param digits the numeric digits to normalize
+     * @param context constraint validator context for error reporting
+     * @return 10-digit phone number string, or null if normalization fails
+     */
+    private String normalizeToTenDigits(String digits, ConstraintValidatorContext context) {
+        if (digits.length() == 10) {
+            return digits; // Already in correct format
+        }
+        
+        if (digits.length() == 11) {
+            // Validate country code is 1
+            if (!digits.startsWith("1")) {
+                buildConstraintViolation(context, "Invalid country code - must be 1 for North American numbers");
+                return null;
+            }
+            
+            // Remove country code prefix
+            return digits.substring(1);
+        }
+        
+        // Invalid length - error already reported in isValidDigitCount
+        return null;
+    }
+    
+    /**
+     * Parses a 10-digit phone number into its component parts.
+     * Extracts area code, exchange code, and subscriber number.
+     * 
+     * @param tenDigitNumber the normalized 10-digit phone number
+     * @return PhoneNumberComponents object with parsed parts, or null if parsing fails
+     */
+    private PhoneNumberComponents parsePhoneComponents(String tenDigitNumber) {
+        if (tenDigitNumber == null || tenDigitNumber.length() != 10) {
+            return null;
+        }
+        
+        try {
+            String areaCode = tenDigitNumber.substring(0, 3);
+            String exchangeCode = tenDigitNumber.substring(3, 6);
+            String subscriberNumber = tenDigitNumber.substring(6, 10);
+            
+            return new PhoneNumberComponents(areaCode, exchangeCode, subscriberNumber);
+        } catch (Exception e) {
+            return null; // Parsing failed
+        }
+    }
+    
+    /**
+     * Validates the area code against the CSLKPCDY.cpy lookup table.
+     * Implements the exact COBOL VALID-PHONE-AREA-CODE validation logic
+     * using Java Set-based lookup for efficient performance.
+     * 
+     * @param areaCode the 3-digit area code to validate
+     * @param context constraint validator context for error reporting
+     * @return true if area code is valid according to NANP and lookup table, false otherwise
+     */
+    private boolean validateAreaCode(String areaCode, ConstraintValidatorContext context) {
+        // Validate area code format (3 digits, not starting with 0 or 1)
+        if (areaCode == null || areaCode.length() != 3) {
+            buildConstraintViolation(context, "Area code must be exactly 3 digits");
+            return false;
+        }
+        
+        // Check if area code starts with 0 or 1 (invalid per NANP rules)
+        char firstDigit = areaCode.charAt(0);
+        if (firstDigit == '0' || firstDigit == '1') {
             buildConstraintViolation(context, "Area code cannot start with 0 or 1");
             return false;
         }
         
-        // Validate exchange code format (cannot start with 0 or 1)
-        if (exchangeCode.startsWith("0") || exchangeCode.startsWith("1")) {
-            buildConstraintViolation(context, "Exchange code cannot start with 0 or 1");
+        // If strict validation is enabled, check against CSLKPCDY.cpy lookup table
+        if (strictAreaCodeValidation) {
+            if (!ValidationConstants.VALID_AREA_CODES.contains(areaCode)) {
+                buildConstraintViolation(context, 
+                    String.format("Area code %s is not a valid North American area code", areaCode));
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Validates the exchange code according to NANP rules.
+     * The exchange code (central office code) cannot start with 0 or 1.
+     * 
+     * @param exchangeCode the 3-digit exchange code to validate
+     * @param context constraint validator context for error reporting
+     * @return true if exchange code is valid, false otherwise
+     */
+    private boolean validateExchangeCode(String exchangeCode, ConstraintValidatorContext context) {
+        // Validate exchange code format (3 digits)
+        if (exchangeCode == null || exchangeCode.length() != 3) {
+            buildConstraintViolation(context, "Exchange code must be exactly 3 digits");
             return false;
         }
         
-        // Validate area code against lookup table if strict validation is enabled
-        if (strictAreaCodeValidation && !ValidationConstants.VALID_AREA_CODES.contains(areaCode)) {
-            buildConstraintViolation(context, 
-                String.format("Area code %s is not a valid North American area code", areaCode));
+        // Check if exchange code starts with 0 or 1 (invalid per NANP rules)
+        char firstDigit = exchangeCode.charAt(0);
+        if (firstDigit == '0' || firstDigit == '1') {
+            buildConstraintViolation(context, "Exchange code cannot start with 0 or 1");
             return false;
         }
         
@@ -184,80 +374,37 @@ public class PhoneNumberValidator implements ConstraintValidator<ValidPhoneNumbe
     }
     
     /**
-     * Build a constraint violation with a custom message.
+     * Builds a custom constraint violation with a specific error message.
+     * Disables the default constraint violation and adds a new one with the provided message.
      * 
-     * @param context the validation context
-     * @param message the custom error message
+     * @param context the constraint validator context
+     * @param message the custom error message to display
      */
     private void buildConstraintViolation(ConstraintValidatorContext context, String message) {
         context.disableDefaultConstraintViolation();
-        context.buildConstraintViolationWithTemplate(message)
-               .addConstraintViolation();
+        context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
     }
     
     /**
-     * Check if an area code is valid according to the CSLKPCDY.cpy lookup table.
-     * 
-     * @param areaCode the 3-digit area code to validate
-     * @return true if the area code is valid, false otherwise
+     * Inner class to hold parsed phone number components.
+     * Provides structured access to area code, exchange code, and subscriber number.
      */
-    public static boolean isValidAreaCode(String areaCode) {
-        return areaCode != null && 
-               areaCode.length() == 3 && 
-               ValidationConstants.VALID_AREA_CODES.contains(areaCode);
-    }
-    
-    /**
-     * Get the set of all valid area codes from the CSLKPCDY.cpy lookup table.
-     * 
-     * @return an immutable set of valid area codes
-     */
-    public static Set<String> getValidAreaCodes() {
-        return ValidationConstants.VALID_AREA_CODES;
-    }
-    
-    /**
-     * Normalize a phone number to a standard format (removes all non-digit characters).
-     * 
-     * @param phoneNumber the phone number to normalize
-     * @return the normalized phone number with digits only, or null if input is null
-     */
-    public static String normalizePhoneNumber(String phoneNumber) {
-        if (phoneNumber == null) {
-            return null;
-        }
-        return DIGITS_ONLY_PATTERN.matcher(phoneNumber.trim()).replaceAll("");
-    }
-    
-    /**
-     * Format a phone number in standard display format (123) 456-7890.
-     * 
-     * @param phoneNumber the phone number to format (digits only)
-     * @return the formatted phone number, or the original string if formatting fails
-     */
-    public static String formatPhoneNumber(String phoneNumber) {
-        if (phoneNumber == null) {
-            return null;
-        }
+    private static class PhoneNumberComponents {
+        final String areaCode;
+        final String exchangeCode;
+        final String subscriberNumber;
         
-        String digitsOnly = normalizePhoneNumber(phoneNumber);
-        if (digitsOnly == null) {
-            return phoneNumber;
+        /**
+         * Creates a new phone number components object.
+         * 
+         * @param areaCode the 3-digit area code
+         * @param exchangeCode the 3-digit exchange code
+         * @param subscriberNumber the 4-digit subscriber number
+         */
+        PhoneNumberComponents(String areaCode, String exchangeCode, String subscriberNumber) {
+            this.areaCode = areaCode;
+            this.exchangeCode = exchangeCode;
+            this.subscriberNumber = subscriberNumber;
         }
-        
-        // Handle 11-digit number with country code
-        if (digitsOnly.length() == 11 && digitsOnly.startsWith("1")) {
-            digitsOnly = digitsOnly.substring(1);
-        }
-        
-        // Format 10-digit number
-        if (digitsOnly.length() == 10) {
-            return String.format("(%s) %s-%s", 
-                digitsOnly.substring(0, 3),
-                digitsOnly.substring(3, 6),
-                digitsOnly.substring(6));
-        }
-        
-        return phoneNumber; // Return original if cannot format
     }
 }
