@@ -1,0 +1,975 @@
+/**
+ * BMS Field Attribute Replication CSS
+ * 
+ * This CSS file implements exact BMS field attribute behavior for React components,
+ * providing visual and functional equivalence to original 3270 terminal field attributes.
+ * 
+ * Implements the following BMS attributes as specified in Summary of Changes Section 0.2.1:
+ * - ASKIP: Auto-skip protected field (read-only display)
+ * - UNPROT: Unprotected field allowing user input
+ * - PROT: Protected field preventing user modification  
+ * - NUM: Numeric-only input validation and mobile keyboard optimization
+ * - IC: Initial cursor positioning with focus management
+ * - BRT: Bright intensity for emphasis and visual prominence
+ * 
+ * Integration with Material-UI TextField components maintains exact terminal
+ * field behavior while providing modern responsive design capabilities.
+ * 
+ * @version CardDemo_v1.0-15-g27d6c6f-68
+ * @author Blitzy Platform
+ */
+
+/* Import theme variables for consistent color palette and spacing */
+@import url('./theme.js');
+
+/* ============================================================================
+ * ASKIP (Auto-Skip Protected) Field Attribute Implementation
+ * ============================================================================
+ * Replicates BMS ASKIP attribute behavior: read-only display fields that
+ * cannot receive focus or user input, typically used for labels and data display
+ */
+
+.bms-askip,
+.askip-field {
+  /* Base display-only field styling */
+  pointer-events: none;
+  user-select: none;
+  background-color: transparent !important;
+  border: 1px solid transparent !important;
+  
+  /* Terminal-style text appearance */
+  color: #ffffff; /* Terminal white for display text */
+  font-family: "Courier New", "Monaco", "Lucida Console", monospace;
+  font-size: 14px;
+  font-weight: normal;
+  letter-spacing: 0.00938em;
+  line-height: 1.5;
+  
+  /* Disable cursor and focus indicators */
+  cursor: default;
+  outline: none;
+  tab-index: -1;
+  
+  /* Prevent text selection and highlighting */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  
+  /* Responsive padding for consistent spacing */
+  padding: 4px 8px;
+  margin: 0;
+  
+  /* Maintain accessibility for screen readers */
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.display-only,
+.protected-display {
+  /* Additional styling for protected display fields */
+  opacity: 0.9;
+  filter: brightness(0.95);
+  
+  /* Subtle visual indication of protected status */
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  
+  /* Maintain terminal character spacing */
+  white-space: pre;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* ============================================================================
+ * UNPROT (Unprotected) Field Attribute Implementation
+ * ============================================================================
+ * Replicates BMS UNPROT attribute behavior: input fields that allow user
+ * modification and receive focus for data entry
+ */
+
+.bms-unprot,
+.unprot-field {
+  /* Base input field styling */
+  background-color: rgba(0, 255, 0, 0.05) !important; /* Subtle green tint */
+  border: 1px solid #333333 !important;
+  border-radius: 2px;
+  
+  /* Terminal-style input appearance */
+  color: #00ff00; /* Terminal green for input fields */
+  font-family: "Courier New", "Monaco", "Lucida Console", monospace;
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 0.00938em;
+  line-height: 1.5;
+  
+  /* Focus behavior */
+  cursor: text;
+  outline: none;
+  transition: all 0.2s ease-in-out;
+  
+  /* Input field padding and spacing */
+  padding: 6px 10px;
+  margin: 2px 0;
+  
+  /* Enable text selection and editing */
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+}
+
+.input-enabled,
+.editable-field {
+  /* Enhanced input field styling */
+  background-color: rgba(0, 255, 0, 0.08) !important;
+  
+  /* Hover state */
+  &:hover {
+    background-color: rgba(0, 255, 0, 0.12) !important;
+    border-color: #666666 !important;
+  }
+  
+  /* Focus state */
+  &:focus,
+  &:focus-within {
+    background-color: rgba(0, 255, 0, 0.15) !important;
+    border-color: #00ffff !important; /* Terminal turquoise for focus */
+    box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.2);
+  }
+  
+  /* Invalid state */
+  &:invalid,
+  &.error {
+    background-color: rgba(255, 0, 0, 0.08) !important;
+    border-color: #ff0000 !important;
+    color: #ff6666;
+  }
+}
+
+/* ============================================================================
+ * PROT (Protected) Field Attribute Implementation
+ * ============================================================================
+ * Replicates BMS PROT attribute behavior: fields that are disabled and
+ * cannot receive focus, but remain visible for context
+ */
+
+.bms-prot,
+.prot-field {
+  /* Base protected field styling */
+  background-color: rgba(128, 128, 128, 0.1) !important;
+  border: 1px solid #666666 !important;
+  border-radius: 2px;
+  
+  /* Disabled appearance */
+  color: #888888; /* Dimmed text for disabled fields */
+  font-family: "Courier New", "Monaco", "Lucida Console", monospace;
+  font-size: 14px;
+  font-weight: normal;
+  letter-spacing: 0.00938em;
+  line-height: 1.5;
+  
+  /* Disable interaction */
+  pointer-events: none;
+  cursor: not-allowed;
+  outline: none;
+  tab-index: -1;
+  
+  /* Visual disabled state */
+  opacity: 0.7;
+  filter: grayscale(0.3);
+  
+  /* Input field padding */
+  padding: 6px 10px;
+  margin: 2px 0;
+  
+  /* Prevent text selection */
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.field-disabled,
+.protected-input {
+  /* Additional protected field styling */
+  background-image: linear-gradient(45deg, 
+    rgba(128, 128, 128, 0.1) 25%, 
+    transparent 25%, 
+    transparent 75%, 
+    rgba(128, 128, 128, 0.1) 75%);
+  background-size: 8px 8px;
+  
+  /* Strikethrough effect for clearly disabled fields */
+  text-decoration: line-through;
+  text-decoration-color: rgba(128, 128, 128, 0.5);
+  
+  /* Maintain readability while indicating disabled state */
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* ============================================================================
+ * NUM (Numeric) Field Attribute Implementation
+ * ============================================================================
+ * Replicates BMS NUM attribute behavior: numeric-only input fields with
+ * mobile keyboard optimization and validation
+ */
+
+.bms-num,
+.num-field {
+  /* Base numeric field styling */
+  background-color: rgba(0, 255, 255, 0.05) !important; /* Subtle cyan tint */
+  border: 1px solid #333333 !important;
+  border-radius: 2px;
+  
+  /* Numeric field appearance */
+  color: #00ffff; /* Terminal cyan for numeric fields */
+  font-family: "Courier New", "Monaco", "Lucida Console", monospace;
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 0.05em; /* Slightly wider letter spacing for numbers */
+  line-height: 1.5;
+  text-align: right; /* Right-align numeric values */
+  
+  /* Input behavior */
+  cursor: text;
+  outline: none;
+  transition: all 0.2s ease-in-out;
+  
+  /* Numeric input padding */
+  padding: 6px 12px;
+  margin: 2px 0;
+  
+  /* Enable text selection */
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+}
+
+.numeric-input,
+.mobile-numeric {
+  /* Enhanced numeric field styling */
+  background-color: rgba(0, 255, 255, 0.08) !important;
+  
+  /* Hover state */
+  &:hover {
+    background-color: rgba(0, 255, 255, 0.12) !important;
+    border-color: #666666 !important;
+  }
+  
+  /* Focus state */
+  &:focus,
+  &:focus-within {
+    background-color: rgba(0, 255, 255, 0.15) !important;
+    border-color: #00ffff !important;
+    box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.2);
+  }
+  
+  /* Invalid numeric input */
+  &:invalid,
+  &.error {
+    background-color: rgba(255, 0, 0, 0.08) !important;
+    border-color: #ff0000 !important;
+    color: #ff6666;
+  }
+  
+  /* Mobile keyboard optimization */
+  input-mode: numeric;
+  pattern: "[0-9]*";
+  
+  /* Decimal number support */
+  &.decimal {
+    pattern: "[0-9]+\.?[0-9]*";
+  }
+  
+  /* Currency formatting */
+  &.currency {
+    &::before {
+      content: '$';
+      color: #00ffff;
+      margin-right: 4px;
+    }
+  }
+}
+
+/* ============================================================================
+ * IC (Initial Cursor) Field Attribute Implementation
+ * ============================================================================
+ * Replicates BMS IC attribute behavior: fields that receive initial focus
+ * when the screen loads, with visual focus indication
+ */
+
+.bms-ic,
+.ic-field {
+  /* Base initial cursor field styling */
+  background-color: rgba(255, 255, 0, 0.05) !important; /* Subtle yellow tint */
+  border: 1px solid #333333 !important;
+  border-radius: 2px;
+  
+  /* Initial focus field appearance */
+  color: #ffff00; /* Terminal yellow for IC fields */
+  font-family: "Courier New", "Monaco", "Lucida Console", monospace;
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 0.00938em;
+  line-height: 1.5;
+  
+  /* Focus behavior */
+  cursor: text;
+  outline: none;
+  transition: all 0.3s ease-in-out;
+  
+  /* Input field padding */
+  padding: 6px 10px;
+  margin: 2px 0;
+  
+  /* Enable text selection */
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  
+  /* Auto-focus indication */
+  animation: initial-focus-pulse 2s ease-in-out;
+}
+
+.initial-cursor,
+.autofocus-field {
+  /* Enhanced initial cursor styling */
+  background-color: rgba(255, 255, 0, 0.08) !important;
+  
+  /* Immediate focus state */
+  &:focus,
+  &:focus-within {
+    background-color: rgba(255, 255, 0, 0.15) !important;
+    border-color: #ffff00 !important;
+    box-shadow: 0 0 0 2px rgba(255, 255, 0, 0.3);
+  }
+  
+  /* Pulsing animation for initial focus */
+  @keyframes initial-focus-pulse {
+    0% { 
+      box-shadow: 0 0 0 0 rgba(255, 255, 0, 0.4);
+    }
+    70% { 
+      box-shadow: 0 0 0 6px rgba(255, 255, 0, 0.1);
+    }
+    100% { 
+      box-shadow: 0 0 0 0 rgba(255, 255, 0, 0.1);
+    }
+  }
+}
+
+/* ============================================================================
+ * BRT (Bright Intensity) Field Attribute Implementation
+ * ============================================================================
+ * Replicates BMS BRT attribute behavior: fields with enhanced visual emphasis
+ * through bold text and increased contrast
+ */
+
+.bms-brt,
+.brt-field {
+  /* Base bright intensity field styling */
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid #ffffff !important;
+  border-radius: 2px;
+  
+  /* Bright intensity appearance */
+  color: #ffffff; /* Bright white for emphasized fields */
+  font-family: "Courier New", "Monaco", "Lucida Console", monospace;
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 0.00938em;
+  line-height: 1.5;
+  
+  /* Visual emphasis */
+  text-shadow: 0 0 2px rgba(255, 255, 255, 0.5);
+  filter: brightness(1.2);
+  
+  /* Input behavior */
+  cursor: text;
+  outline: none;
+  transition: all 0.2s ease-in-out;
+  
+  /* Field padding */
+  padding: 6px 10px;
+  margin: 2px 0;
+  
+  /* Enable text selection */
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+}
+
+.bright-intensity,
+.bold-emphasis {
+  /* Enhanced bright intensity styling */
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  
+  /* Hover state */
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.12) !important;
+    border-color: #ffffff !important;
+    text-shadow: 0 0 4px rgba(255, 255, 255, 0.7);
+  }
+  
+  /* Focus state */
+  &:focus,
+  &:focus-within {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+    border-color: #ffffff !important;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+    text-shadow: 0 0 6px rgba(255, 255, 255, 0.9);
+  }
+  
+  /* Extra emphasis for critical fields */
+  &.critical {
+    animation: bright-pulse 1.5s ease-in-out infinite;
+  }
+  
+  @keyframes bright-pulse {
+    0%, 100% { 
+      filter: brightness(1.2);
+    }
+    50% { 
+      filter: brightness(1.5);
+    }
+  }
+}
+
+/* ============================================================================
+ * Material-UI TextField Integration
+ * ============================================================================
+ * Specialized CSS classes for seamless integration with Material-UI
+ * TextField components while maintaining BMS attribute behavior
+ */
+
+.mui-textfield-bms {
+  /* Base MUI TextField styling for BMS integration */
+  font-family: "Courier New", "Monaco", "Lucida Console", monospace !important;
+  
+  /* TextField root overrides */
+  .MuiTextField-root {
+    margin: 2px 0;
+    
+    /* Input base styling */
+    .MuiInputBase-root {
+      font-family: "Courier New", "Monaco", "Lucida Console", monospace;
+      font-size: 14px;
+      letter-spacing: 0.00938em;
+      line-height: 1.5;
+      
+      /* Input field styling */
+      .MuiInputBase-input {
+        padding: 6px 10px;
+        transition: all 0.2s ease-in-out;
+      }
+      
+      /* Fieldset styling */
+      .MuiOutlinedInput-notchedOutline {
+        border-color: #333333;
+        border-radius: 2px;
+      }
+      
+      /* Hover state */
+      &:hover .MuiOutlinedInput-notchedOutline {
+        border-color: #666666;
+      }
+      
+      /* Focus state */
+      &.Mui-focused .MuiOutlinedInput-notchedOutline {
+        border-color: #00ffff;
+        box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.2);
+      }
+      
+      /* Error state */
+      &.Mui-error .MuiOutlinedInput-notchedOutline {
+        border-color: #ff0000;
+      }
+    }
+    
+    /* Label styling */
+    .MuiInputLabel-root {
+      font-family: "Courier New", "Monaco", "Lucida Console", monospace;
+      font-size: 14px;
+      color: #cccccc;
+      
+      &.Mui-focused {
+        color: #00ffff;
+      }
+      
+      &.Mui-error {
+        color: #ff0000;
+      }
+    }
+    
+    /* Helper text styling */
+    .MuiFormHelperText-root {
+      font-family: "Courier New", "Monaco", "Lucida Console", monospace;
+      font-size: 12px;
+      margin-top: 4px;
+      
+      &.Mui-error {
+        color: #ff0000;
+      }
+    }
+  }
+}
+
+/* Material-UI integration for specific BMS attributes */
+
+.mui-input-askip {
+  /* ASKIP attribute integration */
+  .MuiInputBase-root {
+    background-color: transparent !important;
+    pointer-events: none;
+    
+    .MuiInputBase-input {
+      color: #ffffff;
+      font-weight: normal;
+      cursor: default;
+      user-select: none;
+    }
+    
+    .MuiOutlinedInput-notchedOutline {
+      border-color: transparent !important;
+    }
+  }
+}
+
+.mui-input-unprot {
+  /* UNPROT attribute integration */
+  .MuiInputBase-root {
+    background-color: rgba(0, 255, 0, 0.05) !important;
+    
+    .MuiInputBase-input {
+      color: #00ff00;
+      font-weight: bold;
+    }
+    
+    &:hover {
+      background-color: rgba(0, 255, 0, 0.08) !important;
+    }
+    
+    &.Mui-focused {
+      background-color: rgba(0, 255, 0, 0.12) !important;
+    }
+  }
+}
+
+.mui-input-prot {
+  /* PROT attribute integration */
+  .MuiInputBase-root {
+    background-color: rgba(128, 128, 128, 0.1) !important;
+    pointer-events: none;
+    
+    .MuiInputBase-input {
+      color: #888888;
+      font-weight: normal;
+      cursor: not-allowed;
+    }
+    
+    .MuiOutlinedInput-notchedOutline {
+      border-color: #666666 !important;
+    }
+  }
+}
+
+.mui-input-num {
+  /* NUM attribute integration */
+  .MuiInputBase-root {
+    background-color: rgba(0, 255, 255, 0.05) !important;
+    
+    .MuiInputBase-input {
+      color: #00ffff;
+      font-weight: bold;
+      text-align: right;
+      letter-spacing: 0.05em;
+    }
+    
+    &:hover {
+      background-color: rgba(0, 255, 255, 0.08) !important;
+    }
+    
+    &.Mui-focused {
+      background-color: rgba(0, 255, 255, 0.12) !important;
+    }
+  }
+}
+
+.mui-focus-ic {
+  /* IC attribute integration */
+  .MuiInputBase-root {
+    background-color: rgba(255, 255, 0, 0.05) !important;
+    
+    .MuiInputBase-input {
+      color: #ffff00;
+      font-weight: bold;
+      animation: initial-focus-pulse 2s ease-in-out;
+    }
+    
+    &.Mui-focused {
+      background-color: rgba(255, 255, 0, 0.12) !important;
+    }
+  }
+}
+
+.mui-emphasis-brt {
+  /* BRT attribute integration */
+  .MuiInputBase-root {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    
+    .MuiInputBase-input {
+      color: #ffffff;
+      font-weight: bold;
+      text-shadow: 0 0 2px rgba(255, 255, 255, 0.5);
+      filter: brightness(1.2);
+    }
+    
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.08) !important;
+    }
+    
+    &.Mui-focused {
+      background-color: rgba(255, 255, 255, 0.12) !important;
+    }
+  }
+}
+
+/* ============================================================================
+ * Responsive Design Support
+ * ============================================================================
+ * Responsive breakpoints maintaining 24×80 character terminal layout
+ * while adapting to different screen sizes
+ */
+
+/* Mobile portrait (xs: 320px) */
+@media (max-width: 639px) {
+  .bms-askip, .bms-unprot, .bms-prot, .bms-num, .bms-ic, .bms-brt {
+    font-size: 12px;
+    padding: 4px 6px;
+    margin: 1px 0;
+  }
+  
+  .mui-textfield-bms .MuiTextField-root .MuiInputBase-root .MuiInputBase-input {
+    font-size: 12px;
+    padding: 4px 6px;
+  }
+}
+
+/* Mobile landscape / small tablet (sm: 640px) */
+@media (min-width: 640px) and (max-width: 959px) {
+  .bms-askip, .bms-unprot, .bms-prot, .bms-num, .bms-ic, .bms-brt {
+    font-size: 13px;
+    padding: 5px 8px;
+    margin: 1px 0;
+  }
+  
+  .mui-textfield-bms .MuiTextField-root .MuiInputBase-root .MuiInputBase-input {
+    font-size: 13px;
+    padding: 5px 8px;
+  }
+}
+
+/* Tablet portrait (md: 960px) */
+@media (min-width: 960px) and (max-width: 1279px) {
+  .bms-askip, .bms-unprot, .bms-prot, .bms-num, .bms-ic, .bms-brt {
+    font-size: 14px;
+    padding: 6px 10px;
+    margin: 2px 0;
+  }
+}
+
+/* Desktop standard (lg: 1280px) */
+@media (min-width: 1280px) and (max-width: 1919px) {
+  .bms-askip, .bms-unprot, .bms-prot, .bms-num, .bms-ic, .bms-brt {
+    font-size: 14px;
+    padding: 6px 10px;
+    margin: 2px 0;
+  }
+}
+
+/* Large desktop (xl: 1920px+) */
+@media (min-width: 1920px) {
+  .bms-askip, .bms-unprot, .bms-prot, .bms-num, .bms-ic, .bms-brt {
+    font-size: 16px;
+    padding: 8px 12px;
+    margin: 3px 0;
+  }
+  
+  .mui-textfield-bms .MuiTextField-root .MuiInputBase-root .MuiInputBase-input {
+    font-size: 16px;
+    padding: 8px 12px;
+  }
+}
+
+/* ============================================================================
+ * Accessibility Support
+ * ============================================================================
+ * Enhanced accessibility for screen readers and keyboard navigation
+ * while maintaining BMS terminal behavior
+ */
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .bms-askip, .bms-unprot, .bms-prot, .bms-num, .bms-ic, .bms-brt {
+    border-width: 2px;
+    filter: contrast(1.5);
+  }
+  
+  .bms-askip {
+    color: #ffffff;
+  }
+  
+  .bms-unprot {
+    color: #00ff00;
+    background-color: rgba(0, 255, 0, 0.1) !important;
+  }
+  
+  .bms-prot {
+    color: #cccccc;
+    background-color: rgba(128, 128, 128, 0.2) !important;
+  }
+  
+  .bms-num {
+    color: #00ffff;
+    background-color: rgba(0, 255, 255, 0.1) !important;
+  }
+  
+  .bms-ic {
+    color: #ffff00;
+    background-color: rgba(255, 255, 0, 0.1) !important;
+  }
+  
+  .bms-brt {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    text-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .bms-ic .initial-cursor,
+  .bms-brt .bright-intensity,
+  .mui-focus-ic .MuiInputBase-input {
+    animation: none;
+  }
+  
+  .bms-askip, .bms-unprot, .bms-prot, .bms-num, .bms-ic, .bms-brt {
+    transition: none;
+  }
+}
+
+/* Focus visible support for keyboard navigation */
+.bms-unprot:focus-visible,
+.bms-num:focus-visible,
+.bms-ic:focus-visible,
+.bms-brt:focus-visible {
+  outline: 2px solid #00ffff;
+  outline-offset: 2px;
+}
+
+/* Screen reader support */
+.bms-askip[aria-label],
+.bms-unprot[aria-label],
+.bms-prot[aria-label],
+.bms-num[aria-label],
+.bms-ic[aria-label],
+.bms-brt[aria-label] {
+  position: relative;
+}
+
+.bms-askip[aria-label]::after,
+.bms-unprot[aria-label]::after,
+.bms-prot[aria-label]::after,
+.bms-num[aria-label]::after,
+.bms-ic[aria-label]::after,
+.bms-brt[aria-label]::after {
+  content: attr(aria-label);
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* ============================================================================
+ * Print Styles
+ * ============================================================================
+ * Maintain field appearance in printed documents
+ */
+
+@media print {
+  .bms-askip, .bms-unprot, .bms-prot, .bms-num, .bms-ic, .bms-brt {
+    color: #000000 !important;
+    background-color: #ffffff !important;
+    border: 1px solid #000000 !important;
+    font-family: "Courier New", monospace !important;
+    font-size: 12px !important;
+    text-shadow: none !important;
+    filter: none !important;
+    animation: none !important;
+  }
+  
+  .bms-prot {
+    color: #666666 !important;
+    text-decoration: line-through;
+  }
+  
+  .bms-brt {
+    font-weight: bold !important;
+  }
+}
+
+/* ============================================================================
+ * Utility Classes
+ * ============================================================================
+ * Additional utility classes for specific use cases
+ */
+
+/* Combined attribute classes */
+.bms-unprot.bms-num {
+  /* Unprotected numeric field */
+  color: #00ff00;
+  text-align: right;
+  background-color: rgba(0, 255, 0, 0.05) !important;
+}
+
+.bms-unprot.bms-ic {
+  /* Unprotected field with initial cursor */
+  color: #00ff00;
+  background-color: rgba(0, 255, 0, 0.05) !important;
+  animation: initial-focus-pulse 2s ease-in-out;
+}
+
+.bms-askip.bms-brt {
+  /* Protected display with bright intensity */
+  color: #ffffff;
+  font-weight: bold;
+  text-shadow: 0 0 2px rgba(255, 255, 255, 0.5);
+}
+
+/* Terminal color theme classes */
+.terminal-green {
+  color: #00ff00 !important;
+}
+
+.terminal-red {
+  color: #ff0000 !important;
+}
+
+.terminal-yellow {
+  color: #ffff00 !important;
+}
+
+.terminal-blue {
+  color: #0000ff !important;
+}
+
+.terminal-cyan {
+  color: #00ffff !important;
+}
+
+.terminal-white {
+  color: #ffffff !important;
+}
+
+/* Field validation states */
+.field-valid {
+  border-color: #00ff00 !important;
+  box-shadow: 0 0 0 1px rgba(0, 255, 0, 0.3);
+}
+
+.field-invalid {
+  border-color: #ff0000 !important;
+  box-shadow: 0 0 0 1px rgba(255, 0, 0, 0.3);
+}
+
+.field-warning {
+  border-color: #ffff00 !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 0, 0.3);
+}
+
+/* Focus management utilities */
+.focus-trap {
+  outline: 2px solid #00ffff;
+  outline-offset: 2px;
+}
+
+.no-focus {
+  outline: none;
+  tab-index: -1;
+}
+
+/* Terminal cursor simulation */
+.terminal-cursor {
+  position: relative;
+}
+
+.terminal-cursor::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: #00ffff;
+  animation: cursor-blink 1s infinite;
+}
+
+@keyframes cursor-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Responsive field sizing */
+.field-small {
+  font-size: 12px !important;
+  padding: 4px 6px !important;
+}
+
+.field-medium {
+  font-size: 14px !important;
+  padding: 6px 10px !important;
+}
+
+.field-large {
+  font-size: 16px !important;
+  padding: 8px 12px !important;
+}
+
+/* Layout utilities */
+.field-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.field-label {
+  font-family: "Courier New", "Monaco", "Lucida Console", monospace;
+  font-size: 14px;
+  color: #cccccc;
+  margin-right: 8px;
+  white-space: nowrap;
+}
+
+/* Performance optimization */
+.bms-askip, .bms-unprot, .bms-prot, .bms-num, .bms-ic, .bms-brt {
+  will-change: auto;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* End of BMS Attributes CSS */
