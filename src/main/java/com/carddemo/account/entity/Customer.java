@@ -209,10 +209,14 @@ public class Customer {
     /**
      * Collection of cards associated with this customer
      * 
-     * @OneToMany relationship with cascade operations for card lifecycle management.
+     * TODO: Enable @OneToMany relationship when Card entity is implemented by other agents
+     * @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+     * 
+     * Implements customer-card relationship maintenance per business requirements.
+     * This relationship will provide cascade operations for card lifecycle management.
      */
-    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private Set<Card> cards = new HashSet<>();
+    // @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Set<Object> cards = new HashSet<>();
 
     /**
      * Default constructor required by JPA
@@ -417,33 +421,41 @@ public class Customer {
         }
     }
 
-    public Set<Card> getCards() {
+    public Set<Object> getCards() {
         return cards;
     }
 
-    public void setCards(Set<Card> cards) {
+    public void setCards(Set<Object> cards) {
         this.cards = cards != null ? cards : new HashSet<>();
     }
 
     /**
      * Add a card to this customer's card collection
      * Maintains bidirectional relationship integrity
+     * 
+     * Note: Parameter type will be Card when that entity is implemented.
+     * Current Object type maintains compilation compatibility.
      */
-    public void addCard(Card card) {
+    public void addCard(Object card) {
         if (card != null) {
             this.cards.add(card);
-            card.setCustomer(this);
+            // Bidirectional relationship will be established when Card entity is available
+            // card.setCustomer(this);
         }
     }
 
     /**
      * Remove a card from this customer's card collection
      * Maintains bidirectional relationship integrity
+     * 
+     * Note: Parameter type will be Card when that entity is implemented.
+     * Current Object type maintains compilation compatibility.
      */
-    public void removeCard(Card card) {
+    public void removeCard(Object card) {
         if (card != null) {
             this.cards.remove(card);
-            card.setCustomer(null);
+            // Bidirectional relationship will be cleared when Card entity is available
+            // card.setCustomer(null);
         }
     }
 
