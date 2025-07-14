@@ -194,7 +194,7 @@ VALUES (
 INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, created_at, last_login) 
 VALUES (
     'BATCHUSR', 
-    '$2a$12$pJsD5.uJzJoWuOzWjJjEu.cYmJzIuInJsPs NjP5uJzNsIuMtOqN9N', 
+    '$2a$12$pJsD5.uJzJoWuOzWjJjEu.cYmJzIuInJsPsNjP5uJzNsIuMtOqN9N', 
     'U', 
     'Batch', 
     'Processor', 
