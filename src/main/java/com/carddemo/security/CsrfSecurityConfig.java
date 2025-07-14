@@ -10,12 +10,15 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
-import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.http.ResponseCookie;
+
+import java.util.function.Consumer;
 
 import com.carddemo.common.security.SecurityConfig;
 
@@ -108,27 +111,36 @@ public class CsrfSecurityConfig {
     /**
      * Configure CSRF token repository with secure cookie settings and path restrictions.
      * 
-     * Implements HttpSessionCsrfTokenRepository with enterprise-grade security settings
+     * Implements CookieCsrfTokenRepository with enterprise-grade security settings
      * including secure cookie transmission, SameSite protection, and path restrictions.
-     * The repository integrates with Spring Session Redis for distributed environments
+     * The repository uses cookies for token storage enabling stateless CSRF protection
      * while maintaining CSRF token security across multiple microservice instances.
      * 
      * Security Features:
      * - Secure cookie transmission (HTTPS only in production)
      * - SameSite=Strict for cross-site request protection
      * - Path restriction to /api endpoints only
-     * - Integration with Spring Session for distributed token management
+     * - HttpOnly cookie configuration for XSS protection
      * - Custom cookie naming to avoid application conflicts
      * 
      * @return CsrfTokenRepository configured for secure CSRF token management
      */
     @Bean
     public CsrfTokenRepository csrfTokenRepository() {
-        HttpSessionCsrfTokenRepository repository = new HttpSessionCsrfTokenRepository();
+        CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
         
-        // Configure CSRF token cookie settings for secure transmission
-        // Secure flag ensures transmission over HTTPS only in production environments
-        repository.setCookieHttpOnly(csrfCookieHttpOnly);
+        // Modern cookie configuration using Spring Security 6.x cookie customizer
+        // This approach replaces deprecated individual setter methods
+        Consumer<ResponseCookie.ResponseCookieBuilder> cookieCustomizer = cookieBuilder -> {
+            cookieBuilder
+                .path(csrfCookiePath)                    // Path restriction to API endpoints only
+                .secure(csrfCookieSecure)                // HTTPS-only transmission in production
+                .httpOnly(csrfCookieHttpOnly)            // Allow JavaScript access for React frontend
+                .sameSite(csrfCookieSameSite);           // Cross-site request protection
+        };
+        
+        // Apply modern cookie customizer configuration
+        repository.setCookieCustomizer(cookieCustomizer);
         
         // Custom cookie name prevents conflicts with other CardDemo applications
         // or microservices running in the same domain environment
@@ -141,10 +153,6 @@ public class CsrfSecurityConfig {
         // Header name enables React frontend to send CSRF tokens via X-CSRF-TOKEN header
         // This approach allows React components to include CSRF tokens in AJAX requests
         repository.setHeaderName(CSRF_HEADER_NAME);
-        
-        // Path restriction limits CSRF token availability to API endpoints only
-        // Enhances security by preventing token exposure to non-API resources
-        repository.setCookiePath(csrfCookiePath);
         
         return repository;
     }
@@ -213,15 +221,17 @@ public class CsrfSecurityConfig {
                 // Configure CSRF token request handler for React integration
                 .csrfTokenRequestHandler(createCsrfTokenRequestHandler())
                 
-                // Configure CSRF access denied handler for structured error responses
-                .accessDeniedHandler(csrfExceptionHandler())
-                
                 // Ignore CSRF for specific endpoints that use JWT authentication
                 .ignoringRequestMatchers(
                     new AntPathRequestMatcher("/api/auth/**"),      // Authentication endpoints
                     new AntPathRequestMatcher("/actuator/**"),     // Health and monitoring
                     new AntPathRequestMatcher("/api/*/health")     // Service health checks
                 )
+            )
+            
+            // Configure CSRF access denied handler for structured error responses
+            .exceptionHandling(exceptions -> exceptions
+                .accessDeniedHandler(csrfExceptionHandler())
             )
             
             // Configure session management for CSRF-protected endpoints
@@ -246,8 +256,8 @@ public class CsrfSecurityConfig {
             
             // Configure security headers for CSRF-protected endpoints
             .headers(headers -> headers
-                .frameOptions().deny()                    // Prevent clickjacking attacks
-                .contentTypeOptions().and()               // Prevent MIME type sniffing
+                .frameOptions(frameOptions -> frameOptions.deny())                    // Prevent clickjacking attacks
+                .contentTypeOptions(contentTypeOptions -> {})  // Prevent MIME type sniffing
                 .httpStrictTransportSecurity(hsts -> hsts
                     .maxAgeInSeconds(31536000)            // 1 year HSTS header
                     .includeSubDomains(true)              // Apply to all subdomains
