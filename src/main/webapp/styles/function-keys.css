@@ -1,0 +1,912 @@
+/**
+ * CardDemo Function Key Styling
+ * 
+ * Implements visual cues, tooltips, and navigation indicators for preserving
+ * mainframe keyboard navigation patterns in the React application. This CSS
+ * provides enterprise-grade styling for PF key guidance and keyboard shortcuts
+ * that maintains exact functional equivalence with original COBOL/CICS/BMS
+ * terminal behavior while integrating seamlessly with Material-UI components.
+ * 
+ * Key Features:
+ * - Function key toolbar with Material-UI integration
+ * - Keyboard shortcut tooltips matching BMS help text patterns
+ * - PF key guidance chips (F3=Exit, F7=Page Up, F8=Page Down, F12=Cancel)
+ * - Navigation state indicators with primary theme highlighting
+ * - Key press visual feedback through Material-UI Button ripple effects
+ * - Contextual help integration with Material-UI Popover components
+ * 
+ * BMS Function Key Mappings Preserved:
+ * - F3=Exit (universal across all screens)
+ * - ENTER=Sign-on/Continue (context-dependent)
+ * - F7=Page Up (for data navigation)
+ * - F8=Page Down (for data navigation)
+ * - F12=Cancel (for transaction cancellation)
+ * 
+ * @version CardDemo_v1.0-15-g27d6c6f-68
+ */
+
+/* ==========================================================================
+   FUNCTION KEY TOOLBAR STYLES
+   Implements Material-UI integrated toolbar for function key display
+   ========================================================================== */
+
+/**
+ * Main function key toolbar container
+ * Positioned at bottom of screen to match terminal PF key line location
+ */
+.function-key-toolbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1100; /* Below modal, above app content */
+  background-color: #1a1a1a; /* theme.palette.background.paper */
+  border-top: 1px solid #333333; /* theme.palette.divider */
+  padding: 8px 16px; /* theme.spacing(1) theme.spacing(2) */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: "Courier New", "Monaco", "Lucida Console", monospace;
+  font-size: 12px;
+  color: #ffffff; /* theme.palette.text.primary */
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.3);
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1); /* theme.transitions.easing.easeInOut */
+}
+
+/**
+ * Function key container for grouping related keys
+ */
+.function-key-container {
+  display: flex;
+  align-items: center;
+  gap: 12px; /* theme.spacing(1.5) */
+  flex-wrap: wrap;
+}
+
+/**
+ * Individual function key bar styling
+ */
+.function-key-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* theme.spacing(1) */
+  padding: 4px 8px; /* theme.spacing(0.5) theme.spacing(1) */
+  border-radius: 4px; /* theme.shape.borderRadius */
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid transparent;
+  transition: all 200ms cubic-bezier(0.0, 0, 0.2, 1); /* theme.transitions.duration.shorter */
+}
+
+.function-key-bar:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: #666666;
+}
+
+/**
+ * Toolbar positioning utilities for responsive layout
+ */
+.toolbar-positioning {
+  /* Mobile (xs) - Stack function keys vertically */
+  @media (max-width: 320px) {
+    .function-key-toolbar {
+      flex-direction: column;
+      align-items: stretch;
+      padding: 8px;
+    }
+    
+    .function-key-container {
+      justify-content: center;
+    }
+  }
+  
+  /* Small screens (sm) - Compact horizontal layout */
+  @media (min-width: 640px) {
+    .function-key-toolbar {
+      padding: 6px 16px;
+    }
+    
+    .function-key-container {
+      gap: 8px;
+    }
+  }
+  
+  /* Medium and larger screens - Full layout */
+  @media (min-width: 960px) {
+    .function-key-toolbar {
+      padding: 8px 24px;
+    }
+    
+    .function-key-container {
+      gap: 16px;
+    }
+  }
+}
+
+/* ==========================================================================
+   KEYBOARD SHORTCUTS TOOLTIP STYLES
+   Material-UI Tooltip integration for keyboard shortcut guidance
+   ========================================================================== */
+
+/**
+ * Main keyboard tooltip styling
+ * Extends Material-UI Tooltip theme overrides with function key specifics
+ */
+.keyboard-tooltip {
+  background-color: #1a1a1a !important; /* Force override Material-UI */
+  color: #ffffff !important;
+  border: 1px solid #333333 !important;
+  font-family: "Courier New", "Monaco", "Lucida Console", monospace !important;
+  font-size: 12px !important;
+  max-width: 300px !important;
+  padding: 8px 12px !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+  z-index: 1500 !important; /* theme.zIndex.tooltip */
+}
+
+/**
+ * Tooltip content container for structured help text
+ */
+.tooltip-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  line-height: 1.4;
+}
+
+.tooltip-content .shortcut-title {
+  font-weight: bold;
+  color: #00ffff; /* theme.palette.info.main - terminal turquoise */
+  margin-bottom: 4px;
+  border-bottom: 1px solid #333333;
+  padding-bottom: 2px;
+}
+
+.tooltip-content .shortcut-description {
+  color: #ffffff;
+  font-size: 11px;
+}
+
+/**
+ * Individual shortcut hint styling within tooltips
+ */
+.shortcut-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.shortcut-hint .key-name {
+  font-weight: bold;
+  color: #ffff00; /* theme.palette.warning.main - terminal yellow */
+  background-color: rgba(255, 255, 0, 0.1);
+  padding: 1px 4px;
+  border-radius: 2px;
+  border: 1px solid rgba(255, 255, 0, 0.3);
+  min-width: 24px;
+  text-align: center;
+  font-size: 10px;
+}
+
+.shortcut-hint .key-action {
+  color: #cccccc; /* theme.palette.text.secondary */
+  font-size: 11px;
+  flex: 1;
+  text-align: right;
+}
+
+/**
+ * Tooltip positioning enhancements for function key context
+ */
+.tooltip-positioning {
+  /* Ensure tooltips don't overlap function key toolbar */
+  .keyboard-tooltip[data-popper-placement^="bottom"] {
+    margin-bottom: 60px !important; /* Account for toolbar height */
+  }
+  
+  /* Enhance arrow styling for better visibility */
+  .keyboard-tooltip .MuiTooltip-arrow {
+    color: #1a1a1a !important;
+  }
+  
+  .keyboard-tooltip .MuiTooltip-arrow::before {
+    border: 1px solid #333333 !important;
+  }
+}
+
+/* ==========================================================================
+   PF KEY GUIDANCE CHIPS
+   Material-UI Chip integration for individual function key guidance
+   ========================================================================== */
+
+/**
+ * Base PF key chip styling
+ * Implements terminal-style appearance with Material-UI Chip component
+ */
+.pf-key-chip {
+  font-family: "Courier New", "Monaco", "Lucida Console", monospace !important;
+  font-size: 11px !important;
+  font-weight: bold !important;
+  height: 24px !important;
+  background-color: #333333 !important;
+  color: #ffffff !important;
+  border: 1px solid #666666 !important;
+  border-radius: 2px !important;
+  cursor: pointer !important;
+  transition: all 200ms cubic-bezier(0.0, 0, 0.2, 1) !important;
+  user-select: none !important;
+}
+
+.pf-key-chip:hover {
+  background-color: #555555 !important;
+  border-color: #888888 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.pf-key-chip:active {
+  background-color: #222222 !important;
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.pf-key-chip .MuiChip-label {
+  padding: 0 8px !important;
+  white-space: nowrap !important;
+}
+
+/**
+ * Specific PF key chip variants for different function keys
+ */
+
+/* F3=Exit chip - Universal exit functionality */
+.chip-f3-exit {
+  background-color: #ff4444 !important; /* Red variant for exit action */
+  color: #ffffff !important;
+  border-color: #cc0000 !important;
+}
+
+.chip-f3-exit:hover {
+  background-color: #ff6666 !important;
+  border-color: #ff0000 !important;
+}
+
+.chip-f3-exit:active {
+  background-color: #cc0000 !important;
+}
+
+/* F7=Page Up chip - Navigation functionality */
+.chip-f7-page-up {
+  background-color: #0066cc !important; /* Blue variant for navigation */
+  color: #ffffff !important;
+  border-color: #004499 !important;
+}
+
+.chip-f7-page-up:hover {
+  background-color: #3388dd !important;
+  border-color: #0066cc !important;
+}
+
+.chip-f7-page-up:active {
+  background-color: #004499 !important;
+}
+
+/* F8=Page Down chip - Navigation functionality */
+.chip-f8-page-down {
+  background-color: #0066cc !important; /* Blue variant for navigation */
+  color: #ffffff !important;
+  border-color: #004499 !important;
+}
+
+.chip-f8-page-down:hover {
+  background-color: #3388dd !important;
+  border-color: #0066cc !important;
+}
+
+.chip-f8-page-down:active {
+  background-color: #004499 !important;
+}
+
+/* F12=Cancel chip - Transaction cancellation */
+.chip-f12-cancel {
+  background-color: #ff8800 !important; /* Orange variant for cancel action */
+  color: #ffffff !important;
+  border-color: #cc6600 !important;
+}
+
+.chip-f12-cancel:hover {
+  background-color: #ffaa33 !important;
+  border-color: #ff8800 !important;
+}
+
+.chip-f12-cancel:active {
+  background-color: #cc6600 !important;
+}
+
+/* ENTER=Submit chip - Primary action */
+.chip-enter-submit {
+  background-color: #00cc44 !important; /* Green variant for submit action */
+  color: #ffffff !important;
+  border-color: #009933 !important;
+}
+
+.chip-enter-submit:hover {
+  background-color: #33dd66 !important;
+  border-color: #00cc44 !important;
+}
+
+.chip-enter-submit:active {
+  background-color: #009933 !important;
+}
+
+/* ==========================================================================
+   KEYBOARD NAVIGATION INDICATORS
+   Visual feedback for active navigation states and focus management
+   ========================================================================== */
+
+/**
+ * Active navigation indicator
+ * Highlights currently active navigation element with primary theme color
+ */
+.nav-indicator-active {
+  position: relative;
+  outline: 2px solid #1976d2 !important; /* theme.palette.primary.main */
+  outline-offset: 2px;
+  background-color: rgba(25, 118, 210, 0.1) !important;
+  box-shadow: 0 0 8px rgba(25, 118, 210, 0.3);
+  animation: nav-pulse 2s ease-in-out infinite;
+}
+
+@keyframes nav-pulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(25, 118, 210, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(25, 118, 210, 0.5);
+  }
+}
+
+/**
+ * Focus indicator for keyboard navigation
+ */
+.nav-indicator-focus {
+  position: relative;
+  border: 2px solid #00ffff !important; /* theme.palette.info.main - terminal turquoise */
+  border-radius: 4px !important;
+  background-color: rgba(0, 255, 255, 0.05) !important;
+  transition: all 150ms cubic-bezier(0.4, 0, 1, 1); /* theme.transitions.duration.shortest */
+}
+
+.nav-indicator-focus::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 6px;
+  pointer-events: none;
+  animation: focus-glow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes focus-glow {
+  from {
+    opacity: 0.3;
+  }
+  to {
+    opacity: 0.7;
+  }
+}
+
+/**
+ * Primary highlight for important navigation elements
+ */
+.primary-highlight {
+  background: linear-gradient(135deg, 
+    rgba(25, 118, 210, 0.1) 0%, 
+    rgba(25, 118, 210, 0.2) 100%) !important;
+  border: 1px solid #1976d2 !important;
+  color: #42a5f5 !important; /* theme.palette.primary.light */
+  font-weight: bold !important;
+  text-shadow: 0 0 4px rgba(25, 118, 210, 0.5);
+}
+
+.primary-highlight:hover {
+  background: linear-gradient(135deg, 
+    rgba(25, 118, 210, 0.2) 0%, 
+    rgba(25, 118, 210, 0.3) 100%) !important;
+  border-color: #42a5f5 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(25, 118, 210, 0.3);
+}
+
+/**
+ * Navigation state visual indicators
+ */
+.nav-state-visual {
+  position: relative;
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-state-visual.nav-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+  filter: grayscale(1);
+}
+
+.nav-state-visual.nav-loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-state-visual.nav-loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.2), 
+    transparent);
+  animation: nav-loading-shimmer 1.5s infinite;
+}
+
+@keyframes nav-loading-shimmer {
+  100% {
+    left: 100%;
+  }
+}
+
+/* ==========================================================================
+   KEY PRESS FEEDBACK
+   Material-UI Button ripple effects and press animations
+   ========================================================================== */
+
+/**
+ * Key press visual feedback system
+ * Provides immediate visual response to key press events
+ */
+.key-press-visual {
+  position: relative;
+  overflow: hidden;
+  transform-origin: center;
+  transition: all 150ms cubic-bezier(0.4, 0, 1, 1);
+}
+
+.key-press-visual.key-pressed {
+  transform: scale(0.95);
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.key-press-visual.key-pressed::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  animation: key-press-ripple 300ms ease-out;
+}
+
+@keyframes key-press-ripple {
+  to {
+    width: 200px;
+    height: 200px;
+    opacity: 0;
+  }
+}
+
+/**
+ * Material-UI Button ripple effect enhancement
+ */
+.ripple-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-effect .MuiTouchRipple-root {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.ripple-effect .MuiTouchRipple-rippleVisible {
+  animation: button-ripple-animation 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes button-ripple-animation {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/**
+ * Button feedback for function key interactions
+ */
+.button-feedback {
+  transition: all 150ms cubic-bezier(0.4, 0, 1, 1);
+  position: relative;
+}
+
+.button-feedback:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.button-feedback:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.button-feedback.button-success {
+  background-color: #00cc44;
+  animation: button-success-flash 500ms ease-out;
+}
+
+@keyframes button-success-flash {
+  0% { background-color: #00cc44; }
+  50% { background-color: #33ff66; }
+  100% { background-color: #00cc44; }
+}
+
+/**
+ * Press animation for enhanced feedback
+ */
+.press-animation {
+  animation-duration: 150ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
+  animation-fill-mode: both;
+}
+
+.press-animation.press-down {
+  animation-name: press-down-animation;
+}
+
+.press-animation.press-up {
+  animation-name: press-up-animation;
+}
+
+@keyframes press-down-animation {
+  0% {
+    transform: scale(1) translateY(0);
+  }
+  100% {
+    transform: scale(0.95) translateY(1px);
+  }
+}
+
+@keyframes press-up-animation {
+  0% {
+    transform: scale(0.95) translateY(1px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ==========================================================================
+   HELP TEXT INTEGRATION
+   Material-UI Popover integration for contextual assistance
+   ========================================================================== */
+
+/**
+ * Help text popover styling for function key guidance
+ * Integrates with Material-UI Popover component theme overrides
+ */
+.help-text-popover {
+  background-color: #1a1a1a !important;
+  color: #ffffff !important;
+  border: 1px solid #333333 !important;
+  border-radius: 4px !important;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4) !important;
+  max-width: 400px !important;
+  z-index: 1300 !important; /* theme.zIndex.modal */
+}
+
+.help-text-popover .MuiPopover-paper {
+  background-color: #1a1a1a;
+  color: #ffffff;
+  font-family: "Courier New", "Monaco", "Lucida Console", monospace;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/**
+ * Contextual help content structure
+ */
+.contextual-help {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.contextual-help .help-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #00ffff; /* theme.palette.info.main */
+  border-bottom: 1px solid #333333;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+}
+
+.contextual-help .help-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.contextual-help .help-section-title {
+  font-weight: bold;
+  color: #ffff00; /* theme.palette.warning.main */
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.contextual-help .help-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.contextual-help .help-key {
+  background-color: #333333;
+  color: #ffffff;
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-size: 10px;
+  font-weight: bold;
+  min-width: 24px;
+  text-align: center;
+  border: 1px solid #666666;
+  flex-shrink: 0;
+}
+
+.contextual-help .help-description {
+  color: #cccccc;
+  font-size: 11px;
+  line-height: 1.3;
+  flex: 1;
+}
+
+/**
+ * Function key specific help styling
+ */
+.function-key-help {
+  background-color: rgba(0, 255, 255, 0.05);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 12px;
+  margin-top: 8px;
+}
+
+.function-key-help .help-category {
+  font-weight: bold;
+  color: #00ffff;
+  font-size: 11px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+.function-key-help .key-combination {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 4px 0;
+}
+
+.function-key-help .key-combination .key {
+  background-color: #555555;
+  color: #ffffff;
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-size: 9px;
+  font-weight: bold;
+  border: 1px solid #777777;
+}
+
+.function-key-help .key-combination .plus {
+  color: #888888;
+  font-size: 10px;
+}
+
+/**
+ * Material-UI integration styling for help components
+ */
+.help-integration-mui {
+  /* Enhance Material-UI Popover positioning for function key context */
+  .MuiPopover-root[data-testid="function-key-help"] {
+    z-index: 1400;
+  }
+  
+  /* Custom scrollbar for help content */
+  .help-text-popover ::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .help-text-popover ::-webkit-scrollbar-track {
+    background: #222222;
+    border-radius: 3px;
+  }
+  
+  .help-text-popover ::-webkit-scrollbar-thumb {
+    background: #555555;
+    border-radius: 3px;
+  }
+  
+  .help-text-popover ::-webkit-scrollbar-thumb:hover {
+    background: #777777;
+  }
+  
+  /* Close button styling within help popover */
+  .help-text-popover .close-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    border: none;
+    background: transparent;
+    color: #888888;
+    cursor: pointer;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 150ms ease;
+  }
+  
+  .help-text-popover .close-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+  }
+  
+  /* Arrow positioning for help popovers */
+  .help-text-popover .MuiPopover-paper[data-popper-placement^="bottom"] {
+    margin-top: 8px;
+  }
+  
+  .help-text-popover .MuiPopover-paper[data-popper-placement^="top"] {
+    margin-bottom: 8px;
+  }
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN CONSIDERATIONS
+   Breakpoint-specific styling for optimal function key display
+   ========================================================================== */
+
+/* Extra small screens (mobile portrait) */
+@media (max-width: 320px) {
+  .function-key-toolbar {
+    font-size: 10px;
+    padding: 6px 8px;
+  }
+  
+  .pf-key-chip {
+    height: 20px !important;
+    font-size: 9px !important;
+  }
+  
+  .pf-key-chip .MuiChip-label {
+    padding: 0 4px !important;
+  }
+  
+  .help-text-popover {
+    max-width: 280px !important;
+    font-size: 11px !important;
+  }
+}
+
+/* Small screens (terminal equivalent) */
+@media (min-width: 640px) {
+  .function-key-toolbar {
+    font-size: 12px;
+  }
+  
+  .help-text-popover {
+    max-width: 360px !important;
+  }
+}
+
+/* Medium and larger screens */
+@media (min-width: 960px) {
+  .function-key-toolbar {
+    font-size: 13px;
+  }
+  
+  .help-text-popover {
+    max-width: 420px !important;
+  }
+  
+  .contextual-help {
+    padding: 20px;
+  }
+}
+
+/* Large desktop screens */
+@media (min-width: 1280px) {
+  .function-key-toolbar {
+    padding: 10px 32px;
+  }
+  
+  .help-text-popover {
+    max-width: 500px !important;
+  }
+}
+
+/* ==========================================================================
+   ACCESSIBILITY ENHANCEMENTS
+   Screen reader support and keyboard navigation improvements
+   ========================================================================== */
+
+/* Screen reader support for function key descriptions */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .function-key-toolbar {
+    border-top: 2px solid #ffffff;
+    background-color: #000000;
+  }
+  
+  .pf-key-chip {
+    border-width: 2px !important;
+    font-weight: 900 !important;
+  }
+  
+  .nav-indicator-active {
+    outline-width: 3px !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .function-key-toolbar,
+  .pf-key-chip,
+  .nav-indicator-active,
+  .nav-indicator-focus,
+  .key-press-visual,
+  .button-feedback,
+  .press-animation {
+    animation: none !important;
+    transition: none !important;
+  }
+  
+  .nav-indicator-active::after,
+  .nav-indicator-focus::after {
+    animation: none !important;
+  }
+}
+
+/* Print styles */
+@media print {
+  .function-key-toolbar,
+  .help-text-popover {
+    display: none !important;
+  }
+}
