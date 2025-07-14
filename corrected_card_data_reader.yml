@@ -1,0 +1,32 @@
+# CORRECTED Card Data Reader Configuration
+# Field ranges updated based on actual data analysis
+cardDataReader:
+  itemReader:
+    resource:
+      location: "classpath:data/ASCII/carddata.txt"
+      encoding: "UTF-8"
+    lineMapper:
+      tokenizer:
+        type: "fixedLength"
+        ranges:
+          - name: "cardNumber"
+            start: 1
+            end: 16
+          - name: "accountId"
+            start: 17
+            end: 26
+          - name: "customerId"
+            start: 27
+            end: 30  # CORRECTED: Was 32, now 30
+          - name: "embossedName"
+            start: 31  # CORRECTED: Was 33, now 31
+            end: 80    # CORRECTED: Was 82, now 80
+          - name: "expirationDate"
+            start: 81  # CORRECTED: Was 83, now 81
+            end: 90    # CORRECTED: Was 92, now 90
+          - name: "activeStatus"
+            start: 91  # CORRECTED: Was 93, now 91
+            end: 91
+    fieldSetMapper:
+      type: "beanWrapper"
+      targetType: "com.carddemo.common.entity.Card"
