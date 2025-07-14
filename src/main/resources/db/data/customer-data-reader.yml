@@ -1,12 +1,12 @@
 # ============================================================================
-# Spring Batch ItemReader Configuration: customer-data-reader.yml
+# Spring Batch ItemReader Configuration: customer-data-reader.yml (CORRECTED)
 # Description: FlatFileItemReader configuration for processing customer data from custdata.txt
 # Author: Blitzy agent
-# Version: CardDemo_v1.0-15-g27d6c6f-68
+# Version: CardDemo_v1.0-15-g27d6c6f-68 (CORRECTED)
 # ============================================================================
 
 # Customer Data Reader Configuration for Spring Batch Processing
-# Processes 312-character fixed-width records from custdata.txt
+# Processes 500-character fixed-width records from custdata.txt (CORRECTED LENGTH)
 # Maps to PostgreSQL customers table with PII protection and data validation
 
 spring:
@@ -22,7 +22,7 @@ spring:
       # Step Configuration
       step:
         name: "customerDataLoadStep"
-        description: "Process fixed-width customer records with validation"
+        description: "Process 500-character fixed-width customer records with validation"
         chunk-size: 100
         skip-limit: 10
         retry-limit: 3
@@ -39,7 +39,7 @@ spring:
             type: "FIXED_LENGTH"
             strict: true
             
-            # Field Range Definitions (312-character record structure)
+            # Field Range Definitions (500-character record structure - CORRECTED)
             ranges:
               - name: "customerId"
                 start: 1
@@ -49,17 +49,17 @@ spring:
               - name: "firstName"
                 start: 10
                 end: 34
-                description: "Customer first name (25 chars, trimmed to 20)"
+                description: "Customer first name (25 chars)"
                 
               - name: "middleName"
                 start: 35
                 end: 59
-                description: "Customer middle name (25 chars, trimmed to 20)"
+                description: "Customer middle name (25 chars)"
                 
               - name: "lastName"
                 start: 60
                 end: 84
-                description: "Customer last name (25 chars, trimmed to 20)"
+                description: "Customer last name (25 chars)"
                 
               - name: "addressLine1"
                 start: 85
@@ -88,18 +88,18 @@ spring:
                 
               - name: "zipCode"
                 start: 240
-                end: 249
-                description: "ZIP code (10 chars)"
+                end: 244
+                description: "ZIP code (5 chars)"
                 
               - name: "phoneNumber1"
                 start: 250
-                end: 264
-                description: "Primary phone number (15 chars)"
+                end: 263
+                description: "Primary phone number (14 chars)"
                 
               - name: "phoneNumber2"
                 start: 265
-                end: 279
-                description: "Secondary phone number (15 chars)"
+                end: 278
+                description: "Secondary phone number (14 chars)"
                 
               - name: "ssn"
                 start: 280
@@ -114,23 +114,12 @@ spring:
               - name: "dateOfBirth"
                 start: 309
                 end: 318
-                description: "Date of birth (YYYY-MM-DD format)"
+                description: "Date of birth (YYYY-MM-DD format, 10 chars)"
                 
               - name: "ficoCreditScore"
-                start: 319
-                end: 321
-                description: "FICO credit score (3 digits, range 300-850)"
-                
-              # Reserved/padding fields
-              - name: "reserved1"
-                start: 322
-                end: 322
-                description: "Reserved field (1 char)"
-                
-              - name: "reserved2"
                 start: 323
-                end: 372
-                description: "Reserved field (50 chars)"
+                end: 325
+                description: "FICO credit score (3 digits, range 300-850)"
                 
         # Field Set Mapper Configuration
         field-set-mapper:
@@ -221,8 +210,8 @@ spring:
               required: true
               trim: true
               validation:
-                pattern: "^[0-9]{5}(-[0-9]{4})?$"
-                message: "ZIP code must be in format 12345 or 12345-6789"
+                pattern: "^[0-9]{5}$"
+                message: "ZIP code must be exactly 5 digits"
                 
             phoneNumber1:
               property: "phoneNumber1"
@@ -230,8 +219,8 @@ spring:
               trim: true
               max-length: 15
               validation:
-                pattern: "^[\\+]?[1-9][\\d\\s\\-\\(\\)]{8,13}$"
-                message: "Phone number 1 must be a valid phone number format"
+                pattern: "^\\([0-9]{3}\\)[0-9]{3}-[0-9]{4}$"
+                message: "Phone number 1 must be in format (XXX)XXX-XXXX"
                 
             phoneNumber2:
               property: "phoneNumber2"
@@ -239,8 +228,8 @@ spring:
               trim: true
               max-length: 15
               validation:
-                pattern: "^[\\+]?[1-9][\\d\\s\\-\\(\\)]{8,13}$"
-                message: "Phone number 2 must be a valid phone number format"
+                pattern: "^\\([0-9]{3}\\)[0-9]{3}-[0-9]{4}$"
+                message: "Phone number 2 must be in format (XXX)XXX-XXXX"
                 
             ssn:
               property: "ssn"
@@ -333,7 +322,7 @@ spring:
       schema: "carddemo"
       batch-size: 100
       
-      # Column Mapping Configuration
+      # Column Mapping Configuration (CORRECTED to match database schema)
       column-mappings:
         customer_id: "customerId"
         first_name: "firstName"
@@ -342,11 +331,11 @@ spring:
         address_line_1: "addressLine1"
         address_line_2: "addressLine2"
         address_line_3: "addressLine3"
-        state_code: "stateCode"
-        country_code: "countryCode"
-        zip_code: "zipCode"
-        phone_number_1: "phoneNumber1"
-        phone_number_2: "phoneNumber2"
+        address_state: "stateCode"
+        address_country: "countryCode"
+        address_zip: "zipCode"
+        phone_home: "phoneNumber1"
+        phone_work: "phoneNumber2"
         ssn: "ssn"
         government_id: "governmentId"
         date_of_birth: "dateOfBirth"
