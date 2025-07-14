@@ -1,0 +1,383 @@
+{
+  "UserAuthenticationTestData": {
+    "description": "Comprehensive user authentication test data converted from CSUSR01Y.cpy copybook structure for Spring Security testing and JWT authentication validation scenarios",
+    "metadata": {
+      "source_copybook": "CSUSR01Y.cpy",
+      "conversion_target": "PostgreSQL users table",
+      "authentication_method": "JWT with BCrypt password hashing",
+      "user_types": {
+        "A": "Admin user with full system access",
+        "R": "Regular user with limited access"
+      },
+      "field_mappings": {
+        "SEC-USR-ID": "userId (VARCHAR(8))",
+        "SEC-USR-FNAME": "firstName (VARCHAR(20))",
+        "SEC-USR-LNAME": "lastName (VARCHAR(20))",
+        "SEC-USR-PWD": "passwordHash (VARCHAR(60) BCrypt)",
+        "SEC-USR-TYPE": "userType (VARCHAR(1))"
+      }
+    },
+    "admin_users": [
+      {
+        "userId": "ADMIN001",
+        "firstName": "System",
+        "lastName": "Administrator",
+        "passwordHash": "$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iYqiSfFe5gtT4iUWIEzJ6.wYqCny",
+        "plainTextPassword": "admin123",
+        "userType": "A",
+        "description": "Primary system administrator for comprehensive admin testing",
+        "testScenarios": [
+          "JWT token generation with admin role claims",
+          "Full system access authorization testing",
+          "Administrative menu navigation validation",
+          "User management operations testing",
+          "System configuration access validation"
+        ]
+      },
+      {
+        "userId": "ADMIN002",
+        "firstName": "Security",
+        "lastName": "Manager",
+        "passwordHash": "$2a$10$8K2rFSrFqJEGxsEozRGnv.IhfJNKvZcZJ5gEMx8xQnj9rYzqRzIu2",
+        "plainTextPassword": "secmgr456",
+        "userType": "A",
+        "description": "Security manager for security-focused testing scenarios",
+        "testScenarios": [
+          "Security audit access validation",
+          "User role management testing",
+          "Security policy configuration testing",
+          "Authentication event monitoring validation",
+          "Role-based access control verification"
+        ]
+      },
+      {
+        "userId": "ADMIN003",
+        "firstName": "Database",
+        "lastName": "Admin",
+        "passwordHash": "$2a$10$rXzQnQzVpMKL5TKs4TgWP.8jJpKoFYZgJx4jXnO3YpBaVjEqNfGay",
+        "plainTextPassword": "dbadmin789",
+        "userType": "A",
+        "description": "Database administrator for data management testing",
+        "testScenarios": [
+          "Database maintenance access validation",
+          "System monitoring dashboard testing",
+          "Data integrity verification access",
+          "Backup and recovery operation testing",
+          "Performance monitoring access validation"
+        ]
+      }
+    ],
+    "regular_users": [
+      {
+        "userId": "USER0001",
+        "firstName": "John",
+        "lastName": "Smith",
+        "passwordHash": "$2a$10$XK5FpqoYHrBtQQmqbEEu8.4YgA7G3o1wNcGXjdZb9qYRj2dGJKmW2",
+        "plainTextPassword": "user123",
+        "userType": "R",
+        "description": "Standard user for basic functionality testing",
+        "testScenarios": [
+          "Basic authentication flow validation",
+          "Limited menu access testing",
+          "Account viewing permissions validation",
+          "Transaction history access testing",
+          "Profile management testing"
+        ]
+      },
+      {
+        "userId": "USER0002",
+        "firstName": "Jane",
+        "lastName": "Doe",
+        "passwordHash": "$2a$10$QNEKGRhzFgQPdKFRN0qFhOxUzTwV.2z5LxQ5VKGVvfNBsJmOxGFJ2",
+        "plainTextPassword": "jane456",
+        "userType": "R",
+        "description": "Regular user for card management testing",
+        "testScenarios": [
+          "Card listing access validation",
+          "Transaction posting authorization",
+          "Balance inquiry testing",
+          "PIN change functionality testing",
+          "Statement viewing access validation"
+        ]
+      },
+      {
+        "userId": "USER0003",
+        "firstName": "Michael",
+        "lastName": "Johnson",
+        "passwordHash": "$2a$10$L8VJGHGJFgNPgQNSL3qLfO1vGWfVrNQZdNzL8Q7FhQJgXrKoMqRs6",
+        "plainTextPassword": "mike789",
+        "userType": "R",
+        "description": "Customer service representative for support testing",
+        "testScenarios": [
+          "Customer inquiry access validation",
+          "Limited account modification testing",
+          "Support ticket creation testing",
+          "Help desk functionality validation",
+          "Customer communication testing"
+        ]
+      },
+      {
+        "userId": "USER0004",
+        "firstName": "Sarah",
+        "lastName": "Williams",
+        "passwordHash": "$2a$10$P7RKJHEHGgQNdOJgM4qNfO8wGUfUrOZeEOzK9R6GiPIhYrLnNqTr4",
+        "plainTextPassword": "sarah321",
+        "userType": "R",
+        "description": "Business analyst for reporting access testing",
+        "testScenarios": [
+          "Report generation access validation",
+          "Read-only data access testing",
+          "Business intelligence dashboard testing",
+          "Analytics functionality validation",
+          "Report scheduling testing"
+        ]
+      },
+      {
+        "userId": "USER0005",
+        "firstName": "David",
+        "lastName": "Brown",
+        "passwordHash": "$2a$10$K6QJGEGFhNOcPIjL3pKMeN7vFTeSrMXdDMyJ8Q5EhOIfXqJmMpSq3",
+        "plainTextPassword": "david654",
+        "userType": "R",
+        "description": "Regular user for payment processing testing",
+        "testScenarios": [
+          "Bill payment authorization testing",
+          "Transfer functionality validation",
+          "Payment history access testing",
+          "Recurring payment setup testing",
+          "Payment confirmation validation"
+        ]
+      }
+    ]
+  },
+  "SpringSecurityTestScenarios": {
+    "description": "Spring Security specific test scenarios for JWT authentication and authorization validation",
+    "jwt_authentication_scenarios": [
+      {
+        "scenario": "Successful Admin Login",
+        "userId": "ADMIN001",
+        "expectedRole": "ROLE_ADMIN",
+        "expectedClaims": {
+          "sub": "ADMIN001",
+          "userType": "A",
+          "firstName": "System",
+          "lastName": "Administrator",
+          "authorities": ["ROLE_ADMIN", "ROLE_USER"]
+        },
+        "tokenValidation": {
+          "algorithm": "HS256",
+          "expirationMinutes": 30,
+          "issuer": "carddemo-auth-service"
+        }
+      },
+      {
+        "scenario": "Successful Regular User Login",
+        "userId": "USER0001",
+        "expectedRole": "ROLE_USER",
+        "expectedClaims": {
+          "sub": "USER0001",
+          "userType": "R",
+          "firstName": "John",
+          "lastName": "Smith",
+          "authorities": ["ROLE_USER"]
+        },
+        "tokenValidation": {
+          "algorithm": "HS256",
+          "expirationMinutes": 30,
+          "issuer": "carddemo-auth-service"
+        }
+      }
+    ],
+    "authorization_test_scenarios": [
+      {
+        "scenario": "Admin Access to User Management",
+        "userId": "ADMIN001",
+        "endpoint": "/api/admin/users",
+        "expectedResult": "ACCESS_GRANTED",
+        "requiredRole": "ROLE_ADMIN"
+      },
+      {
+        "scenario": "Regular User Denied Admin Access",
+        "userId": "USER0001",
+        "endpoint": "/api/admin/users",
+        "expectedResult": "ACCESS_DENIED",
+        "requiredRole": "ROLE_ADMIN"
+      },
+      {
+        "scenario": "User Access to Own Account",
+        "userId": "USER0001",
+        "endpoint": "/api/account/view",
+        "expectedResult": "ACCESS_GRANTED",
+        "requiredRole": "ROLE_USER"
+      }
+    ],
+    "session_management_scenarios": [
+      {
+        "scenario": "Session Creation on Login",
+        "userId": "USER0001",
+        "expectedSessionData": {
+          "sessionId": "generated_uuid",
+          "userId": "USER0001",
+          "userType": "R",
+          "loginTime": "timestamp",
+          "lastActivity": "timestamp"
+        },
+        "redisKey": "spring:session:sessions:{sessionId}",
+        "ttlMinutes": 30
+      },
+      {
+        "scenario": "Session Invalidation on Logout",
+        "userId": "USER0001",
+        "action": "logout",
+        "expectedResult": "session_destroyed",
+        "redisKeyRemoval": true
+      }
+    ]
+  },
+  "COBOLConversionTestData": {
+    "description": "Test data for validating COBOL to Spring Security conversion accuracy",
+    "field_length_validation": [
+      {
+        "field": "SEC-USR-ID",
+        "cobolDefinition": "PIC X(08)",
+        "javaMapping": "String userId (max 8 chars)",
+        "testValue": "ADMIN001",
+        "validationRule": "exactly_8_chars_or_less"
+      },
+      {
+        "field": "SEC-USR-FNAME",
+        "cobolDefinition": "PIC X(20)",
+        "javaMapping": "String firstName (max 20 chars)",
+        "testValue": "System",
+        "validationRule": "max_20_chars"
+      },
+      {
+        "field": "SEC-USR-LNAME",
+        "cobolDefinition": "PIC X(20)",
+        "javaMapping": "String lastName (max 20 chars)",
+        "testValue": "Administrator",
+        "validationRule": "max_20_chars"
+      },
+      {
+        "field": "SEC-USR-PWD",
+        "cobolDefinition": "PIC X(08)",
+        "javaMapping": "String passwordHash (VARCHAR(60) BCrypt)",
+        "testValue": "$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iYqiSfFe5gtT4iUWIEzJ6.wYqCny",
+        "validationRule": "bcrypt_hash_60_chars"
+      },
+      {
+        "field": "SEC-USR-TYPE",
+        "cobolDefinition": "PIC X(01)",
+        "javaMapping": "String userType (VARCHAR(1))",
+        "testValue": "A",
+        "validationRule": "exactly_1_char"
+      }
+    ],
+    "racf_to_spring_security_mapping": [
+      {
+        "racfUserType": "A",
+        "springSecurityRole": "ROLE_ADMIN",
+        "description": "Administrator with full system access",
+        "permissions": [
+          "USER_MANAGEMENT",
+          "SYSTEM_ADMINISTRATION",
+          "SECURITY_CONFIGURATION",
+          "AUDIT_ACCESS",
+          "DATA_MANAGEMENT"
+        ]
+      },
+      {
+        "racfUserType": "R",
+        "springSecurityRole": "ROLE_USER",
+        "description": "Regular user with limited access",
+        "permissions": [
+          "ACCOUNT_VIEW",
+          "TRANSACTION_HISTORY",
+          "PROFILE_MANAGEMENT",
+          "CARD_MANAGEMENT",
+          "BILL_PAYMENT"
+        ]
+      }
+    ],
+    "data_integrity_validation": [
+      {
+        "testCase": "Password Hash Validation",
+        "description": "Verify BCrypt password hashing consistency",
+        "originalPassword": "admin123",
+        "hashedPassword": "$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iYqiSfFe5gtT4iUWIEzJ6.wYqCny",
+        "validationMethod": "BCryptPasswordEncoder.matches()"
+      },
+      {
+        "testCase": "User Type Validation",
+        "description": "Verify user type field constraints",
+        "validValues": ["A", "R"],
+        "invalidValues": ["X", "1", "", null],
+        "validationMethod": "jakarta.validation.constraints.NotBlank"
+      },
+      {
+        "testCase": "User ID Uniqueness",
+        "description": "Verify primary key constraints",
+        "testUserIds": ["ADMIN001", "USER0001", "USER0002"],
+        "duplicateTest": "should_fail_on_duplicate_user_id",
+        "validationMethod": "PostgreSQL primary key constraint"
+      }
+    ],
+    "legacy_compatibility_tests": [
+      {
+        "testCase": "Character Set Conversion",
+        "description": "Verify EBCDIC to ASCII conversion accuracy",
+        "cobolValue": "ADMIN001",
+        "javaValue": "ADMIN001",
+        "expectedResult": "exact_match"
+      },
+      {
+        "testCase": "Field Padding Validation",
+        "description": "Verify COBOL space padding handling",
+        "cobolValue": "ADMIN001",
+        "javaValue": "ADMIN001",
+        "paddingBehavior": "trim_trailing_spaces"
+      },
+      {
+        "testCase": "Null Value Handling",
+        "description": "Verify COBOL LOW-VALUES to NULL conversion",
+        "cobolLowValues": "\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00",
+        "javaNull": null,
+        "conversionRule": "low_values_to_null"
+      }
+    ]
+  },
+  "test_execution_metadata": {
+    "description": "Metadata for test execution and validation",
+    "total_test_users": 8,
+    "admin_user_count": 3,
+    "regular_user_count": 5,
+    "password_complexity": {
+      "algorithm": "BCrypt",
+      "rounds": 10,
+      "salt_length": 29
+    },
+    "validation_rules": {
+      "user_id_pattern": "^[A-Z0-9]{1,8}$",
+      "name_pattern": "^[A-Za-z\\s]{1,20}$",
+      "user_type_pattern": "^[AR]$"
+    },
+    "test_categories": [
+      "Authentication Flow Testing",
+      "Authorization Testing",
+      "Session Management Testing",
+      "JWT Token Validation",
+      "BCrypt Password Testing",
+      "Role-Based Access Control",
+      "Security Integration Testing",
+      "Database Integration Testing",
+      "Field Mapping Validation",
+      "COBOL Conversion Testing"
+    ],
+    "spring_security_configuration": {
+      "jwt_secret": "test_secret_key_for_jwt_signing",
+      "jwt_expiration": 1800,
+      "bcrypt_strength": 10,
+      "session_timeout": 1800
+    }
+  }
+}
