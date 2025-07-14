@@ -2,9 +2,11 @@ package com.carddemo.common.repository;
 
 import com.carddemo.common.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -194,6 +196,8 @@ public interface UserRepository extends JpaRepository<User, String> {
      * Transactional Behavior:
      * Executes within Spring transaction boundary with automatic rollback on failure
      */
+    @Modifying
+    @Transactional
     @Query("UPDATE User u SET u.lastLogin = :lastLogin WHERE u.userId = :userId")
     int updateLastLoginByUserId(@Param("userId") String userId, 
                                @Param("lastLogin") LocalDateTime lastLogin);
@@ -212,6 +216,28 @@ public interface UserRepository extends JpaRepository<User, String> {
      * Generated query: SELECT COUNT(u) FROM User u WHERE u.userType = :userType
      */
     long countByUserType(String userType);
+
+    /**
+     * Deletes a user by user ID for administrative user management operations.
+     * 
+     * This method provides user deletion functionality for administrative
+     * operations, supporting the user management workflow with efficient
+     * user removal by ID. Used by user management controllers for
+     * administrative user deletion operations.
+     * 
+     * @param userId The user ID to delete
+     * @return int Number of rows affected (should be 1 for successful deletion)
+     * 
+     * Transactional Behavior:
+     * Executes within Spring transaction boundary with automatic rollback on failure
+     * 
+     * Spring Data JPA Query Generation:
+     * Generated query: DELETE FROM User u WHERE u.userId = :userId
+     */
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM User u WHERE u.userId = :userId")
+    int deleteByUserId(@Param("userId") String userId);
 
     /**
      * Finds users with names matching search criteria.
