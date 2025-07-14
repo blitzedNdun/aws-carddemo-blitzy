@@ -1,0 +1,505 @@
+# ============================================================================
+# Spring Batch ItemReader Configuration: customer-data-reader.yml
+# Description: FlatFileItemReader configuration for processing customer data from custdata.txt
+# Author: Blitzy agent
+# Version: CardDemo_v1.0-15-g27d6c6f-68
+# ============================================================================
+
+# Customer Data Reader Configuration for Spring Batch Processing
+# Processes 312-character fixed-width records from custdata.txt
+# Maps to PostgreSQL customers table with PII protection and data validation
+
+spring:
+  batch:
+    job:
+      names: customerDataLoadJob
+    
+    # Customer Data Processing Job Configuration
+    customer-data-load:
+      job-name: "customerDataLoadJob"
+      description: "Load customer data from custdata.txt into PostgreSQL customers table"
+      
+      # Step Configuration
+      step:
+        name: "customerDataLoadStep"
+        description: "Process fixed-width customer records with validation"
+        chunk-size: 100
+        skip-limit: 10
+        retry-limit: 3
+        
+        # FlatFileItemReader Configuration
+        reader:
+          name: "customerDataReader"
+          resource: "classpath:data/custdata.txt"
+          encoding: "UTF-8"
+          strict: true
+          
+          # Fixed-Width Line Tokenizer Configuration
+          line-tokenizer:
+            type: "FIXED_LENGTH"
+            strict: true
+            
+            # Field Range Definitions (312-character record structure)
+            ranges:
+              - name: "customerId"
+                start: 1
+                end: 9
+                description: "9-digit customer identifier"
+                
+              - name: "firstName"
+                start: 10
+                end: 34
+                description: "Customer first name (25 chars, trimmed to 20)"
+                
+              - name: "middleName"
+                start: 35
+                end: 59
+                description: "Customer middle name (25 chars, trimmed to 20)"
+                
+              - name: "lastName"
+                start: 60
+                end: 84
+                description: "Customer last name (25 chars, trimmed to 20)"
+                
+              - name: "addressLine1"
+                start: 85
+                end: 134
+                description: "Primary address line (50 chars)"
+                
+              - name: "addressLine2"
+                start: 135
+                end: 184
+                description: "Secondary address line (50 chars)"
+                
+              - name: "addressLine3"
+                start: 185
+                end: 234
+                description: "Additional address line (50 chars)"
+                
+              - name: "stateCode"
+                start: 235
+                end: 236
+                description: "State abbreviation (2 chars)"
+                
+              - name: "countryCode"
+                start: 237
+                end: 239
+                description: "Country code (3 chars)"
+                
+              - name: "zipCode"
+                start: 240
+                end: 249
+                description: "ZIP code (10 chars)"
+                
+              - name: "phoneNumber1"
+                start: 250
+                end: 264
+                description: "Primary phone number (15 chars)"
+                
+              - name: "phoneNumber2"
+                start: 265
+                end: 279
+                description: "Secondary phone number (15 chars)"
+                
+              - name: "ssn"
+                start: 280
+                end: 288
+                description: "Social Security Number (9 chars) - PII protected"
+                
+              - name: "governmentId"
+                start: 289
+                end: 308
+                description: "Government ID number (20 chars) - PII protected"
+                
+              - name: "dateOfBirth"
+                start: 309
+                end: 318
+                description: "Date of birth (YYYY-MM-DD format)"
+                
+              - name: "ficoCreditScore"
+                start: 319
+                end: 321
+                description: "FICO credit score (3 digits, range 300-850)"
+                
+              # Reserved/padding fields
+              - name: "reserved1"
+                start: 322
+                end: 322
+                description: "Reserved field (1 char)"
+                
+              - name: "reserved2"
+                start: 323
+                end: 372
+                description: "Reserved field (50 chars)"
+                
+        # Field Set Mapper Configuration
+        field-set-mapper:
+          type: "BEAN_WRAPPER"
+          target-type: "com.carddemo.common.entity.Customer"
+          
+          # Field Mapping and Validation Rules
+          field-mappings:
+            customerId:
+              property: "customerId"
+              required: true
+              trim: true
+              validation:
+                pattern: "^[0-9]{9}$"
+                message: "Customer ID must be exactly 9 digits"
+                
+            firstName:
+              property: "firstName"
+              required: true
+              trim: true
+              max-length: 20
+              validation:
+                pattern: "^[A-Za-z\\s\\-\\.]+$"
+                message: "First name can only contain letters, spaces, hyphens, and dots"
+                min-length: 1
+                
+            middleName:
+              property: "middleName"
+              required: false
+              trim: true
+              max-length: 20
+              validation:
+                pattern: "^[A-Za-z\\s\\-\\.]*$"
+                message: "Middle name can only contain letters, spaces, hyphens, and dots"
+                
+            lastName:
+              property: "lastName"
+              required: true
+              trim: true
+              max-length: 20
+              validation:
+                pattern: "^[A-Za-z\\s\\-\\.]+$"
+                message: "Last name can only contain letters, spaces, hyphens, and dots"
+                min-length: 1
+                
+            addressLine1:
+              property: "addressLine1"
+              required: true
+              trim: true
+              max-length: 50
+              validation:
+                min-length: 1
+                message: "Address line 1 is required"
+                
+            addressLine2:
+              property: "addressLine2"
+              required: false
+              trim: true
+              max-length: 50
+              
+            addressLine3:
+              property: "addressLine3"
+              required: false
+              trim: true
+              max-length: 50
+              
+            stateCode:
+              property: "stateCode"
+              required: true
+              trim: true
+              uppercase: true
+              validation:
+                pattern: "^[A-Z]{2}$"
+                message: "State code must be exactly 2 uppercase letters"
+                
+            countryCode:
+              property: "countryCode"
+              required: true
+              trim: true
+              uppercase: true
+              default-value: "USA"
+              validation:
+                pattern: "^[A-Z]{2,3}$"
+                message: "Country code must be 2-3 uppercase letters"
+                
+            zipCode:
+              property: "zipCode"
+              required: true
+              trim: true
+              validation:
+                pattern: "^[0-9]{5}(-[0-9]{4})?$"
+                message: "ZIP code must be in format 12345 or 12345-6789"
+                
+            phoneNumber1:
+              property: "phoneNumber1"
+              required: false
+              trim: true
+              max-length: 15
+              validation:
+                pattern: "^[\\+]?[1-9][\\d\\s\\-\\(\\)]{8,13}$"
+                message: "Phone number 1 must be a valid phone number format"
+                
+            phoneNumber2:
+              property: "phoneNumber2"
+              required: false
+              trim: true
+              max-length: 15
+              validation:
+                pattern: "^[\\+]?[1-9][\\d\\s\\-\\(\\)]{8,13}$"
+                message: "Phone number 2 must be a valid phone number format"
+                
+            ssn:
+              property: "ssn"
+              required: true
+              trim: true
+              pii-protected: true
+              validation:
+                pattern: "^[0-9]{9}$"
+                message: "SSN must be exactly 9 digits"
+              anonymization:
+                enabled: true
+                method: "mask"
+                mask-pattern: "***-**-####"
+                preserve-last-digits: 4
+                
+            governmentId:
+              property: "governmentId"
+              required: false
+              trim: true
+              max-length: 20
+              pii-protected: true
+              anonymization:
+                enabled: true
+                method: "scramble"
+                preserve-format: true
+                
+            dateOfBirth:
+              property: "dateOfBirth"
+              required: true
+              trim: true
+              type: "DATE"
+              format: "yyyy-MM-dd"
+              validation:
+                min-date: "1900-01-01"
+                max-date: "TODAY"
+                message: "Date of birth must be between 1900-01-01 and today"
+                
+            ficoCreditScore:
+              property: "ficoCreditScore"
+              required: false
+              trim: true
+              type: "INTEGER"
+              validation:
+                min-value: 300
+                max-value: 850
+                message: "FICO credit score must be between 300 and 850"
+                
+        # Customer Entity Default Values
+        entity-defaults:
+          primaryCardholderIndicator: true
+          eftAccountId: null
+          
+      # Error Handling Configuration
+      error-handling:
+        skip-policy: "LIMIT_BASED"
+        skip-limit: 10
+        skip-exceptions:
+          - "org.springframework.batch.item.file.FlatFileParseException"
+          - "org.springframework.batch.item.validator.ValidationException"
+          - "java.lang.IllegalArgumentException"
+          
+        retry-policy: "SIMPLE"
+        retry-limit: 3
+        retry-exceptions:
+          - "java.sql.SQLException"
+          - "org.springframework.dao.DataAccessException"
+          - "java.net.SocketTimeoutException"
+          
+        # Error Logging Configuration
+        logging:
+          error-file: "logs/customer-data-errors.log"
+          log-level: "ERROR"
+          include-stack-trace: true
+          
+      # Data Processing Statistics
+      statistics:
+        enabled: true
+        log-interval: 1000
+        metrics:
+          - "READ_COUNT"
+          - "WRITE_COUNT"
+          - "SKIP_COUNT"
+          - "ERROR_COUNT"
+          - "PROCESSING_TIME"
+          
+  # Database Configuration for Customer Table
+  datasource:
+    customer-table:
+      table-name: "customers"
+      schema: "carddemo"
+      batch-size: 100
+      
+      # Column Mapping Configuration
+      column-mappings:
+        customer_id: "customerId"
+        first_name: "firstName"
+        middle_name: "middleName"
+        last_name: "lastName"
+        address_line_1: "addressLine1"
+        address_line_2: "addressLine2"
+        address_line_3: "addressLine3"
+        state_code: "stateCode"
+        country_code: "countryCode"
+        zip_code: "zipCode"
+        phone_number_1: "phoneNumber1"
+        phone_number_2: "phoneNumber2"
+        ssn: "ssn"
+        government_id: "governmentId"
+        date_of_birth: "dateOfBirth"
+        fico_credit_score: "ficoCreditScore"
+        primary_cardholder_indicator: "primaryCardholderIndicator"
+        eft_account_id: "eftAccountId"
+        
+# Data Anonymization Configuration for Test Environments
+anonymization:
+  enabled: "${ANONYMIZATION_ENABLED:false}"
+  environment: "${SPRING_PROFILES_ACTIVE:dev}"
+  
+  # PII Protection Rules
+  pii-protection:
+    ssn:
+      method: "MASK"
+      mask-pattern: "***-**-####"
+      preserve-last-digits: 4
+      
+    government-id:
+      method: "SCRAMBLE"
+      preserve-format: true
+      scramble-percentage: 80
+      
+    phone-numbers:
+      method: "PATTERN_REPLACE"
+      pattern: "^(\\([0-9]{3}\\))[0-9]{3}-[0-9]{4}$"
+      replacement: "$1XXX-XXXX"
+      
+    address:
+      method: "GENERALIZE"
+      generalize-level: "CITY"
+      preserve-state: true
+      preserve-zip: false
+      
+  # Test Environment Data Generation
+  test-data:
+    faker-enabled: true
+    faker-locale: "en_US"
+    
+    # Faker Configuration for Test Data
+    faker-rules:
+      first-name:
+        provider: "name.firstName"
+        
+      middle-name:
+        provider: "name.firstName"
+        null-probability: 0.3
+        
+      last-name:
+        provider: "name.lastName"
+        
+      address-line-1:
+        provider: "address.streetAddress"
+        
+      address-line-2:
+        provider: "address.secondaryAddress"
+        null-probability: 0.4
+        
+      address-line-3:
+        provider: "address.city"
+        
+      phone-number-1:
+        provider: "phoneNumber.phoneNumber"
+        format: "(###)###-####"
+        
+      phone-number-2:
+        provider: "phoneNumber.phoneNumber"
+        format: "(###)###-####"
+        null-probability: 0.5
+        
+      date-of-birth:
+        provider: "date.birthday"
+        min-age: 18
+        max-age: 90
+        
+      fico-score:
+        provider: "number.numberBetween"
+        min: 300
+        max: 850
+
+# Performance Optimization Configuration
+performance:
+  chunk-size: 100
+  commit-interval: 100
+  reader-buffer-size: 1000
+  
+  # Connection Pool Configuration
+  hikari:
+    minimum-idle: 10
+    maximum-pool-size: 50
+    connection-timeout: 30000
+    idle-timeout: 600000
+    
+  # Batch Processing Optimization
+  batch-optimization:
+    parallel-processing: false
+    thread-pool-size: 4
+    queue-capacity: 1000
+    
+# Security Configuration
+security:
+  encryption:
+    enabled: true
+    algorithm: "AES"
+    key-size: 256
+    
+  # PII Field Encryption
+  pii-encryption:
+    ssn:
+      enabled: true
+      algorithm: "AES-256-GCM"
+      
+    government-id:
+      enabled: true
+      algorithm: "AES-256-GCM"
+      
+# Monitoring and Logging Configuration
+monitoring:
+  metrics:
+    enabled: true
+    export-to-prometheus: true
+    
+  # Job Execution Monitoring
+  job-monitoring:
+    enabled: true
+    log-execution-details: true
+    alert-on-failure: true
+    
+  # Data Quality Monitoring
+  data-quality:
+    enabled: true
+    validation-rules:
+      - "REQUIRED_FIELDS_PRESENT"
+      - "FIELD_LENGTH_VALIDATION"
+      - "PATTERN_VALIDATION"
+      - "RANGE_VALIDATION"
+      - "REFERENTIAL_INTEGRITY"
+      
+# Environment-Specific Configuration
+profiles:
+  dev:
+    chunk-size: 50
+    anonymization.enabled: true
+    
+  test:
+    chunk-size: 100
+    anonymization.enabled: true
+    
+  staging:
+    chunk-size: 200
+    anonymization.enabled: true
+    
+  prod:
+    chunk-size: 500
+    anonymization.enabled: false
