@@ -58,6 +58,16 @@ public class TransactionCategory implements Serializable {
     private String categoryDescription;
 
     /**
+     * Parent transaction type for hierarchical category structure
+     * Links to transaction_types table for foreign key relationship
+     * Maps to first 2 characters of transaction category code
+     */
+    @Column(name = "parent_transaction_type", length = 2, nullable = false)
+    @NotNull(message = "Parent transaction type cannot be null")
+    @Size(min = 2, max = 2, message = "Parent transaction type must be exactly 2 characters")
+    private String parentTransactionType;
+
+    /**
      * Active status flag for category lifecycle management
      * New field not present in original COBOL structure
      * Enables soft deletion and category activation/deactivation
@@ -86,11 +96,13 @@ public class TransactionCategory implements Serializable {
      * 
      * @param transactionCategory 4-character category code
      * @param categoryDescription Category description (max 60 chars)
+     * @param parentTransactionType Parent transaction type (2 chars)
      * @param activeStatus Active status flag
      */
-    public TransactionCategory(String transactionCategory, String categoryDescription, Boolean activeStatus) {
+    public TransactionCategory(String transactionCategory, String categoryDescription, String parentTransactionType, Boolean activeStatus) {
         this.transactionCategory = transactionCategory;
         this.categoryDescription = categoryDescription;
+        this.parentTransactionType = parentTransactionType;
         this.activeStatus = activeStatus;
     }
 
@@ -132,6 +144,26 @@ public class TransactionCategory implements Serializable {
     @CacheEvict(value = "transactionCategories", key = "#root.target.transactionCategory")
     public void setCategoryDescription(String categoryDescription) {
         this.categoryDescription = categoryDescription;
+    }
+
+    /**
+     * Gets the parent transaction type
+     * 
+     * @return parent transaction type
+     */
+    public String getParentTransactionType() {
+        return parentTransactionType;
+    }
+
+    /**
+     * Sets the parent transaction type
+     * Cache eviction triggered when parent type is modified
+     * 
+     * @param parentTransactionType Parent transaction type (2 chars)
+     */
+    @CacheEvict(value = "transactionCategories", key = "#root.target.transactionCategory")
+    public void setParentTransactionType(String parentTransactionType) {
+        this.parentTransactionType = parentTransactionType;
     }
 
     /**
@@ -266,7 +298,7 @@ public class TransactionCategory implements Serializable {
      */
     @Override
     public String toString() {
-        return String.format("TransactionCategory{transactionCategory='%s', categoryDescription='%s', activeStatus=%s}", 
-                           transactionCategory, categoryDescription, activeStatus);
+        return String.format("TransactionCategory{transactionCategory='%s', categoryDescription='%s', parentTransactionType='%s', activeStatus=%s}", 
+                           transactionCategory, categoryDescription, parentTransactionType, activeStatus);
     }
 }
