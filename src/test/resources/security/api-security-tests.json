@@ -1,0 +1,2486 @@
+{
+  "metadata": {
+    "description": "Comprehensive API security test scenarios for CardDemo microservices architecture providing REST endpoint protection validation with rate limiting, authentication bypass testing, and authorization flow validation across all 24 converted CICS transactions per Section 6.4.2.2 implementation requirements",
+    "version": "1.0.0",
+    "created_by": "Blitzy Agent",
+    "creation_date": "2024-01-20T15:00:00Z",
+    "last_modified": "2024-01-20T15:00:00Z",
+    "test_framework": "Spring Boot Test with Rest Assured",
+    "security_framework": "Spring Security 6.x with JWT OAuth2 Resource Server",
+    "compliance_standards": ["PCI DSS", "SOX", "GDPR", "ISO 27001"],
+    "test_environment": "Integration Test with Testcontainers Redis",
+    "coverage_scope": "All 24 CICS-to-REST endpoint transformations with comprehensive security validation"
+  },
+
+  "APISecurityTestScenarios": {
+    "authentication_bypass_tests": {
+      "description": "Comprehensive authentication bypass testing scenarios validating JWT token validation and security gateway protection across all REST endpoints",
+      "test_scenarios": [
+        {
+          "scenario_name": "Missing Authorization Header Test",
+          "test_purpose": "Validate that all protected endpoints reject requests without Authorization header",
+          "test_method": "GET",
+          "test_endpoints": [
+            "/api/auth/menu",
+            "/api/account/view/00000000001",
+            "/api/card/list",
+            "/api/transaction/history",
+            "/api/user/profile",
+            "/api/admin/users",
+            "/api/admin/system/config",
+            "/api/bill/payment/process",
+            "/api/account/update/00000000001",
+            "/api/card/update/4000000000000001",
+            "/api/transaction/create",
+            "/api/user/create",
+            "/api/user/update/USER0001",
+            "/api/user/delete/USER0001",
+            "/api/system/maintenance",
+            "/api/batch/jobs",
+            "/api/audit/logs",
+            "/api/reports/transactions",
+            "/api/reports/accounts",
+            "/api/reports/cards",
+            "/api/reports/users",
+            "/api/transfer/funds",
+            "/api/card/activate",
+            "/api/card/deactivate"
+          ],
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "expected_status": 401,
+          "expected_response": {
+            "error": "Unauthorized",
+            "message": "Missing authentication token"
+          },
+          "security_event_expected": "GATEWAY_AUTH_FAILURE",
+          "validation_points": [
+            "Verify 401 status code returned",
+            "Verify security event logged",
+            "Verify no business logic executed",
+            "Verify rate limiting not bypassed"
+          ]
+        },
+        {
+          "scenario_name": "Invalid JWT Token Format Test",
+          "test_purpose": "Validate rejection of malformed JWT tokens across all endpoints",
+          "test_method": "GET",
+          "test_endpoints": [
+            "/api/auth/menu",
+            "/api/account/view/00000000001",
+            "/api/card/list",
+            "/api/transaction/history"
+          ],
+          "headers": {
+            "Authorization": "Bearer invalid.jwt.token.format",
+            "Content-Type": "application/json"
+          },
+          "expected_status": 401,
+          "expected_response": {
+            "error": "Unauthorized",
+            "message": "Invalid authentication token"
+          },
+          "security_event_expected": "GATEWAY_AUTH_FAILURE",
+          "validation_points": [
+            "Verify malformed token rejection",
+            "Verify no token parsing errors exposed",
+            "Verify security event correlation ID present",
+            "Verify MDC context cleanup"
+          ]
+        },
+        {
+          "scenario_name": "Expired JWT Token Test",
+          "test_purpose": "Validate that expired JWT tokens are rejected with appropriate error handling",
+          "test_method": "GET",
+          "test_endpoints": [
+            "/api/account/view/00000000001",
+            "/api/card/list",
+            "/api/admin/users"
+          ],
+          "headers": {
+            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBRE1JTjAwMSIsInVzZXJfdHlwZSI6IkEiLCJyb2xlIjoiUk9MRV9BRE1JTiIsImZpcnN0X25hbWUiOiJTeXN0ZW0iLCJsYXN0X25hbWUiOiJBZG1pbmlzdHJhdG9yIiwic2Vzc2lvbl9pZCI6ImV4cGlyZWQtYWRtaW4tc2Vzc2lvbi0wMDEiLCJpc3MiOiJjYXJkZGVtby1hdXRoLXNlcnZpY2UiLCJpYXQiOjE3MDU3NDYwMDAsImV4cCI6MTcwNTc0NzgwMH0.ExpiredTokenSignatureForTesting12345",
+            "Content-Type": "application/json"
+          },
+          "expected_status": 401,
+          "expected_response": {
+            "error": "Unauthorized",
+            "message": "Invalid authentication token"
+          },
+          "security_event_expected": "GATEWAY_AUTH_FAILURE",
+          "validation_points": [
+            "Verify expired token detection",
+            "Verify no session creation",
+            "Verify expiration time validation",
+            "Verify audit event with expiration reason"
+          ]
+        },
+        {
+          "scenario_name": "Invalid JWT Signature Test",
+          "test_purpose": "Validate that JWT tokens with invalid signatures are rejected to prevent tampering",
+          "test_method": "POST",
+          "test_endpoints": [
+            "/api/transaction/create",
+            "/api/bill/payment/process",
+            "/api/user/create"
+          ],
+          "headers": {
+            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBRE1JTjAwMSIsInVzZXJfdHlwZSI6IkEiLCJyb2xlIjoiUk9MRV9BRE1JTiIsImZpcnN0X25hbWUiOiJTeXN0ZW0iLCJsYXN0X25hbWUiOiJBZG1pbmlzdHJhdG9yIiwic2Vzc2lvbl9pZCI6ImludmFsaWQtc2lnbmF0dXJlLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.INVALID_SIGNATURE_FOR_SECURITY_TESTING",
+            "Content-Type": "application/json"
+          },
+          "request_body": {
+            "amount": "100.00",
+            "description": "Test transaction"
+          },
+          "expected_status": 401,
+          "expected_response": {
+            "error": "Unauthorized",
+            "message": "Invalid authentication token"
+          },
+          "security_event_expected": "GATEWAY_AUTH_FAILURE",
+          "validation_points": [
+            "Verify signature validation failure",
+            "Verify tampering detection",
+            "Verify no business logic execution",
+            "Verify security alert generation"
+          ]
+        }
+      ]
+    },
+
+    "authorization_flow_tests": {
+      "description": "Role-based authorization flow validation testing with Spring Security @PreAuthorize annotations and JWT role claims verification",
+      "test_scenarios": [
+        {
+          "scenario_name": "Admin Role Authorization Test",
+          "test_purpose": "Validate admin role access to all endpoints including administrative functions",
+          "test_method": "GET",
+          "valid_admin_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBRE1JTjAwMSIsInVzZXJfdHlwZSI6IkEiLCJyb2xlIjoiUk9MRV9BRE1JTiIsImZpcnN0X25hbWUiOiJTeXN0ZW0iLCJsYXN0X25hbWUiOiJBZG1pbmlzdHJhdG9yIiwic2Vzc2lvbl9pZCI6ImFkbWluLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.kP4vVmKrGJCdHvzV7dCkzFHlD8kBqFp2KY9hPJF3zN4",
+          "test_endpoints": [
+            {
+              "endpoint": "/api/admin/users",
+              "expected_status": 200,
+              "authorization_annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+              "description": "Admin user management endpoint"
+            },
+            {
+              "endpoint": "/api/admin/system/config",
+              "expected_status": 200,
+              "authorization_annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+              "description": "System configuration management"
+            },
+            {
+              "endpoint": "/api/audit/logs",
+              "expected_status": 200,
+              "authorization_annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+              "description": "Audit log access"
+            },
+            {
+              "endpoint": "/api/batch/jobs",
+              "expected_status": 200,
+              "authorization_annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+              "description": "Batch job management"
+            },
+            {
+              "endpoint": "/api/account/view/00000000001",
+              "expected_status": 200,
+              "authorization_annotation": "@PreAuthorize(\"hasAnyRole('USER','ADMIN')\")",
+              "description": "Account viewing with admin privileges"
+            },
+            {
+              "endpoint": "/api/transaction/history",
+              "expected_status": 200,
+              "authorization_annotation": "@PreAuthorize(\"hasAnyRole('USER','ADMIN')\")",
+              "description": "Transaction history with admin access"
+            }
+          ],
+          "headers": {
+            "Authorization": "Bearer {valid_admin_token}",
+            "Content-Type": "application/json"
+          },
+          "expected_jwt_claims": {
+            "user_id": "ADMIN001",
+            "user_type": "A",
+            "role": "ROLE_ADMIN",
+            "authorities": ["ROLE_ADMIN", "ROLE_USER"]
+          },
+          "validation_points": [
+            "Verify admin role extraction from JWT",
+            "Verify @PreAuthorize annotation evaluation",
+            "Verify role hierarchy (admin inherits user)",
+            "Verify audit event logging"
+          ]
+        },
+        {
+          "scenario_name": "User Role Authorization Test",
+          "test_purpose": "Validate user role access restrictions and proper authorization boundaries",
+          "test_method": "GET",
+          "valid_user_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBj",
+          "test_endpoints": [
+            {
+              "endpoint": "/api/account/view/00000000001",
+              "expected_status": 200,
+              "authorization_annotation": "@PreAuthorize(\"hasAnyRole('USER','ADMIN')\")",
+              "description": "Account viewing with user privileges"
+            },
+            {
+              "endpoint": "/api/card/list",
+              "expected_status": 200,
+              "authorization_annotation": "@PreAuthorize(\"hasAnyRole('USER','ADMIN')\")",
+              "description": "Card listing for user"
+            },
+            {
+              "endpoint": "/api/transaction/history",
+              "expected_status": 200,
+              "authorization_annotation": "@PreAuthorize(\"hasAnyRole('USER','ADMIN')\")",
+              "description": "Transaction history access"
+            },
+            {
+              "endpoint": "/api/bill/payment/process",
+              "expected_status": 200,
+              "authorization_annotation": "@PreAuthorize(\"hasAnyRole('USER','ADMIN')\")",
+              "description": "Bill payment processing"
+            },
+            {
+              "endpoint": "/api/transfer/funds",
+              "expected_status": 200,
+              "authorization_annotation": "@PreAuthorize(\"hasAnyRole('USER','ADMIN')\")",
+              "description": "Fund transfer capability"
+            }
+          ],
+          "headers": {
+            "Authorization": "Bearer {valid_user_token}",
+            "Content-Type": "application/json"
+          },
+          "expected_jwt_claims": {
+            "user_id": "USER0001",
+            "user_type": "U",
+            "role": "ROLE_USER",
+            "authorities": ["ROLE_USER"]
+          },
+          "validation_points": [
+            "Verify user role extraction from JWT",
+            "Verify hasAnyRole evaluation success",
+            "Verify user context propagation",
+            "Verify proper authorization decision"
+          ]
+        },
+        {
+          "scenario_name": "User Role Restriction Test",
+          "test_purpose": "Validate that user role is properly restricted from admin-only endpoints",
+          "test_method": "GET",
+          "valid_user_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBj",
+          "test_endpoints": [
+            {
+              "endpoint": "/api/admin/users",
+              "expected_status": 403,
+              "authorization_annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+              "description": "Admin user management - should be forbidden"
+            },
+            {
+              "endpoint": "/api/admin/system/config",
+              "expected_status": 403,
+              "authorization_annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+              "description": "System configuration - should be forbidden"
+            },
+            {
+              "endpoint": "/api/audit/logs",
+              "expected_status": 403,
+              "authorization_annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+              "description": "Audit log access - should be forbidden"
+            },
+            {
+              "endpoint": "/api/batch/jobs",
+              "expected_status": 403,
+              "authorization_annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+              "description": "Batch job management - should be forbidden"
+            },
+            {
+              "endpoint": "/api/user/create",
+              "expected_status": 403,
+              "authorization_annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+              "description": "User creation - should be forbidden"
+            },
+            {
+              "endpoint": "/api/user/delete/USER0002",
+              "expected_status": 403,
+              "authorization_annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+              "description": "User deletion - should be forbidden"
+            }
+          ],
+          "headers": {
+            "Authorization": "Bearer {valid_user_token}",
+            "Content-Type": "application/json"
+          },
+          "expected_response": {
+            "error": "Forbidden",
+            "message": "Insufficient permissions"
+          },
+          "security_event_expected": "AUTHORIZATION_DENIED",
+          "validation_points": [
+            "Verify 403 Forbidden status",
+            "Verify hasRole('ADMIN') evaluation failure",
+            "Verify authorization denial event logging",
+            "Verify no business logic execution"
+          ]
+        }
+      ]
+    },
+
+    "rate_limiting_tests": {
+      "description": "Comprehensive rate limiting validation with Redis-backed enforcement per Section 6.4.2.4 implementation testing across all user types and endpoints",
+      "test_scenarios": [
+        {
+          "scenario_name": "User Rate Limit Enforcement Test",
+          "test_purpose": "Validate 100 requests per minute rate limit for regular users with Redis backend",
+          "test_method": "GET",
+          "valid_user_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBj",
+          "test_endpoint": "/api/account/view/00000000001",
+          "rate_limit_config": {
+            "user_type": "U",
+            "requests_per_minute": 100,
+            "window_seconds": 60,
+            "redis_key_prefix": "rate_limit:USER0001:",
+            "burst_capacity": 10
+          },
+          "test_execution": {
+            "request_count": 105,
+            "request_interval_ms": 500,
+            "parallel_threads": 5
+          },
+          "headers": {
+            "Authorization": "Bearer {valid_user_token}",
+            "Content-Type": "application/json"
+          },
+          "expected_results": {
+            "successful_requests": 100,
+            "rate_limited_requests": 5,
+            "rate_limit_status": 429,
+            "rate_limit_headers": {
+              "Retry-After": "60",
+              "X-RateLimit-Limit": "100",
+              "X-RateLimit-Remaining": "0",
+              "X-RateLimit-Reset": "timestamp"
+            }
+          },
+          "expected_response_429": {
+            "error": "Too Many Requests",
+            "message": "Rate limit exceeded"
+          },
+          "security_event_expected": "RATE_LIMIT_EXCEEDED",
+          "validation_points": [
+            "Verify Redis rate limit key creation",
+            "Verify sliding window algorithm",
+            "Verify 429 status after limit exceeded",
+            "Verify rate limit headers present",
+            "Verify security event logging"
+          ]
+        },
+        {
+          "scenario_name": "Admin Rate Limit Enforcement Test",
+          "test_purpose": "Validate 500 requests per minute rate limit for admin users with higher threshold",
+          "test_method": "GET",
+          "valid_admin_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBRE1JTjAwMSIsInVzZXJfdHlwZSI6IkEiLCJyb2xlIjoiUk9MRV9BRE1JTiIsImZpcnN0X25hbWUiOiJTeXN0ZW0iLCJsYXN0X25hbWUiOiJBZG1pbmlzdHJhdG9yIiwic2Vzc2lvbl9pZCI6ImFkbWluLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.kP4vVmKrGJCdHvzV7dCkzFHlD8kBqFp2KY9hPJF3zN4",
+          "test_endpoint": "/api/admin/users",
+          "rate_limit_config": {
+            "user_type": "A",
+            "requests_per_minute": 500,
+            "window_seconds": 60,
+            "redis_key_prefix": "rate_limit:ADMIN001:",
+            "burst_capacity": 50
+          },
+          "test_execution": {
+            "request_count": 510,
+            "request_interval_ms": 100,
+            "parallel_threads": 10
+          },
+          "headers": {
+            "Authorization": "Bearer {valid_admin_token}",
+            "Content-Type": "application/json"
+          },
+          "expected_results": {
+            "successful_requests": 500,
+            "rate_limited_requests": 10,
+            "rate_limit_status": 429,
+            "rate_limit_headers": {
+              "Retry-After": "60",
+              "X-RateLimit-Limit": "500",
+              "X-RateLimit-Remaining": "0",
+              "X-RateLimit-Reset": "timestamp"
+            }
+          },
+          "expected_response_429": {
+            "error": "Too Many Requests",
+            "message": "Rate limit exceeded"
+          },
+          "security_event_expected": "RATE_LIMIT_EXCEEDED",
+          "validation_points": [
+            "Verify admin rate limit higher than user",
+            "Verify Redis key per user/endpoint",
+            "Verify burst capacity handling",
+            "Verify TTL expiration cleanup",
+            "Verify performance under load"
+          ]
+        },
+        {
+          "scenario_name": "Endpoint-Specific Rate Limiting Test",
+          "test_purpose": "Validate rate limiting is applied per endpoint and user combination",
+          "test_method": "GET",
+          "valid_user_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBj",
+          "test_endpoints": [
+            {
+              "endpoint": "/api/account/view/00000000001",
+              "requests": 60,
+              "redis_key": "rate_limit:USER0001:/api/account/view/00000000001",
+              "expected_status": 200
+            },
+            {
+              "endpoint": "/api/card/list",
+              "requests": 50,
+              "redis_key": "rate_limit:USER0001:/api/card/list",
+              "expected_status": 200
+            },
+            {
+              "endpoint": "/api/transaction/history",
+              "requests": 40,
+              "redis_key": "rate_limit:USER0001:/api/transaction/history",
+              "expected_status": 200
+            }
+          ],
+          "headers": {
+            "Authorization": "Bearer {valid_user_token}",
+            "Content-Type": "application/json"
+          },
+          "total_requests": 150,
+          "expected_results": {
+            "all_endpoints_successful": true,
+            "separate_rate_limit_keys": true,
+            "no_cross_endpoint_interference": true
+          },
+          "validation_points": [
+            "Verify separate Redis keys per endpoint",
+            "Verify no cross-endpoint rate limit interference",
+            "Verify individual endpoint limits",
+            "Verify Redis key expiration per endpoint"
+          ]
+        },
+        {
+          "scenario_name": "Rate Limit Recovery Test",
+          "test_purpose": "Validate rate limit window expiration and request processing recovery",
+          "test_method": "GET",
+          "valid_user_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBj",
+          "test_endpoint": "/api/account/view/00000000001",
+          "test_execution": {
+            "phase1_requests": 101,
+            "phase1_expected_429": 1,
+            "wait_time_seconds": 65,
+            "phase2_requests": 50,
+            "phase2_expected_200": 50
+          },
+          "headers": {
+            "Authorization": "Bearer {valid_user_token}",
+            "Content-Type": "application/json"
+          },
+          "expected_results": {
+            "phase1_rate_limited": true,
+            "phase2_recovery_successful": true,
+            "redis_key_expiration": true
+          },
+          "validation_points": [
+            "Verify rate limit window expiration",
+            "Verify Redis key TTL cleanup",
+            "Verify request processing recovery",
+            "Verify counter reset after window"
+          ]
+        }
+      ]
+    },
+
+    "jwt_token_validation_tests": {
+      "description": "Comprehensive JWT token validation testing covering signature verification, expiration checking, and claims validation per Spring Security OAuth2 Resource Server implementation",
+      "test_scenarios": [
+        {
+          "scenario_name": "JWT Signature Validation Test",
+          "test_purpose": "Validate JWT token signature verification using HS256 algorithm with secret key",
+          "test_method": "GET",
+          "test_endpoint": "/api/account/view/00000000001",
+          "test_cases": [
+            {
+              "case_name": "Valid JWT Signature",
+              "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBj",
+              "expected_status": 200,
+              "expected_result": "SIGNATURE_VALID",
+              "validation_points": [
+                "Verify HS256 algorithm processing",
+                "Verify secret key validation",
+                "Verify signature integrity",
+                "Verify JWT decoder success"
+              ]
+            },
+            {
+              "case_name": "Invalid JWT Signature",
+              "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TAMPERED_SIGNATURE_FOR_TESTING_12345",
+              "expected_status": 401,
+              "expected_result": "SIGNATURE_INVALID",
+              "expected_response": {
+                "error": "Unauthorized",
+                "message": "Invalid authentication token"
+              },
+              "validation_points": [
+                "Verify signature tampering detection",
+                "Verify JWT decoder failure",
+                "Verify security event logging",
+                "Verify no authentication context creation"
+              ]
+            },
+            {
+              "case_name": "Wrong Algorithm JWT",
+              "jwt_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.InvalidRS256SignatureForAlgorithmTesting",
+              "expected_status": 401,
+              "expected_result": "ALGORITHM_MISMATCH",
+              "expected_response": {
+                "error": "Unauthorized",
+                "message": "Invalid authentication token"
+              },
+              "validation_points": [
+                "Verify algorithm mismatch detection",
+                "Verify HS256 requirement enforcement",
+                "Verify algorithm downgrade protection",
+                "Verify security violation logging"
+              ]
+            }
+          ]
+        },
+        {
+          "scenario_name": "JWT Expiration Validation Test",
+          "test_purpose": "Validate JWT token expiration checking and time-based validation",
+          "test_method": "GET",
+          "test_endpoint": "/api/card/list",
+          "test_cases": [
+            {
+              "case_name": "Valid Unexpired Token",
+              "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBj",
+              "token_issued_at": "2024-01-20T14:30:00Z",
+              "token_expires_at": "2024-01-20T15:00:00Z",
+              "test_time": "2024-01-20T14:45:00Z",
+              "expected_status": 200,
+              "expected_result": "TOKEN_VALID",
+              "validation_points": [
+                "Verify expiration time parsing",
+                "Verify current time comparison",
+                "Verify token within validity window",
+                "Verify successful authentication"
+              ]
+            },
+            {
+              "case_name": "Expired Token",
+              "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJleHBpcmVkLXVzZXItc2Vzc2lvbi0wMDEiLCJpc3MiOiJjYXJkZGVtby1hdXRoLXNlcnZpY2UiLCJpYXQiOjE3MDU3Mzc2MDAsImV4cCI6MTcwNTczOTQwMH0.ExpiredUserTokenSignatureForTesting67890",
+              "token_issued_at": "2024-01-20T10:00:00Z",
+              "token_expires_at": "2024-01-20T10:30:00Z",
+              "test_time": "2024-01-20T14:00:00Z",
+              "expected_status": 401,
+              "expected_result": "TOKEN_EXPIRED",
+              "expected_response": {
+                "error": "Unauthorized",
+                "message": "Invalid authentication token"
+              },
+              "validation_points": [
+                "Verify expiration detection",
+                "Verify time comparison accuracy",
+                "Verify expired token rejection",
+                "Verify expiration audit logging"
+              ]
+            },
+            {
+              "case_name": "Future Issue Date Token",
+              "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJmdXR1cmUtaXNzdWUtc2Vzc2lvbi0wMDEiLCJpc3MiOiJjYXJkZGVtby1hdXRoLXNlcnZpY2UiLCJpYXQiOjE3MDU3NjAwMDAsImV4cCI6MTcwNTc2MTgwMH0.FutureIssueDateTokenSignatureForTesting",
+              "token_issued_at": "2024-01-20T16:00:00Z",
+              "token_expires_at": "2024-01-20T16:30:00Z",
+              "test_time": "2024-01-20T14:30:00Z",
+              "expected_status": 401,
+              "expected_result": "INVALID_ISSUE_DATE",
+              "expected_response": {
+                "error": "Unauthorized",
+                "message": "Invalid authentication token"
+              },
+              "validation_points": [
+                "Verify issue date validation",
+                "Verify future token rejection",
+                "Verify time manipulation detection",
+                "Verify security event correlation"
+              ]
+            }
+          ]
+        },
+        {
+          "scenario_name": "JWT Claims Validation Test",
+          "test_purpose": "Validate required JWT claims presence and format according to CardDemo authentication requirements",
+          "test_method": "GET",
+          "test_endpoint": "/api/transaction/history",
+          "test_cases": [
+            {
+              "case_name": "Valid Claims Structure",
+              "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBj",
+              "expected_claims": {
+                "sub": "USER0001",
+                "user_id": "USER0001",
+                "user_type": "U",
+                "role": "ROLE_USER",
+                "first_name": "John",
+                "last_name": "Smith",
+                "session_id": "user-session-001",
+                "iss": "carddemo-auth-service",
+                "iat": 1705753800,
+                "exp": 1705755600
+              },
+              "expected_status": 200,
+              "expected_result": "CLAIMS_VALID",
+              "validation_points": [
+                "Verify all required claims present",
+                "Verify claim types and formats",
+                "Verify issuer validation",
+                "Verify user context establishment"
+              ]
+            },
+            {
+              "case_name": "Missing Required Claims",
+              "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsImlzcyI6ImNhcmRkZW1vLWF1dGgtc2VydmljZSIsImlhdCI6MTcwNTc1MzgwMCwiZXhwIjoxNzA1NzU1NjAwfQ.MissingClaimsTokenSignatureForTesting",
+              "missing_claims": ["user_type", "role"],
+              "expected_status": 401,
+              "expected_result": "MISSING_REQUIRED_CLAIMS",
+              "expected_response": {
+                "error": "Unauthorized",
+                "message": "Invalid authentication token"
+              },
+              "validation_points": [
+                "Verify required claims validation",
+                "Verify missing claim detection",
+                "Verify authentication failure",
+                "Verify validation error logging"
+              ]
+            },
+            {
+              "case_name": "Invalid User Type",
+              "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlgiLCJyb2xlIjoiUk9MRV9VTktOT1dOIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.InvalidUserTypeTokenSignatureForTesting",
+              "invalid_user_type": "X",
+              "expected_status": 401,
+              "expected_result": "INVALID_USER_TYPE",
+              "expected_response": {
+                "error": "Unauthorized",
+                "message": "Invalid authentication token"
+              },
+              "validation_points": [
+                "Verify user type validation (A or U only)",
+                "Verify invalid user type rejection",
+                "Verify security context prevention",
+                "Verify user type validation logging"
+              ]
+            },
+            {
+              "case_name": "Invalid Issuer",
+              "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiaXNzIjoiaW52YWxpZC1pc3N1ZXIiLCJpYXQiOjE3MDU3NTM4MDAsImV4cCI6MTcwNTc1NTYwMH0.InvalidIssuerTokenSignatureForTesting",
+              "invalid_issuer": "invalid-issuer",
+              "expected_issuer": "carddemo-auth-service",
+              "expected_status": 401,
+              "expected_result": "INVALID_ISSUER",
+              "expected_response": {
+                "error": "Unauthorized",
+                "message": "Invalid authentication token"
+              },
+              "validation_points": [
+                "Verify issuer claim validation",
+                "Verify trusted issuer enforcement",
+                "Verify issuer mismatch detection",
+                "Verify issuer validation logging"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+
+    "endpoint_protection_tests": {
+      "description": "Comprehensive endpoint protection validation covering all 24 CICS-to-REST transaction endpoints with security gateway integration",
+      "test_scenarios": [
+        {
+          "scenario_name": "Authentication Service Endpoints",
+          "test_purpose": "Validate authentication service endpoints security implementation",
+          "endpoints": [
+            {
+              "endpoint": "/api/auth/login",
+              "method": "POST",
+              "cics_transaction": "COSGN00C",
+              "security_level": "public",
+              "expected_status_without_auth": 200,
+              "description": "Login endpoint - public access for authentication"
+            },
+            {
+              "endpoint": "/api/auth/menu",
+              "method": "GET",
+              "cics_transaction": "COMEN01C",
+              "security_level": "authenticated",
+              "expected_status_without_auth": 401,
+              "required_role": "hasAnyRole('USER','ADMIN')",
+              "description": "Menu navigation - requires authentication"
+            },
+            {
+              "endpoint": "/api/auth/logout",
+              "method": "POST",
+              "cics_transaction": "COSGN00C",
+              "security_level": "authenticated",
+              "expected_status_without_auth": 401,
+              "required_role": "hasAnyRole('USER','ADMIN')",
+              "description": "Logout endpoint - requires authentication"
+            }
+          ]
+        },
+        {
+          "scenario_name": "Account Management Endpoints",
+          "test_purpose": "Validate account management endpoints security implementation",
+          "endpoints": [
+            {
+              "endpoint": "/api/account/view/{accountId}",
+              "method": "GET",
+              "cics_transaction": "COACTVWC",
+              "security_level": "authenticated",
+              "expected_status_without_auth": 401,
+              "required_role": "hasAnyRole('USER','ADMIN')",
+              "description": "Account view - requires user or admin role"
+            },
+            {
+              "endpoint": "/api/account/update/{accountId}",
+              "method": "PUT",
+              "cics_transaction": "COACTUPC",
+              "security_level": "authenticated",
+              "expected_status_without_auth": 401,
+              "required_role": "hasAnyRole('USER','ADMIN')",
+              "description": "Account update - requires user or admin role"
+            },
+            {
+              "endpoint": "/api/account/list",
+              "method": "GET",
+              "cics_transaction": "COACTVWC",
+              "security_level": "authenticated",
+              "expected_status_without_auth": 401,
+              "required_role": "hasAnyRole('USER','ADMIN')",
+              "description": "Account list - requires user or admin role"
+            }
+          ]
+        },
+        {
+          "scenario_name": "Card Management Endpoints",
+          "test_purpose": "Validate card management endpoints security implementation",
+          "endpoints": [
+            {
+              "endpoint": "/api/card/list",
+              "method": "GET",
+              "cics_transaction": "COCRDLIC",
+              "security_level": "authenticated",
+              "expected_status_without_auth": 401,
+              "required_role": "hasAnyRole('USER','ADMIN')",
+              "description": "Card list - requires user or admin role"
+            },
+            {
+              "endpoint": "/api/card/update/{cardId}",
+              "method": "PUT",
+              "cics_transaction": "COCRDUPC",
+              "security_level": "authenticated",
+              "expected_status_without_auth": 401,
+              "required_role": "hasAnyRole('USER','ADMIN')",
+              "description": "Card update - requires user or admin role"
+            },
+            {
+              "endpoint": "/api/card/activate/{cardId}",
+              "method": "POST",
+              "cics_transaction": "COCRDUPC",
+              "security_level": "authenticated",
+              "expected_status_without_auth": 401,
+              "required_role": "hasAnyRole('USER','ADMIN')",
+              "description": "Card activation - requires user or admin role"
+            },
+            {
+              "endpoint": "/api/card/deactivate/{cardId}",
+              "method": "POST",
+              "cics_transaction": "COCRDUPC",
+              "security_level": "authenticated",
+              "expected_status_without_auth": 401,
+              "required_role": "hasAnyRole('USER','ADMIN')",
+              "description": "Card deactivation - requires user or admin role"
+            }
+          ]
+        },
+        {
+          "scenario_name": "Transaction Processing Endpoints",
+          "test_purpose": "Validate transaction processing endpoints security implementation",
+          "endpoints": [
+            {
+              "endpoint": "/api/transaction/history",
+              "method": "GET",
+              "cics_transaction": "COTRN00C",
+              "security_level": "authenticated",
+              "expected_status_without_auth": 401,
+              "required_role": "hasAnyRole('USER','ADMIN')",
+              "description": "Transaction history - requires user or admin role"
+            },
+            {
+              "endpoint": "/api/transaction/create",
+              "method": "POST",
+              "cics_transaction": "COTRN02C",
+              "security_level": "authenticated",
+              "expected_status_without_auth": 401,
+              "required_role": "hasAnyRole('USER','ADMIN')",
+              "description": "Transaction creation - requires user or admin role"
+            },
+            {
+              "endpoint": "/api/transaction/details/{transactionId}",
+              "method": "GET",
+              "cics_transaction": "COTRN01C",
+              "security_level": "authenticated",
+              "expected_status_without_auth": 401,
+              "required_role": "hasAnyRole('USER','ADMIN')",
+              "description": "Transaction details - requires user or admin role"
+            }
+          ]
+        },
+        {
+          "scenario_name": "Bill Payment Endpoints",
+          "test_purpose": "Validate bill payment endpoints security implementation",
+          "endpoints": [
+            {
+              "endpoint": "/api/bill/payment/process",
+              "method": "POST",
+              "cics_transaction": "COBIL00C",
+              "security_level": "authenticated",
+              "expected_status_without_auth": 401,
+              "required_role": "hasAnyRole('USER','ADMIN')",
+              "description": "Bill payment processing - requires user or admin role"
+            },
+            {
+              "endpoint": "/api/bill/payment/history",
+              "method": "GET",
+              "cics_transaction": "COBIL00C",
+              "security_level": "authenticated",
+              "expected_status_without_auth": 401,
+              "required_role": "hasAnyRole('USER','ADMIN')",
+              "description": "Bill payment history - requires user or admin role"
+            }
+          ]
+        },
+        {
+          "scenario_name": "User Management Endpoints (Admin Only)",
+          "test_purpose": "Validate user management endpoints with admin-only security",
+          "endpoints": [
+            {
+              "endpoint": "/api/user/create",
+              "method": "POST",
+              "cics_transaction": "COUSR00C",
+              "security_level": "admin_only",
+              "expected_status_without_auth": 401,
+              "expected_status_user_role": 403,
+              "required_role": "hasRole('ADMIN')",
+              "description": "User creation - requires admin role only"
+            },
+            {
+              "endpoint": "/api/user/update/{userId}",
+              "method": "PUT",
+              "cics_transaction": "COUSR02C",
+              "security_level": "admin_only",
+              "expected_status_without_auth": 401,
+              "expected_status_user_role": 403,
+              "required_role": "hasRole('ADMIN')",
+              "description": "User update - requires admin role only"
+            },
+            {
+              "endpoint": "/api/user/delete/{userId}",
+              "method": "DELETE",
+              "cics_transaction": "COUSR03C",
+              "security_level": "admin_only",
+              "expected_status_without_auth": 401,
+              "expected_status_user_role": 403,
+              "required_role": "hasRole('ADMIN')",
+              "description": "User deletion - requires admin role only"
+            },
+            {
+              "endpoint": "/api/user/list",
+              "method": "GET",
+              "cics_transaction": "COUSR01C",
+              "security_level": "admin_only",
+              "expected_status_without_auth": 401,
+              "expected_status_user_role": 403,
+              "required_role": "hasRole('ADMIN')",
+              "description": "User list - requires admin role only"
+            }
+          ]
+        },
+        {
+          "scenario_name": "Administrative Endpoints",
+          "test_purpose": "Validate administrative endpoints with admin-only security",
+          "endpoints": [
+            {
+              "endpoint": "/api/admin/system/config",
+              "method": "GET",
+              "cics_transaction": "COADM01C",
+              "security_level": "admin_only",
+              "expected_status_without_auth": 401,
+              "expected_status_user_role": 403,
+              "required_role": "hasRole('ADMIN')",
+              "description": "System configuration - requires admin role only"
+            },
+            {
+              "endpoint": "/api/admin/users",
+              "method": "GET",
+              "cics_transaction": "COADM02C",
+              "security_level": "admin_only",
+              "expected_status_without_auth": 401,
+              "expected_status_user_role": 403,
+              "required_role": "hasRole('ADMIN')",
+              "description": "Admin user management - requires admin role only"
+            },
+            {
+              "endpoint": "/api/audit/logs",
+              "method": "GET",
+              "cics_transaction": "COADM03C",
+              "security_level": "admin_only",
+              "expected_status_without_auth": 401,
+              "expected_status_user_role": 403,
+              "required_role": "hasRole('ADMIN')",
+              "description": "Audit logs - requires admin role only"
+            },
+            {
+              "endpoint": "/api/batch/jobs",
+              "method": "GET",
+              "cics_transaction": "COADM04C",
+              "security_level": "admin_only",
+              "expected_status_without_auth": 401,
+              "expected_status_user_role": 403,
+              "required_role": "hasRole('ADMIN')",
+              "description": "Batch job management - requires admin role only"
+            }
+          ]
+        },
+        {
+          "scenario_name": "Reporting Endpoints",
+          "test_purpose": "Validate reporting endpoints security implementation",
+          "endpoints": [
+            {
+              "endpoint": "/api/reports/transactions",
+              "method": "GET",
+              "cics_transaction": "CORPT00C",
+              "security_level": "authenticated",
+              "expected_status_without_auth": 401,
+              "required_role": "hasAnyRole('USER','ADMIN')",
+              "description": "Transaction reports - requires user or admin role"
+            },
+            {
+              "endpoint": "/api/reports/accounts",
+              "method": "GET",
+              "cics_transaction": "CORPT01C",
+              "security_level": "authenticated",
+              "expected_status_without_auth": 401,
+              "required_role": "hasAnyRole('USER','ADMIN')",
+              "description": "Account reports - requires user or admin role"
+            },
+            {
+              "endpoint": "/api/reports/cards",
+              "method": "GET",
+              "cics_transaction": "CORPT02C",
+              "security_level": "authenticated",
+              "expected_status_without_auth": 401,
+              "required_role": "hasAnyRole('USER','ADMIN')",
+              "description": "Card reports - requires user or admin role"
+            }
+          ]
+        }
+      ]
+    },
+
+    "security_header_tests": {
+      "description": "HTTP security headers validation testing for Spring Security integration and secure communication",
+      "test_scenarios": [
+        {
+          "scenario_name": "Security Headers Validation",
+          "test_purpose": "Validate presence and configuration of security headers in API responses",
+          "test_endpoints": [
+            "/api/auth/menu",
+            "/api/account/view/00000000001",
+            "/api/card/list",
+            "/api/admin/users"
+          ],
+          "expected_security_headers": {
+            "X-Content-Type-Options": "nosniff",
+            "X-Frame-Options": "DENY",
+            "X-XSS-Protection": "1; mode=block",
+            "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+            "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+          },
+          "forbidden_headers": [
+            "Server",
+            "X-Powered-By",
+            "X-AspNet-Version"
+          ],
+          "validation_points": [
+            "Verify all security headers present",
+            "Verify header values configured correctly",
+            "Verify no information disclosure headers",
+            "Verify HSTS configuration"
+          ]
+        },
+        {
+          "scenario_name": "Content Security Policy Test",
+          "test_purpose": "Validate Content Security Policy header configuration",
+          "test_endpoints": [
+            "/api/auth/menu",
+            "/api/admin/system/config"
+          ],
+          "expected_csp_header": "Content-Security-Policy",
+          "expected_csp_value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; media-src 'self'; object-src 'none'; child-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+          "validation_points": [
+            "Verify CSP header presence",
+            "Verify CSP directive configuration",
+            "Verify no unsafe directives",
+            "Verify frame-ancestors protection"
+          ]
+        },
+        {
+          "scenario_name": "CORS Configuration Test",
+          "test_purpose": "Validate CORS configuration for cross-origin request handling",
+          "test_method": "OPTIONS",
+          "test_endpoints": [
+            "/api/auth/login",
+            "/api/account/view/00000000001",
+            "/api/card/list"
+          ],
+          "cors_headers": {
+            "Origin": "https://carddemo.example.com",
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "Authorization, Content-Type"
+          },
+          "expected_cors_headers": {
+            "Access-Control-Allow-Origin": "https://carddemo.example.com",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Authorization, Content-Type, X-Requested-With",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Max-Age": "3600"
+          },
+          "validation_points": [
+            "Verify CORS headers present",
+            "Verify allowed origins configured",
+            "Verify allowed methods configured",
+            "Verify credentials handling"
+          ]
+        }
+      ]
+    },
+
+    "csrf_protection_tests": {
+      "description": "CSRF protection validation testing for Spring Security stateless JWT authentication",
+      "test_scenarios": [
+        {
+          "scenario_name": "CSRF Token Validation",
+          "test_purpose": "Validate CSRF protection configuration for stateless JWT authentication",
+          "test_method": "POST",
+          "test_endpoints": [
+            "/api/transaction/create",
+            "/api/bill/payment/process",
+            "/api/user/create"
+          ],
+          "csrf_configuration": {
+            "csrf_protection_enabled": false,
+            "reason": "Stateless JWT authentication with proper CORS configuration",
+            "alternative_protection": "JWT token validation and CORS policies"
+          },
+          "test_cases": [
+            {
+              "case_name": "POST Request Without CSRF Token",
+              "headers": {
+                "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBj",
+                "Content-Type": "application/json"
+              },
+              "request_body": {
+                "amount": "100.00",
+                "description": "Test transaction"
+              },
+              "expected_status": 200,
+              "expected_result": "REQUEST_SUCCESSFUL",
+              "validation_points": [
+                "Verify CSRF not required for JWT authentication",
+                "Verify request processed successfully",
+                "Verify JWT token provides sufficient protection",
+                "Verify CORS headers provide origin validation"
+              ]
+            }
+          ]
+        },
+        {
+          "scenario_name": "CSRF Alternative Protection",
+          "test_purpose": "Validate alternative CSRF protection through JWT token validation",
+          "test_method": "POST",
+          "test_endpoint": "/api/transaction/create",
+          "test_cases": [
+            {
+              "case_name": "Request Without JWT Token",
+              "headers": {
+                "Content-Type": "application/json"
+              },
+              "request_body": {
+                "amount": "100.00",
+                "description": "Test transaction"
+              },
+              "expected_status": 401,
+              "expected_result": "AUTHENTICATION_REQUIRED",
+              "validation_points": [
+                "Verify JWT token required for state-changing operations",
+                "Verify request rejected without authentication",
+                "Verify CSRF protection through authentication requirement"
+              ]
+            },
+            {
+              "case_name": "Request With Invalid JWT Token",
+              "headers": {
+                "Authorization": "Bearer invalid.jwt.token",
+                "Content-Type": "application/json"
+              },
+              "request_body": {
+                "amount": "100.00",
+                "description": "Test transaction"
+              },
+              "expected_status": 401,
+              "expected_result": "AUTHENTICATION_FAILED",
+              "validation_points": [
+                "Verify invalid JWT token rejection",
+                "Verify request rejected with invalid authentication",
+                "Verify CSRF protection through token validation"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+
+    "cors_validation_tests": {
+      "description": "CORS validation testing for Spring Cloud Gateway configuration and cross-origin request handling",
+      "test_scenarios": [
+        {
+          "scenario_name": "CORS Preflight Request Test",
+          "test_purpose": "Validate CORS preflight request handling and response headers",
+          "test_method": "OPTIONS",
+          "test_endpoints": [
+            "/api/auth/login",
+            "/api/account/view/00000000001",
+            "/api/card/list",
+            "/api/admin/users"
+          ],
+          "test_cases": [
+            {
+              "case_name": "Valid Origin Preflight",
+              "headers": {
+                "Origin": "https://carddemo.example.com",
+                "Access-Control-Request-Method": "GET",
+                "Access-Control-Request-Headers": "Authorization, Content-Type"
+              },
+              "expected_status": 200,
+              "expected_headers": {
+                "Access-Control-Allow-Origin": "https://carddemo.example.com",
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                "Access-Control-Allow-Headers": "Authorization, Content-Type, X-Requested-With",
+                "Access-Control-Allow-Credentials": "true",
+                "Access-Control-Max-Age": "3600"
+              },
+              "validation_points": [
+                "Verify preflight request handled correctly",
+                "Verify allowed origin reflected",
+                "Verify allowed methods configured",
+                "Verify credentials support enabled"
+              ]
+            },
+            {
+              "case_name": "Invalid Origin Preflight",
+              "headers": {
+                "Origin": "https://malicious.example.com",
+                "Access-Control-Request-Method": "GET",
+                "Access-Control-Request-Headers": "Authorization, Content-Type"
+              },
+              "expected_status": 403,
+              "expected_result": "CORS_ORIGIN_DENIED",
+              "validation_points": [
+                "Verify unauthorized origin rejection",
+                "Verify CORS policy enforcement",
+                "Verify security boundary protection",
+                "Verify no CORS headers in rejection"
+              ]
+            },
+            {
+              "case_name": "Missing Origin Header",
+              "headers": {
+                "Access-Control-Request-Method": "GET",
+                "Access-Control-Request-Headers": "Authorization, Content-Type"
+              },
+              "expected_status": 400,
+              "expected_result": "MISSING_ORIGIN_HEADER",
+              "validation_points": [
+                "Verify origin header requirement",
+                "Verify proper error handling",
+                "Verify CORS validation enforcement"
+              ]
+            }
+          ]
+        },
+        {
+          "scenario_name": "CORS Simple Request Test",
+          "test_purpose": "Validate CORS simple request handling and response headers",
+          "test_method": "GET",
+          "test_endpoints": [
+            "/api/auth/menu",
+            "/api/account/view/00000000001",
+            "/api/card/list"
+          ],
+          "test_cases": [
+            {
+              "case_name": "Valid Origin Simple Request",
+              "headers": {
+                "Origin": "https://carddemo.example.com",
+                "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBj",
+                "Content-Type": "application/json"
+              },
+              "expected_status": 200,
+              "expected_headers": {
+                "Access-Control-Allow-Origin": "https://carddemo.example.com",
+                "Access-Control-Allow-Credentials": "true"
+              },
+              "validation_points": [
+                "Verify simple request processed",
+                "Verify origin header reflected",
+                "Verify credentials allowed",
+                "Verify successful authentication"
+              ]
+            },
+            {
+              "case_name": "Invalid Origin Simple Request",
+              "headers": {
+                "Origin": "https://malicious.example.com",
+                "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBj",
+                "Content-Type": "application/json"
+              },
+              "expected_status": 403,
+              "expected_result": "CORS_ORIGIN_DENIED",
+              "no_cors_headers": true,
+              "validation_points": [
+                "Verify unauthorized origin rejection",
+                "Verify no CORS headers in response",
+                "Verify CORS policy enforcement",
+                "Verify security boundary protection"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "RateLimitingTestCases": {
+    "redis_backed_rate_limiting": {
+      "description": "Redis-backed rate limiting test cases validating distributed rate enforcement with sliding window algorithm",
+      "test_scenarios": [
+        {
+          "scenario_name": "Redis Connection Test",
+          "test_purpose": "Validate Redis connection and rate limiting key storage",
+          "setup": {
+            "redis_container": "testcontainers/redis:7-alpine",
+            "redis_port": 6379,
+            "connection_timeout": 5000,
+            "command_timeout": 3000
+          },
+          "test_execution": {
+            "user_id": "USER0001",
+            "endpoint": "/api/account/view/00000000001",
+            "request_count": 5,
+            "expected_redis_key": "rate_limit:USER0001:/api/account/view/00000000001"
+          },
+          "validation_points": [
+            "Verify Redis connection established",
+            "Verify rate limiting key created",
+            "Verify key expiration set correctly",
+            "Verify counter incremented per request"
+          ]
+        },
+        {
+          "scenario_name": "Sliding Window Algorithm Test",
+          "test_purpose": "Validate sliding window rate limiting algorithm accuracy",
+          "test_config": {
+            "window_size_seconds": 60,
+            "rate_limit": 100,
+            "test_duration_seconds": 120
+          },
+          "test_execution": {
+            "phase1": {
+              "requests": 80,
+              "time_window": "0-30 seconds",
+              "expected_status": 200
+            },
+            "phase2": {
+              "requests": 30,
+              "time_window": "30-60 seconds",
+              "expected_status": "200 for 20 requests, 429 for 10 requests"
+            },
+            "phase3": {
+              "requests": 50,
+              "time_window": "60-90 seconds",
+              "expected_status": 200
+            }
+          },
+          "validation_points": [
+            "Verify sliding window accuracy",
+            "Verify rate limit enforcement",
+            "Verify window expiration handling",
+            "Verify counter reset behavior"
+          ]
+        },
+        {
+          "scenario_name": "Distributed Rate Limiting Test",
+          "test_purpose": "Validate rate limiting across multiple application instances",
+          "test_setup": {
+            "application_instances": 3,
+            "redis_cluster": "single_node",
+            "load_balancer": "round_robin"
+          },
+          "test_execution": {
+            "total_requests": 150,
+            "requests_per_instance": 50,
+            "user_id": "USER0001",
+            "endpoint": "/api/card/list",
+            "expected_rate_limit": 100
+          },
+          "expected_results": {
+            "successful_requests": 100,
+            "rate_limited_requests": 50,
+            "consistent_enforcement": true
+          },
+          "validation_points": [
+            "Verify consistent rate limiting across instances",
+            "Verify Redis shared state",
+            "Verify no race conditions",
+            "Verify atomic counter operations"
+          ]
+        }
+      ]
+    },
+
+    "user_specific_limits": {
+      "description": "User-specific rate limiting test cases validating different limits for user types",
+      "test_scenarios": [
+        {
+          "scenario_name": "User Type Rate Limit Differentiation",
+          "test_purpose": "Validate different rate limits for user types (A vs U)",
+          "test_cases": [
+            {
+              "user_type": "U",
+              "user_id": "USER0001",
+              "rate_limit": 100,
+              "test_requests": 110,
+              "expected_successful": 100,
+              "expected_rate_limited": 10
+            },
+            {
+              "user_type": "A",
+              "user_id": "ADMIN001",
+              "rate_limit": 500,
+              "test_requests": 520,
+              "expected_successful": 500,
+              "expected_rate_limited": 20
+            }
+          ],
+          "validation_points": [
+            "Verify user type extracted from JWT",
+            "Verify appropriate rate limit applied",
+            "Verify no cross-user interference",
+            "Verify accurate limit enforcement"
+          ]
+        },
+        {
+          "scenario_name": "User Isolation Test",
+          "test_purpose": "Validate rate limiting isolation between different users",
+          "test_execution": {
+            "user1": {
+              "user_id": "USER0001",
+              "user_type": "U",
+              "requests": 100,
+              "endpoint": "/api/account/view/00000000001"
+            },
+            "user2": {
+              "user_id": "USER0002",
+              "user_type": "U",
+              "requests": 100,
+              "endpoint": "/api/account/view/00000000002"
+            }
+          },
+          "expected_results": {
+            "user1_successful": 100,
+            "user2_successful": 100,
+            "no_cross_user_interference": true
+          },
+          "validation_points": [
+            "Verify separate rate limit counters",
+            "Verify user isolation in Redis",
+            "Verify no shared rate limiting",
+            "Verify independent window expiration"
+          ]
+        }
+      ]
+    },
+
+    "endpoint_specific_limits": {
+      "description": "Endpoint-specific rate limiting test cases validating per-endpoint rate enforcement",
+      "test_scenarios": [
+        {
+          "scenario_name": "Endpoint Isolation Test",
+          "test_purpose": "Validate rate limiting isolation between different endpoints",
+          "test_user": {
+            "user_id": "USER0001",
+            "user_type": "U",
+            "rate_limit_per_endpoint": 100
+          },
+          "test_endpoints": [
+            {
+              "endpoint": "/api/account/view/00000000001",
+              "requests": 100,
+              "expected_redis_key": "rate_limit:USER0001:/api/account/view/00000000001"
+            },
+            {
+              "endpoint": "/api/card/list",
+              "requests": 100,
+              "expected_redis_key": "rate_limit:USER0001:/api/card/list"
+            },
+            {
+              "endpoint": "/api/transaction/history",
+              "requests": 100,
+              "expected_redis_key": "rate_limit:USER0001:/api/transaction/history"
+            }
+          ],
+          "expected_results": {
+            "total_successful_requests": 300,
+            "rate_limited_requests": 0,
+            "endpoint_isolation": true
+          },
+          "validation_points": [
+            "Verify separate Redis keys per endpoint",
+            "Verify no cross-endpoint interference",
+            "Verify endpoint-specific counters",
+            "Verify independent expiration"
+          ]
+        },
+        {
+          "scenario_name": "Endpoint Rate Limit Overflow Test",
+          "test_purpose": "Validate rate limiting when endpoint limit exceeded",
+          "test_user": {
+            "user_id": "USER0001",
+            "user_type": "U",
+            "rate_limit_per_endpoint": 100
+          },
+          "test_endpoint": "/api/account/view/00000000001",
+          "test_requests": 120,
+          "expected_results": {
+            "successful_requests": 100,
+            "rate_limited_requests": 20,
+            "redis_key_present": true,
+            "counter_accurate": true
+          },
+          "validation_points": [
+            "Verify endpoint rate limit enforcement",
+            "Verify 429 status after limit exceeded",
+            "Verify Redis counter accuracy",
+            "Verify rate limit headers present"
+          ]
+        }
+      ]
+    },
+
+    "burst_capacity_tests": {
+      "description": "Burst capacity test cases validating rate limiting burst handling and recovery",
+      "test_scenarios": [
+        {
+          "scenario_name": "Burst Request Handling Test",
+          "test_purpose": "Validate burst capacity handling within rate limits",
+          "test_config": {
+            "rate_limit": 100,
+            "burst_capacity": 10,
+            "window_seconds": 60
+          },
+          "test_execution": {
+            "burst_requests": 15,
+            "burst_duration_seconds": 5,
+            "followed_by_steady_requests": 90,
+            "steady_duration_seconds": 55
+          },
+          "expected_results": {
+            "burst_successful": 10,
+            "burst_rejected": 5,
+            "steady_successful": 90,
+            "total_within_limit": true
+          },
+          "validation_points": [
+            "Verify burst capacity handling",
+            "Verify burst rejection after capacity",
+            "Verify steady state processing",
+            "Verify overall rate limit compliance"
+          ]
+        },
+        {
+          "scenario_name": "Burst Recovery Test",
+          "test_purpose": "Validate burst capacity recovery after rate limit window",
+          "test_config": {
+            "rate_limit": 100,
+            "burst_capacity": 10,
+            "window_seconds": 60
+          },
+          "test_execution": {
+            "phase1_burst": 15,
+            "phase1_expected_successful": 10,
+            "wait_time_seconds": 65,
+            "phase2_burst": 15,
+            "phase2_expected_successful": 10
+          },
+          "validation_points": [
+            "Verify burst capacity recovery",
+            "Verify rate limit window reset",
+            "Verify burst handling restoration",
+            "Verify Redis key expiration"
+          ]
+        }
+      ]
+    },
+
+    "rate_limit_headers": {
+      "description": "Rate limit headers test cases validating HTTP headers for rate limiting information",
+      "test_scenarios": [
+        {
+          "scenario_name": "Rate Limit Headers Test",
+          "test_purpose": "Validate rate limit information headers in responses",
+          "test_config": {
+            "user_id": "USER0001",
+            "user_type": "U",
+            "rate_limit": 100,
+            "endpoint": "/api/account/view/00000000001"
+          },
+          "test_execution": {
+            "request_sequence": [
+              {
+                "request_number": 1,
+                "expected_headers": {
+                  "X-RateLimit-Limit": "100",
+                  "X-RateLimit-Remaining": "99",
+                  "X-RateLimit-Reset": "timestamp"
+                }
+              },
+              {
+                "request_number": 50,
+                "expected_headers": {
+                  "X-RateLimit-Limit": "100",
+                  "X-RateLimit-Remaining": "50",
+                  "X-RateLimit-Reset": "timestamp"
+                }
+              },
+              {
+                "request_number": 100,
+                "expected_headers": {
+                  "X-RateLimit-Limit": "100",
+                  "X-RateLimit-Remaining": "0",
+                  "X-RateLimit-Reset": "timestamp"
+                }
+              },
+              {
+                "request_number": 101,
+                "expected_status": 429,
+                "expected_headers": {
+                  "X-RateLimit-Limit": "100",
+                  "X-RateLimit-Remaining": "0",
+                  "X-RateLimit-Reset": "timestamp",
+                  "Retry-After": "60"
+                }
+              }
+            ]
+          },
+          "validation_points": [
+            "Verify rate limit headers present",
+            "Verify remaining count accuracy",
+            "Verify reset timestamp format",
+            "Verify retry-after header on 429"
+          ]
+        }
+      ]
+    },
+
+    "limit_exceeded_responses": {
+      "description": "Rate limit exceeded response test cases validating 429 status code handling",
+      "test_scenarios": [
+        {
+          "scenario_name": "429 Response Format Test",
+          "test_purpose": "Validate 429 Too Many Requests response format and content",
+          "test_setup": {
+            "user_id": "USER0001",
+            "user_type": "U",
+            "rate_limit": 100,
+            "endpoint": "/api/account/view/00000000001"
+          },
+          "test_execution": {
+            "initial_requests": 100,
+            "overflow_requests": 5
+          },
+          "expected_429_response": {
+            "status": 429,
+            "headers": {
+              "Content-Type": "application/json",
+              "X-RateLimit-Limit": "100",
+              "X-RateLimit-Remaining": "0",
+              "X-RateLimit-Reset": "timestamp",
+              "Retry-After": "60"
+            },
+            "body": {
+              "error": "Too Many Requests",
+              "message": "Rate limit exceeded",
+              "timestamp": "ISO8601_timestamp"
+            }
+          },
+          "validation_points": [
+            "Verify 429 status code",
+            "Verify error response format",
+            "Verify rate limit headers",
+            "Verify retry-after header"
+          ]
+        },
+        {
+          "scenario_name": "Rate Limit Security Event Test",
+          "test_purpose": "Validate security event logging for rate limit violations",
+          "test_setup": {
+            "user_id": "USER0001",
+            "user_type": "U",
+            "rate_limit": 100,
+            "endpoint": "/api/account/view/00000000001"
+          },
+          "test_execution": {
+            "requests_within_limit": 100,
+            "requests_exceeding_limit": 10
+          },
+          "expected_security_events": [
+            {
+              "event_type": "RATE_LIMIT_EXCEEDED",
+              "user_id": "USER0001",
+              "endpoint": "/api/account/view/00000000001",
+              "limit": 100,
+              "attempts": 110,
+              "correlation_id": "present"
+            }
+          ],
+          "validation_points": [
+            "Verify security event generated",
+            "Verify event correlation ID",
+            "Verify user context in event",
+            "Verify rate limit violation details"
+          ]
+        }
+      ]
+    }
+  },
+
+  "AuthenticationTestCases": {
+    "jwt_authentication_bypass": {
+      "description": "JWT authentication bypass test cases validating token validation security",
+      "test_scenarios": [
+        {
+          "scenario_name": "Token Manipulation Test",
+          "test_purpose": "Validate JWT token manipulation detection and prevention",
+          "test_cases": [
+            {
+              "case_name": "Modified Payload Test",
+              "original_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBj",
+              "modified_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IkEiLCJyb2xlIjoiUk9MRV9BRE1JTiIsImZpcnN0X25hbWUiOiJKb2huIiwibGFzdF9uYW1lIjoiU21pdGgiLCJzZXNzaW9uX2lkIjoidXNlci1zZXNzaW9uLTAwMSIsImlzcyI6ImNhcmRkZW1vLWF1dGgtc2VydmljZSIsImlhdCI6MTcwNTc1MzgwMCwiZXhwIjoxNzA1NzU1NjAwfQ.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBj",
+              "modification": "Changed user_type from U to A, role from ROLE_USER to ROLE_ADMIN",
+              "test_endpoint": "/api/admin/users",
+              "expected_status": 401,
+              "expected_result": "SIGNATURE_VERIFICATION_FAILED",
+              "validation_points": [
+                "Verify payload modification detection",
+                "Verify signature verification failure",
+                "Verify privilege escalation prevention",
+                "Verify security event logging"
+              ]
+            },
+            {
+              "case_name": "Algorithm Confusion Test",
+              "original_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIn0.signature",
+              "modified_token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IkEiLCJyb2xlIjoiUk9MRV9BRE1JTiJ9.",
+              "modification": "Changed algorithm to 'none' and elevated privileges",
+              "test_endpoint": "/api/admin/users",
+              "expected_status": 401,
+              "expected_result": "ALGORITHM_MISMATCH",
+              "validation_points": [
+                "Verify algorithm confusion prevention",
+                "Verify 'none' algorithm rejection",
+                "Verify HS256 algorithm requirement",
+                "Verify algorithm downgrade protection"
+              ]
+            }
+          ]
+        },
+        {
+          "scenario_name": "Token Replay Attack Test",
+          "test_purpose": "Validate JWT token replay attack prevention",
+          "test_scenario": {
+            "valid_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBj",
+            "test_endpoint": "/api/account/view/00000000001",
+            "replay_attempts": 100,
+            "time_window": "Within token validity period"
+          },
+          "expected_results": {
+            "all_requests_successful": true,
+            "no_replay_protection": true,
+            "stateless_design": true,
+            "note": "JWT is stateless by design, replay protection through short expiration"
+          },
+          "validation_points": [
+            "Verify token validity within expiration",
+            "Verify stateless authentication design",
+            "Verify short token expiration as replay mitigation",
+            "Verify session correlation for tracking"
+          ]
+        }
+      ]
+    },
+
+    "token_expiration_tests": {
+      "description": "Token expiration test cases validating JWT token lifecycle and expiration handling",
+      "test_scenarios": [
+        {
+          "scenario_name": "Token Expiration Timeline Test",
+          "test_purpose": "Validate JWT token expiration timeline and validation accuracy",
+          "test_config": {
+            "token_lifetime_minutes": 30,
+            "test_intervals": [5, 15, 25, 29, 30, 31, 35]
+          },
+          "test_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBj",
+          "test_endpoint": "/api/account/view/00000000001",
+          "expected_results": [
+            {
+              "minute": 5,
+              "expected_status": 200,
+              "expected_result": "TOKEN_VALID"
+            },
+            {
+              "minute": 15,
+              "expected_status": 200,
+              "expected_result": "TOKEN_VALID"
+            },
+            {
+              "minute": 25,
+              "expected_status": 200,
+              "expected_result": "TOKEN_VALID"
+            },
+            {
+              "minute": 29,
+              "expected_status": 200,
+              "expected_result": "TOKEN_VALID"
+            },
+            {
+              "minute": 30,
+              "expected_status": 200,
+              "expected_result": "TOKEN_VALID"
+            },
+            {
+              "minute": 31,
+              "expected_status": 401,
+              "expected_result": "TOKEN_EXPIRED"
+            },
+            {
+              "minute": 35,
+              "expected_status": 401,
+              "expected_result": "TOKEN_EXPIRED"
+            }
+          ],
+          "validation_points": [
+            "Verify exact expiration timing",
+            "Verify transition from valid to expired",
+            "Verify consistent expiration behavior",
+            "Verify expiration error handling"
+          ]
+        },
+        {
+          "scenario_name": "Clock Skew Tolerance Test",
+          "test_purpose": "Validate JWT token expiration with clock skew tolerance",
+          "test_config": {
+            "clock_skew_tolerance_seconds": 60,
+            "test_scenarios": [
+              {
+                "server_time": "2024-01-20T15:00:00Z",
+                "token_expiry": "2024-01-20T14:59:30Z",
+                "expected_result": "TOKEN_VALID"
+              },
+              {
+                "server_time": "2024-01-20T15:01:30Z",
+                "token_expiry": "2024-01-20T15:00:00Z",
+                "expected_result": "TOKEN_EXPIRED"
+              }
+            ]
+          },
+          "validation_points": [
+            "Verify clock skew tolerance",
+            "Verify grace period handling",
+            "Verify security boundary enforcement",
+            "Verify time synchronization requirements"
+          ]
+        }
+      ]
+    },
+
+    "invalid_signature_tests": {
+      "description": "Invalid signature test cases validating JWT signature verification security",
+      "test_scenarios": [
+        {
+          "scenario_name": "Signature Tampering Test",
+          "test_purpose": "Validate detection of JWT signature tampering",
+          "test_cases": [
+            {
+              "case_name": "Single Character Signature Change",
+              "original_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBj",
+              "tampered_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBk",
+              "modification": "Changed last character of signature from 'j' to 'k'",
+              "test_endpoint": "/api/account/view/00000000001",
+              "expected_status": 401,
+              "expected_result": "SIGNATURE_VERIFICATION_FAILED",
+              "validation_points": [
+                "Verify minimal signature change detection",
+                "Verify signature verification failure",
+                "Verify authentication rejection",
+                "Verify security event logging"
+              ]
+            },
+            {
+              "case_name": "Completely Invalid Signature",
+              "original_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBj",
+              "tampered_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.COMPLETELY_INVALID_SIGNATURE_12345",
+              "modification": "Replaced signature with invalid string",
+              "test_endpoint": "/api/account/view/00000000001",
+              "expected_status": 401,
+              "expected_result": "SIGNATURE_VERIFICATION_FAILED",
+              "validation_points": [
+                "Verify invalid signature rejection",
+                "Verify signature format validation",
+                "Verify authentication failure",
+                "Verify error handling robustness"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+
+    "malformed_token_tests": {
+      "description": "Malformed token test cases validating JWT format validation and error handling",
+      "test_scenarios": [
+        {
+          "scenario_name": "Token Structure Validation Test",
+          "test_purpose": "Validate JWT token structure validation and malformed token rejection",
+          "test_cases": [
+            {
+              "case_name": "Missing Signature Segment",
+              "malformed_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIn0",
+              "description": "Token with only header and payload segments",
+              "test_endpoint": "/api/account/view/00000000001",
+              "expected_status": 401,
+              "expected_result": "MALFORMED_TOKEN",
+              "validation_points": [
+                "Verify three-segment requirement",
+                "Verify missing signature detection",
+                "Verify malformed token rejection",
+                "Verify error message consistency"
+              ]
+            },
+            {
+              "case_name": "Too Many Segments",
+              "malformed_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIn0.signature.extra_segment",
+              "description": "Token with four segments instead of three",
+              "test_endpoint": "/api/account/view/00000000001",
+              "expected_status": 401,
+              "expected_result": "MALFORMED_TOKEN",
+              "validation_points": [
+                "Verify segment count validation",
+                "Verify extra segment rejection",
+                "Verify token format enforcement",
+                "Verify security boundary protection"
+              ]
+            },
+            {
+              "case_name": "Invalid Base64 Encoding",
+              "malformed_token": "INVALID_BASE64_HEADER.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIn0.signature",
+              "description": "Token with invalid base64 encoding in header",
+              "test_endpoint": "/api/account/view/00000000001",
+              "expected_status": 401,
+              "expected_result": "MALFORMED_TOKEN",
+              "validation_points": [
+                "Verify base64 decoding validation",
+                "Verify encoding error handling",
+                "Verify malformed header rejection",
+                "Verify parser error protection"
+              ]
+            },
+            {
+              "case_name": "Empty Token",
+              "malformed_token": "",
+              "description": "Empty token string",
+              "test_endpoint": "/api/account/view/00000000001",
+              "expected_status": 401,
+              "expected_result": "MISSING_TOKEN",
+              "validation_points": [
+                "Verify empty token rejection",
+                "Verify null/empty validation",
+                "Verify authentication requirement",
+                "Verify consistent error handling"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+
+    "missing_authorization_header": {
+      "description": "Missing authorization header test cases validating authentication requirement enforcement",
+      "test_scenarios": [
+        {
+          "scenario_name": "Authorization Header Requirement Test",
+          "test_purpose": "Validate authorization header requirement across all protected endpoints",
+          "test_endpoints": [
+            {
+              "endpoint": "/api/account/view/00000000001",
+              "method": "GET",
+              "security_level": "authenticated",
+              "expected_status": 401
+            },
+            {
+              "endpoint": "/api/card/list",
+              "method": "GET",
+              "security_level": "authenticated",
+              "expected_status": 401
+            },
+            {
+              "endpoint": "/api/transaction/history",
+              "method": "GET",
+              "security_level": "authenticated",
+              "expected_status": 401
+            },
+            {
+              "endpoint": "/api/admin/users",
+              "method": "GET",
+              "security_level": "admin_only",
+              "expected_status": 401
+            },
+            {
+              "endpoint": "/api/user/create",
+              "method": "POST",
+              "security_level": "admin_only",
+              "expected_status": 401
+            }
+          ],
+          "request_headers": {
+            "Content-Type": "application/json"
+          },
+          "expected_response": {
+            "error": "Unauthorized",
+            "message": "Missing authentication token"
+          },
+          "validation_points": [
+            "Verify authorization header requirement",
+            "Verify consistent 401 response",
+            "Verify error message consistency",
+            "Verify security event logging"
+          ]
+        },
+        {
+          "scenario_name": "Authorization Header Format Test",
+          "test_purpose": "Validate authorization header format requirements",
+          "test_cases": [
+            {
+              "case_name": "Missing Bearer Prefix",
+              "headers": {
+                "Authorization": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSJ9.signature",
+                "Content-Type": "application/json"
+              },
+              "test_endpoint": "/api/account/view/00000000001",
+              "expected_status": 401,
+              "expected_result": "MISSING_BEARER_PREFIX",
+              "validation_points": [
+                "Verify Bearer prefix requirement",
+                "Verify header format validation",
+                "Verify authentication failure",
+                "Verify format error handling"
+              ]
+            },
+            {
+              "case_name": "Invalid Authorization Scheme",
+              "headers": {
+                "Authorization": "Basic dXNlcjpwYXNzd29yZA==",
+                "Content-Type": "application/json"
+              },
+              "test_endpoint": "/api/account/view/00000000001",
+              "expected_status": 401,
+              "expected_result": "INVALID_AUTH_SCHEME",
+              "validation_points": [
+                "Verify Bearer scheme requirement",
+                "Verify scheme validation",
+                "Verify Basic auth rejection",
+                "Verify authentication scheme enforcement"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+
+    "bearer_token_validation": {
+      "description": "Bearer token validation test cases validating JWT Bearer token processing",
+      "test_scenarios": [
+        {
+          "scenario_name": "Bearer Token Extraction Test",
+          "test_purpose": "Validate Bearer token extraction from Authorization header",
+          "test_cases": [
+            {
+              "case_name": "Valid Bearer Token Format",
+              "headers": {
+                "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBj",
+                "Content-Type": "application/json"
+              },
+              "test_endpoint": "/api/account/view/00000000001",
+              "expected_status": 200,
+              "expected_result": "TOKEN_EXTRACTED_SUCCESSFULLY",
+              "validation_points": [
+                "Verify Bearer token extraction",
+                "Verify token processing",
+                "Verify authentication success",
+                "Verify security context creation"
+              ]
+            },
+            {
+              "case_name": "Bearer Token with Extra Spaces",
+              "headers": {
+                "Authorization": "Bearer   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBj   ",
+                "Content-Type": "application/json"
+              },
+              "test_endpoint": "/api/account/view/00000000001",
+              "expected_status": 200,
+              "expected_result": "TOKEN_EXTRACTED_WITH_TRIM",
+              "validation_points": [
+                "Verify token trimming",
+                "Verify whitespace handling",
+                "Verify robust token extraction",
+                "Verify authentication success"
+              ]
+            },
+            {
+              "case_name": "Case Insensitive Bearer",
+              "headers": {
+                "Authorization": "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBj",
+                "Content-Type": "application/json"
+              },
+              "test_endpoint": "/api/account/view/00000000001",
+              "expected_status": 401,
+              "expected_result": "CASE_SENSITIVE_BEARER_REQUIRED",
+              "validation_points": [
+                "Verify case sensitivity requirement",
+                "Verify Bearer prefix exactness",
+                "Verify authentication failure",
+                "Verify case sensitivity enforcement"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "AuthorizationFlowTests": {
+    "role_based_access_control": {
+      "description": "Role-based access control test cases validating Spring Security authorization framework",
+      "test_scenarios": [
+        {
+          "scenario_name": "Role Hierarchy Test",
+          "test_purpose": "Validate role hierarchy enforcement (admin inherits user permissions)",
+          "test_cases": [
+            {
+              "case_name": "Admin Access to User Endpoints",
+              "user_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBRE1JTjAwMSIsInVzZXJfdHlwZSI6IkEiLCJyb2xlIjoiUk9MRV9BRE1JTiIsImZpcnN0X25hbWUiOiJTeXN0ZW0iLCJsYXN0X25hbWUiOiJBZG1pbmlzdHJhdG9yIiwic2Vzc2lvbl9pZCI6ImFkbWluLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.kP4vVmKrGJCdHvzV7dCkzFHlD8kBqFp2KY9hPJF3zN4",
+              "user_role": "ROLE_ADMIN",
+              "user_authorities": ["ROLE_ADMIN", "ROLE_USER"],
+              "test_endpoints": [
+                {
+                  "endpoint": "/api/account/view/00000000001",
+                  "authorization_annotation": "@PreAuthorize(\"hasAnyRole('USER','ADMIN')\")",
+                  "expected_status": 200,
+                  "access_reason": "Admin inherits user permissions"
+                },
+                {
+                  "endpoint": "/api/card/list",
+                  "authorization_annotation": "@PreAuthorize(\"hasAnyRole('USER','ADMIN')\")",
+                  "expected_status": 200,
+                  "access_reason": "Admin inherits user permissions"
+                },
+                {
+                  "endpoint": "/api/transaction/history",
+                  "authorization_annotation": "@PreAuthorize(\"hasAnyRole('USER','ADMIN')\")",
+                  "expected_status": 200,
+                  "access_reason": "Admin inherits user permissions"
+                }
+              ],
+              "validation_points": [
+                "Verify role hierarchy implementation",
+                "Verify admin authority includes user permissions",
+                "Verify hasAnyRole evaluation success",
+                "Verify role inheritance enforcement"
+              ]
+            },
+            {
+              "case_name": "User Access to Admin Endpoints",
+              "user_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBj",
+              "user_role": "ROLE_USER",
+              "user_authorities": ["ROLE_USER"],
+              "test_endpoints": [
+                {
+                  "endpoint": "/api/admin/users",
+                  "authorization_annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+                  "expected_status": 403,
+                  "access_reason": "User lacks admin role"
+                },
+                {
+                  "endpoint": "/api/user/create",
+                  "authorization_annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+                  "expected_status": 403,
+                  "access_reason": "User lacks admin role"
+                },
+                {
+                  "endpoint": "/api/audit/logs",
+                  "authorization_annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+                  "expected_status": 403,
+                  "access_reason": "User lacks admin role"
+                }
+              ],
+              "expected_response": {
+                "error": "Forbidden",
+                "message": "Insufficient permissions"
+              },
+              "validation_points": [
+                "Verify role restriction enforcement",
+                "Verify hasRole('ADMIN') evaluation failure",
+                "Verify 403 Forbidden response",
+                "Verify authorization boundary protection"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+
+    "admin_only_endpoints": {
+      "description": "Admin-only endpoint test cases validating administrative access control",
+      "test_scenarios": [
+        {
+          "scenario_name": "Administrative Function Access Test",
+          "test_purpose": "Validate admin-only functions require ROLE_ADMIN authority",
+          "admin_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBRE1JTjAwMSIsInVzZXJfdHlwZSI6IkEiLCJyb2xlIjoiUk9MRV9BRE1JTiIsImZpcnN0X25hbWUiOiJTeXN0ZW0iLCJsYXN0X25hbWUiOiJBZG1pbmlzdHJhdG9yIiwic2Vzc2lvbl9pZCI6ImFkbWluLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.kP4vVmKrGJCdHvzV7dCkzFHlD8kBqFp2KY9hPJF3zN4",
+          "admin_only_endpoints": [
+            {
+              "endpoint": "/api/admin/users",
+              "method": "GET",
+              "function": "User management listing",
+              "authorization_annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+              "expected_status": 200,
+              "business_function": "Administrative user management"
+            },
+            {
+              "endpoint": "/api/admin/system/config",
+              "method": "GET",
+              "function": "System configuration access",
+              "authorization_annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+              "expected_status": 200,
+              "business_function": "System administration"
+            },
+            {
+              "endpoint": "/api/user/create",
+              "method": "POST",
+              "function": "User creation",
+              "authorization_annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+              "expected_status": 200,
+              "business_function": "User provisioning"
+            },
+            {
+              "endpoint": "/api/user/delete/USER0002",
+              "method": "DELETE",
+              "function": "User deletion",
+              "authorization_annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+              "expected_status": 200,
+              "business_function": "User deprovisioning"
+            },
+            {
+              "endpoint": "/api/audit/logs",
+              "method": "GET",
+              "function": "Audit log access",
+              "authorization_annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+              "expected_status": 200,
+              "business_function": "Compliance and audit"
+            },
+            {
+              "endpoint": "/api/batch/jobs",
+              "method": "GET",
+              "function": "Batch job management",
+              "authorization_annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+              "expected_status": 200,
+              "business_function": "System maintenance"
+            }
+          ],
+          "validation_points": [
+            "Verify admin role required for all endpoints",
+            "Verify hasRole('ADMIN') evaluation success",
+            "Verify administrative function access",
+            "Verify business function authorization"
+          ]
+        }
+      ]
+    },
+
+    "user_role_restrictions": {
+      "description": "User role restriction test cases validating user access boundaries",
+      "test_scenarios": [
+        {
+          "scenario_name": "User Role Boundary Test",
+          "test_purpose": "Validate user role access restrictions and permission boundaries",
+          "user_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBj",
+          "allowed_endpoints": [
+            {
+              "endpoint": "/api/account/view/00000000001",
+              "authorization_annotation": "@PreAuthorize(\"hasAnyRole('USER','ADMIN')\")",
+              "expected_status": 200,
+              "access_reason": "User has required role"
+            },
+            {
+              "endpoint": "/api/card/list",
+              "authorization_annotation": "@PreAuthorize(\"hasAnyRole('USER','ADMIN')\")",
+              "expected_status": 200,
+              "access_reason": "User has required role"
+            },
+            {
+              "endpoint": "/api/transaction/history",
+              "authorization_annotation": "@PreAuthorize(\"hasAnyRole('USER','ADMIN')\")",
+              "expected_status": 200,
+              "access_reason": "User has required role"
+            },
+            {
+              "endpoint": "/api/bill/payment/process",
+              "authorization_annotation": "@PreAuthorize(\"hasAnyRole('USER','ADMIN')\")",
+              "expected_status": 200,
+              "access_reason": "User has required role"
+            }
+          ],
+          "restricted_endpoints": [
+            {
+              "endpoint": "/api/admin/users",
+              "authorization_annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+              "expected_status": 403,
+              "restriction_reason": "User lacks admin role"
+            },
+            {
+              "endpoint": "/api/user/create",
+              "authorization_annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+              "expected_status": 403,
+              "restriction_reason": "User lacks admin role"
+            },
+            {
+              "endpoint": "/api/audit/logs",
+              "authorization_annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+              "expected_status": 403,
+              "restriction_reason": "User lacks admin role"
+            }
+          ],
+          "validation_points": [
+            "Verify user role access boundaries",
+            "Verify hasAnyRole evaluation for allowed endpoints",
+            "Verify hasRole('ADMIN') failure for restricted endpoints",
+            "Verify consistent authorization enforcement"
+          ]
+        }
+      ]
+    },
+
+    "cross_service_authorization": {
+      "description": "Cross-service authorization test cases validating microservice security context propagation",
+      "test_scenarios": [
+        {
+          "scenario_name": "Service-to-Service Authorization Test",
+          "test_purpose": "Validate security context propagation across microservice boundaries",
+          "test_flow": {
+            "initial_request": {
+              "endpoint": "/api/account/view/00000000001",
+              "user_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBj",
+              "service": "account-service"
+            },
+            "internal_calls": [
+              {
+                "from_service": "account-service",
+                "to_service": "customer-service",
+                "endpoint": "/internal/customer/details",
+                "security_context": "propagated",
+                "expected_status": 200
+              },
+              {
+                "from_service": "account-service",
+                "to_service": "transaction-service",
+                "endpoint": "/internal/transaction/summary",
+                "security_context": "propagated",
+                "expected_status": 200
+              }
+            ]
+          },
+          "validation_points": [
+            "Verify security context propagation",
+            "Verify JWT token forwarding",
+            "Verify role preservation across services",
+            "Verify authorization consistency"
+          ]
+        }
+      ]
+    },
+
+    "method_level_security": {
+      "description": "Method-level security test cases validating @PreAuthorize annotation enforcement",
+      "test_scenarios": [
+        {
+          "scenario_name": "PreAuthorize Annotation Test",
+          "test_purpose": "Validate @PreAuthorize annotation enforcement at method level",
+          "test_methods": [
+            {
+              "method_name": "getUserList",
+              "service": "UserManagementService",
+              "annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+              "test_cases": [
+                {
+                  "user_role": "ROLE_ADMIN",
+                  "expected_result": "ACCESS_GRANTED",
+                  "expected_status": 200
+                },
+                {
+                  "user_role": "ROLE_USER",
+                  "expected_result": "ACCESS_DENIED",
+                  "expected_status": 403
+                }
+              ]
+            },
+            {
+              "method_name": "getAccountDetails",
+              "service": "AccountService",
+              "annotation": "@PreAuthorize(\"hasAnyRole('USER','ADMIN')\")",
+              "test_cases": [
+                {
+                  "user_role": "ROLE_ADMIN",
+                  "expected_result": "ACCESS_GRANTED",
+                  "expected_status": 200
+                },
+                {
+                  "user_role": "ROLE_USER",
+                  "expected_result": "ACCESS_GRANTED",
+                  "expected_status": 200
+                }
+              ]
+            },
+            {
+              "method_name": "createUser",
+              "service": "UserManagementService",
+              "annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+              "test_cases": [
+                {
+                  "user_role": "ROLE_ADMIN",
+                  "expected_result": "ACCESS_GRANTED",
+                  "expected_status": 200
+                },
+                {
+                  "user_role": "ROLE_USER",
+                  "expected_result": "ACCESS_DENIED",
+                  "expected_status": 403
+                }
+              ]
+            }
+          ],
+          "validation_points": [
+            "Verify @PreAuthorize evaluation",
+            "Verify method-level authorization",
+            "Verify role-based access control",
+            "Verify authorization expression parsing"
+          ]
+        }
+      ]
+    },
+
+    "resource_access_validation": {
+      "description": "Resource access validation test cases validating data access authorization",
+      "test_scenarios": [
+        {
+          "scenario_name": "Resource Owner Validation Test",
+          "test_purpose": "Validate resource access based on ownership and role",
+          "test_resources": [
+            {
+              "resource_type": "account",
+              "resource_id": "00000000001",
+              "owner_user_id": "USER0001",
+              "test_cases": [
+                {
+                  "accessing_user": "USER0001",
+                  "user_role": "ROLE_USER",
+                  "expected_result": "ACCESS_GRANTED",
+                  "access_reason": "Resource owner"
+                },
+                {
+                  "accessing_user": "USER0002",
+                  "user_role": "ROLE_USER",
+                  "expected_result": "ACCESS_DENIED",
+                  "access_reason": "Not resource owner"
+                },
+                {
+                  "accessing_user": "ADMIN001",
+                  "user_role": "ROLE_ADMIN",
+                  "expected_result": "ACCESS_GRANTED",
+                  "access_reason": "Admin override"
+                }
+              ]
+            },
+            {
+              "resource_type": "transaction",
+              "resource_id": "TXN001",
+              "owner_user_id": "USER0001",
+              "test_cases": [
+                {
+                  "accessing_user": "USER0001",
+                  "user_role": "ROLE_USER",
+                  "expected_result": "ACCESS_GRANTED",
+                  "access_reason": "Transaction owner"
+                },
+                {
+                  "accessing_user": "USER0002",
+                  "user_role": "ROLE_USER",
+                  "expected_result": "ACCESS_DENIED",
+                  "access_reason": "Not transaction owner"
+                },
+                {
+                  "accessing_user": "ADMIN001",
+                  "user_role": "ROLE_ADMIN",
+                  "expected_result": "ACCESS_GRANTED",
+                  "access_reason": "Admin audit access"
+                }
+              ]
+            }
+          ],
+          "validation_points": [
+            "Verify resource ownership validation",
+            "Verify role-based access override",
+            "Verify data access authorization",
+            "Verify privacy boundary enforcement"
+          ]
+        }
+      ]
+    }
+  }
+}
