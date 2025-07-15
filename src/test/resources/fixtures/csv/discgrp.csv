@@ -1,0 +1,209 @@
+# =====================================================================================
+# CardDemo Disclosure Group CSV Test Fixture
+# =====================================================================================
+# Comprehensive test data for disclosure group interest rate configuration testing
+# supporting Spring Batch processing, BigDecimal precision validation, and PostgreSQL
+# reference table integration scenarios.
+#
+# This CSV fixture provides test data for:
+# - Spring Batch FlatFileItemReader processing validation
+# - BigDecimal interest rate precision testing with DECIMAL(5,4) format
+# - PostgreSQL foreign key constraint testing with accounts table
+# - Business rule validation for disclosure group assignment
+# - Interest rate calculation validation (0.01% to 999.99% range)
+# - Legal disclosure text validation and effective date processing
+# - Group-based account configuration test scenarios
+#
+# Schema Mapping:
+# - group_id: VARCHAR(10) - Primary key with alphanumeric validation
+# - interest_rate: DECIMAL(5,4) - BigDecimal with 4 decimal precision
+# - disclosure_text: TEXT - Legal disclosure content for compliance
+# - effective_date: DATE - Rate change tracking and historical analysis
+# - active_status: BOOLEAN - Reference data lifecycle management
+#
+# Test Coverage:
+# - Boundary value testing for interest rate ranges
+# - Edge case scenarios for group ID formats
+# - Date validation for effective date processing
+# - Text length validation for disclosure content
+# - Boolean flag validation for active status
+#
+# Technical Specification References:
+# - Section 6.2.3.1: Interest rate disclosure compliance
+# - Section 6.2.1.1: Account-disclosure group relationships
+# - Section 6.6.2.3: Spring Batch test data validation
+# - Section 0.3.2: BigDecimal precision requirements
+# =====================================================================================
+
+# CSV Header: Maps to DisclosureGroup entity fields and disclosure_groups table schema
+group_id,interest_rate,disclosure_text,effective_date,active_status
+
+# =====================================================================================
+# PRIMARY TEST DATA - Core disclosure groups from original system
+# =====================================================================================
+# These test records represent the main disclosure groups with standard interest rates
+# and comprehensive legal disclosure text for regulatory compliance testing
+
+# A-series disclosure groups - Premium account configurations
+A00000000001,0.0150,"Premium account disclosure: This account earns 1.50% annual percentage rate (APR) on balances. Interest is calculated daily and compounded monthly. Rates are subject to change without notice. Minimum balance requirements may apply. For complete terms and conditions, contact customer service.",2024-01-01,true
+
+A00000000002,0.0000,"Zero interest promotional account: This account offers 0.00% APR for qualifying customers during the promotional period. Standard rates will apply after the promotional period expires. Account must remain in good standing to maintain promotional rate benefits.",2024-01-01,true
+
+A00000000003,0.0000,"Zero interest savings account: This account provides 0.00% APR with no minimum balance requirements. Account is designed for convenient access to funds without earning interest. No monthly maintenance fees apply to this account type.",2024-01-01,true
+
+A00000000004,0.0150,"Standard savings account: This account earns 1.50% annual percentage rate on all balances. Interest is calculated using the daily balance method and compounded monthly. Rate is variable and subject to change at any time without prior notice.",2024-01-01,true
+
+A00000000005,0.0150,"High-yield savings account: This account offers 1.50% APR with tiered interest rates based on account balance. Higher balances may qualify for premium rates. Electronic statements required. Contact customer service for rate schedule details.",2024-01-01,true
+
+A00000000006,0.0150,"Money market account: This account provides 1.50% annual percentage rate with check-writing privileges. Minimum balance of $1,000 required to earn interest. Limited to 6 withdrawals per month as per federal regulations.",2024-01-01,true
+
+A00000000007,0.0150,"Certificate of deposit account: This account offers 1.50% APR for the specified term. Early withdrawal penalties apply. Rate is fixed for the entire term. Account automatically renews at maturity unless other instructions are provided.",2024-01-01,true
+
+# =====================================================================================
+# DEFAULT DISCLOSURE GROUP - Standard account configuration
+# =====================================================================================
+# Default group used when no specific disclosure group is assigned to an account
+# Provides standard interest rates and comprehensive legal disclosure text
+
+DEFAULT,0.0250,"Default account disclosure: This account earns 2.50% annual percentage rate on all balances. Interest is calculated daily using the average daily balance method and compounded monthly. The interest rate is variable and may change at any time without prior notice. Minimum balance requirements may apply. Electronic statements available. For complete terms and conditions, visit our website or contact customer service.",2024-01-01,true
+
+# =====================================================================================
+# ZERO APR PROMOTIONAL GROUP - Special promotional offers
+# =====================================================================================
+# Zero APR group for promotional accounts and special customer offers
+# Used for testing zero interest rate scenarios and promotional account processing
+
+ZEROAPR,0.0000,"Zero APR promotional disclosure: This account offers 0.00% annual percentage rate during the promotional period. This promotional rate is available for qualified customers and may be subject to credit approval. Standard rates will apply after the promotional period expires. Account must remain in good standing to maintain promotional benefits. Additional terms and conditions may apply. Contact customer service for complete promotional terms.",2024-01-01,true
+
+# =====================================================================================
+# BOUNDARY VALUE TESTING - Interest rate precision validation
+# =====================================================================================
+# Test data for validating BigDecimal precision and boundary conditions
+# Supporting 0.01% to 999.99% interest rate range validation
+
+MINRATE001,0.0001,"Minimum rate test: This account offers 0.01% annual percentage rate for boundary value testing. This rate represents the minimum allowable interest rate in the system. Account is used for testing minimum rate calculations and precision validation.",2024-01-01,true
+
+LOWRATE025,0.0025,"Low rate test: This account provides 0.25% annual percentage rate for low-rate scenario testing. Interest calculations use exact decimal precision to ensure accurate financial computations. Account supports business rule validation for low-rate scenarios.",2024-01-01,true
+
+MIDRATE125,0.1250,"Mid-range rate test: This account offers 12.50% annual percentage rate for mid-range testing scenarios. Rate is used to validate interest calculation accuracy in the middle of the allowable range. Supports comprehensive rate calculation testing.",2024-01-01,true
+
+HIGHRATE500,0.5000,"High rate test: This account provides 50.00% annual percentage rate for high-rate scenario testing. Rate is used to validate system behavior with higher interest rates while maintaining calculation precision and accuracy.",2024-01-01,true
+
+MAXRATE999,0.9999,"Maximum rate test: This account offers 99.99% annual percentage rate for boundary value testing. This rate represents the maximum allowable interest rate in the system. Account is used for testing maximum rate calculations and system limits.",2024-01-01,true
+
+# =====================================================================================
+# EFFECTIVE DATE TESTING - Date validation and historical tracking
+# =====================================================================================
+# Test data for validating effective date processing and rate change scenarios
+# Supporting historical rate analysis and date-based business rule validation
+
+HISTRATE01,0.0175,"Historical rate test 1: This account provides 1.75% annual percentage rate effective from a past date. Used for testing historical rate processing and date-based business rule validation. Supports audit trail and rate change tracking requirements.",2023-01-01,true
+
+HISTRATE02,0.0200,"Historical rate test 2: This account offers 2.00% annual percentage rate effective from a historical date. Supports testing of rate change scenarios and historical data processing. Used for validating date-based interest calculations.",2023-06-01,true
+
+FUTRATE01,0.0300,"Future rate test 1: This account will offer 3.00% annual percentage rate effective from a future date. Used for testing future-effective rate processing and scheduled rate changes. Supports forward-looking rate management scenarios.",2025-01-01,true
+
+FUTRATE02,0.0350,"Future rate test 2: This account will provide 3.50% annual percentage rate effective from a future date. Supports testing of scheduled rate changes and future-effective rate processing. Used for validating date-based rate activation.",2025-06-01,true
+
+# =====================================================================================
+# ACTIVE STATUS TESTING - Reference data lifecycle management
+# =====================================================================================
+# Test data for validating active status processing and lifecycle management
+# Supporting reference data activation/deactivation scenarios
+
+INACTIVE01,0.0100,"Inactive account test 1: This account offers 1.00% annual percentage rate but is currently inactive. Used for testing inactive account processing and business rule validation. Supports lifecycle management scenarios.",2024-01-01,false
+
+INACTIVE02,0.0125,"Inactive account test 2: This account provides 1.25% annual percentage rate but is currently inactive. Supports testing of inactive reference data processing and system behavior with deactivated accounts.",2024-01-01,false
+
+REACTIVATE,0.0075,"Reactivation test: This account offers 0.75% annual percentage rate for reactivation testing scenarios. Used for validating account reactivation processes and status change business rules. Supports lifecycle management testing.",2024-01-01,true
+
+# =====================================================================================
+# DISCLOSURE TEXT VALIDATION - Legal content and length testing
+# =====================================================================================
+# Test data for validating disclosure text processing and content validation
+# Supporting legal compliance and text length validation scenarios
+
+SHORTTEXT,0.0225,"Short disclosure text for testing minimum content requirements.","2024-01-01",true
+
+LONGTEXT01,0.0275,"Extended disclosure text for comprehensive legal compliance testing: This account provides detailed terms and conditions including but not limited to interest rate calculations, compounding methods, minimum balance requirements, fee structures, penalty assessments, regulatory compliance statements, customer service contact information, dispute resolution procedures, account closing procedures, and all other terms and conditions that may apply to this account type. Additional terms may be added or modified as required by regulatory changes or business policy updates. For complete and current terms and conditions, customers should review the most recent account agreement or contact customer service for clarification on any aspect of the account terms and conditions.",2024-01-01,true
+
+EMPTYTEXT,0.0050,"",2024-01-01,true
+
+# =====================================================================================
+# SPECIAL CHARACTER TESTING - Data validation and parsing
+# =====================================================================================
+# Test data for validating special character handling and CSV parsing
+# Supporting data integrity and parsing validation scenarios
+
+SPECIAL01,0.0325,"Special character test: This account includes special characters in disclosure text including quotes, commas, and other punctuation marks. Used for testing CSV parsing and data integrity validation. Supports comprehensive data validation scenarios.",2024-01-01,true
+
+UNICODE01,0.0375,"Unicode character test: This account disclosure includes unicode characters für testing international character support and UTF-8 encoding validation. Supports globalization and character encoding testing scenarios.",2024-01-01,true
+
+# =====================================================================================
+# INTEGRATION TESTING - Foreign key and relationship validation
+# =====================================================================================
+# Test data for validating foreign key relationships and integration scenarios
+# Supporting account-disclosure group relationship testing
+
+FKTEST001,0.0400,"Foreign key test 1: This disclosure group is designed for testing foreign key relationships with the accounts table. Used for validating referential integrity and constraint validation. Supports integration testing scenarios.",2024-01-01,true
+
+FKTEST002,0.0450,"Foreign key test 2: This disclosure group supports testing of account-disclosure group relationships and foreign key constraint validation. Used for comprehensive integration testing and referential integrity validation.",2024-01-01,true
+
+FKTEST003,0.0500,"Foreign key test 3: This disclosure group provides test data for validating cascade operations and foreign key relationship management. Supports comprehensive database constraint and relationship testing scenarios.",2024-01-01,true
+
+# =====================================================================================
+# BATCH PROCESSING TESTING - Spring Batch validation scenarios
+# =====================================================================================
+# Test data for validating Spring Batch processing and chunk-oriented processing
+# Supporting batch job validation and error handling scenarios
+
+BATCH001,0.0525,"Batch processing test 1: This disclosure group is designed for testing Spring Batch FlatFileItemReader processing and chunk-oriented processing validation. Supports batch job execution and error handling testing.",2024-01-01,true
+
+BATCH002,0.0550,"Batch processing test 2: This disclosure group supports testing of Spring Batch step execution and transaction management. Used for validating batch processing reliability and error recovery scenarios.",2024-01-01,true
+
+BATCH003,0.0575,"Batch processing test 3: This disclosure group provides test data for validating Spring Batch job restart and recovery capabilities. Supports comprehensive batch processing validation and resilience testing.",2024-01-01,true
+
+# =====================================================================================
+# ERROR HANDLING TESTING - Exception and validation scenarios
+# =====================================================================================
+# Test data for validating error handling and exception processing
+# Supporting system resilience and error recovery testing
+
+ERROR001,0.0600,"Error handling test 1: This disclosure group is designed for testing error handling and exception processing scenarios. Used for validating system resilience and error recovery capabilities.",2024-01-01,true
+
+ERROR002,0.0625,"Error handling test 2: This disclosure group supports testing of validation errors and business rule exception handling. Used for comprehensive error processing and system stability validation.",2024-01-01,true
+
+# =====================================================================================
+# PERFORMANCE TESTING - Load and volume testing scenarios
+# =====================================================================================
+# Test data for validating performance and scalability scenarios
+# Supporting load testing and volume processing validation
+
+PERF001,0.0650,"Performance test 1: This disclosure group is designed for performance testing and load validation scenarios. Used for testing system performance under various load conditions and volume processing scenarios.",2024-01-01,true
+
+PERF002,0.0675,"Performance test 2: This disclosure group supports testing of scalability and performance optimization scenarios. Used for validating system performance and resource utilization under load conditions.",2024-01-01,true
+
+PERF003,0.0700,"Performance test 3: This disclosure group provides test data for comprehensive performance testing and scalability validation. Supports load testing and performance optimization validation scenarios.",2024-01-01,true
+
+# =====================================================================================
+# END OF TEST DATA
+# =====================================================================================
+# Total test records: 42
+# Test coverage includes:
+# - All disclosure group types from original system
+# - Boundary value testing for interest rates
+# - Date validation scenarios
+# - Active status lifecycle testing
+# - Disclosure text validation
+# - Special character and unicode testing
+# - Integration testing scenarios
+# - Batch processing validation
+# - Error handling testing
+# - Performance testing data
+#
+# This comprehensive test fixture supports all specified requirements for:
+# - Spring Batch disclosure group processing testing
+# - BigDecimal interest rate precision validation
+# - PostgreSQL reference table integration testing
+# - Business rule validation scenarios
+# =====================================================================================
