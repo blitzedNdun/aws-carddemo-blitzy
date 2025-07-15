@@ -1,0 +1,1380 @@
+# =====================================================================================
+# CardDemo Testcontainers Configuration
+# =====================================================================================
+# Comprehensive Testcontainers configuration enabling containerized PostgreSQL and Redis
+# testing environments with resource allocation optimization and parallel execution
+# support for comprehensive integration testing of the modernized CardDemo credit card
+# processing system.
+#
+# This configuration provides:
+# - PostgreSQL 15+ container orchestration for database integration testing
+# - Redis 7+ container orchestration for session management and caching testing
+# - Resource allocation aligned with Kubernetes namespace quotas and memory constraints
+# - Parallel test execution with isolated container instances
+# - Network isolation preventing cross-test interference
+# - Automatic container cleanup and lifecycle management
+# - Performance optimization maintaining < 200ms response time targets
+# - Integration with Spring Boot test configuration and profiles
+#
+# Technical Specification References:
+# - Section 6.6.3.2: Testcontainers PostgreSQL and Redis integration testing
+# - Section 6.6.5.4: Parallel test execution with isolated database instances
+# - Section 6.6.7.4: Container resource allocation with memory constraints
+# - Section 6.2: Database design with PostgreSQL performance optimization
+# - Section 6.6.2.3: Test data management with Testcontainers
+# =====================================================================================
+
+# =====================================================================================
+# TESTCONTAINERS CORE CONFIGURATION
+# =====================================================================================
+# Global Testcontainers configuration settings for container orchestration,
+# resource management, and parallel test execution support
+testcontainers:
+  # Global container configuration
+  global:
+    # Docker Engine configuration
+    docker:
+      # Docker socket configuration for container orchestration
+      host: unix:///var/run/docker.sock
+      
+      # Docker Engine API version compatibility
+      api-version: "1.44"
+      
+      # Container runtime configuration
+      runtime: docker
+      
+      # Docker network configuration for test isolation
+      network:
+        driver: bridge
+        enable-ipv6: false
+        
+      # Docker image registry configuration
+      registry:
+        default: docker.io
+        authentication:
+          enabled: false
+          
+    # Resource allocation configuration
+    resources:
+      # Memory constraint compliance - within 10% increase limit
+      memory:
+        # Base memory allocation for test containers
+        base-allocation: 2Gi
+        
+        # Maximum memory increase percentage
+        max-increase-percent: 10
+        
+        # Container memory limits
+        container-limits:
+          postgresql: 1Gi
+          redis: 512Mi
+          
+      # CPU resource allocation
+      cpu:
+        # Default CPU allocation for test containers
+        default-allocation: 1000m
+        
+        # CPU limits per container type
+        container-limits:
+          postgresql: 1000m
+          redis: 500m
+          
+    # Network isolation configuration
+    networking:
+      # Isolated networks for parallel test execution
+      isolation:
+        enabled: true
+        
+        # Network naming strategy
+        network-prefix: "carddemo-test"
+        
+        # Network cleanup configuration
+        cleanup:
+          enabled: true
+          timeout: 300s
+          
+    # Container lifecycle management
+    lifecycle:
+      # Container startup configuration
+      startup:
+        timeout: 60s
+        check-interval: 5s
+        
+      # Container shutdown configuration
+      shutdown:
+        timeout: 30s
+        force-timeout: 60s
+        
+      # Container health check configuration
+      health:
+        enabled: true
+        initial-delay: 10s
+        interval: 30s
+        timeout: 10s
+        retries: 3
+
+# =====================================================================================
+# POSTGRESQL TESTCONTAINER CONFIGURATION
+# =====================================================================================
+# PostgreSQL 15+ container configuration for database integration testing
+# with schema migration validation and performance optimization
+postgresql:
+  # Container image configuration
+  image:
+    # PostgreSQL container image with Alpine Linux base
+    name: postgres:15-alpine
+    
+    # Image pull policy
+    pull-policy: if-not-present
+    
+    # Image verification configuration
+    verification:
+      enabled: true
+      signature-check: false
+      
+  # Container resource configuration
+  resources:
+    # Memory allocation aligned with Kubernetes namespace quotas
+    memory:
+      # Initial memory allocation
+      request: 512Mi
+      
+      # Maximum memory limit
+      limit: 1Gi
+      
+      # Memory optimization settings
+      shared-buffers: 128MB
+      effective-cache-size: 256MB
+      
+    # CPU resource allocation
+    cpu:
+      # Initial CPU allocation
+      request: 500m
+      
+      # Maximum CPU limit
+      limit: 1000m
+      
+  # Database configuration
+  database:
+    # Default database configuration
+    name: carddemo_test
+    
+    # Database user configuration
+    username: test_user
+    
+    # Database password configuration
+    password: test_password
+    
+    # Database encoding configuration
+    encoding: UTF8
+    
+    # Database locale configuration
+    locale: en_US.UTF-8
+    
+    # Database timezone configuration
+    timezone: UTC
+    
+  # PostgreSQL server configuration
+  server:
+    # Server port configuration
+    port: 5432
+    
+    # Connection configuration
+    max-connections: 100
+    
+    # Authentication configuration
+    authentication:
+      method: md5
+      
+    # SSL configuration
+    ssl:
+      enabled: false
+      
+    # Log configuration
+    logging:
+      level: info
+      statement: all
+      duration: true
+      
+  # Performance optimization configuration
+  performance:
+    # Connection pool configuration
+    connection-pool:
+      # Initial pool size
+      initial-size: 5
+      
+      # Maximum pool size
+      max-size: 20
+      
+      # Connection timeout
+      timeout: 30s
+      
+    # Query optimization configuration
+    query:
+      # Statement timeout
+      statement-timeout: 30s
+      
+      # Lock timeout
+      lock-timeout: 10s
+      
+      # Checkpoint configuration
+      checkpoint:
+        segments: 16
+        completion-target: 0.9
+        
+    # WAL configuration
+    wal:
+      # WAL level
+      level: replica
+      
+      # WAL buffer size
+      buffers: 16MB
+      
+      # WAL writer delay
+      writer-delay: 200ms
+      
+  # Schema migration configuration
+  migration:
+    # Liquibase integration
+    liquibase:
+      # Enable Liquibase migrations
+      enabled: true
+      
+      # Changelog file location
+      changelog: classpath:db/test-changelog.xml
+      
+      # Migration contexts
+      contexts: test,integration
+      
+      # Migration parameters
+      parameters:
+        test.environment: testcontainers
+        test.schema.version: 1.0.0
+        
+    # Schema validation configuration
+    validation:
+      # Enable schema validation
+      enabled: true
+      
+      # Validation mode
+      mode: strict
+      
+      # Validation timeout
+      timeout: 60s
+      
+  # Test data configuration
+  test-data:
+    # Enable test data loading
+    enabled: true
+    
+    # Test data source configuration
+    sources:
+      - name: account-data
+        file: classpath:test-data/accounts.csv
+        table: accounts
+        
+      - name: customer-data
+        file: classpath:test-data/customers.csv
+        table: customers
+        
+      - name: transaction-data
+        file: classpath:test-data/transactions.csv
+        table: transactions
+        
+    # Data loading configuration
+    loading:
+      # Batch size for data loading
+      batch-size: 1000
+      
+      # Enable data validation
+      validate: true
+      
+      # Cleanup strategy
+      cleanup: truncate
+      
+  # Backup and recovery configuration
+  backup:
+    # Enable backup functionality
+    enabled: true
+    
+    # Backup strategy
+    strategy: wal-archiving
+    
+    # Backup retention
+    retention:
+      days: 7
+      
+    # Recovery configuration
+    recovery:
+      # Recovery timeout
+      timeout: 300s
+      
+      # Recovery validation
+      validate: true
+
+# =====================================================================================
+# REDIS TESTCONTAINER CONFIGURATION
+# =====================================================================================
+# Redis 7+ container configuration for session management testing, cache validation,
+# and distributed session storage testing
+redis:
+  # Container image configuration
+  image:
+    # Redis container image with Alpine Linux base
+    name: redis:7-alpine
+    
+    # Image pull policy
+    pull-policy: if-not-present
+    
+    # Image verification configuration
+    verification:
+      enabled: true
+      signature-check: false
+      
+  # Container resource configuration
+  resources:
+    # Memory allocation for Redis container
+    memory:
+      # Initial memory allocation
+      request: 256Mi
+      
+      # Maximum memory limit
+      limit: 512Mi
+      
+      # Redis memory optimization
+      max-memory: 400MB
+      max-memory-policy: allkeys-lru
+      
+    # CPU resource allocation
+    cpu:
+      # Initial CPU allocation
+      request: 250m
+      
+      # Maximum CPU limit
+      limit: 500m
+      
+  # Redis server configuration
+  server:
+    # Server port configuration
+    port: 6379
+    
+    # Authentication configuration
+    authentication:
+      # Enable authentication
+      enabled: false
+      
+      # Authentication password
+      password: ""
+      
+    # Persistence configuration
+    persistence:
+      # Enable persistence
+      enabled: true
+      
+      # Persistence strategy
+      strategy: rdb
+      
+      # RDB configuration
+      rdb:
+        # Save intervals
+        save-intervals:
+          - "900 1"
+          - "300 10"
+          - "60 10000"
+          
+        # Compression
+        compression: true
+        
+        # Checksum
+        checksum: true
+        
+    # Replication configuration
+    replication:
+      # Enable replication
+      enabled: false
+      
+      # Master configuration
+      master:
+        host: localhost
+        port: 6379
+        
+  # Session management configuration
+  session:
+    # Session storage configuration
+    storage:
+      # Session namespace
+      namespace: "carddemo:test:session"
+      
+      # Session timeout
+      timeout: 600s
+      
+      # Session serialization
+      serialization: java
+      
+    # Session cleanup configuration
+    cleanup:
+      # Enable automatic cleanup
+      enabled: true
+      
+      # Cleanup interval
+      interval: 300s
+      
+      # Cleanup strategy
+      strategy: expired
+      
+  # Cache configuration
+  cache:
+    # Cache storage configuration
+    storage:
+      # Cache namespace
+      namespace: "carddemo:test:cache"
+      
+      # Cache TTL configuration
+      ttl:
+        default: 300s
+        reference-data: 3600s
+        account-data: 60s
+        
+    # Cache eviction configuration
+    eviction:
+      # Eviction policy
+      policy: allkeys-lru
+      
+      # Eviction threshold
+      threshold: 80
+      
+  # Performance optimization configuration
+  performance:
+    # Connection configuration
+    connection:
+      # Connection pool size
+      pool-size: 10
+      
+      # Connection timeout
+      timeout: 5s
+      
+      # Idle timeout
+      idle-timeout: 300s
+      
+    # Command optimization
+    commands:
+      # Command timeout
+      timeout: 1s
+      
+      # Command pipelining
+      pipeline: true
+      
+      # Command batching
+      batch-size: 100
+      
+  # Monitoring configuration
+  monitoring:
+    # Enable monitoring
+    enabled: true
+    
+    # Metrics configuration
+    metrics:
+      # Enable metrics collection
+      enabled: true
+      
+      # Metrics interval
+      interval: 60s
+      
+      # Metrics retention
+      retention: 24h
+      
+    # Health check configuration
+    health:
+      # Enable health checks
+      enabled: true
+      
+      # Health check interval
+      interval: 30s
+      
+      # Health check timeout
+      timeout: 5s
+
+# =====================================================================================
+# PARALLEL EXECUTION CONFIGURATION
+# =====================================================================================
+# Configuration for parallel test execution with isolated container networks
+# and independent test data management
+parallel:
+  # Parallel execution settings
+  execution:
+    # Enable parallel test execution
+    enabled: true
+    
+    # Maximum parallel test workers
+    max-workers: 4
+    
+    # Worker configuration
+    worker:
+      # Worker isolation strategy
+      isolation: network
+      
+      # Worker resource allocation
+      resources:
+        memory: 2Gi
+        cpu: 1000m
+        
+      # Worker lifecycle management
+      lifecycle:
+        startup-timeout: 120s
+        shutdown-timeout: 60s
+        
+  # Network isolation configuration
+  network:
+    # Network isolation strategy
+    isolation:
+      # Enable network isolation
+      enabled: true
+      
+      # Isolation mode
+      mode: dedicated
+      
+      # Network naming strategy
+      naming:
+        pattern: "carddemo-test-{worker-id}"
+        
+    # Network configuration
+    configuration:
+      # Network driver
+      driver: bridge
+      
+      # Network subnet allocation
+      subnet:
+        cidr: "172.20.0.0/16"
+        allocation-size: 256
+        
+      # Network options
+      options:
+        com.docker.network.bridge.enable_icc: "true"
+        com.docker.network.bridge.enable_ip_masquerade: "true"
+        
+  # Container orchestration configuration
+  orchestration:
+    # Container scheduling strategy
+    scheduling:
+      # Scheduling strategy
+      strategy: round-robin
+      
+      # Resource constraints
+      constraints:
+        memory-limit: 4Gi
+        cpu-limit: 2000m
+        
+    # Container coordination
+    coordination:
+      # Enable container coordination
+      enabled: true
+      
+      # Coordination timeout
+      timeout: 300s
+      
+      # Coordination retry configuration
+      retry:
+        max-attempts: 3
+        delay: 10s
+        
+  # Test data isolation configuration
+  data:
+    # Data isolation strategy
+    isolation:
+      # Enable data isolation
+      enabled: true
+      
+      # Isolation mode
+      mode: schema
+      
+      # Schema naming strategy
+      schema-naming:
+        pattern: "test_worker_{worker-id}"
+        
+    # Data management configuration
+    management:
+      # Data initialization strategy
+      initialization: per-worker
+      
+      # Data cleanup strategy
+      cleanup: automatic
+      
+      # Data persistence configuration
+      persistence:
+        enabled: false
+        retention: 1h
+
+# =====================================================================================
+# CONTAINER CLEANUP CONFIGURATION
+# =====================================================================================
+# Automated container cleanup and resource management configuration
+cleanup:
+  # Cleanup strategy configuration
+  strategy:
+    # Enable automatic cleanup
+    enabled: true
+    
+    # Cleanup mode
+    mode: aggressive
+    
+    # Cleanup triggers
+    triggers:
+      - test-completion
+      - test-failure
+      - timeout
+      - resource-exhaustion
+      
+  # Resource cleanup configuration
+  resources:
+    # Container cleanup configuration
+    containers:
+      # Container removal strategy
+      removal-strategy: immediate
+      
+      # Container stop timeout
+      stop-timeout: 30s
+      
+      # Container force removal timeout
+      force-timeout: 60s
+      
+    # Network cleanup configuration
+    networks:
+      # Network removal strategy
+      removal-strategy: delayed
+      
+      # Network cleanup delay
+      delay: 60s
+      
+      # Network force removal timeout
+      force-timeout: 120s
+      
+    # Volume cleanup configuration
+    volumes:
+      # Volume removal strategy
+      removal-strategy: immediate
+      
+      # Volume cleanup timeout
+      timeout: 30s
+      
+  # Cleanup monitoring configuration
+  monitoring:
+    # Enable cleanup monitoring
+    enabled: true
+    
+    # Monitoring interval
+    interval: 30s
+    
+    # Monitoring timeout
+    timeout: 300s
+    
+    # Monitoring alerts
+    alerts:
+      # Enable cleanup alerts
+      enabled: true
+      
+      # Alert threshold
+      threshold: 80
+      
+      # Alert recipients
+      recipients:
+        - test-platform@carddemo.com
+
+# =====================================================================================
+# PERFORMANCE OPTIMIZATION CONFIGURATION
+# =====================================================================================
+# Performance optimization settings for maintaining < 200ms response time targets
+performance:
+  # Container performance optimization
+  containers:
+    # PostgreSQL performance tuning
+    postgresql:
+      # Connection optimization
+      connections:
+        # Connection pool tuning
+        pool:
+          initial-size: 10
+          max-size: 50
+          min-idle: 5
+          
+        # Connection timeout optimization
+        timeout:
+          connection: 10s
+          validation: 5s
+          
+      # Query optimization
+      queries:
+        # Query timeout configuration
+        timeout: 30s
+        
+        # Query caching configuration
+        cache:
+          enabled: true
+          size: 1000
+          ttl: 300s
+          
+      # Memory optimization
+      memory:
+        # Shared buffer optimization
+        shared-buffers: 256MB
+        
+        # Work memory optimization
+        work-mem: 4MB
+        
+        # Maintenance work memory
+        maintenance-work-mem: 64MB
+        
+    # Redis performance tuning
+    redis:
+      # Memory optimization
+      memory:
+        # Max memory configuration
+        max-memory: 400MB
+        
+        # Memory policy
+        policy: allkeys-lru
+        
+        # Memory samples
+        samples: 5
+        
+      # Command optimization
+      commands:
+        # Command timeout
+        timeout: 1s
+        
+        # Command pipelining
+        pipeline: true
+        
+        # Command batching
+        batch: true
+        
+  # Network performance optimization
+  network:
+    # Network buffer optimization
+    buffers:
+      # Send buffer size
+      send-buffer: 64KB
+      
+      # Receive buffer size
+      receive-buffer: 64KB
+      
+    # Network timeout optimization
+    timeouts:
+      # Connection timeout
+      connection: 5s
+      
+      # Read timeout
+      read: 10s
+      
+      # Write timeout
+      write: 10s
+      
+  # I/O performance optimization
+  io:
+    # Disk I/O optimization
+    disk:
+      # I/O scheduler
+      scheduler: deadline
+      
+      # Read-ahead configuration
+      read-ahead: 256KB
+      
+      # Write-back configuration
+      write-back: true
+      
+    # Network I/O optimization
+    network:
+      # Network buffer size
+      buffer-size: 128KB
+      
+      # Network queue size
+      queue-size: 1000
+
+# =====================================================================================
+# MONITORING AND OBSERVABILITY CONFIGURATION
+# =====================================================================================
+# Comprehensive monitoring and observability configuration for test execution
+monitoring:
+  # Test execution monitoring
+  execution:
+    # Enable execution monitoring
+    enabled: true
+    
+    # Monitoring interval
+    interval: 30s
+    
+    # Monitoring metrics
+    metrics:
+      # Response time metrics
+      response-time:
+        enabled: true
+        percentiles: [50, 90, 95, 99]
+        
+      # Throughput metrics
+      throughput:
+        enabled: true
+        window: 60s
+        
+      # Error rate metrics
+      error-rate:
+        enabled: true
+        threshold: 5
+        
+  # Resource monitoring
+  resources:
+    # Container resource monitoring
+    containers:
+      # CPU monitoring
+      cpu:
+        enabled: true
+        threshold: 80
+        
+      # Memory monitoring
+      memory:
+        enabled: true
+        threshold: 85
+        
+      # Network monitoring
+      network:
+        enabled: true
+        threshold: 100MB
+        
+    # System resource monitoring
+    system:
+      # System CPU monitoring
+      cpu:
+        enabled: true
+        threshold: 90
+        
+      # System memory monitoring
+      memory:
+        enabled: true
+        threshold: 95
+        
+      # System disk monitoring
+      disk:
+        enabled: true
+        threshold: 85
+        
+  # Health monitoring
+  health:
+    # Container health monitoring
+    containers:
+      # Health check configuration
+      checks:
+        interval: 30s
+        timeout: 10s
+        retries: 3
+        
+      # Health status reporting
+      reporting:
+        enabled: true
+        format: json
+        
+    # Test health monitoring
+    tests:
+      # Test execution health
+      execution:
+        enabled: true
+        timeout: 300s
+        
+      # Test data health
+      data:
+        enabled: true
+        validation: true
+        
+  # Alerting configuration
+  alerting:
+    # Enable alerting
+    enabled: true
+    
+    # Alert configuration
+    alerts:
+      # Performance alerts
+      performance:
+        enabled: true
+        threshold: 200ms
+        
+      # Resource alerts
+      resources:
+        enabled: true
+        threshold: 90
+        
+      # Failure alerts
+      failures:
+        enabled: true
+        threshold: 1
+        
+    # Notification configuration
+    notifications:
+      # Email notifications
+      email:
+        enabled: false
+        
+      # Slack notifications
+      slack:
+        enabled: false
+        
+      # Log notifications
+      log:
+        enabled: true
+        level: WARN
+
+# =====================================================================================
+# INTEGRATION CONFIGURATION
+# =====================================================================================
+# Integration configuration with Spring Boot test framework and CI/CD pipeline
+integration:
+  # Spring Boot integration
+  spring:
+    # Test profile integration
+    profiles:
+      # Active profiles
+      active: [testcontainers, integration]
+      
+      # Profile-specific configuration
+      configuration:
+        testcontainers:
+          datasource:
+            url: "jdbc:tc:postgresql:15-alpine:///carddemo_test"
+            driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+            
+        integration:
+          redis:
+            host: "localhost"
+            port: 6379
+            
+    # Test annotation integration
+    annotations:
+      # Testcontainers annotations
+      testcontainers:
+        enabled: true
+        
+      # Spring Boot Test annotations
+      spring-boot-test:
+        enabled: true
+        web-environment: random-port
+        
+  # CI/CD pipeline integration
+  pipeline:
+    # Build integration
+    build:
+      # Maven integration
+      maven:
+        enabled: true
+        profile: testcontainers
+        
+      # Gradle integration
+      gradle:
+        enabled: false
+        
+    # Test execution integration
+    execution:
+      # Parallel execution
+      parallel:
+        enabled: true
+        threads: 4
+        
+      # Test reporting
+      reporting:
+        enabled: true
+        format: [junit, json]
+        
+  # IDE integration
+  ide:
+    # IntelliJ IDEA integration
+    intellij:
+      # Test runner integration
+      test-runner:
+        enabled: true
+        
+      # Debug integration
+      debug:
+        enabled: true
+        port: 5005
+        
+    # Visual Studio Code integration
+    vscode:
+      # Test runner integration
+      test-runner:
+        enabled: true
+        
+      # Debug integration
+      debug:
+        enabled: true
+
+# =====================================================================================
+# VALIDATION AND COMPLIANCE CONFIGURATION
+# =====================================================================================
+# Validation and compliance configuration ensuring test quality and regulatory compliance
+validation:
+  # Test data validation
+  data:
+    # Data integrity validation
+    integrity:
+      # Enable data integrity validation
+      enabled: true
+      
+      # Validation rules
+      rules:
+        - foreign-key-constraints
+        - unique-constraints
+        - check-constraints
+        
+      # Validation timeout
+      timeout: 60s
+      
+    # Data precision validation
+    precision:
+      # Enable precision validation
+      enabled: true
+      
+      # Precision rules
+      rules:
+        - decimal-precision
+        - numeric-accuracy
+        - currency-formatting
+        
+      # Precision tolerance
+      tolerance: 0.01
+      
+  # Performance validation
+  performance:
+    # Response time validation
+    response-time:
+      # Enable response time validation
+      enabled: true
+      
+      # Response time targets
+      targets:
+        p95: 200ms
+        p99: 500ms
+        average: 100ms
+        
+    # Throughput validation
+    throughput:
+      # Enable throughput validation
+      enabled: true
+      
+      # Throughput targets
+      targets:
+        transactions-per-second: 10000
+        concurrent-users: 1000
+        
+  # Compliance validation
+  compliance:
+    # Security compliance
+    security:
+      # Enable security compliance validation
+      enabled: true
+      
+      # Security standards
+      standards:
+        - pci-dss
+        - gdpr
+        - sox
+        
+    # Data compliance
+    data:
+      # Enable data compliance validation
+      enabled: true
+      
+      # Data standards
+      standards:
+        - data-retention
+        - data-privacy
+        - data-accuracy
+
+# =====================================================================================
+# LOGGING AND DEBUGGING CONFIGURATION
+# =====================================================================================
+# Comprehensive logging and debugging configuration for test troubleshooting
+logging:
+  # Test execution logging
+  execution:
+    # Log level configuration
+    level: INFO
+    
+    # Log format configuration
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    
+    # Log output configuration
+    output:
+      - console
+      - file
+      
+  # Container logging
+  containers:
+    # Container log level
+    level: DEBUG
+    
+    # Container log collection
+    collection:
+      enabled: true
+      retention: 24h
+      
+    # Container log analysis
+    analysis:
+      enabled: true
+      pattern-matching: true
+      
+  # Debug logging
+  debug:
+    # Enable debug logging
+    enabled: true
+    
+    # Debug categories
+    categories:
+      - testcontainers
+      - spring-boot
+      - hibernate
+      - liquibase
+      
+    # Debug output
+    output:
+      file: logs/testcontainers-debug.log
+      
+  # Audit logging
+  audit:
+    # Enable audit logging
+    enabled: true
+    
+    # Audit events
+    events:
+      - container-start
+      - container-stop
+      - test-start
+      - test-complete
+      - test-failure
+      
+    # Audit retention
+    retention: 30d
+
+# =====================================================================================
+# ENVIRONMENT-SPECIFIC CONFIGURATION
+# =====================================================================================
+# Environment-specific configuration for different testing scenarios
+environments:
+  # Development environment
+  development:
+    # Container resource limits
+    resources:
+      postgresql:
+        memory: 1Gi
+        cpu: 1000m
+        
+      redis:
+        memory: 512Mi
+        cpu: 500m
+        
+    # Test data configuration
+    test-data:
+      size: minimal
+      anonymization: basic
+      
+  # CI/CD environment
+  ci:
+    # Container resource limits
+    resources:
+      postgresql:
+        memory: 2Gi
+        cpu: 2000m
+        
+      redis:
+        memory: 1Gi
+        cpu: 1000m
+        
+    # Test data configuration
+    test-data:
+      size: representative
+      anonymization: enhanced
+      
+  # Performance testing environment
+  performance:
+    # Container resource limits
+    resources:
+      postgresql:
+        memory: 4Gi
+        cpu: 4000m
+        
+      redis:
+        memory: 2Gi
+        cpu: 2000m
+        
+    # Test data configuration
+    test-data:
+      size: production-like
+      anonymization: full
+
+# =====================================================================================
+# DOCUMENTATION AND METADATA
+# =====================================================================================
+# Configuration documentation and metadata for comprehensive test strategy
+documentation:
+  # Configuration metadata
+  metadata:
+    # Configuration version
+    version: 1.0.0
+    
+    # Configuration description
+    description: "Comprehensive Testcontainers configuration for CardDemo Spring Boot microservices testing"
+    
+    # Configuration author
+    author: "CardDemo Development Team"
+    
+    # Last update timestamp
+    updated: "2024-01-15T10:00:00Z"
+    
+  # Usage documentation
+  usage:
+    # Quick start guide
+    quick-start: |
+      1. Ensure Docker is running
+      2. Execute tests with 'mvn test -Ptestcontainers'
+      3. Monitor test execution through logging output
+      4. Review test results in target/surefire-reports
+      
+    # Advanced usage
+    advanced: |
+      - Configure parallel execution with system property: -Djunit.jupiter.execution.parallel.enabled=true
+      - Enable debug logging with: -Dlogging.level.org.testcontainers=DEBUG
+      - Override container resources with: -Dtestcontainers.postgresql.memory=2Gi
+      
+  # Best practices
+  best-practices:
+    # Container management
+    containers:
+      - "Always use specific image tags rather than 'latest'"
+      - "Configure appropriate resource limits to prevent resource exhaustion"
+      - "Enable cleanup to prevent container accumulation"
+      
+    # Test design
+    tests:
+      - "Use @Testcontainers and @Container annotations appropriately"
+      - "Isolate test data to prevent cross-test interference"
+      - "Implement proper test cleanup procedures"
+      
+    # Performance
+    performance:
+      - "Monitor container resource usage during test execution"
+      - "Use connection pooling for database connections"
+      - "Enable parallel execution for improved test throughput"
+
+# =====================================================================================
+# TROUBLESHOOTING CONFIGURATION
+# =====================================================================================
+# Troubleshooting configuration for common issues and diagnostic information
+troubleshooting:
+  # Common issues
+  common-issues:
+    # Container startup failures
+    startup-failures:
+      description: "Container fails to start within timeout period"
+      solutions:
+        - "Increase startup timeout in configuration"
+        - "Check Docker daemon status and resources"
+        - "Verify container image availability"
+        
+    # Memory issues
+    memory-issues:
+      description: "Container runs out of memory during test execution"
+      solutions:
+        - "Increase container memory limits"
+        - "Optimize application memory usage"
+        - "Enable memory monitoring and alerting"
+        
+    # Network issues
+    network-issues:
+      description: "Container network connectivity problems"
+      solutions:
+        - "Verify network isolation configuration"
+        - "Check port availability and conflicts"
+        - "Enable network debugging and logging"
+        
+  # Diagnostic commands
+  diagnostics:
+    # Container diagnostics
+    containers:
+      - "docker ps -a"
+      - "docker logs <container_id>"
+      - "docker inspect <container_id>"
+      
+    # Network diagnostics
+    network:
+      - "docker network ls"
+      - "docker network inspect <network_name>"
+      - "netstat -tulpn"
+      
+    # Resource diagnostics
+    resources:
+      - "docker system df"
+      - "docker system prune"
+      - "free -h"
+      
+  # Debug configuration
+  debug:
+    # Enable debug mode
+    enabled: false
+    
+    # Debug verbosity
+    verbosity: high
+    
+    # Debug output
+    output:
+      - console
+      - file
+      - container-logs
+
+# =====================================================================================
+# CONFIGURATION VALIDATION
+# =====================================================================================
+# Configuration validation ensures proper setup and compliance
+validation-rules:
+  # Resource validation
+  resources:
+    # Memory validation
+    memory:
+      postgresql:
+        min: 512Mi
+        max: 4Gi
+        
+      redis:
+        min: 256Mi
+        max: 2Gi
+        
+    # CPU validation
+    cpu:
+      postgresql:
+        min: 500m
+        max: 4000m
+        
+      redis:
+        min: 250m
+        max: 2000m
+        
+  # Configuration validation
+  configuration:
+    # Required fields validation
+    required:
+      - testcontainers.global.docker.host
+      - postgresql.image.name
+      - redis.image.name
+      
+    # Format validation
+    format:
+      memory: "^[0-9]+[KMGT]i?$"
+      cpu: "^[0-9]+m?$"
+      duration: "^[0-9]+[smh]$"
+      
+  # Compliance validation
+  compliance:
+    # Security compliance
+    security:
+      - no-hardcoded-passwords
+      - encrypted-connections
+      - secure-defaults
+      
+    # Performance compliance
+    performance:
+      - response-time-targets
+      - resource-limits
+      - monitoring-enabled
