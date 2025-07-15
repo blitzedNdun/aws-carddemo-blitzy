@@ -53,7 +53,7 @@ card_number,account_id,customer_id,cvv_code,embossed_name,expiration_date,active
 5555555555554444,00000000002,000000002,456,Jane Doe,2025-11-30,true
 
 # Test Case 3: Valid American Express card with active status
-378282246310005,00000000003,000000003,789,Robert Johnson,2025-10-31,true
+3782822463100050,00000000003,000000003,789,Robert Johnson,2025-10-31,true
 
 # Test Case 4: Valid Discover card with active status
 6011111111111117,00000000004,000000004,234,Mary Williams,2025-09-30,true
@@ -73,7 +73,7 @@ card_number,account_id,customer_id,cvv_code,embossed_name,expiration_date,active
 5555555555554445,00000000007,000000007,012,Michael Wilson,2025-06-30,true
 
 # Test Case 8: Invalid Luhn - American Express pattern but fails algorithm
-378282246310006,00000000008,000000008,345,Linda Taylor,2025-05-31,true
+3782822463100060,00000000008,000000008,345,Linda Taylor,2025-05-31,true
 
 # =============================================================================
 # CARD EXPIRATION DATE TEST SCENARIOS
@@ -224,7 +224,7 @@ card_number,account_id,customer_id,cvv_code,embossed_name,expiration_date,active
 5555555555554519,00000000034,000000034,612,Sandra Moore,2024-11-30,true
 
 # Test Case 35: American Express type validation
-378282246310013,00000000035,000000035,734,Timothy Taylor,2024-10-31,true
+3782822463100130,00000000035,000000035,734,Timothy Taylor,2024-10-31,true
 
 # Test Case 36: Discover card type validation
 6011111111111182,00000000036,000000036,856,Ashley Anderson,2024-09-30,true
