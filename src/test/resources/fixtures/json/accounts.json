@@ -1,0 +1,952 @@
+[
+  {
+    "accountId": "00000000001",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "1940.00",
+    "creditLimit": "20200.00",
+    "cashCreditLimit": "10200.00",
+    "openDate": "2014-11-20",
+    "expirationDate": "2025-05-20",
+    "reissueDate": "2025-05-20",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000001",
+      "firstName": "John",
+      "lastName": "Doe"
+    }
+  },
+  {
+    "accountId": "00000000002",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "1580.00",
+    "creditLimit": "61300.00",
+    "cashCreditLimit": "54480.00",
+    "openDate": "2013-06-19",
+    "expirationDate": "2024-08-11",
+    "reissueDate": "2024-08-11",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000002",
+      "firstName": "Jane",
+      "lastName": "Smith"
+    }
+  },
+  {
+    "accountId": "00000000003",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "1470.00",
+    "creditLimit": "49090.00",
+    "cashCreditLimit": "5380.00",
+    "openDate": "2013-08-23",
+    "expirationDate": "2024-01-10",
+    "reissueDate": "2024-01-10",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000003",
+      "firstName": "Michael",
+      "lastName": "Johnson"
+    }
+  },
+  {
+    "accountId": "00000000004",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "400.00",
+    "creditLimit": "35030.00",
+    "cashCreditLimit": "27890.00",
+    "openDate": "2012-11-17",
+    "expirationDate": "2023-12-16",
+    "reissueDate": "2023-12-16",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000004",
+      "firstName": "Sarah",
+      "lastName": "Williams"
+    }
+  },
+  {
+    "accountId": "00000000005",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "3450.00",
+    "creditLimit": "38190.00",
+    "cashCreditLimit": "24300.00",
+    "openDate": "2012-10-03",
+    "expirationDate": "2025-03-09",
+    "reissueDate": "2025-03-09",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000005",
+      "firstName": "David",
+      "lastName": "Brown"
+    }
+  },
+  {
+    "accountId": "00000000006",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "2180.00",
+    "creditLimit": "35840.00",
+    "cashCreditLimit": "29480.00",
+    "openDate": "2017-12-23",
+    "expirationDate": "2025-10-08",
+    "reissueDate": "2025-10-08",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000006",
+      "firstName": "Lisa",
+      "lastName": "Miller"
+    }
+  },
+  {
+    "accountId": "00000000007",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "1930.00",
+    "creditLimit": "20650.00",
+    "cashCreditLimit": "2640.00",
+    "openDate": "2012-10-12",
+    "expirationDate": "2024-12-13",
+    "reissueDate": "2024-12-13",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000007",
+      "firstName": "Robert",
+      "lastName": "Davis"
+    }
+  },
+  {
+    "accountId": "00000000008",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "6050.00",
+    "creditLimit": "61040.00",
+    "cashCreditLimit": "13180.00",
+    "openDate": "2012-01-04",
+    "expirationDate": "2024-05-20",
+    "reissueDate": "2024-05-20",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000008",
+      "firstName": "Jennifer",
+      "lastName": "Garcia"
+    }
+  },
+  {
+    "accountId": "00000000009",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "5600.00",
+    "creditLimit": "82010.00",
+    "cashCreditLimit": "20650.00",
+    "openDate": "2016-08-27",
+    "expirationDate": "2024-12-27",
+    "reissueDate": "2024-12-27",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000009",
+      "firstName": "Christopher",
+      "lastName": "Rodriguez"
+    }
+  },
+  {
+    "accountId": "00000000010",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "1590.00",
+    "creditLimit": "54010.00",
+    "cashCreditLimit": "44420.00",
+    "openDate": "2015-09-13",
+    "expirationDate": "2023-01-27",
+    "reissueDate": "2023-01-27",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000010",
+      "firstName": "Amanda",
+      "lastName": "Martinez"
+    }
+  },
+  {
+    "accountId": "00000000011",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "2120.00",
+    "creditLimit": "49980.00",
+    "cashCreditLimit": "31750.00",
+    "openDate": "2014-09-12",
+    "expirationDate": "2025-03-12",
+    "reissueDate": "2025-03-12",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000011",
+      "firstName": "Matthew",
+      "lastName": "Anderson"
+    }
+  },
+  {
+    "accountId": "00000000012",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "1760.00",
+    "creditLimit": "46360.00",
+    "cashCreditLimit": "3880.00",
+    "openDate": "2009-06-17",
+    "expirationDate": "2023-07-07",
+    "reissueDate": "2023-07-07",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000012",
+      "firstName": "Ashley",
+      "lastName": "Taylor"
+    }
+  },
+  {
+    "accountId": "00000000013",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "410.00",
+    "creditLimit": "75420.00",
+    "cashCreditLimit": "49220.00",
+    "openDate": "2017-10-01",
+    "expirationDate": "2024-08-04",
+    "reissueDate": "2024-08-04",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000013",
+      "firstName": "Joshua",
+      "lastName": "Thomas"
+    }
+  },
+  {
+    "accountId": "00000000014",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "150.00",
+    "creditLimit": "22540.00",
+    "cashCreditLimit": "2120.00",
+    "openDate": "2010-12-04",
+    "expirationDate": "2025-12-11",
+    "reissueDate": "2025-12-11",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000014",
+      "firstName": "Jessica",
+      "lastName": "Jackson"
+    }
+  },
+  {
+    "accountId": "00000000015",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "4890.00",
+    "creditLimit": "84410.00",
+    "cashCreditLimit": "38330.00",
+    "openDate": "2009-10-06",
+    "expirationDate": "2025-06-09",
+    "reissueDate": "2025-06-09",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000015",
+      "firstName": "Andrew",
+      "lastName": "White"
+    }
+  },
+  {
+    "accountId": "00000000016",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "7330.00",
+    "creditLimit": "89220.00",
+    "cashCreditLimit": "26320.00",
+    "openDate": "2014-09-11",
+    "expirationDate": "2024-01-25",
+    "reissueDate": "2024-01-25",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000016",
+      "firstName": "Brittany",
+      "lastName": "Harris"
+    }
+  },
+  {
+    "accountId": "00000000017",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "330.00",
+    "creditLimit": "5680.00",
+    "cashCreditLimit": "5100.00",
+    "openDate": "2014-05-17",
+    "expirationDate": "2025-03-01",
+    "reissueDate": "2025-03-01",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000017",
+      "firstName": "Daniel",
+      "lastName": "Clark"
+    }
+  },
+  {
+    "accountId": "00000000018",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "1440.00",
+    "creditLimit": "29030.00",
+    "cashCreditLimit": "14960.00",
+    "openDate": "2018-11-15",
+    "expirationDate": "2023-09-10",
+    "reissueDate": "2023-09-10",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000018",
+      "firstName": "Stephanie",
+      "lastName": "Lewis"
+    }
+  },
+  {
+    "accountId": "00000000019",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "4800.00",
+    "creditLimit": "69860.00",
+    "cashCreditLimit": "37230.00",
+    "openDate": "2011-12-14",
+    "expirationDate": "2025-07-23",
+    "reissueDate": "2025-07-23",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000019",
+      "firstName": "Kevin",
+      "lastName": "Walker"
+    }
+  },
+  {
+    "accountId": "00000000020",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "3690.00",
+    "creditLimit": "37670.00",
+    "cashCreditLimit": "10400.00",
+    "openDate": "2014-02-27",
+    "expirationDate": "2024-03-13",
+    "reissueDate": "2024-03-13",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000020",
+      "firstName": "Michelle",
+      "lastName": "Hall"
+    }
+  },
+  {
+    "accountId": "00000000021",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "1120.00",
+    "creditLimit": "12640.00",
+    "cashCreditLimit": "1800.00",
+    "openDate": "2011-10-19",
+    "expirationDate": "2023-01-06",
+    "reissueDate": "2023-01-06",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000021",
+      "firstName": "Ryan",
+      "lastName": "Allen"
+    }
+  },
+  {
+    "accountId": "00000000022",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "550.00",
+    "creditLimit": "85990.00",
+    "cashCreditLimit": "47120.00",
+    "openDate": "2016-11-21",
+    "expirationDate": "2025-12-28",
+    "reissueDate": "2025-12-28",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000022",
+      "firstName": "Rebecca",
+      "lastName": "Young"
+    }
+  },
+  {
+    "accountId": "00000000023",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "1040.00",
+    "creditLimit": "33770.00",
+    "cashCreditLimit": "29040.00",
+    "openDate": "2012-03-15",
+    "expirationDate": "2025-03-18",
+    "reissueDate": "2025-03-18",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000023",
+      "firstName": "Brandon",
+      "lastName": "Hernandez"
+    }
+  },
+  {
+    "accountId": "00000000024",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "4000.00",
+    "creditLimit": "51740.00",
+    "cashCreditLimit": "41290.00",
+    "openDate": "2015-08-08",
+    "expirationDate": "2025-02-11",
+    "reissueDate": "2025-02-11",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000024",
+      "firstName": "Nicole",
+      "lastName": "King"
+    }
+  },
+  {
+    "accountId": "00000000025",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "610.00",
+    "creditLimit": "81940.00",
+    "cashCreditLimit": "65820.00",
+    "openDate": "2012-10-26",
+    "expirationDate": "2025-07-10",
+    "reissueDate": "2025-07-10",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000025",
+      "firstName": "Justin",
+      "lastName": "Wright"
+    }
+  },
+  {
+    "accountId": "00000000026",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "460.00",
+    "creditLimit": "21810.00",
+    "cashCreditLimit": "13750.00",
+    "openDate": "2009-04-20",
+    "expirationDate": "2024-12-19",
+    "reissueDate": "2024-12-19",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000026",
+      "firstName": "Samantha",
+      "lastName": "Lopez"
+    }
+  },
+  {
+    "accountId": "00000000027",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "2840.00",
+    "creditLimit": "55720.00",
+    "cashCreditLimit": "20750.00",
+    "openDate": "2012-09-30",
+    "expirationDate": "2025-07-13",
+    "reissueDate": "2025-07-13",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000027",
+      "firstName": "Tyler",
+      "lastName": "Hill"
+    }
+  },
+  {
+    "accountId": "00000000028",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "680.00",
+    "creditLimit": "8680.00",
+    "cashCreditLimit": "5470.00",
+    "openDate": "2015-05-20",
+    "expirationDate": "2024-05-09",
+    "reissueDate": "2024-05-09",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000028",
+      "firstName": "Rachel",
+      "lastName": "Scott"
+    }
+  },
+  {
+    "accountId": "00000000029",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "3390.00",
+    "creditLimit": "55110.00",
+    "cashCreditLimit": "43610.00",
+    "openDate": "2015-11-03",
+    "expirationDate": "2024-06-04",
+    "reissueDate": "2024-06-04",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000029",
+      "firstName": "Nathan",
+      "lastName": "Green"
+    }
+  },
+  {
+    "accountId": "00000000030",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "20.00",
+    "creditLimit": "1200.00",
+    "cashCreditLimit": "930.00",
+    "openDate": "2011-08-26",
+    "expirationDate": "2024-06-27",
+    "reissueDate": "2024-06-27",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000030",
+      "firstName": "Megan",
+      "lastName": "Adams"
+    }
+  },
+  {
+    "accountId": "00000000031",
+    "activeStatus": "INACTIVE",
+    "currentBalance": "310.00",
+    "creditLimit": "11400.00",
+    "cashCreditLimit": "10770.00",
+    "openDate": "2017-02-25",
+    "expirationDate": "2025-06-08",
+    "reissueDate": "2025-06-08",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000031",
+      "firstName": "Aaron",
+      "lastName": "Baker"
+    }
+  },
+  {
+    "accountId": "00000000032",
+    "activeStatus": "INACTIVE",
+    "currentBalance": "300.00",
+    "creditLimit": "11750.00",
+    "cashCreditLimit": "8460.00",
+    "openDate": "2013-11-10",
+    "expirationDate": "2025-05-19",
+    "reissueDate": "2025-05-19",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000032",
+      "firstName": "Heather",
+      "lastName": "Gonzalez"
+    }
+  },
+  {
+    "accountId": "00000000033",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "4100.00",
+    "creditLimit": "64040.00",
+    "cashCreditLimit": "9510.00",
+    "openDate": "2012-10-11",
+    "expirationDate": "2025-10-07",
+    "reissueDate": "2025-10-07",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000033",
+      "firstName": "Jeremy",
+      "lastName": "Nelson"
+    }
+  },
+  {
+    "accountId": "00000000034",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "2530.00",
+    "creditLimit": "36420.00",
+    "cashCreditLimit": "27700.00",
+    "openDate": "2009-05-10",
+    "expirationDate": "2025-10-06",
+    "reissueDate": "2025-10-06",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000034",
+      "firstName": "Kimberly",
+      "lastName": "Carter"
+    }
+  },
+  {
+    "accountId": "00000000035",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "1660.00",
+    "creditLimit": "19470.00",
+    "cashCreditLimit": "15250.00",
+    "openDate": "2018-02-02",
+    "expirationDate": "2025-09-23",
+    "reissueDate": "2025-09-23",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000035",
+      "firstName": "Sean",
+      "lastName": "Mitchell"
+    }
+  },
+  {
+    "accountId": "00000000036",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "1100.00",
+    "creditLimit": "33280.00",
+    "cashCreditLimit": "8390.00",
+    "openDate": "2018-07-18",
+    "expirationDate": "2024-12-23",
+    "reissueDate": "2024-12-23",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000036",
+      "firstName": "Amy",
+      "lastName": "Perez"
+    }
+  },
+  {
+    "accountId": "00000000037",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "70.00",
+    "creditLimit": "4460.00",
+    "cashCreditLimit": "1660.00",
+    "openDate": "2016-09-10",
+    "expirationDate": "2023-10-24",
+    "reissueDate": "2023-10-24",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000037",
+      "firstName": "Brian",
+      "lastName": "Roberts"
+    }
+  },
+  {
+    "accountId": "00000000038",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "6120.00",
+    "creditLimit": "65050.00",
+    "cashCreditLimit": "34760.00",
+    "openDate": "2010-08-12",
+    "expirationDate": "2023-07-23",
+    "reissueDate": "2023-07-23",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000038",
+      "firstName": "Crystal",
+      "lastName": "Turner"
+    }
+  },
+  {
+    "accountId": "00000000039",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "8430.00",
+    "creditLimit": "97500.00",
+    "cashCreditLimit": "62120.00",
+    "openDate": "2018-08-26",
+    "expirationDate": "2025-09-08",
+    "reissueDate": "2025-09-08",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000039",
+      "firstName": "Eric",
+      "lastName": "Phillips"
+    }
+  },
+  {
+    "accountId": "00000000040",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "430.00",
+    "creditLimit": "58230.00",
+    "cashCreditLimit": "16740.00",
+    "openDate": "2010-02-13",
+    "expirationDate": "2023-10-27",
+    "reissueDate": "2023-10-27",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000040",
+      "firstName": "Danielle",
+      "lastName": "Campbell"
+    }
+  },
+  {
+    "accountId": "00000000041",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "3750.00",
+    "creditLimit": "67210.00",
+    "cashCreditLimit": "34290.00",
+    "openDate": "2015-02-07",
+    "expirationDate": "2023-04-24",
+    "reissueDate": "2023-04-24",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000041",
+      "firstName": "Adam",
+      "lastName": "Parker"
+    }
+  },
+  {
+    "accountId": "00000000042",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "3020.00",
+    "creditLimit": "65630.00",
+    "cashCreditLimit": "51030.00",
+    "openDate": "2016-09-19",
+    "expirationDate": "2025-09-19",
+    "reissueDate": "2025-09-19",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000042",
+      "firstName": "Tiffany",
+      "lastName": "Evans"
+    }
+  },
+  {
+    "accountId": "00000000043",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "6100.00",
+    "creditLimit": "61680.00",
+    "cashCreditLimit": "12060.00",
+    "openDate": "2012-04-09",
+    "expirationDate": "2025-08-29",
+    "reissueDate": "2025-08-29",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000043",
+      "firstName": "Gregory",
+      "lastName": "Edwards"
+    }
+  },
+  {
+    "accountId": "00000000044",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "2630.00",
+    "creditLimit": "68990.00",
+    "cashCreditLimit": "44320.00",
+    "openDate": "2018-12-01",
+    "expirationDate": "2024-01-17",
+    "reissueDate": "2024-01-17",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000044",
+      "firstName": "Melissa",
+      "lastName": "Collins"
+    }
+  },
+  {
+    "accountId": "00000000045",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "1860.00",
+    "creditLimit": "27190.00",
+    "cashCreditLimit": "6880.00",
+    "openDate": "2010-12-31",
+    "expirationDate": "2025-07-09",
+    "reissueDate": "2025-07-09",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000045",
+      "firstName": "Patrick",
+      "lastName": "Stewart"
+    }
+  },
+  {
+    "accountId": "00000000046",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "3960.00",
+    "creditLimit": "70070.00",
+    "cashCreditLimit": "54380.00",
+    "openDate": "2013-09-06",
+    "expirationDate": "2025-06-20",
+    "reissueDate": "2025-06-20",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000046",
+      "firstName": "Allison",
+      "lastName": "Sanchez"
+    }
+  },
+  {
+    "accountId": "00000000047",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "320.00",
+    "creditLimit": "23380.00",
+    "cashCreditLimit": "1590.00",
+    "openDate": "2014-04-03",
+    "expirationDate": "2025-08-23",
+    "reissueDate": "2025-08-23",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000047",
+      "firstName": "Richard",
+      "lastName": "Morris"
+    }
+  },
+  {
+    "accountId": "00000000048",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "2260.00",
+    "creditLimit": "23060.00",
+    "cashCreditLimit": "6120.00",
+    "openDate": "2017-03-18",
+    "expirationDate": "2025-02-06",
+    "reissueDate": "2025-02-06",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000048",
+      "firstName": "Kelly",
+      "lastName": "Rogers"
+    }
+  },
+  {
+    "accountId": "00000000049",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "1000.00",
+    "creditLimit": "90480.00",
+    "cashCreditLimit": "48070.00",
+    "openDate": "2019-04-06",
+    "expirationDate": "2023-09-17",
+    "reissueDate": "2023-09-17",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000049",
+      "firstName": "Scott",
+      "lastName": "Reed"
+    }
+  },
+  {
+    "accountId": "00000000050",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "4920.00",
+    "creditLimit": "61690.00",
+    "cashCreditLimit": "45870.00",
+    "openDate": "2011-04-22",
+    "expirationDate": "2023-03-09",
+    "reissueDate": "2023-03-09",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "",
+    "customer": {
+      "customerId": "000000050",
+      "firstName": "Christine",
+      "lastName": "Cook"
+    }
+  }
+]
