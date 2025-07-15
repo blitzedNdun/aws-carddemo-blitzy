@@ -1,0 +1,1062 @@
+# OWASP ZAP Security Scanning Configuration for CardDemo Spring Boot Microservices
+# 
+# This configuration provides comprehensive automated vulnerability assessment for the CardDemo
+# financial transaction processing system, implementing PCI DSS compliance testing requirements
+# with zero tolerance for HIGH/CRITICAL vulnerabilities. The configuration integrates with
+# Spring Boot microservices architecture and JWT authentication framework.
+#
+# Key Features:
+# - OWASP ZAP 2.16.1 automated security scanning configuration
+# - JWT authentication endpoint testing scenarios
+# - PCI DSS compliance testing profiles for cardholder data protection
+# - Zero HIGH/CRITICAL vulnerability tolerance enforcement
+# - Spring Boot REST API comprehensive security validation
+#
+# Integration with:
+# - Spring Security JWT authentication framework
+# - PostgreSQL database security controls
+# - React frontend authentication components
+# - Kubernetes containerized security environment
+#
+# @author Blitzy Agent
+# @version 1.0
+# @since 2024-12-20
+
+# =============================================================================
+# CORE OWASP ZAP CONFIGURATION
+# =============================================================================
+
+zap:
+  version: "2.16.1"
+  mode: "attack"
+  
+  # Core ZAP daemon configuration
+  daemon:
+    enabled: true
+    host: "0.0.0.0"
+    port: 8080
+    api_key: "${ZAP_API_KEY:carddemo-security-scan-2024}"
+    
+  # Memory and performance settings for comprehensive scanning
+  memory:
+    heap_size: "4g"
+    max_depth: 5
+    thread_count: 10
+    
+  # Logging configuration for security scan auditing
+  logging:
+    level: "INFO"
+    file: "/var/log/zap/security-scan.log"
+    format: "json"
+    audit_enabled: true
+
+# =============================================================================
+# TARGET APPLICATION CONFIGURATION
+# =============================================================================
+
+target:
+  application_name: "CardDemo Financial Transaction System"
+  base_url: "http://localhost:8080"
+  
+  # Spring Boot microservices endpoints for security scanning
+  endpoints:
+    authentication:
+      - path: "/api/auth/login"
+        method: "POST"
+        description: "JWT authentication endpoint"
+        critical_security_test: true
+        
+      - path: "/api/auth/logout"
+        method: "POST"
+        description: "Session termination endpoint"
+        requires_authentication: true
+        
+      - path: "/api/auth/validate"
+        method: "GET"
+        description: "JWT token validation endpoint"
+        requires_authentication: true
+        
+      - path: "/api/auth/refresh"
+        method: "POST"
+        description: "JWT token refresh endpoint"
+        requires_authentication: true
+        
+    account_management:
+      - path: "/api/accounts/{id}"
+        method: "GET"
+        description: "Account view endpoint with financial data"
+        requires_authentication: true
+        pci_dss_sensitive: true
+        
+      - path: "/api/accounts/{id}"
+        method: "PUT"
+        description: "Account update endpoint with financial modifications"
+        requires_authentication: true
+        pci_dss_sensitive: true
+        
+    user_management:
+      - path: "/api/admin/users"
+        method: "GET"
+        description: "Administrative user listing"
+        requires_admin_role: true
+        
+      - path: "/api/admin/users"
+        method: "POST"
+        description: "User creation endpoint"
+        requires_admin_role: true
+        
+      - path: "/api/admin/users/{userId}"
+        method: "PUT"
+        description: "User update endpoint"
+        requires_admin_role: true
+        
+      - path: "/api/admin/users/{userId}"
+        method: "DELETE"
+        description: "User deletion endpoint"
+        requires_admin_role: true
+        
+      - path: "/api/admin/users/{userId}"
+        method: "GET"
+        description: "User details retrieval"
+        requires_admin_role: true
+        
+    transaction_processing:
+      - path: "/api/transactions"
+        method: "GET"
+        description: "Transaction history endpoint"
+        requires_authentication: true
+        pci_dss_sensitive: true
+        
+      - path: "/api/transactions"
+        method: "POST"
+        description: "Transaction creation endpoint"
+        requires_authentication: true
+        pci_dss_sensitive: true
+        
+    card_management:
+      - path: "/api/cards"
+        method: "GET"
+        description: "Card listing endpoint"
+        requires_authentication: true
+        pci_dss_sensitive: true
+        
+      - path: "/api/cards/{cardId}"
+        method: "PUT"
+        description: "Card update endpoint"
+        requires_authentication: true
+        pci_dss_sensitive: true
+
+# =============================================================================
+# JWT AUTHENTICATION CONFIGURATION
+# =============================================================================
+
+authentication:
+  type: "jwt"
+  
+  # JWT token configuration for authenticated scanning
+  jwt:
+    algorithm: "HS256"
+    secret_key: "${JWT_SECRET_KEY:cardDemo2024SecretKeyForJWTAuthentication}"
+    issuer: "carddemo-auth-service"
+    expiration_minutes: 30
+    
+    # Test tokens for security scanning scenarios
+    test_tokens:
+      valid_admin_token:
+        user_id: "ADMIN001"
+        user_type: "A"
+        role: "ROLE_ADMIN"
+        authorities: ["ROLE_ADMIN", "ROLE_USER"]
+        session_id: "zap-admin-session-001"
+        token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBRE1JTjAwMSIsInVzZXJfdHlwZSI6IkEiLCJyb2xlIjoiUk9MRV9BRE1JTiIsImZpcnN0X25hbWUiOiJTZWN1cml0eSIsImxhc3RfbmFtZSI6IlNjYW5uZXIiLCJzZXNzaW9uX2lkIjoiemFwLWFkbWluLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.ZapAdminTokenForSecurityTesting12345"
+        
+      valid_user_token:
+        user_id: "USER0001"
+        user_type: "U"
+        role: "ROLE_USER"
+        authorities: ["ROLE_USER"]
+        session_id: "zap-user-session-001"
+        token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IlNlY3VyaXR5IiwibGFzdF9uYW1lIjoiU2Nhbm5lciIsInNlc3Npb25faWQiOiJ6YXAtdXNlci1zZXNzaW9uLTAwMSIsImlzcyI6ImNhcmRkZW1vLWF1dGgtc2VydmljZSIsImlhdCI6MTcwNTc1MzgwMCwiZXhwIjoxNzA1NzU1NjAwfQ.ZapUserTokenForSecurityTesting67890"
+        
+      expired_token:
+        user_id: "EXPIRED01"
+        user_type: "A"
+        role: "ROLE_ADMIN"
+        session_id: "zap-expired-session-001"
+        issued_at: "2024-01-20T12:00:00Z"
+        expires_at: "2024-01-20T12:30:00Z"
+        token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFWFBJUkVEMDEiLCJ1c2VyX3R5cGUiOiJBIiwicm9sZSI6IlJPTEVfQURNSU4iLCJpc3MiOiJjYXJkZGVtby1hdXRoLXNlcnZpY2UiLCJpYXQiOjE3MDU3NDYwMDAsImV4cCI6MTcwNTc0NzgwMH0.ExpiredTokenForSecurityTesting"
+        
+      invalid_signature_token:
+        user_id: "INVALID01"
+        user_type: "A"
+        role: "ROLE_ADMIN"
+        session_id: "zap-invalid-session-001"
+        token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJJTlZBTElEMDEiLCJ1c2VyX3R5cGUiOiJBIiwicm9sZSI6IlJPTEVfQURNSU4iLCJpc3MiOiJjYXJkZGVtby1hdXRoLXNlcnZpY2UiLCJpYXQiOjE3MDU3NTM4MDAsImV4cCI6MTcwNTc1NTYwMH0.INVALID_SIGNATURE_FOR_SECURITY_TESTING"
+        
+      malformed_token:
+        description: "Token with invalid format"
+        token: "MALFORMED.TOKEN.FORMAT"
+        
+  # Authentication test scenarios
+  test_scenarios:
+    - name: "Valid Admin Authentication"
+      description: "Test admin user authentication with valid credentials"
+      endpoint: "/api/auth/login"
+      method: "POST"
+      payload:
+        username: "ADMIN001"
+        password: "AdminPass123"
+      expected_response: 200
+      
+    - name: "Valid User Authentication"
+      description: "Test regular user authentication with valid credentials"
+      endpoint: "/api/auth/login"
+      method: "POST"
+      payload:
+        username: "USER0001"
+        password: "UserPass123"
+      expected_response: 200
+      
+    - name: "Invalid Credentials"
+      description: "Test authentication with invalid credentials"
+      endpoint: "/api/auth/login"
+      method: "POST"
+      payload:
+        username: "INVALID"
+        password: "WrongPassword"
+      expected_response: 401
+      
+    - name: "SQL Injection in Authentication"
+      description: "Test SQL injection vulnerability in authentication"
+      endpoint: "/api/auth/login"
+      method: "POST"
+      payload:
+        username: "admin' OR '1'='1"
+        password: "password"
+      expected_response: 401
+      
+    - name: "JWT Token Validation"
+      description: "Test JWT token validation with various token states"
+      endpoint: "/api/auth/validate"
+      method: "GET"
+      token_scenarios:
+        - valid_admin_token
+        - valid_user_token
+        - expired_token
+        - invalid_signature_token
+        - malformed_token
+
+# =============================================================================
+# VULNERABILITY SCANNING PROFILES
+# =============================================================================
+
+vulnerability_scanning:
+  # Core security vulnerability categories
+  profiles:
+    sql_injection:
+      enabled: true
+      severity: "HIGH"
+      description: "SQL injection vulnerability detection"
+      test_parameters:
+        - "username"
+        - "password"
+        - "accountId"
+        - "userId"
+        - "cardId"
+        - "transactionId"
+      payloads:
+        - "' OR '1'='1"
+        - "'; DROP TABLE users; --"
+        - "1' UNION SELECT * FROM users --"
+        - "admin'/**/OR/**/1=1/**/--"
+        - "' OR 1=1 LIMIT 1 --"
+        
+    xss_vulnerability:
+      enabled: true
+      severity: "HIGH"
+      description: "Cross-site scripting vulnerability detection"
+      test_parameters:
+        - "firstName"
+        - "lastName"
+        - "address"
+        - "description"
+        - "comment"
+      payloads:
+        - "<script>alert('XSS')</script>"
+        - "<img src=x onerror=alert('XSS')>"
+        - "javascript:alert('XSS')"
+        - "<svg/onload=alert('XSS')>"
+        - "'>><script>alert('XSS')</script>"
+        
+    csrf_protection:
+      enabled: true
+      severity: "MEDIUM"
+      description: "Cross-site request forgery protection validation"
+      test_scenarios:
+        - "Missing CSRF token"
+        - "Invalid CSRF token"
+        - "Reused CSRF token"
+        - "Cross-origin request validation"
+        
+    authentication_bypass:
+      enabled: true
+      severity: "CRITICAL"
+      description: "Authentication bypass vulnerability detection"
+      test_scenarios:
+        - "JWT token manipulation"
+        - "Session fixation"
+        - "Authentication parameter tampering"
+        - "Role escalation attempts"
+        
+    authorization_flow:
+      enabled: true
+      severity: "HIGH"
+      description: "Authorization flow security validation"
+      test_scenarios:
+        - "Privilege escalation attempts"
+        - "Role boundary testing"
+        - "Resource access validation"
+        - "Method-level authorization bypass"
+        
+    api_security:
+      enabled: true
+      severity: "HIGH"
+      description: "REST API security validation"
+      test_scenarios:
+        - "HTTP method tampering"
+        - "Content-type manipulation"
+        - "Parameter pollution"
+        - "Rate limiting bypass"
+        
+    session_management:
+      enabled: true
+      severity: "MEDIUM"
+      description: "Session management security testing"
+      test_scenarios:
+        - "Session fixation"
+        - "Session hijacking"
+        - "Session timeout validation"
+        - "Concurrent session handling"
+        
+    input_validation:
+      enabled: true
+      severity: "MEDIUM"
+      description: "Input validation security testing"
+      test_parameters:
+        - "accountBalance"
+        - "transactionAmount"
+        - "cardNumber"
+        - "expirationDate"
+        - "cvv"
+      validation_tests:
+        - "Buffer overflow attempts"
+        - "Format string attacks"
+        - "Path traversal attempts"
+        - "Command injection tests"
+        
+    output_encoding:
+      enabled: true
+      severity: "MEDIUM"
+      description: "Output encoding verification"
+      test_scenarios:
+        - "Response header injection"
+        - "Content-type manipulation"
+        - "Character encoding bypass"
+        - "JSON/XML output validation"
+
+# =============================================================================
+# PCI DSS COMPLIANCE TESTING CONFIGURATION
+# =============================================================================
+
+pci_dss_compliance:
+  version: "4.0"
+  enabled: true
+  
+  # PCI DSS requirement testing profiles
+  requirements:
+    # Requirement 3: Protect stored cardholder data
+    requirement_3:
+      enabled: true
+      description: "Cardholder data protection testing"
+      test_scenarios:
+        - name: "Cardholder Data Encryption"
+          description: "Verify cardholder data encryption at rest"
+          endpoints:
+            - "/api/accounts/{id}"
+            - "/api/cards/{cardId}"
+            - "/api/transactions"
+          validation_checks:
+            - "Primary account number (PAN) masking"
+            - "Card verification value (CVV) protection"
+            - "Expiration date security"
+            - "Cardholder name protection"
+            
+        - name: "Cardholder Data Transmission"
+          description: "Verify cardholder data encryption in transit"
+          validation_checks:
+            - "TLS 1.3 enforcement"
+            - "Certificate validation"
+            - "Secure communication protocols"
+            - "Man-in-the-middle protection"
+            
+    # Requirement 4: Encrypt transmission of cardholder data
+    requirement_4:
+      enabled: true
+      description: "Transmission encryption validation"
+      test_scenarios:
+        - name: "Network Encryption"
+          description: "Verify network encryption compliance"
+          validation_checks:
+            - "TLS 1.3 protocol enforcement"
+            - "Certificate chain validation"
+            - "Cipher suite compliance"
+            - "Perfect forward secrecy"
+            
+        - name: "API Communication Security"
+          description: "Verify API communication encryption"
+          endpoints:
+            - "/api/auth/login"
+            - "/api/accounts/{id}"
+            - "/api/transactions"
+            - "/api/cards/{cardId}"
+          validation_checks:
+            - "HTTPS enforcement"
+            - "HTTP Strict Transport Security (HSTS)"
+            - "Secure cookie attributes"
+            - "Content Security Policy (CSP)"
+            
+    # Requirement 6: Develop secure systems and applications
+    requirement_6:
+      enabled: true
+      description: "Secure development practices validation"
+      test_scenarios:
+        - name: "Vulnerability Management"
+          description: "Verify vulnerability management practices"
+          validation_checks:
+            - "Known vulnerability scanning"
+            - "Security patch validation"
+            - "Dependency vulnerability assessment"
+            - "Code security analysis"
+            
+        - name: "Secure Authentication"
+          description: "Verify secure authentication implementation"
+          validation_checks:
+            - "Password complexity enforcement"
+            - "Multi-factor authentication support"
+            - "Account lockout mechanisms"
+            - "Session management security"
+            
+    # Requirement 7: Restrict access by business need-to-know
+    requirement_7:
+      enabled: true
+      description: "Access control validation"
+      test_scenarios:
+        - name: "Role-Based Access Control"
+          description: "Verify role-based access control implementation"
+          validation_checks:
+            - "User role assignment validation"
+            - "Privilege escalation prevention"
+            - "Resource access restrictions"
+            - "Administrative access controls"
+            
+        - name: "Data Access Controls"
+          description: "Verify data access controls"
+          endpoints:
+            - "/api/admin/users"
+            - "/api/accounts/{id}"
+            - "/api/transactions"
+          validation_checks:
+            - "User-specific data access"
+            - "Administrative privilege validation"
+            - "Cross-user data access prevention"
+            - "Audit trail generation"
+            
+    # Requirement 8: Assign unique ID to each person with computer access
+    requirement_8:
+      enabled: true
+      description: "User identification and authentication"
+      test_scenarios:
+        - name: "User Authentication"
+          description: "Verify user authentication mechanisms"
+          validation_checks:
+            - "Unique user identification"
+            - "Strong authentication methods"
+            - "Password policy enforcement"
+            - "Authentication logging"
+            
+        - name: "Session Management"
+          description: "Verify session management controls"
+          validation_checks:
+            - "Session timeout enforcement"
+            - "Session token security"
+            - "Concurrent session management"
+            - "Session invalidation"
+            
+    # Requirement 10: Track and monitor all access
+    requirement_10:
+      enabled: true
+      description: "Audit logging and monitoring"
+      test_scenarios:
+        - name: "Audit Trail Generation"
+          description: "Verify audit trail generation"
+          validation_checks:
+            - "Authentication event logging"
+            - "Authorization event logging"
+            - "Data access logging"
+            - "System event logging"
+            
+        - name: "Log Protection"
+          description: "Verify log protection mechanisms"
+          validation_checks:
+            - "Log integrity protection"
+            - "Log retention policies"
+            - "Log access controls"
+            - "Log monitoring capabilities"
+            
+    # Requirement 11: Regularly test security systems
+    requirement_11:
+      enabled: true
+      description: "Security testing validation"
+      test_scenarios:
+        - name: "Vulnerability Scanning"
+          description: "Verify vulnerability scanning practices"
+          validation_checks:
+            - "Regular vulnerability assessments"
+            - "Penetration testing procedures"
+            - "Security scan automation"
+            - "Remediation tracking"
+            
+        - name: "Change Detection"
+          description: "Verify change detection mechanisms"
+          validation_checks:
+            - "File integrity monitoring"
+            - "Configuration change detection"
+            - "Unauthorized access detection"
+            - "Incident response procedures"
+
+# =============================================================================
+# SECURITY SCANNING AUTOMATION
+# =============================================================================
+
+automation:
+  enabled: true
+  
+  # Automated security test execution
+  execution:
+    schedule: "0 2 * * *"  # Daily at 2 AM
+    timeout: 3600  # 1 hour timeout
+    max_concurrent_scans: 3
+    retry_attempts: 2
+    
+  # Quality gates and thresholds
+  quality_gates:
+    zero_high_critical_tolerance:
+      enabled: true
+      description: "Zero tolerance for HIGH/CRITICAL vulnerabilities"
+      thresholds:
+        critical_vulnerabilities: 0
+        high_vulnerabilities: 0
+        medium_vulnerabilities: 10
+        low_vulnerabilities: 20
+        informational_vulnerabilities: 50
+        
+    pci_dss_compliance_gate:
+      enabled: true
+      description: "PCI DSS compliance validation gate"
+      requirements:
+        - "All PCI DSS requirements must pass"
+        - "Cardholder data protection validated"
+        - "Encryption standards verified"
+        - "Access controls validated"
+        
+    authentication_security_gate:
+      enabled: true
+      description: "Authentication security validation gate"
+      requirements:
+        - "JWT token security validated"
+        - "Authentication bypass prevention"
+        - "Session management security"
+        - "Authorization flow validation"
+        
+  # Reporting and notification
+  reporting:
+    enabled: true
+    formats:
+      - "json"
+      - "xml"
+      - "html"
+      - "pdf"
+    output_directory: "/var/log/zap/reports"
+    
+    # Report content configuration
+    include_sections:
+      - "executive_summary"
+      - "vulnerability_details"
+      - "pci_dss_compliance"
+      - "authentication_analysis"
+      - "remediation_recommendations"
+      - "technical_appendix"
+      
+    # Automated notifications
+    notifications:
+      enabled: true
+      channels:
+        email:
+          enabled: true
+          recipients:
+            - "security-team@carddemo.com"
+            - "compliance-team@carddemo.com"
+          severity_threshold: "MEDIUM"
+          
+        slack:
+          enabled: true
+          webhook_url: "${SLACK_WEBHOOK_URL}"
+          channel: "#security-alerts"
+          severity_threshold: "HIGH"
+          
+        jira:
+          enabled: true
+          project_key: "SECURITY"
+          issue_type: "Security Vulnerability"
+          severity_threshold: "HIGH"
+          
+  # Integration with CI/CD pipeline
+  cicd_integration:
+    enabled: true
+    pipeline_stages:
+      - "pre_deployment"
+      - "post_deployment"
+      - "scheduled_maintenance"
+      
+    # Build integration
+    build_integration:
+      jenkins_plugin: true
+      github_actions: true
+      gitlab_ci: true
+      
+    # Quality gate enforcement
+    gate_enforcement:
+      fail_build_on_critical: true
+      fail_build_on_high: true
+      fail_build_on_pci_violation: true
+      generate_baseline_report: true
+
+# =============================================================================
+# ADVANCED SECURITY TESTING FEATURES
+# =============================================================================
+
+advanced_features:
+  # Active security testing
+  active_scanning:
+    enabled: true
+    intensity: "HIGH"
+    
+    # Attack categories
+    attack_categories:
+      - "injection_attacks"
+      - "authentication_attacks"
+      - "authorization_attacks"
+      - "session_attacks"
+      - "input_validation_attacks"
+      - "business_logic_attacks"
+      
+    # Custom payloads for CardDemo specific testing
+    custom_payloads:
+      financial_data_injection:
+        - "'; UPDATE accounts SET balance = 999999.99 WHERE account_id = '1'; --"
+        - "1' UNION SELECT account_id, balance FROM accounts WHERE balance > 10000 --"
+        - "admin'; DROP TABLE transactions; --"
+        
+      jwt_token_manipulation:
+        - "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJBRE1JTiIsInJvbGUiOiJST0xFX0FETUlOIn0."
+        - "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBRE1JTiIsInJvbGUiOiJST0xFX0FETUlOIiwiZXhwIjo5OTk5OTk5OTk5fQ.FAKE_SIGNATURE"
+        
+      authorization_bypass:
+        - "userId=1&targetUserId=2"
+        - "role=ROLE_ADMIN&originalRole=ROLE_USER"
+        - "accountId=../../../admin/accounts/1"
+        
+  # Passive security analysis
+  passive_scanning:
+    enabled: true
+    analysis_types:
+      - "response_header_analysis"
+      - "cookie_security_analysis"
+      - "content_security_analysis"
+      - "information_disclosure_analysis"
+      
+    # Security headers validation
+    security_headers:
+      required_headers:
+        - "Content-Security-Policy"
+        - "X-Frame-Options"
+        - "X-Content-Type-Options"
+        - "Strict-Transport-Security"
+        - "X-XSS-Protection"
+        - "Referrer-Policy"
+        - "Feature-Policy"
+        
+      cookie_security:
+        - "Secure attribute"
+        - "HttpOnly attribute"
+        - "SameSite attribute"
+        - "Path attribute validation"
+        
+  # Fuzzing capabilities
+  fuzzing:
+    enabled: true
+    fuzzing_types:
+      - "parameter_fuzzing"
+      - "header_fuzzing"
+      - "payload_fuzzing"
+      - "protocol_fuzzing"
+      
+    # Fuzzing parameters
+    fuzzing_parameters:
+      iterations: 1000
+      mutation_rate: 0.1
+      timeout: 10
+      
+    # Custom fuzzing dictionaries
+    dictionaries:
+      financial_terms:
+        - "balance"
+        - "transaction"
+        - "account"
+        - "credit"
+        - "debit"
+        - "payment"
+        - "transfer"
+        
+      security_terms:
+        - "admin"
+        - "root"
+        - "password"
+        - "token"
+        - "session"
+        - "auth"
+        - "login"
+
+# =============================================================================
+# ENVIRONMENT-SPECIFIC CONFIGURATION
+# =============================================================================
+
+environments:
+  development:
+    enabled: true
+    target_url: "http://localhost:8080"
+    authentication_required: false
+    scan_intensity: "MEDIUM"
+    
+  testing:
+    enabled: true
+    target_url: "http://test.carddemo.local:8080"
+    authentication_required: true
+    scan_intensity: "HIGH"
+    
+  staging:
+    enabled: true
+    target_url: "https://staging.carddemo.com"
+    authentication_required: true
+    scan_intensity: "HIGH"
+    ssl_verification: true
+    
+  production:
+    enabled: false
+    target_url: "https://carddemo.com"
+    authentication_required: true
+    scan_intensity: "LOW"
+    ssl_verification: true
+    read_only_mode: true
+
+# =============================================================================
+# COMPLIANCE AND AUDIT CONFIGURATION
+# =============================================================================
+
+compliance:
+  # Compliance frameworks
+  frameworks:
+    pci_dss:
+      version: "4.0"
+      enabled: true
+      requirements_coverage: "complete"
+      
+    sox:
+      enabled: true
+      audit_requirements: "comprehensive"
+      
+    gdpr:
+      enabled: true
+      data_protection_validation: true
+      
+    owasp_top_10:
+      version: "2021"
+      enabled: true
+      coverage: "complete"
+      
+  # Audit trail configuration
+  audit_trail:
+    enabled: true
+    retention_period: "7_years"
+    encryption: true
+    integrity_validation: true
+    
+    # Audit events
+    events:
+      - "scan_initiation"
+      - "vulnerability_detection"
+      - "compliance_validation"
+      - "security_exceptions"
+      - "configuration_changes"
+      
+  # Compliance reporting
+  compliance_reporting:
+    enabled: true
+    report_types:
+      - "pci_dss_compliance_report"
+      - "vulnerability_assessment_report"
+      - "security_posture_report"
+      - "audit_findings_report"
+      
+    # Report distribution
+    distribution:
+      internal:
+        - "security_team"
+        - "compliance_team"
+        - "development_team"
+        - "management_team"
+        
+      external:
+        - "auditors"
+        - "regulatory_authorities"
+        - "security_consultants"
+
+# =============================================================================
+# PERFORMANCE AND OPTIMIZATION
+# =============================================================================
+
+performance:
+  # Scanning performance optimization
+  optimization:
+    parallel_scanning: true
+    connection_pooling: true
+    request_throttling: true
+    memory_optimization: true
+    
+  # Performance thresholds
+  thresholds:
+    max_scan_duration: 3600  # 1 hour
+    max_memory_usage: "4GB"
+    max_cpu_usage: "80%"
+    max_concurrent_requests: 50
+    
+  # Caching configuration
+  caching:
+    enabled: true
+    cache_duration: 3600  # 1 hour
+    cache_size: "1GB"
+    
+    # Cache types
+    cache_types:
+      - "vulnerability_signatures"
+      - "authentication_tokens"
+      - "endpoint_configurations"
+      - "compliance_rules"
+
+# =============================================================================
+# LOGGING AND MONITORING
+# =============================================================================
+
+logging:
+  # Log levels
+  levels:
+    root: "INFO"
+    security: "DEBUG"
+    compliance: "INFO"
+    performance: "WARN"
+    
+  # Log destinations
+  destinations:
+    console:
+      enabled: true
+      format: "json"
+      
+    file:
+      enabled: true
+      path: "/var/log/zap/security-scan.log"
+      rotation: "daily"
+      retention: "30_days"
+      
+    syslog:
+      enabled: true
+      host: "syslog.carddemo.com"
+      port: 514
+      facility: "local0"
+      
+    elasticsearch:
+      enabled: true
+      host: "elasticsearch.carddemo.com"
+      port: 9200
+      index: "security-scans"
+      
+  # Monitoring integration
+  monitoring:
+    enabled: true
+    metrics_endpoint: "/metrics"
+    health_endpoint: "/health"
+    
+    # Prometheus metrics
+    prometheus:
+      enabled: true
+      metrics:
+        - "scan_duration"
+        - "vulnerability_count"
+        - "compliance_score"
+        - "authentication_success_rate"
+        
+    # Grafana dashboards
+    grafana:
+      enabled: true
+      dashboards:
+        - "security_overview"
+        - "vulnerability_trends"
+        - "compliance_status"
+        - "authentication_analytics"
+
+# =============================================================================
+# INTEGRATION CONFIGURATIONS
+# =============================================================================
+
+integrations:
+  # Spring Boot integration
+  spring_boot:
+    enabled: true
+    actuator_endpoints: true
+    security_events: true
+    metrics_collection: true
+    
+  # Database integration
+  database:
+    postgresql:
+      enabled: true
+      connection_security_testing: true
+      sql_injection_testing: true
+      
+  # Container integration
+  kubernetes:
+    enabled: true
+    pod_security_testing: true
+    network_policy_validation: true
+    
+  # CI/CD integration
+  ci_cd:
+    github_actions:
+      enabled: true
+      workflow_file: ".github/workflows/security-scan.yml"
+      
+    jenkins:
+      enabled: true
+      pipeline_integration: true
+      
+    gitlab_ci:
+      enabled: true
+      pipeline_file: ".gitlab-ci.yml"
+
+# =============================================================================
+# SECURITY CONFIGURATION VALIDATION
+# =============================================================================
+
+validation:
+  # Configuration validation
+  config_validation:
+    enabled: true
+    strict_mode: true
+    
+  # Security validation
+  security_validation:
+    enabled: true
+    validation_checks:
+      - "api_key_security"
+      - "ssl_certificate_validation"
+      - "authentication_token_security"
+      - "endpoint_authorization"
+      
+  # Compliance validation
+  compliance_validation:
+    enabled: true
+    validation_frameworks:
+      - "pci_dss"
+      - "sox"
+      - "gdpr"
+      - "owasp_top_10"
+      
+# =============================================================================
+# DOCUMENTATION AND HELP
+# =============================================================================
+
+documentation:
+  # Help and documentation
+  help:
+    enabled: true
+    documentation_url: "https://docs.carddemo.com/security"
+    support_email: "security-support@carddemo.com"
+    
+  # Configuration examples
+  examples:
+    enabled: true
+    example_configurations:
+      - "basic_security_scan"
+      - "pci_dss_compliance_scan"
+      - "authentication_security_scan"
+      - "api_security_scan"
+      
+  # Best practices
+  best_practices:
+    enabled: true
+    guidelines:
+      - "security_scanning_best_practices"
+      - "pci_dss_compliance_guidelines"
+      - "authentication_security_guidelines"
+      - "api_security_guidelines"
+
+# =============================================================================
+# VERSION AND METADATA
+# =============================================================================
+
+metadata:
+  version: "1.0.0"
+  created_by: "Blitzy Agent"
+  created_date: "2024-12-20"
+  last_modified: "2024-12-20"
+  description: "OWASP ZAP security scanning configuration for CardDemo financial transaction system"
+  
+  # Configuration metadata
+  configuration:
+    target_system: "CardDemo Financial Transaction System"
+    architecture: "Spring Boot Microservices"
+    security_framework: "Spring Security 6.x"
+    authentication: "JWT Token Based"
+    database: "PostgreSQL 15+"
+    containerization: "Kubernetes"
+    
+  # Compliance metadata
+  compliance:
+    pci_dss_version: "4.0"
+    sox_compliance: true
+    gdpr_compliance: true
+    owasp_top_10_version: "2021"
+    
+  # Security metadata
+  security:
+    encryption_standards: "AES-256, TLS 1.3"
+    authentication_method: "JWT with HS256"
+    password_hashing: "BCrypt"
+    session_management: "Redis backed"
+    
+  # Integration metadata
+  integration:
+    ci_cd_platforms: ["GitHub Actions", "Jenkins", "GitLab CI"]
+    monitoring_tools: ["Prometheus", "Grafana", "ELK Stack"]
+    notification_channels: ["Email", "Slack", "JIRA"]
+    reporting_formats: ["JSON", "XML", "HTML", "PDF"]
