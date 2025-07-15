@@ -1,0 +1,1233 @@
+# =====================================================================================
+# CardDemo Session Management Test Configuration
+# =====================================================================================
+# Comprehensive Redis-backed Spring Session testing scenarios validating session
+# lifecycle equivalent to CICS pseudo-conversational processing and distributed
+# session consistency across microservice boundaries per Section 6.4.1.3 and 6.4.1.5
+#
+# This configuration provides:
+# - Redis-backed session management test scenarios per Section 6.4.1.3 implementation
+# - Session lifecycle testing equivalent to CICS pseudo-conversational processing
+# - Distributed session consistency validation across microservice boundaries
+# - TTL-based session expiration testing and automatic cleanup validation
+# - Session event handling and audit logging test scenarios
+# - JWT token correlation with session management testing
+# - Session security testing with HttpOnly cookies and CSRF protection
+# - Cross-service session propagation and consistency validation
+#
+# Technical Specification References:
+# - Section 6.4.1.3: Session Management Architecture - Redis-backed Spring Session
+# - Section 6.4.1.5: JWT Token Management - Distributed session consistency
+# - Section 0.1.3: Technical Interpretation - Stateless REST APIs with session management
+# - Section 6.4.2.1: Spring Security Role-Based Access Control with session context
+#
+# COBOL Program Context:
+# This test configuration validates the transformation from CICS pseudo-conversational
+# processing patterns (COCOM01Y.cpy communication areas) to modern distributed session
+# management using Redis, ensuring equivalent session state preservation for user
+# context, navigation state, and transaction state across microservices architecture.
+# =====================================================================================
+
+# =====================================================================================
+# SESSION MANAGEMENT TEST SCENARIOS (DEFAULT EXPORT)
+# =====================================================================================
+# Comprehensive session management test scenarios validating Redis-backed Spring
+# Session configuration with CICS pseudo-conversational processing equivalence
+SessionManagementTestScenarios:
+  # Session lifecycle testing configuration
+  session-lifecycle:
+    # Session creation testing scenarios
+    session-creation:
+      # Basic session creation with user context
+      basic-creation:
+        description: "Validate basic Redis session creation with user authentication context"
+        test-scenario: session-creation-basic
+        expected-session-attributes:
+          - session.created.timestamp
+          - session.namespace
+          - session.type
+          - user.authentication.context
+        session-timeout: 1800  # 30 minutes equivalent to CICS terminal timeout
+        session-namespace: "carddemo:session:test"
+        audit-events:
+          - SESSION_CREATED
+          - USER_AUTHENTICATED
+        validation-points:
+          - redis-key-creation
+          - session-id-generation
+          - ttl-configuration
+          - attribute-initialization
+          
+      # Session creation with JWT token correlation
+      jwt-correlation-creation:
+        description: "Validate session creation with JWT token correlation and security context"
+        test-scenario: session-creation-jwt-correlation
+        jwt-token-claims:
+          user_id: "test-user-123"
+          user_type: "A"
+          roles: ["ROLE_ADMIN", "ROLE_USER"]
+          session_correlation_id: "jwt-session-correlation-456"
+        expected-session-attributes:
+          - session.created.timestamp
+          - session.namespace
+          - session.type
+          - jwt.correlation.id
+          - user.authentication.context
+          - security.context.roles
+        session-correlation:
+          jwt-to-session-mapping: true
+          role-based-session-attributes: true
+          security-context-propagation: true
+        validation-points:
+          - jwt-session-correlation
+          - role-based-attribute-initialization
+          - security-context-establishment
+          - redis-session-persistence
+          
+      # Session creation with CICS communication area equivalent
+      cics-equivalent-creation:
+        description: "Validate session creation with CICS COMMAREA equivalent context preservation"
+        test-scenario: session-creation-cics-equivalent
+        commarea-equivalent-attributes:
+          from-transaction-id: "TEST"
+          from-program-id: "TESTPROG"
+          to-transaction-id: "MENU"
+          to-program-id: "COMEN01C"
+          user-id: "TESTUSER"
+          user-type: "A"
+          program-context: "ENTER"
+          customer-id: "123456789"
+          account-id: "12345678901"
+          card-number: "1234567890123456"
+          last-map: "TESTMAP"
+          last-mapset: "TESTSET"
+        expected-session-attributes:
+          - session.created.timestamp
+          - session.namespace
+          - session.type
+          - cics.commarea.equivalent
+          - navigation.context
+          - transaction.context
+          - user.business.context
+        validation-points:
+          - commarea-attribute-mapping
+          - navigation-context-preservation
+          - transaction-context-maintenance
+          - business-context-initialization
+          
+    # Session validation testing scenarios
+    session-validation:
+      # Session ID validation and resolution
+      session-id-validation:
+        description: "Validate session ID resolution through cookies and headers"
+        test-scenario: session-validation-id-resolution
+        session-id-resolvers:
+          - cookie-resolver
+          - header-resolver
+        test-scenarios:
+          cookie-based-resolution:
+            cookie-name: "CARDDEMO_SESSION"
+            cookie-attributes:
+              http-only: true
+              secure: true
+              same-site: "strict"
+              path: "/"
+            validation-points:
+              - cookie-presence-validation
+              - cookie-security-attributes
+              - session-id-extraction
+              - redis-session-lookup
+              
+          header-based-resolution:
+            header-name: "X-Auth-Token"
+            header-format: "Bearer {sessionId}"
+            validation-points:
+              - header-presence-validation
+              - header-format-validation
+              - session-id-extraction
+              - redis-session-lookup
+              
+          dual-resolver-fallback:
+            primary-resolver: cookie-resolver
+            fallback-resolver: header-resolver
+            validation-points:
+              - primary-resolver-attempt
+              - fallback-resolver-activation
+              - session-resolution-consistency
+              
+      # Session attribute validation
+      session-attribute-validation:
+        description: "Validate session attribute persistence and retrieval from Redis"
+        test-scenario: session-validation-attributes
+        test-attributes:
+          string-attributes:
+            - name: "user.id"
+              value: "test-user-123"
+              serialization: "string"
+              
+            - name: "user.type"
+              value: "A"
+              serialization: "string"
+              
+          object-attributes:
+            - name: "user.authentication.context"
+              value:
+                username: "test-user"
+                roles: ["ROLE_ADMIN", "ROLE_USER"]
+                authorities: ["admin:all", "user:read"]
+              serialization: "json"
+              
+            - name: "navigation.context"
+              value:
+                current-page: "main-menu"
+                previous-page: "login"
+                navigation-stack: ["login", "main-menu"]
+              serialization: "json"
+              
+          timestamp-attributes:
+            - name: "session.created.timestamp"
+              value: "auto-generated"
+              serialization: "long"
+              
+            - name: "session.last.accessed"
+              value: "auto-updated"
+              serialization: "long"
+              
+        validation-points:
+          - attribute-persistence-validation
+          - attribute-retrieval-validation
+          - serialization-deserialization-validation
+          - attribute-type-preservation
+          
+    # Session timeout and expiration testing
+    session-timeout:
+      # TTL-based session expiration
+      ttl-expiration:
+        description: "Validate TTL-based session expiration equivalent to CICS terminal timeout"
+        test-scenario: session-timeout-ttl-expiration
+        timeout-configurations:
+          default-timeout:
+            duration: 1800  # 30 minutes
+            time-unit: "SECONDS"
+            cics-equivalent: "CICS terminal timeout"
+            
+          custom-timeout:
+            duration: 900   # 15 minutes
+            time-unit: "SECONDS"
+            use-case: "high-security-operations"
+            
+          extended-timeout:
+            duration: 3600  # 60 minutes
+            time-unit: "SECONDS"
+            use-case: "batch-processing-sessions"
+            
+        validation-scenarios:
+          normal-expiration:
+            description: "Validate normal session expiration after timeout period"
+            test-steps:
+              - create-session
+              - wait-for-timeout
+              - verify-session-expired
+              - verify-redis-key-removal
+              - verify-audit-event-generation
+              
+          session-access-extension:
+            description: "Validate session timeout extension on access"
+            test-steps:
+              - create-session
+              - access-session-before-timeout
+              - verify-ttl-extension
+              - wait-for-extended-timeout
+              - verify-session-expired
+              
+          expired-session-access:
+            description: "Validate behavior when accessing expired session"
+            test-steps:
+              - create-session
+              - wait-for-timeout
+              - attempt-session-access
+              - verify-session-not-found
+              - verify-new-session-creation
+              
+        validation-points:
+          - redis-ttl-configuration
+          - session-expiration-timing
+          - cleanup-process-execution
+          - audit-event-generation
+          - memory-cleanup-validation
+          
+      # Session cleanup automation
+      session-cleanup:
+        description: "Validate automatic session cleanup processes"
+        test-scenario: session-timeout-cleanup
+        cleanup-configurations:
+          scheduled-cleanup:
+            cron-expression: "0 * * * * *"  # Every minute
+            cleanup-scope: "expired-sessions"
+            
+          manual-cleanup:
+            trigger: "administrative-action"
+            cleanup-scope: "all-sessions"
+            
+          selective-cleanup:
+            trigger: "user-specific"
+            cleanup-scope: "user-sessions"
+            
+        validation-scenarios:
+          automatic-cleanup:
+            description: "Validate automatic cleanup of expired sessions"
+            test-steps:
+              - create-multiple-sessions
+              - wait-for-expiration
+              - trigger-cleanup-process
+              - verify-expired-sessions-removed
+              - verify-active-sessions-preserved
+              
+          namespace-cleanup:
+            description: "Validate namespace-specific session cleanup"
+            test-steps:
+              - create-sessions-in-namespaces
+              - trigger-namespace-cleanup
+              - verify-namespace-specific-removal
+              - verify-other-namespaces-preserved
+              
+        validation-points:
+          - cleanup-process-execution
+          - selective-cleanup-accuracy
+          - redis-key-space-cleanup
+          - audit-trail-generation
+          
+    # Session event handling testing
+    session-events:
+      # Session creation events
+      session-creation-events:
+        description: "Validate session creation event handling and audit logging"
+        test-scenario: session-events-creation
+        expected-events:
+          - event-type: "SESSION_CREATED"
+            event-attributes:
+              - session-id
+              - user-id
+              - creation-timestamp
+              - max-inactive-interval
+              - session-namespace
+              
+        audit-validation:
+          audit-event-generation: true
+          audit-event-attributes:
+            - principal: "system"
+            - type: "SESSION_MANAGEMENT"
+            - data:
+                sessionId: "generated-session-id"
+                action: "SESSION_CREATED"
+                timestamp: "event-timestamp"
+                maxInactiveInterval: 1800
+                
+        validation-points:
+          - event-listener-activation
+          - audit-event-generation
+          - event-attribute-population
+          - event-correlation-with-session
+          
+      # Session deletion events
+      session-deletion-events:
+        description: "Validate session deletion event handling and cleanup"
+        test-scenario: session-events-deletion
+        deletion-triggers:
+          - user-logout
+          - session-expiration
+          - administrative-deletion
+          - system-shutdown
+          
+        expected-events:
+          - event-type: "SESSION_DELETED"
+            event-attributes:
+              - session-id
+              - deletion-reason
+              - deletion-timestamp
+              - user-context
+              
+        validation-scenarios:
+          user-logout-deletion:
+            description: "Validate session deletion on user logout"
+            test-steps:
+              - create-session-with-user
+              - initiate-user-logout
+              - verify-session-deletion-event
+              - verify-session-cleanup
+              
+          expiration-deletion:
+            description: "Validate session deletion on expiration"
+            test-steps:
+              - create-session
+              - wait-for-expiration
+              - verify-expiration-event
+              - verify-cleanup-completion
+              
+        validation-points:
+          - deletion-event-generation
+          - cleanup-process-completion
+          - audit-trail-accuracy
+          - resource-cleanup-validation
+          
+      # Session expiration events
+      session-expiration-events:
+        description: "Validate session expiration event handling equivalent to CICS timeout"
+        test-scenario: session-events-expiration
+        expiration-scenarios:
+          timeout-expiration:
+            description: "Session expiration due to inactivity timeout"
+            timeout-duration: 1800
+            expiration-reason: "TIMEOUT"
+            
+          administrative-expiration:
+            description: "Session expiration due to administrative action"
+            expiration-trigger: "ADMIN_ACTION"
+            expiration-reason: "ADMIN_EXPIRED"
+            
+          security-expiration:
+            description: "Session expiration due to security violation"
+            expiration-trigger: "SECURITY_VIOLATION"
+            expiration-reason: "SECURITY_EXPIRED"
+            
+        expected-events:
+          - event-type: "SESSION_EXPIRED"
+            event-attributes:
+              - session-id
+              - expiration-reason
+              - expiration-timestamp
+              - timeout-duration
+              - user-context
+              
+        validation-points:
+          - expiration-event-accuracy
+          - timeout-duration-validation
+          - reason-code-accuracy
+          - audit-trail-completeness
+          
+  # Distributed session management testing
+  distributed-session:
+    # Cross-microservice session consistency
+    cross-service-consistency:
+      description: "Validate distributed session consistency across microservice boundaries"
+      test-scenario: distributed-session-consistency
+      
+      # Microservice session propagation testing
+      microservice-propagation:
+        description: "Test session propagation between microservices"
+        test-services:
+          authentication-service:
+            role: "session-creator"
+            session-operations:
+              - create-session
+              - authenticate-user
+              - populate-security-context
+              
+          account-service:
+            role: "session-consumer"
+            session-operations:
+              - retrieve-session
+              - validate-user-context
+              - access-account-data
+              
+          transaction-service:
+            role: "session-consumer"
+            session-operations:
+              - retrieve-session
+              - validate-authorization
+              - process-transaction
+              
+          menu-service:
+            role: "session-consumer"
+            session-operations:
+              - retrieve-session
+              - generate-role-based-menu
+              - update-navigation-context
+              
+        propagation-scenarios:
+          auth-to-account:
+            description: "Session propagation from auth service to account service"
+            test-steps:
+              - create-session-in-auth-service
+              - propagate-session-to-account-service
+              - verify-session-consistency
+              - verify-user-context-preservation
+              
+          account-to-transaction:
+            description: "Session propagation from account service to transaction service"
+            test-steps:
+              - retrieve-session-in-account-service
+              - propagate-session-to-transaction-service
+              - verify-authorization-context
+              - verify-transaction-context-preservation
+              
+          cross-service-chain:
+            description: "Session propagation across multiple service calls"
+            test-steps:
+              - create-session-in-auth-service
+              - chain-call-to-account-service
+              - chain-call-to-transaction-service
+              - chain-call-to-menu-service
+              - verify-session-consistency-across-chain
+              
+        validation-points:
+          - session-data-consistency
+          - user-context-preservation
+          - authorization-context-propagation
+          - session-id-correlation
+          
+      # Session data consistency validation
+      session-data-consistency:
+        description: "Validate session data consistency across distributed Redis instances"
+        test-scenario: distributed-session-data-consistency
+        
+        redis-cluster-testing:
+          description: "Test session consistency in Redis cluster environment"
+          cluster-configuration:
+            redis-nodes:
+              - host: "redis-master-1"
+                port: 6379
+                role: "master"
+                
+              - host: "redis-slave-1"
+                port: 6379
+                role: "slave"
+                master: "redis-master-1"
+                
+              - host: "redis-master-2"
+                port: 6379
+                role: "master"
+                
+              - host: "redis-slave-2"
+                port: 6379
+                role: "slave"
+                master: "redis-master-2"
+                
+          consistency-scenarios:
+            write-read-consistency:
+              description: "Validate write-read consistency across cluster nodes"
+              test-steps:
+                - write-session-to-master
+                - read-session-from-slave
+                - verify-data-consistency
+                - verify-replication-timing
+                
+            failover-consistency:
+              description: "Validate session consistency during failover"
+              test-steps:
+                - create-session-on-master
+                - simulate-master-failure
+                - verify-slave-promotion
+                - verify-session-accessibility
+                
+            split-brain-recovery:
+              description: "Validate session consistency after split-brain recovery"
+              test-steps:
+                - create-sessions-during-split
+                - simulate-network-recovery
+                - verify-session-merge-strategy
+                - verify-data-consistency
+                
+        validation-points:
+          - data-replication-accuracy
+          - failover-transparency
+          - consistency-maintenance
+          - recovery-completeness
+          
+    # JWT token correlation with session management
+    jwt-session-correlation:
+      description: "Validate JWT token correlation with distributed session management"
+      test-scenario: distributed-session-jwt-correlation
+      
+      # JWT token to session mapping
+      jwt-to-session-mapping:
+        description: "Test JWT token correlation with session data"
+        correlation-scenarios:
+          token-session-creation:
+            description: "Create session with JWT token correlation"
+            jwt-token-claims:
+              iss: "carddemo-auth-service"
+              sub: "test-user-123"
+              aud: "carddemo-services"
+              exp: 1800
+              iat: "current-timestamp"
+              user_id: "test-user-123"
+              user_type: "A"
+              roles: ["ROLE_ADMIN", "ROLE_USER"]
+              session_correlation_id: "jwt-session-correlation-789"
+              
+            expected-session-attributes:
+              - jwt.correlation.id
+              - jwt.token.claims
+              - user.authentication.context
+              - authorization.context
+              
+            validation-points:
+              - jwt-claims-extraction
+              - session-attribute-mapping
+              - correlation-id-establishment
+              - security-context-synchronization
+              
+          token-session-validation:
+            description: "Validate session using JWT token correlation"
+            test-steps:
+              - create-session-with-jwt
+              - validate-session-using-token
+              - verify-correlation-consistency
+              - verify-security-context-match
+              
+          token-session-refresh:
+            description: "Refresh session using JWT token rotation"
+            test-steps:
+              - create-session-with-jwt
+              - generate-new-jwt-token
+              - refresh-session-correlation
+              - verify-session-continuity
+              
+        validation-points:
+          - jwt-session-correlation-accuracy
+          - token-validation-consistency
+          - security-context-synchronization
+          - session-refresh-seamlessness
+          
+      # Cross-service JWT validation
+      cross-service-jwt-validation:
+        description: "Test JWT token validation across microservice boundaries"
+        test-scenario: distributed-session-jwt-cross-service
+        
+        service-to-service-validation:
+          authentication-service:
+            role: "jwt-issuer"
+            responsibilities:
+              - generate-jwt-token
+              - create-session-correlation
+              - validate-token-signature
+              
+          gateway-service:
+            role: "jwt-validator"
+            responsibilities:
+              - validate-jwt-token
+              - extract-session-correlation
+              - route-to-target-service
+              
+          business-services:
+            role: "jwt-consumer"
+            responsibilities:
+              - receive-validated-jwt
+              - extract-session-context
+              - process-business-logic
+              
+        validation-scenarios:
+          end-to-end-validation:
+            description: "End-to-end JWT validation across services"
+            test-steps:
+              - generate-jwt-in-auth-service
+              - validate-jwt-in-gateway
+              - consume-jwt-in-business-service
+              - verify-session-consistency
+              
+          token-propagation:
+            description: "JWT token propagation through service chain"
+            test-steps:
+              - initiate-service-chain-call
+              - propagate-jwt-through-chain
+              - verify-token-integrity
+              - verify-session-correlation
+              
+        validation-points:
+          - jwt-signature-validation
+          - token-propagation-integrity
+          - session-correlation-consistency
+          - security-context-preservation
+          
+# =====================================================================================
+# REDIS SESSION TEST CONFIGURATION (NAMED EXPORT)
+# =====================================================================================
+# Comprehensive Redis session storage test configuration supporting Testcontainers
+# Redis instances, session serialization testing, and distributed session validation
+RedisSessionTestConfiguration:
+  # Redis container test setup
+  redis-container:
+    # Testcontainers Redis configuration
+    container-configuration:
+      image: "redis:7-alpine"
+      exposed-ports:
+        - 6379
+      environment-variables:
+        REDIS_PASSWORD: "test-redis-password"
+        REDIS_DATABASE: "0"
+        
+      # Redis container startup configuration
+      startup-configuration:
+        timeout: 60
+        wait-strategy: "port"
+        startup-checks:
+          - ping-response
+          - info-command
+          - key-set-get
+          
+      # Redis container network configuration
+      network-configuration:
+        network-mode: "bridge"
+        network-aliases:
+          - "redis-test"
+          - "session-store"
+          
+    # Redis cluster testing configuration
+    cluster-configuration:
+      enabled: false  # Single node for testing
+      nodes:
+        - host: "localhost"
+          port: 6379
+          role: "master"
+          
+      # Cluster failover testing
+      failover-testing:
+        enabled: false
+        scenarios:
+          - master-node-failure
+          - slave-promotion
+          - cluster-recovery
+          
+    # Redis container health checks
+    health-checks:
+      startup-probe:
+        command: "redis-cli ping"
+        interval: 5
+        timeout: 3
+        retries: 12
+        
+      liveness-probe:
+        command: "redis-cli ping"
+        interval: 10
+        timeout: 5
+        retries: 3
+        
+      readiness-probe:
+        command: "redis-cli info replication"
+        interval: 5
+        timeout: 3
+        retries: 5
+        
+  # Session store configuration testing
+  session-store:
+    # Redis session storage configuration
+    storage-configuration:
+      namespace: "carddemo:session:test"
+      ttl-configuration:
+        default-ttl: 1800  # 30 minutes
+        max-ttl: 3600      # 60 minutes
+        min-ttl: 300       # 5 minutes
+        
+      # Session key configuration
+      key-configuration:
+        key-prefix: "spring:session:sessions:"
+        key-pattern: "spring:session:sessions:{sessionId}"
+        expiration-key-prefix: "spring:session:expirations:"
+        
+      # Session serialization configuration
+      serialization-configuration:
+        key-serializer: "StringRedisSerializer"
+        value-serializer: "GenericJackson2JsonRedisSerializer"
+        hash-key-serializer: "StringRedisSerializer"
+        hash-value-serializer: "GenericJackson2JsonRedisSerializer"
+        
+    # Session data persistence testing
+    persistence-testing:
+      # Session attribute persistence
+      attribute-persistence:
+        string-attributes:
+          - key: "user.id"
+            value: "test-user-123"
+            expected-type: "java.lang.String"
+            
+          - key: "user.type"
+            value: "A"
+            expected-type: "java.lang.String"
+            
+        numeric-attributes:
+          - key: "session.created.timestamp"
+            value: "auto-generated"
+            expected-type: "java.lang.Long"
+            
+          - key: "session.last.accessed"
+            value: "auto-updated"
+            expected-type: "java.lang.Long"
+            
+        object-attributes:
+          - key: "user.authentication.context"
+            value:
+              username: "test-user"
+              roles: ["ROLE_ADMIN", "ROLE_USER"]
+              authorities: ["admin:all", "user:read"]
+            expected-type: "java.util.Map"
+            
+          - key: "security.context"
+            value:
+              authentication-type: "JWT"
+              principal: "test-user"
+              authorities: ["ROLE_ADMIN", "ROLE_USER"]
+              authenticated: true
+            expected-type: "java.util.Map"
+            
+        validation-points:
+          - attribute-serialization-accuracy
+          - attribute-deserialization-accuracy
+          - data-type-preservation
+          - complex-object-handling
+          
+      # Session lifecycle persistence
+      lifecycle-persistence:
+        creation-persistence:
+          description: "Validate session persistence during creation"
+          test-steps:
+            - create-session-with-attributes
+            - verify-redis-key-creation
+            - verify-attribute-persistence
+            - verify-ttl-setting
+            
+        update-persistence:
+          description: "Validate session persistence during updates"
+          test-steps:
+            - create-session
+            - update-session-attributes
+            - verify-attribute-updates
+            - verify-ttl-refresh
+            
+        deletion-persistence:
+          description: "Validate session cleanup during deletion"
+          test-steps:
+            - create-session
+            - delete-session
+            - verify-redis-key-removal
+            - verify-cleanup-completion
+            
+        validation-points:
+          - persistence-consistency
+          - update-atomicity
+          - deletion-completeness
+          - cleanup-thoroughness
+          
+  # TTL expiration testing
+  ttl-testing:
+    # TTL configuration validation
+    ttl-configuration:
+      default-expiration:
+        duration: 1800  # 30 minutes
+        time-unit: "SECONDS"
+        cics-equivalent: "CICS terminal timeout"
+        
+      custom-expiration:
+        duration: 900   # 15 minutes
+        time-unit: "SECONDS"
+        use-case: "security-sensitive-operations"
+        
+      extended-expiration:
+        duration: 3600  # 60 minutes
+        time-unit: "SECONDS"
+        use-case: "long-running-operations"
+        
+    # TTL behavior validation
+    ttl-behavior:
+      expiration-timing:
+        description: "Validate TTL expiration timing accuracy"
+        test-scenarios:
+          precise-expiration:
+            description: "Test precise expiration timing"
+            test-steps:
+              - create-session-with-ttl
+              - wait-for-expiration-minus-buffer
+              - verify-session-still-active
+              - wait-for-expiration-plus-buffer
+              - verify-session-expired
+              
+          access-based-refresh:
+            description: "Test TTL refresh on session access"
+            test-steps:
+              - create-session-with-ttl
+              - access-session-before-expiration
+              - verify-ttl-refresh
+              - wait-for-original-expiration
+              - verify-session-still-active
+              
+        validation-points:
+          - expiration-timing-accuracy
+          - ttl-refresh-mechanism
+          - access-detection-accuracy
+          - expiration-cleanup-timing
+          
+      expiration-cleanup:
+        description: "Validate session cleanup on expiration"
+        cleanup-scenarios:
+          automatic-cleanup:
+            description: "Automatic cleanup of expired sessions"
+            test-steps:
+              - create-multiple-sessions
+              - wait-for-expiration
+              - verify-expired-sessions-removed
+              - verify-active-sessions-preserved
+              
+          manual-cleanup:
+            description: "Manual cleanup of expired sessions"
+            test-steps:
+              - create-sessions-with-different-ttls
+              - trigger-manual-cleanup
+              - verify-selective-cleanup
+              - verify-cleanup-completeness
+              
+        validation-points:
+          - cleanup-process-accuracy
+          - selective-cleanup-precision
+          - active-session-preservation
+          - resource-cleanup-completeness
+          
+  # Session failover testing
+  session-failover:
+    # Redis failover scenarios
+    failover-scenarios:
+      single-node-failure:
+        description: "Test session handling during single Redis node failure"
+        test-scenario: session-failover-single-node
+        
+        failure-simulation:
+          failure-type: "node-shutdown"
+          recovery-type: "node-restart"
+          failure-duration: 30  # seconds
+          
+        validation-steps:
+          - create-active-sessions
+          - simulate-redis-failure
+          - verify-session-unavailability
+          - simulate-redis-recovery
+          - verify-session-recovery
+          
+        expected-behavior:
+          during-failure:
+            - session-access-failures
+            - error-handling-activation
+            - fallback-mechanism-activation
+            
+          after-recovery:
+            - session-accessibility-restoration
+            - data-consistency-validation
+            - ttl-preservation-check
+            
+        validation-points:
+          - failure-detection-accuracy
+          - recovery-timing-validation
+          - data-consistency-preservation
+          - session-continuity-validation
+          
+      cluster-failover:
+        description: "Test session handling during Redis cluster failover"
+        test-scenario: session-failover-cluster
+        enabled: false  # Disabled for single-node testing
+        
+        cluster-failure-scenarios:
+          master-node-failure:
+            description: "Master node failure with slave promotion"
+            failure-type: "master-node-shutdown"
+            recovery-type: "slave-promotion"
+            
+          split-brain-scenario:
+            description: "Network partition causing split-brain"
+            failure-type: "network-partition"
+            recovery-type: "network-healing"
+            
+        validation-points:
+          - cluster-topology-awareness
+          - failover-transparency
+          - session-data-consistency
+          - recovery-completeness
+          
+  # Session security testing
+  session-security:
+    # Cookie security validation
+    cookie-security:
+      # Security attribute validation
+      security-attributes:
+        http-only:
+          description: "Validate HttpOnly cookie attribute"
+          test-scenario: cookie-security-http-only
+          expected-value: true
+          validation-method: "javascript-access-denial"
+          
+        secure-flag:
+          description: "Validate Secure cookie attribute"
+          test-scenario: cookie-security-secure
+          expected-value: true
+          validation-method: "https-only-transmission"
+          
+        same-site:
+          description: "Validate SameSite cookie attribute"
+          test-scenario: cookie-security-same-site
+          expected-value: "strict"
+          validation-method: "cross-site-request-blocking"
+          
+      # Cookie configuration validation
+      cookie-configuration:
+        cookie-name: "CARDDEMO_SESSION"
+        cookie-path: "/"
+        cookie-domain: "auto-detect"
+        cookie-max-age: 1800  # 30 minutes
+        
+        validation-scenarios:
+          cookie-creation:
+            description: "Validate cookie creation with security attributes"
+            test-steps:
+              - create-session
+              - verify-cookie-creation
+              - verify-security-attributes
+              - verify-cookie-content
+              
+          cookie-transmission:
+            description: "Validate secure cookie transmission"
+            test-steps:
+              - create-session-over-https
+              - verify-cookie-transmission
+              - verify-secure-attribute-enforcement
+              
+        validation-points:
+          - cookie-security-compliance
+          - attribute-enforcement
+          - transmission-security
+          - content-protection
+          
+    # Session token security
+    token-security:
+      # Session ID generation security
+      session-id-generation:
+        description: "Validate cryptographically secure session ID generation"
+        test-scenario: session-security-id-generation
+        
+        generation-requirements:
+          randomness: "cryptographically-secure"
+          length: 32  # characters
+          character-set: "alphanumeric"
+          uniqueness: "guaranteed"
+          
+        validation-tests:
+          randomness-test:
+            description: "Test session ID randomness"
+            test-steps:
+              - generate-multiple-session-ids
+              - analyze-randomness-distribution
+              - verify-cryptographic-strength
+              
+          uniqueness-test:
+            description: "Test session ID uniqueness"
+            test-steps:
+              - generate-large-number-of-ids
+              - verify-no-duplicates
+              - verify-collision-resistance
+              
+        validation-points:
+          - cryptographic-randomness
+          - uniqueness-guarantee
+          - collision-resistance
+          - entropy-sufficiency
+          
+      # Session token correlation security
+      token-correlation:
+        description: "Validate session token correlation security"
+        test-scenario: session-security-token-correlation
+        
+        correlation-scenarios:
+          jwt-session-correlation:
+            description: "JWT token to session correlation security"
+            test-steps:
+              - create-session-with-jwt
+              - verify-correlation-security
+              - verify-token-validation
+              - verify-session-binding
+              
+          header-session-correlation:
+            description: "Header token to session correlation security"
+            test-steps:
+              - create-session-with-header-token
+              - verify-header-validation
+              - verify-session-binding
+              - verify-token-integrity
+              
+        validation-points:
+          - correlation-security
+          - token-validation-accuracy
+          - session-binding-integrity
+          - unauthorized-access-prevention
+          
+  # Session namespace isolation
+  namespace-isolation:
+    # Multi-tenant session testing
+    multi-tenant-testing:
+      description: "Validate session namespace isolation for multi-tenant support"
+      test-scenario: session-namespace-isolation
+      
+      namespace-configurations:
+        tenant-a:
+          namespace: "carddemo:session:tenant-a"
+          redis-database: 0
+          
+        tenant-b:
+          namespace: "carddemo:session:tenant-b"
+          redis-database: 1
+          
+        test-environment:
+          namespace: "carddemo:session:test"
+          redis-database: 2
+          
+      isolation-scenarios:
+        namespace-separation:
+          description: "Test namespace separation between tenants"
+          test-steps:
+            - create-sessions-in-different-namespaces
+            - verify-namespace-isolation
+            - verify-cross-namespace-inaccessibility
+            - verify-cleanup-isolation
+            
+        namespace-cleanup:
+          description: "Test namespace-specific cleanup"
+          test-steps:
+            - create-sessions-in-multiple-namespaces
+            - trigger-namespace-specific-cleanup
+            - verify-selective-cleanup
+            - verify-other-namespace-preservation
+            
+      validation-points:
+        - namespace-isolation-effectiveness
+        - cross-namespace-security
+        - cleanup-isolation-accuracy
+        - data-segregation-completeness
+        
+  # Connection pool testing
+  connection-pool:
+    # Lettuce connection pool configuration
+    lettuce-pool:
+      description: "Validate Lettuce Redis connection pool configuration"
+      test-scenario: session-connection-pool
+      
+      pool-configuration:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: -1
+        
+      pool-validation:
+        connection-creation:
+          description: "Test connection pool creation and initialization"
+          test-steps:
+            - initialize-connection-pool
+            - verify-pool-configuration
+            - verify-connection-availability
+            - verify-pool-health
+            
+        connection-management:
+          description: "Test connection pool management"
+          test-steps:
+            - create-multiple-concurrent-sessions
+            - verify-connection-pooling
+            - verify-connection-reuse
+            - verify-connection-cleanup
+            
+        pool-performance:
+          description: "Test connection pool performance"
+          test-steps:
+            - measure-connection-acquisition-time
+            - measure-session-operation-performance
+            - verify-performance-thresholds
+            
+      validation-points:
+        - pool-initialization-success
+        - connection-management-efficiency
+        - performance-threshold-compliance
+        - resource-cleanup-completeness
+        
+  # Session monitoring and metrics
+  session-monitoring:
+    # Session metrics collection
+    metrics-collection:
+      description: "Validate session management metrics collection"
+      test-scenario: session-monitoring-metrics
+      
+      collected-metrics:
+        session-count:
+          metric-name: "session.active.count"
+          metric-type: "gauge"
+          description: "Number of active sessions"
+          
+        session-creation-rate:
+          metric-name: "session.creation.rate"
+          metric-type: "counter"
+          description: "Rate of session creation"
+          
+        session-expiration-rate:
+          metric-name: "session.expiration.rate"
+          metric-type: "counter"
+          description: "Rate of session expiration"
+          
+        session-operation-timing:
+          metric-name: "session.operation.timing"
+          metric-type: "timer"
+          description: "Session operation timing"
+          
+      metrics-validation:
+        metric-accuracy:
+          description: "Validate metric accuracy"
+          test-steps:
+            - perform-session-operations
+            - collect-metrics
+            - verify-metric-values
+            - verify-metric-consistency
+            
+        metric-performance:
+          description: "Validate metric collection performance"
+          test-steps:
+            - measure-metric-collection-overhead
+            - verify-performance-impact
+            - verify-metric-availability
+            
+      validation-points:
+        - metric-accuracy-validation
+        - performance-impact-assessment
+        - metric-availability-verification
+        - consistency-validation
+        
+    # Session audit logging
+    audit-logging:
+      description: "Validate session management audit logging"
+      test-scenario: session-monitoring-audit
+      
+      audit-events:
+        session-lifecycle-events:
+          - SESSION_CREATED
+          - SESSION_ACCESSED
+          - SESSION_UPDATED
+          - SESSION_EXPIRED
+          - SESSION_DELETED
+          
+        security-events:
+          - UNAUTHORIZED_SESSION_ACCESS
+          - SESSION_HIJACK_ATTEMPT
+          - SESSION_TOKEN_VALIDATION_FAILURE
+          
+      audit-validation:
+        event-generation:
+          description: "Validate audit event generation"
+          test-steps:
+            - perform-session-operations
+            - verify-audit-event-generation
+            - verify-event-completeness
+            - verify-event-accuracy
+            
+        event-persistence:
+          description: "Validate audit event persistence"
+          test-steps:
+            - generate-audit-events
+            - verify-event-storage
+            - verify-event-retrieval
+            - verify-event-retention
+            
+      validation-points:
+        - audit-event-completeness
+        - event-accuracy-validation
+        - persistence-reliability
+        - retention-compliance
