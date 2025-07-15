@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
   <hashTree>
-    <!-- CardDemo Performance Test Plan -->
+    <!-- CardDemo Performance Test Plan 
+         This test plan validates performance requirements for the CardDemo microservices architecture,
+         converting mainframe COBOL/CICS/VSAM to Java 21 Spring Boot microservices with PostgreSQL.
+         Tests cover all REST API endpoints, authentication, and batch processing requirements.
+    -->
     <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="CardDemo Performance Test Plan" enabled="true">
       <boolProp name="TestPlan.functional_mode">false</boolProp>
       <boolProp name="TestPlan.tearDown_on_shutdown">false</boolProp>
@@ -385,6 +389,44 @@
           <hashTree/>
         </hashTree>
 
+        <!-- Load Test Transaction View -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Load Test - Transaction View" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain"></stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol"></stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/api/transactions/${__Random(1000000000000000,9999999999999999,)}</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout">5000</stringProp>
+          <stringProp name="HTTPSampler.response_timeout">30000</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <!-- Authorization Header Manager -->
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Authorization Header" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Authorization</stringProp>
+                <stringProp name="Header.value">Bearer ${load_jwt_token}</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+          
+          <!-- Response Time Assertion for Transaction View -->
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Transaction View Response Time Assertion" enabled="true">
+            <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_THRESHOLD}</stringProp>
+          </DurationAssertion>
+          <hashTree/>
+        </hashTree>
+
         <!-- Load Test Transaction Creation -->
         <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Load Test - Transaction Creation" enabled="true">
           <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
@@ -518,7 +560,7 @@
 
         <!-- Batch Job Status Monitor -->
         <WhileController guiclass="WhileControllerGui" testclass="WhileController" testname="Batch Job Status Monitor" enabled="true">
-          <stringProp name="WhileController.condition">${__javaScript("${job_status}" != "COMPLETED" && "${job_status}" != "FAILED",)}</stringProp>
+          <stringProp name="WhileController.condition">${__javaScript("${job_status}" != "COMPLETED" &amp;&amp; "${job_status}" != "FAILED",)}</stringProp>
         </WhileController>
         <hashTree>
           <!-- Wait Timer -->
