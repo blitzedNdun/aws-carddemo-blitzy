@@ -1,0 +1,1016 @@
+# Role-Based Access Control Test Scenarios for CardDemo Application
+# Comprehensive validation of Spring Security authorization patterns equivalent to legacy RACF permissions
+# Maps COBOL user types ('A' for Admin, 'U' for User) to Spring Security roles (ROLE_ADMIN, ROLE_USER)
+# Tests method-level @PreAuthorize annotations across all microservices per Section 6.4.2.2
+
+# =================================================================
+# ROLE-BASED ACCESS TEST SCENARIOS
+# =================================================================
+
+RoleBasedAccessTestScenarios:
+  metadata:
+    version: "1.0"
+    description: "Comprehensive role-based access control test scenarios validating Spring Security authorization patterns equivalent to legacy RACF permissions"
+    migration_context: "COBOL SEC-USR-TYPE to Spring Security roles mapping per Section 6.4.2.1"
+    framework: "Spring Security 6.x with JWT authentication and @PreAuthorize method-level security"
+    compliance: "SOX, PCI DSS, and enterprise security requirements per Section 6.4.4"
+    
+  # =================================================================
+  # ADMIN-ONLY OPERATIONS TESTING
+  # =================================================================
+  admin_only_operations_tests:
+    description: "Administrative operations requiring ROLE_ADMIN privileges - equivalent to COBOL SEC-USR-TYPE 'A'"
+    security_framework: "Spring Security @PreAuthorize('hasRole(ADMIN)') method-level authorization"
+    legacy_mapping: "CARDDEMO.ADMIN RACF group to ROLE_ADMIN Spring Security authority per Section 6.4.4.2"
+    
+    user_management_operations:
+      description: "User management operations mapping from COBOL COUSR00C-COUSR03C programs"
+      controller: "UserManagementController"
+      base_endpoint: "/api/admin/users"
+      
+      test_scenarios:
+        - test_name: "list_users_admin_access"
+          description: "Validate admin-only access to user listing functionality (COUSR00C equivalent)"
+          endpoint: "/api/admin/users"
+          http_method: "GET"
+          spring_security_annotation: "@PreAuthorize('hasRole(ADMIN)')"
+          controller_method: "listUsers()"
+          admin_access_expected: true
+          user_access_expected: false
+          test_users:
+            valid_admin: "ADMIN001"
+            valid_user: "USER0001"
+            invalid_user: "DSBL0001"
+          expected_responses:
+            admin_success: 200
+            user_forbidden: 403
+            invalid_unauthorized: 401
+          validation_points:
+            - "Admin users can retrieve paginated user lists"
+            - "Regular users receive 403 Forbidden status"
+            - "Invalid users receive 401 Unauthorized status"
+            - "Response includes user data without password hashes"
+            - "Audit logging captures all access attempts"
+            
+        - test_name: "create_user_admin_access"
+          description: "Validate admin-only access to user creation functionality (COUSR01C equivalent)"
+          endpoint: "/api/admin/users"
+          http_method: "POST"
+          spring_security_annotation: "@PreAuthorize('hasRole(ADMIN)')"
+          controller_method: "createUser()"
+          admin_access_expected: true
+          user_access_expected: false
+          test_payload:
+            userId: "NEWUSER1"
+            firstName: "Test"
+            lastName: "User"
+            password: "TestPass123!"
+            userType: "U"
+          expected_responses:
+            admin_success: 201
+            user_forbidden: 403
+            invalid_unauthorized: 401
+          validation_points:
+            - "Admin users can create new user accounts"
+            - "Password is BCrypt hashed before storage"
+            - "User type validation enforces 'A' or 'U' values"
+            - "Duplicate user ID prevention works correctly"
+            - "Comprehensive audit logging for user creation"
+            
+        - test_name: "update_user_admin_access"
+          description: "Validate admin-only access to user update functionality (COUSR02C equivalent)"
+          endpoint: "/api/admin/users/{userId}"
+          http_method: "PUT"
+          spring_security_annotation: "@PreAuthorize('hasRole(ADMIN)')"
+          controller_method: "updateUser()"
+          admin_access_expected: true
+          user_access_expected: false
+          test_payload:
+            firstName: "Updated"
+            lastName: "Name"
+            userType: "U"
+          expected_responses:
+            admin_success: 200
+            user_forbidden: 403
+            invalid_unauthorized: 401
+          validation_points:
+            - "Admin users can update existing user profiles"
+            - "Partial updates supported for all user fields"
+            - "Password updates trigger BCrypt re-hashing"
+            - "User type changes properly validated"
+            - "Optimistic locking prevents concurrent modifications"
+            
+        - test_name: "delete_user_admin_access"
+          description: "Validate admin-only access to user deletion functionality (COUSR03C equivalent)"
+          endpoint: "/api/admin/users/{userId}"
+          http_method: "DELETE"
+          spring_security_annotation: "@PreAuthorize('hasRole(ADMIN)')"
+          controller_method: "deleteUser()"
+          admin_access_expected: true
+          user_access_expected: false
+          expected_responses:
+            admin_success: 200
+            user_forbidden: 403
+            invalid_unauthorized: 401
+          validation_points:
+            - "Admin users can delete existing user accounts"
+            - "Self-deletion prevention for current admin user"
+            - "Cascade deletion handling for related records"
+            - "Comprehensive audit trail for user deletion"
+            - "Confirmation response with deletion timestamp"
+            
+        - test_name: "get_user_by_id_admin_access"
+          description: "Validate admin-only access to individual user retrieval"
+          endpoint: "/api/admin/users/{userId}"
+          http_method: "GET"
+          spring_security_annotation: "@PreAuthorize('hasRole(ADMIN)')"
+          controller_method: "getUserById()"
+          admin_access_expected: true
+          user_access_expected: false
+          expected_responses:
+            admin_success: 200
+            user_forbidden: 403
+            invalid_unauthorized: 401
+          validation_points:
+            - "Admin users can retrieve individual user profiles"
+            - "User ID validation enforces 8-character limit"
+            - "Password hash excluded from response data"
+            - "User type and role information included"
+            - "404 status for non-existent user IDs"
+    
+    system_administration_operations:
+      description: "System administration operations requiring ROLE_ADMIN privileges"
+      security_framework: "Spring Security method-level authorization with administrative role requirements"
+      
+      test_scenarios:
+        - test_name: "system_configuration_admin_access"
+          description: "Validate admin-only access to system configuration endpoints"
+          endpoint: "/api/admin/system/config"
+          http_method: "GET"
+          spring_security_annotation: "@PreAuthorize('hasRole(ADMIN)')"
+          admin_access_expected: true
+          user_access_expected: false
+          expected_responses:
+            admin_success: 200
+            user_forbidden: 403
+          validation_points:
+            - "Admin users can access system configuration"
+            - "Configuration data properly secured"
+            - "Audit logging for configuration access"
+            
+        - test_name: "batch_job_management_admin_access"
+          description: "Validate admin-only access to batch job management"
+          endpoint: "/api/admin/batch/jobs"
+          http_method: "GET"
+          spring_security_annotation: "@PreAuthorize('hasRole(ADMIN)')"
+          admin_access_expected: true
+          user_access_expected: false
+          expected_responses:
+            admin_success: 200
+            user_forbidden: 403
+          validation_points:
+            - "Admin users can manage batch jobs"
+            - "Job status and execution history available"
+            - "Comprehensive audit trail for job operations"
+            
+        - test_name: "audit_log_access_admin_only"
+          description: "Validate admin-only access to audit log viewing"
+          endpoint: "/api/admin/audit"
+          http_method: "GET"
+          spring_security_annotation: "@PreAuthorize('hasRole(ADMIN)')"
+          admin_access_expected: true
+          user_access_expected: false
+          expected_responses:
+            admin_success: 200
+            user_forbidden: 403
+          validation_points:
+            - "Admin users can view audit logs"
+            - "Sensitive audit data properly protected"
+            - "Audit log access itself audited"
+  
+  # =================================================================
+  # USER ROLE OPERATIONS TESTING
+  # =================================================================
+  user_role_operations_tests:
+    description: "Standard user operations accessible to ROLE_USER - equivalent to COBOL SEC-USR-TYPE 'U'"
+    security_framework: "Spring Security @PreAuthorize('hasAnyRole(USER,ADMIN)') method-level authorization"
+    legacy_mapping: "CARDDEMO.USER RACF group to ROLE_USER Spring Security authority per Section 6.4.4.2"
+    
+    account_operations:
+      description: "Account viewing and management operations from COBOL COACTVWC/COACTUPC programs"
+      controller: "AccountViewController, AccountUpdateController"
+      base_endpoint: "/api/accounts"
+      
+      test_scenarios:
+        - test_name: "view_account_user_access"
+          description: "Validate user access to account viewing functionality (COACTVWC equivalent)"
+          endpoint: "/api/accounts/{accountId}"
+          http_method: "GET"
+          spring_security_annotation: "@PreAuthorize('hasAnyRole(USER,ADMIN)')"
+          controller_method: "viewAccount()"
+          admin_access_expected: true
+          user_access_expected: true
+          test_users:
+            valid_admin: "ADMIN001"
+            valid_user: "USER0001"
+            invalid_user: "DSBL0001"
+          expected_responses:
+            admin_success: 200
+            user_success: 200
+            invalid_unauthorized: 401
+          validation_points:
+            - "Both admin and user roles can view accounts"
+            - "Account ID validation enforces 11-digit format"
+            - "Account data includes balance and customer info"
+            - "Proper error handling for invalid account IDs"
+            - "Audit logging for account access"
+            
+        - test_name: "view_account_with_request_body"
+          description: "Validate user access to account viewing with request parameters"
+          endpoint: "/api/accounts/view"
+          http_method: "POST"
+          spring_security_annotation: "@PreAuthorize('hasAnyRole(USER,ADMIN)')"
+          controller_method: "viewAccountWithRequest()"
+          admin_access_expected: true
+          user_access_expected: true
+          test_payload:
+            accountId: "00000000001"
+            pageNumber: 0
+            pageSize: 10
+          expected_responses:
+            admin_success: 200
+            user_success: 200
+            invalid_unauthorized: 401
+          validation_points:
+            - "Both admin and user roles can use enhanced account view"
+            - "Request body validation works correctly"
+            - "Pagination parameters properly handled"
+            - "Search criteria filtering functional"
+            
+        - test_name: "update_account_user_access"
+          description: "Validate user access to account update functionality (COACTUPC equivalent)"
+          endpoint: "/api/accounts/{accountId}"
+          http_method: "PUT"
+          spring_security_annotation: "@PreAuthorize('hasAnyRole(ACCOUNT_UPDATE,ADMIN)')"
+          controller_method: "updateAccount()"
+          admin_access_expected: true
+          user_access_expected: true
+          test_payload:
+            creditLimit: 5000.00
+            activeStatus: "ACTIVE"
+          expected_responses:
+            admin_success: 200
+            user_success: 200
+            invalid_unauthorized: 401
+          validation_points:
+            - "Both admin and user roles can update accounts"
+            - "Field-level validation prevents invalid updates"
+            - "Optimistic locking prevents concurrent modifications"
+            - "Business rule validation enforced"
+            - "Comprehensive audit trail for account changes"
+    
+    transaction_operations:
+      description: "Transaction processing operations from COBOL COTRN00C/COTRN01C/COTRN02C programs"
+      controller: "TransactionController"
+      base_endpoint: "/api/transactions"
+      
+      test_scenarios:
+        - test_name: "list_transactions_user_access"
+          description: "Validate user access to transaction listing functionality (COTRN00C equivalent)"
+          endpoint: "/api/transactions"
+          http_method: "GET"
+          spring_security_annotation: "@PreAuthorize('hasAnyRole(USER,ADMIN)')"
+          controller_method: "getTransactions()"
+          admin_access_expected: true
+          user_access_expected: true
+          query_parameters:
+            page: 0
+            size: 10
+            sortBy: "processingTimestamp"
+            sortDirection: "DESC"
+          expected_responses:
+            admin_success: 200
+            user_success: 200
+            invalid_unauthorized: 401
+          validation_points:
+            - "Both admin and user roles can list transactions"
+            - "Pagination parameters work correctly"
+            - "Sorting and filtering functionality operational"
+            - "User access restricted to own transactions"
+            - "Admin access includes all transactions"
+            
+        - test_name: "view_transaction_detail_user_access"
+          description: "Validate user access to transaction detail viewing (COTRN01C equivalent)"
+          endpoint: "/api/transactions/{transactionId}"
+          http_method: "GET"
+          spring_security_annotation: "@PreAuthorize('hasAnyRole(USER,ADMIN)')"
+          controller_method: "getTransactionById()"
+          admin_access_expected: true
+          user_access_expected: true
+          expected_responses:
+            admin_success: 200
+            user_success: 200
+            invalid_unauthorized: 401
+          validation_points:
+            - "Both admin and user roles can view transaction details"
+            - "Transaction ID validation enforces numeric format"
+            - "Complete transaction data returned"
+            - "Proper error handling for invalid transaction IDs"
+            
+        - test_name: "add_transaction_user_access"
+          description: "Validate user access to transaction addition functionality (COTRN02C equivalent)"
+          endpoint: "/api/transactions"
+          http_method: "POST"
+          spring_security_annotation: "@PreAuthorize('hasAnyRole(USER,ADMIN)')"
+          controller_method: "addTransaction()"
+          admin_access_expected: true
+          user_access_expected: true
+          test_payload:
+            cardNumber: "4000123456789012"
+            transactionAmount: 100.00
+            transactionType: "PURCHASE"
+            merchantName: "Test Merchant"
+          expected_responses:
+            admin_success: 201
+            user_success: 201
+            invalid_unauthorized: 401
+          validation_points:
+            - "Both admin and user roles can add transactions"
+            - "Transaction validation enforces business rules"
+            - "Card number validation works correctly"
+            - "Amount validation prevents invalid transactions"
+            - "Comprehensive audit trail for transaction creation"
+            
+        - test_name: "search_transactions_user_access"
+          description: "Validate user access to transaction search functionality"
+          endpoint: "/api/transactions/search"
+          http_method: "GET"
+          spring_security_annotation: "@PreAuthorize('hasAnyRole(USER,ADMIN)')"
+          controller_method: "searchTransactions()"
+          admin_access_expected: true
+          user_access_expected: true
+          query_parameters:
+            cardNumber: "4000123456789012"
+            transactionId: "1234567890123456"
+          expected_responses:
+            admin_success: 200
+            user_success: 200
+            invalid_unauthorized: 401
+          validation_points:
+            - "Both admin and user roles can search transactions"
+            - "Search criteria validation works correctly"
+            - "Results properly filtered by user access level"
+            - "Pagination and sorting available in search results"
+            
+        - test_name: "transaction_history_user_access"
+          description: "Validate user access to transaction history functionality"
+          endpoint: "/api/transactions/history"
+          http_method: "GET"
+          spring_security_annotation: "@PreAuthorize('hasAnyRole(USER,ADMIN)')"
+          controller_method: "getTransactionHistory()"
+          admin_access_expected: true
+          user_access_expected: true
+          expected_responses:
+            admin_success: 200
+            user_success: 200
+            invalid_unauthorized: 401
+          validation_points:
+            - "Both admin and user roles can view transaction history"
+            - "History data properly filtered by user access level"
+            - "Date range filtering functional"
+            - "Historical data integrity maintained"
+    
+    card_management_operations:
+      description: "Card management operations from COBOL COCRDLIC/COCRDSLC/COCRDUPC programs"
+      security_framework: "Spring Security role-based access with card ownership validation"
+      
+      test_scenarios:
+        - test_name: "list_cards_user_access"
+          description: "Validate user access to card listing functionality (COCRDLIC equivalent)"
+          endpoint: "/api/cards/list"
+          http_method: "GET"
+          spring_security_annotation: "@PreAuthorize('hasAnyRole(USER,ADMIN)')"
+          admin_access_expected: true
+          user_access_expected: true
+          expected_responses:
+            admin_success: 200
+            user_success: 200
+            invalid_unauthorized: 401
+          validation_points:
+            - "Both admin and user roles can list cards"
+            - "User access restricted to own cards"
+            - "Admin access includes all cards"
+            - "Card data properly masked for security"
+            - "Pagination and filtering available"
+            
+        - test_name: "view_card_details_user_access"
+          description: "Validate user access to card detail viewing (COCRDSLC equivalent)"
+          endpoint: "/api/cards/{cardId}"
+          http_method: "GET"
+          spring_security_annotation: "@PreAuthorize('hasAnyRole(USER,ADMIN)')"
+          admin_access_expected: true
+          user_access_expected: true
+          expected_responses:
+            admin_success: 200
+            user_success: 200
+            invalid_unauthorized: 401
+          validation_points:
+            - "Both admin and user roles can view card details"
+            - "Card ownership validation enforced"
+            - "Sensitive card data properly protected"
+            - "Complete card information available"
+            
+        - test_name: "update_card_status_user_access"
+          description: "Validate user access to card status updates (COCRDUPC equivalent)"
+          endpoint: "/api/cards/{cardId}/status"
+          http_method: "PUT"
+          spring_security_annotation: "@PreAuthorize('hasAnyRole(USER,ADMIN)')"
+          admin_access_expected: true
+          user_access_expected: true
+          test_payload:
+            cardStatus: "ACTIVE"
+            reason: "User requested activation"
+          expected_responses:
+            admin_success: 200
+            user_success: 200
+            invalid_unauthorized: 401
+          validation_points:
+            - "Both admin and user roles can update card status"
+            - "Card ownership validation enforced"
+            - "Status change validation works correctly"
+            - "Audit trail for card status changes"
+            - "Business rule validation enforced"
+  
+  # =================================================================
+  # UNAUTHORIZED ACCESS TESTING
+  # =================================================================
+  unauthorized_access_tests:
+    description: "Validation of access denial for insufficient privileges and invalid credentials"
+    security_framework: "Spring Security authentication and authorization denial testing"
+    
+    test_scenarios:
+      - test_name: "admin_operations_user_denial"
+        description: "Verify user role cannot access admin-only operations"
+        endpoints:
+          - "/api/admin/users"
+          - "/api/admin/users/{userId}"
+          - "/api/admin/system/config"
+          - "/api/admin/batch/jobs"
+          - "/api/admin/audit"
+        test_user: "USER0001"
+        expected_response: 403
+        validation_points:
+          - "All admin endpoints return 403 Forbidden for user role"
+          - "Security violations logged in audit trail"
+          - "No sensitive data leaked in error responses"
+          - "Proper HTTP status code mapping"
+          
+      - test_name: "invalid_credentials_denial"
+        description: "Verify access denial for invalid or expired credentials"
+        endpoints:
+          - "/api/accounts/{accountId}"
+          - "/api/transactions"
+          - "/api/cards/list"
+        test_users:
+          - "DSBL0001"  # Disabled user
+          - "EXPR0001"  # Expired password
+          - "INVL0001"  # Invalid role
+        expected_response: 401
+        validation_points:
+          - "Invalid credentials return 401 Unauthorized"
+          - "Disabled accounts cannot access any endpoints"
+          - "Expired passwords trigger authentication failure"
+          - "Invalid roles prevent access to protected resources"
+          
+      - test_name: "no_credentials_denial"
+        description: "Verify access denial for requests without authentication"
+        endpoints:
+          - "/api/accounts/{accountId}"
+          - "/api/transactions"
+          - "/api/admin/users"
+        test_scenario: "No JWT token provided"
+        expected_response: 401
+        validation_points:
+          - "Missing authentication returns 401 Unauthorized"
+          - "No access to protected resources without JWT token"
+          - "Proper error messages for missing credentials"
+          - "Security headers correctly configured"
+  
+  # =================================================================
+  # METHOD-LEVEL SECURITY VALIDATION
+  # =================================================================
+  method_level_security_validation:
+    description: "Comprehensive validation of Spring Security @PreAuthorize method-level annotations"
+    security_framework: "Spring Security method-level authorization with expression-based access control"
+    
+    preauthorize_annotation_tests:
+      - annotation: "@PreAuthorize('hasRole(ADMIN)')"
+        description: "Admin-only method access validation"
+        test_methods:
+          - "UserManagementController.listUsers()"
+          - "UserManagementController.createUser()"
+          - "UserManagementController.updateUser()"
+          - "UserManagementController.deleteUser()"
+          - "UserManagementController.getUserById()"
+        valid_roles: ["ROLE_ADMIN"]
+        invalid_roles: ["ROLE_USER"]
+        expected_behavior:
+          admin_access: "ALLOWED"
+          user_access: "DENIED"
+          
+      - annotation: "@PreAuthorize('hasAnyRole(USER,ADMIN)')"
+        description: "User and admin method access validation"
+        test_methods:
+          - "AccountViewController.viewAccount()"
+          - "AccountViewController.viewAccountWithRequest()"
+          - "TransactionController.getTransactions()"
+          - "TransactionController.getTransactionById()"
+          - "TransactionController.addTransaction()"
+          - "TransactionController.searchTransactions()"
+          - "TransactionController.getTransactionHistory()"
+        valid_roles: ["ROLE_USER", "ROLE_ADMIN"]
+        invalid_roles: []
+        expected_behavior:
+          admin_access: "ALLOWED"
+          user_access: "ALLOWED"
+          
+      - annotation: "@PreAuthorize('hasAnyRole(ACCOUNT_UPDATE,ADMIN)')"
+        description: "Account update specific role validation"
+        test_methods:
+          - "AccountUpdateController.updateAccount()"
+        valid_roles: ["ROLE_ACCOUNT_UPDATE", "ROLE_ADMIN"]
+        invalid_roles: ["ROLE_USER"]
+        expected_behavior:
+          admin_access: "ALLOWED"
+          account_update_access: "ALLOWED"
+          user_access: "DENIED"
+    
+    security_context_validation:
+      description: "Spring Security context and JWT token validation testing"
+      test_scenarios:
+        - test_name: "jwt_token_validation"
+          description: "Validate JWT token processing and role extraction"
+          test_steps:
+            - "Extract JWT token from Authorization header"
+            - "Validate token signature and expiration"
+            - "Extract user ID and roles from token claims"
+            - "Populate Spring Security context"
+            - "Evaluate @PreAuthorize expressions"
+          validation_points:
+            - "JWT token signature validation works correctly"
+            - "Token expiration properly enforced"
+            - "Role claims correctly mapped to Spring Security authorities"
+            - "Security context populated with user details"
+            - "Method-level authorization decisions accurate"
+            
+        - test_name: "session_security_validation"
+          description: "Validate session management and security context persistence"
+          test_steps:
+            - "Create authenticated session with JWT token"
+            - "Verify session stored in Redis with proper TTL"
+            - "Make multiple API calls with same token"
+            - "Verify consistent security context across calls"
+            - "Test session expiration and cleanup"
+          validation_points:
+            - "Session data properly stored in Redis"
+            - "Session TTL equivalent to CICS terminal timeout"
+            - "Security context consistent across API calls"
+            - "Session expiration properly handled"
+            - "Automatic session cleanup functional"
+  
+  # =================================================================
+  # SPRING SECURITY ANNOTATION TESTING
+  # =================================================================
+  spring_security_annotation_tests:
+    description: "Comprehensive testing of Spring Security annotations and configurations"
+    security_framework: "Spring Security 6.x annotation-based security implementation"
+    
+    controller_security_annotations:
+      - controller: "UserManagementController"
+        class_annotations:
+          - "@RestController"
+          - "@RequestMapping('/api/admin/users')"
+          - "@Validated"
+        method_annotations:
+          - method: "listUsers()"
+            annotations: ["@GetMapping", "@PreAuthorize('hasRole(ADMIN)')"]
+            security_test: "Admin role required"
+          - method: "createUser()"
+            annotations: ["@PostMapping", "@PreAuthorize('hasRole(ADMIN)')"]
+            security_test: "Admin role required"
+          - method: "updateUser()"
+            annotations: ["@PutMapping('/{id}')", "@PreAuthorize('hasRole(ADMIN)')"]
+            security_test: "Admin role required"
+          - method: "deleteUser()"
+            annotations: ["@DeleteMapping('/{id}')", "@PreAuthorize('hasRole(ADMIN)')"]
+            security_test: "Admin role required"
+          - method: "getUserById()"
+            annotations: ["@GetMapping('/{userId}')", "@PreAuthorize('hasRole(ADMIN)')"]
+            security_test: "Admin role required"
+            
+      - controller: "AccountViewController"
+        class_annotations:
+          - "@RestController"
+          - "@RequestMapping('/api/accounts')"
+          - "@CrossOrigin(origins = '*', maxAge = 3600)"
+        method_annotations:
+          - method: "viewAccount()"
+            annotations: ["@GetMapping('/{accountId}')", "@PreAuthorize('hasAnyRole(USER,ADMIN)')"]
+            security_test: "User or admin role required"
+          - method: "viewAccountWithRequest()"
+            annotations: ["@PostMapping('/view')", "@PreAuthorize('hasAnyRole(USER,ADMIN)')"]
+            security_test: "User or admin role required"
+            
+      - controller: "AccountUpdateController"
+        class_annotations:
+          - "@RestController"
+          - "@RequestMapping('/api/accounts')"
+        method_annotations:
+          - method: "updateAccount()"
+            annotations: ["@PutMapping('/{id}')", "@PreAuthorize('hasAnyRole(ACCOUNT_UPDATE,ADMIN)')"]
+            security_test: "Account update or admin role required"
+            
+      - controller: "TransactionController"
+        class_annotations:
+          - "@RestController"
+          - "@RequestMapping('/api/transactions')"
+        method_annotations:
+          - method: "getTransactions()"
+            annotations: ["@GetMapping", "@PreAuthorize('hasAnyRole(USER,ADMIN)')"]
+            security_test: "User or admin role required"
+          - method: "getTransactionById()"
+            annotations: ["@GetMapping('/{transactionId}')", "@PreAuthorize('hasAnyRole(USER,ADMIN)')"]
+            security_test: "User or admin role required"
+          - method: "addTransaction()"
+            annotations: ["@PostMapping", "@PreAuthorize('hasAnyRole(USER,ADMIN)')"]
+            security_test: "User or admin role required"
+          - method: "searchTransactions()"
+            annotations: ["@GetMapping('/search')", "@PreAuthorize('hasAnyRole(USER,ADMIN)')"]
+            security_test: "User or admin role required"
+          - method: "getTransactionHistory()"
+            annotations: ["@GetMapping('/history')", "@PreAuthorize('hasAnyRole(USER,ADMIN)')"]
+            security_test: "User or admin role required"
+  
+  # =================================================================
+  # RACF TO SPRING SECURITY MAPPING TESTS
+  # =================================================================
+  racf_to_spring_security_mapping_tests:
+    description: "Validation of RACF user type to Spring Security role mapping per Section 6.4.4.2"
+    migration_context: "Legacy RACF SEC-USR-TYPE to modern Spring Security authorities"
+    
+    role_mapping_validation:
+      - racf_user_type: "A"
+        description: "RACF Admin user type mapping"
+        spring_security_roles: ["ROLE_ADMIN", "ROLE_USER"]
+        legacy_group: "CARDDEMO.ADMIN"
+        test_scenarios:
+          - "Full user management access"
+          - "System administration privileges"
+          - "Audit log access"
+          - "All regular user operations"
+        validation_points:
+          - "Admin users inherit user role privileges"
+          - "Administrative operations only accessible to admin role"
+          - "Comprehensive audit trail for admin actions"
+          - "Role hierarchy properly implemented"
+          
+      - racf_user_type: "U"
+        description: "RACF User type mapping"
+        spring_security_roles: ["ROLE_USER"]
+        legacy_group: "CARDDEMO.USER"
+        test_scenarios:
+          - "Account viewing and updating"
+          - "Transaction processing"
+          - "Card management"
+          - "Personal profile management"
+        validation_points:
+          - "User operations properly restricted"
+          - "No access to administrative functions"
+          - "Data access limited to user's own records"
+          - "Security violations properly logged"
+    
+    authentication_migration_validation:
+      description: "Validation of authentication mechanism migration from RACF to Spring Security"
+      test_scenarios:
+        - test_name: "password_authentication_migration"
+          description: "BCrypt password validation vs legacy RACF authentication"
+          legacy_method: "RACF password validation"
+          modern_method: "Spring Security BCrypt authentication"
+          test_steps:
+            - "Validate legacy COBOL 8-character password input"
+            - "Convert to BCrypt hash for secure storage"
+            - "Authenticate using Spring Security framework"
+            - "Generate JWT token with role claims"
+            - "Establish Redis-backed session"
+          validation_points:
+            - "8-character password input preserved for UI compatibility"
+            - "BCrypt hashing provides enhanced security"
+            - "JWT token contains proper role claims"
+            - "Session management equivalent to CICS terminal storage"
+            - "Authentication audit trail comprehensive"
+            
+        - test_name: "session_management_migration"
+          description: "Redis session management vs legacy CICS terminal storage"
+          legacy_method: "CICS terminal storage"
+          modern_method: "Redis distributed session management"
+          test_steps:
+            - "Create session after successful authentication"
+            - "Store session context in Redis with TTL"
+            - "Validate session persistence across API calls"
+            - "Test session expiration and cleanup"
+            - "Verify session security and isolation"
+          validation_points:
+            - "Session TTL equivalent to CICS timeout"
+            - "Distributed session support for horizontal scaling"
+            - "Session security maintained across microservices"
+            - "Automatic session cleanup functional"
+            - "Session audit trail comprehensive"
+  
+  # =================================================================
+  # CROSS-SERVICE AUTHORIZATION TESTS
+  # =================================================================
+  cross_service_authorization_tests:
+    description: "Validation of authorization across microservice boundaries"
+    security_framework: "Spring Cloud Gateway with JWT token propagation"
+    
+    microservice_authorization_flow:
+      - service: "AccountViewService"
+        security_requirements:
+          - "JWT token validation"
+          - "Role-based access control"
+          - "Account ownership validation"
+        test_scenarios:
+          - "Admin access to all accounts"
+          - "User access to owned accounts only"
+          - "Denied access for invalid tokens"
+        validation_points:
+          - "JWT token properly validated"
+          - "Role claims correctly extracted"
+          - "Account ownership enforced"
+          - "Cross-service audit trail maintained"
+          
+      - service: "TransactionService"
+        security_requirements:
+          - "JWT token validation"
+          - "Role-based access control"
+          - "Transaction ownership validation"
+        test_scenarios:
+          - "Admin access to all transactions"
+          - "User access to own transactions only"
+          - "Denied access for insufficient privileges"
+        validation_points:
+          - "Transaction ownership properly enforced"
+          - "Role-based filtering functional"
+          - "Audit logging for transaction access"
+          - "Security context propagation working"
+          
+      - service: "UserManagementService"
+        security_requirements:
+          - "JWT token validation"
+          - "Admin role requirement"
+          - "Self-management restrictions"
+        test_scenarios:
+          - "Admin access to all user operations"
+          - "User denied access to management functions"
+          - "Self-deletion prevention"
+        validation_points:
+          - "Administrative access properly restricted"
+          - "Self-management validation functional"
+          - "Comprehensive audit trail for user operations"
+          - "Security violations properly logged"
+    
+    jwt_token_propagation_tests:
+      description: "Validation of JWT token propagation across service boundaries"
+      test_scenarios:
+        - test_name: "token_propagation_validation"
+          description: "Verify JWT token properly propagated between services"
+          test_flow:
+            - "Client authenticates with AuthenticationService"
+            - "JWT token generated with role claims"
+            - "Token sent to Spring Cloud Gateway"
+            - "Gateway validates token and routes to service"
+            - "Service validates token and extracts claims"
+            - "Business logic executed with security context"
+          validation_points:
+            - "Token signature validation at each service"
+            - "Role claims properly extracted and used"
+            - "Security context consistent across services"
+            - "Token expiration properly handled"
+            - "Audit trail spans all service interactions"
+            
+        - test_name: "token_refresh_validation"
+          description: "Verify JWT token refresh mechanism"
+          test_flow:
+            - "Client uses near-expired JWT token"
+            - "Gateway detects token expiration approaching"
+            - "Refresh token mechanism activated"
+            - "New JWT token generated with fresh expiration"
+            - "Client updated with new token"
+          validation_points:
+            - "Token refresh mechanism functional"
+            - "Seamless client experience during refresh"
+            - "Old token properly invalidated"
+            - "Security maintained during refresh process"
+            - "Audit logging for token refresh events"
+  
+  # =================================================================
+  # ROLE HIERARCHY VALIDATION TESTS
+  # =================================================================
+  role_hierarchy_validation_tests:
+    description: "Validation of Spring Security role hierarchy implementation"
+    hierarchy_definition: "ROLE_ADMIN > ROLE_USER > ROLE_ANONYMOUS"
+    
+    role_inheritance_tests:
+      - test_name: "admin_inherits_user_privileges"
+        description: "Verify admin role inherits all user role privileges"
+        test_scenarios:
+          - "Admin can access all user endpoints"
+          - "Admin can perform all user operations"
+          - "Admin restrictions only apply to admin-specific operations"
+        validation_points:
+          - "Admin role includes all user privileges"
+          - "Role hierarchy properly implemented"
+          - "No privilege gaps in role inheritance"
+          - "Security annotations respect hierarchy"
+          
+      - test_name: "user_cannot_access_admin_functions"
+        description: "Verify user role cannot access admin-only functions"
+        test_scenarios:
+          - "User denied access to admin endpoints"
+          - "User operations properly restricted"
+          - "Security violations properly logged"
+        validation_points:
+          - "User role restrictions properly enforced"
+          - "No privilege escalation possible"
+          - "Security violations comprehensive logged"
+          - "Error messages appropriate for security"
+          
+      - test_name: "role_based_data_filtering"
+        description: "Verify role-based data access filtering"
+        test_scenarios:
+          - "Admin sees all data across system"
+          - "User sees only own data"
+          - "Data filtering transparent to application logic"
+        validation_points:
+          - "Data access properly filtered by role"
+          - "No data leakage between user contexts"
+          - "Performance impact of filtering minimal"
+          - "Audit trail for data access comprehensive"
+
+# =================================================================
+# SECURITY TEST CONFIGURATION
+# =================================================================
+
+SecurityTestConfiguration:
+  test_execution_framework: "JUnit 5 with Spring Boot Test"
+  security_test_dependencies:
+    - "spring-boot-starter-test"
+    - "spring-security-test"
+    - "junit-jupiter-engine"
+  
+  admin_user_management_tests:
+    description: "Administrative user management testing configuration"
+    test_users:
+      admin_user: "ADMIN001"
+      regular_user: "USER0001"
+      disabled_user: "DSBL0001"
+    test_endpoints:
+      - "/api/admin/users"
+      - "/api/admin/users/{userId}"
+      - "/api/admin/system/config"
+      - "/api/admin/batch/jobs"
+      - "/api/admin/audit"
+    expected_behaviors:
+      admin_access: "ALLOWED"
+      user_access: "FORBIDDEN"
+      disabled_access: "UNAUTHORIZED"
+    
+  user_account_operations_tests:
+    description: "User account operations testing configuration"
+    test_users:
+      admin_user: "ADMIN001"
+      regular_user: "USER0001"
+      invalid_user: "INVL0001"
+    test_endpoints:
+      - "/api/accounts/{accountId}"
+      - "/api/accounts/view"
+    expected_behaviors:
+      admin_access: "ALLOWED"
+      user_access: "ALLOWED"
+      invalid_access: "UNAUTHORIZED"
+    
+  user_transaction_processing_tests:
+    description: "User transaction processing testing configuration"
+    test_users:
+      admin_user: "ADMIN001"
+      regular_user: "USER0001"
+      expired_user: "EXPR0001"
+    test_endpoints:
+      - "/api/transactions"
+      - "/api/transactions/{transactionId}"
+      - "/api/transactions/search"
+      - "/api/transactions/history"
+    expected_behaviors:
+      admin_access: "ALLOWED"
+      user_access: "ALLOWED"
+      expired_access: "UNAUTHORIZED"
+    
+  user_card_management_tests:
+    description: "User card management testing configuration"
+    test_users:
+      admin_user: "ADMIN001"
+      regular_user: "USER0001"
+      disabled_user: "DSBL0001"
+    test_endpoints:
+      - "/api/cards/list"
+      - "/api/cards/{cardId}"
+      - "/api/cards/{cardId}/status"
+    expected_behaviors:
+      admin_access: "ALLOWED"
+      user_access: "ALLOWED"
+      disabled_access: "UNAUTHORIZED"
+    
+  authorization_boundary_validation:
+    description: "Authorization boundary validation testing configuration"
+    test_scenarios:
+      - boundary: "admin_only_operations"
+        valid_roles: ["ROLE_ADMIN"]
+        invalid_roles: ["ROLE_USER"]
+        test_result: "Access control properly enforced"
+      - boundary: "user_and_admin_operations"
+        valid_roles: ["ROLE_USER", "ROLE_ADMIN"]
+        invalid_roles: []
+        test_result: "Role hierarchy properly implemented"
+      - boundary: "account_update_operations"
+        valid_roles: ["ROLE_ACCOUNT_UPDATE", "ROLE_ADMIN"]
+        invalid_roles: ["ROLE_USER"]
+        test_result: "Specialized role validation functional"
+    
+  preauthorize_annotation_testing:
+    description: "Spring Security @PreAuthorize annotation testing configuration"
+    annotation_patterns:
+      - pattern: "hasRole('ADMIN')"
+        description: "Admin-only access control"
+        test_roles: ["ROLE_ADMIN"]
+        expected_result: "ALLOWED"
+      - pattern: "hasAnyRole('USER','ADMIN')"
+        description: "User and admin access control"
+        test_roles: ["ROLE_USER", "ROLE_ADMIN"]
+        expected_result: "ALLOWED"
+      - pattern: "hasAnyRole('ACCOUNT_UPDATE','ADMIN')"
+        description: "Account update specific access control"
+        test_roles: ["ROLE_ACCOUNT_UPDATE", "ROLE_ADMIN"]
+        expected_result: "ALLOWED"
+    
+  security_context_validation:
+    description: "Spring Security context validation testing configuration"
+    validation_points:
+      - "JWT token signature validation"
+      - "Token expiration enforcement"
+      - "Role claims extraction accuracy"
+      - "Security context population"
+      - "Cross-service context propagation"
+    test_scenarios:
+      - scenario: "valid_jwt_token"
+        expected_result: "Security context populated correctly"
+      - scenario: "expired_jwt_token"
+        expected_result: "Authentication failure"
+      - scenario: "invalid_jwt_signature"
+        expected_result: "Token validation failure"
+      - scenario: "missing_jwt_token"
+        expected_result: "Unauthorized access"
+    
+  jwt_role_claims_testing:
+    description: "JWT token role claims validation testing configuration"
+    claim_validation:
+      - claim: "user_id"
+        description: "User identifier claim"
+        validation: "Must match authenticated user"
+      - claim: "user_type"
+        description: "User type claim (A/U)"
+        validation: "Must be valid user type"
+      - claim: "roles"
+        description: "Role array claim"
+        validation: "Must contain valid Spring Security roles"
+      - claim: "exp"
+        description: "Token expiration claim"
+        validation: "Must be valid future timestamp"
+      - claim: "iat"
+        description: "Token issued at claim"
+        validation: "Must be valid past timestamp"
+    test_scenarios:
+      - scenario: "admin_user_token"
+        expected_claims:
+          user_type: "A"
+          roles: ["ROLE_ADMIN", "ROLE_USER"]
+        validation_result: "Admin privileges granted"
+      - scenario: "regular_user_token"
+        expected_claims:
+          user_type: "U"
+          roles: ["ROLE_USER"]
+        validation_result: "User privileges granted"
+      - scenario: "invalid_role_token"
+        expected_claims:
+          user_type: "X"
+          roles: ["ROLE_INVALID"]
+        validation_result: "Authentication failure"
