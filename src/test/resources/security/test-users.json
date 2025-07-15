@@ -1,0 +1,802 @@
+{
+  "TestUserDataset": {
+    "admin_user_credentials": {
+      "description": "Administrator user accounts for testing ROLE_ADMIN privileges and administrative operations",
+      "test_scenarios": [
+        "Full system administration access",
+        "User management operations (CREATE, READ, UPDATE, DELETE)",
+        "System configuration and maintenance",
+        "Audit log access and compliance reporting",
+        "Cross-service administrative permissions"
+      ],
+      "users": [
+        {
+          "userId": "ADMIN001",
+          "firstName": "System",
+          "lastName": "Administrator",
+          "passwordHash": "$2a$12$4vW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
+          "plainTextPassword": "AdminPass123!",
+          "userType": "A",
+          "createdAt": "2024-01-15T08:00:00Z",
+          "lastLogin": "2024-01-20T14:30:00Z",
+          "isEnabled": true,
+          "accountLocked": false,
+          "passwordExpired": false,
+          "testPurpose": "Primary admin account for full system testing"
+        },
+        {
+          "userId": "ADMIN002",
+          "firstName": "Test",
+          "lastName": "Administrator",
+          "passwordHash": "$2a$12$EhMWCqZJyQ0EZ5JOPfnS8OnkMVLQnDDGVKpgZfKQVrGdZYjGMgSFK",
+          "plainTextPassword": "TestAdmin456!",
+          "userType": "A",
+          "createdAt": "2024-01-10T10:15:00Z",
+          "lastLogin": "2024-01-19T16:45:00Z",
+          "isEnabled": true,
+          "accountLocked": false,
+          "passwordExpired": false,
+          "testPurpose": "Secondary admin for parallel testing scenarios"
+        },
+        {
+          "userId": "ADMIN003",
+          "firstName": "Security",
+          "lastName": "Manager",
+          "passwordHash": "$2a$12$XkNrJgNJNqpEGdZYh9TJBOzKZvBnxMmKGzSJ2hYhJJZtK8vVWuFjK",
+          "plainTextPassword": "SecMgr789!",
+          "userType": "A",
+          "createdAt": "2024-01-05T09:30:00Z",
+          "lastLogin": "2024-01-18T11:20:00Z",
+          "isEnabled": true,
+          "accountLocked": false,
+          "passwordExpired": false,
+          "testPurpose": "Security-focused admin for JWT and authorization testing"
+        }
+      ]
+    },
+    "regular_user_credentials": {
+      "description": "Standard user accounts for testing ROLE_USER privileges and standard operations",
+      "test_scenarios": [
+        "Account viewing and personal information access",
+        "Transaction history and statement viewing",
+        "Card management and status updates",
+        "Bill payment and transfer operations",
+        "Restricted access to administrative functions"
+      ],
+      "users": [
+        {
+          "userId": "USER0001",
+          "firstName": "John",
+          "lastName": "Smith",
+          "passwordHash": "$2a$12$2lBJj7A9YUBNKjNRVVZw3uZ8MnJmxLKkEqzPDGkVzJdCrVjhW3JaK",
+          "plainTextPassword": "UserPass123!",
+          "userType": "U",
+          "createdAt": "2024-01-12T14:20:00Z",
+          "lastLogin": "2024-01-20T09:15:00Z",
+          "isEnabled": true,
+          "accountLocked": false,
+          "passwordExpired": false,
+          "testPurpose": "Primary user account for standard functionality testing"
+        },
+        {
+          "userId": "USER0002",
+          "firstName": "Jane",
+          "lastName": "Doe",
+          "passwordHash": "$2a$12$DvVWZJ7LjKsWgTVPQZhLmu7KJmNzXjgHRhCwqJrGtMFdCrVjhW3JaK",
+          "plainTextPassword": "JaneDoe456!",
+          "userType": "U",
+          "createdAt": "2024-01-08T11:45:00Z",
+          "lastLogin": "2024-01-19T15:30:00Z",
+          "isEnabled": true,
+          "accountLocked": false,
+          "passwordExpired": false,
+          "testPurpose": "Secondary user for transaction processing tests"
+        },
+        {
+          "userId": "USER0003",
+          "firstName": "Michael",
+          "lastName": "Johnson",
+          "passwordHash": "$2a$12$GkQzBrJdKjVwTkFdGzFjFuZjhW3JaKjNRVVZw3uZ8MnJmxLKkEqzPD",
+          "plainTextPassword": "MikeJ789!",
+          "userType": "U",
+          "createdAt": "2024-01-03T16:10:00Z",
+          "lastLogin": "2024-01-17T12:45:00Z",
+          "isEnabled": true,
+          "accountLocked": false,
+          "passwordExpired": false,
+          "testPurpose": "User account for card management testing"
+        },
+        {
+          "userId": "USER0004",
+          "firstName": "Sarah",
+          "lastName": "Williams",
+          "passwordHash": "$2a$12$HlRzBrJdKjVwTkFdGzFjFuZjhW3JaKjNRVVZw3uZ8MnJmxLKkEqzPD",
+          "plainTextPassword": "SarahW101!",
+          "userType": "U",
+          "createdAt": "2024-01-14T13:25:00Z",
+          "lastLogin": "2024-01-20T10:20:00Z",
+          "isEnabled": true,
+          "accountLocked": false,
+          "passwordExpired": false,
+          "testPurpose": "User account for bill payment and transfer testing"
+        }
+      ]
+    },
+    "disabled_user_accounts": {
+      "description": "Disabled user accounts for testing authentication rejection and error handling",
+      "test_scenarios": [
+        "Authentication rejection for disabled accounts",
+        "Login attempt logging and audit trail",
+        "Error message validation and security",
+        "Account reactivation testing",
+        "Administrative override scenarios"
+      ],
+      "users": [
+        {
+          "userId": "DISABLED1",
+          "firstName": "Disabled",
+          "lastName": "User",
+          "passwordHash": "$2a$12$5vW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
+          "plainTextPassword": "DisabledPass!",
+          "userType": "U",
+          "createdAt": "2024-01-01T12:00:00Z",
+          "lastLogin": "2024-01-05T14:30:00Z",
+          "isEnabled": false,
+          "accountLocked": false,
+          "passwordExpired": false,
+          "testPurpose": "Testing disabled account authentication rejection"
+        },
+        {
+          "userId": "DISABLED2",
+          "firstName": "Suspended",
+          "lastName": "Admin",
+          "passwordHash": "$2a$12$6vW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
+          "plainTextPassword": "SuspendedAdmin!",
+          "userType": "A",
+          "createdAt": "2023-12-15T10:00:00Z",
+          "lastLogin": "2023-12-20T16:00:00Z",
+          "isEnabled": false,
+          "accountLocked": false,
+          "passwordExpired": false,
+          "testPurpose": "Testing disabled admin account authentication rejection"
+        }
+      ]
+    },
+    "expired_password_users": {
+      "description": "Users with expired passwords for testing password policy enforcement",
+      "test_scenarios": [
+        "Password expiration detection and enforcement",
+        "Forced password change workflows",
+        "Temporary authentication bypass scenarios",
+        "Password policy compliance validation",
+        "Audit trail for password expiration events"
+      ],
+      "users": [
+        {
+          "userId": "EXPIRED1",
+          "firstName": "Expired",
+          "lastName": "Password",
+          "passwordHash": "$2a$12$7vW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
+          "plainTextPassword": "ExpiredPass123!",
+          "userType": "U",
+          "createdAt": "2023-10-01T12:00:00Z",
+          "lastLogin": "2023-11-15T14:30:00Z",
+          "isEnabled": true,
+          "accountLocked": false,
+          "passwordExpired": true,
+          "passwordExpirationDate": "2023-12-31T23:59:59Z",
+          "testPurpose": "Testing password expiration enforcement"
+        },
+        {
+          "userId": "EXPIRED2",
+          "firstName": "Old",
+          "lastName": "Password",
+          "passwordHash": "$2a$12$8vW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
+          "plainTextPassword": "OldPass456!",
+          "userType": "A",
+          "createdAt": "2023-09-15T10:00:00Z",
+          "lastLogin": "2023-10-30T16:00:00Z",
+          "isEnabled": true,
+          "accountLocked": false,
+          "passwordExpired": true,
+          "passwordExpirationDate": "2023-11-30T23:59:59Z",
+          "testPurpose": "Testing admin password expiration scenarios"
+        }
+      ]
+    },
+    "invalid_role_users": {
+      "description": "Users with invalid or undefined roles for testing authorization error handling",
+      "test_scenarios": [
+        "Invalid role rejection and error handling",
+        "Role validation and security enforcement",
+        "Authorization boundary testing",
+        "Role corruption detection",
+        "Security audit trail for invalid roles"
+      ],
+      "users": [
+        {
+          "userId": "INVALID1",
+          "firstName": "Invalid",
+          "lastName": "Role",
+          "passwordHash": "$2a$12$9vW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
+          "plainTextPassword": "InvalidRole123!",
+          "userType": "X",
+          "createdAt": "2024-01-10T12:00:00Z",
+          "lastLogin": "2024-01-15T14:30:00Z",
+          "isEnabled": true,
+          "accountLocked": false,
+          "passwordExpired": false,
+          "testPurpose": "Testing invalid role type rejection"
+        },
+        {
+          "userId": "INVALID2",
+          "firstName": "Undefined",
+          "lastName": "Role",
+          "passwordHash": "$2a$12$AvW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
+          "plainTextPassword": "UndefinedRole456!",
+          "userType": "",
+          "createdAt": "2024-01-12T10:00:00Z",
+          "lastLogin": "2024-01-17T16:00:00Z",
+          "isEnabled": true,
+          "accountLocked": false,
+          "passwordExpired": false,
+          "testPurpose": "Testing empty role type rejection"
+        }
+      ]
+    },
+    "bcrypt_password_test_cases": {
+      "description": "Comprehensive BCrypt password hashing test scenarios for Spring Security validation",
+      "test_scenarios": [
+        "BCrypt password verification accuracy",
+        "Salt round validation (minimum 12 rounds)",
+        "Password complexity enforcement",
+        "Hash algorithm validation",
+        "Performance benchmarking for authentication"
+      ],
+      "users": [
+        {
+          "userId": "BCRYPT01",
+          "firstName": "BCrypt",
+          "lastName": "Test",
+          "passwordHash": "$2a$12$BvW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
+          "plainTextPassword": "TestPass123!",
+          "userType": "U",
+          "createdAt": "2024-01-15T12:00:00Z",
+          "lastLogin": "2024-01-20T14:30:00Z",
+          "isEnabled": true,
+          "accountLocked": false,
+          "passwordExpired": false,
+          "saltRounds": 12,
+          "testPurpose": "Standard BCrypt validation with 12 rounds"
+        },
+        {
+          "userId": "BCRYPT02",
+          "firstName": "Strong",
+          "lastName": "BCrypt",
+          "passwordHash": "$2a$15$CvW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
+          "plainTextPassword": "StrongPass456!",
+          "userType": "A",
+          "createdAt": "2024-01-10T10:00:00Z",
+          "lastLogin": "2024-01-19T16:00:00Z",
+          "isEnabled": true,
+          "accountLocked": false,
+          "passwordExpired": false,
+          "saltRounds": 15,
+          "testPurpose": "High-strength BCrypt validation with 15 rounds"
+        },
+        {
+          "userId": "BCRYPT03",
+          "firstName": "Complex",
+          "lastName": "Password",
+          "passwordHash": "$2a$12$DvW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
+          "plainTextPassword": "C0mpl3x!P@ssw0rd#2024",
+          "userType": "U",
+          "createdAt": "2024-01-08T14:00:00Z",
+          "lastLogin": "2024-01-18T11:30:00Z",
+          "isEnabled": true,
+          "accountLocked": false,
+          "passwordExpired": false,
+          "saltRounds": 12,
+          "testPurpose": "Complex password BCrypt validation"
+        }
+      ]
+    },
+    "authentication_flow_test_data": {
+      "description": "Complete authentication flow test scenarios for JWT token generation and validation",
+      "test_scenarios": [
+        "Login request processing and JWT generation",
+        "Token validation and claims extraction",
+        "Session management and Redis integration",
+        "Token refresh and expiration handling",
+        "Cross-service authentication propagation"
+      ],
+      "users": [
+        {
+          "userId": "AUTHFLOW1",
+          "firstName": "Authentication",
+          "lastName": "Flow",
+          "passwordHash": "$2a$12$EvW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
+          "plainTextPassword": "AuthFlow123!",
+          "userType": "U",
+          "createdAt": "2024-01-15T12:00:00Z",
+          "lastLogin": "2024-01-20T14:30:00Z",
+          "isEnabled": true,
+          "accountLocked": false,
+          "passwordExpired": false,
+          "testPurpose": "Complete authentication flow testing",
+          "expectedJwtClaims": {
+            "user_id": "AUTHFLOW1",
+            "user_type": "U",
+            "roles": ["ROLE_USER"],
+            "first_name": "Authentication",
+            "last_name": "Flow"
+          }
+        },
+        {
+          "userId": "AUTHFLOW2",
+          "firstName": "JWT",
+          "lastName": "Testing",
+          "passwordHash": "$2a$12$FvW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
+          "plainTextPassword": "JWTTest456!",
+          "userType": "A",
+          "createdAt": "2024-01-12T10:00:00Z",
+          "lastLogin": "2024-01-19T16:00:00Z",
+          "isEnabled": true,
+          "accountLocked": false,
+          "passwordExpired": false,
+          "testPurpose": "JWT token generation and validation testing",
+          "expectedJwtClaims": {
+            "user_id": "AUTHFLOW2",
+            "user_type": "A",
+            "roles": ["ROLE_ADMIN", "ROLE_USER"],
+            "first_name": "JWT",
+            "last_name": "Testing"
+          }
+        }
+      ]
+    },
+    "authorization_boundary_test_scenarios": {
+      "description": "Authorization boundary testing for role-based access control validation",
+      "test_scenarios": [
+        "Role-based endpoint access control",
+        "Method-level @PreAuthorize validation",
+        "Cross-service authorization propagation",
+        "Permission escalation prevention",
+        "Resource-level access control"
+      ],
+      "users": [
+        {
+          "userId": "AUTHBND1",
+          "firstName": "Authorization",
+          "lastName": "Boundary",
+          "passwordHash": "$2a$12$GvW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
+          "plainTextPassword": "AuthBoundary123!",
+          "userType": "U",
+          "createdAt": "2024-01-15T12:00:00Z",
+          "lastLogin": "2024-01-20T14:30:00Z",
+          "isEnabled": true,
+          "accountLocked": false,
+          "passwordExpired": false,
+          "testPurpose": "User role authorization boundary testing",
+          "accessibleEndpoints": [
+            "/api/account/view/**",
+            "/api/transaction/view/**",
+            "/api/card/list/**",
+            "/api/profile/update/**"
+          ],
+          "restrictedEndpoints": [
+            "/api/admin/**",
+            "/api/user/create",
+            "/api/user/delete/**",
+            "/api/system/**"
+          ]
+        },
+        {
+          "userId": "AUTHBND2",
+          "firstName": "Admin",
+          "lastName": "Boundary",
+          "passwordHash": "$2a$12$HvW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
+          "plainTextPassword": "AdminBoundary456!",
+          "userType": "A",
+          "createdAt": "2024-01-12T10:00:00Z",
+          "lastLogin": "2024-01-19T16:00:00Z",
+          "isEnabled": true,
+          "accountLocked": false,
+          "passwordExpired": false,
+          "testPurpose": "Admin role authorization boundary testing",
+          "accessibleEndpoints": [
+            "/api/admin/**",
+            "/api/user/**",
+            "/api/system/**",
+            "/api/account/**",
+            "/api/transaction/**",
+            "/api/card/**"
+          ],
+          "restrictedEndpoints": []
+        }
+      ]
+    }
+  },
+  "RACFMigrationTestScenarios": {
+    "legacy_racf_user_mappings": {
+      "description": "Legacy RACF user profile mappings for Spring Security migration validation",
+      "test_scenarios": [
+        "RACF user profile structure preservation",
+        "User ID format and case handling",
+        "Group membership to role mapping",
+        "Profile metadata migration",
+        "Access pattern preservation"
+      ],
+      "mappings": [
+        {
+          "racfUserId": "ADMIN001",
+          "racfProfile": {
+            "userId": "ADMIN001",
+            "firstName": "SYSTEM",
+            "lastName": "ADMINISTRATOR",
+            "group": "CARDDEMO.ADMIN",
+            "profileType": "USER",
+            "passwordPolicy": "RACF_DEFAULT",
+            "lastAccess": "2024-01-20",
+            "creationDate": "2024-01-15"
+          },
+          "springSecurityMapping": {
+            "userId": "ADMIN001",
+            "firstName": "System",
+            "lastName": "Administrator",
+            "userType": "A",
+            "roles": ["ROLE_ADMIN", "ROLE_USER"],
+            "authorities": ["admin:all", "user:read", "user:write"],
+            "migrationStatus": "COMPLETE"
+          }
+        },
+        {
+          "racfUserId": "USER0001",
+          "racfProfile": {
+            "userId": "USER0001",
+            "firstName": "JOHN",
+            "lastName": "SMITH",
+            "group": "CARDDEMO.USER",
+            "profileType": "USER",
+            "passwordPolicy": "RACF_DEFAULT",
+            "lastAccess": "2024-01-20",
+            "creationDate": "2024-01-12"
+          },
+          "springSecurityMapping": {
+            "userId": "USER0001",
+            "firstName": "John",
+            "lastName": "Smith",
+            "userType": "U",
+            "roles": ["ROLE_USER"],
+            "authorities": ["user:read", "account:read", "transaction:read"],
+            "migrationStatus": "COMPLETE"
+          }
+        }
+      ]
+    },
+    "spring_security_role_conversions": {
+      "description": "RACF group to Spring Security role conversion validation",
+      "test_scenarios": [
+        "Group-to-role mapping accuracy",
+        "Role hierarchy preservation",
+        "Permission inheritance validation",
+        "Role-based access control enforcement",
+        "Dynamic role assignment"
+      ],
+      "conversions": [
+        {
+          "racfGroup": "CARDDEMO.ADMIN",
+          "springSecurityRole": "ROLE_ADMIN",
+          "inheritedRoles": ["ROLE_USER"],
+          "permissions": [
+            "admin:all",
+            "user:read",
+            "user:write",
+            "user:delete",
+            "account:read",
+            "account:write",
+            "account:delete",
+            "transaction:read",
+            "transaction:write",
+            "system:configure",
+            "audit:read"
+          ],
+          "conversionStatus": "VALIDATED"
+        },
+        {
+          "racfGroup": "CARDDEMO.USER",
+          "springSecurityRole": "ROLE_USER",
+          "inheritedRoles": [],
+          "permissions": [
+            "user:read",
+            "account:read",
+            "transaction:read",
+            "card:read"
+          ],
+          "conversionStatus": "VALIDATED"
+        }
+      ]
+    },
+    "admin_to_role_admin_scenarios": {
+      "description": "RACF ADMIN users to ROLE_ADMIN conversion test scenarios",
+      "test_scenarios": [
+        "Admin privilege preservation",
+        "System administration access",
+        "User management capabilities",
+        "Audit and compliance access",
+        "Cross-service administrative permissions"
+      ],
+      "scenarios": [
+        {
+          "testName": "Admin User Management Access",
+          "userId": "ADMIN001",
+          "userType": "A",
+          "expectedRoles": ["ROLE_ADMIN", "ROLE_USER"],
+          "testOperations": [
+            {
+              "operation": "CREATE_USER",
+              "endpoint": "/api/admin/users",
+              "expectedResult": "ALLOWED"
+            },
+            {
+              "operation": "DELETE_USER",
+              "endpoint": "/api/admin/users/{id}",
+              "expectedResult": "ALLOWED"
+            },
+            {
+              "operation": "VIEW_AUDIT_LOGS",
+              "endpoint": "/api/admin/audit",
+              "expectedResult": "ALLOWED"
+            }
+          ]
+        },
+        {
+          "testName": "System Administration Access",
+          "userId": "ADMIN002",
+          "userType": "A",
+          "expectedRoles": ["ROLE_ADMIN", "ROLE_USER"],
+          "testOperations": [
+            {
+              "operation": "SYSTEM_CONFIGURATION",
+              "endpoint": "/api/admin/system/config",
+              "expectedResult": "ALLOWED"
+            },
+            {
+              "operation": "BATCH_JOB_MANAGEMENT",
+              "endpoint": "/api/admin/batch/jobs",
+              "expectedResult": "ALLOWED"
+            }
+          ]
+        }
+      ]
+    },
+    "user_to_role_user_scenarios": {
+      "description": "RACF USER users to ROLE_USER conversion test scenarios",
+      "test_scenarios": [
+        "Standard user access preservation",
+        "Account and transaction access",
+        "Card management capabilities",
+        "Administrative function restriction",
+        "Personal data access control"
+      ],
+      "scenarios": [
+        {
+          "testName": "Standard User Operations",
+          "userId": "USER0001",
+          "userType": "U",
+          "expectedRoles": ["ROLE_USER"],
+          "testOperations": [
+            {
+              "operation": "VIEW_ACCOUNT",
+              "endpoint": "/api/account/view/{id}",
+              "expectedResult": "ALLOWED"
+            },
+            {
+              "operation": "VIEW_TRANSACTIONS",
+              "endpoint": "/api/transaction/history",
+              "expectedResult": "ALLOWED"
+            },
+            {
+              "operation": "CREATE_USER",
+              "endpoint": "/api/admin/users",
+              "expectedResult": "DENIED"
+            },
+            {
+              "operation": "DELETE_USER",
+              "endpoint": "/api/admin/users/{id}",
+              "expectedResult": "DENIED"
+            }
+          ]
+        },
+        {
+          "testName": "Card Management Access",
+          "userId": "USER0002",
+          "userType": "U",
+          "expectedRoles": ["ROLE_USER"],
+          "testOperations": [
+            {
+              "operation": "LIST_CARDS",
+              "endpoint": "/api/card/list",
+              "expectedResult": "ALLOWED"
+            },
+            {
+              "operation": "UPDATE_CARD_STATUS",
+              "endpoint": "/api/card/update/{id}",
+              "expectedResult": "ALLOWED"
+            },
+            {
+              "operation": "ADMIN_FUNCTIONS",
+              "endpoint": "/api/admin/**",
+              "expectedResult": "DENIED"
+            }
+          ]
+        }
+      ]
+    },
+    "authentication_migration_validation": {
+      "description": "Authentication mechanism migration validation from RACF to Spring Security",
+      "test_scenarios": [
+        "Password validation migration",
+        "Session management transition",
+        "Authentication flow preservation",
+        "Token-based authentication adoption",
+        "Cross-service authentication propagation"
+      ],
+      "validations": [
+        {
+          "testName": "Password Authentication Migration",
+          "racfAuthentication": {
+            "method": "RACF_PASSWORD_VALIDATION",
+            "userId": "USER0001",
+            "passwordStorage": "RACF_ENCRYPTED",
+            "sessionType": "CICS_TERMINAL"
+          },
+          "springSecurityAuthentication": {
+            "method": "BCRYPT_PASSWORD_VALIDATION",
+            "userId": "USER0001",
+            "passwordStorage": "BCRYPT_HASH",
+            "sessionType": "JWT_TOKEN_REDIS_BACKED"
+          },
+          "migrationValidation": {
+            "passwordMigrated": true,
+            "sessionMigrated": true,
+            "authenticationFlowPreserved": true,
+            "backwardCompatible": false
+          }
+        },
+        {
+          "testName": "Session Management Migration",
+          "racfSessionManagement": {
+            "sessionStorage": "CICS_TERMINAL_STORAGE",
+            "sessionTimeout": "1800",
+            "sessionPersistence": "TERMINAL_BOUND"
+          },
+          "springSecuritySessionManagement": {
+            "sessionStorage": "REDIS_DISTRIBUTED",
+            "sessionTimeout": "1800",
+            "sessionPersistence": "TOKEN_BASED"
+          },
+          "migrationValidation": {
+            "timeoutPreserved": true,
+            "sessionDataMigrated": true,
+            "distributedSessionSupport": true
+          }
+        }
+      ]
+    },
+    "password_hash_upgrade_tests": {
+      "description": "Password hash upgrade testing from RACF to BCrypt implementation",
+      "test_scenarios": [
+        "RACF password hash migration",
+        "BCrypt hash generation validation",
+        "Password policy enforcement",
+        "Hash strength verification",
+        "Migration rollback testing"
+      ],
+      "tests": [
+        {
+          "testName": "RACF to BCrypt Migration",
+          "userId": "MIGRATE01",
+          "racfPassword": {
+            "hashedPassword": "RACF_ENCRYPTED_HASH",
+            "plainTextPassword": "MigratePass123!",
+            "hashAlgorithm": "RACF_DEFAULT"
+          },
+          "bcryptPassword": {
+            "hashedPassword": "$2a$12$IvW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
+            "plainTextPassword": "MigratePass123!",
+            "hashAlgorithm": "BCRYPT",
+            "saltRounds": 12
+          },
+          "migrationValidation": {
+            "passwordValidationEquivalent": true,
+            "securityStrengthImproved": true,
+            "performanceWithinThreshold": true
+          }
+        },
+        {
+          "testName": "BCrypt Strength Validation",
+          "userId": "BCRYPT99",
+          "passwordTests": [
+            {
+              "plainTextPassword": "WeakPass1!",
+              "expectedHashPattern": "^\\$2a\\$12\\$",
+              "saltRounds": 12,
+              "validationResult": "ACCEPTABLE"
+            },
+            {
+              "plainTextPassword": "StrongComplexPassword123!@#",
+              "expectedHashPattern": "^\\$2a\\$15\\$",
+              "saltRounds": 15,
+              "validationResult": "STRONG"
+            }
+          ]
+        }
+      ]
+    },
+    "audit_trail_comparison_data": {
+      "description": "Audit trail comparison between RACF SMF records and Spring Security events",
+      "test_scenarios": [
+        "Authentication event logging",
+        "Authorization decision auditing",
+        "Session lifecycle tracking",
+        "Security violation recording",
+        "Compliance report generation"
+      ],
+      "comparisons": [
+        {
+          "testName": "Authentication Event Audit",
+          "racfAuditRecord": {
+            "recordType": "SMF_AUTHENTICATION",
+            "userId": "USER0001",
+            "timestamp": "2024-01-20T14:30:00Z",
+            "eventType": "AUTHENTICATION_SUCCESS",
+            "terminalId": "TERM001",
+            "applicationId": "CARDDEMO"
+          },
+          "springSecurityAuditEvent": {
+            "eventType": "AUTHENTICATION_SUCCESS",
+            "userId": "USER0001",
+            "timestamp": "2024-01-20T14:30:00Z",
+            "sessionId": "spring-session-123",
+            "ipAddress": "192.168.1.100",
+            "userAgent": "Mozilla/5.0...",
+            "correlationId": "auth-correlation-456"
+          },
+          "auditComparison": {
+            "userIdTracked": true,
+            "timestampAccurate": true,
+            "eventTypeEquivalent": true,
+            "contextEnhanced": true
+          }
+        },
+        {
+          "testName": "Authorization Decision Audit",
+          "racfAuditRecord": {
+            "recordType": "SMF_AUTHORIZATION",
+            "userId": "USER0001",
+            "timestamp": "2024-01-20T14:31:00Z",
+            "eventType": "AUTHORIZATION_GRANTED",
+            "resourceAccessed": "CARDDEMO.TRANSACTION",
+            "accessLevel": "READ"
+          },
+          "springSecurityAuditEvent": {
+            "eventType": "AUTHORIZATION_GRANTED",
+            "userId": "USER0001",
+            "timestamp": "2024-01-20T14:31:00Z",
+            "endpoint": "/api/transaction/view/12345",
+            "httpMethod": "GET",
+            "roles": ["ROLE_USER"],
+            "permissions": ["transaction:read"]
+          },
+          "auditComparison": {
+            "authorizationDecisionTracked": true,
+            "resourceAccessLogged": true,
+            "permissionLevelMaintained": true,
+            "granularityImproved": true
+          }
+        }
+      ]
+    }
+  }
+}
