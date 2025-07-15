@@ -1,0 +1,912 @@
+{
+  "ComprehensiveTestScenarios": {
+    "description": "Comprehensive end-to-end test scenarios combining multiple entities for complete business journey validation, golden file comparison, and cross-component integration testing",
+    "metadata": {
+      "source": "Derived from COBOL copybooks: CSUSR01Y.cpy, CUSTREC.cpy, CVACT01Y.cpy, CVACT02Y.cpy, CVTRA05Y.cpy",
+      "purpose": "Support React component E2E testing, REST API validation, PostgreSQL database integration, and BigDecimal precision validation",
+      "version": "1.0.0",
+      "lastUpdated": "2024-01-15T00:00:00Z",
+      "testingFrameworks": [
+        "Spring Boot Test",
+        "React Testing Library", 
+        "Jest E2E Testing",
+        "TestContainers PostgreSQL",
+        "WireMock REST API Testing",
+        "Redis TestContainers"
+      ],
+      "conversionCompliance": {
+        "cobolToBigDecimalPrecision": "COBOL COMP-3 exact precision preserved",
+        "legacyFieldMapping": "100% field mapping accuracy validated",
+        "businessLogicPreservation": "Zero functional deviation from mainframe"
+      }
+    },
+    "BusinessJourneyTestData": {
+      "description": "Complete user authentication workflows through transaction completion scenarios",
+      "completeCreditCardWorkflows": [
+        {
+          "scenarioName": "Admin User Complete Credit Card Management Journey",
+          "scenarioId": "E2E-ADMIN-001",
+          "description": "Complete business journey from authentication through transaction completion for admin user",
+          "testPhases": [
+            {
+              "phase": "Authentication",
+              "phaseId": "AUTH-001",
+              "description": "JWT authentication with BCrypt password validation",
+              "testData": {
+                "user": {
+                  "userId": "ADMIN001",
+                  "firstName": "System",
+                  "lastName": "Administrator",
+                  "passwordHash": "$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iYqiSfFe5gtT4iUWIEzJ6.wYqCny",
+                  "plainTextPassword": "admin123",
+                  "userType": "A",
+                  "expectedRole": "ROLE_ADMIN",
+                  "expectedClaims": {
+                    "sub": "ADMIN001",
+                    "userType": "A",
+                    "authorities": ["ROLE_ADMIN", "ROLE_USER"]
+                  }
+                },
+                "jwtValidation": {
+                  "algorithm": "HS256",
+                  "expirationMinutes": 30,
+                  "issuer": "carddemo-auth-service"
+                },
+                "sessionManagement": {
+                  "redisKey": "spring:session:sessions:admin001-session",
+                  "sessionData": {
+                    "userId": "ADMIN001",
+                    "userType": "A",
+                    "loginTime": "2024-01-15T10:00:00Z",
+                    "lastActivity": "2024-01-15T10:00:00Z"
+                  },
+                  "ttlMinutes": 30
+                }
+              },
+              "expectedResults": {
+                "jwtToken": "generated_jwt_token_with_admin_claims",
+                "sessionCreated": true,
+                "redirectTo": "/admin/dashboard",
+                "menuAccess": ["User Management", "System Administration", "Reports"]
+              }
+            },
+            {
+              "phase": "Customer Profile Management",
+              "phaseId": "CUST-001",
+              "description": "Customer profile creation and validation with address formatting",
+              "testData": {
+                "customer": {
+                  "customerId": "000000001",
+                  "firstName": "Alexandra",
+                  "middleName": "Marie",
+                  "lastName": "Thompson",
+                  "addressLine1": "1234 Oak Street",
+                  "addressLine2": "Apt 101",
+                  "addressLine3": "Building A",
+                  "stateCode": "CA",
+                  "countryCode": "USA",
+                  "zipCode": "90210",
+                  "phoneNumber1": "(555)123-4567",
+                  "phoneNumber2": "(555)987-6543",
+                  "ssn": "123456789",
+                  "governmentId": "DL12345678901234567890",
+                  "dateOfBirth": "1985-03-15",
+                  "eftAccountId": "EFT0001234",
+                  "primaryCardholderInd": "Y",
+                  "ficoScore": 785
+                },
+                "validationRules": {
+                  "requiredFields": ["firstName", "lastName", "addressLine1", "stateCode", "zipCode"],
+                  "fieldLengths": {
+                    "firstName": 25,
+                    "lastName": 25,
+                    "addressLine1": 50,
+                    "phoneNumber1": 15
+                  },
+                  "ficoScoreRange": {
+                    "min": 300,
+                    "max": 850
+                  }
+                }
+              },
+              "expectedResults": {
+                "customerCreated": true,
+                "validationPassed": true,
+                "primaryKey": "000000001",
+                "addressFormatted": "1234 Oak Street, Apt 101, Building A, CA 90210"
+              }
+            },
+            {
+              "phase": "Account Creation",
+              "phaseId": "ACCT-001",
+              "description": "Account creation with BigDecimal precision validation",
+              "testData": {
+                "account": {
+                  "accountId": "00000000001",
+                  "customerId": "000000001",
+                  "activeStatus": "ACTIVE",
+                  "currentBalance": "1940.00",
+                  "creditLimit": "20200.00",
+                  "cashCreditLimit": "10200.00",
+                  "openDate": "2014-11-20",
+                  "expirationDate": "2025-05-20",
+                  "reissueDate": "2025-05-20",
+                  "currentCycleCredit": "0.00",
+                  "currentCycleDebit": "0.00",
+                  "addressZip": "90210",
+                  "groupId": "DEFAULT"
+                },
+                "bigDecimalPrecision": {
+                  "currentBalance": {
+                    "scale": 2,
+                    "precision": 12,
+                    "cobolEquivalent": "PIC S9(10)V99",
+                    "mathContext": "DECIMAL128"
+                  },
+                  "creditLimit": {
+                    "scale": 2,
+                    "precision": 12,
+                    "cobolEquivalent": "PIC S9(10)V99",
+                    "mathContext": "DECIMAL128"
+                  }
+                }
+              },
+              "expectedResults": {
+                "accountCreated": true,
+                "foreignKeyValid": true,
+                "balancePrecision": "exact_to_2_decimal_places",
+                "jpaEntitySaved": true
+              }
+            },
+            {
+              "phase": "Card Creation",
+              "phaseId": "CARD-001",
+              "description": "Credit card creation with CVV security validation",
+              "testData": {
+                "card": {
+                  "cardNumber": "4050024453765740",
+                  "accountId": "00000000001",
+                  "customerId": "000000001",
+                  "cvvCode": "123",
+                  "embossedName": "Alexandra M Thompson",
+                  "expirationDate": "2025-03-09",
+                  "activeStatus": "A",
+                  "cardType": "Visa",
+                  "isLuhnValid": true,
+                  "isExpired": false
+                },
+                "securityValidation": {
+                  "cvvLength": 3,
+                  "cvvNumeric": true,
+                  "luhnAlgorithm": "valid",
+                  "expirationFuture": true
+                },
+                "relationshipValidation": {
+                  "accountExists": true,
+                  "customerExists": true,
+                  "foreignKeyConstraints": ["account_id", "customer_id"]
+                }
+              },
+              "expectedResults": {
+                "cardCreated": true,
+                "securityValidationPassed": true,
+                "relationshipIntegrityMaintained": true,
+                "embossedNameFormatted": "ALEXANDRA M THOMPSON"
+              }
+            },
+            {
+              "phase": "Transaction Processing",
+              "phaseId": "TRANS-001",
+              "description": "Transaction processing with balance calculation and BigDecimal precision",
+              "testData": {
+                "transaction": {
+                  "transactionId": "T00000000001",
+                  "transactionType": "01",
+                  "categoryCode": "0001",
+                  "source": "POS TERM",
+                  "description": "Purchase at Test Merchant",
+                  "amount": "150.75",
+                  "merchantId": "800000001",
+                  "merchantName": "Test Merchant Inc",
+                  "merchantCity": "Los Angeles",
+                  "merchantZip": "90210",
+                  "cardNumber": "4050024453765740",
+                  "originalTimestamp": "2024-01-15T14:30:00Z",
+                  "processingTimestamp": "2024-01-15T14:30:15Z"
+                },
+                "balanceCalculation": {
+                  "previousBalance": "1940.00",
+                  "transactionAmount": "150.75",
+                  "expectedNewBalance": "2090.75",
+                  "calculationMethod": "BigDecimal.add()",
+                  "roundingMode": "HALF_UP",
+                  "mathContext": "DECIMAL128"
+                },
+                "businessRules": {
+                  "authorizationRequired": true,
+                  "creditLimitCheck": true,
+                  "availableCredit": "18109.25",
+                  "withinCreditLimit": true
+                }
+              },
+              "expectedResults": {
+                "transactionProcessed": true,
+                "balanceUpdated": true,
+                "newBalance": "2090.75",
+                "authorizationCode": "AUTH001",
+                "creditLimitCompliance": true,
+                "transactionPosted": true
+              }
+            },
+            {
+              "phase": "Account Statement Generation",
+              "phaseId": "STMT-001",
+              "description": "Account statement generation with interest calculation and BigDecimal precision",
+              "testData": {
+                "statementPeriod": {
+                  "startDate": "2024-01-01",
+                  "endDate": "2024-01-31",
+                  "statementDate": "2024-02-01",
+                  "dueDate": "2024-02-25"
+                },
+                "interestCalculation": {
+                  "averageDailyBalance": "2015.375",
+                  "dailyPeriodicRate": "0.0004932",
+                  "daysInBillingCycle": 31,
+                  "expectedInterestCharge": "30.84",
+                  "calculationMethod": "BigDecimal compound precision",
+                  "roundingMode": "HALF_UP"
+                },
+                "statementTransactions": [
+                  {
+                    "transactionId": "T00000000001",
+                    "date": "2024-01-15",
+                    "description": "Purchase at Test Merchant",
+                    "amount": "150.75",
+                    "balanceAfter": "2090.75"
+                  }
+                ]
+              },
+              "expectedResults": {
+                "statementGenerated": true,
+                "interestCalculated": true,
+                "interestAmount": "30.84",
+                "newBalance": "2121.59",
+                "minimumPaymentDue": "63.65",
+                "statementPrecisionValid": true
+              }
+            }
+          ],
+          "crossComponentIntegration": {
+            "reactComponentTesting": {
+              "loginComponent": "validates JWT authentication flow",
+              "customerComponent": "validates customer profile creation",
+              "accountComponent": "validates account balance display with BigDecimal precision",
+              "cardComponent": "validates card listing and security features",
+              "transactionComponent": "validates transaction posting and history",
+              "statementComponent": "validates statement generation and display"
+            },
+            "restApiTesting": {
+              "authenticationEndpoint": "POST /api/auth/login",
+              "customerEndpoint": "POST /api/customers",
+              "accountEndpoint": "POST /api/accounts",
+              "cardEndpoint": "POST /api/cards",
+              "transactionEndpoint": "POST /api/transactions",
+              "statementEndpoint": "GET /api/statements/{accountId}"
+            },
+            "databaseIntegration": {
+              "userTable": "validates user authentication data",
+              "customerTable": "validates customer profile data",
+              "accountTable": "validates account data with BigDecimal precision",
+              "cardTable": "validates card data with security constraints",
+              "transactionTable": "validates transaction data with date partitioning",
+              "foreignKeyConstraints": "validates referential integrity"
+            }
+          }
+        },
+        {
+          "scenarioName": "Regular User Credit Card Transaction Journey",
+          "scenarioId": "E2E-USER-001",
+          "description": "Regular user journey focusing on transaction processing and balance management",
+          "testPhases": [
+            {
+              "phase": "Authentication",
+              "phaseId": "AUTH-002",
+              "description": "Regular user authentication with limited access",
+              "testData": {
+                "user": {
+                  "userId": "USER0001",
+                  "firstName": "John",
+                  "lastName": "Smith",
+                  "passwordHash": "$2a$10$XK5FpqoYHrBtQQmqbEEu8.4YgA7G3o1wNcGXjdZb9qYRj2dGJKmW2",
+                  "plainTextPassword": "user123",
+                  "userType": "R",
+                  "expectedRole": "ROLE_USER",
+                  "expectedClaims": {
+                    "sub": "USER0001",
+                    "userType": "R",
+                    "authorities": ["ROLE_USER"]
+                  }
+                },
+                "sessionManagement": {
+                  "redisKey": "spring:session:sessions:user0001-session",
+                  "sessionData": {
+                    "userId": "USER0001",
+                    "userType": "R",
+                    "loginTime": "2024-01-15T09:00:00Z",
+                    "lastActivity": "2024-01-15T09:00:00Z"
+                  },
+                  "ttlMinutes": 30
+                }
+              },
+              "expectedResults": {
+                "jwtToken": "generated_jwt_token_with_user_claims",
+                "sessionCreated": true,
+                "redirectTo": "/user/dashboard",
+                "menuAccess": ["Account View", "Transaction History", "Card Management"]
+              }
+            },
+            {
+              "phase": "Account Balance Inquiry",
+              "phaseId": "BAL-001",
+              "description": "Account balance inquiry with BigDecimal precision validation",
+              "testData": {
+                "account": {
+                  "accountId": "00000000002",
+                  "customerId": "000000002",
+                  "activeStatus": "ACTIVE",
+                  "currentBalance": "1580.00",
+                  "creditLimit": "61300.00",
+                  "cashCreditLimit": "54480.00",
+                  "availableCredit": "59720.00"
+                },
+                "balancePrecision": {
+                  "currentBalance": {
+                    "value": "1580.00",
+                    "scale": 2,
+                    "precision": 12,
+                    "displayFormat": "$1,580.00"
+                  },
+                  "availableCredit": {
+                    "value": "59720.00",
+                    "scale": 2,
+                    "precision": 12,
+                    "displayFormat": "$59,720.00"
+                  }
+                }
+              },
+              "expectedResults": {
+                "balanceRetrieved": true,
+                "precisionMaintained": true,
+                "displayFormatted": true,
+                "currencySymbolIncluded": true
+              }
+            },
+            {
+              "phase": "Transaction History Retrieval",
+              "phaseId": "HIST-001",
+              "description": "Transaction history retrieval with pagination and date filtering",
+              "testData": {
+                "queryParameters": {
+                  "accountId": "00000000002",
+                  "startDate": "2024-01-01",
+                  "endDate": "2024-01-31",
+                  "pageSize": 10,
+                  "pageNumber": 0,
+                  "sortBy": "processingTimestamp",
+                  "sortDirection": "DESC"
+                },
+                "expectedTransactions": [
+                  {
+                    "transactionId": "T00000000002",
+                    "transactionType": "01",
+                    "categoryCode": "0001",
+                    "description": "Purchase at Gas Station",
+                    "amount": "45.50",
+                    "merchantName": "Shell Gas Station",
+                    "processingTimestamp": "2024-01-30T15:20:00Z"
+                  },
+                  {
+                    "transactionId": "T00000000003",
+                    "transactionType": "02",
+                    "categoryCode": "0002",
+                    "description": "Payment - Online",
+                    "amount": "-200.00",
+                    "merchantName": "Online Payment",
+                    "processingTimestamp": "2024-01-25T10:00:00Z"
+                  }
+                ]
+              },
+              "expectedResults": {
+                "transactionsRetrieved": true,
+                "paginationWorking": true,
+                "sortingCorrect": true,
+                "dateFilteringAccurate": true,
+                "balanceCalculationsCorrect": true
+              }
+            },
+            {
+              "phase": "Card Status Inquiry",
+              "phaseId": "CARD-002",
+              "description": "Card status inquiry with security validation",
+              "testData": {
+                "card": {
+                  "cardNumber": "5068358619817151",
+                  "accountId": "00000000002",
+                  "customerId": "000000002",
+                  "cvvCode": "456",
+                  "embossedName": "John Smith",
+                  "expirationDate": "2025-07-13",
+                  "activeStatus": "A",
+                  "cardType": "MasterCard",
+                  "isLuhnValid": true,
+                  "isExpired": false
+                },
+                "securityMasking": {
+                  "cardNumberMasked": "5068-****-****-7151",
+                  "cvvMasked": "***",
+                  "fullDetailsRequireAuth": true
+                }
+              },
+              "expectedResults": {
+                "cardStatusRetrieved": true,
+                "securityMaskingApplied": true,
+                "expirationDateValidated": true,
+                "cardTypeIdentified": true,
+                "luhnValidationPassed": true
+              }
+            }
+          ],
+          "crossComponentIntegration": {
+            "reactComponentTesting": {
+              "loginComponent": "validates regular user authentication",
+              "dashboardComponent": "validates limited menu access",
+              "accountBalanceComponent": "validates balance display with precision",
+              "transactionHistoryComponent": "validates transaction listing with pagination",
+              "cardStatusComponent": "validates card information with security masking"
+            },
+            "restApiTesting": {
+              "authenticationEndpoint": "POST /api/auth/login",
+              "balanceEndpoint": "GET /api/accounts/{accountId}/balance",
+              "transactionHistoryEndpoint": "GET /api/accounts/{accountId}/transactions",
+              "cardStatusEndpoint": "GET /api/cards/{cardNumber}/status"
+            },
+            "databaseIntegration": {
+              "userTable": "validates regular user authentication",
+              "accountTable": "validates balance retrieval with precision",
+              "transactionTable": "validates transaction history with pagination",
+              "cardTable": "validates card status retrieval"
+            }
+          }
+        }
+      ]
+    },
+    "GoldenFileValidationData": {
+      "description": "COBOL COMP-3 precision reference values and BigDecimal calculation validation for zero-tolerance precision verification",
+      "cobolPrecisionReference": {
+        "comp3ValidationScenarios": [
+          {
+            "scenarioName": "Account Balance Precision Validation",
+            "cobolField": "ACCT-CURR-BAL PIC S9(10)V99 COMP-3",
+            "javaEquivalent": "BigDecimal currentBalance",
+            "testCases": [
+              {
+                "description": "Standard positive balance",
+                "cobolValue": "0000194000+",
+                "hexRepresentation": "0x00194000C",
+                "javaValue": "1940.00",
+                "bigDecimalConfig": {
+                  "scale": 2,
+                  "precision": 12,
+                  "mathContext": "DECIMAL128",
+                  "roundingMode": "HALF_UP"
+                },
+                "expectedResult": "exact_match"
+              },
+              {
+                "description": "Large balance with maximum precision",
+                "cobolValue": "9999999999+",
+                "hexRepresentation": "0x9999999999C",
+                "javaValue": "99999999.99",
+                "bigDecimalConfig": {
+                  "scale": 2,
+                  "precision": 12,
+                  "mathContext": "DECIMAL128",
+                  "roundingMode": "HALF_UP"
+                },
+                "expectedResult": "exact_match"
+              },
+              {
+                "description": "Zero balance",
+                "cobolValue": "0000000000+",
+                "hexRepresentation": "0x0000000000C",
+                "javaValue": "0.00",
+                "bigDecimalConfig": {
+                  "scale": 2,
+                  "precision": 12,
+                  "mathContext": "DECIMAL128",
+                  "roundingMode": "HALF_UP"
+                },
+                "expectedResult": "exact_match"
+              },
+              {
+                "description": "Negative balance (debt)",
+                "cobolValue": "0000500000-",
+                "hexRepresentation": "0x0000500000D",
+                "javaValue": "-5000.00",
+                "bigDecimalConfig": {
+                  "scale": 2,
+                  "precision": 12,
+                  "mathContext": "DECIMAL128",
+                  "roundingMode": "HALF_UP"
+                },
+                "expectedResult": "exact_match"
+              }
+            ]
+          },
+          {
+            "scenarioName": "Transaction Amount Precision Validation",
+            "cobolField": "TRAN-AMT PIC S9(09)V99 COMP-3",
+            "javaEquivalent": "BigDecimal transactionAmount",
+            "testCases": [
+              {
+                "description": "Standard purchase amount",
+                "cobolValue": "0015075+",
+                "hexRepresentation": "0x015075C",
+                "javaValue": "150.75",
+                "bigDecimalConfig": {
+                  "scale": 2,
+                  "precision": 11,
+                  "mathContext": "DECIMAL128",
+                  "roundingMode": "HALF_UP"
+                },
+                "expectedResult": "exact_match"
+              },
+              {
+                "description": "Small amount with cents",
+                "cobolValue": "0000001+",
+                "hexRepresentation": "0x000001C",
+                "javaValue": "0.01",
+                "bigDecimalConfig": {
+                  "scale": 2,
+                  "precision": 11,
+                  "mathContext": "DECIMAL128",
+                  "roundingMode": "HALF_UP"
+                },
+                "expectedResult": "exact_match"
+              },
+              {
+                "description": "Large transaction amount",
+                "cobolValue": "9999999999+",
+                "hexRepresentation": "0x9999999999C",
+                "javaValue": "99999999.99",
+                "bigDecimalConfig": {
+                  "scale": 2,
+                  "precision": 11,
+                  "mathContext": "DECIMAL128",
+                  "roundingMode": "HALF_UP"
+                },
+                "expectedResult": "exact_match"
+              },
+              {
+                "description": "Credit/refund amount",
+                "cobolValue": "0025000-",
+                "hexRepresentation": "0x025000D",
+                "javaValue": "-250.00",
+                "bigDecimalConfig": {
+                  "scale": 2,
+                  "precision": 11,
+                  "mathContext": "DECIMAL128",
+                  "roundingMode": "HALF_UP"
+                },
+                "expectedResult": "exact_match"
+              }
+            ]
+          }
+        ],
+        "interestCalculationValidation": {
+          "description": "Interest calculation precision validation matching COBOL arithmetic",
+          "calculationScenarios": [
+            {
+              "scenarioName": "Daily Interest Calculation",
+              "description": "Daily interest calculation with exact COBOL COMP-3 precision",
+              "inputData": {
+                "principalBalance": "2000.00",
+                "annualInterestRate": "18.00",
+                "daysInYear": 365,
+                "daysInBillingCycle": 30
+              },
+              "cobolCalculation": {
+                "dailyRate": "0.000493150684931507",
+                "expectedInterest": "29.59",
+                "cobolFormula": "PRINCIPAL * (RATE / 365) * DAYS",
+                "roundingRule": "HALF_UP_TO_CENTS"
+              },
+              "javaCalculation": {
+                "mathContext": "DECIMAL128",
+                "roundingMode": "HALF_UP",
+                "expectedInterest": "29.59",
+                "javaFormula": "principal.multiply(rate.divide(365, context)).multiply(days, context)",
+                "precisionValidation": "exact_match_to_cobol"
+              }
+            },
+            {
+              "scenarioName": "Compound Interest Calculation",
+              "description": "Monthly compound interest with exact precision matching",
+              "inputData": {
+                "principalBalance": "5000.00",
+                "monthlyInterestRate": "1.50",
+                "compoundingPeriods": 12
+              },
+              "cobolCalculation": {
+                "monthlyRate": "0.0150",
+                "expectedInterest": "77.50",
+                "cobolFormula": "PRINCIPAL * MONTHLY_RATE",
+                "roundingRule": "HALF_UP_TO_CENTS"
+              },
+              "javaCalculation": {
+                "mathContext": "DECIMAL128",
+                "roundingMode": "HALF_UP",
+                "expectedInterest": "77.50",
+                "javaFormula": "principal.multiply(monthlyRate, context)",
+                "precisionValidation": "exact_match_to_cobol"
+              }
+            }
+          ]
+        },
+        "balanceCalculationValidation": {
+          "description": "Balance calculation validation with BigDecimal precision",
+          "balanceUpdateScenarios": [
+            {
+              "scenarioName": "Purchase Transaction Balance Update",
+              "description": "Balance update after purchase transaction",
+              "inputData": {
+                "previousBalance": "1500.00",
+                "transactionAmount": "75.25",
+                "transactionType": "PURCHASE"
+              },
+              "cobolCalculation": {
+                "operation": "ADD",
+                "expectedBalance": "1575.25",
+                "cobolFormula": "PREV_BALANCE + TRAN_AMOUNT",
+                "roundingRule": "HALF_UP_TO_CENTS"
+              },
+              "javaCalculation": {
+                "mathContext": "DECIMAL128",
+                "roundingMode": "HALF_UP",
+                "expectedBalance": "1575.25",
+                "javaFormula": "previousBalance.add(transactionAmount, context)",
+                "precisionValidation": "exact_match_to_cobol"
+              }
+            },
+            {
+              "scenarioName": "Payment Transaction Balance Update",
+              "description": "Balance update after payment transaction",
+              "inputData": {
+                "previousBalance": "2000.00",
+                "paymentAmount": "500.00",
+                "transactionType": "PAYMENT"
+              },
+              "cobolCalculation": {
+                "operation": "SUBTRACT",
+                "expectedBalance": "1500.00",
+                "cobolFormula": "PREV_BALANCE - PAYMENT_AMOUNT",
+                "roundingRule": "HALF_UP_TO_CENTS"
+              },
+              "javaCalculation": {
+                "mathContext": "DECIMAL128",
+                "roundingMode": "HALF_UP",
+                "expectedBalance": "1500.00",
+                "javaFormula": "previousBalance.subtract(paymentAmount, context)",
+                "precisionValidation": "exact_match_to_cobol"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "CrossComponentIntegrationTestData": {
+      "description": "Cross-component integration test scenarios for React components, REST APIs, and PostgreSQL database validation",
+      "fullStackIntegrationScenarios": [
+        {
+          "scenarioName": "Complete Card Authorization Flow",
+          "scenarioId": "INTEGRATION-001",
+          "description": "End-to-end card authorization from React frontend through REST API to PostgreSQL database",
+          "componentStack": {
+            "reactComponents": [
+              "LoginComponent",
+              "CardAuthorizationComponent",
+              "TransactionFormComponent",
+              "BalanceDisplayComponent",
+              "TransactionHistoryComponent"
+            ],
+            "restEndpoints": [
+              "POST /api/auth/login",
+              "POST /api/cards/authorize",
+              "POST /api/transactions",
+              "GET /api/accounts/{accountId}/balance",
+              "GET /api/accounts/{accountId}/transactions"
+            ],
+            "databaseTables": [
+              "users",
+              "customers",
+              "accounts",
+              "cards",
+              "transactions",
+              "transaction_categories",
+              "transaction_types"
+            ]
+          },
+          "testFlow": {
+            "step1": {
+              "description": "User authentication",
+              "reactComponent": "LoginComponent",
+              "restEndpoint": "POST /api/auth/login",
+              "databaseQuery": "SELECT * FROM users WHERE user_id = ?",
+              "testData": {
+                "userId": "USER0001",
+                "password": "user123"
+              },
+              "expectedResult": {
+                "jwtToken": "generated_jwt_token",
+                "sessionCreated": true,
+                "userAuthenticated": true
+              }
+            },
+            "step2": {
+              "description": "Card authorization request",
+              "reactComponent": "CardAuthorizationComponent",
+              "restEndpoint": "POST /api/cards/authorize",
+              "databaseQuery": "SELECT c.*, a.current_balance, a.credit_limit FROM cards c JOIN accounts a ON c.account_id = a.account_id WHERE c.card_number = ?",
+              "testData": {
+                "cardNumber": "4050024453765740",
+                "merchantId": "800000001",
+                "amount": "150.75"
+              },
+              "expectedResult": {
+                "authorizationCode": "AUTH001",
+                "approved": true,
+                "availableCredit": "18109.25"
+              }
+            },
+            "step3": {
+              "description": "Transaction posting",
+              "reactComponent": "TransactionFormComponent",
+              "restEndpoint": "POST /api/transactions",
+              "databaseQuery": "INSERT INTO transactions (transaction_id, card_number, amount, merchant_id, processing_timestamp) VALUES (?, ?, ?, ?, ?)",
+              "testData": {
+                "transactionId": "T00000000001",
+                "cardNumber": "4050024453765740",
+                "amount": "150.75",
+                "merchantId": "800000001",
+                "processingTimestamp": "2024-01-15T14:30:15Z"
+              },
+              "expectedResult": {
+                "transactionPosted": true,
+                "balanceUpdated": true,
+                "newBalance": "2090.75"
+              }
+            },
+            "step4": {
+              "description": "Balance display update",
+              "reactComponent": "BalanceDisplayComponent",
+              "restEndpoint": "GET /api/accounts/{accountId}/balance",
+              "databaseQuery": "SELECT current_balance, credit_limit, (credit_limit - current_balance) as available_credit FROM accounts WHERE account_id = ?",
+              "testData": {
+                "accountId": "00000000001"
+              },
+              "expectedResult": {
+                "currentBalance": "2090.75",
+                "creditLimit": "20200.00",
+                "availableCredit": "18109.25",
+                "balanceFormatted": "$2,090.75"
+              }
+            },
+            "step5": {
+              "description": "Transaction history refresh",
+              "reactComponent": "TransactionHistoryComponent",
+              "restEndpoint": "GET /api/accounts/{accountId}/transactions",
+              "databaseQuery": "SELECT t.*, tc.category_description, tt.type_description FROM transactions t JOIN transaction_categories tc ON t.category_code = tc.category_code JOIN transaction_types tt ON t.transaction_type = tt.transaction_type WHERE t.account_id = ? ORDER BY t.processing_timestamp DESC",
+              "testData": {
+                "accountId": "00000000001",
+                "pageSize": 10,
+                "pageNumber": 0
+              },
+              "expectedResult": {
+                "transactionCount": 1,
+                "latestTransaction": {
+                  "transactionId": "T00000000001",
+                  "amount": "150.75",
+                  "description": "Purchase at Test Merchant",
+                  "processingTimestamp": "2024-01-15T14:30:15Z"
+                }
+              }
+            }
+          }
+        },
+        {
+          "scenarioName": "Batch Processing Integration",
+          "scenarioId": "INTEGRATION-002",
+          "description": "Spring Batch processing integration with PostgreSQL and React reporting components",
+          "componentStack": {
+            "springBatchJobs": [
+              "InterestCalculationJob",
+              "StatementGenerationJob",
+              "TransactionSummaryJob"
+            ],
+            "reactComponents": [
+              "ReportDashboardComponent",
+              "BatchJobStatusComponent",
+              "StatementViewComponent"
+            ],
+            "restEndpoints": [
+              "POST /api/batch/jobs/interest-calculation",
+              "GET /api/batch/jobs/status/{jobId}",
+              "GET /api/statements/{accountId}"
+            ],
+            "databaseTables": [
+              "accounts",
+              "transactions",
+              "statements",
+              "batch_job_execution",
+              "batch_job_instance"
+            ]
+          },
+          "testFlow": {
+            "step1": {
+              "description": "Batch job initiation",
+              "reactComponent": "BatchJobStatusComponent",
+              "restEndpoint": "POST /api/batch/jobs/interest-calculation",
+              "batchJobConfig": {
+                "jobName": "interestCalculationJob",
+                "parameters": {
+                  "statementDate": "2024-01-31",
+                  "accountFilter": "ALL"
+                }
+              },
+              "expectedResult": {
+                "jobId": "JOB001",
+                "jobStatus": "STARTED",
+                "estimatedDuration": "30 minutes"
+              }
+            },
+            "step2": {
+              "description": "Interest calculation processing",
+              "springBatchStep": "InterestCalculationStep",
+              "databaseQuery": "SELECT account_id, current_balance, interest_rate FROM accounts WHERE active_status = 'ACTIVE'",
+              "processingLogic": {
+                "readAccountData": true,
+                "calculateInterest": true,
+                "updateBalances": true,
+                "generateStatements": true
+              },
+              "expectedResult": {
+                "accountsProcessed": 50,
+                "interestCalculated": true,
+                "balancesUpdated": true,
+                "statementsGenerated": 50
+              }
+            },
+            "step3": {
+              "description": "Statement generation completion",
+              "reactComponent": "StatementViewComponent",
+              "restEndpoint": "GET /api/statements/{accountId}",
+              "databaseQuery": "SELECT s.*, a.current_balance, a.credit_limit FROM statements s JOIN accounts a ON s.account_id = a.account_id WHERE s.account_id = ? AND s.statement_date = ?",
+              "testData": {
+                "accountId": "00000000001",
+                "statementDate": "2024-01-31"
+              },
+              "expectedResult": {
+                "statementGenerated": true,
+                "previousBalance": "2090.75",
+                "interestCharged": "30.84",
+                "newBalance": "2121.59",
+                "minimumPayment": "63.65"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
