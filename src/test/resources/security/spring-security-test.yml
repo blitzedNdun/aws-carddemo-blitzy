@@ -1,0 +1,812 @@
+# =====================================================================================
+# CardDemo Spring Security Test Configuration
+# =====================================================================================
+# Comprehensive JWT authentication testing, role-based authorization validation,
+# and security context propagation testing for microservice boundaries according
+# to technical specification Section 6.4 Security Architecture requirements.
+#
+# This configuration provides:
+# - JWT token validation testing per Section 6.4.1.5 implementation
+# - RACF-to-Spring Security role mapping validation for ADMIN and USER roles
+# - Method-level @PreAuthorize validation per Section 6.4.2.2 framework
+# - OAuth2 resource server test configuration with token validation
+# - Security context propagation testing across microservice boundaries
+# - Mock authentication configuration for comprehensive testing scenarios
+#
+# Technical Specification References:
+# - Section 6.4.1.5: JWT Token Management and Security
+# - Section 6.4.2.1: Spring Security Role-Based Access Control Model
+# - Section 6.4.2.2: Method-Level Security Authorization Framework
+# - Section 6.6.2.4: Spring Boot Test Slices and Mocking Strategy
+# =====================================================================================
+
+# =====================================================================================
+# SPRING SECURITY TEST CORE CONFIGURATION
+# =====================================================================================
+spring:
+  # Security test configuration
+  security:
+    # OAuth2 resource server test configuration
+    oauth2:
+      resourceserver:
+        jwt:
+          # Test JWT issuer configuration
+          issuer-uri: ${TEST_JWT_ISSUER_URI:http://localhost:8080/carddemo-test}
+          
+          # Test JWT key set configuration
+          jwk-set-uri: ${TEST_JWT_JWK_SET_URI:http://localhost:8080/carddemo-test/.well-known/jwks.json}
+          
+          # Test JWT audience validation
+          audiences: 
+            - carddemo-test
+            - carddemo-integration
+            - carddemo-security-test
+          
+          # Test token validation settings
+          token-validity-seconds: 3600
+          refresh-token-validity-seconds: 7200
+          
+          # Test JWT claims validation
+          claims:
+            # Standard JWT claims for testing
+            issuer: carddemo-test-issuer
+            subject: test-subject
+            audience: carddemo-test
+            
+            # Custom claims for CardDemo testing
+            user_id: test-user-id
+            user_type: A  # Test admin user type
+            roles: 
+              - ROLE_ADMIN
+              - ROLE_USER
+            
+            # Session correlation for testing
+            session_id: test-session-correlation-id
+            
+            # Test-specific claims
+            test_scenario: security-validation
+            environment: test
+    
+    # Test user configuration for basic authentication scenarios
+    user:
+      name: ${TEST_SECURITY_USER:test-admin}
+      password: ${TEST_SECURITY_PASSWORD:test-password}
+      roles: 
+        - ADMIN
+        - USER
+        - VIEWER
+        - TESTER
+
+# =====================================================================================
+# JWT AUTHENTICATION TEST CONFIGURATION
+# =====================================================================================
+# JWT token validation test scenarios supporting HS256 algorithm testing,
+# token expiration validation, and comprehensive authentication testing
+jwt:
+  test:
+    # JWT signing configuration for testing
+    signing:
+      algorithm: HS256
+      secret-key: ${TEST_JWT_SECRET:test-jwt-secret-key-for-authentication-testing-only}
+      
+    # Token expiration settings for testing
+    expiration:
+      access-token: 3600  # 1 hour for testing
+      refresh-token: 7200  # 2 hours for testing
+      
+    # Test token validation settings
+    validation:
+      # Token signature verification
+      verify-signature: true
+      
+      # Token expiration validation
+      validate-expiration: true
+      
+      # Claims validation
+      validate-claims: true
+      
+      # Audience validation
+      validate-audience: true
+      
+      # Issuer validation
+      validate-issuer: true
+      
+    # Test JWT claims structure
+    claims:
+      # Standard JWT claims
+      standard:
+        issuer: carddemo-test-issuer
+        subject: test-subject
+        audience: carddemo-test
+        issued-at: auto
+        expiration: auto
+        not-before: auto
+        jwt-id: auto
+        
+      # Custom CardDemo claims
+      custom:
+        user_id: test-user-123
+        user_type: A  # Admin user type for testing
+        first_name: Test
+        last_name: Admin
+        roles:
+          - ROLE_ADMIN
+          - ROLE_USER
+        permissions:
+          - user:read
+          - user:write
+          - user:delete
+          - account:read
+          - account:write
+          - transaction:read
+          - transaction:write
+          - admin:all
+        session_id: test-session-123
+        correlation_id: test-correlation-456
+        
+    # Test scenarios configuration
+    scenarios:
+      # Valid token scenarios
+      valid-admin-token:
+        user_type: A
+        roles: [ROLE_ADMIN, ROLE_USER]
+        permissions: [admin:all, user:read, user:write, account:read, account:write]
+        
+      valid-user-token:
+        user_type: U
+        roles: [ROLE_USER]
+        permissions: [user:read, account:read, transaction:read]
+        
+      # Invalid token scenarios
+      expired-token:
+        expiration: -3600  # Expired 1 hour ago
+        
+      invalid-signature:
+        signature: invalid-signature-for-testing
+        
+      missing-claims:
+        user_type: null
+        roles: []
+        
+      malformed-token:
+        format: invalid
+
+# =====================================================================================
+# ROLE-BASED SECURITY TEST SCENARIOS
+# =====================================================================================
+# Comprehensive role-based access control test scenarios validating
+# RACF-to-Spring Security role mapping and authorization boundaries
+security:
+  test:
+    # Role mapping test configuration
+    role-mapping:
+      # RACF to Spring Security role mapping
+      racf-to-spring:
+        # Admin role mapping (RACF user type 'A')
+        admin:
+          racf-user-type: A
+          spring-roles:
+            - ROLE_ADMIN
+            - ROLE_USER  # Admin inherits user permissions
+          permissions:
+            - admin:all
+            - user:read
+            - user:write
+            - user:delete
+            - account:read
+            - account:write
+            - account:delete
+            - transaction:read
+            - transaction:write
+            - card:read
+            - card:write
+            - card:delete
+            - system:configure
+            - audit:read
+            
+        # User role mapping (RACF user type 'U')  
+        user:
+          racf-user-type: U
+          spring-roles:
+            - ROLE_USER
+          permissions:
+            - user:read  # Own profile only
+            - account:read  # Own accounts only
+            - transaction:read  # Own transactions only
+            - card:read  # Own cards only
+            
+    # Method-level security test scenarios
+    method-security:
+      # @PreAuthorize test scenarios
+      pre-authorize:
+        # Admin-only methods
+        admin-only:
+          annotation: "@PreAuthorize('hasRole(\"ADMIN\")')"
+          allowed-roles: [ROLE_ADMIN]
+          denied-roles: [ROLE_USER, ROLE_VIEWER]
+          test-methods:
+            - createUser
+            - deleteUser
+            - updateUserRole
+            - viewAllUsers
+            - systemConfiguration
+            - auditLogAccess
+            
+        # User or Admin methods  
+        user-or-admin:
+          annotation: "@PreAuthorize('hasAnyRole(\"USER\", \"ADMIN\")')"
+          allowed-roles: [ROLE_USER, ROLE_ADMIN]
+          denied-roles: [ROLE_VIEWER]
+          test-methods:
+            - viewOwnProfile
+            - updateOwnProfile
+            - viewOwnAccounts
+            - viewOwnTransactions
+            - processPayment
+            
+        # Specific permission-based methods
+        permission-based:
+          annotation: "@PreAuthorize('hasAuthority(\"admin:all\")')"
+          allowed-authorities: [admin:all]
+          denied-authorities: [user:read, user:write]
+          test-methods:
+            - deleteAccount
+            - modifyInterestRates
+            - generateReports
+            
+    # Authorization boundary test scenarios
+    authorization-boundaries:
+      # Cross-service security propagation
+      cross-service:
+        # Authentication service to account service
+        auth-to-account:
+          source-service: authentication-service
+          target-service: account-service
+          security-context-propagation: true
+          jwt-token-validation: true
+          
+        # Account service to transaction service
+        account-to-transaction:
+          source-service: account-service
+          target-service: transaction-service
+          security-context-propagation: true
+          role-validation: true
+          
+        # Gateway to all services
+        gateway-to-services:
+          source-service: spring-cloud-gateway
+          target-services: 
+            - authentication-service
+            - account-service
+            - card-service
+            - transaction-service
+            - user-service
+          jwt-filter-validation: true
+          rate-limiting-validation: true
+          
+    # Security context test scenarios
+    security-context:
+      # Context establishment testing
+      context-establishment:
+        # JWT token to security context mapping
+        jwt-to-context:
+          token-claims-extraction: true
+          role-authority-mapping: true
+          user-details-population: true
+          
+        # Session management testing
+        session-management:
+          redis-session-validation: true
+          session-timeout-testing: true
+          concurrent-session-handling: true
+          
+      # Context propagation testing
+      context-propagation:
+        # Thread-local context propagation
+        thread-local:
+          async-method-security: true
+          scheduled-task-security: true
+          
+        # Microservice context propagation
+        microservice:
+          rest-template-propagation: true
+          web-client-propagation: true
+          feign-client-propagation: true
+
+# =====================================================================================
+# SPRING BOOT TEST INTEGRATION CONFIGURATION
+# =====================================================================================
+# Integration with Spring Boot test framework supporting @WebMvcTest,
+# @SpringBootTest, and security test slices
+test:
+  # Spring Boot test configuration
+  spring-boot:
+    # Test slices configuration
+    slices:
+      # Web MVC test slice for REST endpoint security
+      web-mvc:
+        # Mock security configuration
+        mock-security:
+          enabled: true
+          with-mock-user:
+            # Admin user mock configuration
+            admin-user:
+              username: test-admin
+              roles: [ADMIN, USER]
+              authorities: [admin:all, user:read, user:write]
+              
+            # Regular user mock configuration
+            regular-user:
+              username: test-user
+              roles: [USER]
+              authorities: [user:read, account:read]
+              
+        # Security test annotations
+        security-annotations:
+          # @WithMockUser configurations
+          with-mock-user:
+            - username: admin-test
+              roles: [ADMIN, USER]
+              authorities: [ROLE_ADMIN, ROLE_USER]
+              
+            - username: user-test
+              roles: [USER]
+              authorities: [ROLE_USER]
+              
+          # @WithMockJwt configurations
+          with-mock-jwt:
+            - claims:
+                user_id: test-admin-123
+                user_type: A
+                roles: [ROLE_ADMIN, ROLE_USER]
+                sub: test-admin
+                iss: carddemo-test
+                
+            - claims:
+                user_id: test-user-456
+                user_type: U
+                roles: [ROLE_USER]
+                sub: test-user
+                iss: carddemo-test
+                
+      # Security test slice configuration
+      security-test:
+        # Authentication testing
+        authentication:
+          jwt-authentication-testing: true
+          basic-authentication-testing: false
+          oauth2-testing: true
+          
+        # Authorization testing
+        authorization:
+          method-level-security: true
+          url-based-security: true
+          expression-based-security: true
+          
+        # Security context testing
+        security-context:
+          context-holder-testing: true
+          context-propagation-testing: true
+          
+    # Integration test configuration
+    integration:
+      # @SpringBootTest configuration
+      spring-boot-test:
+        # Test environment configuration
+        environment:
+          web-environment: MOCK
+          test-property-source: classpath:security/test-security.properties
+          
+        # Test database configuration
+        database:
+          replace: AUTO_CONFIGURED
+          
+        # Test security configuration
+        security:
+          auto-configure-test-security: true
+          
+      # Security integration testing
+      security-integration:
+        # Full application context security testing
+        full-context:
+          jwt-authentication-flow: true
+          role-based-authorization: true
+          method-security-validation: true
+          
+        # Microservice security testing
+        microservice:
+          service-to-service-security: true
+          gateway-security-validation: true
+          distributed-security-context: true
+
+# =====================================================================================
+# MOCK AUTHENTICATION CONFIGURATION
+# =====================================================================================
+# Mock authentication setup for comprehensive testing scenarios
+# without requiring actual authentication infrastructure
+mock:
+  authentication:
+    # Mock JWT token configuration
+    jwt:
+      # Mock token generation
+      token-generation:
+        enabled: true
+        algorithm: HS256
+        secret: mock-jwt-secret-for-testing
+        
+      # Mock token validation
+      token-validation:
+        enabled: true
+        skip-expiration-validation: true
+        skip-signature-validation: false
+        
+      # Mock claims configuration
+      claims:
+        # Default mock claims
+        default:
+          iss: carddemo-mock-issuer
+          sub: mock-user
+          aud: carddemo-test
+          exp: 9999999999  # Far future expiration
+          iat: 1000000000  # Fixed issued at
+          user_id: mock-user-123
+          user_type: A
+          roles: [ROLE_ADMIN, ROLE_USER]
+          
+        # Test scenario claims
+        scenarios:
+          admin-scenario:
+            user_type: A
+            roles: [ROLE_ADMIN, ROLE_USER]
+            authorities: [admin:all]
+            
+          user-scenario:
+            user_type: U
+            roles: [ROLE_USER]
+            authorities: [user:read]
+            
+          expired-scenario:
+            exp: 1000000000  # Past expiration
+            
+    # Mock user details service
+    user-details:
+      # Mock users configuration
+      users:
+        - username: mock-admin
+          password: mock-password
+          roles: [ADMIN, USER]
+          authorities: [ROLE_ADMIN, ROLE_USER]
+          enabled: true
+          account-non-expired: true
+          account-non-locked: true
+          credentials-non-expired: true
+          
+        - username: mock-user
+          password: mock-password
+          roles: [USER]
+          authorities: [ROLE_USER]
+          enabled: true
+          account-non-expired: true
+          account-non-locked: true
+          credentials-non-expired: true
+          
+    # Mock security context
+    security-context:
+      # Default security context for testing
+      default-context:
+        authentication-type: JWT
+        principal: mock-admin
+        authorities: [ROLE_ADMIN, ROLE_USER]
+        authenticated: true
+        
+      # Test scenario contexts
+      contexts:
+        admin-context:
+          principal: mock-admin
+          authorities: [ROLE_ADMIN, ROLE_USER]
+          details:
+            user_type: A
+            session_id: mock-admin-session
+            
+        user-context:
+          principal: mock-user
+          authorities: [ROLE_USER]
+          details:
+            user_type: U
+            session_id: mock-user-session
+
+# =====================================================================================
+# SECURITY TEST VALIDATION CONFIGURATION
+# =====================================================================================
+# Comprehensive validation configuration for security test scenarios
+validation:
+  # Authentication validation
+  authentication:
+    # JWT token validation tests
+    jwt-validation:
+      # Token signature validation
+      signature-validation:
+        enabled: true
+        test-scenarios:
+          - valid-signature
+          - invalid-signature
+          - missing-signature
+          
+      # Token expiration validation
+      expiration-validation:
+        enabled: true
+        test-scenarios:
+          - valid-expiration
+          - expired-token
+          - future-expiration
+          
+      # Claims validation
+      claims-validation:
+        enabled: true
+        required-claims:
+          - iss
+          - sub
+          - aud
+          - exp
+          - iat
+          - user_id
+          - user_type
+          - roles
+          
+    # Authentication flow validation
+    authentication-flow:
+      # Login flow validation
+      login-flow:
+        endpoint: /api/auth/login
+        method: POST
+        expected-response: JWT token
+        
+      # Token refresh validation
+      token-refresh:
+        endpoint: /api/auth/refresh
+        method: POST
+        expected-response: New JWT token
+        
+      # Logout validation
+      logout-flow:
+        endpoint: /api/auth/logout
+        method: POST
+        expected-response: Session invalidation
+        
+  # Authorization validation
+  authorization:
+    # Role-based validation
+    role-based:
+      # Admin role validation
+      admin-role:
+        required-role: ROLE_ADMIN
+        test-endpoints:
+          - /api/admin/**
+          - /api/users/**
+          - /api/system/**
+          
+      # User role validation
+      user-role:
+        required-role: ROLE_USER
+        test-endpoints:
+          - /api/account/**
+          - /api/transaction/**
+          - /api/card/**
+          
+    # Method-level validation
+    method-level:
+      # @PreAuthorize validation
+      pre-authorize:
+        test-methods:
+          - method: createUser
+            annotation: "@PreAuthorize('hasRole(\"ADMIN\")')"
+            allowed-roles: [ROLE_ADMIN]
+            
+          - method: viewAccount
+            annotation: "@PreAuthorize('hasAnyRole(\"USER\", \"ADMIN\")')"
+            allowed-roles: [ROLE_USER, ROLE_ADMIN]
+            
+      # @PostAuthorize validation
+      post-authorize:
+        test-methods:
+          - method: getUserDetails
+            annotation: "@PostAuthorize('returnObject.username == authentication.name')"
+            validation-logic: ownership-check
+            
+  # Security context validation
+  security-context:
+    # Context establishment validation
+    context-establishment:
+      # JWT to context mapping
+      jwt-to-context:
+        token-claims-extraction: true
+        role-authority-mapping: true
+        user-details-population: true
+        
+    # Context propagation validation
+    context-propagation:
+      # Cross-service propagation
+      cross-service:
+        service-to-service: true
+        async-processing: true
+        scheduled-tasks: true
+
+# =====================================================================================
+# OAUTH2 RESOURCE SERVER TEST CONFIGURATION
+# =====================================================================================
+# OAuth2 resource server test setup for comprehensive JWT authentication
+# and authorization testing in microservices environment
+oauth2:
+  resource-server:
+    # Test configuration
+    test:
+      # JWT decoder test configuration
+      jwt-decoder:
+        # Test JWT decoder setup
+        configuration:
+          algorithm: HS256
+          secret-key: ${TEST_JWT_SECRET:oauth2-test-secret-key}
+          
+        # Test scenarios
+        scenarios:
+          valid-token-decoding:
+            token-format: valid
+            expected-result: successful-decode
+            
+          invalid-token-decoding:
+            token-format: invalid
+            expected-result: decode-failure
+            
+          expired-token-decoding:
+            token-format: expired
+            expected-result: expiration-error
+            
+      # Authentication converter test
+      authentication-converter:
+        # JWT to authentication conversion
+        jwt-to-authentication:
+          claims-extraction: true
+          authorities-mapping: true
+          principal-creation: true
+          
+        # Test scenarios
+        scenarios:
+          admin-token-conversion:
+            input-claims:
+              user_type: A
+              roles: [ROLE_ADMIN, ROLE_USER]
+            expected-authorities: [ROLE_ADMIN, ROLE_USER]
+            
+          user-token-conversion:
+            input-claims:
+              user_type: U
+              roles: [ROLE_USER]
+            expected-authorities: [ROLE_USER]
+            
+      # Resource server configuration test
+      resource-server:
+        # Security filter chain test
+        security-filter-chain:
+          jwt-authentication-filter: true
+          bearer-token-resolver: true
+          authentication-entry-point: true
+          
+        # Authorization test
+        authorization:
+          method-security: true
+          url-security: true
+          expression-security: true
+
+# =====================================================================================
+# SECURITY TEST PROFILES
+# =====================================================================================
+# Test profiles for different security testing scenarios
+---
+spring:
+  config:
+    activate:
+      on-profile: security-integration-test
+      
+# Integration test profile configuration
+security:
+  test:
+    integration:
+      # Full security integration testing
+      full-integration:
+        jwt-authentication: true
+        role-based-authorization: true
+        method-level-security: true
+        security-context-propagation: true
+        
+      # Database security testing
+      database:
+        user-authentication: true
+        role-validation: true
+        session-management: true
+        
+---
+spring:
+  config:
+    activate:
+      on-profile: security-unit-test
+      
+# Unit test profile configuration
+security:
+  test:
+    unit:
+      # Mock security configuration
+      mock:
+        authentication: true
+        authorization: true
+        security-context: true
+        
+      # Isolated component testing
+      components:
+        jwt-decoder: true
+        authentication-converter: true
+        authorization-evaluator: true
+        
+---
+spring:
+  config:
+    activate:
+      on-profile: security-performance-test
+      
+# Performance test profile configuration
+security:
+  test:
+    performance:
+      # Authentication performance testing
+      authentication:
+        jwt-validation-performance: true
+        concurrent-authentication: true
+        
+      # Authorization performance testing
+      authorization:
+        role-evaluation-performance: true
+        method-security-performance: true
+        
+      # Load testing configuration
+      load:
+        concurrent-users: 1000
+        test-duration: 300s
+        authentication-rate: 100/s
+
+# =====================================================================================
+# SECURITY TEST DOCUMENTATION
+# =====================================================================================
+# Comprehensive documentation for security test configuration usage
+#
+# JWT Authentication Testing:
+# - Supports HS256 algorithm testing with configurable secret keys
+# - Provides token expiration validation and claims verification
+# - Includes comprehensive test scenarios for valid/invalid tokens
+# - Integrates with Spring Security OAuth2 resource server testing
+#
+# Role-Based Authorization Testing:
+# - Validates RACF-to-Spring Security role mapping (A->ADMIN, U->USER)
+# - Tests method-level @PreAuthorize annotations
+# - Supports cross-service security context propagation
+# - Includes authorization boundary validation
+#
+# Spring Boot Test Integration:
+# - Supports @WebMvcTest, @SpringBootTest, and security test slices
+# - Provides @WithMockUser and @WithMockJwt test annotations
+# - Integrates with Testcontainers for database security testing
+# - Includes mock authentication configuration for isolated testing
+#
+# Security Test Validation:
+# - Comprehensive authentication flow validation
+# - Role-based and method-level authorization validation
+# - Security context establishment and propagation validation
+# - OAuth2 resource server configuration testing
+#
+# Test Profile Support:
+# - security-integration-test: Full security integration testing
+# - security-unit-test: Isolated security component testing
+# - security-performance-test: Security performance and load testing
+#
+# This configuration ensures comprehensive security testing coverage
+# while maintaining alignment with CardDemo technical specifications
+# and Spring Security best practices for microservices architecture.
+# =====================================================================================
