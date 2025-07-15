@@ -1,0 +1,932 @@
+# =====================================================================================
+# CardDemo Spring Boot Integration Test Configuration
+# =====================================================================================
+# Comprehensive integration test configuration supporting Spring Cloud Gateway
+# integration testing, circuit breaker validation, and Kubernetes namespace-based
+# testing architecture for the modernized CardDemo credit card processing system.
+#
+# This configuration extends the base test configuration with:
+# - Spring Cloud Gateway test routing configuration with load balancing
+# - Circuit breaker pattern testing with Resilience4j integration
+# - Distributed session management testing across service boundaries
+# - PostgreSQL Testcontainers integration for database testing
+# - Redis session store testing with distributed session validation
+# - Kubernetes namespace testing support for carddemo-integration environment
+# - HikariCP connection pooling optimized for integration test execution speed
+#
+# Technical Specification References:
+# - Section 6.6.7.1: Kubernetes namespace-based testing architecture
+# - Section 5.1.1: Spring Cloud Gateway integration with load balancing and circuit breaker patterns
+# - Section 6.6.7.3: PostgreSQL Testcontainers integration requirements
+# - Section 6.6.3.2: SpringBootTest integration strategy with Testcontainers
+# =====================================================================================
+
+# =====================================================================================
+# SPRING BOOT INTEGRATION TEST CORE CONFIGURATION
+# =====================================================================================
+spring:
+  # Integration test application identification
+  application:
+    name: carddemo-integration-test
+    version: 1.0.0-INTEGRATION
+  
+  # Active integration test profiles
+  profiles:
+    active: integration-test
+    include:
+      - testcontainers
+      - gateway-integration
+      - circuit-breaker-testing
+      - kubernetes-namespace-testing
+      - redis-session-testing
+  
+  # =====================================================================================
+  # SPRING CLOUD GATEWAY INTEGRATION TEST CONFIGURATION
+  # =====================================================================================
+  # Spring Cloud Gateway test routing configuration for microservice integration
+  # testing with load balancing and circuit breaker patterns per Section 5.1.1
+  cloud:
+    gateway:
+      # Gateway discovery configuration for integration testing
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+          
+      # Integration test routing configuration
+      routes:
+        # Authentication service routing for integration testing
+        - id: auth-service-integration
+          uri: lb://authentication-service
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: auth-service-cb
+                fallbackUri: forward:/fallback/auth
+            - name: Retry
+              args:
+                retries: 3
+                methods: GET,POST
+                backoff:
+                  firstBackoff: 50ms
+                  maxBackoff: 500ms
+                  factor: 2
+                  basedOnPreviousValue: false
+        
+        # Account service routing for integration testing
+        - id: account-service-integration
+          uri: lb://account-service
+          predicates:
+            - Path=/api/account/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: account-service-cb
+                fallbackUri: forward:/fallback/account
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter:
+                  replenishRate: 10
+                  burstCapacity: 20
+                  requestedTokens: 1
+        
+        # Transaction service routing for integration testing
+        - id: transaction-service-integration
+          uri: lb://transaction-service
+          predicates:
+            - Path=/api/transaction/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: transaction-service-cb
+                fallbackUri: forward:/fallback/transaction
+            - name: RequestTimeout
+              args:
+                timeout: 5s
+        
+        # Card service routing for integration testing
+        - id: card-service-integration
+          uri: lb://card-service
+          predicates:
+            - Path=/api/card/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: card-service-cb
+                fallbackUri: forward:/fallback/card
+        
+        # Menu service routing for integration testing
+        - id: menu-service-integration
+          uri: lb://menu-service
+          predicates:
+            - Path=/api/menu/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: menu-service-cb
+                fallbackUri: forward:/fallback/menu
+      
+      # Global filters for integration testing
+      default-filters:
+        - name: GlobalFilter
+        - name: LoggingFilter
+        - name: MetricsFilter
+      
+      # Gateway load balancer configuration for integration testing
+      loadbalancer:
+        ribbon:
+          enabled: false
+        # Use Spring Cloud LoadBalancer
+        use-p2p: true
+        
+      # Integration test timeout configuration
+      httpclient:
+        connect-timeout: 5000
+        response-timeout: 10s
+        pool:
+          max-connections: 100
+          max-idle-time: 30s
+          max-life-time: 60s
+          
+    # Service discovery configuration for integration testing
+    discovery:
+      enabled: true
+      
+    # Load balancer configuration for integration testing
+    loadbalancer:
+      ribbon:
+        enabled: false
+      health-check:
+        interval: 10s
+        initial-delay: 5s
+  
+  # =====================================================================================
+  # INTEGRATION TEST DATABASE CONFIGURATION - PostgreSQL Testcontainers
+  # =====================================================================================
+  # PostgreSQL Testcontainers configuration for integration testing per Section 6.6.7.3
+  datasource:
+    # Testcontainers PostgreSQL configuration
+    url: jdbc:tc:postgresql:15-alpine:///carddemo_integration_test?TC_INITSCRIPT=file:src/test/resources/init-test-db.sql
+    username: carddemo_integration_user
+    password: carddemo_integration_pass
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    
+    # HikariCP configuration optimized for integration test execution speed
+    hikari:
+      # Integration test connection pool sizing
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 10000
+      idle-timeout: 300000
+      max-lifetime: 600000
+      
+      # Integration test performance optimizations
+      data-source-properties:
+        cachePrepStmts: true
+        prepStmtCacheSize: 100
+        prepStmtCacheSqlLimit: 2048
+        useServerPrepStmts: true
+        rewriteBatchedStatements: true
+        
+      # Integration test pool configuration
+      pool-name: CardDemo-Integration-HikariCP
+      register-mbeans: true
+      leak-detection-threshold: 30000
+      
+      # PostgreSQL-specific integration test optimizations
+      connection-init-sql: SET search_path TO public
+      
+  # =====================================================================================
+  # INTEGRATION TEST JPA/HIBERNATE CONFIGURATION
+  # =====================================================================================
+  # JPA configuration for PostgreSQL integration testing
+  jpa:
+    # PostgreSQL dialect for integration testing
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    database: postgresql
+    
+    # Show SQL in integration test logs
+    show-sql: true
+    
+    # Integration test Hibernate configuration
+    hibernate:
+      # Validate schema against PostgreSQL
+      ddl-auto: validate
+      
+      # Integration test naming strategy
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
+      
+      # Integration test JDBC batch processing
+      jdbc:
+        batch_size: 50
+        batch_versioned_data: true
+        order_inserts: true
+        order_updates: true
+        
+    # JPA properties for integration testing
+    properties:
+      hibernate:
+        # Integration test connection management
+        connection.provider_disables_autocommit: true
+        connection.autocommit: false
+        
+        # Integration test query optimization
+        query.fail_on_pagination_over_collection_fetch: true
+        query.in_clause_parameter_padding: true
+        
+        # Integration test monitoring and statistics
+        generate_statistics: true
+        session.events.log.LOG_QUERIES_SLOWER_THAN_MS: 100
+        
+        # PostgreSQL-specific integration test settings
+        dialect.storage_engine: innodb
+        temp.use_jdbc_metadata_defaults: false
+        
+        # SERIALIZABLE isolation for integration testing
+        connection.isolation: 8
+        
+        # Integration test SQL formatting
+        use_sql_comments: true
+        format_sql: true
+        
+        # Integration test cache configuration
+        cache.use_second_level_cache: true
+        cache.use_query_cache: true
+        cache.region.factory_class: org.hibernate.cache.jcache.internal.JCacheRegionFactory
+        
+  # =====================================================================================
+  # INTEGRATION TEST LIQUIBASE CONFIGURATION
+  # =====================================================================================
+  # Liquibase configuration for integration test database schema management
+  liquibase:
+    # Enable Liquibase for integration testing
+    enabled: true
+    
+    # Integration test changelog
+    change-log: classpath:db/integration-test-changelog.xml
+    
+    # Integration test schema
+    default-schema: public
+    
+    # Integration test database connection
+    url: ${spring.datasource.url}
+    user: ${spring.datasource.username}
+    password: ${spring.datasource.password}
+    
+    # Integration test execution contexts
+    contexts: integration-test,carddemo-integration
+    labels: integration-test-data
+    
+    # Integration test parameters
+    parameters:
+      environment: integration-test
+      database.type: postgresql
+      schema.version: integration-1.0.0
+      
+    # Integration test execution settings
+    should-run: true
+    drop-first: false
+    
+  # =====================================================================================
+  # INTEGRATION TEST REDIS CONFIGURATION
+  # =====================================================================================
+  # Redis configuration for distributed session management testing
+  data:
+    redis:
+      # Redis Testcontainers configuration
+      host: ${REDIS_INTEGRATION_HOST:localhost}
+      port: ${REDIS_INTEGRATION_PORT:6379}
+      password: ${REDIS_INTEGRATION_PASSWORD:}
+      database: 1
+      
+      # Integration test connection configuration
+      timeout: 2000ms
+      connect-timeout: 2000ms
+      
+      # Lettuce connection pool for integration testing
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 8
+          min-idle: 2
+          max-wait: 2000ms
+          time-between-eviction-runs: 30000ms
+        
+        # Integration test cluster configuration
+        cluster:
+          refresh:
+            adaptive: true
+            period: 30s
+          
+  # Spring Session configuration for integration testing
+  session:
+    store-type: redis
+    redis:
+      # Integration test session configuration
+      timeout: 20m
+      namespace: "carddemo:integration:session"
+      
+      # Integration test serialization
+      serialization: java
+      
+      # Integration test cleanup configuration
+      cleanup-cron: "0 */2 * * * *"
+      
+      # Integration test cookie configuration
+      cookie:
+        name: CARDDEMO_INTEGRATION_SESSION
+        path: /
+        http-only: true
+        secure: false
+        same-site: lax
+        max-age: 1200
+        
+  # =====================================================================================
+  # INTEGRATION TEST CACHING CONFIGURATION
+  # =====================================================================================
+  # Spring Cache configuration for integration testing
+  cache:
+    type: redis
+    redis:
+      # Integration test cache configuration
+      time-to-live: 60000
+      cache-null-values: false
+      
+      # Integration test cache TTL configuration
+      ttl:
+        reference-data: 300000
+        account-data: 60000
+        session-data: 600000
+        
+    # Integration test cache names
+    cache-names:
+      - integration-reference-data
+      - integration-account-balances
+      - integration-customer-profiles
+      - integration-transaction-data
+      
+  # =====================================================================================
+  # INTEGRATION TEST JACKSON CONFIGURATION
+  # =====================================================================================
+  # Jackson configuration for integration test JSON serialization
+  jackson:
+    # Integration test date formatting
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: UTC
+    
+    # Integration test serialization configuration
+    serialization:
+      write-dates-as-timestamps: false
+      fail-on-empty-beans: false
+      indent-output: true
+      write-durations-as-timestamps: false
+      
+    # Integration test deserialization configuration
+    deserialization:
+      fail-on-unknown-properties: false
+      fail-on-null-for-primitives: false
+      accept-empty-string-as-null-object: true
+      
+    # Integration test property naming
+    property-naming-strategy: SNAKE_CASE
+    
+    # Integration test BigDecimal configuration
+    generator:
+      write-bigdecimal-as-plain: true
+      
+    # Integration test mapper configuration
+    mapper:
+      accept-case-insensitive-enums: true
+      accept-case-insensitive-properties: true
+      
+    # Integration test property inclusion
+    default-property-inclusion: NON_NULL
+
+# =====================================================================================
+# INTEGRATION TEST SERVER CONFIGURATION
+# =====================================================================================
+# Embedded server configuration for integration testing
+server:
+  # Random port for parallel integration test execution
+  port: 0
+  
+  # Integration test server address
+  address: localhost
+  
+  # Integration test servlet configuration
+  servlet:
+    context-path: /integration-test
+    application-display-name: CardDemo Integration Test Application
+    
+  # Integration test connection configuration
+  connection-timeout: 10s
+  
+  # Integration test Tomcat configuration
+  tomcat:
+    # Integration test connection pool
+    max-connections: 200
+    accept-count: 20
+    max-threads: 50
+    min-spare-threads: 10
+    
+    # Integration test request processing
+    max-http-form-post-size: 2MB
+    max-swallow-size: 2MB
+    
+    # Integration test URI encoding
+    uri-encoding: UTF-8
+    
+    # Integration test access log
+    accesslog:
+      enabled: true
+      directory: logs/integration-test
+      prefix: integration_access
+      suffix: .log
+      
+  # Integration test error handling
+  error:
+    include-exception: true
+    include-stacktrace: always
+    include-message: always
+    include-binding-errors: always
+
+# =====================================================================================
+# CIRCUIT BREAKER INTEGRATION TEST CONFIGURATION
+# =====================================================================================
+# Resilience4j circuit breaker configuration for integration testing
+resilience4j:
+  circuitbreaker:
+    instances:
+      auth-service-cb:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+        recordExceptions:
+          - org.springframework.web.client.HttpServerErrorException
+          - java.util.concurrent.TimeoutException
+          - java.io.IOException
+        ignoreExceptions:
+          - org.springframework.security.access.AccessDeniedException
+          
+      account-service-cb:
+        registerHealthIndicator: true
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        permittedNumberOfCallsInHalfOpenState: 5
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 60
+        eventConsumerBufferSize: 10
+        
+      transaction-service-cb:
+        registerHealthIndicator: true
+        slidingWindowSize: 15
+        minimumNumberOfCalls: 8
+        permittedNumberOfCallsInHalfOpenState: 4
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 8s
+        failureRateThreshold: 55
+        eventConsumerBufferSize: 10
+        
+      card-service-cb:
+        registerHealthIndicator: true
+        slidingWindowSize: 12
+        minimumNumberOfCalls: 6
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 6s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+        
+      menu-service-cb:
+        registerHealthIndicator: true
+        slidingWindowSize: 8
+        minimumNumberOfCalls: 4
+        permittedNumberOfCallsInHalfOpenState: 2
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 4s
+        failureRateThreshold: 45
+        eventConsumerBufferSize: 10
+        
+  # Retry configuration for integration testing
+  retry:
+    instances:
+      auth-service-retry:
+        maxAttempts: 3
+        waitDuration: 100ms
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - java.util.concurrent.TimeoutException
+          
+      account-service-retry:
+        maxAttempts: 2
+        waitDuration: 200ms
+        exponentialBackoffMultiplier: 1.5
+        
+      transaction-service-retry:
+        maxAttempts: 4
+        waitDuration: 150ms
+        exponentialBackoffMultiplier: 2
+        
+  # Bulkhead configuration for integration testing
+  bulkhead:
+    instances:
+      auth-service-bulkhead:
+        maxConcurrentCalls: 25
+        maxWaitDuration: 1s
+        
+      account-service-bulkhead:
+        maxConcurrentCalls: 50
+        maxWaitDuration: 2s
+        
+      transaction-service-bulkhead:
+        maxConcurrentCalls: 40
+        maxWaitDuration: 1.5s
+        
+  # Rate limiter configuration for integration testing
+  ratelimiter:
+    instances:
+      auth-service-limiter:
+        limitForPeriod: 10
+        limitRefreshPeriod: 1s
+        timeoutDuration: 1s
+        
+      account-service-limiter:
+        limitForPeriod: 20
+        limitRefreshPeriod: 1s
+        timeoutDuration: 2s
+
+# =====================================================================================
+# INTEGRATION TEST MANAGEMENT AND ACTUATOR CONFIGURATION
+# =====================================================================================
+# Spring Boot Actuator configuration for integration test monitoring
+management:
+  # Integration test endpoints configuration
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,circuitbreakers,prometheus
+      base-path: /integration-test/actuator
+      
+    # Enable integration test endpoints
+    enabled-by-default: true
+    
+  # Integration test endpoint configuration
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+      probes:
+        enabled: true
+        
+    info:
+      enabled: true
+      
+    metrics:
+      enabled: true
+      
+    circuitbreakers:
+      enabled: true
+      
+    prometheus:
+      enabled: true
+      
+  # Integration test health configuration
+  health:
+    # Integration test health indicators
+    db:
+      enabled: true
+    redis:
+      enabled: true
+    ping:
+      enabled: true
+    circuitbreakers:
+      enabled: true
+      
+  # Integration test metrics configuration
+  metrics:
+    # Enable integration test metrics
+    enabled: true
+    
+    # Integration test tags
+    tags:
+      application: ${spring.application.name}
+      environment: integration-test
+      version: ${spring.application.version}
+      namespace: carddemo-integration
+      
+    # Integration test JVM metrics
+    enable:
+      jvm: true
+      system: true
+      web: true
+      
+    # Integration test distribution metrics
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        spring.data.repository.invocations: true
+        resilience4j.circuitbreaker.calls: true
+        
+      percentiles:
+        http.server.requests: 0.5, 0.95, 0.99
+        spring.data.repository.invocations: 0.5, 0.95, 0.99
+        resilience4j.circuitbreaker.calls: 0.5, 0.95, 0.99
+
+# =====================================================================================
+# INTEGRATION TEST LOGGING CONFIGURATION
+# =====================================================================================
+# Logging configuration for integration test environments
+logging:
+  # Integration test log levels
+  level:
+    root: INFO
+    com.carddemo: DEBUG
+    
+    # Spring framework integration test logging
+    org.springframework.test: DEBUG
+    org.springframework.boot.test: DEBUG
+    org.springframework.transaction: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.data: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    
+    # Integration test database logging
+    org.hibernate: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    
+    # Integration test connection pool logging
+    com.zaxxer.hikari: DEBUG
+    
+    # Integration test Liquibase logging
+    liquibase: INFO
+    
+    # Integration test Redis logging
+    io.lettuce: DEBUG
+    
+    # Testcontainers integration test logging
+    org.testcontainers: INFO
+    
+    # Circuit breaker integration test logging
+    io.github.resilience4j: DEBUG
+    
+    # Gateway integration test logging
+    org.springframework.cloud.gateway.filter: DEBUG
+    org.springframework.cloud.gateway.route: DEBUG
+    
+    # Integration test framework logging
+    org.junit.jupiter: DEBUG
+    org.mockito: DEBUG
+    org.assertj: DEBUG
+    
+    # External libraries - reduced logging
+    org.apache: WARN
+    org.postgresql: WARN
+    com.fasterxml.jackson: WARN
+    
+  # Integration test pattern configuration
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}] [%X{traceId}] - %msg%n"
+    
+  # Integration test file logging
+  file:
+    name: logs/integration-test/carddemo-integration.log
+    
+  # Integration test charset configuration
+  charset:
+    console: UTF-8
+    file: UTF-8
+
+# =====================================================================================
+# INTEGRATION TEST CUSTOM APPLICATION PROPERTIES
+# =====================================================================================
+# CardDemo integration test-specific configuration properties
+carddemo:
+  # Integration test application configuration
+  app:
+    name: CardDemo Integration Test Environment
+    version: ${spring.application.version}
+    description: "CardDemo integration test configuration supporting microservice interaction testing"
+    
+  # Integration test business configuration
+  business:
+    # Integration test transaction processing
+    transaction:
+      timeout: 10s
+      max-retries: 3
+      batch-size: 200
+      
+    # Integration test account management
+    account:
+      balance-cache-ttl: 60s
+      credit-limit-check: true
+      
+    # Integration test security configuration
+    security:
+      jwt:
+        secret: integration-test-jwt-secret-key-for-testing-only
+        expiration: 1200
+        refresh-expiration: 7200
+        
+      password:
+        bcrypt-strength: 6
+        
+      session:
+        timeout: 1200
+        
+    # Integration test audit configuration
+    audit:
+      enabled: true
+      retention-days: 1
+      
+  # Integration test performance configuration
+  performance:
+    # Integration test connection pool
+    db:
+      max-connections: 20
+      min-connections: 5
+      connection-timeout: 10s
+      
+    # Integration test cache configuration
+    cache:
+      ttl: 60s
+      max-entries: 500
+      
+    # Integration test batch processing
+    batch:
+      chunk-size: 100
+      thread-pool-size: 4
+      
+  # Integration test monitoring configuration
+  monitoring:
+    # Integration test metrics
+    metrics:
+      enabled: true
+      custom-metrics: true
+      
+    # Integration test health checks
+    health:
+      db-check-timeout: 3s
+      redis-check-timeout: 2s
+      
+    # Integration test alerting disabled
+    alerting:
+      enabled: false
+      
+  # Integration test external services
+  external:
+    # Integration test payment gateway disabled
+    payment:
+      enabled: false
+      
+    # Integration test notification service disabled
+    notification:
+      enabled: false
+      
+  # Integration test Kubernetes configuration
+  kubernetes:
+    # Kubernetes namespace configuration
+    namespace: carddemo-integration
+    
+    # Integration test pod configuration
+    pod:
+      name: ${HOSTNAME:integration-test-pod}
+      
+    # Integration test service configuration
+    service:
+      name: carddemo-integration-service
+      
+    # Integration test resource configuration
+    resources:
+      memory-limit: 2Gi
+      cpu-limit: 1000m
+      
+  # Integration test circuit breaker configuration
+  circuitbreaker:
+    # Circuit breaker test configuration
+    test:
+      enabled: true
+      failure-simulation: true
+      recovery-validation: true
+      
+    # Circuit breaker monitoring
+    monitoring:
+      enabled: true
+      metrics-collection: true
+
+# =====================================================================================
+# TESTCONTAINERS INTEGRATION TEST CONFIGURATION
+# =====================================================================================
+# Testcontainers-specific configuration for integration testing
+testcontainers:
+  # Testcontainers PostgreSQL configuration
+  postgresql:
+    # PostgreSQL Docker image
+    image: postgres:15-alpine
+    
+    # PostgreSQL container configuration
+    container:
+      name: carddemo-integration-postgresql
+      
+    # PostgreSQL database configuration
+    database:
+      name: carddemo_integration_test
+      username: carddemo_integration_user
+      password: carddemo_integration_pass
+      
+    # PostgreSQL initialization
+    init:
+      script: classpath:testcontainers/postgresql/init-integration-db.sql
+      
+  # Testcontainers Redis configuration
+  redis:
+    # Redis Docker image
+    image: redis:7-alpine
+    
+    # Redis container configuration
+    container:
+      name: carddemo-integration-redis
+      
+    # Redis configuration
+    config:
+      password: integration-test-redis-password
+      
+  # Testcontainers general configuration
+  general:
+    # Container cleanup configuration
+    cleanup:
+      enabled: true
+      
+    # Container networking configuration
+    networking:
+      enabled: true
+      
+    # Container logging configuration
+    logging:
+      enabled: true
+      level: INFO
+
+# =====================================================================================
+# INTEGRATION TEST DOCUMENTATION
+# =====================================================================================
+# Configuration supporting comprehensive integration test documentation and validation
+#
+# Integration Test Profile Usage:
+# - 'integration-test' profile: Main integration test configuration
+# - 'testcontainers' profile: PostgreSQL and Redis container integration
+# - 'gateway-integration' profile: Spring Cloud Gateway testing configuration
+# - 'circuit-breaker-testing' profile: Circuit breaker pattern validation
+# - 'kubernetes-namespace-testing' profile: Kubernetes namespace testing support
+# - 'redis-session-testing' profile: Distributed session management testing
+#
+# Kubernetes Namespace Testing:
+# - carddemo-integration namespace configuration
+# - Resource quota compliance validation
+# - Pod deployment and service discovery testing
+# - Network policy validation within namespace
+#
+# Spring Cloud Gateway Integration:
+# - API routing pattern validation
+# - Load balancing test configuration
+# - Circuit breaker integration testing
+# - Request filtering and transformation validation
+#
+# Circuit Breaker Testing:
+# - Resilience4j circuit breaker configuration
+# - Fault tolerance pattern validation
+# - Service failure simulation and recovery testing
+# - Bulkhead and rate limiting pattern testing
+#
+# Distributed Session Management:
+# - Redis-backed session storage testing
+# - Cross-service session propagation validation
+# - Session timeout and cleanup testing
+# - Session serialization and deserialization testing
+#
+# Database Integration Testing:
+# - PostgreSQL Testcontainers with schema validation
+# - Transaction boundary testing with SERIALIZABLE isolation
+# - Connection pool optimization for test execution speed
+# - Liquibase migration execution and validation
+#
+# Performance Optimization:
+# - HikariCP connection pool tuned for integration test speed
+# - Reduced cache TTL values for faster test execution
+# - Optimized retry and circuit breaker configurations
+# - Parallel test execution support with isolated containers
+#
+# This configuration ensures comprehensive integration testing coverage while maintaining
+# performance requirements and enabling rapid feedback cycles for the development team.
+# =====================================================================================
