@@ -356,7 +356,7 @@ spring:
           jwk-set-uri: ${JWT_JWK_SET_URI:https://auth.carddemo.com/.well-known/jwks.json}
           
           # Production JWT validation
-          audiences: 
+          audiences:
             - carddemo-production
             - carddemo-api
           
@@ -552,7 +552,7 @@ server:
     # Production SSL protocols and ciphers
     protocol: TLS
     enabled-protocols: TLSv1.3,TLSv1.2
-    ciphers: 
+    ciphers:
       - TLS_AES_256_GCM_SHA384
       - TLS_AES_128_GCM_SHA256
       - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
