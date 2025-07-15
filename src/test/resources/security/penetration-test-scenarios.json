@@ -1,0 +1,1182 @@
+{
+  "metadata": {
+    "title": "CardDemo Security Penetration Testing Scenarios",
+    "description": "Comprehensive security validation through simulated attacks, vulnerability exploitation attempts, and security control effectiveness testing for Spring Security JWT authentication, cloud-native security patterns, and microservices architecture",
+    "version": "1.0.0",
+    "created_by": "Blitzy Agent",
+    "created_date": "2024-12-20",
+    "compliance_frameworks": ["PCI DSS 4.0", "SOX 404", "GDPR", "OWASP Top 10 2021"],
+    "target_architecture": "Spring Boot Microservices with JWT Authentication",
+    "security_scope": "Authentication, Authorization, Data Protection, Container Security"
+  },
+  "configuration": {
+    "test_environment": {
+      "base_url": "http://localhost:8080",
+      "authentication_endpoints": [
+        "/api/auth/login",
+        "/api/auth/logout",
+        "/api/auth/validate",
+        "/api/auth/refresh"
+      ],
+      "protected_endpoints": [
+        "/api/accounts/{id}",
+        "/api/transactions",
+        "/api/cards",
+        "/api/admin/users",
+        "/api/admin/config"
+      ],
+      "csrf_protected_endpoints": [
+        "/api/admin/forms/**",
+        "/api/users/profile/**",
+        "/api/files/upload/**"
+      ]
+    },
+    "security_headers": {
+      "required_headers": [
+        "Content-Security-Policy",
+        "X-Frame-Options",
+        "X-Content-Type-Options",
+        "Strict-Transport-Security",
+        "X-XSS-Protection"
+      ],
+      "jwt_header": "Authorization",
+      "csrf_header": "X-CSRF-TOKEN",
+      "correlation_header": "X-Correlation-ID"
+    },
+    "test_credentials": {
+      "valid_admin": {
+        "username": "ADMIN001",
+        "password": "AdminPass123",
+        "expected_role": "ROLE_ADMIN"
+      },
+      "valid_user": {
+        "username": "USER0001",
+        "password": "UserPass123",
+        "expected_role": "ROLE_USER"
+      },
+      "invalid_user": {
+        "username": "INVALID",
+        "password": "WrongPass"
+      }
+    }
+  },
+  "PenetrationTestScenarios": {
+    "authentication_security_tests": {
+      "description": "Comprehensive Spring Security JWT authentication vulnerability testing scenarios",
+      "test_categories": [
+        {
+          "category": "JWT Token Manipulation",
+          "severity": "CRITICAL",
+          "test_scenarios": [
+            {
+              "test_id": "JWT_001",
+              "name": "JWT None Algorithm Attack",
+              "description": "Test JWT token manipulation by changing algorithm to 'none' to bypass signature verification",
+              "attack_vector": "JWT Token Manipulation",
+              "payload": {
+                "method": "POST",
+                "endpoint": "/api/accounts/123",
+                "headers": {
+                  "Authorization": "Bearer eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJBRE1JTiIsInVzZXJfdHlwZSI6IkEiLCJyb2xlIjoiUk9MRV9BRE1JTiIsImV4cCI6OTk5OTk5OTk5OX0.",
+                  "Content-Type": "application/json"
+                }
+              },
+              "expected_result": "HTTP 401 - Invalid JWT signature",
+              "validation_points": [
+                "Spring Security JWT decoder rejects 'none' algorithm",
+                "No access granted to protected resources",
+                "Security event logged in audit trail"
+              ]
+            },
+            {
+              "test_id": "JWT_002", 
+              "name": "JWT Signature Manipulation",
+              "description": "Test JWT token with invalid signature to verify signature validation",
+              "attack_vector": "JWT Token Manipulation",
+              "payload": {
+                "method": "GET",
+                "endpoint": "/api/admin/users",
+                "headers": {
+                  "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBRE1JTiIsInVzZXJfdHlwZSI6IkEiLCJyb2xlIjoiUk9MRV9BRE1JTiIsImV4cCI6OTk5OTk5OTk5OX0.INVALID_SIGNATURE_FOR_SECURITY_TESTING"
+                }
+              },
+              "expected_result": "HTTP 401 - JWT signature verification failed",
+              "validation_points": [
+                "Spring Security OAuth2 resource server validates signature",
+                "Access denied to administrative endpoints",
+                "Authentication failure logged with correlation ID"
+              ]
+            },
+            {
+              "test_id": "JWT_003",
+              "name": "JWT Expired Token Access",
+              "description": "Test access with expired JWT token to verify expiration validation",
+              "attack_vector": "JWT Token Manipulation",
+              "payload": {
+                "method": "GET",
+                "endpoint": "/api/accounts/123",
+                "headers": {
+                  "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZXhwIjoxNzA1NzQ3ODAwfQ.ExpiredTokenForSecurityTesting"
+                }
+              },
+              "expected_result": "HTTP 401 - JWT token expired",
+              "validation_points": [
+                "Spring Security JWT decoder validates expiration",
+                "No access to protected resources with expired token",
+                "Token expiration event logged for monitoring"
+              ]
+            },
+            {
+              "test_id": "JWT_004",
+              "name": "JWT Role Escalation Attempt",
+              "description": "Test JWT token with manipulated role claims to attempt privilege escalation",
+              "attack_vector": "JWT Token Manipulation",
+              "payload": {
+                "method": "GET",
+                "endpoint": "/api/admin/users",
+                "headers": {
+                  "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IkEiLCJyb2xlIjoiUk9MRV9BRE1JTiIsImV4cCI6OTk5OTk5OTk5OX0.FAKE_ADMIN_ROLE_SIGNATURE"
+                }
+              },
+              "expected_result": "HTTP 401 - Invalid JWT signature",
+              "validation_points": [
+                "Spring Security prevents role escalation through signature validation",
+                "Method-level @PreAuthorize annotations enforce role boundaries",
+                "Security violation logged with user context"
+              ]
+            }
+          ]
+        },
+        {
+          "category": "Authentication Bypass Attempts",
+          "severity": "CRITICAL",
+          "test_scenarios": [
+            {
+              "test_id": "AUTH_001",
+              "name": "SQL Injection in Authentication",
+              "description": "Test SQL injection vulnerability in authentication endpoint",
+              "attack_vector": "SQL Injection",
+              "payload": {
+                "method": "POST",
+                "endpoint": "/api/auth/login",
+                "headers": {
+                  "Content-Type": "application/json"
+                },
+                "body": {
+                  "username": "admin' OR '1'='1",
+                  "password": "password"
+                }
+              },
+              "expected_result": "HTTP 401 - Authentication failed",
+              "validation_points": [
+                "Spring Security AuthenticationProvider validates credentials",
+                "JPA prepared statements prevent SQL injection",
+                "Failed authentication attempt logged with injection pattern"
+              ]
+            },
+            {
+              "test_id": "AUTH_002",
+              "name": "Authentication Endpoint Brute Force",
+              "description": "Test authentication endpoint against brute force attacks",
+              "attack_vector": "Brute Force Attack",
+              "payload": {
+                "method": "POST",
+                "endpoint": "/api/auth/login",
+                "headers": {
+                  "Content-Type": "application/json"
+                },
+                "body": {
+                  "username": "ADMIN001",
+                  "password": "wrongpassword"
+                },
+                "repeat_count": 100,
+                "expected_rate_limit": "10 attempts per minute"
+              },
+              "expected_result": "HTTP 429 - Too Many Requests after rate limit",
+              "validation_points": [
+                "Spring Cloud Gateway rate limiting activated",
+                "API Gateway protects authentication endpoint",
+                "Brute force attempt logged with client IP"
+              ]
+            },
+            {
+              "test_id": "AUTH_003",
+              "name": "Authentication Header Manipulation",
+              "description": "Test authentication bypass through header manipulation",
+              "attack_vector": "Header Manipulation",
+              "payload": {
+                "method": "GET",
+                "endpoint": "/api/accounts/123",
+                "headers": {
+                  "X-User-Id": "ADMIN001",
+                  "X-User-Role": "ROLE_ADMIN",
+                  "X-Authenticated": "true"
+                }
+              },
+              "expected_result": "HTTP 401 - Missing or invalid JWT token",
+              "validation_points": [
+                "Spring Security requires valid JWT Bearer token",
+                "Custom headers do not bypass authentication",
+                "Unauthorized access attempt logged"
+              ]
+            }
+          ]
+        },
+        {
+          "category": "Session Management Security",
+          "severity": "HIGH",
+          "test_scenarios": [
+            {
+              "test_id": "SESSION_001",
+              "name": "Session Hijacking Attempt",
+              "description": "Test session hijacking through JWT token reuse",
+              "attack_vector": "Session Hijacking",
+              "payload": {
+                "method": "GET",
+                "endpoint": "/api/accounts/123",
+                "headers": {
+                  "Authorization": "Bearer {{captured_jwt_token}}",
+                  "X-Forwarded-For": "192.168.1.100"
+                }
+              },
+              "expected_result": "HTTP 200 - Valid token accepted (expected behavior)",
+              "validation_points": [
+                "JWT token validates correctly from different IP",
+                "Session correlation ID tracked for monitoring",
+                "Token usage logged with IP address for audit"
+              ]
+            },
+            {
+              "test_id": "SESSION_002",
+              "name": "Session Fixation Test",
+              "description": "Test session fixation vulnerability through token reuse",
+              "attack_vector": "Session Fixation",
+              "payload": {
+                "method": "POST",
+                "endpoint": "/api/auth/login",
+                "headers": {
+                  "Content-Type": "application/json",
+                  "Authorization": "Bearer {{old_jwt_token}}"
+                },
+                "body": {
+                  "username": "USER0001",
+                  "password": "UserPass123"
+                }
+              },
+              "expected_result": "HTTP 200 - New JWT token issued",
+              "validation_points": [
+                "New JWT token generated for each authentication",
+                "Old token invalidated in Redis session store",
+                "Session creation logged with new correlation ID"
+              ]
+            },
+            {
+              "test_id": "SESSION_003",
+              "name": "Concurrent Session Management",
+              "description": "Test concurrent session handling and limits",
+              "attack_vector": "Concurrent Session Attack",
+              "payload": {
+                "method": "POST",
+                "endpoint": "/api/auth/login",
+                "headers": {
+                  "Content-Type": "application/json"
+                },
+                "body": {
+                  "username": "USER0001",
+                  "password": "UserPass123"
+                },
+                "concurrent_requests": 10
+              },
+              "expected_result": "HTTP 200 - Multiple valid sessions allowed",
+              "validation_points": [
+                "Spring Security supports multiple concurrent sessions",
+                "Redis session store handles concurrent access",
+                "Session creation events logged for monitoring"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "authorization_security_tests": {
+      "description": "Spring Security role-based authorization and method-level security testing scenarios",
+      "test_categories": [
+        {
+          "category": "Role-Based Access Control",
+          "severity": "HIGH",
+          "test_scenarios": [
+            {
+              "test_id": "RBAC_001",
+              "name": "Administrative Privilege Escalation",
+              "description": "Test unauthorized access to administrative endpoints with user role",
+              "attack_vector": "Privilege Escalation",
+              "payload": {
+                "method": "GET",
+                "endpoint": "/api/admin/users",
+                "headers": {
+                  "Authorization": "Bearer {{valid_user_jwt_token}}",
+                  "Content-Type": "application/json"
+                }
+              },
+              "expected_result": "HTTP 403 - Access denied",
+              "validation_points": [
+                "@PreAuthorize('hasRole(ADMIN)') annotation enforced",
+                "USER role denied access to admin endpoints",
+                "Authorization failure logged with user context"
+              ]
+            },
+            {
+              "test_id": "RBAC_002",
+              "name": "Cross-User Data Access",
+              "description": "Test access to other users' data with valid user token",
+              "attack_vector": "Authorization Bypass",
+              "payload": {
+                "method": "GET",
+                "endpoint": "/api/accounts/999",
+                "headers": {
+                  "Authorization": "Bearer {{valid_user_jwt_token}}",
+                  "Content-Type": "application/json"
+                }
+              },
+              "expected_result": "HTTP 403 - Access denied or HTTP 404 - Not found",
+              "validation_points": [
+                "Spring Security method-level authorization enforced",
+                "User cannot access other users' account data",
+                "Data access attempt logged with correlation ID"
+              ]
+            },
+            {
+              "test_id": "RBAC_003",
+              "name": "Method-Level Authorization Bypass",
+              "description": "Test direct method invocation bypass attempts",
+              "attack_vector": "Authorization Bypass",
+              "payload": {
+                "method": "DELETE",
+                "endpoint": "/api/admin/users/USER0001",
+                "headers": {
+                  "Authorization": "Bearer {{valid_user_jwt_token}}",
+                  "Content-Type": "application/json"
+                }
+              },
+              "expected_result": "HTTP 403 - Access denied",
+              "validation_points": [
+                "Spring Security method-level security prevents deletion",
+                "ROLE_USER cannot delete user accounts",
+                "Deletion attempt logged for security monitoring"
+              ]
+            }
+          ]
+        },
+        {
+          "category": "API Gateway Authorization",
+          "severity": "HIGH",
+          "test_scenarios": [
+            {
+              "test_id": "GATEWAY_001",
+              "name": "API Gateway Bypass Attempt",
+              "description": "Test direct microservice access bypassing API Gateway",
+              "attack_vector": "Gateway Bypass",
+              "payload": {
+                "method": "GET",
+                "endpoint": "http://localhost:8081/accounts/123",
+                "headers": {
+                  "Authorization": "Bearer {{valid_jwt_token}}",
+                  "Content-Type": "application/json"
+                }
+              },
+              "expected_result": "Connection refused or HTTP 404 - Service not directly accessible",
+              "validation_points": [
+                "Microservices not directly accessible externally",
+                "Spring Cloud Gateway enforces routing rules",
+                "Direct access attempt logged if connection established"
+              ]
+            },
+            {
+              "test_id": "GATEWAY_002",
+              "name": "Route Path Manipulation",
+              "description": "Test path manipulation to access unauthorized endpoints",
+              "attack_vector": "Path Manipulation",
+              "payload": {
+                "method": "GET",
+                "endpoint": "/api/accounts/../admin/users",
+                "headers": {
+                  "Authorization": "Bearer {{valid_user_jwt_token}}",
+                  "Content-Type": "application/json"
+                }
+              },
+              "expected_result": "HTTP 400 - Bad Request or HTTP 403 - Access denied",
+              "validation_points": [
+                "Spring Cloud Gateway normalizes request paths",
+                "Path traversal attempts blocked at gateway level",
+                "Malicious path access logged for security analysis"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "injection_attack_tests": {
+      "description": "SQL injection, XSS, and command injection vulnerability testing scenarios",
+      "test_categories": [
+        {
+          "category": "SQL Injection Attacks",
+          "severity": "CRITICAL",
+          "test_scenarios": [
+            {
+              "test_id": "SQL_001",
+              "name": "Authentication SQL Injection",
+              "description": "Test SQL injection in authentication endpoint",
+              "attack_vector": "SQL Injection",
+              "payload": {
+                "method": "POST",
+                "endpoint": "/api/auth/login",
+                "headers": {
+                  "Content-Type": "application/json"
+                },
+                "body": {
+                  "username": "'; DROP TABLE users; --",
+                  "password": "password"
+                }
+              },
+              "expected_result": "HTTP 401 - Authentication failed",
+              "validation_points": [
+                "Spring Data JPA prepared statements prevent SQL injection",
+                "Database tables remain intact after injection attempt",
+                "SQL injection attempt logged with payload details"
+              ]
+            },
+            {
+              "test_id": "SQL_002",
+              "name": "Account Data SQL Injection",
+              "description": "Test SQL injection in account data retrieval",
+              "attack_vector": "SQL Injection",
+              "payload": {
+                "method": "GET",
+                "endpoint": "/api/accounts/123'; UNION SELECT * FROM users--",
+                "headers": {
+                  "Authorization": "Bearer {{valid_admin_jwt_token}}",
+                  "Content-Type": "application/json"
+                }
+              },
+              "expected_result": "HTTP 400 - Bad Request or HTTP 404 - Not found",
+              "validation_points": [
+                "Spring Boot path variable validation prevents injection",
+                "JPA repository methods use parameterized queries",
+                "SQL injection attempt logged with request details"
+              ]
+            },
+            {
+              "test_id": "SQL_003",
+              "name": "Transaction Search SQL Injection",
+              "description": "Test SQL injection in transaction search parameters",
+              "attack_vector": "SQL Injection",
+              "payload": {
+                "method": "GET",
+                "endpoint": "/api/transactions?search=1' OR '1'='1",
+                "headers": {
+                  "Authorization": "Bearer {{valid_user_jwt_token}}",
+                  "Content-Type": "application/json"
+                }
+              },
+              "expected_result": "HTTP 400 - Bad Request or filtered results",
+              "validation_points": [
+                "Spring Security input validation prevents SQL injection",
+                "JPA Criteria API safely handles search parameters",
+                "Search injection attempt logged for monitoring"
+              ]
+            }
+          ]
+        },
+        {
+          "category": "Cross-Site Scripting (XSS)",
+          "severity": "HIGH",
+          "test_scenarios": [
+            {
+              "test_id": "XSS_001",
+              "name": "Reflected XSS in User Input",
+              "description": "Test reflected XSS in user profile update",
+              "attack_vector": "XSS",
+              "payload": {
+                "method": "PUT",
+                "endpoint": "/api/users/profile",
+                "headers": {
+                  "Authorization": "Bearer {{valid_user_jwt_token}}",
+                  "Content-Type": "application/json"
+                },
+                "body": {
+                  "firstName": "<script>alert('XSS')</script>",
+                  "lastName": "User"
+                }
+              },
+              "expected_result": "HTTP 400 - Validation error or sanitized input",
+              "validation_points": [
+                "Jakarta Bean Validation prevents XSS in input",
+                "Spring Security CSP headers block script execution",
+                "XSS attempt logged with sanitized payload"
+              ]
+            },
+            {
+              "test_id": "XSS_002",
+              "name": "Stored XSS in Comments",
+              "description": "Test stored XSS in transaction comments",
+              "attack_vector": "XSS",
+              "payload": {
+                "method": "POST",
+                "endpoint": "/api/transactions",
+                "headers": {
+                  "Authorization": "Bearer {{valid_user_jwt_token}}",
+                  "Content-Type": "application/json"
+                },
+                "body": {
+                  "amount": 100.00,
+                  "description": "<img src=x onerror=alert('XSS')>"
+                }
+              },
+              "expected_result": "HTTP 400 - Validation error or sanitized input",
+              "validation_points": [
+                "Spring Security input validation sanitizes XSS",
+                "Database stores sanitized content only",
+                "XSS payload logged for security analysis"
+              ]
+            }
+          ]
+        },
+        {
+          "category": "Command Injection",
+          "severity": "CRITICAL",
+          "test_scenarios": [
+            {
+              "test_id": "CMD_001",
+              "name": "File Upload Command Injection",
+              "description": "Test command injection in file upload functionality",
+              "attack_vector": "Command Injection",
+              "payload": {
+                "method": "POST",
+                "endpoint": "/api/files/upload",
+                "headers": {
+                  "Authorization": "Bearer {{valid_admin_jwt_token}}",
+                  "Content-Type": "multipart/form-data"
+                },
+                "form_data": {
+                  "filename": "test.txt; rm -rf /",
+                  "file": "test content"
+                }
+              },
+              "expected_result": "HTTP 400 - Invalid filename or sanitized filename",
+              "validation_points": [
+                "Spring Boot file upload validation prevents command injection",
+                "Filename sanitization removes dangerous characters",
+                "Command injection attempt logged with request details"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "csrf_protection_tests": {
+      "description": "Cross-Site Request Forgery (CSRF) protection validation scenarios",
+      "test_categories": [
+        {
+          "category": "CSRF Token Validation",
+          "severity": "MEDIUM",
+          "test_scenarios": [
+            {
+              "test_id": "CSRF_001",
+              "name": "Missing CSRF Token",
+              "description": "Test CSRF protection with missing token",
+              "attack_vector": "CSRF",
+              "payload": {
+                "method": "POST",
+                "endpoint": "/api/admin/forms/config",
+                "headers": {
+                  "Authorization": "Bearer {{valid_admin_jwt_token}}",
+                  "Content-Type": "application/json"
+                },
+                "body": {
+                  "setting": "value"
+                }
+              },
+              "expected_result": "HTTP 403 - CSRF token required",
+              "validation_points": [
+                "Spring Security CSRF protection enforced",
+                "Missing CSRF token blocks request",
+                "CSRF violation logged with correlation ID"
+              ]
+            },
+            {
+              "test_id": "CSRF_002",
+              "name": "Invalid CSRF Token",
+              "description": "Test CSRF protection with invalid token",
+              "attack_vector": "CSRF",
+              "payload": {
+                "method": "POST",
+                "endpoint": "/api/users/profile",
+                "headers": {
+                  "Authorization": "Bearer {{valid_user_jwt_token}}",
+                  "Content-Type": "application/json",
+                  "X-CSRF-TOKEN": "invalid-csrf-token"
+                },
+                "body": {
+                  "firstName": "Updated"
+                }
+              },
+              "expected_result": "HTTP 403 - Invalid CSRF token",
+              "validation_points": [
+                "Spring Security validates CSRF token signature",
+                "Invalid CSRF token blocks request",
+                "CSRF token mismatch logged for monitoring"
+              ]
+            },
+            {
+              "test_id": "CSRF_003",
+              "name": "CSRF Token Reuse",
+              "description": "Test CSRF protection against token reuse",
+              "attack_vector": "CSRF",
+              "payload": {
+                "method": "POST",
+                "endpoint": "/api/files/upload",
+                "headers": {
+                  "Authorization": "Bearer {{valid_user_jwt_token}}",
+                  "Content-Type": "multipart/form-data",
+                  "X-CSRF-TOKEN": "{{used_csrf_token}}"
+                },
+                "form_data": {
+                  "filename": "test.txt",
+                  "file": "content"
+                }
+              },
+              "expected_result": "HTTP 403 - CSRF token already used",
+              "validation_points": [
+                "Spring Security prevents CSRF token reuse",
+                "Token invalidation after single use",
+                "Token reuse attempt logged for security analysis"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "container_security_tests": {
+      "description": "Container security validation and Kubernetes RBAC testing scenarios",
+      "test_categories": [
+        {
+          "category": "Container Runtime Security",
+          "severity": "HIGH",
+          "test_scenarios": [
+            {
+              "test_id": "CONTAINER_001",
+              "name": "Container Escape Attempt",
+              "description": "Test container escape prevention mechanisms",
+              "attack_vector": "Container Escape",
+              "payload": {
+                "method": "POST",
+                "endpoint": "/api/admin/system/command",
+                "headers": {
+                  "Authorization": "Bearer {{valid_admin_jwt_token}}",
+                  "Content-Type": "application/json"
+                },
+                "body": {
+                  "command": "docker run --privileged --pid=host -it alpine nsenter -t 1 -m -u -n -i sh"
+                }
+              },
+              "expected_result": "HTTP 404 - Endpoint not found or HTTP 403 - Access denied",
+              "validation_points": [
+                "No privileged container operations exposed",
+                "Kubernetes security policies prevent privileged access",
+                "Container escape attempt logged for monitoring"
+              ]
+            },
+            {
+              "test_id": "CONTAINER_002",
+              "name": "Pod Security Policy Violation",
+              "description": "Test pod security policy enforcement",
+              "attack_vector": "Pod Security Violation",
+              "payload": {
+                "method": "GET",
+                "endpoint": "/api/system/proc/version",
+                "headers": {
+                  "Authorization": "Bearer {{valid_admin_jwt_token}}",
+                  "Content-Type": "application/json"
+                }
+              },
+              "expected_result": "HTTP 404 - System endpoint not exposed",
+              "validation_points": [
+                "System information not exposed through API",
+                "Pod security policies restrict host access",
+                "System access attempt logged for security analysis"
+              ]
+            }
+          ]
+        },
+        {
+          "category": "Kubernetes RBAC Testing",
+          "severity": "HIGH",
+          "test_scenarios": [
+            {
+              "test_id": "K8S_001",
+              "name": "Service Account Privilege Escalation",
+              "description": "Test service account privilege escalation attempts",
+              "attack_vector": "Kubernetes RBAC Bypass",
+              "payload": {
+                "method": "GET",
+                "endpoint": "/api/k8s/secrets",
+                "headers": {
+                  "Authorization": "Bearer {{valid_user_jwt_token}}",
+                  "Content-Type": "application/json"
+                }
+              },
+              "expected_result": "HTTP 404 - Kubernetes API not exposed",
+              "validation_points": [
+                "Kubernetes API not accessible through application",
+                "Service account permissions properly scoped",
+                "Kubernetes access attempt logged for monitoring"
+              ]
+            },
+            {
+              "test_id": "K8S_002",
+              "name": "Network Policy Bypass",
+              "description": "Test network policy enforcement between services",
+              "attack_vector": "Network Policy Bypass",
+              "payload": {
+                "method": "GET",
+                "endpoint": "/api/internal/health",
+                "headers": {
+                  "Authorization": "Bearer {{valid_user_jwt_token}}",
+                  "Content-Type": "application/json",
+                  "X-Forwarded-For": "192.168.1.100"
+                }
+              },
+              "expected_result": "HTTP 404 - Internal endpoint not exposed",
+              "validation_points": [
+                "Internal endpoints not accessible externally",
+                "Kubernetes network policies enforce segmentation",
+                "Network access attempt logged with source IP"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "data_protection_tests": {
+      "description": "Data protection, encryption, and sensitive data exposure testing scenarios",
+      "test_categories": [
+        {
+          "category": "Sensitive Data Exposure",
+          "severity": "HIGH",
+          "test_scenarios": [
+            {
+              "test_id": "DATA_001",
+              "name": "Password Hash Exposure",
+              "description": "Test password hash exposure in API responses",
+              "attack_vector": "Information Disclosure",
+              "payload": {
+                "method": "GET",
+                "endpoint": "/api/admin/users/USER0001",
+                "headers": {
+                  "Authorization": "Bearer {{valid_admin_jwt_token}}",
+                  "Content-Type": "application/json"
+                }
+              },
+              "expected_result": "HTTP 200 - User data without password hash",
+              "validation_points": [
+                "Password hash not included in API response",
+                "Jackson JSON serialization excludes sensitive fields",
+                "User data access logged for audit compliance"
+              ]
+            },
+            {
+              "test_id": "DATA_002",
+              "name": "Credit Card Number Exposure",
+              "description": "Test credit card number masking in API responses",
+              "attack_vector": "Information Disclosure",
+              "payload": {
+                "method": "GET",
+                "endpoint": "/api/cards/123",
+                "headers": {
+                  "Authorization": "Bearer {{valid_user_jwt_token}}",
+                  "Content-Type": "application/json"
+                }
+              },
+              "expected_result": "HTTP 200 - Card data with masked number",
+              "validation_points": [
+                "Credit card numbers properly masked in response",
+                "Only last 4 digits visible in API response",
+                "Card data access logged for PCI DSS compliance"
+              ]
+            },
+            {
+              "test_id": "DATA_003",
+              "name": "Database Connection String Exposure",
+              "description": "Test database connection information exposure",
+              "attack_vector": "Information Disclosure",
+              "payload": {
+                "method": "GET",
+                "endpoint": "/actuator/env",
+                "headers": {
+                  "Authorization": "Bearer {{valid_admin_jwt_token}}",
+                  "Content-Type": "application/json"
+                }
+              },
+              "expected_result": "HTTP 403 - Actuator endpoints protected",
+              "validation_points": [
+                "Spring Boot Actuator endpoints require admin access",
+                "Database credentials not exposed in environment",
+                "Actuator access logged for security monitoring"
+              ]
+            }
+          ]
+        },
+        {
+          "category": "Encryption Validation",
+          "severity": "HIGH",
+          "test_scenarios": [
+            {
+              "test_id": "ENCRYPT_001",
+              "name": "TLS Configuration Validation",
+              "description": "Test TLS configuration and cipher suite strength",
+              "attack_vector": "Encryption Weakness",
+              "payload": {
+                "method": "GET",
+                "endpoint": "/api/accounts/123",
+                "headers": {
+                  "Authorization": "Bearer {{valid_user_jwt_token}}",
+                  "Content-Type": "application/json"
+                },
+                "tls_config": {
+                  "protocol": "TLSv1.0",
+                  "cipher_suite": "TLS_RSA_WITH_RC4_128_SHA"
+                }
+              },
+              "expected_result": "TLS handshake failure - weak protocol/cipher rejected",
+              "validation_points": [
+                "TLS 1.3 enforced for all connections",
+                "Weak cipher suites rejected by server",
+                "TLS configuration compliance logged"
+              ]
+            },
+            {
+              "test_id": "ENCRYPT_002",
+              "name": "Database Encryption Validation",
+              "description": "Test database connection encryption enforcement",
+              "attack_vector": "Encryption Bypass",
+              "payload": {
+                "method": "POST",
+                "endpoint": "/api/auth/login",
+                "headers": {
+                  "Content-Type": "application/json"
+                },
+                "body": {
+                  "username": "USER0001",
+                  "password": "UserPass123"
+                },
+                "connection_config": {
+                  "ssl": false,
+                  "encrypt": false
+                }
+              },
+              "expected_result": "HTTP 200 - Authentication successful with encrypted connection",
+              "validation_points": [
+                "Database connections forced to use TLS encryption",
+                "Unencrypted database connections rejected",
+                "Database encryption status logged for compliance"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "api_security_tests": {
+      "description": "API security testing including rate limiting, input validation, and endpoint security",
+      "test_categories": [
+        {
+          "category": "Rate Limiting and DoS Protection",
+          "severity": "MEDIUM",
+          "test_scenarios": [
+            {
+              "test_id": "RATE_001",
+              "name": "API Rate Limiting Validation",
+              "description": "Test API rate limiting enforcement",
+              "attack_vector": "Denial of Service",
+              "payload": {
+                "method": "GET",
+                "endpoint": "/api/accounts/123",
+                "headers": {
+                  "Authorization": "Bearer {{valid_user_jwt_token}}",
+                  "Content-Type": "application/json"
+                },
+                "request_rate": "200 requests per minute",
+                "expected_limit": "100 requests per minute"
+              },
+              "expected_result": "HTTP 429 - Too Many Requests after limit exceeded",
+              "validation_points": [
+                "Spring Cloud Gateway rate limiting enforced",
+                "Redis-backed rate limiting tracks request counts",
+                "Rate limit exceeded logged with client identification"
+              ]
+            },
+            {
+              "test_id": "RATE_002",
+              "name": "Administrative Rate Limiting",
+              "description": "Test administrative endpoint rate limiting",
+              "attack_vector": "Denial of Service",
+              "payload": {
+                "method": "GET",
+                "endpoint": "/api/admin/users",
+                "headers": {
+                  "Authorization": "Bearer {{valid_admin_jwt_token}}",
+                  "Content-Type": "application/json"
+                },
+                "request_rate": "1000 requests per minute",
+                "expected_limit": "500 requests per minute"
+              },
+              "expected_result": "HTTP 429 - Too Many Requests after admin limit exceeded",
+              "validation_points": [
+                "Administrative endpoints have higher rate limits",
+                "Admin rate limiting separate from user limits",
+                "Admin rate limit violation logged for monitoring"
+              ]
+            }
+          ]
+        },
+        {
+          "category": "Input Validation Security",
+          "severity": "MEDIUM",
+          "test_scenarios": [
+            {
+              "test_id": "INPUT_001",
+              "name": "Malformed JSON Input",
+              "description": "Test malformed JSON input handling",
+              "attack_vector": "Input Validation Bypass",
+              "payload": {
+                "method": "POST",
+                "endpoint": "/api/transactions",
+                "headers": {
+                  "Authorization": "Bearer {{valid_user_jwt_token}}",
+                  "Content-Type": "application/json"
+                },
+                "body": "{\"amount\": 100.00, \"description\": \"test\""
+              },
+              "expected_result": "HTTP 400 - Malformed JSON",
+              "validation_points": [
+                "Spring Boot JSON parsing validates input format",
+                "Malformed requests rejected with clear error",
+                "Input validation error logged for monitoring"
+              ]
+            },
+            {
+              "test_id": "INPUT_002",
+              "name": "Oversized Request Payload",
+              "description": "Test oversized request payload handling",
+              "attack_vector": "Input Validation Bypass",
+              "payload": {
+                "method": "POST",
+                "endpoint": "/api/files/upload",
+                "headers": {
+                  "Authorization": "Bearer {{valid_user_jwt_token}}",
+                  "Content-Type": "multipart/form-data"
+                },
+                "form_data": {
+                  "filename": "large_file.txt",
+                  "file": "{{50MB_content}}"
+                }
+              },
+              "expected_result": "HTTP 413 - Payload too large",
+              "validation_points": [
+                "Spring Boot enforces request size limits",
+                "Large payload rejected before processing",
+                "Payload size violation logged for security analysis"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "compliance_validation_tests": {
+      "description": "Compliance and regulatory validation testing scenarios",
+      "test_categories": [
+        {
+          "category": "PCI DSS Compliance",
+          "severity": "CRITICAL",
+          "test_scenarios": [
+            {
+              "test_id": "PCI_001",
+              "name": "Cardholder Data Protection",
+              "description": "Test cardholder data protection compliance",
+              "attack_vector": "Data Exposure",
+              "payload": {
+                "method": "GET",
+                "endpoint": "/api/cards/123",
+                "headers": {
+                  "Authorization": "Bearer {{valid_user_jwt_token}}",
+                  "Content-Type": "application/json"
+                }
+              },
+              "expected_result": "HTTP 200 - Card data with PAN masking",
+              "validation_points": [
+                "Primary Account Number (PAN) properly masked",
+                "CVV not included in API response",
+                "Cardholder data access logged for audit"
+              ]
+            },
+            {
+              "test_id": "PCI_002",
+              "name": "Payment Card Industry Data Security",
+              "description": "Test PCI DSS data security requirements",
+              "attack_vector": "Data Security Validation",
+              "payload": {
+                "method": "POST",
+                "endpoint": "/api/cards",
+                "headers": {
+                  "Authorization": "Bearer {{valid_admin_jwt_token}}",
+                  "Content-Type": "application/json"
+                },
+                "body": {
+                  "cardNumber": "4111111111111111",
+                  "expiryDate": "12/25",
+                  "cvv": "123"
+                }
+              },
+              "expected_result": "HTTP 201 - Card created with encrypted storage",
+              "validation_points": [
+                "Card data encrypted in PostgreSQL storage",
+                "CVV not stored in database",
+                "Card creation logged for PCI DSS compliance"
+              ]
+            }
+          ]
+        },
+        {
+          "category": "GDPR Compliance",
+          "severity": "HIGH",
+          "test_scenarios": [
+            {
+              "test_id": "GDPR_001",
+              "name": "Data Subject Access Rights",
+              "description": "Test GDPR data subject access rights implementation",
+              "attack_vector": "Data Privacy Validation",
+              "payload": {
+                "method": "GET",
+                "endpoint": "/api/gdpr/data-export",
+                "headers": {
+                  "Authorization": "Bearer {{valid_user_jwt_token}}",
+                  "Content-Type": "application/json"
+                }
+              },
+              "expected_result": "HTTP 200 - Complete personal data export",
+              "validation_points": [
+                "All personal data included in export",
+                "Data export format machine-readable",
+                "Data access logged for GDPR compliance"
+              ]
+            },
+            {
+              "test_id": "GDPR_002",
+              "name": "Data Portability Rights",
+              "description": "Test GDPR data portability implementation",
+              "attack_vector": "Data Portability Validation",
+              "payload": {
+                "method": "GET",
+                "endpoint": "/api/gdpr/data-portability",
+                "headers": {
+                  "Authorization": "Bearer {{valid_user_jwt_token}}",
+                  "Content-Type": "application/json"
+                }
+              },
+              "expected_result": "HTTP 200 - Portable data format",
+              "validation_points": [
+                "Data provided in structured format",
+                "Data portability format interoperable",
+                "Data portability request logged for compliance"
+              ]
+            }
+          ]
+        },
+        {
+          "category": "SOX Compliance",
+          "severity": "HIGH",
+          "test_scenarios": [
+            {
+              "test_id": "SOX_001",
+              "name": "Audit Trail Integrity",
+              "description": "Test SOX audit trail integrity and immutability",
+              "attack_vector": "Audit Trail Validation",
+              "payload": {
+                "method": "GET",
+                "endpoint": "/api/audit/transactions",
+                "headers": {
+                  "Authorization": "Bearer {{valid_admin_jwt_token}}",
+                  "Content-Type": "application/json"
+                }
+              },
+              "expected_result": "HTTP 200 - Immutable audit trail",
+              "validation_points": [
+                "Audit trail shows all transaction changes",
+                "Audit records are immutable and tamper-proof",
+                "Audit trail access logged for compliance"
+              ]
+            },
+            {
+              "test_id": "SOX_002",
+              "name": "Financial Controls Validation",
+              "description": "Test SOX financial controls and segregation of duties",
+              "attack_vector": "Financial Controls Validation",
+              "payload": {
+                "method": "POST",
+                "endpoint": "/api/transactions/approve",
+                "headers": {
+                  "Authorization": "Bearer {{valid_user_jwt_token}}",
+                  "Content-Type": "application/json"
+                },
+                "body": {
+                  "transactionId": "TXN123",
+                  "amount": 10000.00
+                }
+              },
+              "expected_result": "HTTP 403 - Approval requires admin role",
+              "validation_points": [
+                "Transaction approval requires appropriate authorization",
+                "Segregation of duties enforced through role-based access",
+                "Approval attempt logged for SOX compliance"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "SecurityTestConfiguration": {
+    "description": "Security testing configuration and execution parameters",
+    "test_execution": {
+      "parallel_execution": true,
+      "max_concurrent_tests": 10,
+      "test_timeout": 30,
+      "retry_attempts": 3,
+      "failure_threshold": 0
+    },
+    "reporting": {
+      "generate_detailed_report": true,
+      "include_payloads": true,
+      "include_responses": true,
+      "export_formats": ["json", "html", "pdf"],
+      "compliance_mapping": true
+    },
+    "security_scanning": {
+      "owasp_zap_integration": true,
+      "burp_suite_integration": false,
+      "custom_payloads": true,
+      "vulnerability_correlation": true
+    },
+    "monitoring": {
+      "real_time_monitoring": true,
+      "alert_on_failure": true,
+      "metrics_collection": true,
+      "log_correlation": true
+    },
+    "compliance_validation": {
+      "pci_dss_validation": true,
+      "gdpr_validation": true,
+      "sox_validation": true,
+      "owasp_top_10_validation": true
+    }
+  }
+}
