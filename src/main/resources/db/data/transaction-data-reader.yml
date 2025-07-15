@@ -15,7 +15,7 @@
 # - Error handling and skip policies for data quality management
 #
 # Transaction Data File Format (dailytran.txt):
-# - Record Length: 189 characters
+# - Record Length: 350 characters
 # - Fields: transaction_id, account_id, transaction_type, description, amount,
 #           transaction_category, card_number, merchant_name, merchant_city,
 #           merchant_zip, transaction_timestamp
@@ -49,21 +49,21 @@ spring:
               # Transaction Category - positions 148-149 (2 characters)
               - name: "transactionCategoryRaw"
                 range: "148-149"
-              # Card Number - positions 150-165 (16 characters)
+              # Card Number - positions 263-278 (16 characters)
               - name: "cardNumber"
-                range: "150-165"
-              # Merchant Name - positions 166-205 (40 characters)
-              - name: "merchantName"
-                range: "166-205"
-              # Merchant City - positions 206-245 (40 characters)
-              - name: "merchantCity"
-                range: "206-245"
-              # Merchant ZIP - positions 246-255 (10 characters)
-              - name: "merchantZip"
-                range: "246-255"
-              # Transaction Timestamp - positions 256-281 (26 characters)
+                range: "263-278"
+              # Merchant Name - extracted from description field
+              - name: "merchantNameRaw"
+                range: "28-135"
+              # Merchant City - extracted from description field
+              - name: "merchantCityRaw"
+                range: "28-135"
+              # Merchant ZIP - extracted from description field
+              - name: "merchantZipRaw"
+                range: "28-135"
+              # Transaction Timestamp - positions 279-304 (26 characters)
               - name: "transactionTimestamp"
-                range: "256-281"
+                range: "279-304"
             
             field-set-mapper:
               type: "BeanWrapperFieldSetMapper"
@@ -187,10 +187,10 @@ spring:
                   transformation: |
                     # Parse amount with sign character handling
                     String amountStr = value.trim();
-                    if (amountStr.length() >= 11) {
-                      // Extract numeric part and sign
-                      String numericPart = amountStr.substring(0, 10);
-                      char signChar = amountStr.charAt(10);
+                    if (amountStr.length() >= 8) {
+                      // Extract numeric part (first 7 characters) and sign (8th character)
+                      String numericPart = amountStr.substring(0, 7);
+                      char signChar = amountStr.charAt(7);
                       
                       // Convert to decimal with 2 decimal places
                       long amountCents = Long.parseLong(numericPart);
@@ -256,51 +256,60 @@ spring:
                   validation:
                     - "notNull"
                 
-                # Merchant Name field mapping
+                # Merchant Name field mapping - extracted from description
                 merchantName:
                   type: "string"
+                  source-field: "transactionTypeDesc"
                   trim: true
                   validation:
                     - "size(max=50)"
                   transformation: |
-                    # Clean merchant name and ensure proper format
-                    String name = value.trim();
-                    if (name.length() > 50) {
-                      name = name.substring(0, 50);
+                    # Extract merchant name from description field
+                    String desc = value.trim();
+                    if (desc.contains("Purchase at ")) {
+                      String merchant = desc.substring(desc.indexOf("Purchase at ") + 12);
+                      if (merchant.length() > 50) {
+                        merchant = merchant.substring(0, 50);
+                      }
+                      return merchant.trim();
+                    } else if (desc.contains("Return item at ")) {
+                      String merchant = desc.substring(desc.indexOf("Return item at ") + 15);
+                      if (merchant.length() > 50) {
+                        merchant = merchant.substring(0, 50);
+                      }
+                      return merchant.trim();
+                    } else if (desc.contains("Payment to ")) {
+                      String merchant = desc.substring(desc.indexOf("Payment to ") + 11);
+                      if (merchant.length() > 50) {
+                        merchant = merchant.substring(0, 50);
+                      }
+                      return merchant.trim();
                     }
-                    return name.isEmpty() ? null : name;
+                    return null;
                 
-                # Merchant City field mapping
+                # Merchant City field mapping - placeholder for now
                 merchantCity:
                   type: "string"
+                  source-field: "transactionTypeDesc"
                   trim: true
                   validation:
                     - "size(max=50)"
                   transformation: |
-                    # Clean merchant city and ensure proper format
-                    String city = value.trim();
-                    if (city.length() > 50) {
-                      city = city.substring(0, 50);
-                    }
-                    return city.isEmpty() ? null : city;
+                    # Merchant city is not clearly separated in the data format
+                    # For now, return null and let the system handle it
+                    return null;
                 
-                # Merchant ZIP field mapping
+                # Merchant ZIP field mapping - placeholder for now
                 merchantZip:
                   type: "string"
+                  source-field: "transactionTypeDesc"
                   trim: true
                   validation:
                     - "size(max=10)"
                     - "pattern(^$|^[0-9]{5}(-[0-9]{4})?$)"
                   transformation: |
-                    # Clean and validate ZIP code format
-                    String zip = value.trim();
-                    if (zip.length() > 10) {
-                      zip = zip.substring(0, 10);
-                    }
-                    // Validate ZIP format (XXXXX or XXXXX-XXXX)
-                    if (zip.matches("^[0-9]{5}(-[0-9]{4})?$")) {
-                      return zip;
-                    }
+                    # Merchant ZIP is not clearly separated in the data format
+                    # For now, return null and let the system handle it
                     return null;
                 
                 # Transaction Source default
