@@ -1,0 +1,902 @@
+{
+  "transactionProcessingValidation": {
+    "description": "Golden file containing expected transaction processing outputs for validating real-time transaction calculations, fees, and categorization logic against legacy COBOL transaction processing behavior",
+    "version": "1.0",
+    "lastUpdated": "2024-01-01T00:00:00Z",
+    "purpose": "Validates microservice transaction pipeline accuracy against original mainframe processing with exact amount and fee calculations per Section 0.5.1 business process metrics"
+  },
+  "transactionViewService": {
+    "description": "Expected outputs for TransactionViewService.getTransactionDetails(), findTransactionById(), and formatTransactionView() operations",
+    "testCases": [
+      {
+        "testName": "validTransactionView",
+        "description": "Expected response for valid transaction detail view with complete audit trail",
+        "input": {
+          "transactionId": "0000000000683580",
+          "userId": "testuser",
+          "userRole": "STANDARD"
+        },
+        "expectedOutput": {
+          "success": true,
+          "correlationId": "test-correlation-id",
+          "transactionDetails": {
+            "transactionId": "0000000000683580",
+            "transactionType": "PURCHASE",
+            "categoryCode": "REGULAR_SALES_DRAFT",
+            "amount": "50.47",
+            "description": "POS TERM  Purchase at Abshire-Lowe",
+            "cardNumber": "************0652",
+            "merchantId": "800000000",
+            "merchantName": "Abshire-Lowe",
+            "merchantCity": "North Enoshaven",
+            "merchantZip": "72112",
+            "originalTimestamp": "2022-06-10T19:27:53.000000",
+            "processingTimestamp": "2022-06-10T19:27:53.000000",
+            "source": "POS TERM"
+          },
+          "accountInfo": {
+            "accountId": "0000000001",
+            "currentBalance": "2547.23",
+            "activeStatus": "Y",
+            "cardNumber": "************0652"
+          },
+          "customerInfo": {
+            "customerId": "0000000001",
+            "firstName": "JOHN",
+            "lastName": "DOE",
+            "address": "123 MAIN ST"
+          },
+          "userAuthorizationLevel": "STANDARD",
+          "accessTimestamp": "2024-01-01T12:00:00.000000",
+          "auditInfo": {
+            "userId": "testuser",
+            "operationType": "TRANSACTION_VIEW",
+            "timestamp": "2024-01-01T12:00:00.000000",
+            "correlationId": "test-correlation-id",
+            "sourceSystem": "TransactionViewService",
+            "operationResult": "SUCCESS",
+            "ipAddress": "127.0.0.1"
+          }
+        }
+      },
+      {
+        "testName": "invalidTransactionIdError",
+        "description": "Expected error response for invalid transaction ID format",
+        "input": {
+          "transactionId": "INVALID123",
+          "userId": "testuser",
+          "userRole": "STANDARD"
+        },
+        "expectedOutput": {
+          "success": false,
+          "errorMessage": "Transaction ID can NOT be empty or invalid format",
+          "correlationId": "test-correlation-id"
+        }
+      },
+      {
+        "testName": "transactionNotFoundError",
+        "description": "Expected error response for non-existent transaction",
+        "input": {
+          "transactionId": "9999999999999999",
+          "userId": "testuser",
+          "userRole": "STANDARD"
+        },
+        "expectedOutput": {
+          "success": false,
+          "errorMessage": "Transaction ID NOT found",
+          "correlationId": "test-correlation-id"
+        }
+      },
+      {
+        "testName": "accessDeniedError",
+        "description": "Expected error response for access denied to transaction",
+        "input": {
+          "transactionId": "0000000000683580",
+          "userId": "unauthorizeduser",
+          "userRole": "READONLY"
+        },
+        "expectedOutput": {
+          "success": false,
+          "errorMessage": "Access denied to transaction",
+          "correlationId": "test-correlation-id"
+        }
+      },
+      {
+        "testName": "adminFullAccessView",
+        "description": "Expected response for admin user with full data access",
+        "input": {
+          "transactionId": "0000000001774260",
+          "userId": "admin",
+          "userRole": "ADMIN"
+        },
+        "expectedOutput": {
+          "success": true,
+          "correlationId": "test-correlation-id",
+          "transactionDetails": {
+            "transactionId": "0000000001774260",
+            "transactionType": "REFUND",
+            "categoryCode": "REFUND_CREDIT",
+            "amount": "91.90",
+            "description": "OPERATOR  Return item at Nitzsche, Nicolas and Lowe",
+            "cardNumber": "4856952612877065",
+            "merchantId": "800000000",
+            "merchantName": "Nitzsche, Nicolas and Lowe",
+            "merchantCity": "Fidelshire",
+            "merchantZip": "53378",
+            "originalTimestamp": "2022-06-10T19:27:53.000000",
+            "processingTimestamp": "2022-06-10T19:27:53.000000",
+            "source": "OPERATOR"
+          },
+          "userAuthorizationLevel": "ADMIN",
+          "accessTimestamp": "2024-01-01T12:00:00.000000"
+        }
+      }
+    ]
+  },
+  "transactionService": {
+    "description": "Expected outputs for TransactionService.findTransactions(), searchTransactions(), and getTransactionPage() operations",
+    "testCases": [
+      {
+        "testName": "findTransactionsWithPagination",
+        "description": "Expected response for transaction listing with pagination",
+        "input": {
+          "pageNumber": 0,
+          "pageSize": 10,
+          "sortBy": "processingTimestamp",
+          "sortDirection": "DESC",
+          "correlationId": "test-correlation-id"
+        },
+        "expectedOutput": {
+          "success": true,
+          "timestamp": "2024-01-01T12:00:00.000000",
+          "correlationId": "test-correlation-id",
+          "transactions": [
+            {
+              "transactionId": "0000000000683580",
+              "transactionType": "PURCHASE",
+              "categoryCode": "REGULAR_SALES_DRAFT",
+              "amount": "50.47",
+              "description": "POS TERM  Purchase at Abshire-Lowe",
+              "cardNumber": "************0652",
+              "merchantName": "Abshire-Lowe",
+              "merchantCity": "North Enoshaven",
+              "originalTimestamp": "2022-06-10T19:27:53.000000",
+              "processingTimestamp": "2022-06-10T19:27:53.000000"
+            },
+            {
+              "transactionId": "0000000001774260",
+              "transactionType": "REFUND",
+              "categoryCode": "REFUND_CREDIT",
+              "amount": "91.90",
+              "description": "OPERATOR  Return item at Nitzsche, Nicolas and Lowe",
+              "cardNumber": "************6232",
+              "merchantName": "Nitzsche, Nicolas and Lowe",
+              "merchantCity": "Fidelshire",
+              "originalTimestamp": "2022-06-10T19:27:53.000000",
+              "processingTimestamp": "2022-06-10T19:27:53.000000"
+            }
+          ],
+          "paginationMetadata": {
+            "currentPage": 0,
+            "totalPages": 15,
+            "totalElements": 150,
+            "pageSize": 10,
+            "hasNext": true,
+            "hasPrevious": false,
+            "isFirst": true,
+            "isLast": false
+          },
+          "totalAmount": "142.37"
+        }
+      },
+      {
+        "testName": "searchTransactionsWithFilters",
+        "description": "Expected response for transaction search with account filter",
+        "input": {
+          "accountId": "0000000001",
+          "startDate": "2022-06-01",
+          "endDate": "2022-06-30",
+          "pageNumber": 0,
+          "pageSize": 10,
+          "correlationId": "test-correlation-id"
+        },
+        "expectedOutput": {
+          "success": true,
+          "timestamp": "2024-01-01T12:00:00.000000",
+          "correlationId": "test-correlation-id",
+          "transactions": [
+            {
+              "transactionId": "0000000000683580",
+              "transactionType": "PURCHASE",
+              "categoryCode": "REGULAR_SALES_DRAFT",
+              "amount": "50.47",
+              "description": "POS TERM  Purchase at Abshire-Lowe",
+              "cardNumber": "************0652",
+              "merchantName": "Abshire-Lowe",
+              "merchantCity": "North Enoshaven",
+              "originalTimestamp": "2022-06-10T19:27:53.000000",
+              "processingTimestamp": "2022-06-10T19:27:53.000000"
+            }
+          ],
+          "paginationMetadata": {
+            "currentPage": 0,
+            "totalPages": 1,
+            "totalElements": 1,
+            "pageSize": 10,
+            "hasNext": false,
+            "hasPrevious": false,
+            "isFirst": true,
+            "isLast": true
+          },
+          "totalAmount": "50.47"
+        }
+      },
+      {
+        "testName": "emptyTransactionSearch",
+        "description": "Expected response for search returning no results",
+        "input": {
+          "accountId": "9999999999",
+          "pageNumber": 0,
+          "pageSize": 10,
+          "correlationId": "test-correlation-id"
+        },
+        "expectedOutput": {
+          "success": true,
+          "timestamp": "2024-01-01T12:00:00.000000",
+          "correlationId": "test-correlation-id",
+          "transactions": [],
+          "paginationMetadata": {
+            "currentPage": 0,
+            "totalPages": 0,
+            "totalElements": 0,
+            "pageSize": 10,
+            "hasNext": false,
+            "hasPrevious": false,
+            "isFirst": true,
+            "isLast": true
+          },
+          "totalAmount": "0.00"
+        }
+      },
+      {
+        "testName": "transactionsByCardNumber",
+        "description": "Expected response for transactions filtered by card number",
+        "input": {
+          "cardNumber": "4856952612877065",
+          "pageNumber": 0,
+          "pageSize": 10,
+          "correlationId": "test-correlation-id"
+        },
+        "expectedOutput": {
+          "success": true,
+          "timestamp": "2024-01-01T12:00:00.000000",
+          "correlationId": "test-correlation-id",
+          "transactions": [
+            {
+              "transactionId": "0000000001774260",
+              "transactionType": "REFUND",
+              "categoryCode": "REFUND_CREDIT",
+              "amount": "91.90",
+              "description": "OPERATOR  Return item at Nitzsche, Nicolas and Lowe",
+              "cardNumber": "4856952612877065",
+              "merchantName": "Nitzsche, Nicolas and Lowe",
+              "merchantCity": "Fidelshire",
+              "originalTimestamp": "2022-06-10T19:27:53.000000",
+              "processingTimestamp": "2022-06-10T19:27:53.000000"
+            }
+          ],
+          "paginationMetadata": {
+            "currentPage": 0,
+            "totalPages": 1,
+            "totalElements": 1,
+            "pageSize": 10,
+            "hasNext": false,
+            "hasPrevious": false,
+            "isFirst": true,
+            "isLast": true
+          },
+          "totalAmount": "91.90"
+        }
+      }
+    ]
+  },
+  "addTransactionService": {
+    "description": "Expected outputs for AddTransactionService.addTransaction(), validateTransaction(), and processTransaction() operations",
+    "testCases": [
+      {
+        "testName": "successfulTransactionAddition",
+        "description": "Expected response for successful transaction addition with comprehensive validation",
+        "input": {
+          "accountId": "0000000001",
+          "cardNumber": "4856952612877065",
+          "transactionType": "PURCHASE",
+          "transactionCategory": "REGULAR_SALES_DRAFT",
+          "source": "POS TERM",
+          "description": "Purchase at Test Merchant",
+          "amount": "125.50",
+          "merchantId": "800000001",
+          "merchantName": "Test Merchant",
+          "merchantCity": "Test City",
+          "merchantZip": "12345",
+          "originalDate": "2024-01-01T10:00:00.000000",
+          "processingDate": "2024-01-01T10:00:00.000000",
+          "confirmed": true
+        },
+        "expectedOutput": {
+          "success": true,
+          "message": "Transaction added successfully. Your Tran ID is 0000000329724246.",
+          "confirmationTimestamp": "2024-01-01T12:00:00.000000",
+          "transactionId": "0000000329724246",
+          "transaction": {
+            "transactionId": "0000000329724246",
+            "transactionType": "PURCHASE",
+            "categoryCode": "REGULAR_SALES_DRAFT",
+            "amount": "125.50",
+            "description": "Purchase at Test Merchant",
+            "cardNumber": "4856952612877065",
+            "merchantId": "800000001",
+            "merchantName": "Test Merchant",
+            "merchantCity": "Test City",
+            "merchantZip": "12345",
+            "originalTimestamp": "2024-01-01T10:00:00.000000",
+            "processingTimestamp": "2024-01-01T10:00:00.000000",
+            "source": "POS TERM"
+          },
+          "previousBalance": "2547.23",
+          "currentBalance": "2421.73",
+          "httpStatus": 200,
+          "validationErrors": []
+        }
+      },
+      {
+        "testName": "transactionValidationFailure",
+        "description": "Expected response for transaction validation failure",
+        "input": {
+          "accountId": null,
+          "cardNumber": "",
+          "transactionType": "PURCHASE",
+          "transactionCategory": "REGULAR_SALES_DRAFT",
+          "source": "",
+          "description": "",
+          "amount": "0.00",
+          "confirmed": false
+        },
+        "expectedOutput": {
+          "success": false,
+          "message": "Transaction Source can NOT be empty...",
+          "confirmationTimestamp": "2024-01-01T12:00:00.000000",
+          "httpStatus": 400,
+          "errorCode": "VALIDATION_ERROR",
+          "validationErrors": [
+            "Transaction Source can NOT be empty..."
+          ]
+        }
+      },
+      {
+        "testName": "invalidAmountValidation",
+        "description": "Expected response for invalid amount validation",
+        "input": {
+          "accountId": "0000000001",
+          "cardNumber": "4856952612877065",
+          "transactionType": "PURCHASE",
+          "transactionCategory": "REGULAR_SALES_DRAFT",
+          "source": "POS TERM",
+          "description": "Purchase at Test Merchant",
+          "amount": "-100.00",
+          "confirmed": true
+        },
+        "expectedOutput": {
+          "success": false,
+          "message": "Transaction Amount must be greater than zero",
+          "confirmationTimestamp": "2024-01-01T12:00:00.000000",
+          "httpStatus": 400,
+          "errorCode": "VALIDATION_ERROR",
+          "validationErrors": [
+            "Transaction Amount must be greater than zero"
+          ]
+        }
+      },
+      {
+        "testName": "invalidAccountCardCombination",
+        "description": "Expected response for invalid account-card combination",
+        "input": {
+          "accountId": null,
+          "cardNumber": null,
+          "transactionType": "PURCHASE",
+          "transactionCategory": "REGULAR_SALES_DRAFT",
+          "source": "POS TERM",
+          "description": "Purchase at Test Merchant",
+          "amount": "100.00",
+          "confirmed": true
+        },
+        "expectedOutput": {
+          "success": false,
+          "message": "Account ID or Card Number must be provided",
+          "confirmationTimestamp": "2024-01-01T12:00:00.000000",
+          "httpStatus": 400,
+          "errorCode": "VALIDATION_ERROR",
+          "validationErrors": [
+            "Account ID or Card Number must be provided"
+          ]
+        }
+      },
+      {
+        "testName": "unconfirmedTransaction",
+        "description": "Expected response for unconfirmed transaction",
+        "input": {
+          "accountId": "0000000001",
+          "cardNumber": "4856952612877065",
+          "transactionType": "PURCHASE",
+          "transactionCategory": "REGULAR_SALES_DRAFT",
+          "source": "POS TERM",
+          "description": "Purchase at Test Merchant",
+          "amount": "100.00",
+          "confirmed": false
+        },
+        "expectedOutput": {
+          "success": false,
+          "message": "Transaction confirmation required",
+          "confirmationTimestamp": "2024-01-01T12:00:00.000000",
+          "httpStatus": 400,
+          "errorCode": "VALIDATION_ERROR",
+          "validationErrors": [
+            "Transaction confirmation required"
+          ]
+        }
+      },
+      {
+        "testName": "cashAdvanceTransaction",
+        "description": "Expected response for cash advance transaction with fee calculation",
+        "input": {
+          "accountId": "0000000001",
+          "cardNumber": "4856952612877065",
+          "transactionType": "CASH_ADVANCE",
+          "transactionCategory": "ATM_CASH_ADVANCE",
+          "source": "ATM",
+          "description": "ATM Cash Advance",
+          "amount": "200.00",
+          "merchantId": "800000002",
+          "merchantName": "ATM Location",
+          "merchantCity": "Test City",
+          "merchantZip": "12345",
+          "originalDate": "2024-01-01T10:00:00.000000",
+          "processingDate": "2024-01-01T10:00:00.000000",
+          "confirmed": true
+        },
+        "expectedOutput": {
+          "success": true,
+          "message": "Transaction added successfully. Your Tran ID is 0000000329724247.",
+          "confirmationTimestamp": "2024-01-01T12:00:00.000000",
+          "transactionId": "0000000329724247",
+          "transaction": {
+            "transactionId": "0000000329724247",
+            "transactionType": "CASH_ADVANCE",
+            "categoryCode": "ATM_CASH_ADVANCE",
+            "amount": "200.00",
+            "description": "ATM Cash Advance",
+            "cardNumber": "4856952612877065",
+            "merchantId": "800000002",
+            "merchantName": "ATM Location",
+            "merchantCity": "Test City",
+            "merchantZip": "12345",
+            "originalTimestamp": "2024-01-01T10:00:00.000000",
+            "processingTimestamp": "2024-01-01T10:00:00.000000",
+            "source": "ATM"
+          },
+          "previousBalance": "2421.73",
+          "currentBalance": "2216.73",
+          "httpStatus": 200,
+          "validationErrors": [],
+          "fees": [
+            {
+              "feeType": "CASH_ADVANCE_FEE",
+              "feeAmount": "5.00",
+              "description": "Cash advance fee (2.5% of amount, min $5.00)"
+            }
+          ]
+        }
+      },
+      {
+        "testName": "paymentTransaction",
+        "description": "Expected response for payment transaction processing",
+        "input": {
+          "accountId": "0000000001",
+          "cardNumber": "4856952612877065",
+          "transactionType": "PAYMENT",
+          "transactionCategory": "ELECTRONIC_PAYMENT",
+          "source": "ONLINE",
+          "description": "Online Payment",
+          "amount": "500.00",
+          "originalDate": "2024-01-01T10:00:00.000000",
+          "processingDate": "2024-01-01T10:00:00.000000",
+          "confirmed": true
+        },
+        "expectedOutput": {
+          "success": true,
+          "message": "Transaction added successfully. Your Tran ID is 0000000329724248.",
+          "confirmationTimestamp": "2024-01-01T12:00:00.000000",
+          "transactionId": "0000000329724248",
+          "transaction": {
+            "transactionId": "0000000329724248",
+            "transactionType": "PAYMENT",
+            "categoryCode": "ELECTRONIC_PAYMENT",
+            "amount": "500.00",
+            "description": "Online Payment",
+            "cardNumber": "4856952612877065",
+            "originalTimestamp": "2024-01-01T10:00:00.000000",
+            "processingTimestamp": "2024-01-01T10:00:00.000000",
+            "source": "ONLINE"
+          },
+          "previousBalance": "2216.73",
+          "currentBalance": "2716.73",
+          "httpStatus": 200,
+          "validationErrors": []
+        }
+      },
+      {
+        "testName": "systemErrorHandling",
+        "description": "Expected response for system error during transaction processing",
+        "input": {
+          "accountId": "0000000001",
+          "cardNumber": "4856952612877065",
+          "transactionType": "PURCHASE",
+          "transactionCategory": "REGULAR_SALES_DRAFT",
+          "source": "POS TERM",
+          "description": "Purchase at Test Merchant",
+          "amount": "100.00",
+          "confirmed": true,
+          "simulateError": true
+        },
+        "expectedOutput": {
+          "success": false,
+          "message": "Unable to Add Transaction...",
+          "confirmationTimestamp": "2024-01-01T12:00:00.000000",
+          "httpStatus": 500,
+          "errorCode": "SYSTEM_ERROR",
+          "validationErrors": [
+            "An unexpected error occurred during transaction processing"
+          ]
+        }
+      }
+    ]
+  },
+  "transactionCalculations": {
+    "description": "Expected calculations for transaction amounts, fees, and balance updates with exact COBOL precision",
+    "testCases": [
+      {
+        "testName": "precisionCalculationValidation",
+        "description": "Validates BigDecimal precision equivalent to COBOL COMP-3 calculations",
+        "scenarios": [
+          {
+            "description": "Purchase transaction with tax calculation",
+            "input": {
+              "baseAmount": "100.00",
+              "taxRate": "0.0875",
+              "merchantFeeRate": "0.0275"
+            },
+            "expectedOutput": {
+              "baseAmount": "100.00",
+              "taxAmount": "8.75",
+              "merchantFee": "2.75",
+              "totalAmount": "111.50",
+              "precision": "2",
+              "scale": "2"
+            }
+          },
+          {
+            "description": "Cash advance with fee calculation",
+            "input": {
+              "baseAmount": "200.00",
+              "feeRate": "0.025",
+              "minimumFee": "5.00"
+            },
+            "expectedOutput": {
+              "baseAmount": "200.00",
+              "calculatedFee": "5.00",
+              "minimumFee": "5.00",
+              "appliedFee": "5.00",
+              "totalAmount": "205.00"
+            }
+          },
+          {
+            "description": "Interest calculation with COBOL precision",
+            "input": {
+              "principalAmount": "1000.00",
+              "interestRate": "0.1995",
+              "days": "30"
+            },
+            "expectedOutput": {
+              "principalAmount": "1000.00",
+              "dailyRate": "0.000546575",
+              "interestAmount": "16.40",
+              "totalAmount": "1016.40"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "transactionTypes": {
+    "description": "Expected transaction type and category mappings from COBOL transaction type tables",
+    "mappings": [
+      {
+        "typeCode": "01",
+        "typeName": "PURCHASE",
+        "categories": [
+          {
+            "categoryCode": "010001",
+            "categoryName": "REGULAR_SALES_DRAFT",
+            "description": "Regular Sales Draft"
+          },
+          {
+            "categoryCode": "010002",
+            "categoryName": "REGULAR_CASH_ADVANCE",
+            "description": "Regular Cash Advance"
+          },
+          {
+            "categoryCode": "010003",
+            "categoryName": "CONVENIENCE_CHECK_DEBIT",
+            "description": "Convenience Check Debit"
+          },
+          {
+            "categoryCode": "010004",
+            "categoryName": "ATM_CASH_ADVANCE",
+            "description": "ATM Cash Advance"
+          },
+          {
+            "categoryCode": "010005",
+            "categoryName": "INTEREST_AMOUNT",
+            "description": "Interest Amount"
+          }
+        ]
+      },
+      {
+        "typeCode": "02",
+        "typeName": "PAYMENT",
+        "categories": [
+          {
+            "categoryCode": "020001",
+            "categoryName": "CASH_PAYMENT",
+            "description": "Cash payment"
+          },
+          {
+            "categoryCode": "020002",
+            "categoryName": "ELECTRONIC_PAYMENT",
+            "description": "Electronic payment"
+          },
+          {
+            "categoryCode": "020003",
+            "categoryName": "CHECK_PAYMENT",
+            "description": "Check payment"
+          }
+        ]
+      },
+      {
+        "typeCode": "03",
+        "typeName": "CREDIT",
+        "categories": [
+          {
+            "categoryCode": "030001",
+            "categoryName": "CREDIT_TO_ACCOUNT",
+            "description": "Credit to Account"
+          },
+          {
+            "categoryCode": "030002",
+            "categoryName": "CREDIT_TO_PURCHASE_BALANCE",
+            "description": "Credit to Purchase balance"
+          },
+          {
+            "categoryCode": "030003",
+            "categoryName": "CREDIT_TO_CASH_BALANCE",
+            "description": "Credit to Cash balance"
+          }
+        ]
+      },
+      {
+        "typeCode": "04",
+        "typeName": "AUTHORIZATION",
+        "categories": [
+          {
+            "categoryCode": "040001",
+            "categoryName": "ZERO_DOLLAR_AUTHORIZATION",
+            "description": "Zero dollar authorization"
+          },
+          {
+            "categoryCode": "040002",
+            "categoryName": "ONLINE_PURCHASE_AUTHORIZATION",
+            "description": "Online purchase authorization"
+          },
+          {
+            "categoryCode": "040003",
+            "categoryName": "TRAVEL_BOOKING_AUTHORIZATION",
+            "description": "Travel booking authorization"
+          }
+        ]
+      },
+      {
+        "typeCode": "05",
+        "typeName": "REFUND",
+        "categories": [
+          {
+            "categoryCode": "050001",
+            "categoryName": "REFUND_CREDIT",
+            "description": "Refund credit"
+          }
+        ]
+      },
+      {
+        "typeCode": "06",
+        "typeName": "REVERSAL",
+        "categories": [
+          {
+            "categoryCode": "060001",
+            "categoryName": "FRAUD_REVERSAL",
+            "description": "Fraud reversal"
+          },
+          {
+            "categoryCode": "060002",
+            "categoryName": "NON_FRAUD_REVERSAL",
+            "description": "Non-fraud reversal"
+          }
+        ]
+      },
+      {
+        "typeCode": "07",
+        "typeName": "ADJUSTMENT",
+        "categories": [
+          {
+            "categoryCode": "070001",
+            "categoryName": "SALES_DRAFT_CREDIT_ADJUSTMENT",
+            "description": "Sales draft credit adjustment"
+          }
+        ]
+      }
+    ]
+  },
+  "validationRules": {
+    "description": "Expected validation rules and error messages matching COBOL validation logic",
+    "rules": [
+      {
+        "field": "transactionId",
+        "rules": [
+          {
+            "type": "required",
+            "errorMessage": "Transaction ID can NOT be empty"
+          },
+          {
+            "type": "format",
+            "pattern": "^[0-9]{16}$",
+            "errorMessage": "Transaction ID must be 16 numeric characters"
+          }
+        ]
+      },
+      {
+        "field": "accountId",
+        "rules": [
+          {
+            "type": "required",
+            "errorMessage": "Account ID can NOT be empty"
+          },
+          {
+            "type": "format",
+            "pattern": "^[0-9]{10}$",
+            "errorMessage": "Account ID must be 10 numeric characters"
+          }
+        ]
+      },
+      {
+        "field": "cardNumber",
+        "rules": [
+          {
+            "type": "required",
+            "errorMessage": "Card Number can NOT be empty"
+          },
+          {
+            "type": "format",
+            "pattern": "^[0-9]{16}$",
+            "errorMessage": "Card Number must be 16 numeric characters"
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "rules": [
+          {
+            "type": "required",
+            "errorMessage": "Transaction Amount can NOT be empty"
+          },
+          {
+            "type": "numeric",
+            "errorMessage": "Transaction Amount must be numeric"
+          },
+          {
+            "type": "positive",
+            "errorMessage": "Transaction Amount must be greater than zero"
+          },
+          {
+            "type": "precision",
+            "maxPrecision": 10,
+            "scale": 2,
+            "errorMessage": "Transaction Amount precision exceeded"
+          }
+        ]
+      },
+      {
+        "field": "description",
+        "rules": [
+          {
+            "type": "required",
+            "errorMessage": "Transaction Description can NOT be empty"
+          },
+          {
+            "type": "maxLength",
+            "maxLength": 100,
+            "errorMessage": "Transaction Description exceeds maximum length"
+          }
+        ]
+      },
+      {
+        "field": "source",
+        "rules": [
+          {
+            "type": "required",
+            "errorMessage": "Transaction Source can NOT be empty"
+          },
+          {
+            "type": "maxLength",
+            "maxLength": 10,
+            "errorMessage": "Transaction Source exceeds maximum length"
+          }
+        ]
+      }
+    ]
+  },
+  "performanceMetrics": {
+    "description": "Expected performance metrics for transaction processing validation",
+    "requirements": [
+      {
+        "operation": "transactionView",
+        "responseTime95thPercentile": "200ms",
+        "throughput": "10000 TPS",
+        "memoryUsage": "110% of CICS baseline"
+      },
+      {
+        "operation": "transactionListing",
+        "responseTime95thPercentile": "200ms",
+        "throughput": "10000 TPS",
+        "paginationSize": 10
+      },
+      {
+        "operation": "transactionAddition",
+        "responseTime95thPercentile": "200ms",
+        "throughput": "10000 TPS",
+        "validationSteps": 7
+      }
+    ]
+  },
+  "auditTrail": {
+    "description": "Expected audit trail information for transaction processing operations",
+    "auditFields": [
+      "userId",
+      "operationType",
+      "timestamp",
+      "correlationId",
+      "sourceSystem",
+      "operationResult",
+      "ipAddress",
+      "transactionId",
+      "accountId",
+      "amount",
+      "errorCode",
+      "errorMessage"
+    ],
+    "operationTypes": [
+      "TRANSACTION_VIEW",
+      "TRANSACTION_LIST",
+      "TRANSACTION_SEARCH",
+      "TRANSACTION_ADD",
+      "TRANSACTION_VALIDATION",
+      "BALANCE_UPDATE"
+    ]
+  }
+}
