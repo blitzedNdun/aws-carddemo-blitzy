@@ -9,7 +9,7 @@
     <groupId>com.carddemo</groupId>
     <artifactId>carddemo-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <packaging>pom</packaging>
+    <packaging>jar</packaging>
 
     <name>CardDemo Parent</name>
     <description>
@@ -75,41 +75,14 @@
         <skipITs>false</skipITs>
     </properties>
 
-    <!-- Module Configuration for Multi-Module Project -->
+    <!-- Single Module Configuration - All services in unified structure -->
+    <!-- Module list commented out for monolithic deployment approach -->
+    <!-- 
     <modules>
-        <!-- Core Application Services (24 Interactive Microservices) -->
-        <module>carddemo-auth-service</module>
-        <module>carddemo-menu-service</module>
-        <module>carddemo-account-view-service</module>
-        <module>carddemo-account-update-service</module>
-        <module>carddemo-card-list-service</module>
-        <module>carddemo-card-selection-service</module>
-        <module>carddemo-card-update-service</module>
-        <module>carddemo-bill-payment-service</module>
-        <module>carddemo-transaction-service</module>
-        <module>carddemo-transaction-add-service</module>
-        <module>carddemo-transaction-view-service</module>
-        <module>carddemo-user-management-service</module>
-        
-        <!-- Batch Processing Services (12 Batch Applications) -->
-        <module>carddemo-daily-transaction-posting</module>
-        <module>carddemo-interest-calculation</module>
-        <module>carddemo-statement-generation</module>
-        <module>carddemo-account-processing</module>
-        <module>carddemo-transaction-validation</module>
-        <module>carddemo-transaction-report</module>
-        <module>carddemo-card-report</module>
-        <module>carddemo-account-report</module>
-        
-        <!-- Infrastructure and Common Components -->
-        <module>carddemo-common</module>
-        <module>carddemo-gateway</module>
-        <module>carddemo-config-server</module>
-        <module>carddemo-eureka-server</module>
-        
-        <!-- Frontend Application -->
-        <module>carddemo-webapp</module>
+        Multiple modules were planned but implementation uses unified structure
+        All 36 COBOL programs converted to services within single application
     </modules>
+    -->
 
     <!-- Parent Spring Boot Dependency Management -->
     <parent>
@@ -220,12 +193,38 @@
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-batch</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- Spring Session for Redis -->
+        <dependency>
+            <groupId>org.springframework.session</groupId>
+            <artifactId>spring-session-data-redis</artifactId>
         </dependency>
 
         <!-- Spring Cloud Dependencies -->
@@ -237,6 +236,83 @@
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-config</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-gateway</artifactId>
+        </dependency>
+
+        <!-- JWT Dependencies -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>0.11.5</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>0.11.5</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>0.11.5</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Thymeleaf Template Engine -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+
+        <!-- Servlet API -->
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+        </dependency>
+
+        <!-- Database Dependencies -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.liquibase</groupId>
+            <artifactId>liquibase-core</artifactId>
+        </dependency>
+
+        <!-- Redis Dependencies -->
+        <dependency>
+            <groupId>io.lettuce</groupId>
+            <artifactId>lettuce-core</artifactId>
+        </dependency>
+
+        <!-- Utility Libraries -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+
+        <!-- API Documentation -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
         </dependency>
 
         <!-- Monitoring and Observability -->
