@@ -1,0 +1,702 @@
+{
+  "JWTTokenTestDataset": {
+    "description": "Comprehensive JWT token test dataset providing valid and invalid tokens for authentication testing, authorization validation, and security vulnerability testing in the CardDemo application microservices architecture",
+    "test_scenarios": [
+      "JWT token generation and validation with HS256 algorithm",
+      "Role-based authorization testing with ADMIN and USER authorities",
+      "Token expiration and refresh token lifecycle management",
+      "Security vulnerability testing with malformed and invalid tokens",
+      "Session correlation and distributed microservice authentication",
+      "Spring Security integration testing with JWT authentication filter"
+    ],
+    "algorithm": "HS256",
+    "default_expiration_minutes": 30,
+    "refresh_token_expiration_hours": 24,
+    "issuer": "carddemo-auth-service",
+    "secret_key_reference": "cardDemo2024SecretKeyForJWTAuthentication",
+    
+    "valid_admin_token": {
+      "description": "Valid JWT token for admin user with ROLE_ADMIN authority for comprehensive administrative operation testing",
+      "token_samples": [
+        {
+          "user_id": "ADMIN001",
+          "user_type": "A",
+          "role": "ROLE_ADMIN",
+          "first_name": "System",
+          "last_name": "Administrator",
+          "session_id": "admin-session-001",
+          "issued_at": "2024-01-20T14:30:00Z",
+          "expires_at": "2024-01-20T15:00:00Z",
+          "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBRE1JTjAwMSIsInVzZXJfdHlwZSI6IkEiLCJyb2xlIjoiUk9MRV9BRE1JTiIsImZpcnN0X25hbWUiOiJTeXN0ZW0iLCJsYXN0X25hbWUiOiJBZG1pbmlzdHJhdG9yIiwic2Vzc2lvbl9pZCI6ImFkbWluLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.kP4vVmKrGJCdHvzV7dCkzFHlD8kBqFp2KY9hPJF3zN4",
+          "test_purpose": "Testing admin user authentication and authorization boundaries",
+          "expected_authorities": ["ROLE_ADMIN", "ROLE_USER"],
+          "accessible_endpoints": [
+            "/api/admin/**",
+            "/api/user/**",
+            "/api/system/**",
+            "/api/account/**",
+            "/api/transaction/**",
+            "/api/card/**",
+            "/api/audit/**"
+          ]
+        },
+        {
+          "user_id": "ADMIN002",
+          "user_type": "A",
+          "role": "ROLE_ADMIN",
+          "first_name": "Test",
+          "last_name": "Administrator",
+          "session_id": "admin-session-002",
+          "issued_at": "2024-01-20T16:15:00Z",
+          "expires_at": "2024-01-20T16:45:00Z",
+          "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBRE1JTjAwMiIsInVzZXJfdHlwZSI6IkEiLCJyb2xlIjoiUk9MRV9BRE1JTiIsImZpcnN0X25hbWUiOiJUZXN0IiwibGFzdF9uYW1lIjoiQWRtaW5pc3RyYXRvciIsInNlc3Npb25faWQiOiJhZG1pbi1zZXNzaW9uLTAwMiIsImlzcyI6ImNhcmRkZW1vLWF1dGgtc2VydmljZSIsImlhdCI6MTcwNTc2MDEwMCwiZXhwIjoxNzA1NzYxOTAwfQ.YhLo9fDcGvBz3UJq1MnR8qBjElP7sVt2gKwX5mNdAz8",
+          "test_purpose": "Secondary admin token for concurrent administrative session testing",
+          "expected_authorities": ["ROLE_ADMIN", "ROLE_USER"],
+          "accessible_endpoints": [
+            "/api/admin/users/**",
+            "/api/admin/system/**",
+            "/api/batch/jobs/**"
+          ]
+        },
+        {
+          "user_id": "ADMIN003",
+          "user_type": "A",
+          "role": "ROLE_ADMIN",
+          "first_name": "Security",
+          "last_name": "Manager",
+          "session_id": "admin-session-003",
+          "issued_at": "2024-01-20T10:00:00Z",
+          "expires_at": "2024-01-20T10:30:00Z",
+          "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBRE1JTjAwMyIsInVzZXJfdHlwZSI6IkEiLCJyb2xlIjoiUk9MRV9BRE1JTiIsImZpcnN0X25hbWUiOiJTZWN1cml0eSIsImxhc3RfbmFtZSI6Ik1hbmFnZXIiLCJzZXNzaW9uX2lkIjoiYWRtaW4tc2Vzc2lvbi0wMDMiLCJpc3MiOiJjYXJkZGVtby1hdXRoLXNlcnZpY2UiLCJpYXQiOjE3MDU3Mzc2MDAsImV4cCI6MTcwNTczOTQwMH0.RtHy6kLz2QmNvEg7pW9qXzBjElP7sVt2gKwX5mNdAz8",
+          "test_purpose": "Security manager admin token for JWT and authorization framework testing",
+          "expected_authorities": ["ROLE_ADMIN", "ROLE_USER"],
+          "accessible_endpoints": [
+            "/api/admin/security/**",
+            "/api/audit/**",
+            "/api/system/config/**"
+          ]
+        }
+      ]
+    },
+    
+    "valid_user_token": {
+      "description": "Valid JWT token for regular user with ROLE_USER authority for standard operation testing",
+      "token_samples": [
+        {
+          "user_id": "USER0001",
+          "user_type": "U",
+          "role": "ROLE_USER",
+          "first_name": "John",
+          "last_name": "Smith",
+          "session_id": "user-session-001",
+          "issued_at": "2024-01-20T14:30:00Z",
+          "expires_at": "2024-01-20T15:00:00Z",
+          "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJ1c2VyLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.TpVr7hBqKzM3xL9sQdGt8ZyFnJhGvBz3UJq1MnR8qBj",
+          "test_purpose": "Primary user account for standard functionality testing",
+          "expected_authorities": ["ROLE_USER"],
+          "accessible_endpoints": [
+            "/api/account/view/**",
+            "/api/transaction/view/**",
+            "/api/card/list/**",
+            "/api/profile/update/**"
+          ],
+          "restricted_endpoints": [
+            "/api/admin/**",
+            "/api/user/create",
+            "/api/user/delete/**",
+            "/api/system/**"
+          ]
+        },
+        {
+          "user_id": "USER0002",
+          "user_type": "U",
+          "role": "ROLE_USER",
+          "first_name": "Jane",
+          "last_name": "Doe",
+          "session_id": "user-session-002",
+          "issued_at": "2024-01-20T16:15:00Z",
+          "expires_at": "2024-01-20T16:45:00Z",
+          "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMiIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkphbmUiLCJsYXN0X25hbWUiOiJEb2UiLCJzZXNzaW9uX2lkIjoidXNlci1zZXNzaW9uLTAwMiIsImlzcyI6ImNhcmRkZW1vLWF1dGgtc2VydmljZSIsImlhdCI6MTcwNTc2MDEwMCwiZXhwIjoxNzA1NzYxOTAwfQ.FmKr8lJz5RnPwGh4tX8rYzClGpMiWzN6vLq2OnSdBz9",
+          "test_purpose": "Secondary user for transaction processing and card management tests",
+          "expected_authorities": ["ROLE_USER"],
+          "accessible_endpoints": [
+            "/api/transaction/create",
+            "/api/card/update/**",
+            "/api/bill/payment/**"
+          ]
+        },
+        {
+          "user_id": "USER0003",
+          "user_type": "U",
+          "role": "ROLE_USER",
+          "first_name": "Michael",
+          "last_name": "Johnson",
+          "session_id": "user-session-003",
+          "issued_at": "2024-01-20T11:30:00Z",
+          "expires_at": "2024-01-20T12:00:00Z",
+          "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMyIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6Ik1pY2hhZWwiLCJsYXN0X25hbWUiOiJKb2huc29uIiwic2Vzc2lvbl9pZCI6InVzZXItc2Vzc2lvbi0wMDMiLCJpc3MiOiJjYXJkZGVtby1hdXRoLXNlcnZpY2UiLCJpYXQiOjE3MDU3NDA2MDAsImV4cCI6MTcwNTc0MjQwMH0.NzBhJ4kLm7PqXvAy5dEr9HyFnJhGvBz3UJq1MnR8qBj",
+          "test_purpose": "User account for card management and authorization boundary testing",
+          "expected_authorities": ["ROLE_USER"],
+          "accessible_endpoints": [
+            "/api/card/list",
+            "/api/card/update/**",
+            "/api/account/view/**"
+          ]
+        },
+        {
+          "user_id": "USER0004",
+          "user_type": "U",
+          "role": "ROLE_USER",
+          "first_name": "Sarah",
+          "last_name": "Williams",
+          "session_id": "user-session-004",
+          "issued_at": "2024-01-20T13:45:00Z",
+          "expires_at": "2024-01-20T14:15:00Z",
+          "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwNCIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IlNhcmFoIiwibGFzdF9uYW1lIjoiV2lsbGlhbXMiLCJzZXNzaW9uX2lkIjoidXNlci1zZXNzaW9uLTAwNCIsImlzcyI6ImNhcmRkZW1vLWF1dGgtc2VydmljZSIsImlhdCI6MTcwNTc0OTkwMCwiZXhwIjoxNzA1NzUxNzAwfQ.QdCfH8pLn2KvXwAz6gEs8JzGpMiWzN6vLq2OnSdBz9",
+          "test_purpose": "User account for bill payment and transfer operation testing",
+          "expected_authorities": ["ROLE_USER"],
+          "accessible_endpoints": [
+            "/api/bill/payment/**",
+            "/api/transfer/**",
+            "/api/transaction/history/**"
+          ]
+        }
+      ]
+    },
+    
+    "expired_token": {
+      "description": "Expired JWT tokens for testing token expiration validation and authentication rejection",
+      "token_samples": [
+        {
+          "user_id": "ADMIN001",
+          "user_type": "A",
+          "role": "ROLE_ADMIN",
+          "first_name": "System",
+          "last_name": "Administrator",
+          "session_id": "expired-admin-session-001",
+          "issued_at": "2024-01-20T12:00:00Z",
+          "expires_at": "2024-01-20T12:30:00Z",
+          "current_time": "2024-01-20T14:00:00Z",
+          "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBRE1JTjAwMSIsInVzZXJfdHlwZSI6IkEiLCJyb2xlIjoiUk9MRV9BRE1JTiIsImZpcnN0X25hbWUiOiJTeXN0ZW0iLCJsYXN0X25hbWUiOiJBZG1pbmlzdHJhdG9yIiwic2Vzc2lvbl9pZCI6ImV4cGlyZWQtYWRtaW4tc2Vzc2lvbi0wMDEiLCJpc3MiOiJjYXJkZGVtby1hdXRoLXNlcnZpY2UiLCJpYXQiOjE3MDU3NDYwMDAsImV4cCI6MTcwNTc0NzgwMH0.ExpiredTokenSignatureForTesting12345",
+          "test_purpose": "Testing expired admin token rejection and reauthentication flow",
+          "expected_result": "AUTHENTICATION_FAILED",
+          "error_message": "Token has expired"
+        },
+        {
+          "user_id": "USER0001",
+          "user_type": "U",
+          "role": "ROLE_USER",
+          "first_name": "John",
+          "last_name": "Smith",
+          "session_id": "expired-user-session-001",
+          "issued_at": "2024-01-20T10:00:00Z",
+          "expires_at": "2024-01-20T10:30:00Z",
+          "current_time": "2024-01-20T14:00:00Z",
+          "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJleHBpcmVkLXVzZXItc2Vzc2lvbi0wMDEiLCJpc3MiOiJjYXJkZGVtby1hdXRoLXNlcnZpY2UiLCJpYXQiOjE3MDU3Mzc2MDAsImV4cCI6MTcwNTczOTQwMH0.ExpiredUserTokenSignatureForTesting67890",
+          "test_purpose": "Testing expired user token rejection and session timeout handling",
+          "expected_result": "AUTHENTICATION_FAILED",
+          "error_message": "Token has expired"
+        }
+      ]
+    },
+    
+    "invalid_signature_token": {
+      "description": "JWT tokens with invalid signatures for testing token tampering detection and security validation",
+      "token_samples": [
+        {
+          "user_id": "ADMIN001",
+          "user_type": "A",
+          "role": "ROLE_ADMIN",
+          "first_name": "System",
+          "last_name": "Administrator",
+          "session_id": "invalid-signature-session-001",
+          "issued_at": "2024-01-20T14:30:00Z",
+          "expires_at": "2024-01-20T15:00:00Z",
+          "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBRE1JTjAwMSIsInVzZXJfdHlwZSI6IkEiLCJyb2xlIjoiUk9MRV9BRE1JTiIsImZpcnN0X25hbWUiOiJTeXN0ZW0iLCJsYXN0X25hbWUiOiJBZG1pbmlzdHJhdG9yIiwic2Vzc2lvbl9pZCI6ImludmFsaWQtc2lnbmF0dXJlLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.INVALID_SIGNATURE_FOR_SECURITY_TESTING",
+          "test_purpose": "Testing invalid signature detection and token tampering prevention",
+          "expected_result": "AUTHENTICATION_FAILED",
+          "error_message": "Invalid token signature"
+        },
+        {
+          "user_id": "USER0001",
+          "user_type": "U",
+          "role": "ROLE_USER",
+          "first_name": "John",
+          "last_name": "Smith",
+          "session_id": "invalid-signature-session-002",
+          "issued_at": "2024-01-20T14:30:00Z",
+          "expires_at": "2024-01-20T15:00:00Z",
+          "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZmlyc3RfbmFtZSI6IkpvaG4iLCJsYXN0X25hbWUiOiJTbWl0aCIsInNlc3Npb25faWQiOiJpbnZhbGlkLXNpZ25hdHVyZS1zZXNzaW9uLTAwMiIsImlzcyI6ImNhcmRkZW1vLWF1dGgtc2VydmljZSIsImlhdCI6MTcwNTc1MzgwMCwiZXhwIjoxNzA1NzU1NjAwfQ.TAMPERED_SIGNATURE_FOR_TESTING_12345",
+          "test_purpose": "Testing user token signature validation and security breach detection",
+          "expected_result": "AUTHENTICATION_FAILED",
+          "error_message": "Invalid token signature"
+        }
+      ]
+    },
+    
+    "malformed_token": {
+      "description": "Malformed JWT tokens for testing token format validation and parsing error handling",
+      "token_samples": [
+        {
+          "description": "Token with invalid header format",
+          "jwt_token": "INVALID_HEADER.eyJzdWIiOiJBRE1JTjAwMSIsInVzZXJfdHlwZSI6IkEiLCJyb2xlIjoiUk9MRV9BRE1JTiJ9.kP4vVmKrGJCdHvzV7dCkzFHlD8kBqFp2KY9hPJF3zN4",
+          "test_purpose": "Testing malformed token header rejection",
+          "expected_result": "AUTHENTICATION_FAILED",
+          "error_message": "Malformed JWT token"
+        },
+        {
+          "description": "Token with invalid payload format",
+          "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.INVALID_PAYLOAD_FORMAT.kP4vVmKrGJCdHvzV7dCkzFHlD8kBqFp2KY9hPJF3zN4",
+          "test_purpose": "Testing malformed token payload rejection",
+          "expected_result": "AUTHENTICATION_FAILED",
+          "error_message": "Malformed JWT token"
+        },
+        {
+          "description": "Token with missing signature",
+          "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBRE1JTjAwMSIsInVzZXJfdHlwZSI6IkEiLCJyb2xlIjoiUk9MRV9BRE1JTiJ9",
+          "test_purpose": "Testing token without signature rejection",
+          "expected_result": "AUTHENTICATION_FAILED",
+          "error_message": "Malformed JWT token"
+        },
+        {
+          "description": "Token with too many segments",
+          "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBRE1JTjAwMSIsInVzZXJfdHlwZSI6IkEiLCJyb2xlIjoiUk9MRV9BRE1JTiJ9.kP4vVmKrGJCdHvzV7dCkzFHlD8kBqFp2KY9hPJF3zN4.EXTRA_SEGMENT",
+          "test_purpose": "Testing token with extra segments rejection",
+          "expected_result": "AUTHENTICATION_FAILED",
+          "error_message": "Malformed JWT token"
+        },
+        {
+          "description": "Empty token",
+          "jwt_token": "",
+          "test_purpose": "Testing empty token rejection",
+          "expected_result": "AUTHENTICATION_FAILED",
+          "error_message": "Token cannot be null or empty"
+        },
+        {
+          "description": "Null token",
+          "jwt_token": null,
+          "test_purpose": "Testing null token rejection",
+          "expected_result": "AUTHENTICATION_FAILED",
+          "error_message": "Token cannot be null or empty"
+        }
+      ]
+    },
+    
+    "refresh_token_samples": {
+      "description": "Refresh token samples for testing token refresh functionality and extended session management",
+      "token_samples": [
+        {
+          "user_id": "ADMIN001",
+          "user_type": "A",
+          "role": "ROLE_ADMIN",
+          "session_id": "refresh-admin-session-001",
+          "token_type": "refresh",
+          "issued_at": "2024-01-20T14:30:00Z",
+          "expires_at": "2024-01-21T14:30:00Z",
+          "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBRE1JTjAwMSIsInNlc3Npb25faWQiOiJyZWZyZXNoLWFkbWluLXNlc3Npb24tMDAxIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU4NDAyMDB9.RefreshTokenSignatureForAdminUser12345",
+          "test_purpose": "Testing admin user refresh token generation and validation",
+          "expected_result": "REFRESH_TOKEN_VALID",
+          "can_generate_new_access_token": true
+        },
+        {
+          "user_id": "USER0001",
+          "user_type": "U",
+          "role": "ROLE_USER",
+          "session_id": "refresh-user-session-001",
+          "token_type": "refresh",
+          "issued_at": "2024-01-20T14:30:00Z",
+          "expires_at": "2024-01-21T14:30:00Z",
+          "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMSIsInNlc3Npb25faWQiOiJyZWZyZXNoLXVzZXItc2Vzc2lvbi0wMDEiLCJpc3MiOiJjYXJkZGVtby1hdXRoLXNlcnZpY2UiLCJpYXQiOjE3MDU3NTM4MDAsImV4cCI6MTcwNTg0MDIwMH0.RefreshTokenSignatureForRegularUser67890",
+          "test_purpose": "Testing regular user refresh token generation and validation",
+          "expected_result": "REFRESH_TOKEN_VALID",
+          "can_generate_new_access_token": true
+        },
+        {
+          "user_id": "USER0002",
+          "user_type": "U",
+          "role": "ROLE_USER",
+          "session_id": "expired-refresh-session-001",
+          "token_type": "refresh",
+          "issued_at": "2024-01-19T14:30:00Z",
+          "expires_at": "2024-01-20T14:30:00Z",
+          "current_time": "2024-01-20T16:00:00Z",
+          "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU0VSMDAwMiIsInNlc3Npb25faWQiOiJleHBpcmVkLXJlZnJlc2gtc2Vzc2lvbi0wMDEiLCJpc3MiOiJjYXJkZGVtby1hdXRoLXNlcnZpY2UiLCJpYXQiOjE3MDU2NjczMDAsImV4cCI6MTcwNTc1MzgwMH0.ExpiredRefreshTokenSignatureForTesting",
+          "test_purpose": "Testing expired refresh token rejection and session termination",
+          "expected_result": "REFRESH_TOKEN_EXPIRED",
+          "can_generate_new_access_token": false
+        }
+      ]
+    },
+    
+    "role_based_jwt_claims": {
+      "description": "Role-based JWT claims testing for Spring Security authorization and method-level security validation",
+      "admin_role_claims": {
+        "description": "Admin role claims with full system access permissions",
+        "claim_samples": [
+          {
+            "user_id": "ADMIN001",
+            "user_type": "A",
+            "role": "ROLE_ADMIN",
+            "authorities": ["ROLE_ADMIN", "ROLE_USER"],
+            "permissions": [
+              "admin:all",
+              "user:read",
+              "user:write",
+              "user:delete",
+              "account:read",
+              "account:write",
+              "account:delete",
+              "transaction:read",
+              "transaction:write",
+              "system:configure",
+              "audit:read",
+              "batch:manage"
+            ],
+            "accessible_resources": [
+              "AdminUserManagement",
+              "SystemConfiguration",
+              "AuditLogAccess",
+              "BatchJobManagement",
+              "SecurityConfiguration",
+              "DatabaseMaintenance",
+              "MonitoringDashboard"
+            ],
+            "restricted_resources": [],
+            "test_scenarios": [
+              "@PreAuthorize('hasRole(\"ADMIN\")')",
+              "@Secured('ROLE_ADMIN')",
+              "@RolesAllowed('ROLE_ADMIN')",
+              "hasAuthority('admin:all')",
+              "hasAnyRole('ADMIN', 'SUPER_ADMIN')"
+            ]
+          }
+        ]
+      },
+      "user_role_claims": {
+        "description": "User role claims with restricted access permissions",
+        "claim_samples": [
+          {
+            "user_id": "USER0001",
+            "user_type": "U",
+            "role": "ROLE_USER",
+            "authorities": ["ROLE_USER"],
+            "permissions": [
+              "user:read",
+              "account:read",
+              "transaction:read",
+              "card:read",
+              "card:update",
+              "profile:update",
+              "bill:pay",
+              "transfer:create"
+            ],
+            "accessible_resources": [
+              "AccountInformation",
+              "TransactionHistory",
+              "CardManagement",
+              "ProfileManagement",
+              "BillPayment",
+              "MoneyTransfer",
+              "StatementView"
+            ],
+            "restricted_resources": [
+              "AdminUserManagement",
+              "SystemConfiguration",
+              "AuditLogAccess",
+              "BatchJobManagement",
+              "SecurityConfiguration",
+              "DatabaseMaintenance",
+              "MonitoringDashboard"
+            ],
+            "test_scenarios": [
+              "@PreAuthorize('hasRole(\"USER\")')",
+              "@Secured('ROLE_USER')",
+              "@RolesAllowed('ROLE_USER')",
+              "hasAuthority('user:read')",
+              "!hasRole('ADMIN')"
+            ]
+          }
+        ]
+      }
+    },
+    
+    "session_correlation_ids": {
+      "description": "Session correlation IDs for distributed microservice authentication and tracing",
+      "correlation_samples": [
+        {
+          "session_id": "session-corr-001",
+          "user_id": "ADMIN001",
+          "user_type": "A",
+          "service_chain": [
+            "auth-service",
+            "account-service",
+            "transaction-service",
+            "card-service"
+          ],
+          "trace_id": "trace-admin-001",
+          "span_id": "span-admin-001",
+          "parent_span_id": null,
+          "created_at": "2024-01-20T14:30:00Z",
+          "expires_at": "2024-01-20T15:00:00Z",
+          "test_purpose": "Testing distributed tracing across microservices with admin context"
+        },
+        {
+          "session_id": "session-corr-002",
+          "user_id": "USER0001",
+          "user_type": "U",
+          "service_chain": [
+            "auth-service",
+            "account-service",
+            "transaction-service"
+          ],
+          "trace_id": "trace-user-001",
+          "span_id": "span-user-001",
+          "parent_span_id": null,
+          "created_at": "2024-01-20T14:30:00Z",
+          "expires_at": "2024-01-20T15:00:00Z",
+          "test_purpose": "Testing distributed tracing across microservices with user context"
+        },
+        {
+          "session_id": "session-corr-003",
+          "user_id": "USER0002",
+          "user_type": "U",
+          "service_chain": [
+            "auth-service",
+            "card-service",
+            "bill-service"
+          ],
+          "trace_id": "trace-user-002",
+          "span_id": "span-user-002",
+          "parent_span_id": null,
+          "created_at": "2024-01-20T16:15:00Z",
+          "expires_at": "2024-01-20T16:45:00Z",
+          "test_purpose": "Testing session correlation for bill payment service integration"
+        }
+      ]
+    }
+  },
+  
+  "SecurityTestTokenSamples": {
+    "description": "Comprehensive security test token samples for JWT validation, algorithm testing, and negative security scenarios",
+    
+    "HS256_algorithm_tokens": {
+      "description": "JWT tokens specifically for HS256 algorithm validation and cryptographic testing",
+      "algorithm_test_samples": [
+        {
+          "test_name": "Valid HS256 Token",
+          "algorithm": "HS256",
+          "user_id": "HSTEST01",
+          "user_type": "A",
+          "role": "ROLE_ADMIN",
+          "secret_key": "cardDemo2024SecretKeyForJWTAuthentication",
+          "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJIU1RFU1QwMSIsInVzZXJfdHlwZSI6IkEiLCJyb2xlIjoiUk9MRV9BRE1JTiIsImlzcyI6ImNhcmRkZW1vLWF1dGgtc2VydmljZSIsImlhdCI6MTcwNTc1MzgwMCwiZXhwIjoxNzA1NzU1NjAwfQ.ValidHS256SignatureForAlgorithmTesting",
+          "test_purpose": "Testing HS256 algorithm signature validation",
+          "expected_result": "VALID_SIGNATURE"
+        },
+        {
+          "test_name": "Invalid Algorithm Token",
+          "algorithm": "RS256",
+          "user_id": "HSTEST02",
+          "user_type": "U",
+          "role": "ROLE_USER",
+          "jwt_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJIU1RFU1QwMiIsInVzZXJfdHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiaXNzIjoiY2FyZGRlbW8tYXV0aC1zZXJ2aWNlIiwiaWF0IjoxNzA1NzUzODAwLCJleHAiOjE3MDU3NTU2MDB9.InvalidRS256SignatureForAlgorithmTesting",
+          "test_purpose": "Testing rejection of non-HS256 algorithm tokens",
+          "expected_result": "INVALID_ALGORITHM"
+        }
+      ]
+    },
+    
+    "30_minute_expiration_samples": {
+      "description": "JWT tokens for testing 30-minute expiration validation and timeout handling",
+      "expiration_test_samples": [
+        {
+          "test_name": "Valid 30-Minute Token",
+          "user_id": "EXPTEST01",
+          "user_type": "A",
+          "role": "ROLE_ADMIN",
+          "issued_at": "2024-01-20T14:30:00Z",
+          "expires_at": "2024-01-20T15:00:00Z",
+          "current_time": "2024-01-20T14:45:00Z",
+          "expiration_minutes": 30,
+          "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFWFBURVNUMDEiLCJ1c2VyX3R5cGUiOiJBIiwicm9sZSI6IlJPTEVfQURNSU4iLCJpc3MiOiJjYXJkZGVtby1hdXRoLXNlcnZpY2UiLCJpYXQiOjE3MDU3NTM4MDAsImV4cCI6MTcwNTc1NTYwMH0.Valid30MinuteTokenSignatureForTesting",
+          "test_purpose": "Testing valid 30-minute token within expiration window",
+          "expected_result": "TOKEN_VALID"
+        },
+        {
+          "test_name": "Expired 30-Minute Token",
+          "user_id": "EXPTEST02",
+          "user_type": "U",
+          "role": "ROLE_USER",
+          "issued_at": "2024-01-20T14:00:00Z",
+          "expires_at": "2024-01-20T14:30:00Z",
+          "current_time": "2024-01-20T14:45:00Z",
+          "expiration_minutes": 30,
+          "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJFWFBURVNUMDIiLCJ1c2VyX3R5cGUiOiJVIiwicm9sZSI6IlJPTEVfVVNFUiIsImlzcyI6ImNhcmRkZW1vLWF1dGgtc2VydmljZSIsImlhdCI6MTcwNTc1MjAwMCwiZXhwIjoxNzA1NzUzODAwfQ.Expired30MinuteTokenSignatureForTesting",
+          "test_purpose": "Testing expired 30-minute token rejection",
+          "expected_result": "TOKEN_EXPIRED"
+        }
+      ]
+    },
+    
+    "admin_role_claims": {
+      "description": "Admin role claims for comprehensive authorization testing",
+      "admin_claim_samples": [
+        {
+          "user_id": "ADMCLAIM01",
+          "user_type": "A",
+          "role": "ROLE_ADMIN",
+          "first_name": "Admin",
+          "last_name": "Claims",
+          "session_id": "admin-claims-session-001",
+          "jwt_claims": {
+            "sub": "ADMCLAIM01",
+            "user_type": "A",
+            "role": "ROLE_ADMIN",
+            "first_name": "Admin",
+            "last_name": "Claims",
+            "session_id": "admin-claims-session-001",
+            "iss": "carddemo-auth-service",
+            "iat": 1705753800,
+            "exp": 1705755600,
+            "authorities": ["ROLE_ADMIN", "ROLE_USER"],
+            "permissions": [
+              "admin:all",
+              "user:read",
+              "user:write",
+              "user:delete",
+              "system:configure"
+            ]
+          },
+          "test_purpose": "Testing admin role claims extraction and validation",
+          "expected_authorities": ["ROLE_ADMIN", "ROLE_USER"]
+        }
+      ]
+    },
+    
+    "user_role_claims": {
+      "description": "User role claims for standard authorization testing",
+      "user_claim_samples": [
+        {
+          "user_id": "USRCLAIM01",
+          "user_type": "U",
+          "role": "ROLE_USER",
+          "first_name": "User",
+          "last_name": "Claims",
+          "session_id": "user-claims-session-001",
+          "jwt_claims": {
+            "sub": "USRCLAIM01",
+            "user_type": "U",
+            "role": "ROLE_USER",
+            "first_name": "User",
+            "last_name": "Claims",
+            "session_id": "user-claims-session-001",
+            "iss": "carddemo-auth-service",
+            "iat": 1705753800,
+            "exp": 1705755600,
+            "authorities": ["ROLE_USER"],
+            "permissions": [
+              "user:read",
+              "account:read",
+              "transaction:read",
+              "card:read"
+            ]
+          },
+          "test_purpose": "Testing user role claims extraction and validation",
+          "expected_authorities": ["ROLE_USER"]
+        }
+      ]
+    },
+    
+    "negative_test_scenarios": {
+      "description": "Negative test scenarios for security vulnerability testing and edge case handling",
+      "negative_test_samples": [
+        {
+          "test_name": "Token with Invalid User Type",
+          "user_id": "NEGTEST01",
+          "user_type": "X",
+          "role": "ROLE_UNKNOWN",
+          "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJORUdURVNUMDEiLCJ1c2VyX3R5cGUiOiJYIiwicm9sZSI6IlJPTEVfVU5LTk9XTiIsImlzcyI6ImNhcmRkZW1vLWF1dGgtc2VydmljZSIsImlhdCI6MTcwNTc1MzgwMCwiZXhwIjoxNzA1NzU1NjAwfQ.InvalidUserTypeTokenSignatureForTesting",
+          "test_purpose": "Testing invalid user type rejection",
+          "expected_result": "INVALID_USER_TYPE"
+        },
+        {
+          "test_name": "Token with Missing Required Claims",
+          "user_id": "NEGTEST02",
+          "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJORUdURVNUMDIiLCJpc3MiOiJjYXJkZGVtby1hdXRoLXNlcnZpY2UiLCJpYXQiOjE3MDU3NTM4MDAsImV4cCI6MTcwNTc1NTYwMH0.MissingClaimsTokenSignatureForTesting",
+          "test_purpose": "Testing token with missing required claims rejection",
+          "expected_result": "MISSING_REQUIRED_CLAIMS"
+        },
+        {
+          "test_name": "Token with Invalid Issuer",
+          "user_id": "NEGTEST03",
+          "user_type": "A",
+          "role": "ROLE_ADMIN",
+          "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJORUdURVNUMDMiLCJ1c2VyX3R5cGUiOiJBIiwicm9sZSI6IlJPTEVfQURNSU4iLCJpc3MiOiJpbnZhbGlkLWlzc3VlciIsImlhdCI6MTcwNTc1MzgwMCwiZXhwIjoxNzA1NzU1NjAwfQ.InvalidIssuerTokenSignatureForTesting",
+          "test_purpose": "Testing token with invalid issuer rejection",
+          "expected_result": "INVALID_ISSUER"
+        },
+        {
+          "test_name": "Token with Future Issue Date",
+          "user_id": "NEGTEST04",
+          "user_type": "U",
+          "role": "ROLE_USER",
+          "issued_at": "2024-01-20T16:00:00Z",
+          "current_time": "2024-01-20T14:30:00Z",
+          "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJORUdURVNUMDQiLCJ1c2VyX3R5cGUiOiJVIiwicm9sZSI6IlJPTEVfVVNFUiIsImlzcyI6ImNhcmRkZW1vLWF1dGgtc2VydmljZSIsImlhdCI6MTcwNTc2MDAwMCwiZXhwIjoxNzA1NzYxODAwfQ.FutureIssueDateTokenSignatureForTesting",
+          "test_purpose": "Testing token with future issue date rejection",
+          "expected_result": "INVALID_ISSUE_DATE"
+        }
+      ]
+    },
+    
+    "jwt_validation_test_cases": {
+      "description": "Comprehensive JWT validation test cases covering all validation scenarios",
+      "validation_test_samples": [
+        {
+          "test_name": "Complete Token Validation Suite",
+          "user_id": "VALTEST01",
+          "user_type": "A",
+          "role": "ROLE_ADMIN",
+          "first_name": "Validation",
+          "last_name": "Test",
+          "session_id": "validation-session-001",
+          "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJWQUxURVNUMDEiLCJ1c2VyX3R5cGUiOiJBIiwicm9sZSI6IlJPTEVfQURNSU4iLCJmaXJzdF9uYW1lIjoiVmFsaWRhdGlvbiIsImxhc3RfbmFtZSI6IlRlc3QiLCJzZXNzaW9uX2lkIjoidmFsaWRhdGlvbi1zZXNzaW9uLTAwMSIsImlzcyI6ImNhcmRkZW1vLWF1dGgtc2VydmljZSIsImlhdCI6MTcwNTc1MzgwMCwiZXhwIjoxNzA1NzU1NjAwfQ.CompleteValidationTokenSignatureForTesting",
+          "validation_checks": [
+            {
+              "check_name": "Signature Validation",
+              "expected_result": "VALID",
+              "description": "Verify token signature using HS256 algorithm"
+            },
+            {
+              "check_name": "Expiration Validation",
+              "expected_result": "VALID",
+              "description": "Verify token has not expired"
+            },
+            {
+              "check_name": "Issuer Validation",
+              "expected_result": "VALID",
+              "description": "Verify token issuer matches expected value"
+            },
+            {
+              "check_name": "Claims Validation",
+              "expected_result": "VALID",
+              "description": "Verify all required claims are present"
+            },
+            {
+              "check_name": "User Type Validation",
+              "expected_result": "VALID",
+              "description": "Verify user type is valid (A or U)"
+            },
+            {
+              "check_name": "Role Validation",
+              "expected_result": "VALID",
+              "description": "Verify role matches user type"
+            }
+          ],
+          "test_purpose": "Comprehensive JWT validation testing",
+          "overall_expected_result": "TOKEN_VALID"
+        }
+      ]
+    }
+  }
+}
