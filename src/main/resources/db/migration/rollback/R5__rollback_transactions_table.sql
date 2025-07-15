@@ -258,6 +258,14 @@ BEGIN
     RAISE NOTICE '3. Restart CICS transaction processing region';
     RAISE NOTICE '4. Validate transaction data integrity';
     RAISE NOTICE '5. Resume 4-hour batch processing window operations';
+    
+    -- Financial precision preservation guidance for VSAM restoration
+    RAISE NOTICE 'Financial precision preservation requirements:';
+    RAISE NOTICE '- VSAM TRANSACT dataset maintains COBOL COMP-3 packed decimal precision';
+    RAISE NOTICE '- Transaction amounts stored with exact 12-digit precision, 2 decimal places';
+    RAISE NOTICE '- Restore BigDecimal to COMP-3 conversion procedures for Java integration';
+    RAISE NOTICE '- Verify financial calculation accuracy matches COBOL arithmetic behavior';
+    RAISE NOTICE '- Maintain exact decimal precision for regulatory compliance';
 END
 $$;
 
