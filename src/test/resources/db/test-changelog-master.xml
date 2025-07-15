@@ -167,6 +167,7 @@
         
         <!-- Create test queries to validate index performance -->
         <sql>
+            <![CDATA[
             -- Test primary key performance (should be sub-1ms)
             EXPLAIN (ANALYZE, BUFFERS) 
             SELECT * FROM users WHERE user_id = 'USER0001';
@@ -180,6 +181,7 @@
             SELECT * FROM transactions 
             WHERE transaction_timestamp >= CURRENT_DATE - INTERVAL '30 days'
             AND transaction_timestamp < CURRENT_DATE;
+            ]]>
         </sql>
         
         <rollback>
