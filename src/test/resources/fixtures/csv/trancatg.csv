@@ -1,0 +1,170 @@
+# CardDemo Transaction Category Reference Data CSV Test Fixture
+# =====================================================================================
+# Purpose: Comprehensive test fixture for transaction category reference data supporting 
+#          Spring Batch lookup testing, validation scenarios, and foreign key constraint testing
+# 
+# Structure: CSV format with header row containing transaction category reference data
+#            compatible with TransactionCategory JPA entity for test database population
+# 
+# Usage: Used by Spring Batch test scenarios to validate transaction category processing,
+#        category code validation, description mapping, and foreign key relationships
+# 
+# Test Coverage:
+# - Active transaction categories across all transaction types (01-07)
+# - Inactive categories for lifecycle testing scenarios
+# - Edge cases for validation testing (boundary conditions)
+# - Foreign key constraint validation with transaction types
+# - Category description mapping and validation
+# - Parent transaction type hierarchical relationship testing
+# 
+# Schema Mapping:
+# - transaction_category: VARCHAR(4) NOT NULL (Primary Key)
+# - category_description: VARCHAR(60) NOT NULL
+# - parent_transaction_type: VARCHAR(2) NOT NULL (Foreign Key to transaction_types)
+# - active_status: BOOLEAN NOT NULL DEFAULT TRUE
+# 
+# Author: Blitzy agent
+# Version: CardDemo_v1.0-15-g27d6c6f-68
+# =====================================================================================
+
+transaction_category,category_description,parent_transaction_type,active_status
+0101,Regular Sales Draft,01,true
+0102,Regular Cash Advance,01,true
+0103,Convenience Check Debit,01,true
+0104,ATM Cash Advance,01,true
+0105,Interest Amount,01,true
+0106,Late Fee Charge,01,true
+0107,Overlimit Fee,01,true
+0108,Foreign Transaction Fee,01,true
+0109,Balance Transfer Fee,01,true
+0110,Cash Advance Fee,01,true
+0111,Annual Fee,01,true
+0112,Returned Payment Fee,01,true
+0113,Expedited Payment Fee,01,true
+0114,Card Replacement Fee,01,true
+0115,Statement Copy Fee,01,true
+0116,Inactive Account Fee,01,false
+0117,Promotional Purchase,01,true
+0118,Recurring Payment Charge,01,true
+0119,Disputed Transaction Charge,01,false
+0120,Temporary Authorization Hold,01,true
+0201,Cash Payment,02,true
+0202,Electronic Payment,02,true
+0203,Check Payment,02,true
+0204,Money Order Payment,02,true
+0205,Wire Transfer Payment,02,true
+0206,Online Payment,02,true
+0207,Phone Payment,02,true
+0208,Automatic Payment,02,true
+0209,Expedited Payment,02,true
+0210,International Payment,02,true
+0211,Third Party Payment,02,true
+0212,Overpayment,02,true
+0213,Returned Payment,02,false
+0214,Reversed Payment,02,false
+0215,Promotional Payment,02,true
+0216,Partial Payment,02,true
+0217,Full Payment,02,true
+0218,Minimum Payment,02,true
+0219,Statement Balance Payment,02,true
+0220,Current Balance Payment,02,true
+0301,Credit to Account,03,true
+0302,Credit to Purchase Balance,03,true
+0303,Credit to Cash Balance,03,true
+0304,Promotional Credit,03,true
+0305,Cashback Credit,03,true
+0306,Reward Points Credit,03,true
+0307,Statement Credit,03,true
+0308,Billing Error Credit,03,true
+0309,Goodwill Credit,03,true
+0310,Interest Credit,03,true
+0311,Fee Waiver Credit,03,true
+0312,Overpayment Credit,03,true
+0313,Refund Credit,03,true
+0314,Merchant Credit,03,true
+0315,Chargeback Credit,03,true
+0316,Dispute Resolution Credit,03,true
+0317,Loyalty Program Credit,03,true
+0318,Promotional Rate Credit,03,true
+0319,Balance Transfer Credit,03,false
+0320,Inactive Credit Type,03,false
+0401,Zero Dollar Authorization,04,true
+0402,Online Purchase Authorization,04,true
+0403,Travel Booking Authorization,04,true
+0404,Recurring Payment Authorization,04,true
+0405,Preauthorization Hold,04,true
+0406,Card Present Authorization,04,true
+0407,Card Not Present Authorization,04,true
+0408,Contactless Authorization,04,true
+0409,Mobile Payment Authorization,04,true
+0410,International Authorization,04,true
+0411,High Risk Authorization,04,true
+0412,Merchant Category Authorization,04,true
+0413,Velocity Check Authorization,04,true
+0414,Fraud Prevention Authorization,04,true
+0415,Spending Limit Authorization,04,true
+0416,Expired Authorization,04,false
+0417,Declined Authorization,04,false
+0418,Partial Authorization,04,true
+0419,Voice Authorization,04,true
+0420,Manual Authorization,04,true
+0501,Refund Credit,05,true
+0502,Merchandise Return Refund,05,true
+0503,Service Cancellation Refund,05,true
+0504,Duplicate Transaction Refund,05,true
+0505,Billing Error Refund,05,true
+0506,Unauthorized Transaction Refund,05,true
+0507,Fraud Investigation Refund,05,true
+0508,Dispute Resolution Refund,05,true
+0509,Chargeback Refund,05,true
+0510,Overpayment Refund,05,true
+0511,Processing Error Refund,05,true
+0512,System Error Refund,05,true
+0513,Partial Refund,05,true
+0514,Full Refund,05,true
+0515,Promotional Refund,05,true
+0516,Expired Refund,05,false
+0517,Reversed Refund,05,false
+0518,Cancelled Refund,05,false
+0519,Pending Refund,05,true
+0520,Processed Refund,05,true
+0601,Fraud Reversal,06,true
+0602,Non-Fraud Reversal,06,true
+0603,Authorization Reversal,06,true
+0604,Settlement Reversal,06,true
+0605,Chargeback Reversal,06,true
+0606,Dispute Reversal,06,true
+0607,System Error Reversal,06,true
+0608,Processing Error Reversal,06,true
+0609,Duplicate Transaction Reversal,06,true
+0610,Expired Transaction Reversal,06,true
+0611,Void Transaction Reversal,06,true
+0612,Cancelled Transaction Reversal,06,true
+0613,Partial Reversal,06,true
+0614,Full Reversal,06,true
+0615,Pending Reversal,06,true
+0616,Completed Reversal,06,true
+0617,Failed Reversal,06,false
+0618,Rejected Reversal,06,false
+0619,Timeout Reversal,06,false
+0620,Manual Reversal,06,true
+0701,Sales Draft Credit Adjustment,07,true
+0702,Cash Advance Adjustment,07,true
+0703,Fee Adjustment,07,true
+0704,Interest Adjustment,07,true
+0705,Balance Adjustment,07,true
+0706,Rate Adjustment,07,true
+0707,Limit Adjustment,07,true
+0708,Payment Adjustment,07,true
+0709,Credit Adjustment,07,true
+0710,Debit Adjustment,07,true
+0711,Billing Cycle Adjustment,07,true
+0712,Statement Adjustment,07,true
+0713,Account Adjustment,07,true
+0714,System Adjustment,07,true
+0715,Manual Adjustment,07,true
+0716,Automatic Adjustment,07,true
+0717,Periodic Adjustment,07,true
+0718,Promotional Adjustment,07,true
+0719,Regulatory Adjustment,07,true
+0720,Compliance Adjustment,07,true
