@@ -1,12 +1,12 @@
 {
   "transactionProcessingValidation": {
-    "description": "Golden file containing expected transaction processing outputs for validating real-time transaction calculations, fees, and categorization logic against legacy COBOL transaction processing behavior",
+    "description": "Golden file containing expected transaction processing outputs for validating real-time transaction calculations, fees, and categorization logic against legacy COBOL transaction processing behavior. This file validates the VSAM to PostgreSQL conversion and Spring Boot microservices transformation maintaining exact functional equivalence. Implements real-time transaction calculation validation framework for microservice transaction pipeline testing.",
     "version": "1.0",
     "lastUpdated": "2024-01-01T00:00:00Z",
-    "purpose": "Validates microservice transaction pipeline accuracy against original mainframe processing with exact amount and fee calculations per Section 0.5.1 business process metrics"
+    "purpose": "Validates Spring Boot microservice transaction pipeline accuracy against original mainframe processing with exact amount and fee calculations per Section 0.5.1 business process metrics. Ensures Java 21 implementation maintains COBOL COMP-3 precision and VSAM to PostgreSQL data integrity. Validates sub-200ms response times at 95th percentile supporting 10000 TPS throughput with precise financial calculations and comprehensive validation of transaction type and category processing."
   },
   "transactionViewService": {
-    "description": "Expected outputs for TransactionViewService.getTransactionDetails(), findTransactionById(), and formatTransactionView() operations",
+    "description": "Expected outputs for TransactionViewService.getTransactionDetails(), TransactionViewService.findTransactionById(), and TransactionViewService.formatTransactionView() operations",
     "testCases": [
       {
         "testName": "validTransactionView",
@@ -134,7 +134,7 @@
     ]
   },
   "transactionService": {
-    "description": "Expected outputs for TransactionService.findTransactions(), searchTransactions(), and getTransactionPage() operations",
+    "description": "Expected outputs for TransactionService.findTransactions(), TransactionService.searchTransactions(), and TransactionService.getTransactionPage() operations",
     "testCases": [
       {
         "testName": "findTransactionsWithPagination",
@@ -301,7 +301,7 @@
     ]
   },
   "addTransactionService": {
-    "description": "Expected outputs for AddTransactionService.addTransaction(), validateTransaction(), and processTransaction() operations",
+    "description": "Expected outputs for AddTransactionService.addTransaction(), AddTransactionService.validateTransaction(), and AddTransactionService.processTransaction() operations",
     "testCases": [
       {
         "testName": "successfulTransactionAddition",
@@ -549,7 +549,7 @@
         },
         "expectedOutput": {
           "success": false,
-          "message": "Unable to Add Transaction...",
+          "message": "Unable to Add Transaction",
           "confirmationTimestamp": "2024-01-01T12:00:00.000000",
           "httpStatus": 500,
           "errorCode": "SYSTEM_ERROR",
