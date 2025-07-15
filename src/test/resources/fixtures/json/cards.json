@@ -1,0 +1,914 @@
+{
+  "CardTestData": {
+    "description": "Credit card test data converted from CVACT02Y.cpy copybook structure with CVV security validation and relationship testing for comprehensive card management scenarios",
+    "sourceReference": "app/data/ASCII/carddata.txt",
+    "copybookMapping": "app/cpy/CVACT02Y.cpy",
+    "recordLength": 150,
+    "conversionDate": "2024-01-15",
+    "totalCards": 50,
+    "cards": [
+      {
+        "cardNumber": "4050024453765740",
+        "accountId": "00000005074",
+        "customerId": "000000001",
+        "cvvCode": "123",
+        "embossedName": "Aniya Von",
+        "expirationDate": "2025-03-09",
+        "activeStatus": "A",
+        "cardType": "Visa",
+        "isLuhnValid": true,
+        "isExpired": false,
+        "relationshipData": {
+          "customerName": "Aniya Von",
+          "accountStatus": "Active",
+          "creditLimit": 5000.00,
+          "currentBalance": 1250.75
+        }
+      },
+      {
+        "cardNumber": "5068358619817151",
+        "accountId": "00000002756",
+        "customerId": "000000002",
+        "cvvCode": "456",
+        "embossedName": "Ward Jones",
+        "expirationDate": "2025-07-13",
+        "activeStatus": "A",
+        "cardType": "MasterCard",
+        "isLuhnValid": true,
+        "isExpired": false,
+        "relationshipData": {
+          "customerName": "Ward Jones",
+          "accountStatus": "Active",
+          "creditLimit": 7500.00,
+          "currentBalance": 2100.25
+        }
+      },
+      {
+        "cardNumber": "4092387719324733",
+        "accountId": "00000000202",
+        "customerId": "000000003",
+        "cvvCode": "789",
+        "embossedName": "Enrico Rosenbaum",
+        "expirationDate": "2024-08-11",
+        "activeStatus": "I",
+        "cardType": "Visa",
+        "isLuhnValid": true,
+        "isExpired": true,
+        "relationshipData": {
+          "customerName": "Enrico Rosenbaum",
+          "accountStatus": "Inactive",
+          "creditLimit": 3000.00,
+          "currentBalance": 850.50
+        }
+      },
+      {
+        "cardNumber": "5092798710863623",
+        "accountId": "00000002000",
+        "customerId": "000000004",
+        "cvvCode": "321",
+        "embossedName": "Carter Veum",
+        "expirationDate": "2024-03-13",
+        "activeStatus": "B",
+        "cardType": "MasterCard",
+        "isLuhnValid": true,
+        "isExpired": true,
+        "relationshipData": {
+          "customerName": "Carter Veum",
+          "accountStatus": "Blocked",
+          "creditLimit": 2000.00,
+          "currentBalance": 1999.99
+        }
+      },
+      {
+        "cardNumber": "4098249621362979",
+        "accountId": "00000001207",
+        "customerId": "000000005",
+        "cvvCode": "654",
+        "embossedName": "Maci Robel",
+        "expirationDate": "2023-07-07",
+        "activeStatus": "I",
+        "cardType": "Visa",
+        "isLuhnValid": true,
+        "isExpired": true,
+        "relationshipData": {
+          "customerName": "Maci Robel",
+          "accountStatus": "Inactive",
+          "creditLimit": 1500.00,
+          "currentBalance": 0.00
+        }
+      },
+      {
+        "cardNumber": "6011408656522435",
+        "accountId": "00000004464",
+        "customerId": "000000006",
+        "cvvCode": "987",
+        "embossedName": "Irving Emard",
+        "expirationDate": "2024-01-17",
+        "activeStatus": "A",
+        "cardType": "Discover",
+        "isLuhnValid": true,
+        "isExpired": true,
+        "relationshipData": {
+          "customerName": "Irving Emard",
+          "accountStatus": "Active",
+          "creditLimit": 4000.00,
+          "currentBalance": 1750.30
+        }
+      },
+      {
+        "cardNumber": "4114216769287893",
+        "accountId": "00000003762",
+        "customerId": "000000007",
+        "cvvCode": "147",
+        "embossedName": "Shany Walker",
+        "expirationDate": "2023-10-24",
+        "activeStatus": "A",
+        "cardType": "Visa",
+        "isLuhnValid": true,
+        "isExpired": true,
+        "relationshipData": {
+          "customerName": "Shany Walker",
+          "accountStatus": "Active",
+          "creditLimit": 6000.00,
+          "currentBalance": 3250.75
+        }
+      },
+      {
+        "cardNumber": "4156140910649160",
+        "accountId": "00000003503",
+        "customerId": "000000008",
+        "cvvCode": "258",
+        "embossedName": "Angelica Dach",
+        "expirationDate": "2025-09-23",
+        "activeStatus": "A",
+        "cardType": "Visa",
+        "isLuhnValid": true,
+        "isExpired": false,
+        "relationshipData": {
+          "customerName": "Angelica Dach",
+          "accountStatus": "Active",
+          "creditLimit": 8000.00,
+          "currentBalance": 4120.60
+        }
+      },
+      {
+        "cardNumber": "5274530372000209",
+        "accountId": "00000003903",
+        "customerId": "000000009",
+        "cvvCode": "369",
+        "embossedName": "Aliyah Berge",
+        "expirationDate": "2025-09-08",
+        "activeStatus": "A",
+        "cardType": "MasterCard",
+        "isLuhnValid": true,
+        "isExpired": false,
+        "relationshipData": {
+          "customerName": "Aliyah Berge",
+          "accountStatus": "Active",
+          "creditLimit": 5500.00,
+          "currentBalance": 2750.40
+        }
+      },
+      {
+        "cardNumber": "5276083679710756",
+        "accountId": "00000002485",
+        "customerId": "000000010",
+        "cvvCode": "741",
+        "embossedName": "Stefanie Dickinson",
+        "expirationDate": "2025-02-11",
+        "activeStatus": "I",
+        "cardType": "MasterCard",
+        "isLuhnValid": true,
+        "isExpired": false,
+        "relationshipData": {
+          "customerName": "Stefanie Dickinson",
+          "accountStatus": "Inactive",
+          "creditLimit": 3500.00,
+          "currentBalance": 1200.85
+        }
+      },
+      {
+        "cardNumber": "5287196825281249",
+        "accountId": "00000000677",
+        "customerId": "000000011",
+        "cvvCode": "852",
+        "embossedName": "Ignacio Douglas",
+        "expirationDate": "2025-10-08",
+        "activeStatus": "A",
+        "cardType": "MasterCard",
+        "isLuhnValid": true,
+        "isExpired": false,
+        "relationshipData": {
+          "customerName": "Ignacio Douglas",
+          "accountStatus": "Active",
+          "creditLimit": 4500.00,
+          "currentBalance": 987.25
+        }
+      },
+      {
+        "cardNumber": "4294013936230044",
+        "accountId": "00000002287",
+        "customerId": "000000012",
+        "cvvCode": "963",
+        "embossedName": "Allene Brown",
+        "expirationDate": "2025-12-28",
+        "activeStatus": "A",
+        "cardType": "Visa",
+        "isLuhnValid": true,
+        "isExpired": false,
+        "relationshipData": {
+          "customerName": "Allene Brown",
+          "accountStatus": "Active",
+          "creditLimit": 6500.00,
+          "currentBalance": 3890.15
+        }
+      },
+      {
+        "cardNumber": "5298809135309431",
+        "accountId": "00000000479",
+        "customerId": "000000013",
+        "cvvCode": "159",
+        "embossedName": "Delbert Parisian",
+        "expirationDate": "2023-12-16",
+        "activeStatus": "B",
+        "cardType": "MasterCard",
+        "isLuhnValid": true,
+        "isExpired": true,
+        "relationshipData": {
+          "customerName": "Delbert Parisian",
+          "accountStatus": "Blocked",
+          "creditLimit": 2500.00,
+          "currentBalance": 2499.99
+        }
+      },
+      {
+        "cardNumber": "4326076361233756",
+        "accountId": "00000001034",
+        "customerId": "000000014",
+        "cvvCode": "753",
+        "embossedName": "Maybell Mann",
+        "expirationDate": "2023-01-27",
+        "activeStatus": "I",
+        "cardType": "Visa",
+        "isLuhnValid": true,
+        "isExpired": true,
+        "relationshipData": {
+          "customerName": "Maybell Mann",
+          "accountStatus": "Inactive",
+          "creditLimit": 1000.00,
+          "currentBalance": 125.50
+        }
+      },
+      {
+        "cardNumber": "3376628198415515",
+        "accountId": "00000004162",
+        "customerId": "000000015",
+        "cvvCode": "357",
+        "embossedName": "Lucinda Dach",
+        "expirationDate": "2023-04-24",
+        "activeStatus": "A",
+        "cardType": "American Express",
+        "isLuhnValid": true,
+        "isExpired": true,
+        "relationshipData": {
+          "customerName": "Lucinda Dach",
+          "accountStatus": "Active",
+          "creditLimit": 10000.00,
+          "currentBalance": 5678.90
+        }
+      },
+      {
+        "cardNumber": "4394024601614148",
+        "accountId": "00000001937",
+        "customerId": "000000016",
+        "cvvCode": "468",
+        "embossedName": "Hadley Hamill",
+        "expirationDate": "2025-07-23",
+        "activeStatus": "A",
+        "cardType": "Visa",
+        "isLuhnValid": true,
+        "isExpired": false,
+        "relationshipData": {
+          "customerName": "Hadley Hamill",
+          "accountStatus": "Active",
+          "creditLimit": 7000.00,
+          "currentBalance": 2456.78
+        }
+      },
+      {
+        "cardNumber": "4399916924637588",
+        "accountId": "00000000331",
+        "customerId": "000000017",
+        "cvvCode": "579",
+        "embossedName": "Larry Homenick",
+        "expirationDate": "2024-01-10",
+        "activeStatus": "A",
+        "cardType": "Visa",
+        "isLuhnValid": true,
+        "isExpired": true,
+        "relationshipData": {
+          "customerName": "Larry Homenick",
+          "accountStatus": "Active",
+          "creditLimit": 3000.00,
+          "currentBalance": 1567.89
+        }
+      },
+      {
+        "cardNumber": "4401150089177736",
+        "accountId": "00000001339",
+        "customerId": "000000018",
+        "cvvCode": "680",
+        "embossedName": "Mariane Fadel",
+        "expirationDate": "2024-08-04",
+        "activeStatus": "I",
+        "cardType": "Visa",
+        "isLuhnValid": true,
+        "isExpired": true,
+        "relationshipData": {
+          "customerName": "Mariane Fadel",
+          "accountStatus": "Inactive",
+          "creditLimit": 2000.00,
+          "currentBalance": 890.12
+        }
+      },
+      {
+        "cardNumber": "4438527147662781",
+        "accountId": "00000003470",
+        "customerId": "000000019",
+        "cvvCode": "791",
+        "embossedName": "Faustino Schmidt",
+        "expirationDate": "2025-10-06",
+        "activeStatus": "A",
+        "cardType": "Visa",
+        "isLuhnValid": true,
+        "isExpired": false,
+        "relationshipData": {
+          "customerName": "Faustino Schmidt",
+          "accountStatus": "Active",
+          "creditLimit": 5000.00,
+          "currentBalance": 2345.67
+        }
+      },
+      {
+        "cardNumber": "4453478410271395",
+        "accountId": "00000003664",
+        "customerId": "000000020",
+        "cvvCode": "802",
+        "embossedName": "Toney Gerhold",
+        "expirationDate": "2024-12-23",
+        "activeStatus": "A",
+        "cardType": "Visa",
+        "isLuhnValid": true,
+        "isExpired": true,
+        "relationshipData": {
+          "customerName": "Toney Gerhold",
+          "accountStatus": "Active",
+          "creditLimit": 4000.00,
+          "currentBalance": 1890.34
+        }
+      },
+      {
+        "cardNumber": "4485945261287706",
+        "accountId": "00000000732",
+        "customerId": "000000021",
+        "cvvCode": "913",
+        "embossedName": "Cooper Mayert",
+        "expirationDate": "2024-12-13",
+        "activeStatus": "B",
+        "cardType": "Visa",
+        "isLuhnValid": true,
+        "isExpired": true,
+        "relationshipData": {
+          "customerName": "Cooper Mayert",
+          "accountStatus": "Blocked",
+          "creditLimit": 1500.00,
+          "currentBalance": 1500.00
+        }
+      },
+      {
+        "cardNumber": "5540709985047986",
+        "accountId": "00000002152",
+        "customerId": "000000022",
+        "cvvCode": "024",
+        "embossedName": "Jerrold Maggio",
+        "expirationDate": "2023-01-06",
+        "activeStatus": "I",
+        "cardType": "MasterCard",
+        "isLuhnValid": true,
+        "isExpired": true,
+        "relationshipData": {
+          "customerName": "Jerrold Maggio",
+          "accountStatus": "Inactive",
+          "creditLimit": 2500.00,
+          "currentBalance": 456.78
+        }
+      },
+      {
+        "cardNumber": "5565683054498121",
+        "accountId": "00000004619",
+        "customerId": "000000023",
+        "cvvCode": "135",
+        "embossedName": "Cindy Cremin",
+        "expirationDate": "2025-06-20",
+        "activeStatus": "A",
+        "cardType": "MasterCard",
+        "isLuhnValid": true,
+        "isExpired": false,
+        "relationshipData": {
+          "customerName": "Cindy Cremin",
+          "accountStatus": "Active",
+          "creditLimit": 3500.00,
+          "currentBalance": 1234.56
+        }
+      },
+      {
+        "cardNumber": "5567118447850584",
+        "accountId": "00000001813",
+        "customerId": "000000024",
+        "cvvCode": "246",
+        "embossedName": "Emile White",
+        "expirationDate": "2023-09-10",
+        "activeStatus": "A",
+        "cardType": "MasterCard",
+        "isLuhnValid": true,
+        "isExpired": true,
+        "relationshipData": {
+          "customerName": "Emile White",
+          "accountStatus": "Active",
+          "creditLimit": 4500.00,
+          "currentBalance": 2987.65
+        }
+      },
+      {
+        "cardNumber": "5578735122887933",
+        "accountId": "00000004706",
+        "customerId": "000000025",
+        "cvvCode": "357",
+        "embossedName": "Rigoberto Hoeger",
+        "expirationDate": "2025-08-23",
+        "activeStatus": "A",
+        "cardType": "MasterCard",
+        "isLuhnValid": true,
+        "isExpired": false,
+        "relationshipData": {
+          "customerName": "Rigoberto Hoeger",
+          "accountStatus": "Active",
+          "creditLimit": 6000.00,
+          "currentBalance": 3456.78
+        }
+      },
+      {
+        "cardNumber": "5597511751661607",
+        "accountId": "00000004242",
+        "customerId": "000000026",
+        "cvvCode": "468",
+        "embossedName": "Heather Nienow",
+        "expirationDate": "2025-09-19",
+        "activeStatus": "A",
+        "cardType": "MasterCard",
+        "isLuhnValid": true,
+        "isExpired": false,
+        "relationshipData": {
+          "customerName": "Heather Nienow",
+          "accountStatus": "Active",
+          "creditLimit": 5500.00,
+          "currentBalance": 2678.90
+        }
+      },
+      {
+        "cardNumber": "6011600961915067",
+        "accountId": "00000000502",
+        "customerId": "000000027",
+        "cvvCode": "579",
+        "embossedName": "Treva Schowalter",
+        "expirationDate": "2025-03-09",
+        "activeStatus": "A",
+        "cardType": "Discover",
+        "isLuhnValid": true,
+        "isExpired": false,
+        "relationshipData": {
+          "customerName": "Treva Schowalter",
+          "accountStatus": "Active",
+          "creditLimit": 3000.00,
+          "currentBalance": 1089.45
+        }
+      },
+      {
+        "cardNumber": "6011634925033164",
+        "accountId": "00000001573",
+        "customerId": "000000028",
+        "cvvCode": "680",
+        "embossedName": "Aubree Hermann",
+        "expirationDate": "2025-06-09",
+        "activeStatus": "I",
+        "cardType": "Discover",
+        "isLuhnValid": true,
+        "isExpired": false,
+        "relationshipData": {
+          "customerName": "Aubree Hermann",
+          "accountStatus": "Inactive",
+          "creditLimit": 2000.00,
+          "currentBalance": 567.89
+        }
+      },
+      {
+        "cardNumber": "6011650353518179",
+        "accountId": "00000004841",
+        "customerId": "000000029",
+        "cvvCode": "791",
+        "embossedName": "Lyric Pacocha",
+        "expirationDate": "2025-02-06",
+        "activeStatus": "A",
+        "cardType": "Discover",
+        "isLuhnValid": true,
+        "isExpired": false,
+        "relationshipData": {
+          "customerName": "Lyric Pacocha",
+          "accountStatus": "Active",
+          "creditLimit": 4000.00,
+          "currentBalance": 1987.65
+        }
+      },
+      {
+        "cardNumber": "6011650923036255",
+        "accountId": "00000003023",
+        "customerId": "000000030",
+        "cvvCode": "802",
+        "embossedName": "Layla Ullrich",
+        "expirationDate": "2024-06-27",
+        "activeStatus": "A",
+        "cardType": "Discover",
+        "isLuhnValid": true,
+        "isExpired": true,
+        "relationshipData": {
+          "customerName": "Layla Ullrich",
+          "accountStatus": "Active",
+          "creditLimit": 3500.00,
+          "currentBalance": 1456.78
+        }
+      }
+    ]
+  },
+  
+  "CardManagementTestScenarios": {
+    "description": "Comprehensive card management test scenarios supporting pagination, status validation, and Spring Boot REST API endpoint testing",
+    "paginationScenarios": {
+      "defaultPageSize": 7,
+      "totalPages": 8,
+      "cardsPerPage": 7,
+      "lastPageCards": 1,
+      "paginationTestCases": [
+        {
+          "scenarioName": "First Page Load",
+          "pageNumber": 0,
+          "pageSize": 7,
+          "expectedCardNumbers": [
+            "4050024453765740",
+            "5068358619817151", 
+            "4092387719324733",
+            "5092798710863623",
+            "4098249621362979",
+            "6011408656522435",
+            "4114216769287893"
+          ],
+          "expectedTotalElements": 30,
+          "expectedTotalPages": 5,
+          "hasNext": true,
+          "hasPrevious": false
+        },
+        {
+          "scenarioName": "Second Page Load",
+          "pageNumber": 1,
+          "pageSize": 7,
+          "expectedCardNumbers": [
+            "4156140910649160",
+            "5274530372000209",
+            "5276083679710756",
+            "5287196825281249",
+            "4294013936230044",
+            "5298809135309431",
+            "4326076361233756"
+          ],
+          "expectedTotalElements": 30,
+          "expectedTotalPages": 5,
+          "hasNext": true,
+          "hasPrevious": true
+        },
+        {
+          "scenarioName": "Last Page Load",
+          "pageNumber": 4,
+          "pageSize": 7,
+          "expectedCardNumbers": [
+            "6011650353518179",
+            "6011650923036255"
+          ],
+          "expectedTotalElements": 30,
+          "expectedTotalPages": 5,
+          "hasNext": false,
+          "hasPrevious": true
+        }
+      ]
+    },
+    "statusValidationScenarios": {
+      "activeCards": {
+        "count": 20,
+        "validForTransactions": true,
+        "sampleCardNumbers": [
+          "4050024453765740",
+          "5068358619817151",
+          "4156140910649160",
+          "5274530372000209"
+        ]
+      },
+      "inactiveCards": {
+        "count": 6,
+        "validForTransactions": false,
+        "sampleCardNumbers": [
+          "4092387719324733",
+          "4098249621362979",
+          "5276083679710756",
+          "4326076361233756"
+        ]
+      },
+      "blockedCards": {
+        "count": 4,
+        "validForTransactions": false,
+        "requiresAdminIntervention": true,
+        "sampleCardNumbers": [
+          "5092798710863623",
+          "5298809135309431",
+          "4485945261287706"
+        ]
+      }
+    },
+    "expirationDateScenarios": {
+      "futureExpirationCards": {
+        "count": 15,
+        "validForTransactions": true,
+        "sampleCards": [
+          {
+            "cardNumber": "4050024453765740",
+            "expirationDate": "2025-03-09",
+            "daysUntilExpiration": 120
+          },
+          {
+            "cardNumber": "5068358619817151",
+            "expirationDate": "2025-07-13",
+            "daysUntilExpiration": 245
+          }
+        ]
+      },
+      "expiredCards": {
+        "count": 15,
+        "validForTransactions": false,
+        "sampleCards": [
+          {
+            "cardNumber": "4092387719324733",
+            "expirationDate": "2024-08-11",
+            "daysSinceExpiration": 157
+          },
+          {
+            "cardNumber": "5092798710863623",
+            "expirationDate": "2024-03-13",
+            "daysSinceExpiration": 308
+          }
+        ]
+      }
+    },
+    "cvvSecurityScenarios": {
+      "validCvvCodes": {
+        "pattern": "\\d{3}",
+        "sampleCodes": ["123", "456", "789", "321", "654"],
+        "description": "3-digit numeric CVV codes for card security validation"
+      },
+      "cvvValidationRules": {
+        "length": 3,
+        "type": "numeric",
+        "range": "000-999",
+        "securityLevel": "confidential",
+        "encryptionRequired": true
+      }
+    },
+    "cardTypeScenarios": {
+      "visa": {
+        "count": 12,
+        "prefix": "4",
+        "sampleCards": ["4050024453765740", "4092387719324733", "4098249621362979"]
+      },
+      "mastercard": {
+        "count": 12,
+        "prefix": "5",
+        "sampleCards": ["5068358619817151", "5092798710863623", "5274530372000209"]
+      },
+      "americanExpress": {
+        "count": 1,
+        "prefix": "3",
+        "sampleCards": ["3376628198415515"]
+      },
+      "discover": {
+        "count": 5,
+        "prefix": "6011",
+        "sampleCards": ["6011408656522435", "6011600961915067", "6011634925033164"]
+      }
+    },
+    "relationshipValidationScenarios": {
+      "cardAccountRelationships": {
+        "description": "Foreign key constraint validation between cards and accounts",
+        "testCases": [
+          {
+            "cardNumber": "4050024453765740",
+            "accountId": "00000005074",
+            "relationshipValid": true,
+            "constraintType": "foreign_key"
+          },
+          {
+            "cardNumber": "5068358619817151",
+            "accountId": "00000002756",
+            "relationshipValid": true,
+            "constraintType": "foreign_key"
+          }
+        ]
+      },
+      "cardCustomerRelationships": {
+        "description": "Foreign key constraint validation between cards and customers",
+        "testCases": [
+          {
+            "cardNumber": "4050024453765740",
+            "customerId": "000000001",
+            "relationshipValid": true,
+            "constraintType": "foreign_key"
+          },
+          {
+            "cardNumber": "5068358619817151",
+            "customerId": "000000002",
+            "relationshipValid": true,
+            "constraintType": "foreign_key"
+          }
+        ]
+      }
+    }
+  },
+  
+  "COBOLConversionValidationData": {
+    "description": "Validation data for CVACT02Y.cpy copybook structure conversion and ASCII carddata.txt migration verification",
+    "copybookStructure": {
+      "recordName": "CARD-RECORD",
+      "recordLength": 150,
+      "fieldMappings": [
+        {
+          "cobolField": "CARD-NUM",
+          "cobolType": "PIC X(16)",
+          "jsonField": "cardNumber",
+          "jsonType": "string",
+          "validation": "16-digit numeric pattern",
+          "sampleValue": "4050024453765740"
+        },
+        {
+          "cobolField": "CARD-ACCT-ID",
+          "cobolType": "PIC 9(11)",
+          "jsonField": "accountId",
+          "jsonType": "string",
+          "validation": "11-digit numeric pattern",
+          "sampleValue": "00000005074"
+        },
+        {
+          "cobolField": "CARD-CVV-CD",
+          "cobolType": "PIC 9(03)",
+          "jsonField": "cvvCode",
+          "jsonType": "string",
+          "validation": "3-digit numeric pattern",
+          "sampleValue": "123"
+        },
+        {
+          "cobolField": "CARD-EMBOSSED-NAME",
+          "cobolType": "PIC X(50)",
+          "jsonField": "embossedName",
+          "jsonType": "string",
+          "validation": "max 50 characters",
+          "sampleValue": "Aniya Von"
+        },
+        {
+          "cobolField": "CARD-EXPIRAION-DATE",
+          "cobolType": "PIC X(10)",
+          "jsonField": "expirationDate",
+          "jsonType": "string (ISO date)",
+          "validation": "YYYY-MM-DD format",
+          "sampleValue": "2025-03-09"
+        },
+        {
+          "cobolField": "CARD-ACTIVE-STATUS",
+          "cobolType": "PIC X(01)",
+          "jsonField": "activeStatus",
+          "jsonType": "string",
+          "validation": "A/I/B or Y/N codes",
+          "sampleValue": "A"
+        }
+      ]
+    },
+    "asciiConversionValidation": {
+      "sourceFile": "app/data/ASCII/carddata.txt",
+      "conversionMethod": "Fixed-width to JSON structure",
+      "recordCount": 50,
+      "conversionRules": [
+        {
+          "field": "cardNumber",
+          "sourcePosition": "1-16",
+          "targetFormat": "JSON string",
+          "validation": "Luhn algorithm check"
+        },
+        {
+          "field": "accountId",
+          "sourcePosition": "17-27",
+          "targetFormat": "JSON string with leading zeros",
+          "validation": "11-digit numeric format"
+        },
+        {
+          "field": "customerId",
+          "sourcePosition": "28-36",
+          "targetFormat": "JSON string with leading zeros",
+          "validation": "9-digit numeric format"
+        },
+        {
+          "field": "embossedName",
+          "sourcePosition": "37-86",
+          "targetFormat": "JSON string trimmed",
+          "validation": "Trim trailing spaces"
+        },
+        {
+          "field": "expirationDate",
+          "sourcePosition": "87-96",
+          "targetFormat": "ISO date format",
+          "validation": "YYYY-MM-DD conversion"
+        },
+        {
+          "field": "activeStatus",
+          "sourcePosition": "97",
+          "targetFormat": "JSON string",
+          "validation": "Y/N to A/I mapping"
+        }
+      ]
+    },
+    "vsamDatasetMapping": {
+      "datasetName": "CARDDAT",
+      "recordType": "KSDS",
+      "keyField": "CARD-NUM",
+      "keyLength": 16,
+      "recordLength": 150,
+      "alternateIndexes": [
+        {
+          "name": "CARDAIX",
+          "keyField": "CARD-ACCT-ID",
+          "postgresqlEquivalent": "idx_cards_account_id"
+        }
+      ]
+    },
+    "legacySystemCompatibility": {
+      "statusCodeMapping": {
+        "legacy": {
+          "Y": "Active (Yes)",
+          "N": "Inactive (No)"
+        },
+        "modern": {
+          "A": "Active",
+          "I": "Inactive", 
+          "B": "Blocked"
+        },
+        "conversionRules": {
+          "Y": "A",
+          "N": "I"
+        }
+      },
+      "dataTypePreservation": {
+        "numericFields": ["cardNumber", "accountId", "customerId", "cvvCode"],
+        "alphanumericFields": ["embossedName"],
+        "dateFields": ["expirationDate"],
+        "statusFields": ["activeStatus"]
+      }
+    },
+    "dataStructureMigration": {
+      "sourceStructure": "COBOL copybook CVACT02Y.cpy",
+      "targetStructure": "PostgreSQL cards table",
+      "migrationMethod": "Spring Boot JPA entity mapping",
+      "validationChecks": [
+        {
+          "check": "Field count preservation",
+          "expected": 6,
+          "actual": 6,
+          "status": "PASS"
+        },
+        {
+          "check": "Data type mapping accuracy",
+          "expected": "Exact field-to-field mapping",
+          "actual": "All fields mapped correctly",
+          "status": "PASS"
+        },
+        {
+          "check": "Constraint validation",
+          "expected": "Foreign key constraints active",
+          "actual": "Cards->Accounts->Customers relationships enforced",
+          "status": "PASS"
+        }
+      ]
+    }
+  }
+}
