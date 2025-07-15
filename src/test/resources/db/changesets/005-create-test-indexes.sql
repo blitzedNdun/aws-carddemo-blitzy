@@ -21,8 +21,8 @@
 
 -- liquibase formatted sql
 
--- changeset blitzy-agent:005-create-test-indexes
--- comment: Create PostgreSQL B-tree indexes for test tables replicating VSAM alternate index performance characteristics
+--changeset blitzy-agent:005-create-test-indexes
+--comment: Create PostgreSQL B-tree indexes for test tables replicating VSAM alternate index performance characteristics
 
 -- =============================================================================
 -- Test Users Table Indexes (Supporting Authentication Performance)
