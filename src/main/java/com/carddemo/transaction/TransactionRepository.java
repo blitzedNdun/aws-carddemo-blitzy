@@ -301,4 +301,17 @@ public interface TransactionRepository extends JpaRepository<Transaction, String
      */
     @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE t.account.accountId = :accountId AND t.processingTimestamp >= :startDate AND t.processingTimestamp <= :endDate")
     BigDecimal sumAmountByAccountIdAndDateRange(@Param("accountId") String accountId, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    /**
+     * Counts transactions within a specific date range.
+     * 
+     * <p>This method provides efficient transaction count queries for date-filtered
+     * datasets, essential for batch processing validation and progress tracking.</p>
+     * 
+     * @param startDate the start date for the range (inclusive)
+     * @param endDate the end date for the range (inclusive)
+     * @return the count of transactions within the date range
+     */
+    @Query("SELECT COUNT(t) FROM Transaction t WHERE t.processingTimestamp >= :startDate AND t.processingTimestamp <= :endDate")
+    Long countByDateRange(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 }
