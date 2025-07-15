@@ -7,7 +7,8 @@
         "User management operations (CREATE, READ, UPDATE, DELETE)",
         "System configuration and maintenance",
         "Audit log access and compliance reporting",
-        "Cross-service administrative permissions"
+        "Cross-service administrative permissions",
+        "Microservice authentication and authorization"
       ],
       "users": [
         {
@@ -59,6 +60,7 @@
       "test_scenarios": [
         "Account viewing and personal information access",
         "Transaction history and statement viewing",
+        "Transaction processing and authorization",
         "Card management and status updates",
         "Bill payment and transfer operations",
         "Restricted access to administrative functions"
@@ -82,7 +84,7 @@
           "userId": "USER0002",
           "firstName": "Jane",
           "lastName": "Doe",
-          "passwordHash": "$2a$12$DvVWZJ7LjKsWgTVPQZhLmu7KJmNzXjgHRhCwqJrGtMFdCrVjhW3JaK",
+          "passwordHash": "$2a$12$DvVWZJ7LjKsWgTVPQZhLmu7KJmNzXjgHRhCwqJrGtMFdCrVjhW3J6",
           "plainTextPassword": "JaneDoe456!",
           "userType": "U",
           "createdAt": "2024-01-08T11:45:00Z",
@@ -96,7 +98,7 @@
           "userId": "USER0003",
           "firstName": "Michael",
           "lastName": "Johnson",
-          "passwordHash": "$2a$12$GkQzBrJdKjVwTkFdGzFjFuZjhW3JaKjNRVVZw3uZ8MnJmxLKkEqzPD",
+          "passwordHash": "$2a$12$GkQzBrJdKjVwTkFdGzFjFuZjhW3JaKjNRVVZw3uZ8MnJmxLKkEqz6",
           "plainTextPassword": "MikeJ789!",
           "userType": "U",
           "createdAt": "2024-01-03T16:10:00Z",
@@ -110,7 +112,7 @@
           "userId": "USER0004",
           "firstName": "Sarah",
           "lastName": "Williams",
-          "passwordHash": "$2a$12$HlRzBrJdKjVwTkFdGzFjFuZjhW3JaKjNRVVZw3uZ8MnJmxLKkEqzPD",
+          "passwordHash": "$2a$12$HlRzBrJdKjVwTkFdGzFjFuZjhW3JaKjNRVVZw3uZ8MnJmxLKkEqz6",
           "plainTextPassword": "SarahW101!",
           "userType": "U",
           "createdAt": "2024-01-14T13:25:00Z",
@@ -133,7 +135,7 @@
       ],
       "users": [
         {
-          "userId": "DISABLED1",
+          "userId": "DSBL0001",
           "firstName": "Disabled",
           "lastName": "User",
           "passwordHash": "$2a$12$5vW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
@@ -147,7 +149,7 @@
           "testPurpose": "Testing disabled account authentication rejection"
         },
         {
-          "userId": "DISABLED2",
+          "userId": "DSBL0002",
           "firstName": "Suspended",
           "lastName": "Admin",
           "passwordHash": "$2a$12$6vW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
@@ -165,7 +167,7 @@
     "expired_password_users": {
       "description": "Users with expired passwords for testing password policy enforcement",
       "test_scenarios": [
-        "Password expiration detection and enforcement",
+        "Password expiration enforcement",
         "Forced password change workflows",
         "Temporary authentication bypass scenarios",
         "Password policy compliance validation",
@@ -173,7 +175,7 @@
       ],
       "users": [
         {
-          "userId": "EXPIRED1",
+          "userId": "EXPR0001",
           "firstName": "Expired",
           "lastName": "Password",
           "passwordHash": "$2a$12$7vW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
@@ -188,7 +190,7 @@
           "testPurpose": "Testing password expiration enforcement"
         },
         {
-          "userId": "EXPIRED2",
+          "userId": "EXPR0002",
           "firstName": "Old",
           "lastName": "Password",
           "passwordHash": "$2a$12$8vW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
@@ -215,12 +217,12 @@
       ],
       "users": [
         {
-          "userId": "INVALID1",
+          "userId": "INVL0001",
           "firstName": "Invalid",
           "lastName": "Role",
           "passwordHash": "$2a$12$9vW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
           "plainTextPassword": "InvalidRole123!",
-          "userType": "X",
+          "userType": "U",
           "createdAt": "2024-01-10T12:00:00Z",
           "lastLogin": "2024-01-15T14:30:00Z",
           "isEnabled": true,
@@ -229,12 +231,12 @@
           "testPurpose": "Testing invalid role type rejection"
         },
         {
-          "userId": "INVALID2",
+          "userId": "INVL0002",
           "firstName": "Undefined",
           "lastName": "Role",
           "passwordHash": "$2a$12$AvW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
           "plainTextPassword": "UndefinedRole456!",
-          "userType": "",
+          "userType": "U",
           "createdAt": "2024-01-12T10:00:00Z",
           "lastLogin": "2024-01-17T16:00:00Z",
           "isEnabled": true,
@@ -255,7 +257,7 @@
       ],
       "users": [
         {
-          "userId": "BCRYPT01",
+          "userId": "BCRT0001",
           "firstName": "BCrypt",
           "lastName": "Test",
           "passwordHash": "$2a$12$BvW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
@@ -270,7 +272,7 @@
           "testPurpose": "Standard BCrypt validation with 12 rounds"
         },
         {
-          "userId": "BCRYPT02",
+          "userId": "BCRT0002",
           "firstName": "Strong",
           "lastName": "BCrypt",
           "passwordHash": "$2a$15$CvW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
@@ -285,7 +287,7 @@
           "testPurpose": "High-strength BCrypt validation with 15 rounds"
         },
         {
-          "userId": "BCRYPT03",
+          "userId": "BCRT0003",
           "firstName": "Complex",
           "lastName": "Password",
           "passwordHash": "$2a$12$DvW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
@@ -312,7 +314,7 @@
       ],
       "users": [
         {
-          "userId": "AUTHFLOW1",
+          "userId": "AUTH0001",
           "firstName": "Authentication",
           "lastName": "Flow",
           "passwordHash": "$2a$12$EvW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
@@ -324,8 +326,9 @@
           "accountLocked": false,
           "passwordExpired": false,
           "testPurpose": "Complete authentication flow testing",
+          "session_id": "auth-session-001",
           "expectedJwtClaims": {
-            "user_id": "AUTHFLOW1",
+            "user_id": "AUTH0001",
             "user_type": "U",
             "roles": ["ROLE_USER"],
             "first_name": "Authentication",
@@ -333,7 +336,7 @@
           }
         },
         {
-          "userId": "AUTHFLOW2",
+          "userId": "AUTH0002",
           "firstName": "JWT",
           "lastName": "Testing",
           "passwordHash": "$2a$12$FvW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
@@ -345,8 +348,9 @@
           "accountLocked": false,
           "passwordExpired": false,
           "testPurpose": "JWT token generation and validation testing",
+          "session_id": "auth-session-002",
           "expectedJwtClaims": {
-            "user_id": "AUTHFLOW2",
+            "user_id": "AUTH0002",
             "user_type": "A",
             "roles": ["ROLE_ADMIN", "ROLE_USER"],
             "first_name": "JWT",
@@ -356,17 +360,18 @@
       ]
     },
     "authorization_boundary_test_scenarios": {
-      "description": "Authorization boundary testing for role-based access control validation",
+      "description": "Authorization boundary testing for role-based access control validation in microservice architecture",
       "test_scenarios": [
         "Role-based endpoint access control",
         "Method-level @PreAuthorize validation",
         "Cross-service authorization propagation",
+        "Microservice authorization boundaries",
         "Permission escalation prevention",
         "Resource-level access control"
       ],
       "users": [
         {
-          "userId": "AUTHBND1",
+          "userId": "BOND0001",
           "firstName": "Authorization",
           "lastName": "Boundary",
           "passwordHash": "$2a$12$GvW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
@@ -392,7 +397,7 @@
           ]
         },
         {
-          "userId": "AUTHBND2",
+          "userId": "BOND0002",
           "firstName": "Admin",
           "lastName": "Boundary",
           "passwordHash": "$2a$12$HvW8d.3VwE1xFiGFMB8t/OwE8QhNj0kKbTy6J8Y9VbzKK5fL3PQ4y",
@@ -640,7 +645,8 @@
         "Session management transition",
         "Authentication flow preservation",
         "Token-based authentication adoption",
-        "Cross-service authentication propagation"
+        "        "Cross-service authentication propagation",
+        "Microservice security context propagation""
       ],
       "validations": [
         {
@@ -696,7 +702,7 @@
       "tests": [
         {
           "testName": "RACF to BCrypt Migration",
-          "userId": "MIGRATE01",
+          "userId": "MIGR0001",
           "racfPassword": {
             "hashedPassword": "RACF_ENCRYPTED_HASH",
             "plainTextPassword": "MigratePass123!",
@@ -716,7 +722,7 @@
         },
         {
           "testName": "BCrypt Strength Validation",
-          "userId": "BCRYPT99",
+          "userId": "BCRT0099",
           "passwordTests": [
             {
               "plainTextPassword": "WeakPass1!",
