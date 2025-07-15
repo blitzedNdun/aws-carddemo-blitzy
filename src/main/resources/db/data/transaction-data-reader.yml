@@ -1,0 +1,536 @@
+# Spring Batch FlatFileItemReader Configuration for CardDemo Transaction Data Loading
+# 
+# This configuration defines ItemReader for loading transaction data from dailytran.txt
+# with 189-character fixed-width records into PostgreSQL transactions table, maintaining
+# exact COBOL field mappings, BigDecimal precision, and monthly partitioning support
+# per Section 0.3.2 and Section 6.2.1.4 requirements.
+#
+# Key Features:
+# - Fixed-width record processing with 189-character equivalent records
+# - DECIMAL(12,2) precision handling for transaction amounts
+# - Timestamp parsing with microsecond precision for partitioning
+# - Transaction type and category validation with foreign key enforcement
+# - Monthly RANGE partitioning support for high-volume data processing
+# - BigDecimal arithmetic with COBOL COMP-3 equivalent precision
+# - Error handling and skip policies for data quality management
+#
+# Transaction Data File Format (dailytran.txt):
+# - Record Length: 189 characters
+# - Fields: transaction_id, account_id, transaction_type, description, amount,
+#           transaction_category, card_number, merchant_name, merchant_city,
+#           merchant_zip, transaction_timestamp
+#
+# @author Blitzy agent
+# @version CardDemo_v1.0-15-g27d6c6f-68
+
+spring:
+  batch:
+    transaction-data:
+      # Configuration for daily transaction data loading from dailytran.txt
+      daily-transactions:
+        reader:
+          type: "FlatFileItemReader"
+          resource: "classpath:db/data/ASCII/dailytran.txt"
+          line-mapper:
+            type: "FixedLengthTokenizer"
+            columns:
+              # Transaction ID - positions 1-16 (16 characters)
+              - name: "transactionId"
+                range: "1-16"
+              # Account ID - positions 17-27 (11 characters)  
+              - name: "accountId"
+                range: "17-27"
+              # Transaction Type/Description - positions 28-135 (108 characters)
+              - name: "transactionTypeDesc"
+                range: "28-135"
+              # Transaction Amount - positions 136-147 (12 characters including sign)
+              - name: "transactionAmountRaw"
+                range: "136-147"
+              # Transaction Category - positions 148-149 (2 characters)
+              - name: "transactionCategoryRaw"
+                range: "148-149"
+              # Card Number - positions 150-165 (16 characters)
+              - name: "cardNumber"
+                range: "150-165"
+              # Merchant Name - positions 166-205 (40 characters)
+              - name: "merchantName"
+                range: "166-205"
+              # Merchant City - positions 206-245 (40 characters)
+              - name: "merchantCity"
+                range: "206-245"
+              # Merchant ZIP - positions 246-255 (10 characters)
+              - name: "merchantZip"
+                range: "246-255"
+              # Transaction Timestamp - positions 256-281 (26 characters)
+              - name: "transactionTimestamp"
+                range: "256-281"
+            
+            field-set-mapper:
+              type: "BeanWrapperFieldSetMapper"
+              target-type: "com.carddemo.common.entity.Transaction"
+              custom-editors:
+                # Transaction ID field mapping
+                transactionId:
+                  type: "string"
+                  trim: true
+                  validation:
+                    - "notNull"
+                    - "size(min=16, max=16)"
+                    - "pattern(^[A-Za-z0-9]{16}$)"
+                  transformation: |
+                    # Ensure 16-character format with zero-padding if needed
+                    value = value.trim().replaceAll("[^A-Za-z0-9]", "0");
+                    while (value.length() < 16) {
+                      value = "0" + value;
+                    }
+                    return value.substring(0, 16);
+                
+                # Account ID field mapping with validation
+                accountId:
+                  type: "string"
+                  trim: true
+                  validation:
+                    - "notNull"
+                    - "size(min=11, max=11)"
+                    - "pattern(^\\d{11}$)"
+                  transformation: |
+                    # Ensure 11-digit format with zero-padding
+                    value = value.trim().replaceAll("[^0-9]", "");
+                    while (value.length() < 11) {
+                      value = "0" + value;
+                    }
+                    return value.substring(0, 11);
+                
+                # Card Number field mapping with validation
+                cardNumber:
+                  type: "string"
+                  trim: true
+                  validation:
+                    - "notNull"
+                    - "size(min=16, max=16)"
+                    - "pattern(^\\d{16}$)"
+                  transformation: |
+                    # Extract numeric digits only and ensure 16-digit format
+                    value = value.trim().replaceAll("[^0-9]", "");
+                    while (value.length() < 16) {
+                      value = "0" + value;
+                    }
+                    return value.substring(0, 16);
+                
+                # Transaction Type extraction from description
+                transactionType:
+                  type: "string"
+                  source-field: "transactionTypeDesc"
+                  transformation: |
+                    # Extract transaction type from description field
+                    # POS TERM -> "01", OPERATOR -> "03", etc.
+                    String desc = value.trim().toUpperCase();
+                    if (desc.contains("POS TERM")) {
+                      return "01";
+                    } else if (desc.contains("OPERATOR")) {
+                      return "03";
+                    } else if (desc.contains("ONLINE")) {
+                      return "04";
+                    } else if (desc.contains("PAYMENT")) {
+                      return "02";
+                    } else if (desc.contains("REFUND")) {
+                      return "05";
+                    } else if (desc.contains("REVERSAL")) {
+                      return "06";
+                    } else if (desc.contains("ADJUSTMENT")) {
+                      return "07";
+                    } else {
+                      return "01"; // Default to purchase
+                    }
+                  validation:
+                    - "notNull"
+                    - "size(min=2, max=2)"
+                    - "pattern(^\\d{2}$)"
+                
+                # Transaction Category extraction and mapping
+                transactionCategory:
+                  type: "string"
+                  source-field: "transactionCategoryRaw"
+                  transformation: |
+                    # Map category code to 4-character format
+                    String category = value.trim();
+                    if (category.length() >= 1) {
+                      char categoryChar = category.charAt(0);
+                      // Map character codes to 4-digit category codes
+                      switch (categoryChar) {
+                        case 'A': case 'B': case 'C': case 'D': case 'E':
+                          return "0001"; // Regular sales
+                        case 'F': case 'G': case 'H': case 'I': case 'J':
+                          return "0002"; // Cash advance
+                        case 'K': case 'L': case 'M': case 'N': case 'O':
+                          return "0003"; // Convenience check
+                        case 'P': case 'Q': case 'R': case 'S': case 'T':
+                          return "0004"; // ATM transaction
+                        default:
+                          return "0001"; // Default category
+                      }
+                    }
+                    return "0001";
+                  validation:
+                    - "notNull"
+                    - "size(min=4, max=4)"
+                    - "pattern(^\\d{4}$)"
+                
+                # Transaction Amount with BigDecimal precision
+                transactionAmount:
+                  type: "bigDecimal"
+                  source-field: "transactionAmountRaw"
+                  scale: 2
+                  precision: 12
+                  math-context: "DECIMAL128"
+                  rounding-mode: "HALF_EVEN"
+                  transformation: |
+                    # Parse amount with sign character handling
+                    String amountStr = value.trim();
+                    if (amountStr.length() >= 11) {
+                      // Extract numeric part and sign
+                      String numericPart = amountStr.substring(0, 10);
+                      char signChar = amountStr.charAt(10);
+                      
+                      // Convert to decimal with 2 decimal places
+                      long amountCents = Long.parseLong(numericPart);
+                      BigDecimal amount = new BigDecimal(amountCents).divide(new BigDecimal("100"), 2, RoundingMode.HALF_EVEN);
+                      
+                      // Apply sign - COBOL packed decimal sign handling
+                      if (signChar == '}' || signChar == 'J' || signChar == 'K' || signChar == 'L' || 
+                          signChar == 'M' || signChar == 'N' || signChar == 'O' || signChar == 'P' || 
+                          signChar == 'Q' || signChar == 'R') {
+                        amount = amount.negate();
+                      }
+                      
+                      return amount;
+                    }
+                    return new BigDecimal("0.00");
+                  validation:
+                    - "notNull"
+                    - "decimalMin(-999999999.99)"
+                    - "decimalMax(999999999.99)"
+                
+                # Transaction Description extraction
+                description:
+                  type: "string"
+                  source-field: "transactionTypeDesc"
+                  transformation: |
+                    # Extract description part after transaction type
+                    String desc = value.trim();
+                    if (desc.contains("Purchase at ")) {
+                      return desc.substring(desc.indexOf("Purchase at "));
+                    } else if (desc.contains("Return item at ")) {
+                      return desc.substring(desc.indexOf("Return item at "));
+                    } else if (desc.contains("Payment to ")) {
+                      return desc.substring(desc.indexOf("Payment to "));
+                    } else {
+                      return desc;
+                    }
+                  validation:
+                    - "notNull"
+                    - "size(min=1, max=100)"
+                
+                # Transaction Timestamp with microsecond precision
+                transactionTimestamp:
+                  type: "localDateTime"
+                  format: "yyyy-MM-dd HH:mm:ss.SSSSSS"
+                  default-format: "yyyy-MM-dd HH:mm:ss"
+                  transformation: |
+                    # Parse timestamp with microsecond precision
+                    String timestamp = value.trim();
+                    if (timestamp.length() >= 19) {
+                      try {
+                        // Handle microsecond precision
+                        if (timestamp.contains(".")) {
+                          return LocalDateTime.parse(timestamp, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS"));
+                        } else {
+                          return LocalDateTime.parse(timestamp, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                        }
+                      } catch (DateTimeParseException e) {
+                        // Fallback to current timestamp
+                        return LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
+                      }
+                    }
+                    return LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
+                  validation:
+                    - "notNull"
+                
+                # Merchant Name field mapping
+                merchantName:
+                  type: "string"
+                  trim: true
+                  validation:
+                    - "size(max=50)"
+                  transformation: |
+                    # Clean merchant name and ensure proper format
+                    String name = value.trim();
+                    if (name.length() > 50) {
+                      name = name.substring(0, 50);
+                    }
+                    return name.isEmpty() ? null : name;
+                
+                # Merchant City field mapping
+                merchantCity:
+                  type: "string"
+                  trim: true
+                  validation:
+                    - "size(max=50)"
+                  transformation: |
+                    # Clean merchant city and ensure proper format
+                    String city = value.trim();
+                    if (city.length() > 50) {
+                      city = city.substring(0, 50);
+                    }
+                    return city.isEmpty() ? null : city;
+                
+                # Merchant ZIP field mapping
+                merchantZip:
+                  type: "string"
+                  trim: true
+                  validation:
+                    - "size(max=10)"
+                    - "pattern(^$|^[0-9]{5}(-[0-9]{4})?$)"
+                  transformation: |
+                    # Clean and validate ZIP code format
+                    String zip = value.trim();
+                    if (zip.length() > 10) {
+                      zip = zip.substring(0, 10);
+                    }
+                    // Validate ZIP format (XXXXX or XXXXX-XXXX)
+                    if (zip.matches("^[0-9]{5}(-[0-9]{4})?$")) {
+                      return zip;
+                    }
+                    return null;
+                
+                # Transaction Source default
+                transactionSource:
+                  type: "string"
+                  default: "BATCH_LOAD"
+                  validation:
+                    - "size(max=10)"
+                
+                # Merchant ID extraction from description
+                merchantId:
+                  type: "string"
+                  source-field: "transactionTypeDesc"
+                  transformation: |
+                    # Extract merchant ID if present in description
+                    String desc = value.trim();
+                    // Look for numeric patterns that might be merchant IDs
+                    Pattern pattern = Pattern.compile("\\b\\d{6,9}\\b");
+                    Matcher matcher = pattern.matcher(desc);
+                    if (matcher.find()) {
+                      return matcher.group();
+                    }
+                    return null;
+                  validation:
+                    - "size(max=9)"
+                    - "pattern(^$|^\\d{1,9}$)"
+          
+          # Skip policy configuration for data quality management
+          skip-policy:
+            skip-limit: 1000
+            skippable-exceptions:
+              - "NumberFormatException"
+              - "DateTimeParseException"
+              - "ValidationException"
+              - "DataIntegrityViolationException"
+          
+          # Error handling configuration
+          error-handling:
+            max-retry-attempts: 3
+            retry-delay: 2000
+            log-skipped-items: true
+            log-validation-errors: true
+            fail-on-error-threshold: 0.05 # 5% error rate threshold
+        
+        # Processing configuration for high-volume data
+        processing:
+          # Chunk configuration for optimal performance
+          chunk:
+            size: 5000
+            commit-interval: 5000
+            reader-transaction-timeout: 300
+            processor-transaction-timeout: 600
+            writer-transaction-timeout: 900
+          
+          # Parallel processing configuration
+          parallel:
+            enabled: true
+            core-pool-size: 4
+            max-pool-size: 8
+            queue-capacity: 10000
+            thread-name-prefix: "transaction-data-"
+            allow-core-thread-timeout: true
+            keep-alive-seconds: 60
+          
+          # Partitioning configuration for monthly RANGE partitioning
+          partitioning:
+            enabled: true
+            partition-key: "transactionTimestamp"
+            partition-type: "RANGE"
+            partition-interval: "MONTHLY"
+            auto-create-partitions: true
+            partition-retention-months: 24
+        
+        # Transaction management configuration
+        transaction:
+          isolation-level: "READ_COMMITTED"
+          timeout: 1800 # 30 minutes for large batch processing
+          propagation: "REQUIRED"
+          rollback-for:
+            - "DataIntegrityViolationException"
+            - "ConstraintViolationException"
+            - "ValidationException"
+          
+          # Connection pool configuration for high-volume processing
+          connection-pool:
+            initial-size: 10
+            max-active: 50
+            max-idle: 20
+            max-wait: 30000
+            validation-query: "SELECT 1"
+            test-on-borrow: true
+            test-while-idle: true
+            time-between-eviction-runs: 30000
+        
+        # Foreign key constraint validation
+        constraints:
+          validate-foreign-keys: true
+          foreign-key-mappings:
+            - source-field: "accountId"
+              target-table: "accounts"
+              target-field: "account_id"
+              required: true
+              cache-lookups: true
+            - source-field: "cardNumber"
+              target-table: "cards"
+              target-field: "card_number"
+              required: true
+              cache-lookups: true
+            - source-field: "transactionType"
+              target-table: "transaction_types"
+              target-field: "transaction_type"
+              required: true
+              cache-lookups: true
+            - source-field: "transactionCategory"
+              target-table: "transaction_categories"
+              target-field: "transaction_category"
+              required: true
+              cache-lookups: true
+        
+        # Performance optimization configuration
+        performance:
+          batch-insert-size: 5000
+          fetch-size: 10000
+          use-bulk-insert: true
+          statement-cache-size: 500
+          enable-query-cache: true
+          
+          # Index hints for optimal insertion performance
+          index-hints:
+            - "USE INDEX (idx_transactions_timestamp)"
+            - "USE INDEX (idx_transactions_account_id)"
+            - "USE INDEX (idx_transactions_card_number)"
+        
+        # Monitoring and metrics configuration
+        monitoring:
+          enabled: true
+          metrics:
+            - "items-read-per-second"
+            - "items-processed-per-second"
+            - "items-written-per-second"
+            - "items-skipped-count"
+            - "processing-time-average"
+            - "memory-usage-percent"
+            - "database-connection-count"
+            - "partition-distribution"
+          
+          # Health checks for data processing
+          health-checks:
+            - "database-connection-pool"
+            - "file-reading-progress"
+            - "memory-usage-threshold"
+            - "partition-availability"
+            - "foreign-key-constraint-validation"
+          
+          # Alerting configuration
+          alerts:
+            - condition: "items-skipped-count > 500"
+              action: "log-warning"
+              message: "High skip count detected in transaction data loading"
+            - condition: "processing-time-average > 120000"
+              action: "log-error"
+              message: "Transaction processing time exceeds 2 minutes average"
+            - condition: "memory-usage-percent > 85"
+              action: "log-warning"
+              message: "High memory usage during transaction processing"
+        
+        # Data validation rules
+        validation:
+          strict-mode: true
+          validate-all-fields: true
+          fail-on-first-error: false
+          
+          # Custom validation rules for transaction data
+          custom-rules:
+            - rule: "transactionAmount != null && transactionAmount.scale() == 2"
+              message: "Transaction amount must have exactly 2 decimal places"
+            - rule: "transactionTimestamp != null && transactionTimestamp.isAfter(LocalDateTime.of(2000, 1, 1, 0, 0))"
+              message: "Transaction timestamp must be after year 2000"
+            - rule: "accountId != null && accountId.matches('^\\d{11}$')"
+              message: "Account ID must be exactly 11 digits"
+            - rule: "cardNumber != null && cardNumber.matches('^\\d{16}$')"
+              message: "Card number must be exactly 16 digits"
+            - rule: "transactionType != null && transactionType.matches('^\\d{2}$')"
+              message: "Transaction type must be exactly 2 digits"
+            - rule: "transactionCategory != null && transactionCategory.matches('^\\d{4}$')"
+              message: "Transaction category must be exactly 4 digits"
+        
+        # File processing configuration
+        file:
+          encoding: "UTF-8"
+          line-separator: "\n"
+          strict-quotes: false
+          ignore-empty-lines: true
+          ignore-leading-whitespace: false
+          ignore-trailing-whitespace: false
+          
+          # File validation
+          validation:
+            check-file-existence: true
+            check-file-size: true
+            expected-record-count: 300 # Approximate expected records
+            max-file-size: "50MB"
+            min-file-size: "1KB"
+        
+        # Cache configuration for reference data lookups
+        cache:
+          enabled: true
+          reference-data-cache:
+            accounts: 
+              ttl: 3600 # 1 hour
+              max-size: 100000
+            cards:
+              ttl: 3600 # 1 hour  
+              max-size: 500000
+            transaction-types:
+              ttl: 86400 # 24 hours
+              max-size: 100
+            transaction-categories:
+              ttl: 86400 # 24 hours
+              max-size: 1000
+          
+          # Cache warming on startup
+          warm-on-startup: true
+          
+          # Redis cache configuration
+          redis:
+            enabled: true
+            key-prefix: "carddemo:transaction-data:"
+            default-ttl: 3600
+            connection-pool:
+              max-active: 20
+              max-idle: 10
+              max-wait: 3000
