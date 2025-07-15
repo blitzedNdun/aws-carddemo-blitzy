@@ -1,0 +1,1052 @@
+# =====================================================================================
+# CardDemo Production Configuration Profile
+# =====================================================================================
+# Production-optimized Spring Boot configuration profile designed for enterprise-grade
+# deployment with high availability, clustering, security hardening, and performance
+# tuning to support the modernized CardDemo credit card management system.
+#
+# This configuration transforms the original CICS/VSAM mainframe architecture into
+# a cloud-native, containerized microservices platform while maintaining identical
+# business logic and regulatory compliance requirements.
+#
+# Key Production Features:
+# - PostgreSQL clustering with streaming replication for high availability
+# - Redis cluster mode for distributed session management and caching
+# - HikariCP connection pool optimization for 10,000+ TPS throughput
+# - Enhanced security hardening with JWT authentication and encryption
+# - JSON structured logging for centralized log aggregation via ELK stack
+# - JVM memory optimization within 10% overhead of CICS baseline
+# - Production-grade monitoring and observability infrastructure
+# - SOX and PCI DSS compliance through comprehensive audit logging
+#
+# Technical Specification References:
+# - Section 0.1.2: Performance Requirements - Sub-200ms response times
+# - Section 6.2.4.4: PostgreSQL cluster configuration with read replica routing
+# - Section 6.4: Security Architecture - Spring Security hardening
+# - Section 8.3.5: Containerization - Production deployment optimization
+# - Section 8.2: Cloud Services - High-availability infrastructure
+# =====================================================================================
+
+# =====================================================================================
+# SPRING BOOT PRODUCTION CONFIGURATION
+# =====================================================================================
+spring:
+  # Production profile activation
+  profiles:
+    active: production
+  
+  # Application identification for production environment
+  application:
+    name: carddemo
+    version: 1.0.0
+    description: "CardDemo Credit Card Management System - Production"
+  
+  # =====================================================================================
+  # PRODUCTION DATABASE CONFIGURATION - PostgreSQL Clustering
+  # =====================================================================================
+  # Production PostgreSQL configuration with streaming replication, read replicas,
+  # and optimized connection pooling to support 10,000+ TPS throughput requirements
+  # per Technical Specification Section 6.2.4.4
+  datasource:
+    # Primary PostgreSQL cluster configuration
+    primary:
+      url: jdbc:postgresql://${DB_PRIMARY_HOST:prod-postgres-primary}:${DB_PRIMARY_PORT:5432}/${DB_NAME:carddemo}?sslmode=require&serverTimezone=UTC&reWriteBatchedInserts=true&preparedStatementCacheQueries=256&preparedStatementCacheSizeMiB=5
+      username: ${DB_USERNAME:carddemo_user}
+      password: ${DB_PASSWORD:carddemo_secure_password}
+      driver-class-name: org.postgresql.Driver
+      
+      # Production HikariCP connection pool configuration
+      # Optimized for enterprise-grade throughput and reliability
+      hikari:
+        # Connection pool sizing for production workloads
+        maximum-pool-size: 100      # Increased for production load
+        minimum-idle: 20            # Higher baseline for immediate availability
+        connection-timeout: 20000   # 20 seconds for production stability
+        idle-timeout: 300000        # 5 minutes to reduce connection churn
+        max-lifetime: 1200000       # 20 minutes for connection refresh
+        
+        # Connection validation and monitoring for production reliability
+        validation-timeout: 3000
+        leak-detection-threshold: 30000  # 30 seconds for production monitoring
+        
+        # Production-optimized PostgreSQL connection properties
+        data-source-properties:
+          # Advanced prepared statement caching for performance
+          cachePrepStmts: true
+          prepStmtCacheSize: 500
+          prepStmtCacheSqlLimit: 4096
+          useServerPrepStmts: true
+          
+          # Network and timeout optimization for production
+          tcpKeepAlive: true
+          socketTimeout: 20
+          loginTimeout: 5
+          
+          # SSL/TLS configuration for production security
+          ssl: true
+          sslmode: require
+          sslcert: ${SSL_CERT_PATH:/etc/ssl/certs/postgresql-client.crt}
+          sslkey: ${SSL_KEY_PATH:/etc/ssl/private/postgresql-client.key}
+          sslrootcert: ${SSL_ROOT_CERT_PATH:/etc/ssl/certs/ca-certificates.crt}
+          
+          # Connection pool identification and monitoring
+          pool-name: CardDemoProductionPool
+          register-mbeans: true
+          
+          # Production database optimization
+          defaultRowFetchSize: 100
+          logUnclosedConnections: true
+          
+    # Read replica configuration for query distribution
+    replica:
+      url: jdbc:postgresql://${DB_REPLICA_HOST:prod-postgres-replica}:${DB_REPLICA_PORT:5432}/${DB_NAME:carddemo}?sslmode=require&serverTimezone=UTC&readOnly=true
+      username: ${DB_REPLICA_USERNAME:carddemo_readonly}
+      password: ${DB_REPLICA_PASSWORD:carddemo_readonly_password}
+      driver-class-name: org.postgresql.Driver
+      
+      # Read replica connection pool configuration
+      hikari:
+        maximum-pool-size: 50       # Smaller pool for read-only queries
+        minimum-idle: 10
+        connection-timeout: 15000
+        idle-timeout: 600000
+        max-lifetime: 1800000
+        
+        # Read replica optimizations
+        data-source-properties:
+          readOnly: true
+          cachePrepStmts: true
+          prepStmtCacheSize: 250
+          useServerPrepStmts: true
+          pool-name: CardDemoReadReplicaPool
+          
+    # Primary datasource configuration (for backward compatibility)
+    url: jdbc:postgresql://${DB_PRIMARY_HOST:prod-postgres-primary}:${DB_PRIMARY_PORT:5432}/${DB_NAME:carddemo}?sslmode=require&serverTimezone=UTC&reWriteBatchedInserts=true
+    username: ${DB_USERNAME:carddemo_user}
+    password: ${DB_PASSWORD:carddemo_secure_password}
+    driver-class-name: org.postgresql.Driver
+    
+    # Production HikariCP settings
+    hikari:
+      maximum-pool-size: 100
+      minimum-idle: 20
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      validation-timeout: 3000
+      leak-detection-threshold: 30000
+      
+      data-source-properties:
+        cachePrepStmts: true
+        prepStmtCacheSize: 500
+        prepStmtCacheSqlLimit: 4096
+        useServerPrepStmts: true
+        tcpKeepAlive: true
+        socketTimeout: 20
+        loginTimeout: 5
+        ssl: true
+        sslmode: require
+        pool-name: CardDemoProductionHikariCP
+        register-mbeans: true
+        defaultRowFetchSize: 100
+        logUnclosedConnections: true
+  
+  # =====================================================================================
+  # PRODUCTION JPA/HIBERNATE CONFIGURATION
+  # =====================================================================================
+  # Production JPA configuration optimized for PostgreSQL clustering with performance
+  # and reliability enhancements for enterprise-grade transaction processing
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    database: postgresql
+    
+    # Production JPA settings - no SQL logging for performance
+    show-sql: false
+    
+    # Production Hibernate configuration
+    hibernate:
+      ddl-auto: none  # Never auto-generate schema in production
+      
+      # Production naming strategy
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
+      
+      # Production JDBC batch processing optimization
+      jdbc:
+        batch_size: 50          # Optimized batch size for production
+        batch_versioned_data: true
+        order_inserts: true
+        order_updates: true
+        fetch_size: 100
+    
+    # Production JPA properties for PostgreSQL optimization
+    properties:
+      hibernate:
+        # Production connection management
+        connection.provider_disables_autocommit: true
+        connection.autocommit: false
+        
+        # Production query optimization
+        query.fail_on_pagination_over_collection_fetch: true
+        query.in_clause_parameter_padding: true
+        query.plan_cache_max_size: 2048
+        
+        # Production statistics and monitoring
+        generate_statistics: true
+        session.events.log.LOG_QUERIES_SLOWER_THAN_MS: 50  # Log slow queries
+        
+        # Production isolation level for VSAM-equivalent locking
+        connection.isolation: 8  # SERIALIZABLE for data consistency
+        
+        # Production performance optimization
+        temp.use_jdbc_metadata_defaults: false
+        jdbc.time_zone: UTC
+        
+        # Production caching configuration
+        cache.use_second_level_cache: true
+        cache.use_query_cache: true
+        cache.region.factory_class: org.hibernate.cache.jcache.JCacheRegionFactory
+        
+        # Production connection pool validation
+        connection.handling_mode: DELAYED_ACQUISITION_AND_RELEASE_AFTER_STATEMENT
+        connection.autoReconnect: true
+        connection.autoReconnectForPools: true
+        connection.is-connection-validation-required: true
+        
+    # Production open-in-view disabled for performance
+    open-in-view: false
+  
+  # =====================================================================================
+  # PRODUCTION TRANSACTION MANAGEMENT
+  # =====================================================================================
+  # Production transaction configuration for distributed transaction support
+  # with optimized timeout and recovery settings
+  transaction:
+    jta:
+      enabled: true
+      
+    # Production transaction timeout settings
+    default-timeout: 20s        # Reduced timeout for production responsiveness
+    rollback-on-commit-failure: true
+    
+    # Production transaction manager configuration
+    manager:
+      recovery-interval: 60s    # Recovery check interval
+      transaction-timeout: 20s
+      
+  # =====================================================================================
+  # PRODUCTION REDIS CLUSTER CONFIGURATION
+  # =====================================================================================
+  # Production Redis cluster configuration for high-availability session management
+  # and distributed caching with automatic failover and cluster topology management
+  data:
+    redis:
+      # Redis cluster configuration for high availability
+      cluster:
+        # Production Redis cluster nodes
+        nodes:
+          - ${REDIS_NODE1_HOST:prod-redis-node1}:${REDIS_NODE1_PORT:6379}
+          - ${REDIS_NODE2_HOST:prod-redis-node2}:${REDIS_NODE2_PORT:6379}
+          - ${REDIS_NODE3_HOST:prod-redis-node3}:${REDIS_NODE3_PORT:6379}
+          - ${REDIS_NODE4_HOST:prod-redis-node4}:${REDIS_NODE4_PORT:6379}
+          - ${REDIS_NODE5_HOST:prod-redis-node5}:${REDIS_NODE5_PORT:6379}
+          - ${REDIS_NODE6_HOST:prod-redis-node6}:${REDIS_NODE6_PORT:6379}
+        
+        # Cluster topology management
+        max-redirects: 5
+        
+        # Cluster refresh configuration
+        refresh:
+          adaptive: true
+          period: 30s
+          triggers:
+            - moved-redirect
+            - ask-redirect
+            - persistent-reconnects
+            - uncovered-slot
+            - unknown-node
+      
+      # Production Redis connection configuration
+      password: ${REDIS_PASSWORD:redis_cluster_secure_password}
+      timeout: 1000ms           # Reduced timeout for production responsiveness
+      connect-timeout: 2000ms
+      
+      # Production Lettuce connection pool configuration
+      lettuce:
+        pool:
+          max-active: 20        # Increased pool size for production
+          max-idle: 10
+          min-idle: 5           # Maintain minimum connections
+          max-wait: 1000ms      # Reduced wait time
+          time-between-eviction-runs: 30000ms
+          
+        # Production cluster settings
+        cluster:
+          refresh:
+            adaptive: true
+            period: 30s
+            dynamic-refresh-sources: true
+            
+        # Production connection settings
+        shutdown-timeout: 5s
+        
+      # Production SSL configuration for Redis
+      ssl:
+        enabled: ${REDIS_SSL_ENABLED:true}
+        
+      # Production sentinel configuration (alternative to cluster)
+      sentinel:
+        master: ${REDIS_SENTINEL_MASTER:carddemo-master}
+        nodes:
+          - ${REDIS_SENTINEL1_HOST:prod-redis-sentinel1}:${REDIS_SENTINEL1_PORT:26379}
+          - ${REDIS_SENTINEL2_HOST:prod-redis-sentinel2}:${REDIS_SENTINEL2_PORT:26379}
+          - ${REDIS_SENTINEL3_HOST:prod-redis-sentinel3}:${REDIS_SENTINEL3_PORT:26379}
+        password: ${REDIS_SENTINEL_PASSWORD:sentinel_secure_password}
+  
+  # =====================================================================================
+  # PRODUCTION SESSION MANAGEMENT
+  # =====================================================================================
+  # Production session configuration with Redis cluster backing for distributed
+  # session management across multiple application instances
+  session:
+    store-type: redis
+    redis:
+      # Production session timeout aligned with security requirements
+      timeout: 20m              # Reduced for production security
+      namespace: "carddemo:prod:session"
+      
+      # Production session configuration
+      serialization: json       # JSON for better interoperability
+      
+      # Production Redis key configuration
+      cleanup-cron: "0 */5 * * * *"  # Cleanup every 5 minutes
+      
+      # Production session cookie configuration
+      cookie:
+        name: CARDDEMO_PROD_SESSION
+        path: /
+        domain: ${SESSION_COOKIE_DOMAIN:.carddemo.com}
+        http-only: true
+        secure: true
+        same-site: strict
+        max-age: 1200           # 20 minutes aligned with session timeout
+        
+      # Production session tracking
+      tracking-modes:
+        - cookie
+        - url
+        
+      # Production session persistence
+      flush-mode: on-save
+      save-mode: on-set-attribute
+  
+  # =====================================================================================
+  # PRODUCTION SECURITY CONFIGURATION
+  # =====================================================================================
+  # Production security configuration with enhanced JWT authentication,
+  # encryption, and audit capabilities for enterprise compliance
+  security:
+    # Production OAuth2 Resource Server configuration
+    oauth2:
+      resourceserver:
+        jwt:
+          # Production JWT configuration
+          issuer-uri: ${JWT_ISSUER_URI:https://auth.carddemo.com}
+          jwk-set-uri: ${JWT_JWK_SET_URI:https://auth.carddemo.com/.well-known/jwks.json}
+          
+          # Production JWT validation
+          audiences: 
+            - carddemo-production
+            - carddemo-api
+          
+          # Production JWT token configuration
+          token-validity-seconds: 1200    # 20 minutes for production
+          refresh-token-validity-seconds: 43200  # 12 hours
+          
+          # Production JWT cache configuration
+          cache-duration: 300s
+          
+      # Production OAuth2 client configuration
+      client:
+        registration:
+          carddemo:
+            client-id: ${OAUTH2_CLIENT_ID:carddemo-production-client}
+            client-secret: ${OAUTH2_CLIENT_SECRET:carddemo-production-secret}
+            scope: openid,profile,email
+            authorization-grant-type: authorization_code
+            redirect-uri: ${OAUTH2_REDIRECT_URI:https://api.carddemo.com/login/oauth2/code/carddemo}
+            
+        provider:
+          carddemo:
+            authorization-uri: ${OAUTH2_AUTHORIZATION_URI:https://auth.carddemo.com/oauth2/authorize}
+            token-uri: ${OAUTH2_TOKEN_URI:https://auth.carddemo.com/oauth2/token}
+            user-info-uri: ${OAUTH2_USER_INFO_URI:https://auth.carddemo.com/oauth2/userinfo}
+            jwk-set-uri: ${OAUTH2_JWK_SET_URI:https://auth.carddemo.com/.well-known/jwks.json}
+  
+  # =====================================================================================
+  # PRODUCTION CACHING CONFIGURATION
+  # =====================================================================================
+  # Production caching configuration using Redis cluster for distributed caching
+  # with optimized TTL settings and cache-specific configurations
+  cache:
+    type: redis
+    redis:
+      # Production cache configuration
+      time-to-live: 180000      # 3 minutes default TTL
+      cache-null-values: false
+      key-prefix: "carddemo:prod:cache:"
+      
+      # Production cache-specific TTL configuration
+      ttl:
+        reference-data: 3600000     # 1 hour for reference tables
+        account-data: 120000        # 2 minutes for account information
+        session-data: 1200000       # 20 minutes for session data
+        transaction-types: 7200000  # 2 hours for transaction types
+        user-permissions: 1800000   # 30 minutes for user permissions
+        
+    # Production cache manager configuration
+    cache-names:
+      - reference-data
+      - account-balances
+      - customer-profiles
+      - transaction-types
+      - transaction-categories
+      - user-permissions
+      - audit-data
+      - security-tokens
+      
+    # Production cache configuration
+    caffeine:
+      spec: maximumSize=10000,expireAfterWrite=180s
+      
+  # =====================================================================================
+  # PRODUCTION LIQUIBASE CONFIGURATION
+  # =====================================================================================
+  # Production Liquibase configuration for controlled schema evolution
+  liquibase:
+    enabled: true
+    change-log: classpath:db/liquibase-changelog.xml
+    default-schema: public
+    
+    # Production database connection
+    url: ${spring.datasource.url}
+    user: ${spring.datasource.username}
+    password: ${spring.datasource.password}
+    
+    # Production execution parameters
+    contexts: production
+    labels: production
+    
+    # Production safety configuration
+    drop-first: false
+    should-run: true
+    
+    # Production parameters
+    parameters:
+      environment: production
+      database.type: postgresql
+      schema.version: 1.0.0
+      cluster.mode: true
+      
+  # =====================================================================================
+  # PRODUCTION BATCH PROCESSING CONFIGURATION
+  # =====================================================================================
+  # Production Spring Batch configuration for high-throughput batch processing
+  batch:
+    job:
+      enabled: true
+      
+    # Production JDBC configuration
+    jdbc:
+      initialize-schema: never
+      isolation-level-for-create: SERIALIZABLE
+      table-prefix: BATCH_
+      
+    # Production launcher configuration
+    launcher:
+      enabled: true
+      
+    # Production processing configuration
+    processing:
+      chunk-size: 2000          # Increased chunk size for production
+      commit-interval: 500      # Optimized commit interval
+      skip-limit: 5             # Reduced skip limit for production
+      retry-limit: 2            # Reduced retry limit
+      
+    # Production metrics configuration
+    metrics:
+      enabled: true
+      export:
+        prometheus:
+          enabled: true
+          step: 30s
+          
+  # =====================================================================================
+  # PRODUCTION JACKSON CONFIGURATION
+  # =====================================================================================
+  # Production Jackson configuration for optimized JSON processing
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: UTC
+    
+    # Production serialization configuration
+    serialization:
+      write-dates-as-timestamps: false
+      write-durations-as-timestamps: false
+      fail-on-empty-beans: false
+      indent-output: false      # Disabled for production performance
+      
+    # Production deserialization configuration
+    deserialization:
+      fail-on-unknown-properties: false
+      fail-on-null-for-primitives: false
+      accept-empty-string-as-null-object: true
+      
+    # Production property naming
+    property-naming-strategy: SNAKE_CASE
+    
+    # Production BigDecimal configuration for COBOL precision
+    generator:
+      write-bigdecimal-as-plain: true
+      
+    # Production number format
+    number-format: "#,##0.00"
+    
+    # Production mapper configuration
+    mapper:
+      accept-case-insensitive-enums: true
+      accept-case-insensitive-properties: true
+      
+    # Production property inclusion
+    default-property-inclusion: NON_NULL
+
+# =====================================================================================
+# PRODUCTION SERVER CONFIGURATION
+# =====================================================================================
+# Production server configuration optimized for high throughput and security
+server:
+  # Production port configuration
+  port: ${SERVER_PORT:8080}
+  
+  # Production server address
+  address: 0.0.0.0
+  
+  # Production servlet configuration
+  servlet:
+    context-path: ${SERVER_CONTEXT_PATH:}
+    application-display-name: CardDemo Production
+    
+  # Production HTTP/2 configuration
+  http2:
+    enabled: true
+    
+  # Production SSL configuration
+  ssl:
+    enabled: ${SSL_ENABLED:true}
+    key-store: ${SSL_KEY_STORE:/etc/ssl/certs/carddemo.p12}
+    key-store-password: ${SSL_KEY_STORE_PASSWORD:carddemo_ssl_keystore_password}
+    key-store-type: PKCS12
+    key-alias: carddemo-production
+    
+    # Production SSL protocols and ciphers
+    protocol: TLS
+    enabled-protocols: TLSv1.3,TLSv1.2
+    ciphers: 
+      - TLS_AES_256_GCM_SHA384
+      - TLS_AES_128_GCM_SHA256
+      - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+      - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+      
+    # Production client authentication
+    client-auth: want
+    
+  # Production connection configuration
+  connection-timeout: 20s
+  
+  # Production Tomcat configuration
+  tomcat:
+    # Production connection pool
+    max-connections: 10000      # Increased for production load
+    accept-count: 200           # Increased accept count
+    max-threads: 300            # Increased thread pool
+    min-spare-threads: 25       # Higher minimum threads
+    
+    # Production request processing
+    max-http-form-post-size: 1MB
+    max-swallow-size: 1MB
+    
+    # Production URI encoding
+    uri-encoding: UTF-8
+    
+    # Production access log configuration
+    accesslog:
+      enabled: true
+      directory: /var/log/carddemo
+      prefix: carddemo_production_access
+      suffix: .log
+      pattern: "%h %l %u %t \"%r\" %s %b %D %{User-Agent}i \"%{Referer}i\" %{X-Forwarded-For}i"
+      rotate: true
+      max-days: 30
+      
+    # Production compression
+    compression: "on"
+    compression-min-size: 1024
+    compressable-mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json,application/xml
+    
+    # Production threads configuration
+    threads:
+      max: 300
+      min-spare: 25
+      
+    # Production connector configuration
+    connector:
+      relaxed-query-chars: "[]|{}^&#x5c;&#x60;&quot;&lt;&gt;"
+      relaxed-path-chars: "[]|"
+      
+  # Production error handling
+  error:
+    include-exception: false    # Disabled for production security
+    include-stacktrace: never   # Never expose stack traces
+    include-message: never      # Never expose error messages
+    include-binding-errors: never
+    
+  # Production forward headers for load balancer
+  forward-headers-strategy: framework
+  
+  # Production request encoding
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+# =====================================================================================
+# PRODUCTION MANAGEMENT AND MONITORING
+# =====================================================================================
+# Production actuator configuration for comprehensive monitoring and management
+management:
+  # Production endpoints configuration
+  endpoints:
+    web:
+      exposure:
+        # Limited exposure for production security
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+      
+    # Production endpoint enablement
+    enabled-by-default: false
+    
+  # Production endpoint configuration
+  endpoint:
+    health:
+      enabled: true
+      show-details: when-authorized
+      show-components: when-authorized
+      probes:
+        enabled: true
+        
+    info:
+      enabled: true
+      
+    metrics:
+      enabled: true
+      
+    prometheus:
+      enabled: true
+      
+    # Security: Disable potentially sensitive endpoints
+    env:
+      enabled: false
+      
+    configprops:
+      enabled: false
+      
+    beans:
+      enabled: false
+      
+    loggers:
+      enabled: false
+      
+    shutdown:
+      enabled: false
+      
+  # Production health check configuration
+  health:
+    # Production health indicators
+    db:
+      enabled: true
+    redis:
+      enabled: true
+    diskspace:
+      enabled: true
+      threshold: 2GB            # Increased threshold for production
+    ping:
+      enabled: true
+      
+    # Production circuit breaker health
+    circuitbreakers:
+      enabled: true
+      
+    # Production Kubernetes probes
+    probes:
+      enabled: true
+      
+  # Production metrics configuration
+  metrics:
+    enabled: true
+    
+    # Production Prometheus export
+    export:
+      prometheus:
+        enabled: true
+        descriptions: true
+        step: 30s               # 30-second metrics collection
+        
+    # Production custom metrics tags
+    tags:
+      application: ${spring.application.name}
+      environment: production
+      version: ${spring.application.version}
+      datacenter: ${DATACENTER:primary}
+      cluster: ${CLUSTER_NAME:carddemo-prod}
+      
+    # Production JVM metrics
+    enable:
+      jvm: true
+      system: true
+      web: true
+      process: true
+      
+    # Production distribution metrics
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        spring.data.repository.invocations: true
+        
+      percentiles:
+        http.server.requests: 0.5, 0.90, 0.95, 0.99
+        spring.data.repository.invocations: 0.5, 0.90, 0.95, 0.99
+        
+      # Production SLA configuration
+      sla:
+        http.server.requests: 50ms,100ms,200ms,500ms
+        
+    # Production timer configuration
+    web:
+      server:
+        request:
+          autotime:
+            enabled: true
+            percentiles: 0.5, 0.90, 0.95, 0.99
+            
+  # Production tracing configuration
+  tracing:
+    enabled: true
+    sampling:
+      probability: 0.1          # 10% sampling for production performance
+      
+  # Production observation configuration
+  observations:
+    enabled: true
+    
+  # Production info configuration
+  info:
+    env:
+      enabled: false            # Disabled for production security
+    build:
+      enabled: true
+    git:
+      enabled: true
+      mode: simple              # Simple mode for production
+    java:
+      enabled: true
+    os:
+      enabled: true
+      
+  # Production security configuration
+  security:
+    enabled: true
+    roles: ADMIN,ACTUATOR
+
+# =====================================================================================
+# PRODUCTION LOGGING CONFIGURATION
+# =====================================================================================
+# Production logging configuration with structured JSON output for ELK stack
+logging:
+  # Production log levels
+  level:
+    root: WARN
+    com.carddemo: INFO
+    
+    # Production Spring framework logging
+    org.springframework.web: WARN
+    org.springframework.security: INFO
+    org.springframework.data: WARN
+    org.springframework.batch: INFO
+    org.springframework.cloud: WARN
+    
+    # Production database logging
+    org.hibernate: WARN
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    
+    # Production infrastructure logging
+    com.zaxxer.hikari: WARN
+    liquibase: INFO
+    io.lettuce: WARN
+    io.micrometer: WARN
+    
+    # Production external libraries
+    org.apache: ERROR
+    org.postgresql: ERROR
+    com.fasterxml.jackson: ERROR
+    
+  # Production logback configuration
+  config: classpath:logback-spring.xml
+  
+  # Production log file configuration
+  file:
+    name: /var/log/carddemo/carddemo-production.log
+    path: /var/log/carddemo/
+    max-size: 100MB
+    max-history: 180          # 6 months retention
+    total-size-cap: 50GB      # 50GB total log storage
+    
+  # Production log patterns - optimized for structured logging
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}] [%X{correlationId:-}] - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}] [%X{correlationId:-}] - %msg%n"
+    
+  # Production charset configuration
+  charset:
+    console: UTF-8
+    file: UTF-8
+
+# =====================================================================================
+# PRODUCTION CARDDEMO CONFIGURATION
+# =====================================================================================
+# Production-specific CardDemo application configuration
+carddemo:
+  # Production application configuration
+  app:
+    name: CardDemo Credit Card Management System
+    version: ${spring.application.version}
+    description: "Production deployment of modernized CardDemo system"
+    environment: production
+    
+  # Production business configuration
+  business:
+    # Production transaction processing
+    transaction:
+      timeout: 15s              # Reduced timeout for production
+      max-retries: 2            # Reduced retries
+      batch-size: 2000          # Increased batch size
+      
+    # Production account management
+    account:
+      balance-cache-ttl: 120s   # Reduced cache TTL
+      credit-limit-check: true
+      
+    # Production security configuration
+    security:
+      jwt:
+        secret: ${JWT_SECRET:carddemo-production-jwt-secret-key-very-secure}
+        expiration: 1200        # 20 minutes
+        refresh-expiration: 43200  # 12 hours
+        issuer: carddemo-production
+        
+      password:
+        bcrypt-strength: 14     # Increased for production security
+        
+      session:
+        timeout: 1200           # 20 minutes
+        
+    # Production audit configuration
+    audit:
+      enabled: true
+      retention-days: 2555      # 7 years for SOX compliance
+      
+  # Production performance configuration
+  performance:
+    # Production database configuration
+    db:
+      max-connections: 100
+      min-connections: 20
+      connection-timeout: 20s
+      
+    # Production cache configuration
+    cache:
+      ttl: 180s
+      max-entries: 50000        # Increased for production
+      
+    # Production batch processing
+    batch:
+      chunk-size: 2000
+      thread-pool-size: 10      # Increased thread pool
+      
+  # Production monitoring configuration
+  monitoring:
+    # Production metrics
+    metrics:
+      enabled: true
+      custom-metrics: true
+      
+    # Production health checks
+    health:
+      db-check-timeout: 3s
+      redis-check-timeout: 2s
+      
+    # Production alerting
+    alerting:
+      enabled: true
+      webhook-url: ${ALERTING_WEBHOOK_URL:https://alerts.carddemo.com/webhook}
+      
+  # Production external services
+  external:
+    # Production payment gateway
+    payment:
+      enabled: ${PAYMENT_GATEWAY_ENABLED:false}
+      url: ${PAYMENT_GATEWAY_URL:https://payment.carddemo.com}
+      timeout: 5s
+      
+    # Production notification service
+    notification:
+      enabled: ${NOTIFICATION_ENABLED:false}
+      url: ${NOTIFICATION_SERVICE_URL:https://notification.carddemo.com}
+      timeout: 3s
+
+# =====================================================================================
+# PRODUCTION JVM CONFIGURATION
+# =====================================================================================
+# Production JVM configuration optimized for performance and memory management
+# Maintains within 10% overhead of CICS baseline per requirements
+jvm:
+  # Production memory configuration
+  memory:
+    # Heap memory configuration (optimized for production workload)
+    heap:
+      initial: ${JVM_HEAP_INITIAL:2g}    # Initial heap size
+      maximum: ${JVM_HEAP_MAX:4g}        # Maximum heap size
+      
+    # Non-heap memory configuration
+    metaspace:
+      initial: ${JVM_METASPACE_INITIAL:256m}
+      maximum: ${JVM_METASPACE_MAX:512m}
+      
+    # Direct memory configuration
+    direct:
+      maximum: ${JVM_DIRECT_MAX:1g}
+      
+  # Production garbage collection configuration
+  gc:
+    # G1 garbage collector for production
+    collector: G1GC
+    
+    # G1 configuration
+    g1:
+      heap-region-size: 16m
+      max-gc-pause-millis: 100    # 100ms max pause time
+      
+    # GC logging configuration
+    logging:
+      enabled: true
+      file: /var/log/carddemo/gc.log
+      
+  # Production JVM options
+  options:
+    # Memory management
+    - "-XX:+UseG1GC"
+    - "-XX:MaxGCPauseMillis=100"
+    - "-XX:+UseStringDeduplication"
+    - "-XX:+OptimizeStringConcat"
+    
+    # Performance optimization
+    - "-XX:+UseBiasedLocking"
+    - "-XX:+UseCompressedOops"
+    - "-XX:+UseCompressedClassPointers"
+    - "-XX:+TieredCompilation"
+    
+    # Monitoring and debugging
+    - "-XX:+FlightRecorder"
+    - "-XX:+UnlockCommercialFeatures"
+    - "-XX:+UnlockDiagnosticVMOptions"
+    - "-XX:+LogVMOutput"
+    
+    # Security
+    - "-Djava.security.egd=file:/dev/urandom"
+    - "-Dcom.sun.management.jmxremote.authenticate=true"
+    - "-Dcom.sun.management.jmxremote.ssl=true"
+
+# =====================================================================================
+# PRODUCTION KUBERNETES CONFIGURATION
+# =====================================================================================
+# Production Kubernetes-specific configuration for cloud-native deployment
+kubernetes:
+  # Production resource limits
+  resources:
+    limits:
+      cpu: "2000m"              # 2 CPU cores
+      memory: "4Gi"             # 4GB memory
+    requests:
+      cpu: "1000m"              # 1 CPU core minimum
+      memory: "2Gi"             # 2GB memory minimum
+      
+  # Production health probes
+  probes:
+    liveness:
+      path: /actuator/health/liveness
+      initial-delay: 60s
+      period: 30s
+      timeout: 10s
+      failure-threshold: 3
+      
+    readiness:
+      path: /actuator/health/readiness
+      initial-delay: 30s
+      period: 10s
+      timeout: 5s
+      failure-threshold: 3
+      
+    startup:
+      path: /actuator/health
+      initial-delay: 10s
+      period: 5s
+      timeout: 3s
+      failure-threshold: 30
+      
+  # Production horizontal pod autoscaling
+  autoscaling:
+    enabled: true
+    min-replicas: 3
+    max-replicas: 20
+    target-cpu-utilization: 70
+    target-memory-utilization: 80
+    
+  # Production service configuration
+  service:
+    type: ClusterIP
+    port: 8080
+    
+  # Production ingress configuration
+  ingress:
+    enabled: true
+    class: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/proxy-body-size: "1m"
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "20"
+      nginx.ingress.kubernetes.io/proxy-send-timeout: "20"
+      
+  # Production volume configuration
+  volumes:
+    logs:
+      mount-path: /var/log/carddemo
+      size: 10Gi
+      storage-class: fast-ssd
+      
+    temp:
+      mount-path: /tmp
+      size: 1Gi
+      storage-class: fast-ssd
