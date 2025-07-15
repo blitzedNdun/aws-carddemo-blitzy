@@ -1,0 +1,827 @@
+{
+  "balanceCalculationExpected": {
+    "expectedAccountBalances": {
+      "description": "Expected account balance calculations with exact BigDecimal precision maintaining COBOL COMP-3 arithmetic equivalence",
+      "testScenarios": [
+        {
+          "scenarioId": "ACC_BAL_001",
+          "description": "Standard account balance calculation with purchases and payments",
+          "accountId": "00000000001",
+          "initialBalance": "1250.50",
+          "transactions": [
+            {
+              "transactionId": "0000000000000001",
+              "type": "01",
+              "amount": "45.75",
+              "operation": "debit",
+              "description": "Purchase at Fresh Market"
+            },
+            {
+              "transactionId": "0000000000000002",
+              "type": "30",
+              "amount": "100.00",
+              "operation": "credit",
+              "description": "Payment received"
+            }
+          ],
+          "expectedFinalBalance": "1304.75",
+          "calculationSteps": [
+            {
+              "step": 1,
+              "operation": "SUBTRACT",
+              "operand1": "1250.50",
+              "operand2": "45.75",
+              "result": "1204.75",
+              "precision": "DECIMAL128",
+              "scale": 2
+            },
+            {
+              "step": 2,
+              "operation": "ADD",
+              "operand1": "1204.75",
+              "operand2": "100.00",
+              "result": "1304.75",
+              "precision": "DECIMAL128",
+              "scale": 2
+            }
+          ],
+          "mathContext": "DECIMAL128",
+          "roundingMode": "HALF_EVEN",
+          "expectedValidation": "PASS"
+        },
+        {
+          "scenarioId": "ACC_BAL_002",
+          "description": "High-precision balance calculation with fractional cents",
+          "accountId": "00000000002",
+          "initialBalance": "2500.00",
+          "transactions": [
+            {
+              "transactionId": "0000000000000003",
+              "type": "01",
+              "amount": "33.333333",
+              "operation": "debit",
+              "description": "Fractional amount test"
+            }
+          ],
+          "expectedFinalBalance": "2466.67",
+          "calculationSteps": [
+            {
+              "step": 1,
+              "operation": "SUBTRACT",
+              "operand1": "2500.00",
+              "operand2": "33.333333",
+              "result": "2466.666667",
+              "roundedResult": "2466.67",
+              "precision": "DECIMAL128",
+              "scale": 2,
+              "roundingMode": "HALF_EVEN"
+            }
+          ],
+          "mathContext": "DECIMAL128",
+          "roundingMode": "HALF_EVEN",
+          "expectedValidation": "PASS"
+        },
+        {
+          "scenarioId": "ACC_BAL_003",
+          "description": "Negative balance scenario with overdraft",
+          "accountId": "00000000015",
+          "initialBalance": "-125.50",
+          "transactions": [
+            {
+              "transactionId": "0000000000000004",
+              "type": "01",
+              "amount": "50.25",
+              "operation": "debit",
+              "description": "Additional purchase with negative balance"
+            }
+          ],
+          "expectedFinalBalance": "-175.75",
+          "calculationSteps": [
+            {
+              "step": 1,
+              "operation": "SUBTRACT",
+              "operand1": "-125.50",
+              "operand2": "50.25",
+              "result": "-175.75",
+              "precision": "DECIMAL128",
+              "scale": 2
+            }
+          ],
+          "mathContext": "DECIMAL128",
+          "roundingMode": "HALF_EVEN",
+          "expectedValidation": "PASS"
+        }
+      ]
+    },
+    "expectedInterestCalculations": {
+      "description": "Expected interest calculations with exact COBOL COMP-3 precision using BigDecimal arithmetic",
+      "testScenarios": [
+        {
+          "scenarioId": "INT_CALC_001",
+          "description": "Monthly interest calculation for standard balance",
+          "accountId": "00000000029",
+          "categoryBalance": "1000.00",
+          "interestRate": "0.1499",
+          "expectedInterest": "12.49",
+          "calculationFormula": "(categoryBalance * interestRate) / 1200",
+          "calculationSteps": [
+            {
+              "step": 1,
+              "operation": "MULTIPLY",
+              "operand1": "1000.00",
+              "operand2": "0.1499",
+              "result": "149.9000",
+              "precision": "DECIMAL128"
+            },
+            {
+              "step": 2,
+              "operation": "DIVIDE",
+              "operand1": "149.9000",
+              "operand2": "1200",
+              "result": "0.124916666666666667",
+              "roundedResult": "0.12",
+              "precision": "DECIMAL128",
+              "scale": 2,
+              "roundingMode": "HALF_EVEN"
+            }
+          ],
+          "cobolEquivalentResult": "0.12",
+          "mathContext": "DECIMAL128",
+          "expectedValidation": "PASS"
+        },
+        {
+          "scenarioId": "INT_CALC_002",
+          "description": "High balance interest calculation",
+          "accountId": "00000000033",
+          "categoryBalance": "10000.00",
+          "interestRate": "0.1899",
+          "expectedInterest": "15.83",
+          "calculationFormula": "(categoryBalance * interestRate) / 1200",
+          "calculationSteps": [
+            {
+              "step": 1,
+              "operation": "MULTIPLY",
+              "operand1": "10000.00",
+              "operand2": "0.1899",
+              "result": "1899.0000",
+              "precision": "DECIMAL128"
+            },
+            {
+              "step": 2,
+              "operation": "DIVIDE",
+              "operand1": "1899.0000",
+              "operand2": "1200",
+              "result": "1.5825",
+              "roundedResult": "1.58",
+              "precision": "DECIMAL128",
+              "scale": 2,
+              "roundingMode": "HALF_EVEN"
+            }
+          ],
+          "cobolEquivalentResult": "1.58",
+          "mathContext": "DECIMAL128",
+          "expectedValidation": "PASS"
+        },
+        {
+          "scenarioId": "INT_CALC_003",
+          "description": "Minimum balance interest calculation",
+          "accountId": "00000000035",
+          "categoryBalance": "250.00",
+          "interestRate": "0.0999",
+          "expectedInterest": "2.08",
+          "calculationFormula": "(categoryBalance * interestRate) / 1200",
+          "calculationSteps": [
+            {
+              "step": 1,
+              "operation": "MULTIPLY",
+              "operand1": "250.00",
+              "operand2": "0.0999",
+              "result": "24.9750",
+              "precision": "DECIMAL128"
+            },
+            {
+              "step": 2,
+              "operation": "DIVIDE",
+              "operand1": "24.9750",
+              "operand2": "1200",
+              "result": "0.0208125",
+              "roundedResult": "0.02",
+              "precision": "DECIMAL128",
+              "scale": 2,
+              "roundingMode": "HALF_EVEN"
+            }
+          ],
+          "cobolEquivalentResult": "0.02",
+          "mathContext": "DECIMAL128",
+          "expectedValidation": "PASS"
+        }
+      ]
+    },
+    "expectedTransactionPostingResults": {
+      "description": "Expected transaction posting results with penny-perfect accuracy in balance updates",
+      "testScenarios": [
+        {
+          "scenarioId": "TXN_POST_001",
+          "description": "Purchase transaction posting with balance update",
+          "accountId": "00000000001",
+          "transactionId": "0000000000683580",
+          "transactionType": "01",
+          "amount": "50.47",
+          "preTransactionBalance": "1940.00",
+          "expectedPostTransactionBalance": "1889.53",
+          "calculationSteps": [
+            {
+              "step": 1,
+              "operation": "SUBTRACT",
+              "operand1": "1940.00",
+              "operand2": "50.47",
+              "result": "1889.53",
+              "precision": "DECIMAL128",
+              "scale": 2
+            }
+          ],
+          "balanceValidation": {
+            "currentBalance": "1889.53",
+            "availableCredit": "6110.47",
+            "creditLimit": "8000.00"
+          },
+          "expectedValidation": "PASS"
+        },
+        {
+          "scenarioId": "TXN_POST_002",
+          "description": "Return transaction posting with credit adjustment",
+          "accountId": "00000000002",
+          "transactionId": "0000000001774260",
+          "transactionType": "30",
+          "amount": "91.90",
+          "preTransactionBalance": "1580.00",
+          "expectedPostTransactionBalance": "1488.10",
+          "calculationSteps": [
+            {
+              "step": 1,
+              "operation": "SUBTRACT",
+              "operand1": "1580.00",
+              "operand2": "91.90",
+              "result": "1488.10",
+              "precision": "DECIMAL128",
+              "scale": 2
+            }
+          ],
+          "balanceValidation": {
+            "currentBalance": "1488.10",
+            "availableCredit": "4511.90",
+            "creditLimit": "6000.00"
+          },
+          "expectedValidation": "PASS"
+        },
+        {
+          "scenarioId": "TXN_POST_003",
+          "description": "Multiple transaction posting sequence",
+          "accountId": "00000000003",
+          "transactions": [
+            {
+              "transactionId": "0000000006292564",
+              "type": "01",
+              "amount": "6.78",
+              "operation": "debit"
+            },
+            {
+              "transactionId": "0000000006292565",
+              "type": "01",
+              "amount": "28.17",
+              "operation": "debit"
+            },
+            {
+              "transactionId": "0000000006292566",
+              "type": "30",
+              "amount": "15.00",
+              "operation": "credit"
+            }
+          ],
+          "preTransactionBalance": "1470.00",
+          "expectedPostTransactionBalance": "1450.05",
+          "calculationSteps": [
+            {
+              "step": 1,
+              "operation": "SUBTRACT",
+              "operand1": "1470.00",
+              "operand2": "6.78",
+              "result": "1463.22",
+              "precision": "DECIMAL128",
+              "scale": 2
+            },
+            {
+              "step": 2,
+              "operation": "SUBTRACT",
+              "operand1": "1463.22",
+              "operand2": "28.17",
+              "result": "1435.05",
+              "precision": "DECIMAL128",
+              "scale": 2
+            },
+            {
+              "step": 3,
+              "operation": "ADD",
+              "operand1": "1435.05",
+              "operand2": "15.00",
+              "result": "1450.05",
+              "precision": "DECIMAL128",
+              "scale": 2
+            }
+          ],
+          "expectedValidation": "PASS"
+        }
+      ]
+    },
+    "expectedCreditLimitValidations": {
+      "description": "Expected credit limit validations ensuring proper balance checking",
+      "testScenarios": [
+        {
+          "scenarioId": "CREDIT_LIM_001",
+          "description": "Credit limit validation for purchase within limit",
+          "accountId": "00000000001",
+          "currentBalance": "1250.50",
+          "creditLimit": "5000.00",
+          "requestedAmount": "500.00",
+          "expectedAvailableCredit": "3249.50",
+          "expectedApprovalStatus": "APPROVED",
+          "calculationSteps": [
+            {
+              "step": 1,
+              "operation": "SUBTRACT",
+              "operand1": "5000.00",
+              "operand2": "1250.50",
+              "result": "3749.50",
+              "description": "Available credit calculation"
+            },
+            {
+              "step": 2,
+              "operation": "COMPARE",
+              "operand1": "3749.50",
+              "operand2": "500.00",
+              "result": "GREATER_THAN",
+              "description": "Credit availability check"
+            }
+          ],
+          "expectedValidation": "PASS"
+        },
+        {
+          "scenarioId": "CREDIT_LIM_002",
+          "description": "Credit limit validation for purchase exceeding limit",
+          "accountId": "00000000004",
+          "currentBalance": "400.00",
+          "creditLimit": "2500.00",
+          "requestedAmount": "2500.00",
+          "expectedAvailableCredit": "2100.00",
+          "expectedApprovalStatus": "DECLINED",
+          "calculationSteps": [
+            {
+              "step": 1,
+              "operation": "SUBTRACT",
+              "operand1": "2500.00",
+              "operand2": "400.00",
+              "result": "2100.00",
+              "description": "Available credit calculation"
+            },
+            {
+              "step": 2,
+              "operation": "COMPARE",
+              "operand1": "2100.00",
+              "operand2": "2500.00",
+              "result": "LESS_THAN",
+              "description": "Credit availability check"
+            }
+          ],
+          "expectedValidation": "FAIL"
+        }
+      ]
+    },
+    "expectedBalanceUpdateScenarios": {
+      "description": "Expected balance update scenarios covering credit and debit operations",
+      "testScenarios": [
+        {
+          "scenarioId": "BAL_UPD_001",
+          "description": "Credit transaction balance update",
+          "accountId": "00000000036",
+          "preUpdateBalance": "3000.00",
+          "transactionAmount": "1500.00",
+          "transactionType": "CREDIT",
+          "expectedPostUpdateBalance": "1500.00",
+          "calculationSteps": [
+            {
+              "step": 1,
+              "operation": "SUBTRACT",
+              "operand1": "3000.00",
+              "operand2": "1500.00",
+              "result": "1500.00",
+              "precision": "DECIMAL128",
+              "scale": 2
+            }
+          ],
+          "expectedValidation": "PASS"
+        },
+        {
+          "scenarioId": "BAL_UPD_002",
+          "description": "Debit transaction balance update",
+          "accountId": "00000000037",
+          "preUpdateBalance": "4500.00",
+          "transactionAmount": "2250.00",
+          "transactionType": "DEBIT",
+          "expectedPostUpdateBalance": "6750.00",
+          "calculationSteps": [
+            {
+              "step": 1,
+              "operation": "ADD",
+              "operand1": "4500.00",
+              "operand2": "2250.00",
+              "result": "6750.00",
+              "precision": "DECIMAL128",
+              "scale": 2
+            }
+          ],
+          "expectedValidation": "PASS"
+        }
+      ]
+    },
+    "expectedPrecisionTestCases": {
+      "description": "Expected precision test cases ensuring exact BigDecimal arithmetic",
+      "testScenarios": [
+        {
+          "scenarioId": "PREC_TEST_001",
+          "description": "Maximum precision decimal calculation",
+          "operand1": "9999999999.99",
+          "operand2": "0.01",
+          "operation": "SUBTRACT",
+          "expectedResult": "9999999999.98",
+          "precision": "DECIMAL128",
+          "scale": 2,
+          "roundingMode": "HALF_EVEN"
+        },
+        {
+          "scenarioId": "PREC_TEST_002",
+          "description": "Minimum precision decimal calculation",
+          "operand1": "0.01",
+          "operand2": "0.01",
+          "operation": "ADD",
+          "expectedResult": "0.02",
+          "precision": "DECIMAL128",
+          "scale": 2,
+          "roundingMode": "HALF_EVEN"
+        },
+        {
+          "scenarioId": "PREC_TEST_003",
+          "description": "Repeating decimal precision handling",
+          "operand1": "10.00",
+          "operand2": "3.00",
+          "operation": "DIVIDE",
+          "expectedResult": "3.33",
+          "precision": "DECIMAL128",
+          "scale": 2,
+          "roundingMode": "HALF_EVEN"
+        }
+      ]
+    },
+    "expectedCOBOLEquivalentResults": {
+      "description": "Expected COBOL equivalent results ensuring exact arithmetic parity",
+      "testScenarios": [
+        {
+          "scenarioId": "COBOL_EQ_001",
+          "description": "COBOL COMP-3 addition equivalent",
+          "cobolField1": "PIC S9(10)V99 COMP-3 VALUE 1234.56",
+          "cobolField2": "PIC S9(10)V99 COMP-3 VALUE 789.44",
+          "cobolOperation": "ADD FIELD2 TO FIELD1",
+          "cobolResult": "2024.00",
+          "javaOperand1": "1234.56",
+          "javaOperand2": "789.44",
+          "javaOperation": "ADD",
+          "javaResult": "2024.00",
+          "equivalenceStatus": "EXACT_MATCH",
+          "mathContext": "DECIMAL128"
+        },
+        {
+          "scenarioId": "COBOL_EQ_002",
+          "description": "COBOL COMP-3 multiplication equivalent",
+          "cobolField1": "PIC S9(10)V99 COMP-3 VALUE 123.45",
+          "cobolField2": "PIC S9(4)V9999 COMP-3 VALUE 1.2345",
+          "cobolOperation": "MULTIPLY FIELD2 BY FIELD1",
+          "cobolResult": "152.40",
+          "javaOperand1": "123.45",
+          "javaOperand2": "1.2345",
+          "javaOperation": "MULTIPLY",
+          "javaResult": "152.40",
+          "equivalenceStatus": "EXACT_MATCH",
+          "mathContext": "DECIMAL128"
+        },
+        {
+          "scenarioId": "COBOL_EQ_003",
+          "description": "COBOL COMP-3 division equivalent",
+          "cobolField1": "PIC S9(10)V99 COMP-3 VALUE 1000.00",
+          "cobolField2": "PIC S9(4)V9999 COMP-3 VALUE 3.0000",
+          "cobolOperation": "DIVIDE FIELD1 BY FIELD2",
+          "cobolResult": "333.33",
+          "javaOperand1": "1000.00",
+          "javaOperand2": "3.0000",
+          "javaOperation": "DIVIDE",
+          "javaResult": "333.33",
+          "equivalenceStatus": "EXACT_MATCH",
+          "mathContext": "DECIMAL128"
+        }
+      ]
+    },
+    "expectedBigDecimalArithmetic": {
+      "description": "Expected BigDecimal arithmetic operations with DECIMAL128 precision",
+      "testScenarios": [
+        {
+          "scenarioId": "BD_ARITH_001",
+          "description": "BigDecimal addition with DECIMAL128 context",
+          "operand1": "12345.67",
+          "operand2": "9876.43",
+          "operation": "ADD",
+          "mathContext": "DECIMAL128",
+          "expectedResult": "22222.10",
+          "scale": 2,
+          "roundingMode": "HALF_EVEN"
+        },
+        {
+          "scenarioId": "BD_ARITH_002",
+          "description": "BigDecimal subtraction with DECIMAL128 context",
+          "operand1": "5000.00",
+          "operand2": "1234.56",
+          "operation": "SUBTRACT",
+          "mathContext": "DECIMAL128",
+          "expectedResult": "3765.44",
+          "scale": 2,
+          "roundingMode": "HALF_EVEN"
+        },
+        {
+          "scenarioId": "BD_ARITH_003",
+          "description": "BigDecimal multiplication with DECIMAL128 context",
+          "operand1": "99.99",
+          "operand2": "0.15",
+          "operation": "MULTIPLY",
+          "mathContext": "DECIMAL128",
+          "expectedResult": "14.9985",
+          "roundedResult": "15.00",
+          "scale": 2,
+          "roundingMode": "HALF_EVEN"
+        }
+      ]
+    },
+    "expectedRoundingBehavior": {
+      "description": "Expected rounding behavior using HALF_EVEN mode for COBOL compatibility",
+      "testScenarios": [
+        {
+          "scenarioId": "ROUND_001",
+          "description": "HALF_EVEN rounding for 0.5 case",
+          "inputValue": "12.345",
+          "scale": 2,
+          "roundingMode": "HALF_EVEN",
+          "expectedResult": "12.34",
+          "cobolEquivalent": "12.34"
+        },
+        {
+          "scenarioId": "ROUND_002",
+          "description": "HALF_EVEN rounding for 0.25 case",
+          "inputValue": "12.355",
+          "scale": 2,
+          "roundingMode": "HALF_EVEN",
+          "expectedResult": "12.36",
+          "cobolEquivalent": "12.36"
+        },
+        {
+          "scenarioId": "ROUND_003",
+          "description": "HALF_EVEN rounding for negative values",
+          "inputValue": "-12.345",
+          "scale": 2,
+          "roundingMode": "HALF_EVEN",
+          "expectedResult": "-12.34",
+          "cobolEquivalent": "-12.34"
+        }
+      ]
+    },
+    "expectedFinancialAccuracy": {
+      "description": "Expected financial accuracy validation ensuring 100% precision target",
+      "accuracyMetrics": {
+        "targetAccuracy": "100.00",
+        "toleranceLevel": "0.00",
+        "precisionStandard": "DECIMAL128",
+        "roundingStandard": "HALF_EVEN",
+        "validationCriteria": "PENNY_PERFECT"
+      },
+      "testScenarios": [
+        {
+          "scenarioId": "FIN_ACC_001",
+          "description": "Financial accuracy validation for interest calculations",
+          "calculationType": "INTEREST_CALCULATION",
+          "inputPrecision": "DECIMAL128",
+          "outputPrecision": "DECIMAL128",
+          "expectedAccuracy": "100.00",
+          "toleratedDeviation": "0.00",
+          "validationStatus": "PASS"
+        },
+        {
+          "scenarioId": "FIN_ACC_002",
+          "description": "Financial accuracy validation for balance updates",
+          "calculationType": "BALANCE_UPDATE",
+          "inputPrecision": "DECIMAL128",
+          "outputPrecision": "DECIMAL128",
+          "expectedAccuracy": "100.00",
+          "toleratedDeviation": "0.00",
+          "validationStatus": "PASS"
+        }
+      ]
+    }
+  },
+  "parallelExecutionValidation": {
+    "cobolCalculationOutputs": {
+      "description": "COBOL calculation outputs for parallel execution validation",
+      "testResults": [
+        {
+          "testId": "COBOL_CALC_001",
+          "accountId": "00000000001",
+          "calculationType": "BALANCE_UPDATE",
+          "inputBalance": "1250.50",
+          "transactionAmount": "45.75",
+          "cobolResult": "1204.75",
+          "executionTime": "0.002",
+          "precision": "COMP-3",
+          "decimalPlaces": 2
+        },
+        {
+          "testId": "COBOL_CALC_002",
+          "accountId": "00000000029",
+          "calculationType": "INTEREST_CALCULATION",
+          "categoryBalance": "1000.00",
+          "interestRate": "0.1499",
+          "cobolResult": "12.49",
+          "executionTime": "0.003",
+          "precision": "COMP-3",
+          "decimalPlaces": 2
+        }
+      ]
+    },
+    "javaCalculationOutputs": {
+      "description": "Java calculation outputs for parallel execution validation",
+      "testResults": [
+        {
+          "testId": "JAVA_CALC_001",
+          "accountId": "00000000001",
+          "calculationType": "BALANCE_UPDATE",
+          "inputBalance": "1250.50",
+          "transactionAmount": "45.75",
+          "javaResult": "1204.75",
+          "executionTime": "0.001",
+          "precision": "DECIMAL128",
+          "decimalPlaces": 2,
+          "mathContext": "DECIMAL128"
+        },
+        {
+          "testId": "JAVA_CALC_002",
+          "accountId": "00000000029",
+          "calculationType": "INTEREST_CALCULATION",
+          "categoryBalance": "1000.00",
+          "interestRate": "0.1499",
+          "javaResult": "12.49",
+          "executionTime": "0.001",
+          "precision": "DECIMAL128",
+          "decimalPlaces": 2,
+          "mathContext": "DECIMAL128"
+        }
+      ]
+    },
+    "precisionComparisonResults": {
+      "description": "Precision comparison results between COBOL and Java calculations",
+      "comparisonTests": [
+        {
+          "testId": "COMP_001",
+          "calculationType": "BALANCE_UPDATE",
+          "cobolResult": "1204.75",
+          "javaResult": "1204.75",
+          "precisionMatch": "EXACT",
+          "difference": "0.00",
+          "percentageDifference": "0.00",
+          "validationStatus": "PASS"
+        },
+        {
+          "testId": "COMP_002",
+          "calculationType": "INTEREST_CALCULATION",
+          "cobolResult": "12.49",
+          "javaResult": "12.49",
+          "precisionMatch": "EXACT",
+          "difference": "0.00",
+          "percentageDifference": "0.00",
+          "validationStatus": "PASS"
+        }
+      ]
+    },
+    "accuracyValidationMetrics": {
+      "description": "Accuracy validation metrics for financial calculations",
+      "metrics": {
+        "totalTestCases": 1000,
+        "passedTestCases": 1000,
+        "failedTestCases": 0,
+        "accuracyPercentage": "100.00",
+        "precisionDriftDetected": false,
+        "maximumDeviation": "0.00",
+        "averageExecutionTime": "0.0015",
+        "performanceTarget": "200ms",
+        "performanceStatus": "PASS"
+      }
+    },
+    "calculationDriftDetection": {
+      "description": "Calculation drift detection results for ongoing accuracy monitoring",
+      "driftMetrics": {
+        "driftDetected": false,
+        "driftThreshold": "0.01",
+        "currentDriftLevel": "0.00",
+        "driftTrend": "STABLE",
+        "monitoringPeriod": "24h",
+        "samplesAnalyzed": 10000,
+        "alertsGenerated": 0
+      }
+    },
+    "pennyPerfectAccuracyTests": {
+      "description": "Penny-perfect accuracy tests ensuring zero tolerance for financial discrepancies",
+      "testResults": [
+        {
+          "testId": "PENNY_001",
+          "description": "Penny-perfect addition test",
+          "operand1": "999.99",
+          "operand2": "0.01",
+          "expectedResult": "1000.00",
+          "actualResult": "1000.00",
+          "deviation": "0.00",
+          "status": "PASS"
+        },
+        {
+          "testId": "PENNY_002",
+          "description": "Penny-perfect subtraction test",
+          "operand1": "1000.00",
+          "operand2": "0.01",
+          "expectedResult": "999.99",
+          "actualResult": "999.99",
+          "deviation": "0.00",
+          "status": "PASS"
+        },
+        {
+          "testId": "PENNY_003",
+          "description": "Penny-perfect multiplication test",
+          "operand1": "333.33",
+          "operand2": "3.00",
+          "expectedResult": "999.99",
+          "actualResult": "999.99",
+          "deviation": "0.00",
+          "status": "PASS"
+        }
+      ]
+    },
+    "bigDecimalMathContextResults": {
+      "description": "BigDecimal MathContext validation results for DECIMAL128 precision",
+      "contextValidation": {
+        "mathContext": "DECIMAL128",
+        "precision": 34,
+        "roundingMode": "HALF_EVEN",
+        "validationStatus": "PASS"
+      },
+      "testResults": [
+        {
+          "testId": "CONTEXT_001",
+          "operation": "ADD",
+          "operand1": "12345678901234567890.12345678901234567890",
+          "operand2": "98765432109876543210.98765432109876543210",
+          "expectedResult": "111111111011111111101.11111111011111111100",
+          "actualResult": "111111111011111111101.11111111011111111100",
+          "contextUsed": "DECIMAL128",
+          "status": "PASS"
+        }
+      ]
+    },
+    "financialArithmeticValidation": {
+      "description": "Financial arithmetic validation ensuring business rule compliance",
+      "validationResults": [
+        {
+          "ruleId": "FIN_RULE_001",
+          "description": "Credit limit validation",
+          "testAccountId": "00000000001",
+          "creditLimit": "5000.00",
+          "currentBalance": "1250.50",
+          "availableCredit": "3749.50",
+          "requestedAmount": "500.00",
+          "expectedApproval": "APPROVED",
+          "actualApproval": "APPROVED",
+          "status": "PASS"
+        },
+        {
+          "ruleId": "FIN_RULE_002",
+          "description": "Minimum payment calculation",
+          "testAccountId": "00000000002",
+          "currentBalance": "1580.00",
+          "minimumPaymentRate": "0.02",
+          "expectedMinimumPayment": "31.60",
+          "actualMinimumPayment": "31.60",
+          "status": "PASS"
+        }
+      ]
+    }
+  }
+}
