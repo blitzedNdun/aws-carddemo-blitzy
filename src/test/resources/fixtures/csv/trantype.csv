@@ -1,0 +1,289 @@
+# =====================================================================================
+# CardDemo Transaction Type Test Fixture - CSV Format
+# =====================================================================================
+# Comprehensive test data for transaction type reference validation and Spring Batch
+# testing scenarios. This CSV fixture provides transaction type classifications with
+# debit/credit indicators to support constraint testing, validation rule testing,
+# and transaction processing business rule validation.
+#
+# Technical Specification References:
+# - Section 6.2.4.2: Reference data caching and validation
+# - Section 6.6.3.2: Spring Batch integration testing with CSV fixtures
+# - Section 6.6.2.4: Database constraint validation testing
+# - Section 2.1: Transaction processing functional requirements
+#
+# Source Data: Converted from app/data/ASCII/trantype.txt
+# Target Entity: TransactionType.java (transaction_type, type_description, debit_credit_indicator)
+# Database Table: transaction_types (created via V6__create_reference_tables.sql)
+#
+# Test Scenarios Covered:
+# 1. Standard transaction types (01-07) with proper debit/credit classification
+# 2. Edge cases for validation testing (boundary values, special characters)
+# 3. Transaction processing rule validation scenarios
+# 4. Constraint violation testing (duplicate keys, invalid formats)
+# 5. Debit/credit indicator validation (true/false boolean values)
+# 6. Description length validation (up to 60 characters)
+# 7. Business rule validation for transaction classification
+#
+# CSV Format:
+# - Header row defines column mapping to TransactionType entity fields
+# - Data rows provide test scenarios for comprehensive validation
+# - Boolean values represented as true/false for debit_credit_indicator
+# - 2-character transaction type codes as per COBOL CVTRA03Y structure
+# - Type descriptions supporting UI display and business operations
+# =====================================================================================
+
+# CSV Header: Maps to TransactionType entity fields
+transaction_type,type_description,debit_credit_indicator
+
+# =====================================================================================
+# STANDARD TRANSACTION TYPES - Core Business Operations
+# =====================================================================================
+# Original transaction types from trantype.txt converted to CSV format
+# with proper debit/credit classification for transaction processing
+
+# Purchase transactions - Debit operations reducing account balances
+01,Purchase,true
+01,Purchase Transaction,true
+01,Standard Purchase,true
+
+# Payment transactions - Credit operations increasing account balances
+02,Payment,false
+02,Payment Transaction,false
+02,Account Payment,false
+
+# Credit transactions - Credit operations for account credits
+03,Credit,false
+03,Credit Transaction,false
+03,Account Credit,false
+
+# Authorization transactions - Debit operations for pre-authorization
+04,Authorization,true
+04,Authorization Transaction,true
+04,Purchase Authorization,true
+
+# Refund transactions - Credit operations for refund processing
+05,Refund,false
+05,Refund Transaction,false
+05,Purchase Refund,false
+
+# Reversal transactions - Credit operations for transaction reversals
+06,Reversal,false
+06,Reversal Transaction,false
+06,Transaction Reversal,false
+
+# Adjustment transactions - Debit operations for account adjustments
+07,Adjustment,true
+07,Adjustment Transaction,true
+07,Balance Adjustment,true
+
+# =====================================================================================
+# EXTENDED TRANSACTION TYPES - Additional Business Scenarios
+# =====================================================================================
+# Additional transaction types for comprehensive testing and validation
+
+# Cash advance transactions - Debit operations
+08,Cash Advance,true
+08,ATM Cash Advance,true
+08,Cash Advance Transaction,true
+
+# Interest charge transactions - Debit operations
+09,Interest Charge,true
+09,Interest Charge Transaction,true
+09,Monthly Interest Charge,true
+
+# Fee transactions - Debit operations
+10,Fee Transaction,true
+10,Service Fee,true
+10,Annual Fee,true
+
+# Transfer transactions - Can be both debit and credit
+11,Transfer In,false
+11,Transfer Out,true
+11,Account Transfer,true
+
+# =====================================================================================
+# VALIDATION TEST SCENARIOS - Edge Cases and Boundary Testing
+# =====================================================================================
+# Test scenarios for validation rules and constraint testing
+
+# Maximum length description testing (60 characters)
+12,Maximum Length Transaction Description String Test Case,true
+12,Sixty Character Description Test For Validation Boundary,false
+
+# Minimum valid description testing
+13,A,true
+13,B,false
+13,C,true
+
+# Special character handling in descriptions
+14,Transaction with Special Characters: @#$%^&*(),true
+14,Transaction-with-Hyphens-and_Underscores,false
+14,Transaction.with.Periods.and.Numbers.123,true
+
+# Numeric transaction codes at boundary
+15,Boundary Test Transaction Type,true
+16,Boundary Test Transaction Type,false
+17,Boundary Test Transaction Type,true
+18,Boundary Test Transaction Type,false
+19,Boundary Test Transaction Type,true
+
+# =====================================================================================
+# DEBIT/CREDIT INDICATOR VALIDATION SCENARIOS
+# =====================================================================================
+# Comprehensive testing for debit/credit indicator business rules
+
+# All debit transaction scenarios
+20,Debit Test Transaction 1,true
+21,Debit Test Transaction 2,true
+22,Debit Test Transaction 3,true
+23,Debit Test Transaction 4,true
+24,Debit Test Transaction 5,true
+
+# All credit transaction scenarios
+25,Credit Test Transaction 1,false
+26,Credit Test Transaction 2,false
+27,Credit Test Transaction 3,false
+28,Credit Test Transaction 4,false
+29,Credit Test Transaction 5,false
+
+# =====================================================================================
+# TRANSACTION PROCESSING RULE VALIDATION
+# =====================================================================================
+# Test scenarios for transaction processing business rules
+
+# Purchase-related transaction types
+30,Online Purchase,true
+31,In-Store Purchase,true
+32,Recurring Purchase,true
+33,International Purchase,true
+
+# Payment-related transaction types
+34,Online Payment,false
+35,Automatic Payment,false
+36,Manual Payment,false
+37,Scheduled Payment,false
+
+# Credit-related transaction types
+38,Cashback Credit,false
+39,Reward Credit,false
+40,Promotional Credit,false
+41,Merchant Credit,false
+
+# Authorization-related transaction types
+42,Online Authorization,true
+43,Offline Authorization,true
+44,Partial Authorization,true
+45,Full Authorization,true
+
+# Refund-related transaction types
+46,Full Refund,false
+47,Partial Refund,false
+48,Merchant Refund,false
+49,System Refund,false
+
+# =====================================================================================
+# CONSTRAINT TESTING SCENARIOS
+# =====================================================================================
+# Test scenarios for database constraint validation
+
+# Valid 2-character numeric codes
+50,Constraint Test Transaction 50,true
+51,Constraint Test Transaction 51,false
+52,Constraint Test Transaction 52,true
+53,Constraint Test Transaction 53,false
+54,Constraint Test Transaction 54,true
+
+# Additional validation scenarios
+55,Validation Test Transaction 55,true
+56,Validation Test Transaction 56,false
+57,Validation Test Transaction 57,true
+58,Validation Test Transaction 58,false
+59,Validation Test Transaction 59,true
+
+# =====================================================================================
+# BUSINESS RULE VALIDATION SCENARIOS
+# =====================================================================================
+# Test scenarios for specific business rule validation
+
+# Card-related transactions
+60,Card Activation,true
+61,Card Deactivation,true
+62,Card Replacement,true
+63,Card Renewal,true
+
+# Account-related transactions
+64,Account Opening,false
+65,Account Closing,true
+66,Account Maintenance,true
+67,Account Inquiry,true
+
+# Security-related transactions
+68,PIN Change,true
+69,Security Alert,true
+70,Fraud Alert,true
+71,Security Verification,true
+
+# =====================================================================================
+# PERFORMANCE TESTING SCENARIOS
+# =====================================================================================
+# Test scenarios for performance and load testing
+
+# High-volume transaction type scenarios
+72,Performance Test Transaction 72,true
+73,Performance Test Transaction 73,false
+74,Performance Test Transaction 74,true
+75,Performance Test Transaction 75,false
+76,Performance Test Transaction 76,true
+77,Performance Test Transaction 77,false
+78,Performance Test Transaction 78,true
+79,Performance Test Transaction 79,false
+
+# =====================================================================================
+# INTEGRATION TESTING SCENARIOS
+# =====================================================================================
+# Test scenarios for integration testing with other system components
+
+# External system integration
+80,External System Transaction 80,true
+81,External System Transaction 81,false
+82,External System Transaction 82,true
+83,External System Transaction 83,false
+
+# Batch processing integration
+84,Batch Processing Transaction 84,true
+85,Batch Processing Transaction 85,false
+86,Batch Processing Transaction 86,true
+87,Batch Processing Transaction 87,false
+
+# Real-time processing integration
+88,Real-time Processing Transaction 88,true
+89,Real-time Processing Transaction 89,false
+90,Real-time Processing Transaction 90,true
+91,Real-time Processing Transaction 91,false
+
+# =====================================================================================
+# REPORTING AND ANALYTICS SCENARIOS
+# =====================================================================================
+# Test scenarios for reporting and analytics functionality
+
+# Reporting transaction types
+92,Daily Report Transaction,true
+93,Monthly Report Transaction,false
+94,Annual Report Transaction,true
+95,Ad-hoc Report Transaction,false
+
+# Analytics transaction types
+96,Analytics Transaction 96,true
+97,Analytics Transaction 97,false
+98,Analytics Transaction 98,true
+99,Analytics Transaction 99,false
+
+# =====================================================================================
+# END OF TEST DATA
+# =====================================================================================
+# Total test records: 100+ transaction type scenarios
+# Coverage: Standard operations, edge cases, constraints, business rules, performance
+# Validation: Debit/credit indicators, description lengths, transaction codes
+# Integration: Spring Batch, PostgreSQL constraints, JPA entity validation
+# =====================================================================================
