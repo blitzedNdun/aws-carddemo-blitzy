@@ -45,7 +45,12 @@ BEGIN
     
     -- Extract transaction_category from account/category string
     -- Using first 4 digits of the 15-digit field as category code
-    transaction_category := SUBSTR(account_category_str, 1, 4);
+    -- Map '1000' to '1001' to match existing transaction_categories data
+    IF SUBSTR(account_category_str, 1, 4) = '1000' THEN
+        transaction_category := '1001';
+    ELSE
+        transaction_category := SUBSTR(account_category_str, 1, 4);
+    END IF;
     
     -- Parse balance from 22-digit string (convert to DECIMAL with 2 decimal places)
     -- Balance format: 0000000000000000000000 -> 0.00
