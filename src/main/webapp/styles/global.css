@@ -1,0 +1,724 @@
+/**
+ * CardDemo Global CSS
+ * Foundational styling for BMS-to-React transformation
+ * Provides cross-browser normalization, typography, accessibility, and consistent styling
+ * for the entire CardDemo application across all components.
+ */
+
+/* ===========================================
+ * EXTERNAL DEPENDENCIES
+ * ========================================== */
+
+/* CSS Reset and Cross-Browser Normalization */
+@import url('normalize.css');
+
+/* Google Fonts for Monospace Typography */
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@300;400;500;600;700&display=swap');
+
+/* ===========================================
+ * CSS CUSTOM PROPERTIES (CSS Variables)
+ * ========================================== */
+
+:root {
+  /* BMS Color Mapping to Material-UI Theme Colors */
+  --color-dfh-blue: #1976d2;       /* Material-UI primary.main */
+  --color-dfh-green: #2e7d32;      /* Material-UI success.main */
+  --color-dfh-yellow: #ed6c02;     /* Material-UI warning.main */
+  --color-dfh-red: #d32f2f;        /* Material-UI error.main */
+  --color-dfh-turquoise: #0288d1;  /* Material-UI info.main */
+  --color-dfh-neutral: #424242;    /* Material-UI grey.800 */
+  
+  /* High Contrast Accessibility Colors */
+  --color-text-primary: #000000;
+  --color-text-secondary: #424242;
+  --color-background-primary: #ffffff;
+  --color-background-secondary: #f5f5f5;
+  --color-focus-indicator: #0066cc;
+  --color-error-text: #d32f2f;
+  --color-success-text: #2e7d32;
+  
+  /* Typography Scale */
+  --font-family-monospace: 'Roboto Mono', 'Source Code Pro', 'Consolas', 'Monaco', monospace;
+  --font-family-primary: 'Roboto', 'Arial', sans-serif;
+  --font-size-base: 14px;
+  --font-size-small: 12px;
+  --font-size-large: 16px;
+  --font-size-xlarge: 18px;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+  
+  /* Spacing System (8px grid) */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+  
+  /* Layout Dimensions */
+  --terminal-width: 80ch;           /* 80 character terminal width */
+  --terminal-height: 24lh;          /* 24 line terminal height */
+  --border-radius: 4px;
+  --border-width: 1px;
+  
+  /* Z-Index Scale */
+  --z-index-modal: 1300;
+  --z-index-tooltip: 1500;
+  --z-index-focus: 1000;
+}
+
+/* ===========================================
+ * GLOBAL RESET AND NORMALIZATION
+ * ========================================== */
+
+/* Box-sizing border-box for all elements */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* HTML5 element reset */
+html {
+  line-height: 1.15;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Body base styles */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  background-color: var(--color-background-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Form element normalization */
+button,
+input,
+optgroup,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  margin: 0;
+}
+
+/* Remove default button styles */
+button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* Remove default list styles */
+ul,
+ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Remove default link styles */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Remove default heading margins */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  font-weight: var(--font-weight-medium);
+}
+
+/* Remove default paragraph margins */
+p {
+  margin: 0;
+}
+
+/* ===========================================
+ * TYPOGRAPHY SYSTEM
+ * ========================================== */
+
+/* Monospace font family definitions for financial data */
+.monospace-font,
+.financial-data,
+.account-number,
+.card-number,
+.amount,
+.transaction-id,
+.terminal-text {
+  font-family: var(--font-family-monospace);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.025em;
+}
+
+/* Character alignment utilities for terminal-like display */
+.character-aligned {
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-base);
+  line-height: 1.2;
+  letter-spacing: 0;
+  white-space: pre;
+  tab-size: 8;
+}
+
+/* Financial data display typography */
+.financial-amount {
+  font-family: var(--font-family-monospace);
+  font-weight: var(--font-weight-medium);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.financial-amount.positive {
+  color: var(--color-dfh-green);
+}
+
+.financial-amount.negative {
+  color: var(--color-dfh-red);
+}
+
+.financial-amount.zero {
+  color: var(--color-text-secondary);
+}
+
+/* Responsive font sizing */
+@media (max-width: 600px) {
+  :root {
+    --font-size-base: 12px;
+    --font-size-small: 10px;
+    --font-size-large: 14px;
+    --font-size-xlarge: 16px;
+  }
+}
+
+@media (min-width: 1200px) {
+  :root {
+    --font-size-base: 16px;
+    --font-size-small: 14px;
+    --font-size-large: 18px;
+    --font-size-xlarge: 20px;
+  }
+}
+
+/* ===========================================
+ * ACCESSIBILITY ENHANCEMENTS
+ * ========================================== */
+
+/* High contrast ratios for WCAG 2.1 AA compliance */
+.high-contrast {
+  color: var(--color-text-primary);
+  background-color: var(--color-background-primary);
+}
+
+.high-contrast-inverse {
+  color: var(--color-background-primary);
+  background-color: var(--color-text-primary);
+}
+
+/* Keyboard navigation support */
+.focusable:focus,
+button:focus,
+input:focus,
+select:focus,
+textarea:focus,
+[tabindex]:focus {
+  outline: 2px solid var(--color-focus-indicator);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--color-focus-indicator);
+}
+
+/* Remove focus outline for mouse users */
+.focus-visible:focus:not(.focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Focus indicators for interactive elements */
+.focus-indicator {
+  position: relative;
+}
+
+.focus-indicator::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border: 2px solid transparent;
+  border-radius: var(--border-radius);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.focus-indicator:focus::after {
+  border-color: var(--color-focus-indicator);
+  opacity: 1;
+}
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skip links for keyboard navigation */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: var(--color-text-primary);
+  color: var(--color-background-primary);
+  padding: 8px;
+  text-decoration: none;
+  border-radius: var(--border-radius);
+  z-index: var(--z-index-focus);
+  transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+  top: 6px;
+}
+
+/* Enhanced contrast for error states */
+.error-state {
+  color: var(--color-error-text);
+  border-color: var(--color-error-text);
+}
+
+.error-state:focus {
+  outline-color: var(--color-error-text);
+  box-shadow: 0 0 0 2px var(--color-error-text);
+}
+
+/* ===========================================
+ * SPACING SYSTEM
+ * ========================================== */
+
+/* Consistent margin scales */
+.m-0 { margin: 0; }
+.m-xs { margin: var(--spacing-xs); }
+.m-sm { margin: var(--spacing-sm); }
+.m-md { margin: var(--spacing-md); }
+.m-lg { margin: var(--spacing-lg); }
+.m-xl { margin: var(--spacing-xl); }
+.m-xxl { margin: var(--spacing-xxl); }
+
+/* Margin directions */
+.mt-0 { margin-top: 0; }
+.mt-xs { margin-top: var(--spacing-xs); }
+.mt-sm { margin-top: var(--spacing-sm); }
+.mt-md { margin-top: var(--spacing-md); }
+.mt-lg { margin-top: var(--spacing-lg); }
+.mt-xl { margin-top: var(--spacing-xl); }
+
+.mb-0 { margin-bottom: 0; }
+.mb-xs { margin-bottom: var(--spacing-xs); }
+.mb-sm { margin-bottom: var(--spacing-sm); }
+.mb-md { margin-bottom: var(--spacing-md); }
+.mb-lg { margin-bottom: var(--spacing-lg); }
+.mb-xl { margin-bottom: var(--spacing-xl); }
+
+.ml-0 { margin-left: 0; }
+.ml-xs { margin-left: var(--spacing-xs); }
+.ml-sm { margin-left: var(--spacing-sm); }
+.ml-md { margin-left: var(--spacing-md); }
+.ml-lg { margin-left: var(--spacing-lg); }
+.ml-xl { margin-left: var(--spacing-xl); }
+
+.mr-0 { margin-right: 0; }
+.mr-xs { margin-right: var(--spacing-xs); }
+.mr-sm { margin-right: var(--spacing-sm); }
+.mr-md { margin-right: var(--spacing-md); }
+.mr-lg { margin-right: var(--spacing-lg); }
+.mr-xl { margin-right: var(--spacing-xl); }
+
+/* Padding utilities */
+.p-0 { padding: 0; }
+.p-xs { padding: var(--spacing-xs); }
+.p-sm { padding: var(--spacing-sm); }
+.p-md { padding: var(--spacing-md); }
+.p-lg { padding: var(--spacing-lg); }
+.p-xl { padding: var(--spacing-xl); }
+.p-xxl { padding: var(--spacing-xxl); }
+
+/* Padding directions */
+.pt-0 { padding-top: 0; }
+.pt-xs { padding-top: var(--spacing-xs); }
+.pt-sm { padding-top: var(--spacing-sm); }
+.pt-md { padding-top: var(--spacing-md); }
+.pt-lg { padding-top: var(--spacing-lg); }
+.pt-xl { padding-top: var(--spacing-xl); }
+
+.pb-0 { padding-bottom: 0; }
+.pb-xs { padding-bottom: var(--spacing-xs); }
+.pb-sm { padding-bottom: var(--spacing-sm); }
+.pb-md { padding-bottom: var(--spacing-md); }
+.pb-lg { padding-bottom: var(--spacing-lg); }
+.pb-xl { padding-bottom: var(--spacing-xl); }
+
+.pl-0 { padding-left: 0; }
+.pl-xs { padding-left: var(--spacing-xs); }
+.pl-sm { padding-left: var(--spacing-sm); }
+.pl-md { padding-left: var(--spacing-md); }
+.pl-lg { padding-left: var(--spacing-lg); }
+.pl-xl { padding-left: var(--spacing-xl); }
+
+.pr-0 { padding-right: 0; }
+.pr-xs { padding-right: var(--spacing-xs); }
+.pr-sm { padding-right: var(--spacing-sm); }
+.pr-md { padding-right: var(--spacing-md); }
+.pr-lg { padding-right: var(--spacing-lg); }
+.pr-xl { padding-right: var(--spacing-xl); }
+
+/* Material-UI theme spacing alignment */
+.mui-spacing-1 { margin: var(--spacing-sm); }
+.mui-spacing-2 { margin: var(--spacing-md); }
+.mui-spacing-3 { margin: var(--spacing-lg); }
+.mui-spacing-4 { margin: var(--spacing-xl); }
+
+/* Responsive spacing breakpoints */
+@media (max-width: 600px) {
+  .responsive-spacing {
+    margin: var(--spacing-sm);
+    padding: var(--spacing-sm);
+  }
+}
+
+@media (min-width: 600px) and (max-width: 960px) {
+  .responsive-spacing {
+    margin: var(--spacing-md);
+    padding: var(--spacing-md);
+  }
+}
+
+@media (min-width: 960px) {
+  .responsive-spacing {
+    margin: var(--spacing-lg);
+    padding: var(--spacing-lg);
+  }
+}
+
+/* ===========================================
+ * VISUAL HIERARCHY
+ * ========================================== */
+
+/* Application-wide styling foundation */
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-background-primary);
+}
+
+.app-header {
+  background-color: var(--color-dfh-blue);
+  color: var(--color-background-primary);
+  padding: var(--spacing-md);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.app-main {
+  flex: 1;
+  padding: var(--spacing-md);
+  max-width: var(--terminal-width);
+  margin: 0 auto;
+  width: 100%;
+}
+
+.app-footer {
+  background-color: var(--color-background-secondary);
+  padding: var(--spacing-sm);
+  border-top: var(--border-width) solid #e0e0e0;
+}
+
+/* Component styling base */
+.component-container {
+  background-color: var(--color-background-primary);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.component-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: var(--border-width) solid #e0e0e0;
+}
+
+.component-title {
+  font-size: var(--font-size-large);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.component-content {
+  line-height: 1.6;
+}
+
+/* Cross-browser consistency */
+.cross-browser-reset {
+  /* Consistent box model */
+  box-sizing: border-box;
+  
+  /* Consistent font rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  /* Consistent input styling */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  
+  /* Consistent focus behavior */
+  outline: none;
+}
+
+/* BMS transformation styling support */
+.bms-screen {
+  font-family: var(--font-family-monospace);
+  background-color: #000000;
+  color: #00ff00;
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius);
+  min-height: var(--terminal-height);
+  max-width: var(--terminal-width);
+  overflow: hidden;
+  white-space: pre-wrap;
+  line-height: 1.2;
+}
+
+.bms-field {
+  display: inline-block;
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-base);
+  background-color: transparent;
+  border: none;
+  color: inherit;
+  padding: 0;
+  margin: 0;
+}
+
+.bms-field.protected {
+  background-color: var(--color-background-secondary);
+  color: var(--color-text-secondary);
+}
+
+.bms-field.input {
+  background-color: var(--color-background-primary);
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-text-secondary);
+}
+
+.bms-field.highlighted {
+  font-weight: var(--font-weight-bold);
+  color: var(--color-dfh-yellow);
+}
+
+.bms-field.error {
+  color: var(--color-dfh-red);
+  background-color: rgba(211, 47, 47, 0.1);
+}
+
+/* ===========================================
+ * UTILITY CLASSES
+ * ========================================== */
+
+/* Display utilities */
+.d-none { display: none; }
+.d-block { display: block; }
+.d-inline { display: inline; }
+.d-inline-block { display: inline-block; }
+.d-flex { display: flex; }
+.d-grid { display: grid; }
+
+/* Flexbox utilities */
+.flex-row { flex-direction: row; }
+.flex-column { flex-direction: column; }
+.flex-wrap { flex-wrap: wrap; }
+.justify-start { justify-content: flex-start; }
+.justify-center { justify-content: center; }
+.justify-end { justify-content: flex-end; }
+.justify-between { justify-content: space-between; }
+.align-start { align-items: flex-start; }
+.align-center { align-items: center; }
+.align-end { align-items: flex-end; }
+
+/* Text utilities */
+.text-left { text-align: left; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-nowrap { white-space: nowrap; }
+.text-wrap { white-space: normal; }
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Color utilities */
+.text-primary { color: var(--color-text-primary); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-success { color: var(--color-dfh-green); }
+.text-error { color: var(--color-dfh-red); }
+.text-warning { color: var(--color-dfh-yellow); }
+.text-info { color: var(--color-dfh-turquoise); }
+
+/* Background utilities */
+.bg-primary { background-color: var(--color-background-primary); }
+.bg-secondary { background-color: var(--color-background-secondary); }
+.bg-success { background-color: var(--color-dfh-green); }
+.bg-error { background-color: var(--color-dfh-red); }
+.bg-warning { background-color: var(--color-dfh-yellow); }
+.bg-info { background-color: var(--color-dfh-turquoise); }
+
+/* Border utilities */
+.border-none { border: none; }
+.border-solid { border: var(--border-width) solid #e0e0e0; }
+.border-top { border-top: var(--border-width) solid #e0e0e0; }
+.border-bottom { border-bottom: var(--border-width) solid #e0e0e0; }
+.border-left { border-left: var(--border-width) solid #e0e0e0; }
+.border-right { border-right: var(--border-width) solid #e0e0e0; }
+
+/* Responsive utilities */
+.visible-xs { display: none; }
+.visible-sm { display: none; }
+.visible-md { display: none; }
+.visible-lg { display: none; }
+
+@media (max-width: 599px) {
+  .visible-xs { display: block; }
+  .hidden-xs { display: none; }
+}
+
+@media (min-width: 600px) and (max-width: 959px) {
+  .visible-sm { display: block; }
+  .hidden-sm { display: none; }
+}
+
+@media (min-width: 960px) and (max-width: 1279px) {
+  .visible-md { display: block; }
+  .hidden-md { display: none; }
+}
+
+@media (min-width: 1280px) {
+  .visible-lg { display: block; }
+  .hidden-lg { display: none; }
+}
+
+/* ===========================================
+ * ANIMATION AND TRANSITIONS
+ * ========================================== */
+
+/* Smooth transitions for interactive elements */
+.transition-all {
+  transition: all 0.3s ease;
+}
+
+.transition-color {
+  transition: color 0.2s ease;
+}
+
+.transition-background {
+  transition: background-color 0.2s ease;
+}
+
+.transition-border {
+  transition: border-color 0.2s ease;
+}
+
+.transition-transform {
+  transition: transform 0.2s ease;
+}
+
+/* Loading animations */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.loading-pulse {
+  animation: pulse 2s infinite;
+}
+
+/* Focus animations */
+@keyframes focus-ring {
+  0% { box-shadow: 0 0 0 0 var(--color-focus-indicator); }
+  100% { box-shadow: 0 0 0 4px transparent; }
+}
+
+.focus-ring:focus {
+  animation: focus-ring 0.3s ease-out;
+}
+
+/* ===========================================
+ * PRINT STYLES
+ * ========================================== */
+
+@media print {
+  * {
+    -webkit-print-color-adjust: exact;
+    color-adjust: exact;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  .app-container {
+    background: white;
+    color: black;
+  }
+  
+  .financial-amount {
+    font-family: var(--font-family-monospace);
+    font-weight: var(--font-weight-bold);
+  }
+  
+  .bms-screen {
+    background: white;
+    color: black;
+    border: 1px solid black;
+  }
+  
+  /* Page break utilities */
+  .page-break-before {
+    page-break-before: always;
+  }
+  
+  .page-break-after {
+    page-break-after: always;
+  }
+  
+  .page-break-inside-avoid {
+    page-break-inside: avoid;
+  }
+}
