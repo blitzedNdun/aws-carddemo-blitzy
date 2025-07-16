@@ -53,7 +53,11 @@ public class PhoneNumberValidator implements ConstraintValidator<ValidPhoneNumbe
     );
     
     private static final Pattern PHONE_PATTERN_DIGITS_ONLY = Pattern.compile(
-        "^\\+?1?([0-9]{10})$"
+        "^([0-9]{10})$"
+    );
+    
+    private static final Pattern PHONE_PATTERN_DIGITS_WITH_COUNTRY_CODE = Pattern.compile(
+        "^1([0-9]{10})$"
     );
     
     private static final Pattern PHONE_PATTERN_INTERNATIONAL = Pattern.compile(
@@ -71,8 +75,8 @@ public class PhoneNumberValidator implements ConstraintValidator<ValidPhoneNumbe
     
     static {
         initializeValidPhoneAreaCodes();
-        initializeValidGeneralPurposeCodes();
         initializeValidEasyRecognizableCodes();
+        initializeValidGeneralPurposeCodes();
     }
     
     /**
@@ -701,19 +705,31 @@ public class PhoneNumberValidator implements ConstraintValidator<ValidPhoneNumbe
         // Validate the format and extract area code
         String areaCode = extractAreaCode(phoneNumber);
         if (areaCode == null) {
-            addCustomMessage(context, "Invalid phone number format. Expected North American format (10 digits)");
+            if (annotation.message().equals("Invalid phone number format or area code not recognized")) {
+                addCustomMessage(context, "Invalid phone number format. Expected North American format (10 digits)");
+            } else {
+                addCustomMessage(context, annotation.message());
+            }
             return false;
         }
         
         // Validate area code against COBOL lookup table
         if (!isValidAreaCode(areaCode)) {
-            addCustomMessage(context, "Area code " + areaCode + " is not a valid North American area code");
+            if (annotation.message().equals("Invalid phone number format or area code not recognized")) {
+                addCustomMessage(context, "Area code " + areaCode + " is not a valid North American area code");
+            } else {
+                addCustomMessage(context, annotation.message());
+            }
             return false;
         }
         
         // Check if easily recognizable area codes are allowed
         if (!annotation.allowEasyRecognizableAreaCodes() && VALID_EASY_RECOGNIZABLE_CODES.contains(areaCode)) {
-            addCustomMessage(context, "Area code " + areaCode + " is an easily recognizable code and not allowed");
+            if (annotation.message().equals("Invalid phone number format or area code not recognized")) {
+                addCustomMessage(context, "Area code " + areaCode + " is an easily recognizable code and not allowed");
+            } else {
+                addCustomMessage(context, annotation.message());
+            }
             return false;
         }
         
@@ -754,23 +770,21 @@ public class PhoneNumberValidator implements ConstraintValidator<ValidPhoneNumbe
             return internationalMatcher.group(1);
         }
         
-        // Try digits only format
+        // Try digits only format (10 digits)
         Matcher digitsMatcher = PHONE_PATTERN_DIGITS_ONLY.matcher(phoneNumber);
         if (digitsMatcher.matches()) {
             String digits = digitsMatcher.group(1);
-            if (digits.length() == 10) {
-                return digits.substring(0, 3);
-            }
+            return digits.substring(0, 3);
         }
         
-        // Try extracting from raw digits
-        String normalizedNumber = phoneNumber.replaceAll("[^0-9]", "");
-        if (normalizedNumber.length() == 10) {
-            return normalizedNumber.substring(0, 3);
-        } else if (normalizedNumber.length() == 11 && normalizedNumber.startsWith("1")) {
-            return normalizedNumber.substring(1, 4);
+        // Try digits with country code format (11 digits starting with 1)
+        Matcher digitsWithCountryMatcher = PHONE_PATTERN_DIGITS_WITH_COUNTRY_CODE.matcher(phoneNumber);
+        if (digitsWithCountryMatcher.matches()) {
+            String digits = digitsWithCountryMatcher.group(1);
+            return digits.substring(0, 3);
         }
         
+        // No fallback - only accept numbers that match explicit patterns
         return null;
     }
     
@@ -818,10 +832,10 @@ public class PhoneNumberValidator implements ConstraintValidator<ValidPhoneNumbe
     private void addCustomMessage(ConstraintValidatorContext context, String message) {
         context.disableDefaultConstraintViolation();
         
-        // Add validation context if provided
+        // Add context if provided
         String fullMessage = message;
-        if (!annotation.validationContext().isEmpty()) {
-            fullMessage = annotation.validationContext() + ": " + message;
+        if (!annotation.context().isEmpty()) {
+            fullMessage = annotation.context() + ": " + message;
         }
         
         context.buildConstraintViolationWithTemplate(fullMessage)
