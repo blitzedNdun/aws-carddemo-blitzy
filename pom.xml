@@ -15,7 +15,7 @@
     <groupId>com.carddemo</groupId>
     <artifactId>carddemo-parent</artifactId>
     <version>1.0.0</version>
-    <packaging>pom</packaging>
+    <packaging>jar</packaging>
 
     <name>CardDemo Parent POM</name>
     <description>Multi-module Maven parent POM for CardDemo mainframe-to-cloud transformation supporting 36 microservices modules converted from COBOL programs</description>
@@ -48,58 +48,7 @@
         <jacoco.minimum.coverage>0.80</jacoco.minimum.coverage>
     </properties>
 
-    <!-- Multi-module structure for 36 microservices converted from COBOL programs -->
-    <modules>
-        <!-- Core Application Module -->
-        <module>src/main/java/com/carddemo</module>
-        
-        <!-- Authentication & Security Services -->
-        <module>auth-service</module>
-        <module>menu-service</module>
-        
-        <!-- Account Management Services -->
-        <module>account-service</module>
-        <module>account-view-service</module>
-        <module>account-update-service</module>
-        
-        <!-- Card Management Services -->
-        <module>card-service</module>
-        <module>card-list-service</module>
-        <module>card-update-service</module>
-        <module>card-selection-service</module>
-        <module>bill-payment-service</module>
-        
-        <!-- Transaction Processing Services -->
-        <module>transaction-service</module>
-        <module>transaction-view-service</module>
-        <module>transaction-add-service</module>
-        
-        <!-- Batch Processing Services -->
-        <module>batch-account-service</module>
-        <module>batch-card-service</module>
-        <module>batch-transaction-service</module>
-        <module>batch-statement-service</module>
-        <module>batch-interest-service</module>
-        <module>batch-daily-posting-service</module>
-        <module>batch-validation-service</module>
-        <module>batch-report-service</module>
-        
-        <!-- Common Utilities and Shared Libraries -->
-        <module>common-utilities</module>
-        <module>common-entities</module>
-        <module>common-validators</module>
-        <module>common-security</module>
-        <module>common-config</module>
-        
-        <!-- Web Application Module -->
-        <module>webapp</module>
-        
-        <!-- Infrastructure and Gateway Services -->
-        <module>api-gateway</module>
-        <module>config-server</module>
-        <module>eureka-server</module>
-        <module>monitoring-service</module>
-    </modules>
+    <!-- Single-module structure for CardDemo application -->
 
     <!-- Dependency Management for consistent versions across all modules -->
     <dependencyManagement>
@@ -164,6 +113,83 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <!-- Project Dependencies -->
+    <dependencies>
+        <!-- Spring Boot Dependencies -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        
+        <!-- JWT Dependencies -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+        </dependency>
+        
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        
+        <!-- Database Dependencies -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+        </dependency>
+        
+        <!-- Redis Dependencies -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.springframework.session</groupId>
+            <artifactId>spring-session-data-redis</artifactId>
+        </dependency>
+        
+        <!-- Spring Cloud Dependencies -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-gateway</artifactId>
+        </dependency>
+        
+        <!-- Commons Dependencies -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+    </dependencies>
 
     <!-- Build Configuration -->
     <build>
