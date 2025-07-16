@@ -141,10 +141,10 @@ public @interface ValidPhoneNumber {
     boolean generalPurposeOnly() default false;
     
     /**
-     * Custom validation context for providing additional error information.
+     * Custom context for providing additional error information.
      * This allows for more detailed error messages indicating specific validation failures.
      * 
-     * @return the validation context
+     * @return the context
      */
-    String validationContext() default "";
+    String context() default "";
 }
