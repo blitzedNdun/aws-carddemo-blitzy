@@ -18,6 +18,7 @@
 package com.carddemo.common.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 
 /**
@@ -324,6 +325,7 @@ public class BaseResponseDto {
      * 
      * @return true if this is an error response, false otherwise
      */
+    @JsonIgnore
     public boolean isError() {
         return !success;
     }
@@ -333,6 +335,7 @@ public class BaseResponseDto {
      * 
      * @return true if correlation ID is present, false otherwise
      */
+    @JsonIgnore
     public boolean hasCorrelationId() {
         return correlationId != null && !correlationId.trim().isEmpty();
     }
@@ -342,6 +345,7 @@ public class BaseResponseDto {
      * 
      * @return formatted timestamp string
      */
+    @JsonIgnore
     public String getFormattedTimestamp() {
         return timestamp != null ? timestamp.toString() : null;
     }
