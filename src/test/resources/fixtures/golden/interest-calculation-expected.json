@@ -1,0 +1,410 @@
+{
+  "testSuiteMetadata": {
+    "description": "Golden file for interest calculation validation ensuring COBOL COMP-3 decimal precision equivalence",
+    "version": "1.0.0",
+    "createdDate": "2024-01-15T10:00:00Z",
+    "bigDecimalContext": "DECIMAL128",
+    "precision": 15,
+    "scale": 2,
+    "roundingMode": "HALF_EVEN",
+    "comparisonTolerance": "0.00",
+    "testFramework": "JUnit 5 with AssertJ BigDecimal assertions",
+    "validationCriteria": [
+      "Exact decimal equivalence to 15 precision, 2 scale",
+      "Penny-perfect accuracy validation",
+      "COBOL COMP-3 arithmetic preservation",
+      "BigDecimal.DECIMAL128 context compliance"
+    ]
+  },
+  "interestCalculationTestCases": [
+    {
+      "testCaseId": "IC001",
+      "description": "Daily interest calculation for account 00000000001 with standard rate",
+      "inputData": {
+        "accountId": "00000000001",
+        "currentBalance": "194.00",
+        "creditLimit": "2020.00",
+        "interestRate": "0.1890",
+        "daysSinceLastCalculation": 30,
+        "calculationDate": "2024-01-15",
+        "compoundingFrequency": "DAILY",
+        "annualPercentageRate": "18.90"
+      },
+      "expectedOutput": {
+        "interestAmount": "2.97",
+        "newBalance": "196.97",
+        "calculationMethod": "COMPOUND_DAILY",
+        "formula": "(194.00 * 0.1890 * 30) / 365",
+        "intermediateSteps": [
+          {
+            "step": 1,
+            "description": "Principal amount",
+            "value": "194.00"
+          },
+          {
+            "step": 2,
+            "description": "Daily rate calculation",
+            "value": "0.000517808219178082"
+          },
+          {
+            "step": 3,
+            "description": "Interest for 30 days",
+            "value": "2.97"
+          }
+        ],
+        "bigDecimalPrecision": {
+          "totalDigits": 15,
+          "decimalPlaces": 2,
+          "mathContext": "DECIMAL128"
+        }
+      }
+    },
+    {
+      "testCaseId": "IC002",
+      "description": "Monthly compound interest for account 00000000002 with high balance",
+      "inputData": {
+        "accountId": "00000000002",
+        "currentBalance": "1580.00",
+        "creditLimit": "6130.00",
+        "interestRate": "0.2150",
+        "daysSinceLastCalculation": 31,
+        "calculationDate": "2024-01-15",
+        "compoundingFrequency": "MONTHLY",
+        "annualPercentageRate": "21.50"
+      },
+      "expectedOutput": {
+        "interestAmount": "28.53",
+        "newBalance": "1608.53",
+        "calculationMethod": "COMPOUND_MONTHLY",
+        "formula": "1580.00 * ((1 + 0.2150/12)^1 - 1)",
+        "intermediateSteps": [
+          {
+            "step": 1,
+            "description": "Principal amount",
+            "value": "1580.00"
+          },
+          {
+            "step": 2,
+            "description": "Monthly rate",
+            "value": "0.017916666666666666"
+          },
+          {
+            "step": 3,
+            "description": "Compound calculation",
+            "value": "28.53"
+          }
+        ],
+        "bigDecimalPrecision": {
+          "totalDigits": 15,
+          "decimalPlaces": 2,
+          "mathContext": "DECIMAL128"
+        }
+      }
+    },
+    {
+      "testCaseId": "IC003",
+      "description": "Interest calculation for account 00000000003 with low balance boundary case",
+      "inputData": {
+        "accountId": "00000000003",
+        "currentBalance": "5.38",
+        "creditLimit": "490.90",
+        "interestRate": "0.1250",
+        "daysSinceLastCalculation": 1,
+        "calculationDate": "2024-01-15",
+        "compoundingFrequency": "DAILY",
+        "annualPercentageRate": "12.50"
+      },
+      "expectedOutput": {
+        "interestAmount": "0.00",
+        "newBalance": "5.38",
+        "calculationMethod": "COMPOUND_DAILY",
+        "formula": "(5.38 * 0.1250 * 1) / 365",
+        "intermediateSteps": [
+          {
+            "step": 1,
+            "description": "Principal amount",
+            "value": "5.38"
+          },
+          {
+            "step": 2,
+            "description": "Daily rate calculation",
+            "value": "0.000342465753424658"
+          },
+          {
+            "step": 3,
+            "description": "Interest for 1 day (rounded to nearest cent)",
+            "value": "0.00"
+          }
+        ],
+        "bigDecimalPrecision": {
+          "totalDigits": 15,
+          "decimalPlaces": 2,
+          "mathContext": "DECIMAL128"
+        }
+      }
+    },
+    {
+      "testCaseId": "IC004",
+      "description": "Interest calculation for account 00000000004 with negative balance",
+      "inputData": {
+        "accountId": "00000000004",
+        "currentBalance": "-278.90",
+        "creditLimit": "350.30",
+        "interestRate": "0.2490",
+        "daysSinceLastCalculation": 15,
+        "calculationDate": "2024-01-15",
+        "compoundingFrequency": "DAILY",
+        "annualPercentageRate": "24.90"
+      },
+      "expectedOutput": {
+        "interestAmount": "-2.85",
+        "newBalance": "-281.75",
+        "calculationMethod": "COMPOUND_DAILY",
+        "formula": "(-278.90 * 0.2490 * 15) / 365",
+        "intermediateSteps": [
+          {
+            "step": 1,
+            "description": "Principal amount (negative balance)",
+            "value": "-278.90"
+          },
+          {
+            "step": 2,
+            "description": "Daily rate calculation",
+            "value": "0.000682191780821918"
+          },
+          {
+            "step": 3,
+            "description": "Interest for 15 days on negative balance",
+            "value": "-2.85"
+          }
+        ],
+        "bigDecimalPrecision": {
+          "totalDigits": 15,
+          "decimalPlaces": 2,
+          "mathContext": "DECIMAL128"
+        }
+      }
+    },
+    {
+      "testCaseId": "IC005",
+      "description": "Annual interest calculation for account 00000000005 with maximum precision",
+      "inputData": {
+        "accountId": "00000000005",
+        "currentBalance": "3450.00",
+        "creditLimit": "3819.00",
+        "interestRate": "0.0999",
+        "daysSinceLastCalculation": 365,
+        "calculationDate": "2024-01-15",
+        "compoundingFrequency": "ANNUAL",
+        "annualPercentageRate": "9.99"
+      },
+      "expectedOutput": {
+        "interestAmount": "344.66",
+        "newBalance": "3794.66",
+        "calculationMethod": "COMPOUND_ANNUAL",
+        "formula": "3450.00 * ((1 + 0.0999)^1 - 1)",
+        "intermediateSteps": [
+          {
+            "step": 1,
+            "description": "Principal amount",
+            "value": "3450.00"
+          },
+          {
+            "step": 2,
+            "description": "Annual rate",
+            "value": "0.0999"
+          },
+          {
+            "step": 3,
+            "description": "Annual compound calculation",
+            "value": "344.66"
+          }
+        ],
+        "bigDecimalPrecision": {
+          "totalDigits": 15,
+          "decimalPlaces": 2,
+          "mathContext": "DECIMAL128"
+        }
+      }
+    }
+  ],
+  "batchInterestCalculationTestCases": [
+    {
+      "testCaseId": "BIC001",
+      "description": "Batch interest calculation for multiple accounts with different rates",
+      "inputData": {
+        "batchDate": "2024-01-15",
+        "processingWindow": "4_HOURS",
+        "accountsToProcess": [
+          {
+            "accountId": "00000000001",
+            "currentBalance": "194.00",
+            "interestRate": "0.1890"
+          },
+          {
+            "accountId": "00000000002",
+            "currentBalance": "1580.00",
+            "interestRate": "0.2150"
+          },
+          {
+            "accountId": "00000000003",
+            "currentBalance": "5.38",
+            "interestRate": "0.1250"
+          }
+        ]
+      },
+      "expectedOutput": {
+        "totalInterestCalculated": "31.50",
+        "accountsProcessed": 3,
+        "totalNewBalance": "1781.88",
+        "processingTime": "< 4 hours",
+        "individualResults": [
+          {
+            "accountId": "00000000001",
+            "interestAmount": "2.97",
+            "newBalance": "196.97"
+          },
+          {
+            "accountId": "00000000002",
+            "interestAmount": "28.53",
+            "newBalance": "1608.53"
+          },
+          {
+            "accountId": "00000000003",
+            "interestAmount": "0.00",
+            "newBalance": "5.38"
+          }
+        ],
+        "bigDecimalPrecision": {
+          "totalDigits": 15,
+          "decimalPlaces": 2,
+          "mathContext": "DECIMAL128"
+        }
+      }
+    }
+  ],
+  "edgeCaseTestScenarios": [
+    {
+      "testCaseId": "EC001",
+      "description": "Maximum precision test with 15 digits",
+      "inputData": {
+        "accountId": "00000000999",
+        "currentBalance": "9999999999.99",
+        "creditLimit": "9999999999.99",
+        "interestRate": "0.9999",
+        "daysSinceLastCalculation": 1,
+        "calculationDate": "2024-01-15"
+      },
+      "expectedOutput": {
+        "interestAmount": "27397260.27",
+        "newBalance": "10027397260.26",
+        "calculationMethod": "COMPOUND_DAILY",
+        "bigDecimalPrecision": {
+          "totalDigits": 15,
+          "decimalPlaces": 2,
+          "mathContext": "DECIMAL128"
+        }
+      }
+    },
+    {
+      "testCaseId": "EC002",
+      "description": "Minimum precision test with smallest non-zero amount",
+      "inputData": {
+        "accountId": "00000000998",
+        "currentBalance": "0.01",
+        "creditLimit": "100.00",
+        "interestRate": "0.0001",
+        "daysSinceLastCalculation": 1,
+        "calculationDate": "2024-01-15"
+      },
+      "expectedOutput": {
+        "interestAmount": "0.00",
+        "newBalance": "0.01",
+        "calculationMethod": "COMPOUND_DAILY",
+        "bigDecimalPrecision": {
+          "totalDigits": 15,
+          "decimalPlaces": 2,
+          "mathContext": "DECIMAL128"
+        }
+      }
+    },
+    {
+      "testCaseId": "EC003",
+      "description": "Zero balance test",
+      "inputData": {
+        "accountId": "00000000997",
+        "currentBalance": "0.00",
+        "creditLimit": "1000.00",
+        "interestRate": "0.1500",
+        "daysSinceLastCalculation": 30,
+        "calculationDate": "2024-01-15"
+      },
+      "expectedOutput": {
+        "interestAmount": "0.00",
+        "newBalance": "0.00",
+        "calculationMethod": "COMPOUND_DAILY",
+        "bigDecimalPrecision": {
+          "totalDigits": 15,
+          "decimalPlaces": 2,
+          "mathContext": "DECIMAL128"
+        }
+      }
+    }
+  ],
+  "validationRules": {
+    "precisionValidation": {
+      "description": "All calculations must use BigDecimal with DECIMAL128 context",
+      "requirements": [
+        "Exact decimal equivalence to 15 precision, 2 scale",
+        "No floating-point arithmetic - BigDecimal only",
+        "RoundingMode.HALF_EVEN for all calculations",
+        "MathContext.DECIMAL128 for all operations"
+      ]
+    },
+    "comparisonValidation": {
+      "description": "Golden file comparison must validate exact matches",
+      "requirements": [
+        "Zero tolerance for calculation deviations",
+        "String comparison of BigDecimal.toPlainString() results",
+        "Parallel execution validation against COBOL outputs",
+        "Automated regression detection for precision drift"
+      ]
+    },
+    "businessRuleValidation": {
+      "description": "Interest calculation business rules preservation",
+      "requirements": [
+        "Compound interest calculation accuracy",
+        "Negative balance interest charge application",
+        "Minimum interest charge thresholds",
+        "Maximum credit limit validation"
+      ]
+    }
+  },
+  "testExecutionMetadata": {
+    "junitConfiguration": {
+      "testClass": "InterestCalculationValidationTest",
+      "testMethods": [
+        "testDailyInterestCalculation",
+        "testMonthlyCompoundInterest",
+        "testBatchInterestProcessing",
+        "testEdgeCaseScenarios",
+        "testBigDecimalPrecisionCompliance"
+      ],
+      "assertions": [
+        "assertThat(actualInterest).usingComparator(BigDecimal::compareTo).isEqualTo(expectedInterest)",
+        "assertThat(actualBalance).hasPrecision(15).hasScale(2)",
+        "assertThat(calculationResult).isEqualTo(goldenFileExpected)"
+      ]
+    },
+    "springBootTestConfiguration": {
+      "testSlice": "@DataJpaTest",
+      "testContainers": "PostgreSQL, Redis",
+      "profiles": ["test", "golden-file-validation"],
+      "dependencies": [
+        "spring-boot-starter-test",
+        "testcontainers-postgresql",
+        "assertj-core"
+      ]
+    }
+  }
+}
