@@ -175,6 +175,9 @@ public class JwtTokenUtil {
             Object roles = claims.get(CLAIM_ROLES);
             if (roles instanceof String[]) {
                 return (String[]) roles;
+            } else if (roles instanceof java.util.List) {
+                java.util.List<?> rolesList = (java.util.List<?>) roles;
+                return rolesList.toArray(new String[0]);
             }
             return new String[0];
         });
@@ -251,11 +254,11 @@ public class JwtTokenUtil {
      */
     private Claims extractAllClaims(String token) {
         SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
-        return Jwts.parserBuilder()
-                .setSigningKey(key)
+        return Jwts.parser()
+                .verifyWith(key)
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     /**
