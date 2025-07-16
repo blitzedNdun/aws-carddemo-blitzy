@@ -622,18 +622,7 @@ public enum PhoneAreaCode {
         return Optional.empty();
     }
 
-    /**
-     * Returns all valid area codes as an array.
-     * 
-     * This method maintains compatibility with the original COBOL enumeration
-     * behavior, providing access to all valid area codes for validation
-     * and lookup operations.
-     * 
-     * @return Array of all PhoneAreaCode enum values
-     */
-    public static PhoneAreaCode[] values() {
-        return PhoneAreaCode.values();
-    }
+
 
     /**
      * Validates area code with Optional result handling.
