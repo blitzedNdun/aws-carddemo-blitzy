@@ -1,5 +1,6 @@
 package com.carddemo.common.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -288,6 +289,7 @@ public class BaseRequestDto {
      * 
      * @return true if request context is valid, false otherwise
      */
+    @JsonIgnore
     public boolean isValidRequestContext() {
         return correlationId != null && !correlationId.trim().isEmpty() &&
                userId != null && !userId.trim().isEmpty() &&
@@ -305,6 +307,7 @@ public class BaseRequestDto {
      * 
      * @return audit summary string
      */
+    @JsonIgnore
     public String getAuditSummary() {
         return String.format("Request[correlationId=%s, userId=%s, sessionId=%s, timestamp=%s, role=%s, clientIp=%s]",
                            correlationId, userId, sessionId, requestTimestamp, userRole, clientIpAddress);
@@ -317,6 +320,7 @@ public class BaseRequestDto {
      * 
      * @return sanitized request summary
      */
+    @JsonIgnore
     public String getSanitizedSummary() {
         String maskedSessionId = sessionId != null ? sessionId.substring(0, 8) + "..." : null;
         String maskedClientIp = clientIpAddress != null ? 
