@@ -16,6 +16,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@300;400;500;600;700&display=swap');
 
+/* Font Display Optimization */
+@font-face {
+  font-family: 'Roboto Mono';
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Source Code Pro';
+  font-display: swap;
+}
+
 /* ===========================================
  * CSS CUSTOM PROPERTIES (CSS Variables)
  * ========================================== */
