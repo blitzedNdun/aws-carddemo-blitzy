@@ -187,6 +187,10 @@ export const HIGHLIGHT_STYLES = {
     '&:focus': {
       borderBottomColor: 'primary.main',
       borderBottomWidth: '3px'
+    },
+    '&:active': {
+      borderBottomColor: 'primary.dark',
+      borderBottomWidth: '3px'
     }
   },
 
@@ -211,6 +215,10 @@ export const HIGHLIGHT_STYLES = {
     color: 'primary.contrastText',
     '&:hover': {
       backgroundColor: 'primary.dark'
+    },
+    '&:active': {
+      backgroundColor: 'primary.dark',
+      transform: 'scale(0.98)'
     }
   },
 
