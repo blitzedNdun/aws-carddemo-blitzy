@@ -82,9 +82,11 @@ public class TransactionCategory implements Serializable {
      * 
      * Uses lazy loading for optimal performance and memory usage.
      * CascadeType.ALL ensures balance records are managed with category lifecycle.
+     * 
+     * NOTE: Commented out until TransactionCategoryBalance entity is available
      */
-    @OneToMany(mappedBy = "transactionCategory", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<TransactionCategoryBalance> transactionCategoryBalances;
+    // @OneToMany(mappedBy = "transactionCategory", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    // private List<TransactionCategoryBalance> transactionCategoryBalances;
 
     /**
      * Default Constructor
@@ -191,19 +193,23 @@ public class TransactionCategory implements Serializable {
      * Get Transaction Category Balances
      * 
      * @return list of associated transaction category balance records
+     * 
+     * NOTE: Commented out until TransactionCategoryBalance entity is available
      */
-    public List<TransactionCategoryBalance> getTransactionCategoryBalances() {
-        return transactionCategoryBalances;
-    }
+    // public List<TransactionCategoryBalance> getTransactionCategoryBalances() {
+    //     return transactionCategoryBalances;
+    // }
 
     /**
      * Set Transaction Category Balances
      * 
      * @param transactionCategoryBalances list of balance records
+     * 
+     * NOTE: Commented out until TransactionCategoryBalance entity is available
      */
-    public void setTransactionCategoryBalances(List<TransactionCategoryBalance> transactionCategoryBalances) {
-        this.transactionCategoryBalances = transactionCategoryBalances;
-    }
+    // public void setTransactionCategoryBalances(List<TransactionCategoryBalance> transactionCategoryBalances) {
+    //     this.transactionCategoryBalances = transactionCategoryBalances;
+    // }
 
     /**
      * Add Transaction Category Balance
@@ -212,13 +218,15 @@ public class TransactionCategory implements Serializable {
      * Maintains bidirectional relationship integrity.
      * 
      * @param balance transaction category balance to add
+     * 
+     * NOTE: Commented out until TransactionCategoryBalance entity is available
      */
-    public void addTransactionCategoryBalance(TransactionCategoryBalance balance) {
-        if (transactionCategoryBalances != null) {
-            transactionCategoryBalances.add(balance);
-            balance.setTransactionCategory(this);
-        }
-    }
+    // public void addTransactionCategoryBalance(TransactionCategoryBalance balance) {
+    //     if (transactionCategoryBalances != null) {
+    //         transactionCategoryBalances.add(balance);
+    //         balance.setTransactionCategory(this);
+    //     }
+    // }
 
     /**
      * Remove Transaction Category Balance
@@ -227,13 +235,15 @@ public class TransactionCategory implements Serializable {
      * Maintains bidirectional relationship integrity.
      * 
      * @param balance transaction category balance to remove
+     * 
+     * NOTE: Commented out until TransactionCategoryBalance entity is available
      */
-    public void removeTransactionCategoryBalance(TransactionCategoryBalance balance) {
-        if (transactionCategoryBalances != null) {
-            transactionCategoryBalances.remove(balance);
-            balance.setTransactionCategory(null);
-        }
-    }
+    // public void removeTransactionCategoryBalance(TransactionCategoryBalance balance) {
+    //     if (transactionCategoryBalances != null) {
+    //         transactionCategoryBalances.remove(balance);
+    //         balance.setTransactionCategory(null);
+    //     }
+    // }
 
     /**
      * Get Balance Count
@@ -241,9 +251,12 @@ public class TransactionCategory implements Serializable {
      * Convenience method to get the number of associated balance records.
      * 
      * @return number of balance records, 0 if none
+     * 
+     * NOTE: Returns 0 until TransactionCategoryBalance entity is available
      */
     public int getBalanceCount() {
-        return transactionCategoryBalances != null ? transactionCategoryBalances.size() : 0;
+        // return transactionCategoryBalances != null ? transactionCategoryBalances.size() : 0;
+        return 0; // Temporary until TransactionCategoryBalance entity is available
     }
 
     /**
