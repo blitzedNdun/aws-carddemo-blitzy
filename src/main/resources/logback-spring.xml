@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Logback Logging Configuration for CardDemo Application
+  
+  This configuration provides structured JSON logging, audit trail capture,
+  and centralized log aggregation supporting cloud-native observability
+  and compliance requirements for the COBOL-to-Java migration.
+  
+  Features:
+  - JSON structured logging for ELK stack integration
+  - Correlation ID tracking for distributed transaction tracing
+  - Audit logging for compliance and security monitoring
+  - Performance monitoring integration
+  - Container-based log management with rotation policies
+  - Profile-specific configurations for development and production
+  
+  Compatible with:
+  - Spring Boot 3.2.x
+  - Logback 1.4.x
+  - Java 21 LTS
+  - Kubernetes container environments
+  - ELK stack (Elasticsearch, Logstash, Kibana)
+  - Filebeat log collection
+-->
+<configuration>
+    <!-- Spring Boot profile support -->
+    <springProfile name="!prod">
+        <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    </springProfile>
+    
+    <!-- Define property values for consistent configuration -->
+    <property name="LOG_PATH" value="${LOG_PATH:-/var/log/carddemo}"/>
+    <property name="LOG_FILE" value="${LOG_FILE:-carddemo}"/>
+    <property name="APP_NAME" value="${spring.application.name:-carddemo}"/>
+    <property name="APP_VERSION" value="${spring.application.version:-1.0.0}"/>
+    <property name="HOSTNAME" value="${HOSTNAME:-localhost}"/>
+    
+    <!-- Console appender for development and container standard output -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <springProfile name="dev,local">
+            <!-- Human-readable format for development -->
+            <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{correlationId:-}] %logger{36} - %msg%n</pattern>
+            </encoder>
+        </springProfile>
+        
+        <springProfile name="!dev,!local">
+            <!-- JSON format for production and container environments -->
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <includeContext>true</includeContext>
+                <includeMdc>true</includeMdc>
+                <customFields>{"service":"${APP_NAME}","version":"${APP_VERSION}","hostname":"${HOSTNAME}"}</customFields>
+                <fieldNames>
+                    <timestamp>@timestamp</timestamp>
+                    <message>message</message>
+                    <level>level</level>
+                    <thread>thread</thread>
+                    <logger>logger</logger>
+                </fieldNames>
+            </encoder>
+        </springProfile>
+    </appender>
+    
+    <!-- File appender for application logs with rotation -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/${LOG_FILE}.log</file>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeContext>true</includeContext>
+            <includeMdc>true</includeMdc>
+            <customFields>{"service":"${APP_NAME}","version":"${APP_VERSION}","hostname":"${HOSTNAME}","log_type":"application"}</customFields>
+            <fieldNames>
+                <timestamp>@timestamp</timestamp>
+                <message>message</message>
+                <level>level</level>
+                <thread>thread</thread>
+                <logger>logger</logger>
+            </fieldNames>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/${LOG_FILE}.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>5GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+    
+    <!-- Audit log appender for compliance and security monitoring -->
+    <appender name="AUDIT" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/audit.log</file>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeContext>true</includeContext>
+            <includeMdc>true</includeMdc>
+            <customFields>{"service":"${APP_NAME}","version":"${APP_VERSION}","hostname":"${HOSTNAME}","log_type":"audit"}</customFields>
+            <fieldNames>
+                <timestamp>@timestamp</timestamp>
+                <message>message</message>
+                <level>level</level>
+                <thread>thread</thread>
+                <logger>logger</logger>
+            </fieldNames>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/audit.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>90</maxHistory>
+            <totalSizeCap>10GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+    
+    <!-- Performance monitoring log appender -->
+    <appender name="PERFORMANCE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/performance.log</file>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeContext>true</includeContext>
+            <includeMdc>true</includeMdc>
+            <customFields>{"service":"${APP_NAME}","version":"${APP_VERSION}","hostname":"${HOSTNAME}","log_type":"performance"}</customFields>
+            <fieldNames>
+                <timestamp>@timestamp</timestamp>
+                <message>message</message>
+                <level>level</level>
+                <thread>thread</thread>
+                <logger>logger</logger>
+            </fieldNames>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/performance.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>3GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+    
+    <!-- Error tracking appender for critical issues -->
+    <appender name="ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/error.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeContext>true</includeContext>
+            <includeMdc>true</includeMdc>
+            <includeCallerData>true</includeCallerData>
+            <customFields>{"service":"${APP_NAME}","version":"${APP_VERSION}","hostname":"${HOSTNAME}","log_type":"error"}</customFields>
+            <fieldNames>
+                <timestamp>@timestamp</timestamp>
+                <message>message</message>
+                <level>level</level>
+                <thread>thread</thread>
+                <logger>logger</logger>
+            </fieldNames>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/error.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>90</maxHistory>
+            <totalSizeCap>5GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+    
+    <!-- Async appender for performance optimization -->
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="FILE"/>
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <maxFlushTime>1000</maxFlushTime>
+        <neverBlock>true</neverBlock>
+    </appender>
+    
+    <!-- Async appender for audit logs -->
+    <appender name="ASYNC_AUDIT" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="AUDIT"/>
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <maxFlushTime>1000</maxFlushTime>
+        <neverBlock>false</neverBlock>
+    </appender>
+    
+    <!-- Logger configuration for different components -->
+    
+    <!-- Root logger configuration -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_FILE"/>
+        <appender-ref ref="ERROR"/>
+    </root>
+    
+    <!-- Spring Boot framework logging -->
+    <logger name="org.springframework.boot" level="INFO"/>
+    <logger name="org.springframework.web" level="INFO"/>
+    <logger name="org.springframework.security" level="INFO"/>
+    <logger name="org.springframework.data" level="INFO"/>
+    <logger name="org.springframework.batch" level="INFO"/>
+    
+    <!-- Database and JPA logging -->
+    <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_FILE"/>
+    </logger>
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_FILE"/>
+    </logger>
+    
+    <!-- CardDemo application logging -->
+    <logger name="com.carddemo" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_FILE"/>
+        <appender-ref ref="ERROR"/>
+    </logger>
+    
+    <!-- Audit logging for security and compliance -->
+    <logger name="com.carddemo.audit" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_AUDIT"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Performance monitoring logger -->
+    <logger name="com.carddemo.performance" level="INFO" additivity="false">
+        <appender-ref ref="PERFORMANCE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Transaction processing logging -->
+    <logger name="com.carddemo.transaction" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_FILE"/>
+        <appender-ref ref="ASYNC_AUDIT"/>
+    </logger>
+    
+    <!-- Authentication and authorization logging -->
+    <logger name="com.carddemo.auth" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_FILE"/>
+        <appender-ref ref="ASYNC_AUDIT"/>
+    </logger>
+    
+    <!-- Account management logging -->
+    <logger name="com.carddemo.account" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_FILE"/>
+        <appender-ref ref="ASYNC_AUDIT"/>
+    </logger>
+    
+    <!-- Card management logging -->
+    <logger name="com.carddemo.card" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_FILE"/>
+        <appender-ref ref="ASYNC_AUDIT"/>
+    </logger>
+    
+    <!-- Batch processing logging -->
+    <logger name="com.carddemo.batch" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_FILE"/>
+        <appender-ref ref="PERFORMANCE"/>
+    </logger>
+    
+    <!-- Security event logging -->
+    <logger name="org.springframework.security.authentication" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_AUDIT"/>
+    </logger>
+    
+    <!-- Exception and error logging -->
+    <logger name="com.carddemo.exception" level="ERROR" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ERROR"/>
+        <appender-ref ref="ASYNC_AUDIT"/>
+    </logger>
+    
+    <!-- Microservice communication logging -->
+    <logger name="org.springframework.cloud.openfeign" level="INFO"/>
+    <logger name="org.springframework.cloud.gateway" level="INFO"/>
+    
+    <!-- Actuator and monitoring -->
+    <logger name="org.springframework.boot.actuate" level="INFO"/>
+    <logger name="io.micrometer" level="INFO"/>
+    
+    <!-- Redis session management -->
+    <logger name="org.springframework.session" level="INFO"/>
+    <logger name="io.lettuce" level="INFO"/>
+    
+    <!-- Development profile specific logging -->
+    <springProfile name="dev,local">
+        <logger name="com.carddemo" level="DEBUG"/>
+        <logger name="org.springframework.web" level="DEBUG"/>
+        <logger name="org.springframework.security" level="DEBUG"/>
+        <logger name="org.hibernate.SQL" level="DEBUG"/>
+        <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE"/>
+    </springProfile>
+    
+    <!-- Production profile specific logging -->
+    <springProfile name="prod">
+        <logger name="com.carddemo" level="INFO"/>
+        <logger name="org.springframework" level="WARN"/>
+        <logger name="org.hibernate" level="WARN"/>
+        <logger name="org.apache" level="WARN"/>
+        <logger name="com.zaxxer.hikari" level="WARN"/>
+        
+        <!-- Reduced root level for production -->
+        <root level="WARN">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="ASYNC_FILE"/>
+            <appender-ref ref="ERROR"/>
+        </root>
+    </springProfile>
+    
+    <!-- Test profile specific logging -->
+    <springProfile name="test">
+        <logger name="com.carddemo" level="DEBUG"/>
+        <logger name="org.springframework.test" level="DEBUG"/>
+        <logger name="org.testcontainers" level="INFO"/>
+        
+        <!-- Console only for tests -->
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+    
+    <!-- Staging profile specific logging -->
+    <springProfile name="staging">
+        <logger name="com.carddemo" level="INFO"/>
+        <logger name="org.springframework" level="INFO"/>
+        <logger name="org.hibernate" level="INFO"/>
+        
+        <!-- Enable performance logging in staging -->
+        <logger name="com.carddemo.performance" level="DEBUG" additivity="false">
+            <appender-ref ref="PERFORMANCE"/>
+            <appender-ref ref="CONSOLE"/>
+        </logger>
+    </springProfile>
+    
+    <!-- Kubernetes container environment optimization -->
+    <springProfile name="kubernetes">
+        <!-- Container-optimized logging -->
+        <property name="LOG_PATH" value="/var/log/carddemo"/>
+        
+        <!-- Ensure logs are written to container stdout for Filebeat collection -->
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="ASYNC_FILE"/>
+            <appender-ref ref="ERROR"/>
+        </root>
+        
+        <!-- Enhanced correlation ID tracking for distributed services -->
+        <logger name="com.carddemo" level="INFO" additivity="false">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="ASYNC_FILE"/>
+            <appender-ref ref="ERROR"/>
+        </logger>
+    </springProfile>
+    
+    <!-- Shutdown hook for graceful log cleanup -->
+    <shutdownHook class="ch.qos.logback.core.hook.DelayingShutdownHook"/>
+    
+    <!-- Status listener for configuration debugging -->
+    <statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener"/>
+    
+</configuration>
