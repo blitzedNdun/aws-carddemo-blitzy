@@ -1,5 +1,6 @@
 package com.carddemo.common.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.*;
 
@@ -179,6 +180,7 @@ public class MenuOptionDTO {
      *
      * @return true if access level is 'A' (Admin), false otherwise
      */
+    @JsonIgnore
     public boolean isAdminOnly() {
         return "A".equals(accessLevel);
     }
@@ -188,6 +190,7 @@ public class MenuOptionDTO {
      *
      * @return true if access level is 'U' (User) or null, false if admin-only
      */
+    @JsonIgnore
     public boolean isUserAccessible() {
         return !"A".equals(accessLevel);
     }
