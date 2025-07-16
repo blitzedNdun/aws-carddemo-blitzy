@@ -1,0 +1,655 @@
+{
+  "metadata": {
+    "description": "Transaction category reference data for comprehensive category validation, balance tracking, and Redis cache testing scenarios",
+    "version": "1.0.0",
+    "generatedFrom": "app/data/ASCII/trancatg.txt",
+    "lastUpdated": "2024-01-15T00:00:00Z",
+    "recordCount": 18,
+    "testingPurpose": "Supports category validation, balance tracking, and Redis cache testing per Section 6.2.4.2",
+    "cachingStrategy": "Daily refresh with Spring Cache abstraction and Redis backend"
+  },
+  "categories": [
+    {
+      "transactionCategory": "0100",
+      "categoryCode": "010001",
+      "categoryDescription": "Regular Sales Draft",
+      "categoryType": "SALES_TRANSACTION",
+      "activeStatus": true,
+      "balanceTracking": true,
+      "defaultCurrencyCode": "USD",
+      "processingRules": {
+        "requiresAuthorization": true,
+        "allowsReversal": true,
+        "affectsAccountBalance": true,
+        "balanceCategory": "PURCHASE"
+      },
+      "businessLogic": {
+        "debitCreditIndicator": "DEBIT",
+        "transactionLimit": 9999999999.99,
+        "feeCalculation": "STANDARD",
+        "interestBearing": false
+      },
+      "cacheProperties": {
+        "cacheable": true,
+        "ttl": 86400,
+        "refreshStrategy": "DAILY",
+        "preloadOnStartup": true
+      }
+    },
+    {
+      "transactionCategory": "0100",
+      "categoryCode": "010002",
+      "categoryDescription": "Regular Cash Advance",
+      "categoryType": "CASH_ADVANCE",
+      "activeStatus": true,
+      "balanceTracking": true,
+      "defaultCurrencyCode": "USD",
+      "processingRules": {
+        "requiresAuthorization": true,
+        "allowsReversal": true,
+        "affectsAccountBalance": true,
+        "balanceCategory": "CASH_ADVANCE"
+      },
+      "businessLogic": {
+        "debitCreditIndicator": "DEBIT",
+        "transactionLimit": 5000.00,
+        "feeCalculation": "CASH_ADVANCE",
+        "interestBearing": true
+      },
+      "cacheProperties": {
+        "cacheable": true,
+        "ttl": 86400,
+        "refreshStrategy": "DAILY",
+        "preloadOnStartup": true
+      }
+    },
+    {
+      "transactionCategory": "0100",
+      "categoryCode": "010003",
+      "categoryDescription": "Convenience Check Debit",
+      "categoryType": "CONVENIENCE_CHECK",
+      "activeStatus": true,
+      "balanceTracking": true,
+      "defaultCurrencyCode": "USD",
+      "processingRules": {
+        "requiresAuthorization": false,
+        "allowsReversal": true,
+        "affectsAccountBalance": true,
+        "balanceCategory": "CASH_ADVANCE"
+      },
+      "businessLogic": {
+        "debitCreditIndicator": "DEBIT",
+        "transactionLimit": 2500.00,
+        "feeCalculation": "CASH_ADVANCE",
+        "interestBearing": true
+      },
+      "cacheProperties": {
+        "cacheable": true,
+        "ttl": 86400,
+        "refreshStrategy": "DAILY",
+        "preloadOnStartup": true
+      }
+    },
+    {
+      "transactionCategory": "0100",
+      "categoryCode": "010004",
+      "categoryDescription": "ATM Cash Advance",
+      "categoryType": "ATM_CASH_ADVANCE",
+      "activeStatus": true,
+      "balanceTracking": true,
+      "defaultCurrencyCode": "USD",
+      "processingRules": {
+        "requiresAuthorization": true,
+        "allowsReversal": true,
+        "affectsAccountBalance": true,
+        "balanceCategory": "CASH_ADVANCE"
+      },
+      "businessLogic": {
+        "debitCreditIndicator": "DEBIT",
+        "transactionLimit": 1000.00,
+        "feeCalculation": "ATM_CASH_ADVANCE",
+        "interestBearing": true
+      },
+      "cacheProperties": {
+        "cacheable": true,
+        "ttl": 86400,
+        "refreshStrategy": "DAILY",
+        "preloadOnStartup": true
+      }
+    },
+    {
+      "transactionCategory": "0100",
+      "categoryCode": "010005",
+      "categoryDescription": "Interest Amount",
+      "categoryType": "INTEREST_CHARGE",
+      "activeStatus": true,
+      "balanceTracking": true,
+      "defaultCurrencyCode": "USD",
+      "processingRules": {
+        "requiresAuthorization": false,
+        "allowsReversal": false,
+        "affectsAccountBalance": true,
+        "balanceCategory": "INTEREST"
+      },
+      "businessLogic": {
+        "debitCreditIndicator": "DEBIT",
+        "transactionLimit": 999999.99,
+        "feeCalculation": "NONE",
+        "interestBearing": false
+      },
+      "cacheProperties": {
+        "cacheable": true,
+        "ttl": 86400,
+        "refreshStrategy": "DAILY",
+        "preloadOnStartup": true
+      }
+    },
+    {
+      "transactionCategory": "0200",
+      "categoryCode": "020001",
+      "categoryDescription": "Cash payment",
+      "categoryType": "CASH_PAYMENT",
+      "activeStatus": true,
+      "balanceTracking": true,
+      "defaultCurrencyCode": "USD",
+      "processingRules": {
+        "requiresAuthorization": false,
+        "allowsReversal": true,
+        "affectsAccountBalance": true,
+        "balanceCategory": "PAYMENT"
+      },
+      "businessLogic": {
+        "debitCreditIndicator": "CREDIT",
+        "transactionLimit": 9999999999.99,
+        "feeCalculation": "NONE",
+        "interestBearing": false
+      },
+      "cacheProperties": {
+        "cacheable": true,
+        "ttl": 86400,
+        "refreshStrategy": "DAILY",
+        "preloadOnStartup": true
+      }
+    },
+    {
+      "transactionCategory": "0200",
+      "categoryCode": "020002",
+      "categoryDescription": "Electronic payment",
+      "categoryType": "ELECTRONIC_PAYMENT",
+      "activeStatus": true,
+      "balanceTracking": true,
+      "defaultCurrencyCode": "USD",
+      "processingRules": {
+        "requiresAuthorization": false,
+        "allowsReversal": true,
+        "affectsAccountBalance": true,
+        "balanceCategory": "PAYMENT"
+      },
+      "businessLogic": {
+        "debitCreditIndicator": "CREDIT",
+        "transactionLimit": 9999999999.99,
+        "feeCalculation": "NONE",
+        "interestBearing": false
+      },
+      "cacheProperties": {
+        "cacheable": true,
+        "ttl": 86400,
+        "refreshStrategy": "DAILY",
+        "preloadOnStartup": true
+      }
+    },
+    {
+      "transactionCategory": "0200",
+      "categoryCode": "020003",
+      "categoryDescription": "Check payment",
+      "categoryType": "CHECK_PAYMENT",
+      "activeStatus": true,
+      "balanceTracking": true,
+      "defaultCurrencyCode": "USD",
+      "processingRules": {
+        "requiresAuthorization": false,
+        "allowsReversal": true,
+        "affectsAccountBalance": true,
+        "balanceCategory": "PAYMENT"
+      },
+      "businessLogic": {
+        "debitCreditIndicator": "CREDIT",
+        "transactionLimit": 9999999999.99,
+        "feeCalculation": "NONE",
+        "interestBearing": false
+      },
+      "cacheProperties": {
+        "cacheable": true,
+        "ttl": 86400,
+        "refreshStrategy": "DAILY",
+        "preloadOnStartup": true
+      }
+    },
+    {
+      "transactionCategory": "0300",
+      "categoryCode": "030001",
+      "categoryDescription": "Credit to Account",
+      "categoryType": "ACCOUNT_CREDIT",
+      "activeStatus": true,
+      "balanceTracking": true,
+      "defaultCurrencyCode": "USD",
+      "processingRules": {
+        "requiresAuthorization": false,
+        "allowsReversal": true,
+        "affectsAccountBalance": true,
+        "balanceCategory": "CREDIT"
+      },
+      "businessLogic": {
+        "debitCreditIndicator": "CREDIT",
+        "transactionLimit": 9999999999.99,
+        "feeCalculation": "NONE",
+        "interestBearing": false
+      },
+      "cacheProperties": {
+        "cacheable": true,
+        "ttl": 86400,
+        "refreshStrategy": "DAILY",
+        "preloadOnStartup": true
+      }
+    },
+    {
+      "transactionCategory": "0300",
+      "categoryCode": "030002",
+      "categoryDescription": "Credit to Purchase balance",
+      "categoryType": "PURCHASE_BALANCE_CREDIT",
+      "activeStatus": true,
+      "balanceTracking": true,
+      "defaultCurrencyCode": "USD",
+      "processingRules": {
+        "requiresAuthorization": false,
+        "allowsReversal": true,
+        "affectsAccountBalance": true,
+        "balanceCategory": "PURCHASE"
+      },
+      "businessLogic": {
+        "debitCreditIndicator": "CREDIT",
+        "transactionLimit": 9999999999.99,
+        "feeCalculation": "NONE",
+        "interestBearing": false
+      },
+      "cacheProperties": {
+        "cacheable": true,
+        "ttl": 86400,
+        "refreshStrategy": "DAILY",
+        "preloadOnStartup": true
+      }
+    },
+    {
+      "transactionCategory": "0300",
+      "categoryCode": "030003",
+      "categoryDescription": "Credit to Cash balance",
+      "categoryType": "CASH_BALANCE_CREDIT",
+      "activeStatus": true,
+      "balanceTracking": true,
+      "defaultCurrencyCode": "USD",
+      "processingRules": {
+        "requiresAuthorization": false,
+        "allowsReversal": true,
+        "affectsAccountBalance": true,
+        "balanceCategory": "CASH_ADVANCE"
+      },
+      "businessLogic": {
+        "debitCreditIndicator": "CREDIT",
+        "transactionLimit": 9999999999.99,
+        "feeCalculation": "NONE",
+        "interestBearing": false
+      },
+      "cacheProperties": {
+        "cacheable": true,
+        "ttl": 86400,
+        "refreshStrategy": "DAILY",
+        "preloadOnStartup": true
+      }
+    },
+    {
+      "transactionCategory": "0400",
+      "categoryCode": "040001",
+      "categoryDescription": "Zero dollar authorization",
+      "categoryType": "ZERO_DOLLAR_AUTH",
+      "activeStatus": true,
+      "balanceTracking": false,
+      "defaultCurrencyCode": "USD",
+      "processingRules": {
+        "requiresAuthorization": true,
+        "allowsReversal": false,
+        "affectsAccountBalance": false,
+        "balanceCategory": "AUTHORIZATION"
+      },
+      "businessLogic": {
+        "debitCreditIndicator": "NONE",
+        "transactionLimit": 0.00,
+        "feeCalculation": "NONE",
+        "interestBearing": false
+      },
+      "cacheProperties": {
+        "cacheable": true,
+        "ttl": 86400,
+        "refreshStrategy": "DAILY",
+        "preloadOnStartup": true
+      }
+    },
+    {
+      "transactionCategory": "0400",
+      "categoryCode": "040002",
+      "categoryDescription": "Online purchase authorization",
+      "categoryType": "ONLINE_PURCHASE_AUTH",
+      "activeStatus": true,
+      "balanceTracking": false,
+      "defaultCurrencyCode": "USD",
+      "processingRules": {
+        "requiresAuthorization": true,
+        "allowsReversal": true,
+        "affectsAccountBalance": false,
+        "balanceCategory": "AUTHORIZATION"
+      },
+      "businessLogic": {
+        "debitCreditIndicator": "NONE",
+        "transactionLimit": 9999999999.99,
+        "feeCalculation": "NONE",
+        "interestBearing": false
+      },
+      "cacheProperties": {
+        "cacheable": true,
+        "ttl": 86400,
+        "refreshStrategy": "DAILY",
+        "preloadOnStartup": true
+      }
+    },
+    {
+      "transactionCategory": "0400",
+      "categoryCode": "040003",
+      "categoryDescription": "Travel booking authorization",
+      "categoryType": "TRAVEL_BOOKING_AUTH",
+      "activeStatus": true,
+      "balanceTracking": false,
+      "defaultCurrencyCode": "USD",
+      "processingRules": {
+        "requiresAuthorization": true,
+        "allowsReversal": true,
+        "affectsAccountBalance": false,
+        "balanceCategory": "AUTHORIZATION"
+      },
+      "businessLogic": {
+        "debitCreditIndicator": "NONE",
+        "transactionLimit": 9999999999.99,
+        "feeCalculation": "NONE",
+        "interestBearing": false
+      },
+      "cacheProperties": {
+        "cacheable": true,
+        "ttl": 86400,
+        "refreshStrategy": "DAILY",
+        "preloadOnStartup": true
+      }
+    },
+    {
+      "transactionCategory": "0500",
+      "categoryCode": "050001",
+      "categoryDescription": "Refund credit",
+      "categoryType": "REFUND_CREDIT",
+      "activeStatus": true,
+      "balanceTracking": true,
+      "defaultCurrencyCode": "USD",
+      "processingRules": {
+        "requiresAuthorization": false,
+        "allowsReversal": true,
+        "affectsAccountBalance": true,
+        "balanceCategory": "REFUND"
+      },
+      "businessLogic": {
+        "debitCreditIndicator": "CREDIT",
+        "transactionLimit": 9999999999.99,
+        "feeCalculation": "NONE",
+        "interestBearing": false
+      },
+      "cacheProperties": {
+        "cacheable": true,
+        "ttl": 86400,
+        "refreshStrategy": "DAILY",
+        "preloadOnStartup": true
+      }
+    },
+    {
+      "transactionCategory": "0600",
+      "categoryCode": "060001",
+      "categoryDescription": "Fraud reversal",
+      "categoryType": "FRAUD_REVERSAL",
+      "activeStatus": true,
+      "balanceTracking": true,
+      "defaultCurrencyCode": "USD",
+      "processingRules": {
+        "requiresAuthorization": true,
+        "allowsReversal": false,
+        "affectsAccountBalance": true,
+        "balanceCategory": "REVERSAL"
+      },
+      "businessLogic": {
+        "debitCreditIndicator": "CREDIT",
+        "transactionLimit": 9999999999.99,
+        "feeCalculation": "NONE",
+        "interestBearing": false
+      },
+      "cacheProperties": {
+        "cacheable": true,
+        "ttl": 86400,
+        "refreshStrategy": "DAILY",
+        "preloadOnStartup": true
+      }
+    },
+    {
+      "transactionCategory": "0600",
+      "categoryCode": "060002",
+      "categoryDescription": "Non-fraud reversal",
+      "categoryType": "NON_FRAUD_REVERSAL",
+      "activeStatus": true,
+      "balanceTracking": true,
+      "defaultCurrencyCode": "USD",
+      "processingRules": {
+        "requiresAuthorization": false,
+        "allowsReversal": false,
+        "affectsAccountBalance": true,
+        "balanceCategory": "REVERSAL"
+      },
+      "businessLogic": {
+        "debitCreditIndicator": "CREDIT",
+        "transactionLimit": 9999999999.99,
+        "feeCalculation": "NONE",
+        "interestBearing": false
+      },
+      "cacheProperties": {
+        "cacheable": true,
+        "ttl": 86400,
+        "refreshStrategy": "DAILY",
+        "preloadOnStartup": true
+      }
+    },
+    {
+      "transactionCategory": "0700",
+      "categoryCode": "070001",
+      "categoryDescription": "Sales draft credit adjustment",
+      "categoryType": "SALES_DRAFT_ADJUSTMENT",
+      "activeStatus": true,
+      "balanceTracking": true,
+      "defaultCurrencyCode": "USD",
+      "processingRules": {
+        "requiresAuthorization": false,
+        "allowsReversal": true,
+        "affectsAccountBalance": true,
+        "balanceCategory": "ADJUSTMENT"
+      },
+      "businessLogic": {
+        "debitCreditIndicator": "CREDIT",
+        "transactionLimit": 9999999999.99,
+        "feeCalculation": "NONE",
+        "interestBearing": false
+      },
+      "cacheProperties": {
+        "cacheable": true,
+        "ttl": 86400,
+        "refreshStrategy": "DAILY",
+        "preloadOnStartup": true
+      }
+    }
+  ],
+  "testingScenarios": {
+    "cacheValidation": {
+      "description": "Redis cache testing scenarios for transaction category lookups",
+      "scenarios": [
+        {
+          "name": "cache_warmup_test",
+          "description": "Validate cache warming on application startup",
+          "expectedBehavior": "All categories preloaded with 86400 second TTL",
+          "testData": ["010001", "020001", "030001", "040001", "050001", "060001", "070001"]
+        },
+        {
+          "name": "cache_miss_test",
+          "description": "Test cache miss and subsequent database lookup",
+          "expectedBehavior": "Category not in cache triggers database query and cache population",
+          "testData": ["999999"]
+        },
+        {
+          "name": "cache_hit_test",
+          "description": "Validate cache hit performance for frequently accessed categories",
+          "expectedBehavior": "Sub-millisecond response for cached categories",
+          "testData": ["010001", "020001", "030001"]
+        },
+        {
+          "name": "cache_expiry_test",
+          "description": "Test TTL expiration and automatic refresh",
+          "expectedBehavior": "Cache entry expires after 86400 seconds and refreshes on next access",
+          "testData": ["010001"]
+        },
+        {
+          "name": "cache_eviction_test",
+          "description": "Test LRU eviction policy under memory pressure",
+          "expectedBehavior": "Least recently used categories evicted when cache limit reached",
+          "testData": ["010001", "010002", "010003", "010004", "010005"]
+        }
+      ]
+    },
+    "businessLogicValidation": {
+      "description": "Transaction category business rule validation tests",
+      "scenarios": [
+        {
+          "name": "balance_tracking_validation",
+          "description": "Validate balance tracking rules for different category types",
+          "expectedBehavior": "Categories with balanceTracking=true affect account balances",
+          "testData": {
+            "trackedCategories": ["010001", "020001", "030001", "050001", "060001", "070001"],
+            "unTrackedCategories": ["040001", "040002", "040003"]
+          }
+        },
+        {
+          "name": "authorization_requirement_validation",
+          "description": "Test authorization requirements for different transaction types",
+          "expectedBehavior": "Categories requiring authorization must pass auth checks",
+          "testData": {
+            "authRequired": ["010001", "010002", "010004", "040001", "040002", "040003", "060001"],
+            "noAuthRequired": ["010003", "010005", "020001", "020002", "020003", "030001", "030002", "030003", "050001", "060002", "070001"]
+          }
+        },
+        {
+          "name": "debit_credit_validation",
+          "description": "Validate debit/credit indicator processing",
+          "expectedBehavior": "Debit transactions decrease balance, credit transactions increase balance",
+          "testData": {
+            "debitCategories": ["010001", "010002", "010003", "010004", "010005"],
+            "creditCategories": ["020001", "020002", "020003", "030001", "030002", "030003", "050001", "060001", "060002", "070001"],
+            "noneCategories": ["040001", "040002", "040003"]
+          }
+        },
+        {
+          "name": "transaction_limit_validation",
+          "description": "Test transaction amount limits for different categories",
+          "expectedBehavior": "Transaction amounts must not exceed category limits",
+          "testData": {
+            "limitedCategories": [
+              {"categoryCode": "010002", "limit": 5000.00},
+              {"categoryCode": "010003", "limit": 2500.00},
+              {"categoryCode": "010004", "limit": 1000.00},
+              {"categoryCode": "040001", "limit": 0.00}
+            ],
+            "unlimitedCategories": ["010001", "010005", "020001", "020002", "020003", "030001", "030002", "030003", "040002", "040003", "050001", "060001", "060002", "070001"]
+          }
+        }
+      ]
+    },
+    "integrationTesting": {
+      "description": "Integration testing scenarios for transaction category operations",
+      "scenarios": [
+        {
+          "name": "spring_cache_integration",
+          "description": "Test Spring Cache abstraction with Redis backend",
+          "expectedBehavior": "@Cacheable annotations work with Redis cluster",
+          "testData": ["010001", "020001", "030001"]
+        },
+        {
+          "name": "transaction_processing_integration",
+          "description": "Test category lookup during transaction processing",
+          "expectedBehavior": "Category validation integrated with transaction flow",
+          "testData": {
+            "validTransactions": [
+              {"categoryCode": "010001", "amount": 1000.00},
+              {"categoryCode": "020001", "amount": 500.00},
+              {"categoryCode": "030001", "amount": 250.00}
+            ],
+            "invalidTransactions": [
+              {"categoryCode": "010002", "amount": 6000.00},
+              {"categoryCode": "010004", "amount": 1500.00},
+              {"categoryCode": "040001", "amount": 100.00}
+            ]
+          }
+        },
+        {
+          "name": "balance_category_mapping",
+          "description": "Test balance category assignment for transaction processing",
+          "expectedBehavior": "Transactions assigned to correct balance categories",
+          "testData": {
+            "purchaseBalance": ["010001", "030002"],
+            "cashAdvanceBalance": ["010002", "010003", "010004", "030003"],
+            "paymentBalance": ["020001", "020002", "020003"],
+            "creditBalance": ["030001"],
+            "interestBalance": ["010005"],
+            "authorizationBalance": ["040001", "040002", "040003"],
+            "refundBalance": ["050001"],
+            "reversalBalance": ["060001", "060002"],
+            "adjustmentBalance": ["070001"]
+          }
+        }
+      ]
+    }
+  },
+  "performanceMetrics": {
+    "cachePerformance": {
+      "targetCacheHitRatio": 0.95,
+      "maxCacheLookupTime": "1ms",
+      "cacheWarmupTime": "500ms",
+      "memoryAllocation": "50MB",
+      "concurrentAccessSupport": 10000
+    },
+    "databasePerformance": {
+      "maxQueryTime": "5ms",
+      "connectionPoolSize": 20,
+      "transactionIsolation": "READ_COMMITTED",
+      "indexOptimization": "B-tree on category_code"
+    }
+  },
+  "complianceValidation": {
+    "dataRetention": {
+      "retentionPeriod": "7 years",
+      "archivalPolicy": "Annual migration to archive storage",
+      "complianceStandard": "PCI DSS 10.7"
+    },
+    "auditTrail": {
+      "categoryAccessLogging": true,
+      "modificationTracking": true,
+      "userActivityCorrelation": true,
+      "complianceReporting": "Monthly audit reports"
+    }
+  }
+}
