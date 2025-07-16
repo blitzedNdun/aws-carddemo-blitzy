@@ -1,0 +1,468 @@
+{
+  "test_suite": {
+    "name": "Customer Account Card Integration Test Suite",
+    "version": "1.0.0",
+    "description": "Golden file containing expected customer-account-card integration results for validating data relationship preservation and referential integrity maintenance during VSAM-to-PostgreSQL migration",
+    "test_date": "2024-01-15T10:00:00Z",
+    "baseline_source": "VSAM CUSTDAT/CARDDAT/CARDXREF relationship patterns"
+  },
+  "referential_integrity_validation": {
+    "customer_account_relationships": {
+      "description": "Validates customer-account linkages preserve exact referential integrity equivalent to VSAM cross-reference file logic",
+      "test_cases": [
+        {
+          "test_id": "CAR_001",
+          "customer_id": "000000001",
+          "customer_name": "Immanuel Kessler",
+          "expected_accounts": [
+            {
+              "account_id": "00000000001",
+              "account_status": "A",
+              "current_balance": "493684.37",
+              "credit_limit": "5000.00",
+              "open_date": "1961-06-08",
+              "relationship_type": "PRIMARY",
+              "foreign_key_constraint": "accounts.customer_id -> customers.customer_id"
+            }
+          ],
+          "validation_rules": {
+            "foreign_key_integrity": "STRICT",
+            "cascade_delete": "RESTRICT",
+            "referential_consistency": "MANDATORY"
+          }
+        },
+        {
+          "test_id": "CAR_002", 
+          "customer_id": "000000002",
+          "customer_name": "Enrico Rosenbaum",
+          "expected_accounts": [
+            {
+              "account_id": "00000000002",
+              "account_status": "A",
+              "current_balance": "506210.37",
+              "credit_limit": "7500.00",
+              "open_date": "1961-10-08",
+              "relationship_type": "PRIMARY",
+              "foreign_key_constraint": "accounts.customer_id -> customers.customer_id"
+            }
+          ],
+          "validation_rules": {
+            "foreign_key_integrity": "STRICT",
+            "cascade_delete": "RESTRICT",
+            "referential_consistency": "MANDATORY"
+          }
+        },
+        {
+          "test_id": "CAR_003",
+          "customer_id": "000000003",
+          "customer_name": "Larry Homenick",
+          "expected_accounts": [
+            {
+              "account_id": "00000000003",
+              "account_status": "A",
+              "current_balance": "524193.03",
+              "credit_limit": "10000.00",
+              "open_date": "1987-11-30",
+              "relationship_type": "PRIMARY",
+              "foreign_key_constraint": "accounts.customer_id -> customers.customer_id"
+            }
+          ],
+          "validation_rules": {
+            "foreign_key_integrity": "STRICT",
+            "cascade_delete": "RESTRICT",
+            "referential_consistency": "MANDATORY"
+          }
+        }
+      ]
+    },
+    "customer_card_relationships": {
+      "description": "Validates customer-card linkages maintain PostgreSQL foreign key constraints matching original VSAM relationship patterns",
+      "test_cases": [
+        {
+          "test_id": "CCR_001",
+          "customer_id": "000000001",
+          "customer_name": "Immanuel Kessler",
+          "expected_cards": [
+            {
+              "card_number": "9680294154603697",
+              "card_holder_name": "Immanuel Kessler",
+              "expiration_date": "2025-05-20",
+              "card_status": "Y",
+              "card_type": "CREDIT",
+              "foreign_key_constraint": "cards.customer_id -> customers.customer_id"
+            }
+          ],
+          "cross_reference_validation": {
+            "xref_key": "9680294154603697",
+            "xref_customer": "000000001",
+            "xref_mapping": "CARDXREF_EQUIVALENT"
+          }
+        },
+        {
+          "test_id": "CCR_002",
+          "customer_id": "000000002",
+          "customer_name": "Enrico Rosenbaum",
+          "expected_cards": [
+            {
+              "card_number": "0923877193247330",
+              "card_holder_name": "Enrico Rosenbaum",
+              "expiration_date": "2024-08-11",
+              "card_status": "Y",
+              "card_type": "CREDIT",
+              "foreign_key_constraint": "cards.customer_id -> customers.customer_id"
+            }
+          ],
+          "cross_reference_validation": {
+            "xref_key": "0923877193247330",
+            "xref_customer": "000000002",
+            "xref_mapping": "CARDXREF_EQUIVALENT"
+          }
+        },
+        {
+          "test_id": "CCR_003",
+          "customer_id": "000000003",
+          "customer_name": "Larry Homenick",
+          "expected_cards": [
+            {
+              "card_number": "3999169246375885",
+              "card_holder_name": "Larry Homenick",
+              "expiration_date": "2024-01-10",
+              "card_status": "Y",
+              "card_type": "CREDIT",
+              "foreign_key_constraint": "cards.customer_id -> customers.customer_id"
+            }
+          ],
+          "cross_reference_validation": {
+            "xref_key": "3999169246375885",
+            "xref_customer": "000000003",
+            "xref_mapping": "CARDXREF_EQUIVALENT"
+          }
+        }
+      ]
+    },
+    "account_card_relationships": {
+      "description": "Validates account-card linkages ensure data consistency across service boundaries with exact data preservation",
+      "test_cases": [
+        {
+          "test_id": "ACR_001",
+          "account_id": "00000000001",
+          "customer_id": "000000001",
+          "expected_cards": [
+            {
+              "card_number": "9680294154603697",
+              "account_linkage": "PRIMARY",
+              "card_status": "ACTIVE",
+              "foreign_key_constraint": "cards.account_id -> accounts.account_id"
+            }
+          ],
+          "integration_validation": {
+            "service_boundary": "ACCOUNT_CARD_SERVICE",
+            "data_consistency": "STRICT",
+            "transaction_boundary": "SERIALIZABLE"
+          }
+        },
+        {
+          "test_id": "ACR_002",
+          "account_id": "00000000002",
+          "customer_id": "000000002",
+          "expected_cards": [
+            {
+              "card_number": "0923877193247330",
+              "account_linkage": "PRIMARY",
+              "card_status": "ACTIVE",
+              "foreign_key_constraint": "cards.account_id -> accounts.account_id"
+            }
+          ],
+          "integration_validation": {
+            "service_boundary": "ACCOUNT_CARD_SERVICE",
+            "data_consistency": "STRICT",
+            "transaction_boundary": "SERIALIZABLE"
+          }
+        },
+        {
+          "test_id": "ACR_003",
+          "account_id": "00000000003",
+          "customer_id": "000000003",
+          "expected_cards": [
+            {
+              "card_number": "3999169246375885",
+              "account_linkage": "PRIMARY",
+              "card_status": "ACTIVE",
+              "foreign_key_constraint": "cards.account_id -> accounts.account_id"
+            }
+          ],
+          "integration_validation": {
+            "service_boundary": "ACCOUNT_CARD_SERVICE",
+            "data_consistency": "STRICT",
+            "transaction_boundary": "SERIALIZABLE"
+          }
+        }
+      ]
+    }
+  },
+  "cross_reference_data_integrity": {
+    "description": "Cross-reference data integrity testing validates PostgreSQL foreign key constraints match original VSAM relationship patterns",
+    "vsam_equivalent_mappings": {
+      "card_customer_xref": [
+        {
+          "card_number": "9680294154603697",
+          "customer_id": "000000001",
+          "xref_type": "CARDXREF_EQUIVALENT",
+          "postgresql_constraint": "FOREIGN KEY (customer_id) REFERENCES customers(customer_id)",
+          "vsam_equivalent": "CARDXREF alternate index path"
+        },
+        {
+          "card_number": "0923877193247330",
+          "customer_id": "000000002",
+          "xref_type": "CARDXREF_EQUIVALENT",
+          "postgresql_constraint": "FOREIGN KEY (customer_id) REFERENCES customers(customer_id)",
+          "vsam_equivalent": "CARDXREF alternate index path"
+        },
+        {
+          "card_number": "3999169246375885",
+          "customer_id": "000000003",
+          "xref_type": "CARDXREF_EQUIVALENT",
+          "postgresql_constraint": "FOREIGN KEY (customer_id) REFERENCES customers(customer_id)",
+          "vsam_equivalent": "CARDXREF alternate index path"
+        }
+      ],
+      "account_customer_xref": [
+        {
+          "account_id": "00000000001",
+          "customer_id": "000000001",
+          "xref_type": "CXACAIX_EQUIVALENT",
+          "postgresql_constraint": "FOREIGN KEY (customer_id) REFERENCES customers(customer_id)",
+          "vsam_equivalent": "CXACAIX cross-reference index"
+        },
+        {
+          "account_id": "00000000002",
+          "customer_id": "000000002",
+          "xref_type": "CXACAIX_EQUIVALENT",
+          "postgresql_constraint": "FOREIGN KEY (customer_id) REFERENCES customers(customer_id)",
+          "vsam_equivalent": "CXACAIX cross-reference index"
+        },
+        {
+          "account_id": "00000000003",
+          "customer_id": "000000003",
+          "xref_type": "CXACAIX_EQUIVALENT",
+          "postgresql_constraint": "FOREIGN KEY (customer_id) REFERENCES customers(customer_id)",
+          "vsam_equivalent": "CXACAIX cross-reference index"
+        }
+      ]
+    },
+    "constraint_validation_rules": {
+      "foreign_key_enforcement": "IMMEDIATE",
+      "cascade_operations": "RESTRICT",
+      "referential_actions": {
+        "on_delete": "RESTRICT",
+        "on_update": "CASCADE"
+      },
+      "integrity_validation": {
+        "orphan_detection": "MANDATORY",
+        "constraint_deferrable": "NOT DEFERRABLE",
+        "constraint_initially": "IMMEDIATE"
+      }
+    }
+  },
+  "customer_profile_management": {
+    "description": "Validates customer profile and card management operations maintain data consistency across service boundaries",
+    "test_scenarios": [
+      {
+        "scenario_id": "CPM_001",
+        "scenario_name": "Customer Profile Update with Card Linkage",
+        "customer_id": "000000001",
+        "operations": [
+          {
+            "operation": "UPDATE_CUSTOMER_PROFILE",
+            "service": "CustomerProfileService",
+            "expected_result": {
+              "customer_updated": true,
+              "linked_cards_maintained": true,
+              "account_relationships_preserved": true,
+              "referential_integrity_intact": true
+            }
+          },
+          {
+            "operation": "VALIDATE_CARD_LINKAGE",
+            "service": "CardManagementService",
+            "expected_result": {
+              "card_customer_link_valid": true,
+              "card_account_link_valid": true,
+              "cross_reference_updated": true
+            }
+          }
+        ],
+        "validation_criteria": {
+          "data_consistency": "STRICT",
+          "transaction_isolation": "SERIALIZABLE",
+          "foreign_key_integrity": "ENFORCED"
+        }
+      },
+      {
+        "scenario_id": "CPM_002",
+        "scenario_name": "Card Activation with Account Verification",
+        "customer_id": "000000002",
+        "operations": [
+          {
+            "operation": "ACTIVATE_CARD",
+            "service": "CardManagementService",
+            "expected_result": {
+              "card_activated": true,
+              "account_verified": true,
+              "customer_notified": true,
+              "audit_trail_created": true
+            }
+          },
+          {
+            "operation": "VERIFY_ACCOUNT_LINKAGE",
+            "service": "AccountService",
+            "expected_result": {
+              "account_card_link_verified": true,
+              "credit_limit_enforced": true,
+              "balance_calculations_accurate": true
+            }
+          }
+        ],
+        "validation_criteria": {
+          "data_consistency": "STRICT",
+          "transaction_isolation": "SERIALIZABLE",
+          "foreign_key_integrity": "ENFORCED"
+        }
+      },
+      {
+        "scenario_id": "CPM_003",
+        "scenario_name": "Account Balance Update with Card Validation",
+        "customer_id": "000000003",
+        "operations": [
+          {
+            "operation": "UPDATE_ACCOUNT_BALANCE",
+            "service": "AccountService",
+            "expected_result": {
+              "balance_updated": true,
+              "precision_maintained": true,
+              "card_limits_adjusted": true,
+              "customer_profile_consistent": true
+            }
+          },
+          {
+            "operation": "VALIDATE_CARD_STATUS",
+            "service": "CardManagementService",
+            "expected_result": {
+              "card_status_valid": true,
+              "account_balance_verified": true,
+              "credit_utilization_calculated": true
+            }
+          }
+        ],
+        "validation_criteria": {
+          "data_consistency": "STRICT",
+          "transaction_isolation": "SERIALIZABLE",
+          "foreign_key_integrity": "ENFORCED"
+        }
+      }
+    ]
+  },
+  "data_precision_validation": {
+    "description": "Validates exact data preservation per Section 6.2.1.1 entity relationships with BigDecimal precision",
+    "precision_requirements": {
+      "decimal_precision": "EXACT",
+      "rounding_mode": "HALF_UP",
+      "scale_preservation": "MANDATORY",
+      "cobol_comp3_equivalent": "BIGDECIMAL_DECIMAL128"
+    },
+    "test_data_samples": [
+      {
+        "customer_id": "000000001",
+        "account_balance": "493684.37",
+        "precision_validation": {
+          "decimal_places": 2,
+          "total_digits": 12,
+          "cobol_equivalent": "PIC S9(10)V99 COMP-3",
+          "java_implementation": "BigDecimal(493684.37, MathContext.DECIMAL128)"
+        }
+      },
+      {
+        "customer_id": "000000002",
+        "account_balance": "506210.37",
+        "precision_validation": {
+          "decimal_places": 2,
+          "total_digits": 12,
+          "cobol_equivalent": "PIC S9(10)V99 COMP-3",
+          "java_implementation": "BigDecimal(506210.37, MathContext.DECIMAL128)"
+        }
+      },
+      {
+        "customer_id": "000000003",
+        "account_balance": "524193.03",
+        "precision_validation": {
+          "decimal_places": 2,
+          "total_digits": 12,
+          "cobol_equivalent": "PIC S9(10)V99 COMP-3",
+          "java_implementation": "BigDecimal(524193.03, MathContext.DECIMAL128)"
+        }
+      }
+    ]
+  },
+  "integration_testing_framework": {
+    "description": "Supports validation of customer profile management and card linkage operations with exact data preservation",
+    "test_framework_config": {
+      "test_runner": "SpringBootTest",
+      "database_provider": "PostgreSQL_Testcontainers",
+      "transaction_management": "SPRING_TRANSACTIONAL",
+      "isolation_level": "SERIALIZABLE",
+      "rollback_strategy": "ROLLBACK_ON_FAILURE"
+    },
+    "validation_procedures": [
+      {
+        "procedure_name": "REFERENTIAL_INTEGRITY_CHECK",
+        "description": "Validates all foreign key constraints are properly enforced",
+        "validation_steps": [
+          "INSERT customer record",
+          "INSERT account record with customer_id FK",
+          "INSERT card record with customer_id and account_id FKs",
+          "VERIFY all constraints are satisfied",
+          "ATTEMPT constraint violation",
+          "VERIFY constraint enforcement"
+        ]
+      },
+      {
+        "procedure_name": "CROSS_REFERENCE_VALIDATION",
+        "description": "Validates cross-reference data integrity equivalent to VSAM patterns",
+        "validation_steps": [
+          "QUERY customer by ID",
+          "QUERY related accounts via FK",
+          "QUERY related cards via FK",
+          "VERIFY relationship consistency",
+          "VALIDATE cross-reference mappings"
+        ]
+      },
+      {
+        "procedure_name": "DATA_CONSISTENCY_CHECK",
+        "description": "Validates data consistency across service boundaries",
+        "validation_steps": [
+          "EXECUTE customer profile update",
+          "VERIFY account data consistency",
+          "VERIFY card data consistency",
+          "VALIDATE audit trail integrity",
+          "CONFIRM transaction boundaries"
+        ]
+      }
+    ]
+  },
+  "expected_results_summary": {
+    "total_test_cases": 21,
+    "referential_integrity_tests": 9,
+    "cross_reference_tests": 6,
+    "customer_profile_tests": 3,
+    "data_precision_tests": 3,
+    "success_criteria": {
+      "all_foreign_keys_enforced": true,
+      "cross_reference_integrity_maintained": true,
+      "data_precision_preserved": true,
+      "service_boundary_consistency": true,
+      "transaction_isolation_effective": true
+    },
+    "validation_scope": "COMPLETE",
+    "compliance_level": "SECTION_6_2_1_1_COMPLIANT"
+  }
+}
