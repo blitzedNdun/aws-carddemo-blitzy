@@ -1,0 +1,571 @@
+# =====================================================================================
+# Spring Batch FlatFileItemReader Configuration: Account Data Reader
+# Description: Configures ItemReader for processing account data from acctdata.txt
+#              with exact COBOL COMP-3 decimal precision preservation and 300-byte
+#              fixed-width record parsing for PostgreSQL accounts table loading
+# Author: Blitzy Agent
+# Date: 2024
+# Version: 1.0
+# Dependencies: Account entity, PostgreSQL accounts table schema
+# =====================================================================================
+
+# Spring Batch configuration for account data loading
+spring:
+  batch:
+    # Account data reader configuration
+    readers:
+      # FlatFileItemReader for processing acctdata.txt with 300-byte fixed-width records
+      account-data-reader:
+        # Reader type and configuration
+        type: org.springframework.batch.item.file.FlatFileItemReader
+        
+        # Resource configuration for account data file
+        resource:
+          # Path to account data file (50 records, 300 bytes each)
+          file-path: "classpath:db/data/acctdata.txt"
+          # Resource description for logging and monitoring
+          description: "Account data ASCII file with 50 fixed-width 300-byte records"
+          # Encoding for proper character handling
+          encoding: "UTF-8"
+          # Buffer size for file reading optimization
+          buffer-size: 8192
+        
+        # Line processing configuration
+        line-processing:
+          # Skip header lines (none in this file)
+          lines-to-skip: 0
+          # Comments configuration (none expected)
+          comments: []
+          # Strict mode for validation
+          strict: true
+          # Save state for restart capability
+          save-state: true
+          # Max items to read (50 account records)
+          max-items-count: 50
+        
+        # Fixed-width tokenizer configuration for 300-byte records
+        tokenizer:
+          # Tokenizer type for fixed-width format
+          type: org.springframework.batch.item.file.transform.FixedLengthTokenizer
+          
+          # Column definitions matching acctdata.txt structure
+          columns:
+            # Account ID: positions 1-11 (11 digits with leading zeros)
+            - name: "accountId"
+              start: 1
+              end: 11
+              type: "STRING"
+              trim: true
+              description: "11-digit account identifier with leading zeros"
+            
+            # Active Status: position 12 (Y/N indicator)
+            - name: "activeStatus"
+              start: 12
+              end: 12
+              type: "STRING"
+              trim: true
+              description: "Account active status: Y=Active, N=Inactive"
+            
+            # Customer ID: positions 13-21 (9 digits with leading zeros)
+            - name: "customerId"
+              start: 13
+              end: 21
+              type: "STRING"
+              trim: true
+              description: "9-digit customer identifier with leading zeros"
+            
+            # Reserved field: positions 22-23 (2 digits, not used)
+            - name: "reserved1"
+              start: 22
+              end: 23
+              type: "STRING"
+              trim: true
+              description: "Reserved field for future use"
+            
+            # Current Balance: positions 24-34 (11 digits with { delimiter)
+            - name: "currentBalance"
+              start: 24
+              end: 34
+              type: "DECIMAL"
+              trim: true
+              description: "Current account balance in cents with { delimiter"
+              format:
+                # Remove { delimiter and convert from cents to dollars
+                pattern: "0000000000{0"
+                scale: 2
+                precision: 12
+                math-context: "DECIMAL128"
+                rounding-mode: "HALF_UP"
+            
+            # Credit Limit: positions 35-45 (11 digits with { delimiter)
+            - name: "creditLimit"
+              start: 35
+              end: 45
+              type: "DECIMAL"
+              trim: true
+              description: "Credit limit in cents with { delimiter"
+              format:
+                # Remove { delimiter and convert from cents to dollars
+                pattern: "0000000000{0"
+                scale: 2
+                precision: 12
+                math-context: "DECIMAL128"
+                rounding-mode: "HALF_UP"
+            
+            # Cash Credit Limit: positions 46-56 (11 digits with { delimiter)
+            - name: "cashCreditLimit"
+              start: 46
+              end: 56
+              type: "DECIMAL"
+              trim: true
+              description: "Cash credit limit in cents with { delimiter"
+              format:
+                # Remove { delimiter and convert from cents to dollars
+                pattern: "0000000000{0"
+                scale: 2
+                precision: 12
+                math-context: "DECIMAL128"
+                rounding-mode: "HALF_UP"
+            
+            # Open Date: positions 57-66 (YYYY-MM-DD format)
+            - name: "openDate"
+              start: 57
+              end: 66
+              type: "DATE"
+              trim: true
+              description: "Account open date in YYYY-MM-DD format"
+              format:
+                pattern: "yyyy-MM-dd"
+                locale: "en_US"
+            
+            # Expiration Date: positions 67-76 (YYYY-MM-DD format)
+            - name: "expirationDate"
+              start: 67
+              end: 76
+              type: "DATE"
+              trim: true
+              description: "Account expiration date in YYYY-MM-DD format"
+              format:
+                pattern: "yyyy-MM-dd"
+                locale: "en_US"
+            
+            # Reissue Date: positions 77-86 (YYYY-MM-DD format)
+            - name: "reissueDate"
+              start: 77
+              end: 86
+              type: "DATE"
+              trim: true
+              description: "Card reissue date in YYYY-MM-DD format"
+              format:
+                pattern: "yyyy-MM-dd"
+                locale: "en_US"
+            
+            # Current Cycle Credit: positions 87-97 (11 digits with { delimiter)
+            - name: "currentCycleCredit"
+              start: 87
+              end: 97
+              type: "DECIMAL"
+              trim: true
+              description: "Current cycle credit in cents with { delimiter"
+              format:
+                # Remove { delimiter and convert from cents to dollars
+                pattern: "0000000000{0"
+                scale: 2
+                precision: 12
+                math-context: "DECIMAL128"
+                rounding-mode: "HALF_UP"
+            
+            # Current Cycle Debit: positions 98-108 (11 digits with { delimiter)
+            - name: "currentCycleDebit"
+              start: 98
+              end: 108
+              type: "DECIMAL"
+              trim: true
+              description: "Current cycle debit in cents with { delimiter"
+              format:
+                # Remove { delimiter and convert from cents to dollars
+                pattern: "0000000000{0"
+                scale: 2
+                precision: 12
+                math-context: "DECIMAL128"
+                rounding-mode: "HALF_UP"
+            
+            # Group ID: positions 109-118 (10 characters for disclosure group)
+            - name: "groupId"
+              start: 109
+              end: 118
+              type: "STRING"
+              trim: true
+              description: "Disclosure group identifier (10 characters)"
+            
+            # Address ZIP: positions 119-128 (10 characters for ZIP code)
+            - name: "addressZip"
+              start: 119
+              end: 128
+              type: "STRING"
+              trim: true
+              description: "Account address ZIP code (10 characters)"
+            
+            # Padding: positions 129-300 (remaining bytes are padding)
+            - name: "padding"
+              start: 129
+              end: 300
+              type: "STRING"
+              trim: true
+              description: "Padding to reach 300-byte record length"
+        
+        # Field mapping configuration to Account entity
+        field-mapping:
+          # Target entity class
+          target-type: "com.carddemo.common.entity.Account"
+          
+          # Field mappings with validation and transformation
+          mappings:
+            # Account ID mapping with validation
+            accountId:
+              source-field: "accountId"
+              target-property: "accountId"
+              validation:
+                - type: "NOT_NULL"
+                  message: "Account ID cannot be null"
+                - type: "PATTERN"
+                  pattern: "\\d{11}"
+                  message: "Account ID must be exactly 11 digits"
+              transformation:
+                - type: "TRIM"
+                - type: "ZERO_PAD"
+                  length: 11
+            
+            # Customer ID mapping with validation
+            customerId:
+              source-field: "customerId"
+              target-property: "customerId"
+              validation:
+                - type: "NOT_NULL"
+                  message: "Customer ID cannot be null"
+                - type: "PATTERN"
+                  pattern: "\\d{9}"
+                  message: "Customer ID must be exactly 9 digits"
+              transformation:
+                - type: "TRIM"
+                - type: "ZERO_PAD"
+                  length: 9
+            
+            # Active Status mapping with validation
+            activeStatus:
+              source-field: "activeStatus"
+              target-property: "activeStatus"
+              validation:
+                - type: "NOT_NULL"
+                  message: "Active status cannot be null"
+                - type: "PATTERN"
+                  pattern: "[YN]"
+                  message: "Active status must be 'Y' or 'N'"
+              transformation:
+                - type: "TRIM"
+                - type: "UPPER_CASE"
+            
+            # Current Balance mapping with BigDecimal precision
+            currentBalance:
+              source-field: "currentBalance"
+              target-property: "currentBalance"
+              validation:
+                - type: "NOT_NULL"
+                  message: "Current balance cannot be null"
+                - type: "DECIMAL_MIN"
+                  value: "-9999999999.99"
+                  message: "Current balance cannot be less than -9999999999.99"
+              transformation:
+                - type: "DECIMAL_CONVERTER"
+                  from-cents: true
+                  scale: 2
+                  precision: 12
+                  math-context: "DECIMAL128"
+                  rounding-mode: "HALF_UP"
+            
+            # Credit Limit mapping with BigDecimal precision
+            creditLimit:
+              source-field: "creditLimit"
+              target-property: "creditLimit"
+              validation:
+                - type: "NOT_NULL"
+                  message: "Credit limit cannot be null"
+                - type: "DECIMAL_MIN"
+                  value: "0.00"
+                  message: "Credit limit cannot be negative"
+              transformation:
+                - type: "DECIMAL_CONVERTER"
+                  from-cents: true
+                  scale: 2
+                  precision: 12
+                  math-context: "DECIMAL128"
+                  rounding-mode: "HALF_UP"
+            
+            # Cash Credit Limit mapping with BigDecimal precision
+            cashCreditLimit:
+              source-field: "cashCreditLimit"
+              target-property: "cashCreditLimit"
+              validation:
+                - type: "NOT_NULL"
+                  message: "Cash credit limit cannot be null"
+                - type: "DECIMAL_MIN"
+                  value: "0.00"
+                  message: "Cash credit limit cannot be negative"
+              transformation:
+                - type: "DECIMAL_CONVERTER"
+                  from-cents: true
+                  scale: 2
+                  precision: 12
+                  math-context: "DECIMAL128"
+                  rounding-mode: "HALF_UP"
+            
+            # Open Date mapping
+            openDate:
+              source-field: "openDate"
+              target-property: "openDate"
+              validation:
+                - type: "NOT_NULL"
+                  message: "Open date cannot be null"
+                - type: "DATE_RANGE"
+                  min-date: "1900-01-01"
+                  max-date: "2099-12-31"
+                  message: "Open date must be between 1900-01-01 and 2099-12-31"
+            
+            # Expiration Date mapping
+            expirationDate:
+              source-field: "expirationDate"
+              target-property: "expirationDate"
+              validation:
+                - type: "DATE_RANGE"
+                  min-date: "1900-01-01"
+                  max-date: "2099-12-31"
+                  message: "Expiration date must be between 1900-01-01 and 2099-12-31"
+            
+            # Reissue Date mapping
+            reissueDate:
+              source-field: "reissueDate"
+              target-property: "reissueDate"
+              validation:
+                - type: "DATE_RANGE"
+                  min-date: "1900-01-01"
+                  max-date: "2099-12-31"
+                  message: "Reissue date must be between 1900-01-01 and 2099-12-31"
+            
+            # Current Cycle Credit mapping with BigDecimal precision
+            currentCycleCredit:
+              source-field: "currentCycleCredit"
+              target-property: "currentCycleCredit"
+              validation:
+                - type: "NOT_NULL"
+                  message: "Current cycle credit cannot be null"
+                - type: "DECIMAL_MIN"
+                  value: "0.00"
+                  message: "Current cycle credit cannot be negative"
+              transformation:
+                - type: "DECIMAL_CONVERTER"
+                  from-cents: true
+                  scale: 2
+                  precision: 12
+                  math-context: "DECIMAL128"
+                  rounding-mode: "HALF_UP"
+            
+            # Current Cycle Debit mapping with BigDecimal precision
+            currentCycleDebit:
+              source-field: "currentCycleDebit"
+              target-property: "currentCycleDebit"
+              validation:
+                - type: "NOT_NULL"
+                  message: "Current cycle debit cannot be null"
+                - type: "DECIMAL_MIN"
+                  value: "0.00"
+                  message: "Current cycle debit cannot be negative"
+              transformation:
+                - type: "DECIMAL_CONVERTER"
+                  from-cents: true
+                  scale: 2
+                  precision: 12
+                  math-context: "DECIMAL128"
+                  rounding-mode: "HALF_UP"
+            
+            # Group ID mapping
+            groupId:
+              source-field: "groupId"
+              target-property: "groupId"
+              validation:
+                - type: "MAX_LENGTH"
+                  length: 10
+                  message: "Group ID cannot exceed 10 characters"
+              transformation:
+                - type: "TRIM"
+                - type: "NULL_IF_EMPTY"
+            
+            # Address ZIP mapping
+            addressZip:
+              source-field: "addressZip"
+              target-property: "addressZip"
+              validation:
+                - type: "MAX_LENGTH"
+                  length: 10
+                  message: "Address ZIP code cannot exceed 10 characters"
+              transformation:
+                - type: "TRIM"
+                - type: "NULL_IF_EMPTY"
+        
+        # Error handling configuration
+        error-handling:
+          # Skip malformed records
+          skip-on-error: false
+          # Maximum number of errors before failing
+          max-errors: 0
+          # Log errors for debugging
+          log-errors: true
+          # Error callback configuration
+          error-callback:
+            class: "com.carddemo.batch.callback.AccountDataErrorCallback"
+            methods:
+              on-error: "handleError"
+              on-skip: "handleSkip"
+        
+        # Performance optimization settings
+        performance:
+          # Chunk size for processing (process records in batches)
+          chunk-size: 10
+          # Commit interval for database operations
+          commit-interval: 10
+          # Buffer size for file operations
+          buffer-size: 8192
+          # Read timeout in milliseconds
+          read-timeout: 30000
+          # Enable concurrent processing
+          concurrent-processing: false
+          # Thread pool size (if concurrent enabled)
+          thread-pool-size: 1
+        
+        # Monitoring and metrics configuration
+        monitoring:
+          # Enable metrics collection
+          metrics-enabled: true
+          # Metric names
+          metrics:
+            - name: "account.data.records.read"
+              description: "Number of account records read from file"
+            - name: "account.data.records.processed"
+              description: "Number of account records successfully processed"
+            - name: "account.data.errors.count"
+              description: "Number of errors encountered during processing"
+            - name: "account.data.processing.time"
+              description: "Time taken to process account data file"
+          
+          # Logging configuration
+          logging:
+            # Log level for account data processing
+            level: "INFO"
+            # Log processed record count every N records
+            log-interval: 10
+            # Include processing statistics in logs
+            include-stats: true
+            # Log successful completions
+            log-completion: true
+        
+        # Restart and recovery configuration
+        restart:
+          # Enable restart capability
+          restartable: true
+          # Save execution context for restart
+          save-execution-context: true
+          # Context keys to save
+          context-keys:
+            - "account.data.last.processed.line"
+            - "account.data.processed.count"
+            - "account.data.error.count"
+          # Restart from last committed position
+          restart-from-last-position: true
+        
+        # Database integration configuration
+        database:
+          # Data source configuration
+          data-source: "primaryDataSource"
+          # Transaction manager
+          transaction-manager: "transactionManager"
+          # Batch size for database operations
+          batch-size: 10
+          # Connection pool configuration
+          connection-pool:
+            # Maximum connections for batch operations
+            max-connections: 5
+            # Connection timeout
+            connection-timeout: 30000
+            # Idle timeout
+            idle-timeout: 600000
+          
+          # Table mapping configuration
+          table-mapping:
+            # Target table name
+            target-table: "accounts"
+            # Column mappings
+            column-mappings:
+              accountId: "account_id"
+              customerId: "customer_id"
+              activeStatus: "active_status"
+              currentBalance: "current_balance"
+              creditLimit: "credit_limit"
+              cashCreditLimit: "cash_credit_limit"
+              openDate: "open_date"
+              expirationDate: "expiration_date"
+              reissueDate: "reissue_date"
+              currentCycleCredit: "current_cycle_credit"
+              currentCycleDebit: "current_cycle_debit"
+              groupId: "group_id"
+              addressZip: "address_zip"
+            
+            # Audit fields (automatically populated)
+            audit-fields:
+              created-at: "created_at"
+              updated-at: "updated_at"
+              version: "version"
+        
+        # Validation configuration
+        validation:
+          # Enable field-level validation
+          field-validation: true
+          # Enable cross-field validation
+          cross-field-validation: true
+          # Validation rules
+          rules:
+            # Business rule validations
+            business-rules:
+              - name: "credit-limit-validation"
+                description: "Cash credit limit cannot exceed regular credit limit"
+                condition: "cashCreditLimit <= creditLimit"
+                message: "Cash credit limit cannot exceed regular credit limit"
+              
+              - name: "date-consistency-validation"
+                description: "Expiration date must be after open date"
+                condition: "expirationDate > openDate"
+                message: "Expiration date must be after open date"
+              
+              - name: "reissue-date-validation"
+                description: "Reissue date must be on or after open date"
+                condition: "reissueDate >= openDate"
+                message: "Reissue date must be on or after open date"
+              
+              - name: "cycle-balance-validation"
+                description: "Cycle balances must be non-negative"
+                condition: "currentCycleCredit >= 0 && currentCycleDebit >= 0"
+                message: "Cycle balances must be non-negative"
+            
+            # Data quality validations
+            data-quality:
+              - name: "account-id-uniqueness"
+                description: "Account ID must be unique"
+                type: "UNIQUE"
+                field: "accountId"
+                message: "Account ID must be unique"
+              
+              - name: "customer-id-exists"
+                description: "Customer ID must exist in customers table"
+                type: "FOREIGN_KEY"
+                field: "customerId"
+                reference-table: "customers"
+                reference-field: "customer_id"
+                message: "Customer ID must exist in customers table"
