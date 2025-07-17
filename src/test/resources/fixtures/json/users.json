@@ -1,0 +1,443 @@
+{
+  "UserAuthenticationTestData": {
+    "description": "Comprehensive user authentication test data converted from CSUSR01Y.cpy copybook structure for Spring Security testing and JWT authentication validation scenarios",
+    "metadata": {
+      "sourceStructure": "CSUSR01Y.cpy SEC-USER-DATA",
+      "targetEntity": "User.java",
+      "testFrameworks": ["JUnit 5", "Spring Boot Test", "Spring Security", "Testcontainers"],
+      "conversionDate": "2024-01-15",
+      "dataVersion": "1.0"
+    },
+    "adminUsers": [
+      {
+        "userId": "ADMIN001",
+        "firstName": "System",
+        "lastName": "Administrator",
+        "userType": "A",
+        "passwordHash": "$2a$12$N.6MuX5QTrF8kAYjFrTwjOJTH8fKnqHZHbOkDHjF5HgGQaVmjgKRG",
+        "plainPassword": "AdminPass123!",
+        "description": "Primary system administrator for comprehensive admin testing scenarios",
+        "testScenarios": [
+          "Full system access validation",
+          "Administrative menu generation",
+          "User management operations",
+          "System configuration access",
+          "Audit log review capabilities"
+        ],
+        "jwtClaims": {
+          "role": "ROLE_ADMIN",
+          "authorities": ["ADMIN", "USER", "VIEWER"],
+          "menuAccess": ["ADMIN_MENU", "USER_MENU", "REPORTS_MENU", "SYSTEM_MENU"]
+        }
+      },
+      {
+        "userId": "ADMIN002",
+        "firstName": "Security",
+        "lastName": "Manager",
+        "userType": "A",
+        "passwordHash": "$2a$12$K8DfL2XpQ4VjHgRsT3NmPuEkJ9BwC7YdGhLmFxQv6SaRtUiOpWnKm",
+        "plainPassword": "SecMgr2024!",
+        "description": "Security administrator for authentication and authorization testing",
+        "testScenarios": [
+          "Security policy enforcement",
+          "User role assignment",
+          "Authentication configuration",
+          "Authorization validation",
+          "Security event monitoring"
+        ],
+        "jwtClaims": {
+          "role": "ROLE_ADMIN",
+          "authorities": ["ADMIN", "SECURITY", "USER"],
+          "menuAccess": ["ADMIN_MENU", "SECURITY_MENU", "USER_MENU"]
+        }
+      },
+      {
+        "userId": "ADMIN003",
+        "firstName": "Business",
+        "lastName": "Analyst",
+        "userType": "A",
+        "passwordHash": "$2a$12$M7EgN3YrS5WkLpQzX9VbRtK6HmFdJ8CnGhBkMxOv4SaUiTyWqLpEr",
+        "plainPassword": "BizAnalyst!",
+        "description": "Business administration for business logic testing and validation",
+        "testScenarios": [
+          "Business rule validation",
+          "Transaction monitoring",
+          "Report generation",
+          "Data analysis access",
+          "Business process oversight"
+        ],
+        "jwtClaims": {
+          "role": "ROLE_ADMIN",
+          "authorities": ["ADMIN", "BUSINESS", "REPORTS"],
+          "menuAccess": ["ADMIN_MENU", "BUSINESS_MENU", "REPORTS_MENU"]
+        }
+      }
+    ],
+    "regularUsers": [
+      {
+        "userId": "USER0001",
+        "firstName": "John",
+        "lastName": "Customer",
+        "userType": "U",
+        "passwordHash": "$2a$12$L9KpR4TnX6WjMgNsY8VcQuH5JmGdK3BnFhLkOxPv7SaWiUyTrEpLm",
+        "plainPassword": "UserPass123!",
+        "description": "Standard customer user for basic authentication and authorization testing",
+        "testScenarios": [
+          "Basic authentication flow",
+          "Limited menu access",
+          "Account view operations",
+          "Transaction history access",
+          "Personal information management"
+        ],
+        "jwtClaims": {
+          "role": "ROLE_USER",
+          "authorities": ["USER"],
+          "menuAccess": ["USER_MENU", "ACCOUNT_MENU"]
+        }
+      },
+      {
+        "userId": "USER0002",
+        "firstName": "Jane",
+        "lastName": "Smith",
+        "userType": "U",
+        "passwordHash": "$2a$12$P8HrS6YkM3VjLgQzW9NcRuK7JnFdL4CoHiBmNxPw8SaXiVyUrFqNr",
+        "plainPassword": "SmithPass456!",
+        "description": "Customer user for transaction processing and payment testing",
+        "testScenarios": [
+          "Payment processing",
+          "Transaction authorization",
+          "Account balance inquiries",
+          "Card management operations",
+          "Bill payment processing"
+        ],
+        "jwtClaims": {
+          "role": "ROLE_USER",
+          "authorities": ["USER"],
+          "menuAccess": ["USER_MENU", "PAYMENT_MENU"]
+        }
+      },
+      {
+        "userId": "USER0003",
+        "firstName": "Michael",
+        "lastName": "Johnson",
+        "userType": "U",
+        "passwordHash": "$2a$12$Q9JsT7ZlN4WkMhRzX8OdSvL8KoGeM5DpIjCnOyQx9SbYjWzVsGrOs",
+        "plainPassword": "Johnson789!",
+        "description": "Customer user for statement and reporting functionality testing",
+        "testScenarios": [
+          "Statement generation",
+          "Transaction reporting",
+          "Account summaries",
+          "Historical data access",
+          "Report download operations"
+        ],
+        "jwtClaims": {
+          "role": "ROLE_USER",
+          "authorities": ["USER"],
+          "menuAccess": ["USER_MENU", "REPORTS_MENU"]
+        }
+      },
+      {
+        "userId": "USER0004",
+        "firstName": "Sarah",
+        "lastName": "Williams",
+        "userType": "U",
+        "passwordHash": "$2a$12$R0KuU8AmO5XlNiSzY9PeSwM9LpHfN6EqKkDoP0Ry0TcZkX0WtHsOt",
+        "plainPassword": "Williams012!",
+        "description": "Customer user for mobile and online banking testing scenarios",
+        "testScenarios": [
+          "Mobile authentication",
+          "Online banking access",
+          "Multi-factor authentication",
+          "Session management",
+          "Security validation"
+        ],
+        "jwtClaims": {
+          "role": "ROLE_USER",
+          "authorities": ["USER"],
+          "menuAccess": ["USER_MENU", "MOBILE_MENU"]
+        }
+      },
+      {
+        "userId": "USER0005",
+        "firstName": "Robert",
+        "lastName": "Brown",
+        "userType": "U",
+        "passwordHash": "$2a$12$S1LvV9BnP6YmOjT0Z0QfTxN0MqIgO7FrLlEpQ1Sz1UdAlY1XuItPu",
+        "plainPassword": "Brown345!",
+        "description": "Customer user for card management and transaction testing",
+        "testScenarios": [
+          "Card activation",
+          "PIN management",
+          "Transaction limits",
+          "Card blocking/unblocking",
+          "Merchant authorization"
+        ],
+        "jwtClaims": {
+          "role": "ROLE_USER",
+          "authorities": ["USER"],
+          "menuAccess": ["USER_MENU", "CARD_MENU"]
+        }
+      }
+    ]
+  },
+  "SpringSecurityTestScenarios": {
+    "description": "Spring Security integration test scenarios for JWT authentication, role-based authorization, and session management validation",
+    "authenticationFlowTests": [
+      {
+        "testName": "successful_admin_login",
+        "testUser": "ADMIN001",
+        "expectedOutcome": "JWT token generated with ROLE_ADMIN authority",
+        "validationSteps": [
+          "Validate BCrypt password hash",
+          "Generate JWT token with admin claims",
+          "Verify token signature and expiration",
+          "Confirm role-based menu access"
+        ]
+      },
+      {
+        "testName": "successful_user_login",
+        "testUser": "USER0001",
+        "expectedOutcome": "JWT token generated with ROLE_USER authority",
+        "validationSteps": [
+          "Validate BCrypt password hash",
+          "Generate JWT token with user claims",
+          "Verify limited menu access",
+          "Confirm user-level permissions"
+        ]
+      },
+      {
+        "testName": "failed_authentication_invalid_password",
+        "testUser": "USER0001",
+        "invalidPassword": "WrongPassword123!",
+        "expectedOutcome": "Authentication failure with security event logging",
+        "validationSteps": [
+          "Attempt authentication with invalid password",
+          "Verify authentication failure response",
+          "Confirm security event logging",
+          "Validate no JWT token generation"
+        ]
+      },
+      {
+        "testName": "failed_authentication_nonexistent_user",
+        "testUser": "INVALID001",
+        "expectedOutcome": "User not found with consistent timing response",
+        "validationSteps": [
+          "Attempt authentication with non-existent user",
+          "Verify user not found response",
+          "Confirm timing attack protection",
+          "Validate security event logging"
+        ]
+      }
+    ],
+    "authorizationTests": [
+      {
+        "testName": "admin_access_to_user_management",
+        "testUser": "ADMIN001",
+        "requestedResource": "/api/admin/users",
+        "expectedOutcome": "Access granted with ROLE_ADMIN authority",
+        "validationSteps": [
+          "Validate JWT token with ROLE_ADMIN",
+          "Confirm admin authority in token claims",
+          "Grant access to admin resources",
+          "Log successful authorization event"
+        ]
+      },
+      {
+        "testName": "user_denied_access_to_admin_resources",
+        "testUser": "USER0001",
+        "requestedResource": "/api/admin/users",
+        "expectedOutcome": "Access denied with 403 Forbidden response",
+        "validationSteps": [
+          "Validate JWT token with ROLE_USER",
+          "Confirm insufficient authority",
+          "Deny access to admin resources",
+          "Log authorization failure event"
+        ]
+      },
+      {
+        "testName": "user_access_to_own_account",
+        "testUser": "USER0001",
+        "requestedResource": "/api/account/view",
+        "expectedOutcome": "Access granted with ROLE_USER authority",
+        "validationSteps": [
+          "Validate JWT token with ROLE_USER",
+          "Confirm user authority in token claims",
+          "Grant access to user resources",
+          "Log successful user access"
+        ]
+      }
+    ],
+    "sessionManagementTests": [
+      {
+        "testName": "jwt_token_validation",
+        "testUser": "USER0001",
+        "scenario": "Valid token with proper signature and expiration",
+        "expectedOutcome": "Token validation successful",
+        "validationSteps": [
+          "Verify JWT token signature",
+          "Check token expiration time",
+          "Validate token claims structure",
+          "Confirm user exists in database"
+        ]
+      },
+      {
+        "testName": "jwt_token_expiration",
+        "testUser": "USER0001",
+        "scenario": "Expired token past expiration time",
+        "expectedOutcome": "Token validation failure with re-authentication required",
+        "validationSteps": [
+          "Detect expired token",
+          "Return authentication required response",
+          "Clear client-side token storage",
+          "Redirect to login page"
+        ]
+      },
+      {
+        "testName": "jwt_token_refresh",
+        "testUser": "USER0001",
+        "scenario": "Valid token near expiration requiring refresh",
+        "expectedOutcome": "New token generated with updated expiration",
+        "validationSteps": [
+          "Validate existing token",
+          "Generate new token with same claims",
+          "Update token expiration time",
+          "Return refreshed token to client"
+        ]
+      }
+    ]
+  },
+  "COBOLConversionTestData": {
+    "description": "COBOL to PostgreSQL conversion validation data for testing field mapping, data type conversion, and structural integrity",
+    "fieldMappingValidation": [
+      {
+        "cobolField": "SEC-USR-ID",
+        "cobolType": "PIC X(08)",
+        "postgresField": "user_id",
+        "postgresType": "VARCHAR(8)",
+        "validationRule": "Exact length preservation and case sensitivity",
+        "testValues": ["ADMIN001", "USER0001", "ADMIN002", "USER0002"]
+      },
+      {
+        "cobolField": "SEC-USR-FNAME",
+        "cobolType": "PIC X(20)",
+        "postgresField": "first_name",
+        "postgresType": "VARCHAR(20)",
+        "validationRule": "Maximum length enforcement and character set validation",
+        "testValues": ["System", "John", "Security", "Jane"]
+      },
+      {
+        "cobolField": "SEC-USR-LNAME",
+        "cobolType": "PIC X(20)",
+        "postgresField": "last_name",
+        "postgresType": "VARCHAR(20)",
+        "validationRule": "Maximum length enforcement and character set validation",
+        "testValues": ["Administrator", "Customer", "Manager", "Smith"]
+      },
+      {
+        "cobolField": "SEC-USR-PWD",
+        "cobolType": "PIC X(08)",
+        "postgresField": "password_hash",
+        "postgresType": "VARCHAR(60)",
+        "validationRule": "Expanded field for BCrypt hash storage",
+        "testValues": [
+          "$2a$12$N.6MuX5QTrF8kAYjFrTwjOJTH8fKnqHZHbOkDHjF5HgGQaVmjgKRG",
+          "$2a$12$L9KpR4TnX6WjMgNsY8VcQuH5JmGdK3BnFhLkOxPv7SaWiUyTrEpLm"
+        ]
+      },
+      {
+        "cobolField": "SEC-USR-TYPE",
+        "cobolType": "PIC X(01)",
+        "postgresField": "user_type",
+        "postgresType": "VARCHAR(1)",
+        "validationRule": "Exact single character validation with enum constraints",
+        "testValues": ["A", "U"],
+        "enumValues": {
+          "A": "Administrator",
+          "U": "User"
+        }
+      }
+    ],
+    "dataIntegrityTests": [
+      {
+        "testName": "user_id_uniqueness",
+        "description": "Validate unique constraint on user_id field",
+        "testData": [
+          {"userId": "UNIQUE01", "expectedResult": "success"},
+          {"userId": "UNIQUE01", "expectedResult": "constraint_violation"}
+        ]
+      },
+      {
+        "testName": "user_type_validation",
+        "description": "Validate user_type field accepts only 'A' or 'U' values",
+        "testData": [
+          {"userType": "A", "expectedResult": "success"},
+          {"userType": "U", "expectedResult": "success"},
+          {"userType": "X", "expectedResult": "validation_error"}
+        ]
+      },
+      {
+        "testName": "password_hash_length_validation",
+        "description": "Validate password_hash field accepts BCrypt format",
+        "testData": [
+          {"passwordHash": "$2a$12$validBCryptHashStringHere", "expectedResult": "success"},
+          {"passwordHash": "plaintext", "expectedResult": "validation_error"}
+        ]
+      }
+    ],
+    "performanceTestData": [
+      {
+        "testName": "bulk_user_creation",
+        "description": "Performance test for bulk user creation operations",
+        "recordCount": 1000,
+        "expectedResponseTime": "< 5 seconds",
+        "validationCriteria": "All users created with proper field mapping"
+      },
+      {
+        "testName": "concurrent_authentication",
+        "description": "Performance test for concurrent user authentication",
+        "concurrentUsers": 100,
+        "expectedResponseTime": "< 200ms per authentication",
+        "validationCriteria": "All authentications complete successfully"
+      }
+    ]
+  },
+  "TestDataUtilities": {
+    "description": "Utility configurations and helper data for comprehensive test execution",
+    "bcryptConfiguration": {
+      "saltRounds": 12,
+      "testPasswordGeneration": "enabled",
+      "validationRegex": "^\\$2[ayb]\\$[0-9]{2}\\$[A-Za-z0-9\\.\\/]{53}$"
+    },
+    "jwtConfiguration": {
+      "secretKey": "testSecretKeyForJWTTokenGenerationAndValidation",
+      "tokenExpiration": "1800000",
+      "issuer": "carddemo-test",
+      "audience": "carddemo-users"
+    },
+    "testDatabaseConfiguration": {
+      "schema": "carddemo_test",
+      "tableName": "users",
+      "connectionPool": {
+        "minConnections": 5,
+        "maxConnections": 20,
+        "connectionTimeout": 30000
+      }
+    },
+    "validationPatterns": {
+      "userId": "^[A-Z0-9]{8}$",
+      "firstName": "^[A-Za-z\\s]{1,20}$",
+      "lastName": "^[A-Za-z\\s]{1,20}$",
+      "userType": "^[AU]$",
+      "passwordHash": "^\\$2[ayb]\\$[0-9]{2}\\$[A-Za-z0-9\\.\\/]{53}$"
+    },
+    "testExecutionMetadata": {
+      "testEnvironment": "integration",
+      "testFramework": "JUnit 5",
+      "springBootVersion": "3.2.x",
+      "springSecurityVersion": "6.x",
+      "testContainersVersion": "1.21.3",
+      "postgresVersion": "15.13"
+    }
+  }
+}
