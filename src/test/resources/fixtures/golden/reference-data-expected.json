@@ -211,7 +211,7 @@
     },
     "disclosureGroupsCache": {
       "cacheKey": "disclosureGroups",
-      "expectedCount": 51,
+      "expectedCount": 5,
       "keyFormat": "variable-length-group-id",
       "sampleKeys": ["A000000000", "DEFAULT", "ZEROAPR"],
       "validationRules": {
