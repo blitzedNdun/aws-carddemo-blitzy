@@ -1,0 +1,726 @@
+/*
+ * CardDemo Layout CSS - Terminal Grid Layout System
+ * 
+ * This CSS file implements responsive layout while preserving the exact 24×80 character 
+ * terminal structure from the original BMS maps. It provides CSS Grid and Flexbox 
+ * layout patterns that maintain precise field positioning equivalent to character-based 
+ * terminal coordinates while enabling modern responsive design.
+ * 
+ * Layout Structure:
+ * - Header section (lines 1-3): Transaction code, title, date/time
+ * - Content section (lines 4-22): Variable content based on screen type
+ * - Error message area (line 23): Full width for error messages
+ * - Footer section (line 24): Function key instructions
+ * 
+ * Color mappings reference Material-UI theme values:
+ * - Primary: #00ACC1 (TURQUOISE - user prompts, navigation)
+ * - Success: #00C853 (DFHGREEN - normal data display)
+ * - Error: #D32F2F (DFHRED - error messages)
+ * - Warning: #FFA000 (DFHYELLOW - highlighted fields)
+ * - Info: #1976D2 (DFHBLUE - informational messages)
+ * - Text Primary: #212121 (NEUTRAL - standard display)
+ */
+
+/* ============================================================================
+ * CSS CUSTOM PROPERTIES - Terminal Grid System
+ * ============================================================================ */
+
+:root {
+  /* Terminal dimensions - 24 rows × 80 columns */
+  --terminal-rows: 24;
+  --terminal-cols: 80;
+  
+  /* Character cell dimensions for precise positioning */
+  --char-width: 1ch;
+  --char-height: 1.2em;
+  
+  /* Terminal grid spacing and padding */
+  --terminal-padding: 8px;
+  --terminal-gap: 0;
+  
+  /* Material-UI theme color mappings */
+  --color-primary: #00ACC1;
+  --color-secondary: #37474F;
+  --color-success: #00C853;
+  --color-error: #D32F2F;
+  --color-warning: #FFA000;
+  --color-info: #1976D2;
+  --color-text-primary: #212121;
+  --color-text-secondary: #757575;
+  --color-background-default: #FAFAFA;
+  --color-background-paper: #FFFFFF;
+  --color-divider: #E0E0E0;
+  
+  /* Responsive breakpoints matching Material-UI theme */
+  --breakpoint-xs: 0px;
+  --breakpoint-sm: 600px;
+  --breakpoint-md: 960px;
+  --breakpoint-lg: 1280px;
+  --breakpoint-xl: 1920px;
+  
+  /* Terminal typography matching theme.js */
+  --font-family-mono: "Roboto Mono", "Courier New", monospace;
+  --font-size-base: 14px;
+  --line-height-terminal: 1.2;
+  --letter-spacing-mono: 0em;
+  
+  /* Spacing system matching Material-UI (8px base unit) */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+}
+
+/* ============================================================================
+ * TERMINAL GRID LAYOUT - 24×80 Character Structure
+ * ============================================================================ */
+
+/* Main terminal grid container preserving exact BMS dimensions */
+.terminal-grid-container {
+  display: grid;
+  grid-template-rows: repeat(var(--terminal-rows), var(--char-height));
+  grid-template-columns: repeat(var(--terminal-cols), var(--char-width));
+  gap: var(--terminal-gap);
+  padding: var(--terminal-padding);
+  width: 100%;
+  max-width: calc(80ch + 2 * var(--terminal-padding));
+  margin: 0 auto;
+  
+  /* Terminal-like appearance */
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-terminal);
+  letter-spacing: var(--letter-spacing-mono);
+  background-color: var(--color-background-paper);
+  border: 1px solid var(--color-divider);
+  border-radius: 4px;
+  
+  /* Prevent content overflow */
+  overflow: hidden;
+  position: relative;
+}
+
+/* 24×80 character grid implementation */
+.character-grid-24x80 {
+  display: grid;
+  grid-template-rows: repeat(24, 1fr);
+  grid-template-columns: repeat(80, 1fr);
+  width: 100%;
+  height: calc(24 * var(--char-height));
+  min-height: 480px; /* Fallback for older browsers */
+  
+  /* Monospace character alignment */
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-base);
+  white-space: pre;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Terminal row positioning - maps to BMS line numbers */
+.terminal-row {
+  display: contents;
+}
+
+.terminal-row[data-line="1"] { grid-row: 1; }
+.terminal-row[data-line="2"] { grid-row: 2; }
+.terminal-row[data-line="3"] { grid-row: 3; }
+.terminal-row[data-line="4"] { grid-row: 4; }
+.terminal-row[data-line="5"] { grid-row: 5; }
+.terminal-row[data-line="6"] { grid-row: 6; }
+.terminal-row[data-line="7"] { grid-row: 7; }
+.terminal-row[data-line="8"] { grid-row: 8; }
+.terminal-row[data-line="9"] { grid-row: 9; }
+.terminal-row[data-line="10"] { grid-row: 10; }
+.terminal-row[data-line="11"] { grid-row: 11; }
+.terminal-row[data-line="12"] { grid-row: 12; }
+.terminal-row[data-line="13"] { grid-row: 13; }
+.terminal-row[data-line="14"] { grid-row: 14; }
+.terminal-row[data-line="15"] { grid-row: 15; }
+.terminal-row[data-line="16"] { grid-row: 16; }
+.terminal-row[data-line="17"] { grid-row: 17; }
+.terminal-row[data-line="18"] { grid-row: 18; }
+.terminal-row[data-line="19"] { grid-row: 19; }
+.terminal-row[data-line="20"] { grid-row: 20; }
+.terminal-row[data-line="21"] { grid-row: 21; }
+.terminal-row[data-line="22"] { grid-row: 22; }
+.terminal-row[data-line="23"] { grid-row: 23; }
+.terminal-row[data-line="24"] { grid-row: 24; }
+
+/* Terminal column positioning - maps to BMS column numbers */
+.terminal-col {
+  display: inline-block;
+  position: relative;
+}
+
+/* Field positioning utility class for exact BMS coordinate mapping */
+.field-positioning {
+  position: absolute;
+  white-space: nowrap;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-terminal);
+}
+
+/* Coordinate mapping utilities for POS=(line,column) conversion */
+.coordinate-mapping[data-pos] {
+  position: absolute;
+  transform: translate(
+    calc((var(--col, 1) - 1) * var(--char-width)),
+    calc((var(--row, 1) - 1) * var(--char-height))
+  );
+}
+
+/* ============================================================================
+ * CONTAINER FRAMEWORK - BMS Screen Organization
+ * ============================================================================ */
+
+/* Main application container with responsive layout */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--color-background-default);
+  font-family: var(--font-family-mono);
+}
+
+/* Header section (lines 1-3) - Transaction info, title, date/time */
+.header-section {
+  display: grid;
+  grid-template-rows: repeat(3, var(--char-height));
+  grid-template-columns: 1fr;
+  background-color: var(--color-background-paper);
+  border-bottom: 2px solid var(--color-primary);
+  padding: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  
+  /* Header content layout */
+  grid-template-areas:
+    "header-line-1"
+    "header-line-2"
+    "header-line-3";
+}
+
+.header-section .header-line-1 {
+  grid-area: header-line-1;
+  display: grid;
+  grid-template-columns: 100px 1fr 120px;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.header-section .header-line-2 {
+  grid-area: header-line-2;
+  display: grid;
+  grid-template-columns: 100px 1fr 120px;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.header-section .header-line-3 {
+  grid-area: header-line-3;
+  display: grid;
+  grid-template-columns: 100px 1fr 120px;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+/* Content section (lines 4-22) - Variable content area */
+.content-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-md);
+  background-color: var(--color-background-paper);
+  margin: 0 var(--spacing-sm) var(--spacing-md) var(--spacing-sm);
+  border: 1px solid var(--color-divider);
+  border-radius: 4px;
+  min-height: calc(18 * var(--char-height)); /* Lines 4-22 = 18 lines */
+}
+
+/* Footer section (line 24) - Function key instructions */
+.footer-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--color-secondary);
+  color: #FFFFFF;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-family: var(--font-family-mono);
+  font-size: 0.875rem;
+  border-top: 2px solid var(--color-primary);
+  min-height: var(--char-height);
+}
+
+/* Navigation divider for visual separation */
+.navigation-divider {
+  height: 2px;
+  background-color: var(--color-primary);
+  margin: var(--spacing-sm) 0;
+  border-radius: 1px;
+}
+
+/* Message area (line 23) - Error and status messages */
+.message-area {
+  min-height: var(--char-height);
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin: var(--spacing-sm) 0;
+  border-radius: 4px;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  
+  /* Default state - hidden */
+  display: none;
+}
+
+.message-area.error {
+  display: block;
+  background-color: #FFEBEE;
+  color: var(--color-error);
+  border: 1px solid var(--color-error);
+}
+
+.message-area.warning {
+  display: block;
+  background-color: #FFF8E1;
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning);
+}
+
+.message-area.info {
+  display: block;
+  background-color: #E3F2FD;
+  color: var(--color-info);
+  border: 1px solid var(--color-info);
+}
+
+.message-area.success {
+  display: block;
+  background-color: #E8F5E8;
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
+}
+
+/* ============================================================================
+ * MATERIAL-UI GRID INTEGRATION - 12-Column Responsive System
+ * ============================================================================ */
+
+/* Large container for Material-UI integration */
+.mui-container-lg {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-md);
+  width: 100%;
+}
+
+/* 12-column grid system preserving field relationships */
+.grid-12-column {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--spacing-md);
+  width: 100%;
+}
+
+/* Responsive grid adaptation */
+.grid-responsive {
+  display: grid;
+  gap: var(--spacing-md);
+  
+  /* Default mobile layout */
+  grid-template-columns: 1fr;
+}
+
+/* Grid item positioning utilities */
+.grid-item-positioning {
+  position: relative;
+}
+
+.grid-item-positioning[data-col-span="1"] { grid-column: span 1; }
+.grid-item-positioning[data-col-span="2"] { grid-column: span 2; }
+.grid-item-positioning[data-col-span="3"] { grid-column: span 3; }
+.grid-item-positioning[data-col-span="4"] { grid-column: span 4; }
+.grid-item-positioning[data-col-span="5"] { grid-column: span 5; }
+.grid-item-positioning[data-col-span="6"] { grid-column: span 6; }
+.grid-item-positioning[data-col-span="7"] { grid-column: span 7; }
+.grid-item-positioning[data-col-span="8"] { grid-column: span 8; }
+.grid-item-positioning[data-col-span="9"] { grid-column: span 9; }
+.grid-item-positioning[data-col-span="10"] { grid-column: span 10; }
+.grid-item-positioning[data-col-span="11"] { grid-column: span 11; }
+.grid-item-positioning[data-col-span="12"] { grid-column: span 12; }
+
+/* CSS Grid overlay for precise positioning */
+.css-grid-overlay {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--terminal-cols), 1fr);
+  grid-template-rows: repeat(var(--terminal-rows), var(--char-height));
+  pointer-events: none;
+  opacity: 0.1;
+  z-index: -1;
+}
+
+.css-grid-overlay::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(to right, var(--color-divider) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-divider) 1px, transparent 1px);
+  background-size: var(--char-width) var(--char-height);
+}
+
+/* ============================================================================
+ * RESPONSIVE BREAKPOINTS - Screen Size Adaptation
+ * ============================================================================ */
+
+/* Extra small devices (phones) */
+.breakpoint-xs {
+  display: block;
+}
+
+/* Small devices (tablets) */
+.breakpoint-sm {
+  display: none;
+}
+
+/* Medium devices (laptops) */
+.breakpoint-md {
+  display: none;
+}
+
+/* Large devices (desktops) */
+.breakpoint-lg {
+  display: none;
+}
+
+/* Extra large devices (wide screens) */
+.breakpoint-xl {
+  display: none;
+}
+
+/* Responsive field relationships preservation */
+.responsive-field-relationships {
+  display: grid;
+  gap: var(--spacing-sm);
+  
+  /* Maintain relative positioning across breakpoints */
+  grid-template-areas:
+    "label"
+    "field"
+    "help";
+}
+
+.responsive-field-relationships .field-label {
+  grid-area: label;
+}
+
+.responsive-field-relationships .field-input {
+  grid-area: field;
+}
+
+.responsive-field-relationships .field-help {
+  grid-area: help;
+}
+
+/* ============================================================================
+ * FLEXBOX LAYOUT PATTERNS - Form Arrangements
+ * ============================================================================ */
+
+/* Flexible form container maintaining BMS field flow */
+.flex-form-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  width: 100%;
+  max-width: calc(80ch + 2 * var(--terminal-padding));
+  margin: 0 auto;
+}
+
+/* Field group container for related fields */
+.flex-field-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: flex-start;
+  
+  /* Maintain terminal field alignment */
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-base);
+}
+
+/* Tab sequence preservation for keyboard navigation */
+.tab-sequence-preservation {
+  position: relative;
+}
+
+.tab-sequence-preservation [tabindex] {
+  outline-offset: 2px;
+}
+
+.tab-sequence-preservation [tabindex]:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  background-color: rgba(0, 172, 193, 0.1);
+}
+
+/* Complex form arrangement patterns */
+.complex-form-arrangement {
+  display: grid;
+  gap: var(--spacing-md);
+  
+  /* Default single-column layout */
+  grid-template-columns: 1fr;
+  
+  /* Form sections */
+  grid-template-areas:
+    "header"
+    "main-fields"
+    "secondary-fields"
+    "actions";
+}
+
+.complex-form-arrangement .form-header {
+  grid-area: header;
+}
+
+.complex-form-arrangement .main-fields {
+  grid-area: main-fields;
+}
+
+.complex-form-arrangement .secondary-fields {
+  grid-area: secondary-fields;
+}
+
+.complex-form-arrangement .form-actions {
+  grid-area: actions;
+}
+
+/* Field grouping patterns maintaining BMS organization */
+.field-grouping-patterns {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  
+  /* Group visual styling */
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-divider);
+  border-radius: 4px;
+  background-color: var(--color-background-paper);
+}
+
+.field-grouping-patterns .group-title {
+  font-family: var(--font-family-mono);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-sm);
+  padding-bottom: var(--spacing-xs);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+/* ============================================================================
+ * BMS SCREEN ORGANIZATION - Terminal Screen Replica
+ * ============================================================================ */
+
+/* BMS screen replica container */
+.bms-screen-replica {
+  display: grid;
+  grid-template-rows: 
+    auto /* Header */
+    1fr  /* Content */
+    auto /* Error area */
+    auto; /* Footer */
+  min-height: 100vh;
+  background-color: var(--color-background-default);
+}
+
+/* Field coordinate system for exact BMS positioning */
+.field-coordinate-system {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(80, 1fr);
+  grid-template-rows: repeat(24, var(--char-height));
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-terminal);
+}
+
+/* Terminal positioning utilities */
+.terminal-positioning[data-pos] {
+  position: absolute;
+  grid-column: var(--start-col, 1) / span var(--span-cols, 1);
+  grid-row: var(--start-row, 1) / span var(--span-rows, 1);
+}
+
+/* Screen boundary enforcement - 80 characters wide */
+.screen-boundary-80ch {
+  max-width: 80ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-family-mono);
+}
+
+/* 24-line structure enforcement */
+.line-24-structure {
+  display: grid;
+  grid-template-rows: repeat(24, var(--char-height));
+  min-height: calc(24 * var(--char-height));
+  max-height: calc(24 * var(--char-height));
+  overflow: hidden;
+}
+
+/* ============================================================================
+ * RESPONSIVE MEDIA QUERIES
+ * ============================================================================ */
+
+/* Small devices (tablets) - 600px and up */
+@media (min-width: 600px) {
+  .breakpoint-xs { display: none; }
+  .breakpoint-sm { display: block; }
+  
+  /* Adjust grid for tablet layout */
+  .grid-responsive {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  /* Two-column form layout */
+  .complex-form-arrangement {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "header header"
+      "main-fields secondary-fields"
+      "actions actions";
+  }
+  
+  /* Horizontal field groups */
+  .flex-field-group {
+    flex-direction: row;
+    align-items: center;
+  }
+  
+  /* Responsive field relationships - side by side */
+  .responsive-field-relationships {
+    grid-template-columns: 1fr 2fr 1fr;
+    grid-template-areas: "label field help";
+    align-items: center;
+  }
+}
+
+/* Medium devices (laptops) - 960px and up */
+@media (min-width: 960px) {
+  .breakpoint-sm { display: none; }
+  .breakpoint-md { display: block; }
+  
+  /* Optimal 80-character terminal width */
+  .terminal-grid-container {
+    max-width: 80ch;
+  }
+  
+  /* Three-column grid layout */
+  .grid-responsive {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  /* Enhanced complex form layout */
+  .complex-form-arrangement {
+    grid-template-columns: 1fr 2fr 1fr;
+    grid-template-areas:
+      "header header header"
+      "main-fields main-fields secondary-fields"
+      "actions actions actions";
+  }
+}
+
+/* Large devices (desktops) - 1280px and up */
+@media (min-width: 1280px) {
+  .breakpoint-md { display: none; }
+  .breakpoint-lg { display: block; }
+  
+  /* Four-column grid layout */
+  .grid-responsive {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  /* Wide screen terminal display */
+  .terminal-grid-container {
+    max-width: calc(80ch + 4 * var(--spacing-md));
+  }
+}
+
+/* Extra large devices (wide screens) - 1920px and up */
+@media (min-width: 1920px) {
+  .breakpoint-lg { display: none; }
+  .breakpoint-xl { display: block; }
+  
+  /* Six-column grid layout for ultra-wide screens */
+  .grid-responsive {
+    grid-template-columns: repeat(6, 1fr);
+  }
+  
+  /* Enhanced spacing for large screens */
+  :root {
+    --terminal-padding: 16px;
+    --spacing-md: 24px;
+    --spacing-lg: 32px;
+    --spacing-xl: 48px;
+  }
+}
+
+/* Print styles for reports */
+@media print {
+  .app-container {
+    background-color: white;
+  }
+  
+  .header-section,
+  .footer-section {
+    background-color: white;
+    color: black;
+    border-color: black;
+  }
+  
+  .terminal-grid-container {
+    border: 1px solid black;
+    box-shadow: none;
+  }
+  
+  .message-area {
+    border-color: black;
+    background-color: white;
+    color: black;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --color-background-default: #FFFFFF;
+    --color-background-paper: #FFFFFF;
+    --color-text-primary: #000000;
+    --color-divider: #000000;
+    --color-primary: #0000FF;
+    --color-error: #FF0000;
+  }
+  
+  .terminal-grid-container {
+    border: 2px solid black;
+  }
+  
+  .field-positioning {
+    outline: 1px solid black;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
