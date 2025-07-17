@@ -1,0 +1,596 @@
+{
+  "TransactionTypeTestData": {
+    "description": "Transaction type reference data for lookup validation and Redis cache testing scenarios supporting comprehensive transaction classification logic",
+    "version": "1.0",
+    "lastUpdated": "2024-01-01T00:00:00Z",
+    "source": "Converted from app/data/ASCII/trantype.txt for Spring Boot microservices architecture",
+    "cacheStrategy": {
+      "provider": "Redis",
+      "ttl": "24 hours",
+      "refreshFrequency": "Daily",
+      "cacheManager": "redisCacheManager",
+      "keyPrefix": "transactionTypes"
+    },
+    "transactionTypes": [
+      {
+        "transactionType": "01",
+        "typeDescription": "Purchase",
+        "debitCreditIndicator": true,
+        "category": "DEBIT",
+        "businessRules": {
+          "requiresAuthorization": true,
+          "affectsBalance": true,
+          "processingType": "REAL_TIME",
+          "validationRules": [
+            "MERCHANT_VALIDATION",
+            "AMOUNT_LIMIT_CHECK",
+            "CARD_STATUS_VALIDATION"
+          ]
+        },
+        "testScenarios": [
+          "Valid purchase transaction processing",
+          "Debit indicator validation",
+          "Real-time authorization flow",
+          "Balance impact verification"
+        ]
+      },
+      {
+        "transactionType": "02",
+        "typeDescription": "Payment",
+        "debitCreditIndicator": false,
+        "category": "CREDIT",
+        "businessRules": {
+          "requiresAuthorization": false,
+          "affectsBalance": true,
+          "processingType": "BATCH",
+          "validationRules": [
+            "PAYMENT_SOURCE_VALIDATION",
+            "AMOUNT_VALIDATION",
+            "ACCOUNT_STATUS_CHECK"
+          ]
+        },
+        "testScenarios": [
+          "Credit payment processing",
+          "Credit indicator validation",
+          "Batch processing workflow",
+          "Balance credit verification"
+        ]
+      },
+      {
+        "transactionType": "03",
+        "typeDescription": "Credit",
+        "debitCreditIndicator": false,
+        "category": "CREDIT",
+        "businessRules": {
+          "requiresAuthorization": false,
+          "affectsBalance": true,
+          "processingType": "BATCH",
+          "validationRules": [
+            "CREDIT_REASON_VALIDATION",
+            "AMOUNT_VALIDATION",
+            "ACCOUNT_STATUS_CHECK"
+          ]
+        },
+        "testScenarios": [
+          "Credit adjustment processing",
+          "Credit indicator validation",
+          "Account balance increase",
+          "Batch credit workflow"
+        ]
+      },
+      {
+        "transactionType": "04",
+        "typeDescription": "Authorization",
+        "debitCreditIndicator": true,
+        "category": "DEBIT",
+        "businessRules": {
+          "requiresAuthorization": true,
+          "affectsBalance": false,
+          "processingType": "REAL_TIME",
+          "validationRules": [
+            "CARD_VALIDATION",
+            "AVAILABLE_CREDIT_CHECK",
+            "MERCHANT_VALIDATION",
+            "TRANSACTION_LIMITS"
+          ]
+        },
+        "testScenarios": [
+          "Authorization hold processing",
+          "Debit indicator validation",
+          "Real-time authorization",
+          "Credit limit validation"
+        ]
+      },
+      {
+        "transactionType": "05",
+        "typeDescription": "Refund",
+        "debitCreditIndicator": false,
+        "category": "CREDIT",
+        "businessRules": {
+          "requiresAuthorization": false,
+          "affectsBalance": true,
+          "processingType": "BATCH",
+          "validationRules": [
+            "ORIGINAL_TRANSACTION_VALIDATION",
+            "REFUND_AMOUNT_VALIDATION",
+            "MERCHANT_VALIDATION",
+            "TIME_LIMIT_CHECK"
+          ]
+        },
+        "testScenarios": [
+          "Refund processing workflow",
+          "Credit indicator validation",
+          "Original transaction matching",
+          "Balance credit application"
+        ]
+      },
+      {
+        "transactionType": "06",
+        "typeDescription": "Reversal",
+        "debitCreditIndicator": false,
+        "category": "CREDIT",
+        "businessRules": {
+          "requiresAuthorization": false,
+          "affectsBalance": true,
+          "processingType": "REAL_TIME",
+          "validationRules": [
+            "ORIGINAL_TRANSACTION_VALIDATION",
+            "REVERSAL_REASON_VALIDATION",
+            "TIMING_VALIDATION",
+            "AUTHORIZATION_CHECK"
+          ]
+        },
+        "testScenarios": [
+          "Transaction reversal processing",
+          "Credit indicator validation",
+          "Real-time reversal handling",
+          "Balance restoration"
+        ]
+      },
+      {
+        "transactionType": "07",
+        "typeDescription": "Adjustment",
+        "debitCreditIndicator": true,
+        "category": "DEBIT",
+        "businessRules": {
+          "requiresAuthorization": false,
+          "affectsBalance": true,
+          "processingType": "BATCH",
+          "validationRules": [
+            "ADJUSTMENT_REASON_VALIDATION",
+            "AMOUNT_VALIDATION",
+            "ACCOUNT_STATUS_CHECK",
+            "APPROVAL_REQUIRED"
+          ]
+        },
+        "testScenarios": [
+          "Adjustment processing workflow",
+          "Debit indicator validation",
+          "Account balance adjustment",
+          "Administrative processing"
+        ]
+      }
+    ]
+  },
+  "TransactionTypeValidationScenarios": {
+    "description": "Comprehensive validation scenarios for transaction type testing and Redis cache integration validation",
+    "purchaseTransactionTypeTesting": {
+      "transactionType": "01",
+      "validScenarios": [
+        {
+          "scenario": "Valid purchase transaction",
+          "typeDescription": "Purchase",
+          "debitCreditIndicator": true,
+          "expectedResult": "SUCCESS",
+          "cacheKey": "transactionTypes::01",
+          "cacheTTL": "24 hours"
+        },
+        {
+          "scenario": "Purchase with authorization",
+          "typeDescription": "Purchase",
+          "debitCreditIndicator": true,
+          "expectedResult": "AUTHORIZATION_REQUIRED",
+          "businessValidation": "REAL_TIME_PROCESSING"
+        }
+      ],
+      "invalidScenarios": [
+        {
+          "scenario": "Purchase with credit indicator",
+          "typeDescription": "Purchase",
+          "debitCreditIndicator": false,
+          "expectedResult": "VALIDATION_ERROR",
+          "errorMessage": "Purchase transactions must have debit indicator"
+        }
+      ]
+    },
+    "paymentTransactionTypeTesting": {
+      "transactionType": "02",
+      "validScenarios": [
+        {
+          "scenario": "Valid payment transaction",
+          "typeDescription": "Payment",
+          "debitCreditIndicator": false,
+          "expectedResult": "SUCCESS",
+          "cacheKey": "transactionTypes::02",
+          "cacheTTL": "24 hours"
+        },
+        {
+          "scenario": "Payment batch processing",
+          "typeDescription": "Payment",
+          "debitCreditIndicator": false,
+          "expectedResult": "BATCH_PROCESSED",
+          "businessValidation": "BATCH_PROCESSING"
+        }
+      ],
+      "invalidScenarios": [
+        {
+          "scenario": "Payment with debit indicator",
+          "typeDescription": "Payment",
+          "debitCreditIndicator": true,
+          "expectedResult": "VALIDATION_ERROR",
+          "errorMessage": "Payment transactions must have credit indicator"
+        }
+      ]
+    },
+    "creditTransactionTypeTesting": {
+      "transactionType": "03",
+      "validScenarios": [
+        {
+          "scenario": "Valid credit transaction",
+          "typeDescription": "Credit",
+          "debitCreditIndicator": false,
+          "expectedResult": "SUCCESS",
+          "cacheKey": "transactionTypes::03",
+          "cacheTTL": "24 hours"
+        }
+      ],
+      "invalidScenarios": [
+        {
+          "scenario": "Credit with debit indicator",
+          "typeDescription": "Credit",
+          "debitCreditIndicator": true,
+          "expectedResult": "VALIDATION_ERROR",
+          "errorMessage": "Credit transactions must have credit indicator"
+        }
+      ]
+    },
+    "authorizationTransactionTypeTesting": {
+      "transactionType": "04",
+      "validScenarios": [
+        {
+          "scenario": "Valid authorization transaction",
+          "typeDescription": "Authorization",
+          "debitCreditIndicator": true,
+          "expectedResult": "SUCCESS",
+          "cacheKey": "transactionTypes::04",
+          "cacheTTL": "24 hours"
+        },
+        {
+          "scenario": "Authorization hold processing",
+          "typeDescription": "Authorization",
+          "debitCreditIndicator": true,
+          "expectedResult": "AUTHORIZATION_HOLD",
+          "businessValidation": "REAL_TIME_AUTHORIZATION"
+        }
+      ],
+      "invalidScenarios": [
+        {
+          "scenario": "Authorization with credit indicator",
+          "typeDescription": "Authorization",
+          "debitCreditIndicator": false,
+          "expectedResult": "VALIDATION_ERROR",
+          "errorMessage": "Authorization transactions must have debit indicator"
+        }
+      ]
+    },
+    "refundTransactionTypeTesting": {
+      "transactionType": "05",
+      "validScenarios": [
+        {
+          "scenario": "Valid refund transaction",
+          "typeDescription": "Refund",
+          "debitCreditIndicator": false,
+          "expectedResult": "SUCCESS",
+          "cacheKey": "transactionTypes::05",
+          "cacheTTL": "24 hours"
+        },
+        {
+          "scenario": "Refund batch processing",
+          "typeDescription": "Refund",
+          "debitCreditIndicator": false,
+          "expectedResult": "BATCH_PROCESSED",
+          "businessValidation": "ORIGINAL_TRANSACTION_REQUIRED"
+        }
+      ],
+      "invalidScenarios": [
+        {
+          "scenario": "Refund with debit indicator",
+          "typeDescription": "Refund",
+          "debitCreditIndicator": true,
+          "expectedResult": "VALIDATION_ERROR",
+          "errorMessage": "Refund transactions must have credit indicator"
+        }
+      ]
+    },
+    "reversalTransactionTypeTesting": {
+      "transactionType": "06",
+      "validScenarios": [
+        {
+          "scenario": "Valid reversal transaction",
+          "typeDescription": "Reversal",
+          "debitCreditIndicator": false,
+          "expectedResult": "SUCCESS",
+          "cacheKey": "transactionTypes::06",
+          "cacheTTL": "24 hours"
+        },
+        {
+          "scenario": "Real-time reversal processing",
+          "typeDescription": "Reversal",
+          "debitCreditIndicator": false,
+          "expectedResult": "REAL_TIME_PROCESSED",
+          "businessValidation": "ORIGINAL_TRANSACTION_REQUIRED"
+        }
+      ],
+      "invalidScenarios": [
+        {
+          "scenario": "Reversal with debit indicator",
+          "typeDescription": "Reversal",
+          "debitCreditIndicator": true,
+          "expectedResult": "VALIDATION_ERROR",
+          "errorMessage": "Reversal transactions must have credit indicator"
+        }
+      ]
+    },
+    "adjustmentTransactionTypeTesting": {
+      "transactionType": "07",
+      "validScenarios": [
+        {
+          "scenario": "Valid adjustment transaction",
+          "typeDescription": "Adjustment",
+          "debitCreditIndicator": true,
+          "expectedResult": "SUCCESS",
+          "cacheKey": "transactionTypes::07",
+          "cacheTTL": "24 hours"
+        },
+        {
+          "scenario": "Adjustment batch processing",
+          "typeDescription": "Adjustment",
+          "debitCreditIndicator": true,
+          "expectedResult": "BATCH_PROCESSED",
+          "businessValidation": "APPROVAL_REQUIRED"
+        }
+      ],
+      "invalidScenarios": [
+        {
+          "scenario": "Adjustment with credit indicator",
+          "typeDescription": "Adjustment",
+          "debitCreditIndicator": false,
+          "expectedResult": "VALIDATION_ERROR",
+          "errorMessage": "Adjustment transactions must have debit indicator"
+        }
+      ]
+    },
+    "typeCodeFormatValidation": {
+      "validFormats": [
+        {
+          "typeCode": "01",
+          "format": "2-digit numeric string",
+          "expectedResult": "VALID"
+        },
+        {
+          "typeCode": "02",
+          "format": "2-digit numeric string",
+          "expectedResult": "VALID"
+        },
+        {
+          "typeCode": "07",
+          "format": "2-digit numeric string",
+          "expectedResult": "VALID"
+        }
+      ],
+      "invalidFormats": [
+        {
+          "typeCode": "1",
+          "format": "1-digit numeric string",
+          "expectedResult": "INVALID",
+          "errorMessage": "Transaction type must be exactly 2 characters"
+        },
+        {
+          "typeCode": "A1",
+          "format": "alphanumeric string",
+          "expectedResult": "INVALID",
+          "errorMessage": "Transaction type must be numeric"
+        },
+        {
+          "typeCode": "001",
+          "format": "3-digit numeric string",
+          "expectedResult": "INVALID",
+          "errorMessage": "Transaction type must be exactly 2 characters"
+        },
+        {
+          "typeCode": "",
+          "format": "empty string",
+          "expectedResult": "INVALID",
+          "errorMessage": "Transaction type code is required"
+        }
+      ]
+    },
+    "descriptionLengthValidation": {
+      "validDescriptions": [
+        {
+          "description": "Purchase",
+          "length": 8,
+          "expectedResult": "VALID"
+        },
+        {
+          "description": "Authorization",
+          "length": 13,
+          "expectedResult": "VALID"
+        },
+        {
+          "description": "Valid 60-character description for transaction type testing",
+          "length": 60,
+          "expectedResult": "VALID"
+        }
+      ],
+      "invalidDescriptions": [
+        {
+          "description": "",
+          "length": 0,
+          "expectedResult": "INVALID",
+          "errorMessage": "Type description is required"
+        },
+        {
+          "description": "This is a very long description that exceeds the maximum allowed length of 60 characters for transaction type descriptions",
+          "length": 130,
+          "expectedResult": "INVALID",
+          "errorMessage": "Type description must be between 1 and 60 characters"
+        }
+      ]
+    },
+    "debitCreditIndicatorValidation": {
+      "validIndicators": [
+        {
+          "indicator": true,
+          "type": "DEBIT",
+          "expectedResult": "VALID",
+          "description": "Debit transaction (reduces account balance)"
+        },
+        {
+          "indicator": false,
+          "type": "CREDIT",
+          "expectedResult": "VALID",
+          "description": "Credit transaction (increases account balance)"
+        }
+      ],
+      "invalidIndicators": [
+        {
+          "indicator": null,
+          "type": "NULL",
+          "expectedResult": "INVALID",
+          "errorMessage": "Debit/Credit indicator is required"
+        }
+      ]
+    }
+  },
+  "RedisCacheTestScenarios": {
+    "description": "Redis cache integration test scenarios supporting Spring Cache abstraction validation per Section 6.2.4.2 caching strategy",
+    "cacheConfiguration": {
+      "cacheManager": "redisCacheManager",
+      "cacheName": "transactionTypes",
+      "keyPrefix": "transactionTypes::",
+      "ttl": "24 hours",
+      "serializer": "Jackson2JsonRedisSerializer",
+      "keySerializer": "StringRedisSerializer"
+    },
+    "cacheOperationScenarios": [
+      {
+        "scenario": "Cache Miss - Initial Load",
+        "description": "First access to transaction type data triggers database lookup and cache population",
+        "transactionType": "01",
+        "cacheKey": "transactionTypes::01",
+        "expectedFlow": [
+          "Check Redis cache",
+          "Cache miss detected",
+          "Database lookup via TransactionTypeRepository.findByTransactionType()",
+          "Cache population with 24-hour TTL",
+          "Return transaction type data"
+        ],
+        "expectedResult": "DATABASE_LOOKUP_AND_CACHE_POPULATION",
+        "performanceTarget": "< 50ms response time"
+      },
+      {
+        "scenario": "Cache Hit - Subsequent Access",
+        "description": "Subsequent access to transaction type data returns cached value without database lookup",
+        "transactionType": "01",
+        "cacheKey": "transactionTypes::01",
+        "expectedFlow": [
+          "Check Redis cache",
+          "Cache hit detected",
+          "Return cached transaction type data"
+        ],
+        "expectedResult": "CACHE_HIT",
+        "performanceTarget": "< 5ms response time"
+      },
+      {
+        "scenario": "Cache Eviction - TTL Expiration",
+        "description": "Cache entry expires after 24 hours and is automatically evicted",
+        "transactionType": "02",
+        "cacheKey": "transactionTypes::02",
+        "expectedFlow": [
+          "Cache entry reaches TTL limit",
+          "Redis automatically evicts expired entry",
+          "Next access triggers cache miss",
+          "Database lookup and cache repopulation"
+        ],
+        "expectedResult": "CACHE_EVICTION_AND_REPOPULATION",
+        "performanceTarget": "< 50ms response time for repopulation"
+      },
+      {
+        "scenario": "Cache Warming - Application Startup",
+        "description": "Application startup pre-populates cache with frequently accessed transaction types",
+        "transactionTypes": ["01", "02", "03", "04", "05", "06", "07"],
+        "expectedFlow": [
+          "Application startup event triggered",
+          "TransactionTypeRepository.findAll() executed",
+          "All transaction types cached with 24-hour TTL",
+          "Cache readiness confirmed"
+        ],
+        "expectedResult": "CACHE_WARMING_COMPLETED",
+        "performanceTarget": "< 100ms cache warming time"
+      },
+      {
+        "scenario": "Cache Invalidation - Data Update",
+        "description": "Transaction type data update triggers cache invalidation",
+        "transactionType": "03",
+        "cacheKey": "transactionTypes::03",
+        "expectedFlow": [
+          "Transaction type data updated in database",
+          "Cache invalidation triggered via @CacheEvict annotation",
+          "Cache entry removed from Redis",
+          "Next access triggers cache miss and repopulation"
+        ],
+        "expectedResult": "CACHE_INVALIDATION_AND_REFRESH",
+        "performanceTarget": "< 10ms invalidation time"
+      }
+    ],
+    "springCacheAbstractionValidation": {
+      "annotations": [
+        {
+          "annotation": "@Cacheable",
+          "method": "TransactionTypeRepository.findByTransactionType()",
+          "cacheValue": "transactionTypes",
+          "keyExpression": "#transactionType",
+          "expectedBehavior": "Cache result with transaction type as key"
+        },
+        {
+          "annotation": "@CacheEvict",
+          "method": "TransactionTypeService.updateTransactionType()",
+          "cacheValue": "transactionTypes",
+          "keyExpression": "#transactionType.transactionType",
+          "expectedBehavior": "Remove cache entry when transaction type is updated"
+        },
+        {
+          "annotation": "@CachePut",
+          "method": "TransactionTypeService.createTransactionType()",
+          "cacheValue": "transactionTypes",
+          "keyExpression": "#transactionType.transactionType",
+          "expectedBehavior": "Update cache with new transaction type data"
+        }
+      ]
+    },
+    "performanceValidation": {
+      "lookupPerformanceTargets": {
+        "cacheHit": "< 5ms response time",
+        "cacheMiss": "< 50ms response time",
+        "cacheWarming": "< 100ms for all transaction types",
+        "cacheInvalidation": "< 10ms invalidation time"
+      },
+      "throughputTargets": {
+        "cachedLookups": "10,000+ TPS",
+        "databaseLookups": "1,000+ TPS",
+        "cacheOperations": "50,000+ operations/second"
+      }
+    }
+  }
+}
