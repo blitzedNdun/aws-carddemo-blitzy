@@ -645,7 +645,7 @@ export const NavigationUtils = {
    * @returns Return destination path
    */
   getReturnPath: (currentPath: string): string => {
-    return NAVIGATION_FLOW.RETURN_PATHS[currentPath] || ROUTES.LOGIN;
+    return NAVIGATION_FLOW.RETURN_PATHS[currentPath as keyof typeof NAVIGATION_FLOW.RETURN_PATHS] || ROUTES.LOGIN;
   },
   
   /**
@@ -654,7 +654,7 @@ export const NavigationUtils = {
    * @returns Array of valid navigation destination paths
    */
   getValidDestinations: (currentPath: string): string[] => {
-    const destinations = NAVIGATION_FLOW.XCTL_PATTERNS[currentPath];
+    const destinations = NAVIGATION_FLOW.XCTL_PATTERNS[currentPath as keyof typeof NAVIGATION_FLOW.XCTL_PATTERNS];
     return Array.isArray(destinations) ? destinations : [];
   },
   
@@ -664,7 +664,7 @@ export const NavigationUtils = {
    * @returns Boolean indicating if path is valid
    */
   isValidRoute: (path: string): boolean => {
-    const allRoutes = Object.values(ROUTES).flat();
+    const allRoutes = Object.values(ROUTES).flat() as string[];
     return allRoutes.includes(path);
   },
   
