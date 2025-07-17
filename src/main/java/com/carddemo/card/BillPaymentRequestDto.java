@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.Objects;
 
@@ -406,7 +407,7 @@ public class BillPaymentRequestDto extends BaseRequestDto {
      */
     public BigDecimal getPaymentAmountWithScale() {
         return paymentAmount != null ? 
-               BigDecimal.valueOf(paymentAmount.doubleValue()).setScale(2, BigDecimal.ROUND_HALF_UP) : 
+               BigDecimal.valueOf(paymentAmount.doubleValue()).setScale(2, java.math.RoundingMode.HALF_UP) : 
                null;
     }
 
