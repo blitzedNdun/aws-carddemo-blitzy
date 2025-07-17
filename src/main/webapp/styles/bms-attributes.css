@@ -1,0 +1,822 @@
+/*
+ * BMS Field Attribute CSS Implementation
+ * 
+ * This file provides exact visual and behavioral equivalence for ASKIP, UNPROT, PROT, NUM, IC, and BRT 
+ * field attributes from IBM 3270/BMS terminals in React components with Material-UI integration.
+ * 
+ * BMS Attribute Mappings:
+ * - ASKIP: Auto-skip/display-only fields (protected from user modification)
+ * - UNPROT: Unprotected/editable input fields (normal user input)
+ * - PROT: Protected/read-only fields (visible but not editable)
+ * - NUM: Numeric input fields (optimized for numeric entry and mobile)
+ * - IC: Initial cursor fields (automatically receive focus)
+ * - BRT: Bright intensity fields (bold emphasis for important content)
+ * 
+ * Integration: Designed to work seamlessly with Material-UI TextField components
+ * while preserving the exact 3270 terminal field behavior and visual hierarchy.
+ */
+
+/* =============================================================================
+   ASKIP (Auto Skip) Field Attribute - Display Only Fields
+   ============================================================================= */
+
+/**
+ * ASKIP fields replicate BMS auto-skip behavior where fields are display-only
+ * and automatically skip during tab navigation. These fields show data but
+ * prevent any user modification while maintaining visual accessibility.
+ */
+.bms-askip,
+.askip-field,
+.display-only,
+.protected-display {
+  /* Visual styling to indicate read-only status */
+  background-color: #F5F5F5 !important;
+  color: var(--theme-palette-text-primary, #212121) !important;
+  
+  /* Font styling for data display */
+  font-family: "Roboto Mono", "Courier New", monospace !important;
+  font-weight: 400;
+  font-size: 0.875rem;
+  
+  /* Prevent user interaction */
+  pointer-events: none;
+  user-select: text; /* Allow text selection for copy operations */
+  
+  /* Border styling for visual distinction */
+  border: 1px solid #E0E0E0 !important;
+  border-radius: 4px;
+  
+  /* Padding for content alignment */
+  padding: 8px 12px;
+  
+  /* Ensure proper box model */
+  box-sizing: border-box;
+  
+  /* Spacing for field separation */
+  margin-bottom: 16px;
+  
+  /* Remove focus outline since field is not interactive */
+  outline: none;
+  
+  /* Prevent text cursor on hover */
+  cursor: default;
+}
+
+/* Material-UI TextField integration for ASKIP fields */
+.mui-textfield-bms.bms-askip .MuiOutlinedInput-root,
+.mui-input-askip .MuiOutlinedInput-root {
+  background-color: #F5F5F5 !important;
+  
+  /* Override default TextField styling */
+  &.MuiOutlinedInput-root {
+    border: 1px solid #E0E0E0 !important;
+    
+    /* Remove hover effects */
+    &:hover .MuiOutlinedInput-notchedOutline {
+      border-color: #E0E0E0 !important;
+    }
+    
+    /* Remove focus effects */
+    &.Mui-focused .MuiOutlinedInput-notchedOutline {
+      border-color: #E0E0E0 !important;
+      border-width: 1px !important;
+    }
+  }
+  
+  /* Input element styling */
+  & .MuiOutlinedInput-input {
+    color: var(--theme-palette-text-primary, #212121) !important;
+    cursor: default !important;
+    pointer-events: none !important;
+  }
+}
+
+/* =============================================================================
+   UNPROT (Unprotected) Field Attribute - Editable Input Fields
+   ============================================================================= */
+
+/**
+ * UNPROT fields replicate standard BMS input field behavior allowing full
+ * user interaction including typing, editing, and form submission.
+ */
+.bms-unprot,
+.unprot-field,
+.input-enabled,
+.editable-field {
+  /* Normal input field styling */
+  background-color: #FFFFFF !important;
+  color: var(--theme-palette-text-primary, #212121) !important;
+  
+  /* Font styling for input consistency */
+  font-family: "Roboto Mono", "Courier New", monospace !important;
+  font-weight: 400;
+  font-size: 0.875rem;
+  
+  /* Enable full user interaction */
+  pointer-events: auto;
+  user-select: text;
+  
+  /* Border styling for input fields */
+  border: 1px solid #C4C4C4 !important;
+  border-radius: 4px;
+  
+  /* Padding for input content */
+  padding: 8px 12px;
+  
+  /* Box model consistency */
+  box-sizing: border-box;
+  
+  /* Field spacing */
+  margin-bottom: 16px;
+  
+  /* Focus styling */
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.bms-unprot:focus,
+.unprot-field:focus,
+.input-enabled:focus,
+.editable-field:focus {
+  /* Focus state with theme primary color */
+  border-color: var(--theme-palette-primary-main, #00ACC1) !important;
+  box-shadow: 0 0 0 2px rgba(0, 172, 193, 0.2);
+  outline: none;
+}
+
+/* Material-UI TextField integration for UNPROT fields */
+.mui-textfield-bms.bms-unprot .MuiOutlinedInput-root,
+.mui-input-unprot .MuiOutlinedInput-root {
+  background-color: #FFFFFF !important;
+  
+  /* Standard TextField behavior */
+  &.MuiOutlinedInput-root {
+    /* Hover effects */
+    &:hover .MuiOutlinedInput-notchedOutline {
+      border-color: var(--theme-palette-primary-main, #00ACC1) !important;
+    }
+    
+    /* Focus effects */
+    &.Mui-focused .MuiOutlinedInput-notchedOutline {
+      border-color: var(--theme-palette-primary-main, #00ACC1) !important;
+      border-width: 2px !important;
+    }
+  }
+  
+  /* Input element styling */
+  & .MuiOutlinedInput-input {
+    color: var(--theme-palette-text-primary, #212121) !important;
+    cursor: text !important;
+  }
+}
+
+/* =============================================================================
+   PROT (Protected) Field Attribute - Read-Only Display Fields
+   ============================================================================= */
+
+/**
+ * PROT fields are visible but cannot be modified by the user. Unlike ASKIP,
+ * these fields maintain visual context and may be selectable for copying.
+ */
+.bms-prot,
+.prot-field,
+.field-disabled,
+.protected-input {
+  /* Protected field visual styling */
+  background-color: #FAFAFA !important;
+  color: var(--theme-palette-text-secondary, #757575) !important;
+  
+  /* Typography for protected content */
+  font-family: "Roboto Mono", "Courier New", monospace !important;
+  font-weight: 400;
+  font-size: 0.875rem;
+  
+  /* Limited interaction */
+  pointer-events: none;
+  user-select: text; /* Allow text selection for reference */
+  
+  /* Border styling for protected fields */
+  border: 1px solid #E0E0E0 !important;
+  border-radius: 4px;
+  
+  /* Content padding */
+  padding: 8px 12px;
+  
+  /* Box model */
+  box-sizing: border-box;
+  
+  /* Field spacing */
+  margin-bottom: 16px;
+  
+  /* Visual indicator of protected status */
+  position: relative;
+}
+
+.bms-prot::before,
+.prot-field::before,
+.field-disabled::before,
+.protected-input::before {
+  /* Optional lock icon indicator for protected fields */
+  content: "";
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23757575'%3E%3Cpath d='M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM12 17c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM15.1 8H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z'/%3E%3C/svg%3E");
+  background-size: contain;
+  opacity: 0.5;
+}
+
+/* Material-UI TextField integration for PROT fields */
+.mui-textfield-bms.bms-prot .MuiOutlinedInput-root,
+.mui-input-prot .MuiOutlinedInput-root {
+  background-color: #FAFAFA !important;
+  
+  /* Disabled state styling */
+  &.MuiOutlinedInput-root {
+    /* Remove all interactive effects */
+    &:hover .MuiOutlinedInput-notchedOutline {
+      border-color: #E0E0E0 !important;
+    }
+    
+    &.Mui-focused .MuiOutlinedInput-notchedOutline {
+      border-color: #E0E0E0 !important;
+      border-width: 1px !important;
+    }
+  }
+  
+  /* Input element styling */
+  & .MuiOutlinedInput-input {
+    color: var(--theme-palette-text-secondary, #757575) !important;
+    cursor: default !important;
+    pointer-events: none !important;
+  }
+}
+
+/* =============================================================================
+   NUM (Numeric) Field Attribute - Numeric Input Optimization
+   ============================================================================= */
+
+/**
+ * NUM fields optimize input for numeric data entry with right-aligned text,
+ * numeric input modes for mobile devices, and validation styling.
+ */
+.bms-num,
+.num-field,
+.numeric-input,
+.mobile-numeric {
+  /* Numeric field base styling */
+  background-color: #FFFFFF !important;
+  color: var(--theme-palette-text-primary, #212121) !important;
+  
+  /* Typography optimized for numbers */
+  font-family: "Roboto Mono", "Courier New", monospace !important;
+  font-weight: 400;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums; /* Consistent digit width */
+  
+  /* Right-align numeric content */
+  text-align: right !important;
+  direction: ltr;
+  
+  /* Standard input behavior */
+  pointer-events: auto;
+  user-select: text;
+  
+  /* Border styling */
+  border: 1px solid #C4C4C4 !important;
+  border-radius: 4px;
+  
+  /* Padding with right alignment consideration */
+  padding: 8px 12px;
+  
+  /* Box model */
+  box-sizing: border-box;
+  
+  /* Field spacing */
+  margin-bottom: 16px;
+  
+  /* Mobile numeric keyboard optimization */
+  -webkit-appearance: none;
+  -moz-appearance: textfield;
+}
+
+/* Remove spinner buttons in numeric fields */
+.bms-num::-webkit-outer-spin-button,
+.bms-num::-webkit-inner-spin-button,
+.num-field::-webkit-outer-spin-button,
+.num-field::-webkit-inner-spin-button,
+.numeric-input::-webkit-outer-spin-button,
+.numeric-input::-webkit-inner-spin-button,
+.mobile-numeric::-webkit-outer-spin-button,
+.mobile-numeric::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Focus styling for numeric fields */
+.bms-num:focus,
+.num-field:focus,
+.numeric-input:focus,
+.mobile-numeric:focus {
+  border-color: var(--theme-palette-success-main, #00C853) !important;
+  box-shadow: 0 0 0 2px rgba(0, 200, 83, 0.2);
+  outline: none;
+}
+
+/* Material-UI TextField integration for NUM fields */
+.mui-textfield-bms.bms-num .MuiOutlinedInput-root,
+.mui-input-num .MuiOutlinedInput-root {
+  background-color: #FFFFFF !important;
+  
+  /* Numeric field styling */
+  & .MuiOutlinedInput-input {
+    text-align: right !important;
+    font-variant-numeric: tabular-nums !important;
+    color: var(--theme-palette-text-primary, #212121) !important;
+    
+    /* Mobile input mode attributes */
+    inputmode: numeric;
+    pattern: "[0-9]*";
+  }
+  
+  /* Focus styling with success color */
+  &.Mui-focused .MuiOutlinedInput-notchedOutline {
+    border-color: var(--theme-palette-success-main, #00C853) !important;
+    border-width: 2px !important;
+  }
+  
+  /* Hover effects */
+  &:hover .MuiOutlinedInput-notchedOutline {
+    border-color: var(--theme-palette-success-main, #00C853) !important;
+  }
+}
+
+/* Mobile-specific numeric field optimizations */
+@media screen and (max-width: 768px) {
+  .bms-num,
+  .num-field,
+  .numeric-input,
+  .mobile-numeric,
+  .mui-input-num .MuiOutlinedInput-input {
+    /* Larger touch targets on mobile */
+    min-height: 44px;
+    font-size: 16px; /* Prevent zoom on iOS */
+    
+    /* Mobile numeric keyboard */
+    inputmode: "numeric";
+    pattern: "[0-9]*";
+  }
+}
+
+/* =============================================================================
+   IC (Initial Cursor) Field Attribute - Focus Management
+   ============================================================================= */
+
+/**
+ * IC fields automatically receive focus when the screen is displayed,
+ * replicating BMS initial cursor positioning behavior.
+ */
+.bms-ic,
+.ic-field,
+.initial-cursor,
+.autofocus-field {
+  /* Base styling inherits from UNPROT */
+  background-color: #FFFFFF !important;
+  color: var(--theme-palette-text-primary, #212121) !important;
+  
+  /* Typography */
+  font-family: "Roboto Mono", "Courier New", monospace !important;
+  font-weight: 400;
+  font-size: 0.875rem;
+  
+  /* Input behavior */
+  pointer-events: auto;
+  user-select: text;
+  
+  /* Border with initial focus indicator */
+  border: 2px solid var(--theme-palette-primary-main, #00ACC1) !important;
+  border-radius: 4px;
+  
+  /* Padding adjusted for thicker border */
+  padding: 6px 10px;
+  
+  /* Box model */
+  box-sizing: border-box;
+  
+  /* Field spacing */
+  margin-bottom: 16px;
+  
+  /* Initial focus animation */
+  animation: initialCursorBlink 1s ease-in-out infinite alternate;
+  
+  /* Auto-focus behavior */
+  outline: none;
+}
+
+/* Blinking animation for initial cursor indication */
+@keyframes initialCursorBlink {
+  0% {
+    box-shadow: 0 0 0 2px rgba(0, 172, 193, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 2px rgba(0, 172, 193, 0.8);
+  }
+}
+
+/* Stop blinking animation once field receives actual focus */
+.bms-ic:focus,
+.ic-field:focus,
+.initial-cursor:focus,
+.autofocus-field:focus {
+  animation: none;
+  box-shadow: 0 0 0 2px rgba(0, 172, 193, 0.3);
+}
+
+/* Material-UI TextField integration for IC fields */
+.mui-textfield-bms.bms-ic .MuiOutlinedInput-root,
+.mui-focus-ic .MuiOutlinedInput-root {
+  background-color: #FFFFFF !important;
+  
+  /* Initial focus styling */
+  &.MuiOutlinedInput-root {
+    /* Immediate focus appearance */
+    & .MuiOutlinedInput-notchedOutline {
+      border-color: var(--theme-palette-primary-main, #00ACC1) !important;
+      border-width: 2px !important;
+      animation: initialCursorBlink 1s ease-in-out infinite alternate;
+    }
+    
+    /* Maintain focus when actually focused */
+    &.Mui-focused .MuiOutlinedInput-notchedOutline {
+      animation: none;
+      border-color: var(--theme-palette-primary-main, #00ACC1) !important;
+      border-width: 2px !important;
+    }
+  }
+  
+  /* Input element styling */
+  & .MuiOutlinedInput-input {
+    color: var(--theme-palette-text-primary, #212121) !important;
+    cursor: text !important;
+  }
+}
+
+/* =============================================================================
+   BRT (Bright) Field Attribute - High Intensity Display
+   ============================================================================= */
+
+/**
+ * BRT fields display content with high intensity (bold) to emphasize
+ * important information, headings, or critical data.
+ */
+.bms-brt,
+.brt-field,
+.bright-intensity,
+.bold-emphasis {
+  /* High-intensity visual styling */
+  background-color: #FFFFFF !important;
+  color: var(--theme-palette-text-primary, #212121) !important;
+  
+  /* Bold typography for emphasis */
+  font-family: "Roboto Mono", "Courier New", monospace !important;
+  font-weight: 700 !important; /* Bold weight for high intensity */
+  font-size: 0.875rem;
+  
+  /* Enhanced contrast for visibility */
+  text-shadow: 0 0 1px rgba(33, 33, 33, 0.3);
+  
+  /* Standard interaction */
+  pointer-events: auto;
+  user-select: text;
+  
+  /* Emphasized border */
+  border: 2px solid var(--theme-palette-primary-main, #00ACC1) !important;
+  border-radius: 4px;
+  
+  /* Padding adjusted for thicker border */
+  padding: 6px 10px;
+  
+  /* Box model */
+  box-sizing: border-box;
+  
+  /* Field spacing */
+  margin-bottom: 16px;
+  
+  /* Subtle glow effect for emphasis */
+  box-shadow: 0 0 4px rgba(0, 172, 193, 0.2);
+}
+
+/* Focus state for BRT fields */
+.bms-brt:focus,
+.brt-field:focus,
+.bright-intensity:focus,
+.bold-emphasis:focus {
+  /* Enhanced focus for high-intensity fields */
+  border-color: var(--theme-palette-warning-main, #FFA000) !important;
+  box-shadow: 0 0 0 3px rgba(255, 160, 0, 0.3);
+  outline: none;
+}
+
+/* Material-UI TextField integration for BRT fields */
+.mui-textfield-bms.bms-brt .MuiOutlinedInput-root,
+.mui-emphasis-brt .MuiOutlinedInput-root {
+  background-color: #FFFFFF !important;
+  
+  /* High-intensity field styling */
+  &.MuiOutlinedInput-root {
+    /* Emphasized border */
+    & .MuiOutlinedInput-notchedOutline {
+      border-color: var(--theme-palette-primary-main, #00ACC1) !important;
+      border-width: 2px !important;
+    }
+    
+    /* Enhanced focus state */
+    &.Mui-focused .MuiOutlinedInput-notchedOutline {
+      border-color: var(--theme-palette-warning-main, #FFA000) !important;
+      border-width: 3px !important;
+    }
+    
+    /* Hover effects */
+    &:hover .MuiOutlinedInput-notchedOutline {
+      border-color: var(--theme-palette-warning-main, #FFA000) !important;
+    }
+  }
+  
+  /* Input element styling */
+  & .MuiOutlinedInput-input {
+    color: var(--theme-palette-text-primary, #212121) !important;
+    font-weight: 700 !important;
+    text-shadow: 0 0 1px rgba(33, 33, 33, 0.3);
+    cursor: text !important;
+  }
+  
+  /* Label styling for BRT fields */
+  & .MuiInputLabel-root {
+    font-weight: 600 !important;
+    color: var(--theme-palette-primary-main, #00ACC1) !important;
+    
+    &.Mui-focused {
+      color: var(--theme-palette-warning-main, #FFA000) !important;
+    }
+  }
+}
+
+/* =============================================================================
+   Combination Classes and Special Cases
+   ============================================================================= */
+
+/**
+ * Combined attribute classes for fields that have multiple BMS attributes
+ */
+
+/* Numeric fields with initial cursor (NUM + IC) */
+.bms-num.bms-ic,
+.num-field.ic-field,
+.numeric-input.initial-cursor {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums !important;
+  border: 2px solid var(--theme-palette-success-main, #00C853) !important;
+  animation: initialCursorBlink 1s ease-in-out infinite alternate;
+}
+
+/* Bright numeric fields (NUM + BRT) */
+.bms-num.bms-brt,
+.num-field.brt-field,
+.numeric-input.bright-intensity {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums !important;
+  font-weight: 700 !important;
+  border: 2px solid var(--theme-palette-warning-main, #FFA000) !important;
+}
+
+/* Protected bright fields (PROT + BRT) - for labels and headings */
+.bms-prot.bms-brt,
+.prot-field.brt-field,
+.protected-input.bright-intensity {
+  background-color: #F5F5F5 !important;
+  color: var(--theme-palette-text-primary, #212121) !important;
+  font-weight: 700 !important;
+  border: 2px solid var(--theme-palette-primary-main, #00ACC1) !important;
+  pointer-events: none;
+}
+
+/* =============================================================================
+   Error State Styling for All Field Types
+   ============================================================================= */
+
+/**
+ * Error states that override normal field styling when validation fails
+ */
+.bms-askip.error,
+.bms-unprot.error,
+.bms-prot.error,
+.bms-num.error,
+.bms-ic.error,
+.bms-brt.error,
+.askip-field.error,
+.unprot-field.error,
+.prot-field.error,
+.num-field.error,
+.ic-field.error,
+.brt-field.error {
+  border-color: var(--theme-palette-error-main, #D32F2F) !important;
+  border-width: 2px !important;
+  box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.2) !important;
+  
+  /* Error background tint */
+  background-color: rgba(211, 47, 47, 0.05) !important;
+}
+
+/* Error state for Material-UI integration */
+.mui-textfield-bms.error .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline,
+.mui-input-askip.error .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline,
+.mui-input-unprot.error .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline,
+.mui-input-prot.error .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline,
+.mui-input-num.error .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline,
+.mui-focus-ic.error .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline,
+.mui-emphasis-brt.error .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline {
+  border-color: var(--theme-palette-error-main, #D32F2F) !important;
+  border-width: 2px !important;
+}
+
+/* =============================================================================
+   Accessibility Enhancements
+   ============================================================================= */
+
+/**
+ * ARIA and accessibility support for screen readers and keyboard navigation
+ */
+
+/* Focus indicators for keyboard navigation */
+.bms-askip:focus-visible,
+.bms-unprot:focus-visible,
+.bms-prot:focus-visible,
+.bms-num:focus-visible,
+.bms-ic:focus-visible,
+.bms-brt:focus-visible {
+  outline: 3px solid var(--theme-palette-info-main, #1976D2);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .bms-askip,
+  .bms-unprot,
+  .bms-prot,
+  .bms-num,
+  .bms-ic,
+  .bms-brt {
+    border-width: 2px !important;
+    font-weight: 600 !important;
+  }
+  
+  .bms-askip,
+  .bms-prot {
+    background-color: #E0E0E0 !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .bms-ic,
+  .ic-field,
+  .initial-cursor,
+  .autofocus-field {
+    animation: none !important;
+  }
+  
+  .mui-focus-ic .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline {
+    animation: none !important;
+  }
+}
+
+/* =============================================================================
+   Print Styles
+   ============================================================================= */
+
+/**
+ * Print-specific styles for form printing and documentation
+ */
+@media print {
+  .bms-askip,
+  .bms-unprot,
+  .bms-prot,
+  .bms-num,
+  .bms-ic,
+  .bms-brt {
+    /* Ensure fields are visible in print */
+    background-color: transparent !important;
+    border: 1px solid #000000 !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    animation: none !important;
+  }
+  
+  /* Print field type indicators */
+  .bms-askip::after { content: " [DISPLAY]"; font-size: 0.7rem; }
+  .bms-unprot::after { content: " [INPUT]"; font-size: 0.7rem; }
+  .bms-prot::after { content: " [PROTECTED]"; font-size: 0.7rem; }
+  .bms-num::after { content: " [NUMERIC]"; font-size: 0.7rem; }
+  .bms-ic::after { content: " [FOCUS]"; font-size: 0.7rem; }
+  .bms-brt::after { content: " [EMPHASIS]"; font-size: 0.7rem; }
+}
+
+/* =============================================================================
+   CSS Custom Properties for Theme Integration
+   ============================================================================= */
+
+/**
+ * CSS custom properties that can be dynamically updated via JavaScript
+ * to integrate with Material-UI theme changes
+ */
+:root {
+  /* Primary theme colors from Material-UI theme */
+  --theme-palette-primary-main: #00ACC1;
+  --theme-palette-secondary-main: #37474F;
+  --theme-palette-success-main: #00C853;
+  --theme-palette-error-main: #D32F2F;
+  --theme-palette-warning-main: #FFA000;
+  --theme-palette-info-main: #1976D2;
+  
+  /* Text colors */
+  --theme-palette-text-primary: #212121;
+  --theme-palette-text-secondary: #757575;
+  
+  /* Background colors */
+  --theme-palette-background-default: #FAFAFA;
+  --theme-palette-background-paper: #FFFFFF;
+  
+  /* Typography */
+  --theme-typography-fontFamily: "Roboto Mono", "Courier New", monospace;
+  
+  /* Spacing */
+  --theme-spacing-unit: 8px;
+  
+  /* Breakpoints for responsive design */
+  --theme-breakpoints-sm: 600px;
+  --theme-breakpoints-md: 960px;
+  --theme-breakpoints-lg: 1280px;
+}
+
+/* =============================================================================
+   Utility Classes for Common Patterns
+   ============================================================================= */
+
+/**
+ * Utility classes for common field patterns and layouts
+ */
+
+/* Field group styling for related fields */
+.bms-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theme-spacing-unit, 8px);
+  margin-bottom: calc(var(--theme-spacing-unit, 8px) * 2);
+}
+
+/* Inline field layout for compact forms */
+.bms-field-inline {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--theme-spacing-unit, 8px);
+  flex-wrap: wrap;
+}
+
+/* Field label styling */
+.bms-field-label {
+  font-family: var(--theme-typography-fontFamily, "Roboto Mono", monospace);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--theme-palette-text-primary, #212121);
+  margin-bottom: 4px;
+  display: block;
+}
+
+/* Required field indicator */
+.bms-field-required::after {
+  content: " *";
+  color: var(--theme-palette-error-main, #D32F2F);
+  font-weight: bold;
+}
+
+/* Field help text */
+.bms-field-help {
+  font-family: var(--theme-typography-fontFamily, "Roboto Mono", monospace);
+  font-size: 0.75rem;
+  color: var(--theme-palette-text-secondary, #757575);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* Field error message */
+.bms-field-error {
+  font-family: var(--theme-typography-fontFamily, "Roboto Mono", monospace);
+  font-size: 0.75rem;
+  color: var(--theme-palette-error-main, #D32F2F);
+  margin-top: 4px;
+  line-height: 1.4;
+  font-weight: 500;
+}
