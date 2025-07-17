@@ -203,6 +203,7 @@ public class SecurityGatewayFilter implements GatewayFilter {
      */
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        long startTime = System.currentTimeMillis();
         ServerHttpRequest request = exchange.getRequest();
         ServerHttpResponse response = exchange.getResponse();
         
@@ -256,7 +257,7 @@ public class SecurityGatewayFilter implements GatewayFilter {
                                                     "userType", jwt.getClaimAsString(USER_TYPE_CLAIM),
                                                     "requestUri", requestUri,
                                                     "remoteAddress", remoteAddress,
-                                                    "processingTime", System.currentTimeMillis() - exchange.getRequest().getHeaders().getDate(HttpHeaders.DATE)
+                                                    "processingTime", System.currentTimeMillis() - startTime
                                                 ));
                                             }
                                         });
