@@ -1,6 +1,7 @@
 package com.carddemo.batch.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -436,6 +437,7 @@ public class DailyTransactionDTO {
      * 
      * @return true if all validations pass, false otherwise
      */
+    @JsonIgnore
     public boolean isValid() {
         return transactionId != null && !transactionId.trim().isEmpty() &&
                transactionTypeCode != null && transactionTypeCode.length() == 2 &&
