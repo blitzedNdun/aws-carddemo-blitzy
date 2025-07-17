@@ -604,6 +604,61 @@ public final class ValidationUtils {
     }
     
     /**
+     * Validates FICO credit score range (alias for validateFicoScore).
+     * 
+     * Implements COBOL FICO score validation equivalent to CUST-FICO-CREDIT-SCORE PIC 9(03)
+     * validation. Validates that score is within valid FICO range (300-850).
+     * 
+     * @param ficoCreditScore the FICO credit score to validate
+     * @return ValidationResult indicating validation outcome
+     */
+    public static ValidationResult validateFicoCreditScore(Integer ficoCreditScore) {
+        return validateFicoScore(ficoCreditScore);
+    }
+    
+    /**
+     * Validates customer ID format and structure.
+     * 
+     * Implements COBOL customer ID validation equivalent to CUST-ID PIC 9(09) validation.
+     * Validates that the customer ID is exactly 9 digits and falls within the valid
+     * customer ID range as defined in the original COBOL business rules.
+     * 
+     * @param customerId the customer ID to validate
+     * @return ValidationResult indicating validation outcome
+     */
+    public static ValidationResult validateCustomerId(String customerId) {
+        logger.debug("Validating customer ID: {}", customerId);
+        
+        if (StringUtils.isBlank(customerId)) {
+            logger.warn("Customer ID validation failed: blank field");
+            return ValidationResult.BLANK_FIELD;
+        }
+        
+        String cleanCustomerId = StringUtils.trim(customerId);
+        
+        // Check format - must be exactly 9 digits
+        if (cleanCustomerId.length() != 9 || !NUMERIC_ONLY_PATTERN.matcher(cleanCustomerId).matches()) {
+            logger.warn("Customer ID validation failed: invalid format - {}", cleanCustomerId);
+            return ValidationResult.INVALID_FORMAT;
+        }
+        
+        // Check range - must be within valid customer ID range (1-999999999)
+        try {
+            long custId = Long.parseLong(cleanCustomerId);
+            if (custId < 1 || custId > 999999999) {
+                logger.warn("Customer ID validation failed: out of range - {}", custId);
+                return ValidationResult.INVALID_RANGE;
+            }
+        } catch (NumberFormatException e) {
+            logger.error("Customer ID validation failed: number format exception - {}", cleanCustomerId, e);
+            return ValidationResult.INVALID_FORMAT;
+        }
+        
+        logger.debug("Customer ID validation successful: {}", cleanCustomerId);
+        return ValidationResult.VALID;
+    }
+    
+    /**
      * Validates credit card number using Luhn algorithm.
      * 
      * Implements the Luhn algorithm (mod 10) for credit card number validation.
