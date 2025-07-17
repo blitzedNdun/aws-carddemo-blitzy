@@ -62,11 +62,11 @@ public interface TransactionCategoryBalanceRepository extends JpaRepository<Tran
      * @param accountId The 11-digit account identifier
      * @return List of TransactionCategoryBalance entities ordered by transaction category
      */
-    @Query("SELECT tcb FROM TransactionCategoryBalance tcb WHERE tcb.id.accountId = :accountId ORDER BY tcb.id.transactionCategory")
+    @Query("SELECT tcb FROM TransactionCategoryBalance tcb WHERE tcb.id.accountId = :accountId ORDER BY tcb.id.transactionType, tcb.id.transactionCategory")
     List<TransactionCategoryBalance> findByAccountIdOrderByTransactionCategory(@Param("accountId") String accountId);
 
     /**
-     * Updates the category balance for a specific account and transaction category.
+     * Updates the category balance for a specific account, transaction type, and transaction category.
      * 
      * Performs atomic balance update during transaction posting from batch programs.
      * Maintains BigDecimal precision equivalent to COBOL COMP-3 arithmetic operations.
@@ -77,34 +77,39 @@ public interface TransactionCategoryBalanceRepository extends JpaRepository<Tran
      * - IF TCATBALF-STATUS = '00' (success)
      * 
      * @param accountId The 11-digit account identifier
+     * @param transactionType The 2-character transaction type code
      * @param transactionCategory The 4-character transaction category code
      * @param newBalance The new balance amount with exact decimal precision
      * @return Number of records updated (should be 1 for successful update)
      */
     @Modifying
     @Transactional
-    @Query("UPDATE TransactionCategoryBalance tcb SET tcb.categoryBalance = :newBalance, tcb.lastUpdated = CURRENT_TIMESTAMP WHERE tcb.id.accountId = :accountId AND tcb.id.transactionCategory = :transactionCategory")
+    @Query("UPDATE TransactionCategoryBalance tcb SET tcb.categoryBalance = :newBalance, tcb.lastUpdated = CURRENT_TIMESTAMP WHERE tcb.id.accountId = :accountId AND tcb.id.transactionType = :transactionType AND tcb.id.transactionCategory = :transactionCategory")
     int updateCategoryBalance(@Param("accountId") String accountId, 
+                             @Param("transactionType") String transactionType,
                              @Param("transactionCategory") String transactionCategory, 
                              @Param("newBalance") BigDecimal newBalance);
 
     /**
-     * Retrieves the balance for a specific account and transaction category combination.
+     * Retrieves the balance for a specific account, transaction type, and transaction category combination.
      * 
      * Equivalent to COBOL random read with composite key access pattern.
      * Used for specific category balance lookups in transaction processing.
      * 
      * Original COBOL Pattern:
      * - MOVE ACCOUNT-ID TO TRANCAT-ACCT-ID
+     * - MOVE TYPE-CODE TO TRANCAT-TYPE-CD
      * - MOVE CATEGORY-CODE TO TRANCAT-CD
      * - READ TCATBAL-FILE KEY IS TRAN-CAT-KEY
      * 
      * @param accountId The 11-digit account identifier
+     * @param transactionType The 2-character transaction type code
      * @param transactionCategory The 4-character transaction category code
      * @return Optional containing the balance amount if found, empty otherwise
      */
-    @Query("SELECT tcb.categoryBalance FROM TransactionCategoryBalance tcb WHERE tcb.id.accountId = :accountId AND tcb.id.transactionCategory = :transactionCategory")
+    @Query("SELECT tcb.categoryBalance FROM TransactionCategoryBalance tcb WHERE tcb.id.accountId = :accountId AND tcb.id.transactionType = :transactionType AND tcb.id.transactionCategory = :transactionCategory")
     Optional<BigDecimal> findBalanceByAccountIdAndCategory(@Param("accountId") String accountId, 
+                                                          @Param("transactionType") String transactionType,
                                                           @Param("transactionCategory") String transactionCategory);
 
     /**
@@ -192,7 +197,7 @@ public interface TransactionCategoryBalanceRepository extends JpaRepository<Tran
            "JOIN FETCH tcb.account a " +
            "JOIN FETCH tcb.transactionCategory tc " +
            "WHERE tcb.id.accountId = :accountId " +
-           "ORDER BY tcb.id.transactionCategory")
+           "ORDER BY tcb.id.transactionType, tcb.id.transactionCategory")
     List<TransactionCategoryBalance> findByAccountIdWithDetails(@Param("accountId") String accountId);
 
     /**
@@ -205,7 +210,7 @@ public interface TransactionCategoryBalanceRepository extends JpaRepository<Tran
      * @param maxBalance Maximum balance threshold for filtering
      * @return List of TransactionCategoryBalance entities within the specified range
      */
-    @Query("SELECT tcb FROM TransactionCategoryBalance tcb WHERE tcb.categoryBalance BETWEEN :minBalance AND :maxBalance ORDER BY tcb.id.accountId, tcb.id.transactionCategory")
+    @Query("SELECT tcb FROM TransactionCategoryBalance tcb WHERE tcb.categoryBalance BETWEEN :minBalance AND :maxBalance ORDER BY tcb.id.accountId, tcb.id.transactionType, tcb.id.transactionCategory")
     List<TransactionCategoryBalance> findBalancesInRange(@Param("minBalance") BigDecimal minBalance, 
                                                         @Param("maxBalance") BigDecimal maxBalance);
 
@@ -230,7 +235,7 @@ public interface TransactionCategoryBalanceRepository extends JpaRepository<Tran
      * @param accountIds List of 11-digit account identifiers
      * @return List of TransactionCategoryBalance entities for all specified accounts
      */
-    @Query("SELECT tcb FROM TransactionCategoryBalance tcb WHERE tcb.id.accountId IN :accountIds ORDER BY tcb.id.accountId, tcb.id.transactionCategory")
+    @Query("SELECT tcb FROM TransactionCategoryBalance tcb WHERE tcb.id.accountId IN :accountIds ORDER BY tcb.id.accountId, tcb.id.transactionType, tcb.id.transactionCategory")
     List<TransactionCategoryBalance> findByAccountIdList(@Param("accountIds") List<String> accountIds);
 
     /**
@@ -278,6 +283,7 @@ public interface TransactionCategoryBalanceRepository extends JpaRepository<Tran
      * Maintains data consistency during concurrent balance modifications.
      * 
      * @param accountId The 11-digit account identifier
+     * @param transactionType The 2-character transaction type code
      * @param transactionCategory The 4-character transaction category code
      * @param expectedBalance The expected current balance value
      * @param newBalance The new balance amount to set
@@ -285,8 +291,9 @@ public interface TransactionCategoryBalanceRepository extends JpaRepository<Tran
      */
     @Modifying
     @Transactional
-    @Query("UPDATE TransactionCategoryBalance tcb SET tcb.categoryBalance = :newBalance, tcb.lastUpdated = CURRENT_TIMESTAMP WHERE tcb.id.accountId = :accountId AND tcb.id.transactionCategory = :transactionCategory AND tcb.categoryBalance = :expectedBalance")
+    @Query("UPDATE TransactionCategoryBalance tcb SET tcb.categoryBalance = :newBalance, tcb.lastUpdated = CURRENT_TIMESTAMP WHERE tcb.id.accountId = :accountId AND tcb.id.transactionType = :transactionType AND tcb.id.transactionCategory = :transactionCategory AND tcb.categoryBalance = :expectedBalance")
     int updateCategoryBalanceConditional(@Param("accountId") String accountId,
+                                        @Param("transactionType") String transactionType,
                                         @Param("transactionCategory") String transactionCategory,
                                         @Param("expectedBalance") BigDecimal expectedBalance,
                                         @Param("newBalance") BigDecimal newBalance);
