@@ -1,0 +1,808 @@
+/*
+ * Function Key Styling CSS
+ * 
+ * This file implements visual cues, tooltips, and navigation indicators for preserving 
+ * mainframe keyboard navigation patterns in the React application. It provides styling
+ * for function key toolbars, keyboard shortcuts tooltips, PF key guidance chips,
+ * navigation indicators, key press feedback, and help text integration.
+ * 
+ * The styles maintain compatibility with the BMS-to-React transformation requirements
+ * from the original COBOL/CICS application, preserving the 3270 terminal keyboard
+ * behavior while providing modern web accessibility and visual feedback.
+ * 
+ * Key Components:
+ * - Function key toolbar (F3=Exit, F7=Page Up, F8=Page Down, F12=Cancel, ENTER=Submit)
+ * - Keyboard navigation tooltips with contextual guidance
+ * - Material-UI integration for Tooltip, Chip, and Button components
+ * - Visual feedback system for key press animations and active states
+ * - Help text popover styling for contextual assistance
+ */
+
+/* ==========================================================================
+   Function Key Toolbar Styling
+   ========================================================================== */
+
+/**
+ * Main function key toolbar container
+ * Positioned at bottom of screen to replicate 3270 terminal function key bar
+ */
+.function-key-toolbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #37474F 0%, #455A64 100%);
+  border-top: 2px solid #00ACC1;
+  box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1100;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 56px;
+  font-family: "Roboto Mono", "Courier New", monospace;
+}
+
+/**
+ * Function key container for grouping related keys
+ */
+.function-key-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/**
+ * Individual function key bar styling
+ */
+.function-key-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/**
+ * Toolbar positioning utilities for responsive layout
+ */
+.toolbar-positioning {
+  position: relative;
+  width: 100%;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 960px) {
+  .function-key-toolbar {
+    padding: 6px 12px;
+    min-height: 48px;
+  }
+  
+  .function-key-container {
+    gap: 8px;
+  }
+  
+  .function-key-bar {
+    gap: 6px;
+    padding: 3px 6px;
+  }
+}
+
+@media (max-width: 600px) {
+  .function-key-toolbar {
+    padding: 4px 8px;
+    min-height: 44px;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .function-key-container {
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+/* ==========================================================================
+   Keyboard Shortcuts Tooltip Styling
+   ========================================================================== */
+
+/**
+ * Main tooltip container for keyboard shortcuts
+ * Integrates with Material-UI Tooltip component
+ */
+.keyboard-tooltip {
+  background-color: #37474F !important;
+  color: #FFFFFF !important;
+  border: 1px solid #00ACC1 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  font-family: "Roboto Mono", "Courier New", monospace !important;
+  font-size: 0.75rem !important;
+  max-width: 300px !important;
+  padding: 12px 16px !important;
+}
+
+/**
+ * Tooltip content area styling
+ */
+.tooltip-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tooltip-content .shortcut-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tooltip-content .shortcut-group-title {
+  font-weight: 600;
+  color: #00ACC1;
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(0, 172, 193, 0.3);
+  padding-bottom: 2px;
+}
+
+/**
+ * Individual shortcut hint styling
+ */
+.shortcut-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.shortcut-hint .key-label {
+  background-color: #455A64;
+  color: #FFFFFF;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  min-width: 32px;
+  text-align: center;
+  border: 1px solid #607D8B;
+}
+
+.shortcut-hint .key-description {
+  color: #E0E0E0;
+  font-size: 0.75rem;
+  flex: 1;
+}
+
+/**
+ * Tooltip positioning and arrow styling
+ */
+.tooltip-positioning {
+  position: relative;
+}
+
+.keyboard-tooltip .MuiTooltip-arrow {
+  color: #37474F !important;
+}
+
+/* Enhanced tooltip for complex key combinations */
+.keyboard-tooltip.complex-tooltip {
+  max-width: 400px !important;
+  padding: 16px 20px !important;
+}
+
+.complex-tooltip .tooltip-header {
+  font-weight: 600;
+  color: #00ACC1;
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+  text-align: center;
+  border-bottom: 1px solid rgba(0, 172, 193, 0.5);
+  padding-bottom: 8px;
+}
+
+/* ==========================================================================
+   PF Key Guidance Chips Styling
+   ========================================================================== */
+
+/**
+ * Base styling for PF key guidance chips
+ * Integrates with Material-UI Chip component
+ */
+.pf-key-chip {
+  background-color: #37474F !important;
+  color: #FFFFFF !important;
+  border: 1px solid #607D8B !important;
+  font-family: "Roboto Mono", "Courier New", monospace !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  height: 28px !important;
+  padding: 0 8px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.pf-key-chip:hover {
+  background-color: #455A64 !important;
+  border-color: #00ACC1 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(0, 172, 193, 0.3) !important;
+}
+
+.pf-key-chip:active {
+  background-color: #263238 !important;
+  transform: translateY(0) !important;
+  box-shadow: 0 1px 4px rgba(0, 172, 193, 0.2) !important;
+}
+
+/**
+ * Specific PF key chip styling based on function
+ */
+
+/* F3 = Exit key styling */
+.chip-f3-exit {
+  background-color: #D32F2F !important;
+  border-color: #F44336 !important;
+}
+
+.chip-f3-exit:hover {
+  background-color: #F44336 !important;
+  border-color: #FF5722 !important;
+  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.4) !important;
+}
+
+.chip-f3-exit:active {
+  background-color: #C62828 !important;
+}
+
+/* F7 = Page Up key styling */
+.chip-f7-page-up {
+  background-color: #1976D2 !important;
+  border-color: #2196F3 !important;
+}
+
+.chip-f7-page-up:hover {
+  background-color: #2196F3 !important;
+  border-color: #03A9F4 !important;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.4) !important;
+}
+
+.chip-f7-page-up:active {
+  background-color: #1565C0 !important;
+}
+
+/* F8 = Page Down key styling */
+.chip-f8-page-down {
+  background-color: #1976D2 !important;
+  border-color: #2196F3 !important;
+}
+
+.chip-f8-page-down:hover {
+  background-color: #2196F3 !important;
+  border-color: #03A9F4 !important;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.4) !important;
+}
+
+.chip-f8-page-down:active {
+  background-color: #1565C0 !important;
+}
+
+/* F12 = Cancel key styling */
+.chip-f12-cancel {
+  background-color: #FFA000 !important;
+  border-color: #FFB74D !important;
+  color: #000000 !important;
+}
+
+.chip-f12-cancel:hover {
+  background-color: #FFB74D !important;
+  border-color: #FFCC02 !important;
+  box-shadow: 0 2px 8px rgba(255, 183, 77, 0.4) !important;
+}
+
+.chip-f12-cancel:active {
+  background-color: #F57C00 !important;
+}
+
+/* ENTER = Submit key styling */
+.chip-enter-submit {
+  background-color: #00C853 !important;
+  border-color: #4CAF50 !important;
+  color: #000000 !important;
+}
+
+.chip-enter-submit:hover {
+  background-color: #4CAF50 !important;
+  border-color: #8BC34A !important;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.4) !important;
+}
+
+.chip-enter-submit:active {
+  background-color: #009624 !important;
+}
+
+/* Chip sizing variants */
+.pf-key-chip.small {
+  height: 24px !important;
+  font-size: 0.7rem !important;
+  padding: 0 6px !important;
+}
+
+.pf-key-chip.large {
+  height: 32px !important;
+  font-size: 0.8rem !important;
+  padding: 0 12px !important;
+}
+
+/* ==========================================================================
+   Keyboard Navigation Indicators
+   ========================================================================== */
+
+/**
+ * Active navigation state indicator
+ */
+.nav-indicator-active {
+  position: relative;
+  background-color: rgba(0, 172, 193, 0.1) !important;
+  border: 2px solid #00ACC1 !important;
+  border-radius: 4px !important;
+  outline: none !important;
+}
+
+.nav-indicator-active::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, #00ACC1, #00E5FF);
+  border-radius: 6px;
+  z-index: -1;
+  opacity: 0.3;
+  animation: pulse-border 2s infinite;
+}
+
+/**
+ * Focus state indicator for keyboard navigation
+ */
+.nav-indicator-focus {
+  outline: 2px solid #00ACC1 !important;
+  outline-offset: 2px !important;
+  border-radius: 4px !important;
+  background-color: rgba(0, 172, 193, 0.05) !important;
+}
+
+.nav-indicator-focus::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border: 1px dotted #00ACC1;
+  border-radius: 6px;
+  pointer-events: none;
+  animation: focus-blink 1s infinite alternate;
+}
+
+/**
+ * Primary color highlighting for active elements
+ */
+.primary-highlight {
+  background-color: #00ACC1 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 8px rgba(0, 172, 193, 0.4) !important;
+  border-color: #00E5FF !important;
+}
+
+.primary-highlight:hover {
+  background-color: #00838F !important;
+  box-shadow: 0 4px 12px rgba(0, 172, 193, 0.5) !important;
+}
+
+/**
+ * Navigation state visual feedback
+ */
+.nav-state-visual {
+  transition: all 0.2s ease-in-out;
+  position: relative;
+}
+
+.nav-state-visual.keyboard-navigable {
+  cursor: pointer;
+}
+
+.nav-state-visual.keyboard-navigable:focus {
+  z-index: 10;
+}
+
+.nav-state-visual.keyboard-navigable:focus-visible {
+  outline: 2px solid #00ACC1;
+  outline-offset: 2px;
+}
+
+/* Navigation breadcrumb indicator */
+.nav-breadcrumb {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 16px;
+  height: 16px;
+  background-color: #00ACC1;
+  border-radius: 50%;
+  border: 2px solid #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: #FFFFFF;
+  z-index: 5;
+}
+
+/* ==========================================================================
+   Key Press Feedback Animations
+   ========================================================================== */
+
+/**
+ * Visual feedback for key press actions
+ */
+.key-press-visual {
+  position: relative;
+  overflow: hidden;
+  transform-origin: center;
+  transition: transform 0.1s ease-out;
+}
+
+.key-press-visual:active {
+  transform: scale(0.95);
+}
+
+.key-press-visual.pressed {
+  animation: key-press-flash 0.2s ease-out;
+}
+
+/**
+ * Ripple effect for button feedback
+ * Integrates with Material-UI Button ripple system
+ */
+.ripple-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-effect::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 172, 193, 0.6) 0%, transparent 70%);
+  transform: translate(-50%, -50%);
+  transition: width 0.3s ease-out, height 0.3s ease-out;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.ripple-effect:active::before {
+  width: 200px;
+  height: 200px;
+  transition: width 0.1s ease-out, height 0.1s ease-out;
+}
+
+/**
+ * Button feedback styling
+ */
+.button-feedback {
+  position: relative;
+  transition: all 0.15s ease-in-out;
+}
+
+.button-feedback:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.button-feedback:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.button-feedback.function-key-feedback {
+  background-color: #37474F;
+  border: 1px solid #607D8B;
+}
+
+.button-feedback.function-key-feedback:hover {
+  background-color: #455A64;
+  border-color: #00ACC1;
+}
+
+.button-feedback.function-key-feedback:active {
+  background-color: #263238;
+  border-color: #00838F;
+}
+
+/**
+ * Press animation keyframe
+ */
+.press-animation {
+  animation: press-pulse 0.3s ease-out;
+}
+
+/* ==========================================================================
+   Help Text Integration with Material-UI
+   ========================================================================== */
+
+/**
+ * Help text popover styling
+ * Integrates with Material-UI Popover component
+ */
+.help-text-popover {
+  background-color: #FFFFFF !important;
+  border: 2px solid #00ACC1 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+  max-width: 400px !important;
+  padding: 0 !important;
+}
+
+.help-text-popover .MuiPopover-paper {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/**
+ * Contextual help content area
+ */
+.contextual-help {
+  padding: 16px 20px;
+  font-family: "Roboto Mono", "Courier New", monospace;
+}
+
+.contextual-help .help-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #E0E0E0;
+}
+
+.contextual-help .help-icon {
+  color: #00ACC1;
+  font-size: 1.2rem;
+}
+
+.contextual-help .help-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #37474F;
+}
+
+.contextual-help .help-content {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #616161;
+  margin-bottom: 12px;
+}
+
+.contextual-help .help-shortcuts {
+  background-color: #F5F5F5;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-top: 8px;
+}
+
+.contextual-help .help-shortcuts-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #37474F;
+  margin-bottom: 6px;
+}
+
+.contextual-help .help-shortcut-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.contextual-help .help-shortcut-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.7rem;
+}
+
+.contextual-help .help-shortcut-key {
+  background-color: #37474F;
+  color: #FFFFFF;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.contextual-help .help-shortcut-desc {
+  color: #616161;
+}
+
+/**
+ * Function key specific help styling
+ */
+.function-key-help {
+  background: linear-gradient(135deg, #F8F9FA 0%, #E9ECEF 100%);
+  border-left: 4px solid #00ACC1;
+  padding: 12px 16px;
+  margin: 8px 0;
+  border-radius: 0 4px 4px 0;
+}
+
+.function-key-help .fkey-help-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #00ACC1;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.function-key-help .fkey-help-desc {
+  font-size: 0.75rem;
+  color: #495057;
+  margin-bottom: 6px;
+}
+
+.function-key-help .fkey-help-usage {
+  font-size: 0.7rem;
+  color: #6C757D;
+  font-style: italic;
+}
+
+/**
+ * Material-UI integration helper classes
+ */
+.help-integration-mui {
+  /* Ensures proper z-index layering with Material-UI components */
+  z-index: 1500 !important;
+}
+
+.help-integration-mui .MuiBackdrop-root {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.help-integration-mui .help-close-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px;
+  background-color: transparent;
+  border: none;
+  color: #757575;
+  cursor: pointer;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.help-integration-mui .help-close-button:hover {
+  background-color: #F5F5F5;
+  color: #424242;
+}
+
+/* ==========================================================================
+   Keyframe Animations
+   ========================================================================== */
+
+@keyframes pulse-border {
+  0% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+}
+
+@keyframes focus-blink {
+  0% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes key-press-flash {
+  0% {
+    background-color: rgba(0, 172, 193, 0.1);
+    transform: scale(1);
+  }
+  50% {
+    background-color: rgba(0, 172, 193, 0.3);
+    transform: scale(1.02);
+  }
+  100% {
+    background-color: rgba(0, 172, 193, 0.1);
+    transform: scale(1);
+  }
+}
+
+@keyframes press-pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(0, 172, 193, 0.7);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(0, 172, 193, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(0, 172, 193, 0);
+  }
+}
+
+/* ==========================================================================
+   Accessibility and High Contrast Support
+   ========================================================================== */
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .function-key-toolbar {
+    border-top-width: 3px;
+    background: #000000;
+  }
+  
+  .pf-key-chip {
+    border-width: 2px !important;
+  }
+  
+  .nav-indicator-active {
+    border-width: 3px !important;
+  }
+  
+  .keyboard-tooltip {
+    border-width: 2px !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .key-press-visual,
+  .button-feedback,
+  .press-animation,
+  .nav-indicator-active::before,
+  .nav-indicator-focus::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  
+  .ripple-effect::before {
+    display: none;
+  }
+}
+
+/* Print styles - hide function key elements */
+@media print {
+  .function-key-toolbar,
+  .pf-key-chip,
+  .keyboard-tooltip,
+  .help-text-popover {
+    display: none !important;
+  }
+}
