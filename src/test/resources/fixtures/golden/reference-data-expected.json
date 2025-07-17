@@ -1,0 +1,335 @@
+{
+  "transactionTypes": [
+    {
+      "transactionType": "01",
+      "typeDescription": "Purchase",
+      "debitCreditIndicator": true
+    },
+    {
+      "transactionType": "02",
+      "typeDescription": "Payment",
+      "debitCreditIndicator": false
+    },
+    {
+      "transactionType": "03",
+      "typeDescription": "Credit",
+      "debitCreditIndicator": false
+    },
+    {
+      "transactionType": "04",
+      "typeDescription": "Authorization",
+      "debitCreditIndicator": true
+    },
+    {
+      "transactionType": "05",
+      "typeDescription": "Refund",
+      "debitCreditIndicator": false
+    },
+    {
+      "transactionType": "06",
+      "typeDescription": "Reversal",
+      "debitCreditIndicator": false
+    },
+    {
+      "transactionType": "07",
+      "typeDescription": "Adjustment",
+      "debitCreditIndicator": true
+    }
+  ],
+  "transactionCategories": [
+    {
+      "transactionCategory": "0001",
+      "categoryDescription": "Regular Sales Draft",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0002",
+      "categoryDescription": "Regular Cash Advance",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0003",
+      "categoryDescription": "Convenience Check Debit",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0004",
+      "categoryDescription": "ATM Cash Advance",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0005",
+      "categoryDescription": "Interest Amount",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0001",
+      "categoryDescription": "Cash payment",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0002",
+      "categoryDescription": "Electronic payment",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0003",
+      "categoryDescription": "Check payment",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0001",
+      "categoryDescription": "Credit to Account",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0002",
+      "categoryDescription": "Credit to Purchase balance",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0003",
+      "categoryDescription": "Credit to Cash balance",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0001",
+      "categoryDescription": "Zero dollar authorization",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0002",
+      "categoryDescription": "Online purchase authorization",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0003",
+      "categoryDescription": "Travel booking authorization",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0001",
+      "categoryDescription": "Refund credit",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0001",
+      "categoryDescription": "Fraud reversal",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0002",
+      "categoryDescription": "Non-fraud reversal",
+      "activeStatus": true
+    },
+    {
+      "transactionCategory": "0001",
+      "categoryDescription": "Sales draft credit adjustment",
+      "activeStatus": true
+    }
+  ],
+  "disclosureGroups": [
+    {
+      "groupId": "A000000000",
+      "disclosureText": "Standard disclosure for Group A with 1.50% interest rate applicable to regular card accounts. This disclosure complies with federal banking regulations for interest rate transparency and customer notification requirements.",
+      "interestRate": 0.0150,
+      "effectiveDate": "2024-01-01T00:00:00"
+    },
+    {
+      "groupId": "A000000000",
+      "disclosureText": "Standard disclosure for Group A with 2.50% interest rate applicable to premium card accounts. This disclosure complies with federal banking regulations for interest rate transparency and customer notification requirements.",
+      "interestRate": 0.0250,
+      "effectiveDate": "2024-01-01T00:00:00"
+    },
+    {
+      "groupId": "DEFAULT",
+      "disclosureText": "Default disclosure group with 1.50% interest rate applicable to standard card accounts. This disclosure complies with federal banking regulations for interest rate transparency and customer notification requirements.",
+      "interestRate": 0.0150,
+      "effectiveDate": "2024-01-01T00:00:00"
+    },
+    {
+      "groupId": "DEFAULT",
+      "disclosureText": "Default disclosure group with 2.50% interest rate applicable to premium card accounts. This disclosure complies with federal banking regulations for interest rate transparency and customer notification requirements.",
+      "interestRate": 0.0250,
+      "effectiveDate": "2024-01-01T00:00:00"
+    },
+    {
+      "groupId": "ZEROAPR",
+      "disclosureText": "Zero APR disclosure group with 0.00% interest rate applicable to promotional card accounts. This disclosure complies with federal banking regulations for interest rate transparency and customer notification requirements.",
+      "interestRate": 0.0000,
+      "effectiveDate": "2024-01-01T00:00:00"
+    }
+  ],
+  "cacheValidationData": {
+    "transactionTypesCache": {
+      "cacheKey": "transactionTypes",
+      "expectedCount": 7,
+      "keyFormat": "2-character-code",
+      "sampleKeys": ["01", "02", "03", "04", "05", "06", "07"],
+      "validationRules": {
+        "transactionType": {
+          "required": true,
+          "type": "string",
+          "length": 2,
+          "pattern": "^[0-9]{2}$"
+        },
+        "typeDescription": {
+          "required": true,
+          "type": "string",
+          "maxLength": 60,
+          "minLength": 1
+        },
+        "debitCreditIndicator": {
+          "required": true,
+          "type": "boolean"
+        }
+      }
+    },
+    "transactionCategoriesCache": {
+      "cacheKey": "transactionCategories",
+      "expectedCount": 18,
+      "keyFormat": "4-character-code",
+      "sampleKeys": ["0001", "0002", "0003", "0004", "0005"],
+      "validationRules": {
+        "transactionCategory": {
+          "required": true,
+          "type": "string",
+          "length": 4,
+          "pattern": "^[0-9]{4}$"
+        },
+        "categoryDescription": {
+          "required": true,
+          "type": "string",
+          "maxLength": 60,
+          "minLength": 1
+        },
+        "activeStatus": {
+          "required": true,
+          "type": "boolean"
+        }
+      }
+    },
+    "disclosureGroupsCache": {
+      "cacheKey": "disclosureGroups",
+      "expectedCount": 51,
+      "keyFormat": "variable-length-group-id",
+      "sampleKeys": ["A000000000", "DEFAULT", "ZEROAPR"],
+      "validationRules": {
+        "groupId": {
+          "required": true,
+          "type": "string",
+          "maxLength": 10,
+          "minLength": 1
+        },
+        "disclosureText": {
+          "required": true,
+          "type": "string",
+          "maxLength": 1000,
+          "minLength": 1
+        },
+        "interestRate": {
+          "required": true,
+          "type": "decimal",
+          "precision": 5,
+          "scale": 4,
+          "min": 0.0000,
+          "max": 9.9999
+        },
+        "effectiveDate": {
+          "required": true,
+          "type": "datetime"
+        }
+      }
+    }
+  },
+  "entityMappingData": {
+    "transactionTypeMapping": {
+      "sourceFormat": "ASCII-fixed-width",
+      "targetEntity": "TransactionType",
+      "fieldMappings": [
+        {
+          "sourceField": "positions_1_2",
+          "targetField": "transactionType",
+          "transformation": "direct_copy"
+        },
+        {
+          "sourceField": "positions_3_52",
+          "targetField": "typeDescription",
+          "transformation": "trim_whitespace"
+        },
+        {
+          "sourceField": "derived_business_logic",
+          "targetField": "debitCreditIndicator",
+          "transformation": "business_rule_mapping"
+        }
+      ],
+      "businessRules": {
+        "debitCreditIndicator": {
+          "01": true,
+          "02": false,
+          "03": false,
+          "04": true,
+          "05": false,
+          "06": false,
+          "07": true
+        }
+      }
+    },
+    "transactionCategoryMapping": {
+      "sourceFormat": "ASCII-fixed-width",
+      "targetEntity": "TransactionCategory",
+      "fieldMappings": [
+        {
+          "sourceField": "positions_3_6",
+          "targetField": "transactionCategory",
+          "transformation": "extract_category_code"
+        },
+        {
+          "sourceField": "positions_7_56",
+          "targetField": "categoryDescription",
+          "transformation": "trim_whitespace"
+        },
+        {
+          "sourceField": "default_value",
+          "targetField": "activeStatus",
+          "transformation": "constant_true"
+        }
+      ],
+      "businessRules": {
+        "categoryCodeExtraction": "Extract last 4 digits from 6-digit category code",
+        "activeStatus": "Default all categories to active status"
+      }
+    },
+    "disclosureGroupMapping": {
+      "sourceFormat": "ASCII-fixed-width",
+      "targetEntity": "DisclosureGroup",
+      "fieldMappings": [
+        {
+          "sourceField": "positions_2_11",
+          "targetField": "groupId",
+          "transformation": "trim_whitespace"
+        },
+        {
+          "sourceField": "generated_content",
+          "targetField": "disclosureText",
+          "transformation": "template_generation"
+        },
+        {
+          "sourceField": "positions_22_26",
+          "targetField": "interestRate",
+          "transformation": "basis_points_to_decimal"
+        },
+        {
+          "sourceField": "system_date",
+          "targetField": "effectiveDate",
+          "transformation": "current_timestamp"
+        }
+      ],
+      "businessRules": {
+        "interestRateConversion": "Convert 5-digit basis points to decimal percentage (00150 = 1.50% = 0.0150, 00250 = 2.50% = 0.0250, 00000 = 0.00% = 0.0000)",
+        "disclosureTextGeneration": "Generate compliance disclosure text based on group ID and interest rate for regulatory compliance",
+        "effectiveDate": "Set to system effective date (2024-01-01) for all groups during initial migration"
+      }
+    }
+  }
+}
