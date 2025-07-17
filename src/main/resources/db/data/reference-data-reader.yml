@@ -1,0 +1,533 @@
+# Spring Batch MultiResourceItemReader Configuration for Reference Data Loading
+# Processes 5 ASCII files for CardDemo reference table population
+# Supporting COBOL-to-Java migration with exact decimal precision preservation
+# Required for Redis cache warming and foreign key constraint satisfaction
+
+# Reference Data Reader Configuration
+# Maintains Spring Batch 5.x compatibility with Java 21 LTS
+# Processes fixed-width ASCII files exported from VSAM datasets
+reference-data-reader:
+  # Global processing configuration
+  processing:
+    chunk-size: 1000  # Optimal chunk size for reference data loading
+    skip-limit: 10    # Maximum skippable records per file
+    retry-limit: 3    # Maximum retry attempts for transient failures
+    commit-interval: 500  # Commit frequency for transaction management
+    
+  # Disclosure Group Data Reader - discgrp.txt processing
+  # Handles interest rate data with DECIMAL(5,4) precision
+  # Maps to DisclosureGroup entity with financial compliance requirements
+  disclosure-group-reader:
+    resource-pattern: "classpath:data/ASCII/discgrp.txt"
+    line-mapper:
+      type: "FixedLengthLineMapper"
+      field-set-mapper:
+        type: "BeanWrapperFieldSetMapper"
+        target-type: "com.carddemo.common.entity.DisclosureGroup"
+        strict: true
+        validation: true
+    # Fixed-width field definitions for disclosure group records
+    # Format: Group ID (10) + Transaction Code (6) + Interest Rate (4) + Additional Data
+    column-ranges:
+      - name: "groupId"
+        start: 1
+        end: 10
+        required: true
+        validation: "^[A-Z0-9]{1,10}$"
+        description: "Group identifier for interest rate classification"
+      - name: "transactionCode"
+        start: 11
+        end: 16
+        required: true
+        validation: "^[0-9]{6}$"
+        description: "Transaction code for rate categorization"
+      - name: "interestRateRaw"
+        start: 17
+        end: 20
+        required: true
+        validation: "^[0-9]{4}$"
+        description: "Interest rate as 4-digit integer (basis points)"
+      - name: "disclosureText"
+        start: 21
+        end: 50
+        required: false
+        default: "Standard disclosure terms apply"
+        description: "Legal disclosure text for compliance"
+    # Custom field processing for BigDecimal precision
+    field-processors:
+      - field: "interestRateRaw"
+        processor: "InterestRateProcessor"
+        target-field: "interestRate"
+        precision: 5
+        scale: 4
+        description: "Convert 4-digit integer to DECIMAL(5,4) format"
+        example: "0150 -> 0.0150 (1.50%)"
+      - field: "groupId"
+        processor: "StringTrimProcessor"
+        target-field: "groupId"
+        description: "Trim whitespace from group identifier"
+      - field: "effectiveDate"
+        processor: "DefaultDateProcessor"
+        target-field: "effectiveDate"
+        default-value: "CURRENT_TIMESTAMP"
+        description: "Set effective date to current timestamp"
+    # Validation rules for financial compliance
+    validation-rules:
+      - field: "interestRate"
+        rule: "DECIMAL_RANGE"
+        min-value: "0.0001"
+        max-value: "9.9999"
+        error-message: "Interest rate must be between 0.01% and 999.99%"
+      - field: "groupId"
+        rule: "NOT_NULL_OR_EMPTY"
+        error-message: "Group ID cannot be null or empty"
+      - field: "disclosureText"
+        rule: "MAX_LENGTH"
+        max-length: 1000
+        error-message: "Disclosure text cannot exceed 1000 characters"
+    # Cache configuration for Redis warming
+    cache-config:
+      cache-name: "disclosureGroups"
+      ttl: 86400  # 24 hours in seconds
+      key-generator: "groupId"
+      enable-warming: true
+      
+  # Transaction Type Data Reader - trantype.txt processing
+  # Handles 2-character type codes with debit/credit indicators
+  # Maps to TransactionType entity for transaction classification
+  transaction-type-reader:
+    resource-pattern: "classpath:data/ASCII/trantype.txt"
+    line-mapper:
+      type: "DelimitedLineMapper"
+      field-set-mapper:
+        type: "BeanWrapperFieldSetMapper"
+        target-type: "com.carddemo.common.entity.TransactionType"
+        strict: true
+        validation: true
+    # Fixed-width field definitions for transaction type records
+    # Format: Type Code (2) + Description (50) + Debit/Credit Flag (1)
+    column-ranges:
+      - name: "transactionType"
+        start: 1
+        end: 2
+        required: true
+        validation: "^[0-9]{2}$"
+        description: "2-character transaction type code"
+      - name: "typeDescription"
+        start: 3
+        end: 52
+        required: true
+        validation: "^[A-Za-z ]{1,50}$"
+        description: "Transaction type description"
+      - name: "debitCreditFlag"
+        start: 53
+        end: 53
+        required: false
+        default: "D"
+        validation: "^[DdCc]$"
+        description: "Debit/Credit indicator (D/C)"
+    # Field processing for transaction type data
+    field-processors:
+      - field: "typeDescription"
+        processor: "StringTrimProcessor"
+        target-field: "typeDescription"
+        description: "Trim whitespace from description"
+      - field: "debitCreditFlag"
+        processor: "BooleanProcessor"
+        target-field: "debitCreditIndicator"
+        true-values: ["D", "d"]
+        false-values: ["C", "c"]
+        default-value: true
+        description: "Convert D/C flag to boolean (true=debit, false=credit)"
+      - field: "transactionType"
+        processor: "StringTrimProcessor"
+        target-field: "transactionType"
+        description: "Trim whitespace from transaction type code"
+    # Validation rules for transaction type integrity
+    validation-rules:
+      - field: "transactionType"
+        rule: "FIXED_LENGTH"
+        expected-length: 2
+        error-message: "Transaction type must be exactly 2 characters"
+      - field: "typeDescription"
+        rule: "NOT_NULL_OR_EMPTY"
+        error-message: "Type description cannot be null or empty"
+      - field: "typeDescription"
+        rule: "MAX_LENGTH"
+        max-length: 60
+        error-message: "Type description cannot exceed 60 characters"
+    # Cache configuration for transaction type lookup
+    cache-config:
+      cache-name: "transactionTypes"
+      ttl: 86400  # 24 hours in seconds
+      key-generator: "transactionType"
+      enable-warming: true
+      
+  # Transaction Category Data Reader - trancatg.txt processing
+  # Handles 6-character category codes with active status
+  # Maps to TransactionCategory entity for categorization
+  transaction-category-reader:
+    resource-pattern: "classpath:data/ASCII/trancatg.txt"
+    line-mapper:
+      type: "FixedLengthLineMapper"
+      field-set-mapper:
+        type: "BeanWrapperFieldSetMapper"
+        target-type: "com.carddemo.common.entity.TransactionCategory"
+        strict: true
+        validation: true
+    # Fixed-width field definitions for transaction category records
+    # Format: Category Code (6) + Description (50) + Active Flag (1)
+    column-ranges:
+      - name: "transactionCategory"
+        start: 1
+        end: 6
+        required: true
+        validation: "^[0-9]{6}$"
+        description: "6-character transaction category code"
+      - name: "categoryDescription"
+        start: 7
+        end: 56
+        required: true
+        validation: "^[A-Za-z ]{1,50}$"
+        description: "Transaction category description"
+      - name: "activeFlag"
+        start: 57
+        end: 57
+        required: false
+        default: "Y"
+        validation: "^[YyNn]$"
+        description: "Active status indicator (Y/N)"
+    # Field processing for transaction category data
+    field-processors:
+      - field: "transactionCategory"
+        processor: "CategoryCodeProcessor"
+        target-field: "transactionCategory"
+        format: "6-digit"
+        description: "Extract 4-digit category from 6-digit code"
+        # Extract last 4 digits for 4-character category code
+        extraction-rule: "SUBSTRING"
+        start-position: 3
+        length: 4
+      - field: "categoryDescription"
+        processor: "StringTrimProcessor"
+        target-field: "categoryDescription"
+        description: "Trim whitespace from description"
+      - field: "activeFlag"
+        processor: "BooleanProcessor"
+        target-field: "activeStatus"
+        true-values: ["Y", "y"]
+        false-values: ["N", "n"]
+        default-value: true
+        description: "Convert Y/N flag to boolean (true=active, false=inactive)"
+    # Validation rules for transaction category integrity
+    validation-rules:
+      - field: "transactionCategory"
+        rule: "FIXED_LENGTH"
+        expected-length: 4
+        error-message: "Transaction category must be exactly 4 characters"
+      - field: "categoryDescription"
+        rule: "NOT_NULL_OR_EMPTY"
+        error-message: "Category description cannot be null or empty"
+      - field: "categoryDescription"
+        rule: "MAX_LENGTH"
+        max-length: 60
+        error-message: "Category description cannot exceed 60 characters"
+    # Cache configuration for transaction category lookup
+    cache-config:
+      cache-name: "transactionCategories"
+      ttl: 86400  # 24 hours in seconds
+      key-generator: "transactionCategory"
+      enable-warming: true
+      
+  # Transaction Category Balance Data Reader - tcatbal.txt processing
+  # Handles composite primary key structure with account_id and transaction_category
+  # Maps to TransactionCategoryBalance entity with BigDecimal precision
+  transaction-category-balance-reader:
+    resource-pattern: "classpath:data/ASCII/tcatbal.txt"
+    line-mapper:
+      type: "FixedLengthLineMapper"
+      field-set-mapper:
+        type: "BeanWrapperFieldSetMapper"
+        target-type: "com.carddemo.common.entity.TransactionCategoryBalance"
+        strict: true
+        validation: true
+    # Fixed-width field definitions for transaction category balance records
+    # Format: Account ID (11) + Transaction Category (6) + Balance Amount (13) + Timestamp (8)
+    column-ranges:
+      - name: "accountId"
+        start: 1
+        end: 11
+        required: true
+        validation: "^[0-9]{11}$"
+        description: "11-digit account identifier"
+      - name: "transactionCategoryFull"
+        start: 12
+        end: 17
+        required: true
+        validation: "^[0-9]{6}$"
+        description: "6-digit transaction category code"
+      - name: "balanceAmountRaw"
+        start: 18
+        end: 30
+        required: true
+        validation: "^[0-9\\{\\}\\-]+$"
+        description: "Balance amount in packed decimal format"
+      - name: "lastUpdatedRaw"
+        start: 31
+        end: 38
+        required: false
+        default: "CURRENT"
+        description: "Last updated timestamp (YYYYMMDD format)"
+    # Field processing for composite key and balance data
+    field-processors:
+      - field: "accountId"
+        processor: "AccountIdProcessor"
+        target-field: "id.accountId"
+        description: "Process account ID for composite key"
+        validation: "ACCOUNT_ID_FORMAT"
+      - field: "transactionCategoryFull"
+        processor: "CategoryCodeProcessor"
+        target-field: "id.transactionCategory"
+        format: "6-to-4-digit"
+        description: "Extract 4-digit category from 6-digit code"
+        extraction-rule: "SUBSTRING"
+        start-position: 3
+        length: 4
+      - field: "balanceAmountRaw"
+        processor: "PackedDecimalProcessor"
+        target-field: "categoryBalance"
+        precision: 12
+        scale: 2
+        description: "Convert packed decimal to DECIMAL(12,2) format"
+        cobol-format: "PIC S9(10)V99 COMP-3"
+      - field: "lastUpdatedRaw"
+        processor: "DateProcessor"
+        target-field: "lastUpdated"
+        input-format: "YYYYMMDD"
+        output-format: "TIMESTAMP"
+        default-value: "CURRENT_TIMESTAMP"
+        description: "Convert YYYYMMDD to LocalDateTime"
+    # Validation rules for composite key integrity
+    validation-rules:
+      - field: "accountId"
+        rule: "FIXED_LENGTH"
+        expected-length: 11
+        error-message: "Account ID must be exactly 11 digits"
+      - field: "transactionCategory"
+        rule: "FIXED_LENGTH"
+        expected-length: 4
+        error-message: "Transaction category must be exactly 4 characters"
+      - field: "categoryBalance"
+        rule: "DECIMAL_RANGE"
+        min-value: "-9999999999.99"
+        max-value: "9999999999.99"
+        error-message: "Category balance must be within DECIMAL(12,2) range"
+      - field: "lastUpdated"
+        rule: "NOT_NULL"
+        error-message: "Last updated timestamp cannot be null"
+    # Foreign key validation for referential integrity
+    foreign-key-validation:
+      - field: "accountId"
+        reference-table: "accounts"
+        reference-field: "account_id"
+        error-message: "Account ID must exist in accounts table"
+      - field: "transactionCategory"
+        reference-table: "transaction_categories"
+        reference-field: "transaction_category"
+        error-message: "Transaction category must exist in transaction_categories table"
+    # No cache configuration - transactional data, not reference data
+    
+  # Card Cross-Reference Data Reader - cardxref.txt processing
+  # Handles card-to-account-to-customer relationships
+  # Maps to Card entity with foreign key relationships
+  card-cross-reference-reader:
+    resource-pattern: "classpath:data/ASCII/cardxref.txt"
+    line-mapper:
+      type: "FixedLengthLineMapper"
+      field-set-mapper:
+        type: "BeanWrapperFieldSetMapper"
+        target-type: "com.carddemo.common.entity.Card"
+        strict: true
+        validation: true
+    # Fixed-width field definitions for card cross-reference records
+    # Format: Card Number (16) + Account ID (11) + Customer ID (11) + Additional Data
+    column-ranges:
+      - name: "cardNumber"
+        start: 1
+        end: 16
+        required: true
+        validation: "^[0-9]{16}$"
+        description: "16-digit card number"
+      - name: "accountId"
+        start: 17
+        end: 27
+        required: true
+        validation: "^[0-9]{11}$"
+        description: "11-digit account identifier"
+      - name: "customerId"
+        start: 28
+        end: 38
+        required: true
+        validation: "^[0-9]{11}$"
+        description: "11-digit customer identifier"
+      - name: "activeStatusRaw"
+        start: 39
+        end: 39
+        required: false
+        default: "A"
+        validation: "^[AaSsCc]$"
+        description: "Active status (A/S/C)"
+    # Field processing for card cross-reference data
+    field-processors:
+      - field: "cardNumber"
+        processor: "CardNumberProcessor"
+        target-field: "cardNumber"
+        description: "Validate card number with Luhn algorithm"
+        validation: "LUHN_ALGORITHM"
+      - field: "accountId"
+        processor: "AccountIdProcessor"
+        target-field: "accountId"
+        description: "Validate account ID format"
+        validation: "ACCOUNT_ID_FORMAT"
+      - field: "customerId"
+        processor: "CustomerIdProcessor"
+        target-field: "customerId"
+        description: "Process customer ID (11-digit to 9-digit)"
+        format: "11-to-9-digit"
+        extraction-rule: "SUBSTRING"
+        start-position: 3
+        length: 9
+      - field: "activeStatusRaw"
+        processor: "StringTrimProcessor"
+        target-field: "activeStatus"
+        description: "Trim and uppercase active status"
+        case-conversion: "UPPER"
+      - field: "cvvCode"
+        processor: "DefaultValueProcessor"
+        target-field: "cvvCode"
+        default-value: "000"
+        description: "Set default CVV code for cross-reference loading"
+      - field: "embossedName"
+        processor: "DefaultValueProcessor"
+        target-field: "embossedName"
+        default-value: "CARDHOLDER"
+        description: "Set default embossed name for cross-reference loading"
+      - field: "expirationDate"
+        processor: "DefaultDateProcessor"
+        target-field: "expirationDate"
+        default-value: "CURRENT_DATE_PLUS_3_YEARS"
+        description: "Set default expiration date 3 years from current"
+    # Validation rules for card cross-reference integrity
+    validation-rules:
+      - field: "cardNumber"
+        rule: "FIXED_LENGTH"
+        expected-length: 16
+        error-message: "Card number must be exactly 16 digits"
+      - field: "cardNumber"
+        rule: "LUHN_VALIDATION"
+        error-message: "Card number must pass Luhn algorithm validation"
+      - field: "accountId"
+        rule: "FIXED_LENGTH"
+        expected-length: 11
+        error-message: "Account ID must be exactly 11 digits"
+      - field: "customerId"
+        rule: "FIXED_LENGTH"
+        expected-length: 9
+        error-message: "Customer ID must be exactly 9 digits"
+      - field: "activeStatus"
+        rule: "ENUM_VALIDATION"
+        valid-values: ["A", "S", "C"]
+        error-message: "Active status must be A (Active), S (Suspended), or C (Closed)"
+    # Foreign key validation for referential integrity
+    foreign-key-validation:
+      - field: "accountId"
+        reference-table: "accounts"
+        reference-field: "account_id"
+        error-message: "Account ID must exist in accounts table"
+      - field: "customerId"
+        reference-table: "customers"
+        reference-field: "customer_id"
+        error-message: "Customer ID must exist in customers table"
+    # No cache configuration - transactional data, not reference data
+
+# Global Error Handling Configuration
+error-handling:
+  # Skip policy for non-critical errors
+  skip-policy:
+    skip-limit: 10
+    skippable-exceptions:
+      - "org.springframework.batch.item.file.FlatFileParseException"
+      - "org.springframework.batch.item.validator.ValidationException"
+      - "java.lang.NumberFormatException"
+  # Retry policy for transient failures
+  retry-policy:
+    retry-limit: 3
+    retryable-exceptions:
+      - "org.springframework.dao.DataAccessException"
+      - "java.sql.SQLException"
+      - "java.net.ConnectException"
+  # Listener configuration for monitoring
+  listeners:
+    - type: "StepExecutionListener"
+      class: "com.carddemo.batch.ReferenceDataStepListener"
+    - type: "ItemReadListener"
+      class: "com.carddemo.batch.ReferenceDataReadListener"
+    - type: "ItemProcessListener"
+      class: "com.carddemo.batch.ReferenceDataProcessListener"
+    - type: "ItemWriteListener"
+      class: "com.carddemo.batch.ReferenceDataWriteListener"
+
+# Performance Optimization Configuration
+performance:
+  # Threading configuration for parallel processing
+  thread-pool:
+    core-pool-size: 4
+    max-pool-size: 8
+    queue-capacity: 100
+  # Database optimization settings
+  database:
+    batch-size: 500
+    fetch-size: 1000
+    connection-timeout: 30000
+    validation-query: "SELECT 1"
+  # Memory management
+  memory:
+    max-items-in-memory: 10000
+    flush-interval: 1000
+    gc-optimization: true
+
+# Monitoring and Logging Configuration
+monitoring:
+  # Metrics collection
+  metrics:
+    enabled: true
+    export-interval: 60000  # 1 minute
+    metrics-registry: "prometheus"
+  # Logging configuration
+  logging:
+    level: "INFO"
+    file-pattern: "reference-data-loader-%d{yyyy-MM-dd}.log"
+    max-file-size: "10MB"
+    max-history: 30
+    include-mdc: true
+  # Health check configuration
+  health-check:
+    enabled: true
+    check-interval: 30000  # 30 seconds
+    timeout: 10000  # 10 seconds
+
+# Security Configuration
+security:
+  # Data encryption settings
+  encryption:
+    enabled: false  # ASCII files are not encrypted
+    algorithm: "AES-256-GCM"
+  # Access control
+  access-control:
+    require-authentication: true
+    required-roles: ["BATCH_ADMIN", "DATA_LOADER"]
+  # Audit logging
+  audit:
+    enabled: true
+    log-level: "INFO"
+    include-data-values: false  # Don't log sensitive data
