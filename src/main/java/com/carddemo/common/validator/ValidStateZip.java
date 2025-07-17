@@ -79,7 +79,7 @@ import java.lang.annotation.Target;
  * Jakarta Bean Validation integration for Spring Boot microservices architecture.
  */
 @Documented
-@Constraint(validatedBy = ValidStateZipValidator.class)
+@Constraint(validatedBy = StateZipValidator.class)
 @Target({ElementType.TYPE, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ValidStateZip {
