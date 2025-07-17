@@ -43,7 +43,7 @@ import java.lang.annotation.Target;
  * mainframe application behavior.
  */
 @Documented
-@Constraint(validatedBy = ValidAccountIdValidator.class)
+@Constraint(validatedBy = AccountIdValidator.class)
 @Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ValidAccountId {
