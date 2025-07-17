@@ -1,5 +1,6 @@
 package com.carddemo.account.entity;
 
+import com.carddemo.common.entity.Card;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.time.LocalDate;
