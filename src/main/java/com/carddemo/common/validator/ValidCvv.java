@@ -65,11 +65,9 @@ import java.lang.annotation.Target;
  * @see jakarta.validation.constraints.Size
  */
 @Documented
-@Constraint(validatedBy = {})
+@Constraint(validatedBy = {CvvValidator.class})
 @Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Pattern(regexp = "^[0-9]{3}$", message = "CVV must be exactly 3 digits")
-@Size(min = 3, max = 3, message = "CVV must be exactly 3 characters long")
 public @interface ValidCvv {
 
     /**
