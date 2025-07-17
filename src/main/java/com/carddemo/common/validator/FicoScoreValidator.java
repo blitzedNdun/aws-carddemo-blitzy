@@ -160,6 +160,18 @@ public class FicoScoreValidator implements ConstraintValidator<ValidFicoScore, I
             }
         }
         
+        // Additional validation for edge cases - check zero first
+        if (value == 0) {
+            // Zero is technically within PIC 9(03) range but not a valid FICO score
+            context.disableDefaultConstraintViolation();
+            context.buildConstraintViolationWithTemplate(
+                String.format("FICO credit score cannot be zero - valid range is %d to %d", 
+                             ValidationConstants.MIN_FICO_SCORE, 
+                             ValidationConstants.MAX_FICO_SCORE))
+                .addConstraintViolation();
+            return false;
+        }
+        
         // Validate that the score is within the acceptable range
         // This matches the COBOL validation logic from COACTUPC.cbl
         if (value < ValidationConstants.MIN_FICO_SCORE || value > ValidationConstants.MAX_FICO_SCORE) {
@@ -170,18 +182,6 @@ public class FicoScoreValidator implements ConstraintValidator<ValidFicoScore, I
                              ValidationConstants.MIN_FICO_SCORE, 
                              ValidationConstants.MAX_FICO_SCORE, 
                              value))
-                .addConstraintViolation();
-            return false;
-        }
-        
-        // Additional validation for edge cases
-        if (value == 0) {
-            // Zero is technically within PIC 9(03) range but not a valid FICO score
-            context.disableDefaultConstraintViolation();
-            context.buildConstraintViolationWithTemplate(
-                String.format("FICO credit score cannot be zero - valid range is %d to %d", 
-                             ValidationConstants.MIN_FICO_SCORE, 
-                             ValidationConstants.MAX_FICO_SCORE))
                 .addConstraintViolation();
             return false;
         }
