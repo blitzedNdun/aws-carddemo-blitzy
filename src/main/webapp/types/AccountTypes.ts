@@ -18,8 +18,8 @@
  * @since 2024-01-01
  */
 
-import { FormFieldAttributes, ValidationResult } from './CommonTypes';
-import { ValidationResult as ValidationResultType } from './ValidationTypes';
+import { FormFieldAttributes } from './CommonTypes';
+import { ValidationResult } from './ValidationTypes';
 
 // ===================================================================
 // FINANCIAL PRECISION TYPE DEFINITIONS
