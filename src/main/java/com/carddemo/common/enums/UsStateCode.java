@@ -7,6 +7,7 @@ package com.carddemo.common.enums;
 
 import com.carddemo.common.util.ValidationUtils;
 import java.util.Optional;
+import java.util.Arrays;
 import jakarta.validation.Valid;
 
 /**
@@ -456,8 +457,7 @@ public enum UsStateCode {
      * @return Array of valid ZIP prefixes for this state
      */
     public String[] getValidZipPrefixes() {
-        return StateZipCodeCombo.values()
-            .stream()
+        return Arrays.stream(StateZipCodeCombo.values())
             .filter(combo -> combo.getStateCode().equals(this.code))
             .map(StateZipCodeCombo::getZipPrefix)
             .toArray(String[]::new);
