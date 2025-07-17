@@ -59,7 +59,7 @@ import org.springframework.util.StringUtils;
  */
 @Component
 @Validated
-public class TransactionDataItemWriter implements ItemWriter<TransactionData> {
+public class TransactionDataItemWriter implements ItemWriter<TransactionDataItemWriter.TransactionData> {
 
     private static final Logger logger = LoggerFactory.getLogger(TransactionDataItemWriter.class);
     
@@ -120,7 +120,7 @@ public class TransactionDataItemWriter implements ItemWriter<TransactionData> {
      */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.SERIALIZABLE)
-    public void write(Chunk<? extends TransactionData> chunk) throws Exception {
+    public void write(Chunk<? extends TransactionDataItemWriter.TransactionData> chunk) throws Exception {
         if (chunk == null || chunk.isEmpty()) {
             logger.debug("Empty chunk received, skipping processing");
             return;
@@ -128,11 +128,11 @@ public class TransactionDataItemWriter implements ItemWriter<TransactionData> {
         
         logger.info("Processing chunk of {} transaction records for bulk insert", chunk.size());
         
-        List<TransactionData> validatedTransactions = new ArrayList<>();
+        List<TransactionDataItemWriter.TransactionData> validatedTransactions = new ArrayList<>();
         List<String> validationErrors = new ArrayList<>();
         
         // Validate all transactions in the chunk before processing
-        for (TransactionData transaction : chunk.getItems()) {
+        for (TransactionDataItemWriter.TransactionData transaction : chunk.getItems()) {
             try {
                 if (validateTransactionData(transaction)) {
                     validatedTransactions.add(transaction);
@@ -181,7 +181,7 @@ public class TransactionDataItemWriter implements ItemWriter<TransactionData> {
      * @return true if validation passes, false otherwise
      * @throws DataAccessException if database validation queries fail
      */
-    public boolean validateTransactionData(TransactionData transaction) throws DataAccessException {
+    public boolean validateTransactionData(TransactionDataItemWriter.TransactionData transaction) throws DataAccessException {
         if (transaction == null) {
             logger.warn("Null transaction data received for validation");
             return false;
@@ -263,7 +263,7 @@ public class TransactionDataItemWriter implements ItemWriter<TransactionData> {
      * @param transactions List of validated TransactionData objects to insert
      * @throws SQLException if database insert operation fails
      */
-    public void insertIntoPartition(List<TransactionData> transactions) throws SQLException {
+    public void insertIntoPartition(List<TransactionDataItemWriter.TransactionData> transactions) throws SQLException {
         if (transactions == null || transactions.isEmpty()) {
             logger.debug("No transactions to insert");
             return;
@@ -277,7 +277,7 @@ public class TransactionDataItemWriter implements ItemWriter<TransactionData> {
             // Set connection properties for optimal batch performance
             connection.setAutoCommit(false);
             
-            for (TransactionData transaction : transactions) {
+            for (TransactionDataItemWriter.TransactionData transaction : transactions) {
                 // Bind parameters for INSERT statement
                 statement.setString(1, transaction.getTransactionId());
                 statement.setString(2, transaction.getTransactionType());
@@ -344,7 +344,7 @@ public class TransactionDataItemWriter implements ItemWriter<TransactionData> {
      * @param transactions List of transactions that failed to insert
      * @param error Exception that occurred during insert operation
      */
-    public void handlePartitionError(List<TransactionData> transactions, Exception error) {
+    public void handlePartitionError(List<TransactionDataItemWriter.TransactionData> transactions, Exception error) {
         if (transactions == null || transactions.isEmpty()) {
             logger.error("Partition error occurred with no transaction context: {}", error.getMessage());
             return;
@@ -354,7 +354,7 @@ public class TransactionDataItemWriter implements ItemWriter<TransactionData> {
             transactions.size(), error.getMessage());
         
         // Log detailed error information for each transaction
-        for (TransactionData transaction : transactions) {
+        for (TransactionDataItemWriter.TransactionData transaction : transactions) {
             logger.error("Failed transaction details - ID: {}, Type: {}, Category: {}, Amount: {}, Timestamp: {}", 
                 transaction.getTransactionId(),
                 transaction.getTransactionType(),
