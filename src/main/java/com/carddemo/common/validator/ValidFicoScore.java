@@ -47,7 +47,7 @@ import java.lang.annotation.Documented;
 @Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Constraint(validatedBy = ValidFicoScoreValidator.class)
+@Constraint(validatedBy = FicoScoreValidator.class)
 public @interface ValidFicoScore {
     
     /**
