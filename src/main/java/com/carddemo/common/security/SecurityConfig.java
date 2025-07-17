@@ -377,7 +377,7 @@ public class SecurityConfig {
             String userType = jwt.getClaimAsString("user_type");
             
             // Map RACF user types to Spring Security roles
-            Collection<SimpleGrantedAuthority> authorities = switch (userType) {
+            List<SimpleGrantedAuthority> simpleAuthorities = switch (userType) {
                 case "A" -> List.of(
                     new SimpleGrantedAuthority("ROLE_ADMIN"),
                     new SimpleGrantedAuthority("ROLE_USER")  // Admin inherits user privileges
@@ -388,11 +388,17 @@ public class SecurityConfig {
                 default -> List.of(); // No roles for unknown user types
             };
             
+            // Convert to Collection<GrantedAuthority> for interface compliance
+            Collection<org.springframework.security.core.GrantedAuthority> authorities = 
+                simpleAuthorities.stream()
+                    .map(org.springframework.security.core.GrantedAuthority.class::cast)
+                    .collect(Collectors.toList());
+            
             // Publish audit event for role mapping
             publishSecurityAuditEvent("JWT_ROLE_MAPPING", 
                 Map.of("userId", jwt.getClaimAsString("sub"), 
                        "userType", userType != null ? userType : "UNKNOWN",
-                       "authorities", authorities.stream()
+                       "authorities", simpleAuthorities.stream()
                            .map(SimpleGrantedAuthority::getAuthority)
                            .collect(Collectors.joining(","))));
             
