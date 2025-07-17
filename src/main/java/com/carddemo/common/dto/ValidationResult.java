@@ -1,5 +1,6 @@
 package com.carddemo.common.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
@@ -488,6 +489,7 @@ public class ValidationResult {
      * 
      * @return String summary of validation results
      */
+    @JsonIgnore
     public String getSummary() {
         if (valid) {
             return "Validation passed successfully";
@@ -535,6 +537,7 @@ public class ValidationResult {
      * 
      * @return true if validation was successful
      */
+    @JsonIgnore
     public boolean isSuccess() {
         return isValid();
     }
@@ -545,6 +548,7 @@ public class ValidationResult {
      * 
      * @return true if validation failed
      */
+    @JsonIgnore
     public boolean isFailure() {
         return !isValid();
     }
