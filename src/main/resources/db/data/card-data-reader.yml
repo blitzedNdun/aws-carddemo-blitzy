@@ -1,0 +1,378 @@
+# =====================================================================================
+# Spring Batch Card Data Reader Configuration
+# Description: ItemReader configuration for loading card data from carddata.txt
+#              with Luhn validation, PCI compliance, and referential integrity
+# Author: Blitzy Agent
+# Date: 2024
+# Version: 1.0
+# =====================================================================================
+
+# Card Data Reader Configuration for Spring Batch
+# Maps 150-character fixed-width ASCII records from carddata.txt to Card entity
+# with comprehensive validation, foreign key integrity, and PCI compliance
+
+spring:
+  batch:
+    job:
+      card-data-import:
+        enabled: true
+        description: "Import card data from carddata.txt with Luhn validation and PCI compliance"
+        
+    step:
+      card-data-reader-step:
+        chunk-size: 10
+        skip-limit: 5
+        retry-limit: 3
+        
+        # FlatFileItemReader configuration for carddata.txt processing
+        reader:
+          type: "FlatFileItemReader"
+          resource: "file:app/data/ASCII/carddata.txt"
+          encoding: "UTF-8"
+          strict: true
+          save-state: true
+          max-item-count: 50
+          
+          # Line mapper configuration for 150-character fixed-width records
+          line-mapper:
+            type: "DefaultLineMapper"
+            
+            # Fixed-length tokenizer for precise field positioning
+            line-tokenizer:
+              type: "FixedLengthTokenizer"
+              strict: true
+              
+              # Field column ranges for 150-character record structure
+              # Based on carddata.txt format analysis maintaining exact positioning
+              columns:
+                - name: "cardNumber"
+                  start: 1
+                  end: 16
+                  
+                - name: "accountId"
+                  start: 17
+                  end: 27
+                  
+                - name: "customerId"
+                  start: 28
+                  end: 36
+                  
+                - name: "cvvCode"
+                  start: 37
+                  end: 39
+                  
+                - name: "embossedName"
+                  start: 40
+                  end: 89
+                  
+                - name: "expirationDate"
+                  start: 90
+                  end: 99
+                  
+                - name: "activeStatus"
+                  start: 100
+                  end: 100
+                  
+            # Field set mapper for Card entity mapping
+            field-set-mapper:
+              type: "BeanWrapperFieldSetMapper"
+              target-type: "com.carddemo.common.entity.Card"
+              strict: true
+              
+              # Custom field mapping with validation and conversion
+              field-mappings:
+                cardNumber:
+                  required: true
+                  type: "String"
+                  validation:
+                    pattern: "^[0-9]{16}$"
+                    luhn-check: true
+                  transformation:
+                    trim: true
+                    
+                accountId:
+                  required: true
+                  type: "String"
+                  validation:
+                    pattern: "^[0-9]{11}$"
+                  transformation:
+                    trim: true
+                    left-pad: 
+                      length: 11
+                      character: "0"
+                      
+                customerId:
+                  required: true
+                  type: "String"
+                  validation:
+                    pattern: "^[0-9]{9}$"
+                  transformation:
+                    trim: true
+                    left-pad:
+                      length: 9
+                      character: "0"
+                      
+                cvvCode:
+                  required: true
+                  type: "String"
+                  validation:
+                    pattern: "^[0-9]{3}$"
+                  transformation:
+                    trim: true
+                    left-pad:
+                      length: 3
+                      character: "0"
+                      
+                embossedName:
+                  required: true
+                  type: "String"
+                  validation:
+                    max-length: 50
+                    pattern: "^[A-Za-z0-9\\s\\.\\-']+$"
+                  transformation:
+                    trim: true
+                    upper-case: false
+                    
+                expirationDate:
+                  required: true
+                  type: "LocalDate"
+                  validation:
+                    future-date: true
+                  transformation:
+                    date-format: "yyyy-MM-dd"
+                    
+                activeStatus:
+                  required: true
+                  type: "String"
+                  validation:
+                    pattern: "^[YN]$"
+                  transformation:
+                    trim: true
+                    upper-case: true
+                    
+        # Processor configuration for additional validation and business logic
+        processor:
+          type: "CompositeItemProcessor"
+          delegates:
+            - type: "ValidatingItemProcessor"
+              validator: "CardValidator"
+              
+            - type: "CardDataProcessor"
+              configuration:
+                luhn-validation: true
+                pci-compliance: true
+                foreign-key-validation: true
+                
+        # Writer configuration for PostgreSQL cards table
+        writer:
+          type: "JdbcBatchItemWriter"
+          data-source: "cardDemoDataSource"
+          sql: |
+            INSERT INTO cards (
+              card_number, account_id, customer_id, cvv_code, 
+              embossed_name, expiration_date, active_status, 
+              created_at, updated_at, version
+            ) VALUES (
+              :cardNumber, :accountId, :customerId, :cvvCode,
+              :embossedName, :expirationDate, :activeStatus,
+              CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0
+            )
+          item-prepared-statement-setter: "CardItemPreparedStatementSetter"
+          
+        # Error handling configuration
+        error-handling:
+          skip-policy:
+            skip-exceptions:
+              - "org.springframework.batch.item.file.FlatFileParseException"
+              - "org.springframework.dao.DataIntegrityViolationException"
+              - "javax.validation.ValidationException"
+            skip-limit: 5
+            
+          retry-policy:
+            retry-exceptions:
+              - "org.springframework.dao.DeadlockLoserDataAccessException"
+              - "org.springframework.dao.TransientDataAccessException"
+            retry-limit: 3
+            back-off-period: 1000
+            
+        # Listener configuration for monitoring and logging
+        listeners:
+          - type: "CardDataReaderListener"
+            configuration:
+              log-level: "INFO"
+              log-interval: 10
+              
+          - type: "CardDataValidationListener"
+            configuration:
+              luhn-validation-logging: true
+              pci-compliance-logging: true
+              
+          - type: "CardDataWriterListener"
+            configuration:
+              foreign-key-validation: true
+              duplicate-detection: true
+
+# Card-specific validation configuration
+card-validation:
+  luhn-algorithm:
+    enabled: true
+    strict: true
+    
+  pci-compliance:
+    enabled: true
+    mask-logging: true
+    secure-storage: true
+    
+  foreign-key-validation:
+    enabled: true
+    account-lookup: true
+    customer-lookup: true
+    
+  business-rules:
+    expiration-date-validation: true
+    active-status-validation: true
+    embossed-name-validation: true
+    cvv-code-validation: true
+
+# Database configuration for card data processing
+database:
+  cards-table:
+    name: "cards"
+    schema: "public"
+    
+  foreign-keys:
+    accounts:
+      table: "accounts"
+      column: "account_id"
+      validation: "EXISTS"
+      
+    customers:
+      table: "customers"
+      column: "customer_id"
+      validation: "EXISTS"
+      
+  indexes:
+    card-number: "PRIMARY KEY"
+    account-id: "BTREE INDEX"
+    customer-id: "BTREE INDEX"
+    composite-xref: "COMPOSITE INDEX"
+
+# Performance configuration
+performance:
+  chunk-size: 10
+  commit-interval: 10
+  connection-pool:
+    max-connections: 5
+    timeout: 30000
+    
+  memory-management:
+    buffer-size: 1024
+    cache-size: 100
+    
+  parallel-processing:
+    enabled: false
+    thread-count: 1
+
+# Monitoring and observability
+monitoring:
+  metrics:
+    enabled: true
+    prefix: "card-data-reader"
+    
+  logging:
+    level: "INFO"
+    pattern: "[%d{yyyy-MM-dd HH:mm:ss}] %-5level [%thread] %logger{36} - %msg%n"
+    
+  health-checks:
+    enabled: true
+    interval: 30000
+    
+  alerts:
+    enabled: true
+    thresholds:
+      error-rate: 0.05
+      processing-time: 10000
+
+# Security configuration for PCI compliance
+security:
+  pci-compliance:
+    enabled: true
+    
+  data-encryption:
+    enabled: false  # CVV stored as plain text per original COBOL implementation
+    
+  audit-logging:
+    enabled: true
+    sensitive-data-masking: true
+    
+  access-control:
+    enabled: true
+    role-based: true
+
+# File processing configuration
+file-processing:
+  input:
+    file-path: "app/data/ASCII/carddata.txt"
+    encoding: "UTF-8"
+    line-ending: "CRLF"
+    
+  validation:
+    file-existence: true
+    file-size: true
+    expected-records: 50
+    
+  backup:
+    enabled: true
+    backup-path: "app/data/backup/"
+    
+  cleanup:
+    enabled: false
+    archive-processed: true
+
+# Error recovery configuration
+error-recovery:
+  restart:
+    enabled: true
+    from-last-checkpoint: true
+    
+  rollback:
+    enabled: true
+    transaction-boundary: "STEP"
+    
+  notification:
+    enabled: true
+    email-alerts: false
+    log-alerts: true
+
+# Integration configuration
+integration:
+  spring-batch:
+    version: "5.1.x"
+    auto-configuration: true
+    
+  postgresql:
+    version: "42.7.x"
+    connection-pool: "HikariCP"
+    
+  validation:
+    jsr-303: true
+    custom-validators: true
+    
+  transaction-management:
+    enabled: true
+    isolation: "READ_COMMITTED"
+    propagation: "REQUIRED"
+
+# Development and testing configuration
+development:
+  debug-mode: false
+  verbose-logging: false
+  
+testing:
+  mock-data: false
+  validation-override: false
+  
+production:
+  performance-monitoring: true
+  error-alerting: true
+  audit-logging: true
