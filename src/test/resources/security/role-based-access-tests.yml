@@ -1,0 +1,1186 @@
+# Role-Based Access Control Test Scenarios
+# Comprehensive Spring Security authorization validation replacing legacy RACF permissions
+# Validates method-level @PreAuthorize annotations across all CardDemo microservices
+
+# Main test configuration object providing comprehensive role-based access control validation
+RoleBasedAccessTestScenarios:
+  # Test metadata and configuration
+  testMetadata:
+    version: "1.0"
+    description: "Comprehensive role-based access control test scenarios validating Spring Security authorization patterns equivalent to legacy RACF permissions"
+    framework: "Spring Security 6.x with JWT authentication"
+    testDate: "2024-01-22"
+    author: "Blitzy Agent"
+    compliance:
+      - "Section 6.4.2.1 authorization system"
+      - "Section 6.4.2.2 framework validation"
+      - "Section 6.4.2.4 role-based testing"
+
+  # Admin-only operations testing - validates RACF CARDDEMO.ADMIN equivalent functionality
+  admin_only_operations_tests:
+    description: "Validates ADMIN role exclusive access to user management and system administration functions"
+    testCategory: "ADMIN_EXCLUSIVE_ACCESS"
+    
+    # User Management Operations (mapping to COUSR00C-COUSR03C COBOL programs)
+    user_management_tests:
+      - testName: "Admin User List Access"
+        endpoint: "/api/admin/users"
+        httpMethod: "GET"
+        preAuthorizeAnnotation: "@PreAuthorize('hasRole(ADMIN)')"
+        requiredRole: "ROLE_ADMIN"
+        testUsers:
+          adminUser: "ADMIN001"
+          regularUser: "USER001"
+        expectedResults:
+          adminAccess: true
+          userAccess: false
+        testScenarios:
+          - scenario: "Admin successful access"
+            user: "ADMIN001"
+            expectedStatusCode: 200
+            expectedResponse: "paginated user list"
+            jwtClaims:
+              sub: "ADMIN001"
+              user_type: "A"
+              roles: ["ROLE_ADMIN", "ROLE_USER"]
+          - scenario: "User access denied"
+            user: "USER001"
+            expectedStatusCode: 403
+            expectedResponse: "Access Denied"
+            jwtClaims:
+              sub: "USER001"
+              user_type: "U"
+              roles: ["ROLE_USER"]
+
+      - testName: "Admin User Creation"
+        endpoint: "/api/admin/users"
+        httpMethod: "POST"
+        preAuthorizeAnnotation: "@PreAuthorize('hasRole(ADMIN)')"
+        requiredRole: "ROLE_ADMIN"
+        requestPayload:
+          userId: "NEWUSER1"
+          firstName: "Test"
+          lastName: "User"
+          password: "testpass"
+          userType: "U"
+        testScenarios:
+          - scenario: "Admin creates user successfully"
+            user: "TESTADM"
+            expectedStatusCode: 201
+            expectedResponse: "user created successfully"
+          - scenario: "Regular user denied creation"
+            user: "TESTUSER"
+            expectedStatusCode: 403
+            expectedResponse: "Access Denied"
+
+      - testName: "Admin User Update"
+        endpoint: "/api/admin/users/{userId}"
+        httpMethod: "PUT"
+        preAuthorizeAnnotation: "@PreAuthorize('hasRole(ADMIN)')"
+        requiredRole: "ROLE_ADMIN"
+        pathParameters:
+          userId: "USER001"
+        requestPayload:
+          firstName: "Updated"
+          lastName: "Name"
+          userType: "U"
+        testScenarios:
+          - scenario: "Admin updates user successfully"
+            user: "SUPRADM"
+            expectedStatusCode: 200
+            expectedResponse: "user updated successfully"
+          - scenario: "Regular user denied update"
+            user: "STDUSER"
+            expectedStatusCode: 403
+            expectedResponse: "Access Denied"
+
+      - testName: "Admin User Deletion"
+        endpoint: "/api/admin/users/{userId}"
+        httpMethod: "DELETE"
+        preAuthorizeAnnotation: "@PreAuthorize('hasRole(ADMIN)')"
+        requiredRole: "ROLE_ADMIN"
+        pathParameters:
+          userId: "TESTUSER2"
+        queryParameters:
+          confirm: "true"
+        testScenarios:
+          - scenario: "Admin deletes user successfully"
+            user: "ADMIN001"
+            expectedStatusCode: 200
+            expectedResponse: "user deleted successfully"
+          - scenario: "Admin self-deletion prevention"
+            user: "ADMIN001"
+            pathParameters:
+              userId: "ADMIN001"
+            expectedStatusCode: 403
+            expectedResponse: "Cannot delete your own admin account"
+          - scenario: "Regular user denied deletion"
+            user: "USER001"
+            expectedStatusCode: 403
+            expectedResponse: "Access Denied"
+
+      - testName: "Admin User Details Retrieval"
+        endpoint: "/api/admin/users/{userId}"
+        httpMethod: "GET"
+        preAuthorizeAnnotation: "@PreAuthorize('hasRole(ADMIN)')"
+        requiredRole: "ROLE_ADMIN"
+        pathParameters:
+          userId: "USER001"
+        testScenarios:
+          - scenario: "Admin retrieves user details"
+            user: "TESTADM"
+            expectedStatusCode: 200
+            expectedResponse: "detailed user information"
+          - scenario: "Regular user denied access"
+            user: "USER001"
+            expectedStatusCode: 403
+            expectedResponse: "Access Denied"
+
+    # System Administration Operations (admin-only functions)
+    system_admin_tests:
+      - testName: "System Configuration Access"
+        endpoint: "/api/admin/system/config"
+        httpMethod: "GET"
+        preAuthorizeAnnotation: "@PreAuthorize('hasRole(ADMIN)')"
+        requiredRole: "ROLE_ADMIN"
+        testScenarios:
+          - scenario: "Admin accesses system config"
+            user: "SUPRADM"
+            expectedStatusCode: 200
+            expectedResponse: "system configuration data"
+          - scenario: "User denied system config access"
+            user: "STDUSER"
+            expectedStatusCode: 403
+            expectedResponse: "Access Denied"
+
+      - testName: "Audit Log Access"
+        endpoint: "/api/admin/audit/logs"
+        httpMethod: "GET"
+        preAuthorizeAnnotation: "@PreAuthorize('hasRole(ADMIN)')"
+        requiredRole: "ROLE_ADMIN"
+        testScenarios:
+          - scenario: "Admin accesses audit logs"
+            user: "ADMIN001"
+            expectedStatusCode: 200
+            expectedResponse: "audit log entries"
+          - scenario: "User denied audit access"
+            user: "TESTUSER"
+            expectedStatusCode: 403
+            expectedResponse: "Access Denied"
+
+  # User role operations testing - validates standard user permissions
+  user_role_operations_tests:
+    description: "Validates USER role access to account operations, transaction processing, and card management"
+    testCategory: "USER_STANDARD_ACCESS"
+
+    # Account Operations (mapping to COACTVWC and COACTUPC COBOL programs)
+    account_operations_tests:
+      - testName: "Account View Access"
+        endpoint: "/api/cavw/accounts/{accountId}"
+        httpMethod: "GET"
+        preAuthorizeAnnotation: "@PreAuthorize('hasRole(USER) or hasRole(ADMIN)')"
+        requiredRoles: ["ROLE_USER", "ROLE_ADMIN"]
+        pathParameters:
+          accountId: "00000000001"
+        testScenarios:
+          - scenario: "User views account successfully"
+            user: "USER001"
+            expectedStatusCode: 200
+            expectedResponse: "account details with customer information"
+            jwtClaims:
+              sub: "USER001"
+              user_type: "U"
+              roles: ["ROLE_USER"]
+          - scenario: "Admin views account successfully"
+            user: "ADMIN001"
+            expectedStatusCode: 200
+            expectedResponse: "account details with customer information"
+            jwtClaims:
+              sub: "ADMIN001"
+              user_type: "A"
+              roles: ["ROLE_ADMIN", "ROLE_USER"]
+          - scenario: "Anonymous access denied"
+            user: null
+            expectedStatusCode: 401
+            expectedResponse: "Authentication required"
+
+      - testName: "Account Update Access"
+        endpoint: "/api/accounts/{accountId}"
+        httpMethod: "PUT"
+        preAuthorizeAnnotation: "@PreAuthorize('hasRole(ACCOUNT_UPDATE) or hasRole(ADMIN)')"
+        requiredRoles: ["ROLE_ACCOUNT_UPDATE", "ROLE_ADMIN"]
+        pathParameters:
+          accountId: "00000000001"
+        requestPayload:
+          firstName: "Updated"
+          lastName: "Customer"
+          phoneNumber: "555-0123"
+        testScenarios:
+          - scenario: "User with ACCOUNT_UPDATE role updates account"
+            user: "USER001"
+            userRoles: ["ROLE_USER", "ROLE_ACCOUNT_UPDATE"]
+            expectedStatusCode: 200
+            expectedResponse: "account updated successfully"
+          - scenario: "Admin updates account successfully"
+            user: "TESTADM"
+            expectedStatusCode: 200
+            expectedResponse: "account updated successfully"
+          - scenario: "User without ACCOUNT_UPDATE role denied"
+            user: "TESTUSER"
+            userRoles: ["ROLE_USER"]
+            expectedStatusCode: 403
+            expectedResponse: "Access Denied"
+
+    # Transaction Processing (mapping to COTRN00C, COTRN01C, COTRN02C COBOL programs)
+    transaction_processing_tests:
+      - testName: "Transaction List Access"
+        endpoint: "/api/transactions"
+        httpMethod: "GET"
+        preAuthorizeAnnotation: "@PreAuthorize('hasAnyRole(USER, ADMIN)')"
+        requiredRoles: ["ROLE_USER", "ROLE_ADMIN"]
+        queryParameters:
+          page: 0
+          size: 10
+          sortBy: "transactionTimestamp"
+        testScenarios:
+          - scenario: "User accesses transaction list"
+            user: "STDUSER"
+            expectedStatusCode: 200
+            expectedResponse: "paginated transaction list"
+            jwtClaims:
+              sub: "STDUSER"
+              user_type: "U"
+              roles: ["ROLE_USER"]
+          - scenario: "Admin accesses transaction list"
+            user: "SUPRADM"
+            expectedStatusCode: 200
+            expectedResponse: "paginated transaction list"
+            jwtClaims:
+              sub: "SUPRADM"
+              user_type: "A"
+              roles: ["ROLE_ADMIN", "ROLE_USER"]
+
+      - testName: "Transaction Details Access"
+        endpoint: "/api/transactions/{transactionId}"
+        httpMethod: "GET"
+        preAuthorizeAnnotation: "@PreAuthorize('hasAnyRole(USER, ADMIN)')"
+        requiredRoles: ["ROLE_USER", "ROLE_ADMIN"]
+        pathParameters:
+          transactionId: "TX1234567890ABCD"
+        testScenarios:
+          - scenario: "User views transaction details"
+            user: "USER001"
+            expectedStatusCode: 200
+            expectedResponse: "detailed transaction information"
+          - scenario: "Admin views transaction details"
+            user: "TESTADM"
+            expectedStatusCode: 200
+            expectedResponse: "detailed transaction information"
+          - scenario: "Invalid transaction ID format"
+            user: "USER001"
+            pathParameters:
+              transactionId: "INVALID"
+            expectedStatusCode: 400
+            expectedResponse: "Transaction ID must be exactly 16 alphanumeric characters"
+
+      - testName: "Transaction Creation Access"
+        endpoint: "/api/transactions"
+        httpMethod: "POST"
+        preAuthorizeAnnotation: "@PreAuthorize('hasAnyRole(USER, ADMIN)')"
+        requiredRoles: ["ROLE_USER", "ROLE_ADMIN"]
+        requestPayload:
+          accountId: "00000000001"
+          cardNumber: "4000000000000001"
+          amount: "25.00"
+          merchantName: "Test Merchant"
+          merchantCity: "Test City"
+        testScenarios:
+          - scenario: "User creates transaction successfully"
+            user: "TESTUSER"
+            expectedStatusCode: 201
+            expectedResponse: "transaction created successfully"
+          - scenario: "Admin creates transaction successfully"
+            user: "ADMIN001"
+            expectedStatusCode: 201
+            expectedResponse: "transaction created successfully"
+
+    # Card Management Operations (mapping to COCRDLIC, COCRDSLC, COCRDUPC COBOL programs)
+    card_management_tests:
+      - testName: "Card List Access"
+        endpoint: "/api/cards"
+        httpMethod: "GET"
+        preAuthorizeAnnotation: "@PreAuthorize('hasAnyRole(USER, ADMIN)')"
+        requiredRoles: ["ROLE_USER", "ROLE_ADMIN"]
+        queryParameters:
+          accountId: "00000000001"
+        testScenarios:
+          - scenario: "User accesses card list"
+            user: "STDUSER"
+            expectedStatusCode: 200
+            expectedResponse: "card list for account"
+            jwtClaims:
+              sub: "STDUSER"
+              user_type: "U"
+              roles: ["ROLE_USER"]
+          - scenario: "Admin accesses card list"
+            user: "SUPRADM"
+            expectedStatusCode: 200
+            expectedResponse: "card list for account"
+
+      - testName: "Card Details Access"
+        endpoint: "/api/cards/{cardNumber}"
+        httpMethod: "GET"
+        preAuthorizeAnnotation: "@PreAuthorize('hasAnyRole(USER, ADMIN)')"
+        requiredRoles: ["ROLE_USER", "ROLE_ADMIN"]
+        pathParameters:
+          cardNumber: "4000000000000001"
+        testScenarios:
+          - scenario: "User views card details"
+            user: "USER001"
+            expectedStatusCode: 200
+            expectedResponse: "detailed card information"
+          - scenario: "Admin views card details"
+            user: "TESTADM"
+            expectedStatusCode: 200
+            expectedResponse: "detailed card information"
+
+      - testName: "Card Update Access"
+        endpoint: "/api/cards/{cardNumber}"
+        httpMethod: "PUT"
+        preAuthorizeAnnotation: "@PreAuthorize('hasAnyRole(USER, ADMIN)')"
+        requiredRoles: ["ROLE_USER", "ROLE_ADMIN"]
+        pathParameters:
+          cardNumber: "4000000000000001"
+        requestPayload:
+          cardStatus: "ACTIVE"
+          expirationDate: "2026-12-31"
+        testScenarios:
+          - scenario: "User updates card successfully"
+            user: "TESTUSER"
+            expectedStatusCode: 200
+            expectedResponse: "card updated successfully"
+          - scenario: "Admin updates card successfully"
+            user: "ADMIN001"
+            expectedStatusCode: 200
+            expectedResponse: "card updated successfully"
+
+  # Unauthorized access testing - validates proper access denial
+  unauthorized_access_tests:
+    description: "Validates proper access denial for unauthorized users and invalid authentication"
+    testCategory: "ACCESS_DENIAL_VALIDATION"
+
+    # Anonymous access attempts
+    anonymous_access_tests:
+      - testName: "Anonymous User Management Access"
+        endpoint: "/api/admin/users"
+        httpMethod: "GET"
+        preAuthorizeAnnotation: "@PreAuthorize('hasRole(ADMIN)')"
+        testScenarios:
+          - scenario: "Anonymous access denied"
+            user: null
+            expectedStatusCode: 401
+            expectedResponse: "Authentication required"
+            jwtToken: null
+
+      - testName: "Anonymous Account Access"
+        endpoint: "/api/cavw/accounts/00000000001"
+        httpMethod: "GET"
+        preAuthorizeAnnotation: "@PreAuthorize('hasRole(USER) or hasRole(ADMIN)')"
+        testScenarios:
+          - scenario: "Anonymous access denied"
+            user: null
+            expectedStatusCode: 401
+            expectedResponse: "Authentication required"
+            jwtToken: null
+
+    # Disabled/Locked user access attempts
+    disabled_user_tests:
+      - testName: "Disabled User Access Attempt"
+        endpoint: "/api/transactions"
+        httpMethod: "GET"
+        testScenarios:
+          - scenario: "Disabled user denied access"
+            user: "DISABLED1"
+            accountStatus: "DISABLED"
+            expectedStatusCode: 401
+            expectedResponse: "Account disabled"
+          - scenario: "Locked user denied access"
+            user: "LOCKED01"
+            accountStatus: "LOCKED"
+            expectedStatusCode: 401
+            expectedResponse: "Account locked"
+
+    # Expired password user tests
+    expired_password_tests:
+      - testName: "Expired Password User Access"
+        endpoint: "/api/cavw/accounts/00000000001"
+        httpMethod: "GET"
+        testScenarios:
+          - scenario: "Expired password user denied"
+            user: "EXPIRED1"
+            passwordExpired: true
+            expectedStatusCode: 401
+            expectedResponse: "Password expired"
+
+    # Invalid role user tests
+    invalid_role_tests:
+      - testName: "Invalid Role User Access"
+        endpoint: "/api/transactions"
+        httpMethod: "GET"
+        testScenarios:
+          - scenario: "Invalid role user denied"
+            user: "INVALID1"
+            userType: "X"
+            expectedStatusCode: 401
+            expectedResponse: "Invalid role"
+          - scenario: "Malformed role user denied"
+            user: "MALFORM1"
+            userType: ""
+            expectedStatusCode: 400
+            expectedResponse: "Validation error"
+
+  # Method-level security validation - validates @PreAuthorize annotations
+  method_level_security_validation:
+    description: "Validates Spring Security @PreAuthorize method-level security annotations across all controllers"
+    testCategory: "METHOD_SECURITY_VALIDATION"
+
+    # UserManagementController method security tests
+    user_management_controller_tests:
+      className: "UserManagementController"
+      classLevelAnnotation: "@PreAuthorize('hasRole(ADMIN)')"
+      methods:
+        - methodName: "listUsers"
+          annotation: "@PreAuthorize('hasRole(ADMIN)')"
+          httpMapping: "GET /api/admin/users"
+          allowedRoles: ["ROLE_ADMIN"]
+          deniedRoles: ["ROLE_USER"]
+          testCases:
+            - user: "ADMIN001"
+              expectedAccess: true
+            - user: "USER001"
+              expectedAccess: false
+
+        - methodName: "getUserById"
+          annotation: "@PreAuthorize('hasRole(ADMIN)')"
+          httpMapping: "GET /api/admin/users/{userId}"
+          allowedRoles: ["ROLE_ADMIN"]
+          deniedRoles: ["ROLE_USER"]
+          testCases:
+            - user: "TESTADM"
+              expectedAccess: true
+            - user: "TESTUSER"
+              expectedAccess: false
+
+        - methodName: "createUser"
+          annotation: "@PreAuthorize('hasRole(ADMIN)')"
+          httpMapping: "POST /api/admin/users"
+          allowedRoles: ["ROLE_ADMIN"]
+          deniedRoles: ["ROLE_USER"]
+          testCases:
+            - user: "SUPRADM"
+              expectedAccess: true
+            - user: "STDUSER"
+              expectedAccess: false
+
+        - methodName: "updateUser"
+          annotation: "@PreAuthorize('hasRole(ADMIN)')"
+          httpMapping: "PUT /api/admin/users/{userId}"
+          allowedRoles: ["ROLE_ADMIN"]
+          deniedRoles: ["ROLE_USER"]
+          testCases:
+            - user: "ADMIN001"
+              expectedAccess: true
+            - user: "USER001"
+              expectedAccess: false
+
+        - methodName: "deleteUser"
+          annotation: "@PreAuthorize('hasRole(ADMIN)')"
+          httpMapping: "DELETE /api/admin/users/{userId}"
+          allowedRoles: ["ROLE_ADMIN"]
+          deniedRoles: ["ROLE_USER"]
+          testCases:
+            - user: "TESTADM"
+              expectedAccess: true
+            - user: "TESTUSER"
+              expectedAccess: false
+
+    # AccountViewController method security tests
+    account_view_controller_tests:
+      className: "AccountViewController"
+      methods:
+        - methodName: "viewAccount"
+          annotation: "@PreAuthorize('hasRole(USER) or hasRole(ADMIN)')"
+          httpMapping: "GET /api/cavw/accounts/{accountId}"
+          allowedRoles: ["ROLE_USER", "ROLE_ADMIN"]
+          deniedRoles: []
+          testCases:
+            - user: "USER001"
+              expectedAccess: true
+            - user: "ADMIN001"
+              expectedAccess: true
+            - user: null
+              expectedAccess: false
+
+    # AccountUpdateController method security tests
+    account_update_controller_tests:
+      className: "AccountUpdateController"
+      methods:
+        - methodName: "updateAccount"
+          annotation: "@PreAuthorize('hasRole(ACCOUNT_UPDATE) or hasRole(ADMIN)')"
+          httpMapping: "PUT /api/accounts/{accountId}"
+          allowedRoles: ["ROLE_ACCOUNT_UPDATE", "ROLE_ADMIN"]
+          deniedRoles: ["ROLE_USER"]
+          testCases:
+            - user: "ADMIN001"
+              expectedAccess: true
+            - user: "USER001"
+              userRoles: ["ROLE_USER", "ROLE_ACCOUNT_UPDATE"]
+              expectedAccess: true
+            - user: "TESTUSER"
+              userRoles: ["ROLE_USER"]
+              expectedAccess: false
+
+    # TransactionController method security tests
+    transaction_controller_tests:
+      className: "TransactionController"
+      methods:
+        - methodName: "getTransactions"
+          annotation: "@PreAuthorize('hasAnyRole(USER, ADMIN)')"
+          httpMapping: "GET /api/transactions"
+          allowedRoles: ["ROLE_USER", "ROLE_ADMIN"]
+          deniedRoles: []
+          testCases:
+            - user: "USER001"
+              expectedAccess: true
+            - user: "ADMIN001"
+              expectedAccess: true
+            - user: null
+              expectedAccess: false
+
+        - methodName: "getTransactionById"
+          annotation: "@PreAuthorize('hasAnyRole(USER, ADMIN)')"
+          httpMapping: "GET /api/transactions/{transactionId}"
+          allowedRoles: ["ROLE_USER", "ROLE_ADMIN"]
+          deniedRoles: []
+          testCases:
+            - user: "TESTUSER"
+              expectedAccess: true
+            - user: "TESTADM"
+              expectedAccess: true
+
+        - methodName: "addTransaction"
+          annotation: "@PreAuthorize('hasAnyRole(USER, ADMIN)')"
+          httpMapping: "POST /api/transactions"
+          allowedRoles: ["ROLE_USER", "ROLE_ADMIN"]
+          deniedRoles: []
+          testCases:
+            - user: "STDUSER"
+              expectedAccess: true
+            - user: "SUPRADM"
+              expectedAccess: true
+
+  # Spring Security annotation tests - validates annotation syntax and effectiveness
+  spring_security_annotation_tests:
+    description: "Validates Spring Security annotation syntax and effectiveness across all endpoints"
+    testCategory: "ANNOTATION_VALIDATION"
+
+    # @PreAuthorize annotation syntax validation
+    preauthorize_syntax_tests:
+      - annotationType: "hasRole"
+        syntaxPattern: "@PreAuthorize('hasRole(ROLE_NAME)')"
+        examples:
+          - "@PreAuthorize('hasRole(ADMIN)')"
+          - "@PreAuthorize('hasRole(USER)')"
+        validationCriteria:
+          - "Single role validation"
+          - "Case-sensitive role names"
+          - "ROLE_ prefix handling"
+
+      - annotationType: "hasAnyRole"
+        syntaxPattern: "@PreAuthorize('hasAnyRole(ROLE1, ROLE2)')"
+        examples:
+          - "@PreAuthorize('hasAnyRole(USER, ADMIN)')"
+          - "@PreAuthorize('hasAnyRole(ACCOUNT_UPDATE, ADMIN)')"
+        validationCriteria:
+          - "Multiple role validation"
+          - "OR logic implementation"
+          - "Role precedence handling"
+
+    # Spring Security framework integration tests
+    framework_integration_tests:
+      - testName: "JWT Token Role Extraction"
+        description: "Validates JWT token role claims extraction for @PreAuthorize evaluation"
+        testScenarios:
+          - scenario: "Admin role extraction from JWT"
+            jwtClaims:
+              sub: "ADMIN001"
+              user_type: "A"
+              roles: ["ROLE_ADMIN", "ROLE_USER"]
+            expectedRoles: ["ROLE_ADMIN", "ROLE_USER"]
+            authenticationSuccess: true
+          - scenario: "User role extraction from JWT"
+            jwtClaims:
+              sub: "USER001"
+              user_type: "U"
+              roles: ["ROLE_USER"]
+            expectedRoles: ["ROLE_USER"]
+            authenticationSuccess: true
+
+      - testName: "Security Context Propagation"
+        description: "Validates security context propagation across microservice boundaries"
+        testScenarios:
+          - scenario: "Cross-service authentication"
+            sourceService: "AuthenticationService"
+            targetService: "AccountViewService"
+            jwtTokenPropagation: true
+            securityContextPreserved: true
+
+  # RACF to Spring Security mapping tests - validates migration equivalence
+  racf_to_spring_security_mapping_tests:
+    description: "Validates RACF group permissions to Spring Security authorities mapping per Section 6.4.2.1"
+    testCategory: "RACF_MIGRATION_VALIDATION"
+
+    # Legacy RACF to modern Spring Security mapping
+    racf_migration_tests:
+      - racfGroup: "CARDDEMO.ADMIN"
+        springSecurityRole: "ROLE_ADMIN"
+        mappingValidation:
+          userType: "A"
+          legacyPermissions: ["ALTER", "UPDATE", "READ"]
+          springAuthorities: ["ROLE_ADMIN", "ROLE_USER", "VIEW_ACCOUNTS", "MANAGE_ACCOUNTS", "ADMIN_FUNCTIONS"]
+          testUsers:
+            - userId: "ADMIN001"
+              racfProfile: "CARDDEMO.ADMIN"
+              springRole: "ROLE_ADMIN"
+              accessValidation:
+                userManagement: true
+                systemAdmin: true
+                accountOperations: true
+                transactionProcessing: true
+
+      - racfGroup: "CARDDEMO.USER"
+        springSecurityRole: "ROLE_USER"
+        mappingValidation:
+          userType: "U"
+          legacyPermissions: ["READ", "UPDATE"]
+          springAuthorities: ["ROLE_USER", "VIEW_ACCOUNTS", "PROCESS_TRANSACTIONS"]
+          testUsers:
+            - userId: "USER001"
+              racfProfile: "CARDDEMO.USER"
+              springRole: "ROLE_USER"
+              accessValidation:
+                userManagement: false
+                systemAdmin: false
+                accountOperations: true
+                transactionProcessing: true
+
+    # Authentication equivalence validation
+    authentication_equivalence_tests:
+      - testName: "RACF vs Spring Security Authentication"
+        description: "Validates functional equivalence between RACF and Spring Security authentication"
+        comparisonMatrix:
+          credentialValidation:
+            racfMethod: "8-character password validation"
+            springMethod: "BCrypt hash validation"
+            equivalence: "FUNCTIONALLY_EQUIVALENT"
+          roleBasedAuthorization:
+            racfMethod: "RACF group membership checks"
+            springMethod: "@PreAuthorize role validation"
+            equivalence: "FUNCTIONALLY_EQUIVALENT"
+          sessionManagement:
+            racfMethod: "CICS terminal storage"
+            springMethod: "JWT tokens with Redis session"
+            equivalence: "ENHANCED_FUNCTIONALITY"
+
+  # Cross-service authorization tests - validates authorization across microservice boundaries
+  cross_service_authorization_tests:
+    description: "Validates authorization consistency across all CardDemo microservices"
+    testCategory: "CROSS_SERVICE_VALIDATION"
+
+    # Inter-service authorization flow tests
+    service_boundary_tests:
+      - testName: "Authentication to Account Service Flow"
+        sourceService: "AuthenticationService"
+        targetService: "AccountViewService"
+        authorizationFlow:
+          - step: "User authenticates with AuthenticationService"
+            endpoint: "/api/auth/login"
+            expectedResult: "JWT token with role claims"
+          - step: "User accesses AccountViewService with JWT"
+            endpoint: "/api/cavw/accounts/{accountId}"
+            expectedResult: "Authorized access based on JWT roles"
+          - step: "@PreAuthorize validation in AccountViewService"
+            annotation: "@PreAuthorize('hasRole(USER) or hasRole(ADMIN)')"
+            expectedResult: "Access granted for valid roles"
+
+      - testName: "Admin Service Cross-Authorization"
+        sourceService: "AuthenticationService"
+        targetService: "UserManagementController"
+        authorizationFlow:
+          - step: "Admin user authenticates"
+            user: "ADMIN001"
+            expectedJWT: "JWT with ROLE_ADMIN claims"
+          - step: "Admin accesses UserManagementController"
+            endpoint: "/api/admin/users"
+            annotation: "@PreAuthorize('hasRole(ADMIN)')"
+            expectedResult: "Access granted for admin role"
+          - step: "Regular user attempts admin access"
+            user: "USER001"
+            expectedResult: "Access denied with 403 status"
+
+    # Gateway-level authorization tests
+    gateway_authorization_tests:
+      - testName: "Spring Cloud Gateway JWT Validation"
+        description: "Validates JWT authentication at API Gateway level before microservice routing"
+        testScenarios:
+          - scenario: "Valid JWT routing to microservice"
+            jwtToken: "valid_jwt_with_roles"
+            targetService: "TransactionController"
+            expectedResult: "Request routed successfully"
+          - scenario: "Invalid JWT rejection at gateway"
+            jwtToken: "invalid_jwt_token"
+            targetService: "TransactionController"
+            expectedResult: "401 Unauthorized at gateway level"
+          - scenario: "Expired JWT rejection"
+            jwtToken: "expired_jwt_token"
+            targetService: "AccountViewService"
+            expectedResult: "401 Unauthorized with token expired message"
+
+  # Role hierarchy validation tests - validates role inheritance and precedence
+  role_hierarchy_validation_tests:
+    description: "Validates Spring Security role hierarchy and inheritance patterns"
+    testCategory: "ROLE_HIERARCHY_VALIDATION"
+
+    # Admin role inheritance tests
+    admin_role_inheritance:
+      - testName: "Admin Inherits User Permissions"
+        description: "Validates that ROLE_ADMIN users can access ROLE_USER protected endpoints"
+        roleHierarchy: "ROLE_ADMIN > ROLE_USER"
+        testScenarios:
+          - scenario: "Admin accesses user endpoint"
+            user: "ADMIN001"
+            userRoles: ["ROLE_ADMIN", "ROLE_USER"]
+            endpoint: "/api/cavw/accounts/00000000001"
+            annotation: "@PreAuthorize('hasRole(USER) or hasRole(ADMIN)')"
+            expectedAccess: true
+          - scenario: "Admin accesses admin-only endpoint"
+            user: "ADMIN001"
+            endpoint: "/api/admin/users"
+            annotation: "@PreAuthorize('hasRole(ADMIN)')"
+            expectedAccess: true
+
+    # Role precedence validation
+    role_precedence_tests:
+      - testName: "Role Precedence in @PreAuthorize"
+        description: "Validates role precedence evaluation in @PreAuthorize expressions"
+        testCases:
+          - expression: "@PreAuthorize('hasAnyRole(USER, ADMIN)')"
+            testUsers:
+              - user: "USER001"
+                roles: ["ROLE_USER"]
+                expectedAccess: true
+              - user: "ADMIN001"
+                roles: ["ROLE_ADMIN", "ROLE_USER"]
+                expectedAccess: true
+          - expression: "@PreAuthorize('hasRole(ADMIN)')"
+            testUsers:
+              - user: "USER001"
+                roles: ["ROLE_USER"]
+                expectedAccess: false
+              - user: "ADMIN001"
+                roles: ["ROLE_ADMIN"]
+                expectedAccess: true
+
+# Secondary test configuration object for specific security configurations
+SecurityTestConfiguration:
+  # Admin user management tests - comprehensive CRUD operations validation
+  admin_user_management_tests:
+    description: "Comprehensive admin-only user management operations testing"
+    baseUrl: "/api/admin/users"
+    requiredRole: "ROLE_ADMIN"
+    
+    # Full CRUD operation test suite
+    crud_operations:
+      create:
+        httpMethod: "POST"
+        annotation: "@PreAuthorize('hasRole(ADMIN)')"
+        testPayload:
+          userId: "TESTCRUD"
+          firstName: "Test"
+          lastName: "CRUD"
+          password: "testpass"
+          userType: "U"
+        successTests:
+          - user: "ADMIN001"
+            expectedStatus: 201
+          - user: "TESTADM"
+            expectedStatus: 201
+        failureTests:
+          - user: "USER001"
+            expectedStatus: 403
+          - user: "TESTUSER"
+            expectedStatus: 403
+
+      read:
+        httpMethod: "GET"
+        annotation: "@PreAuthorize('hasRole(ADMIN)')"
+        endpoints:
+          - "/api/admin/users"
+          - "/api/admin/users/{userId}"
+        successTests:
+          - user: "SUPRADM"
+            endpoint: "/api/admin/users"
+            expectedStatus: 200
+          - user: "ADMIN001"
+            endpoint: "/api/admin/users/USER001"
+            expectedStatus: 200
+        failureTests:
+          - user: "STDUSER"
+            endpoint: "/api/admin/users"
+            expectedStatus: 403
+
+      update:
+        httpMethod: "PUT"
+        annotation: "@PreAuthorize('hasRole(ADMIN)')"
+        endpoint: "/api/admin/users/{userId}"
+        testPayload:
+          firstName: "Updated"
+          lastName: "User"
+          userType: "U"
+        successTests:
+          - user: "TESTADM"
+            targetUserId: "TESTUSER"
+            expectedStatus: 200
+        failureTests:
+          - user: "USER001"
+            targetUserId: "TESTUSER"
+            expectedStatus: 403
+
+      delete:
+        httpMethod: "DELETE"
+        annotation: "@PreAuthorize('hasRole(ADMIN)')"
+        endpoint: "/api/admin/users/{userId}"
+        queryParams:
+          confirm: "true"
+        successTests:
+          - user: "SUPRADM"
+            targetUserId: "TESTCRUD"
+            expectedStatus: 200
+        failureTests:
+          - user: "TESTUSER"
+            targetUserId: "TESTCRUD"
+            expectedStatus: 403
+          - user: "ADMIN001"
+            targetUserId: "ADMIN001"
+            expectedStatus: 403
+            reason: "self-deletion prevention"
+
+  # User account operations tests - validates standard user permissions  
+  user_account_operations_tests:
+    description: "Standard user account operations with appropriate access restrictions"
+    
+    # Account viewing operations
+    account_viewing:
+      endpoint: "/api/cavw/accounts/{accountId}"
+      httpMethod: "GET"
+      annotation: "@PreAuthorize('hasRole(USER) or hasRole(ADMIN)')"
+      allowedRoles: ["ROLE_USER", "ROLE_ADMIN"]
+      testScenarios:
+        account_owner_access:
+          - user: "USER001"
+            accountId: "00000000001"
+            relationship: "owner"
+            expectedStatus: 200
+            expectedData: "complete account details"
+        admin_access:
+          - user: "ADMIN001"
+            accountId: "00000000001"
+            relationship: "admin"
+            expectedStatus: 200
+            expectedData: "complete account details"
+        unauthorized_access:
+          - user: null
+            accountId: "00000000001"
+            relationship: "anonymous"
+            expectedStatus: 401
+            expectedData: "authentication required"
+
+    # Account updating operations
+    account_updating:
+      endpoint: "/api/accounts/{accountId}"
+      httpMethod: "PUT"
+      annotation: "@PreAuthorize('hasRole(ACCOUNT_UPDATE) or hasRole(ADMIN)')"
+      allowedRoles: ["ROLE_ACCOUNT_UPDATE", "ROLE_ADMIN"]
+      testPayload:
+        customerFirstName: "Updated"
+        customerLastName: "Name"
+        customerPhone: "555-0123"
+      testScenarios:
+        authorized_update:
+          - user: "USER001"
+            userRoles: ["ROLE_USER", "ROLE_ACCOUNT_UPDATE"]
+            accountId: "00000000001"
+            expectedStatus: 200
+        admin_update:
+          - user: "TESTADM"
+            userRoles: ["ROLE_ADMIN", "ROLE_USER"]
+            accountId: "00000000001"
+            expectedStatus: 200
+        unauthorized_update:
+          - user: "TESTUSER"
+            userRoles: ["ROLE_USER"]
+            accountId: "00000000001"
+            expectedStatus: 403
+
+  # User transaction processing tests - validates transaction operations access
+  user_transaction_processing_tests:
+    description: "User transaction processing operations with security validation"
+    
+    # Transaction listing operations
+    transaction_listing:
+      endpoint: "/api/transactions"
+      httpMethod: "GET"
+      annotation: "@PreAuthorize('hasAnyRole(USER, ADMIN)')"
+      allowedRoles: ["ROLE_USER", "ROLE_ADMIN"]
+      queryParameters:
+        page: 0
+        size: 10
+        sortBy: "transactionTimestamp"
+        sortDir: "DESC"
+      testScenarios:
+        user_access:
+          - user: "USER001"
+            expectedStatus: 200
+            expectedData: "paginated transaction list"
+            dataFiltering: "user-owned transactions only"
+        admin_access:
+          - user: "ADMIN001"
+            expectedStatus: 200
+            expectedData: "paginated transaction list"
+            dataFiltering: "all transactions visible"
+
+    # Transaction creation operations
+    transaction_creation:
+      endpoint: "/api/transactions"
+      httpMethod: "POST"
+      annotation: "@PreAuthorize('hasAnyRole(USER, ADMIN)')"
+      allowedRoles: ["ROLE_USER", "ROLE_ADMIN"]
+      testPayload:
+        accountId: "00000000001"
+        cardNumber: "4000000000000001"
+        amount: "25.00"
+        merchantName: "Test Merchant"
+        merchantCity: "Test City"
+        merchantZip: "12345"
+      testScenarios:
+        user_creation:
+          - user: "TESTUSER"
+            expectedStatus: 201
+            expectedData: "transaction created successfully"
+            validationChecks:
+              - "account ownership validation"
+              - "card-account linkage verification"
+              - "amount validation"
+        admin_creation:
+          - user: "SUPRADM"
+            expectedStatus: 201
+            expectedData: "transaction created successfully"
+            validationChecks:
+              - "administrative override capability"
+              - "comprehensive validation"
+
+  # User card management tests - validates card operations access
+  user_card_management_tests:
+    description: "User card management operations with appropriate access controls"
+    
+    # Card listing operations
+    card_listing:
+      endpoint: "/api/cards"
+      httpMethod: "GET"
+      annotation: "@PreAuthorize('hasAnyRole(USER, ADMIN)')"
+      allowedRoles: ["ROLE_USER", "ROLE_ADMIN"]
+      queryParameters:
+        accountId: "00000000001"
+      testScenarios:
+        user_card_list:
+          - user: "STDUSER"
+            expectedStatus: 200
+            expectedData: "cards associated with user accounts"
+            accessScope: "user-owned cards only"
+        admin_card_list:
+          - user: "TESTADM"
+            expectedStatus: 200
+            expectedData: "cards for specified account"
+            accessScope: "all cards visible"
+
+    # Card status update operations
+    card_updates:
+      endpoint: "/api/cards/{cardNumber}"
+      httpMethod: "PUT"
+      annotation: "@PreAuthorize('hasAnyRole(USER, ADMIN)')"
+      allowedRoles: ["ROLE_USER", "ROLE_ADMIN"]
+      testPayload:
+        cardStatus: "ACTIVE"
+        expirationDate: "2026-12-31"
+      testScenarios:
+        user_card_update:
+          - user: "USER001"
+            cardNumber: "4000000000000001"
+            expectedStatus: 200
+            validationChecks:
+              - "card ownership verification"
+              - "allowed status transitions"
+        admin_card_update:
+          - user: "ADMIN001"
+            cardNumber: "4000000000000001"
+            expectedStatus: 200
+            validationChecks:
+              - "administrative override"
+              - "full status control"
+
+  # Authorization boundary validation - validates security boundaries
+  authorization_boundary_validation:
+    description: "Validates authorization boundaries and security isolation between roles"
+    
+    # Cross-role access attempt tests
+    cross_role_access_tests:
+      - testName: "User attempts admin function"
+        user: "USER001"
+        targetEndpoint: "/api/admin/users"
+        expectedResult: "403 Forbidden"
+        securityBoundary: "admin-only operations"
+      
+      - testName: "Anonymous attempts protected resource"
+        user: null
+        targetEndpoint: "/api/transactions"
+        expectedResult: "401 Unauthorized"
+        securityBoundary: "authentication required"
+      
+      - testName: "Disabled user attempts access"
+        user: "DISABLED1"
+        accountStatus: "DISABLED"
+        targetEndpoint: "/api/cavw/accounts/00000000001"
+        expectedResult: "401 Unauthorized"
+        securityBoundary: "account status validation"
+
+  # @PreAuthorize annotation testing - validates method-level security implementation
+  preauthorize_annotation_testing:
+    description: "Comprehensive @PreAuthorize annotation testing across all controllers"
+    
+    # Annotation effectiveness tests
+    annotation_effectiveness:
+      - controllerClass: "UserManagementController"
+        classAnnotation: "@PreAuthorize('hasRole(ADMIN)')"
+        methodAnnotations:
+          - method: "listUsers"
+            annotation: "@PreAuthorize('hasRole(ADMIN)')"
+            testResult: "admin-only access enforced"
+          - method: "createUser"
+            annotation: "@PreAuthorize('hasRole(ADMIN)')"
+            testResult: "admin-only access enforced"
+          - method: "updateUser"
+            annotation: "@PreAuthorize('hasRole(ADMIN)')"
+            testResult: "admin-only access enforced"
+          - method: "deleteUser"
+            annotation: "@PreAuthorize('hasRole(ADMIN)')"
+            testResult: "admin-only access enforced"
+
+      - controllerClass: "TransactionController"
+        methodAnnotations:
+          - method: "getTransactions"
+            annotation: "@PreAuthorize('hasAnyRole(USER, ADMIN)')"
+            testResult: "user and admin access allowed"
+          - method: "getTransactionById"
+            annotation: "@PreAuthorize('hasAnyRole(USER, ADMIN)')"
+            testResult: "user and admin access allowed"
+          - method: "addTransaction"
+            annotation: "@PreAuthorize('hasAnyRole(USER, ADMIN)')"
+            testResult: "user and admin access allowed"
+
+  # Security context validation - validates security context preservation
+  security_context_validation:
+    description: "Validates Spring Security context preservation across request processing"
+    
+    # Security context persistence tests
+    context_persistence:
+      - testName: "JWT authentication context"
+        authenticationMethod: "JWT Bearer Token"
+        contextElements:
+          - element: "Principal (user ID)"
+            preservation: "maintained throughout request"
+          - element: "Authorities (roles)"
+            preservation: "available for @PreAuthorize evaluation"
+          - element: "Authentication details"
+            preservation: "accessible in service methods"
+        
+      - testName: "Cross-service context propagation"
+        scenario: "Service-to-service communication"
+        contextPropagation: "JWT token forwarded between services"
+        securityContextAvailable: true
+
+  # JWT role claims testing - validates JWT token role handling
+  jwt_role_claims_testing:
+    description: "Validates JWT token role claims extraction and processing"
+    
+    # JWT token structure validation
+    jwt_structure_validation:
+      - tokenType: "Admin user JWT"
+        expectedClaims:
+          sub: "ADMIN001"
+          user_type: "A"
+          roles: ["ROLE_ADMIN", "ROLE_USER"]
+          authorities: ["ROLE_ADMIN", "ROLE_USER", "VIEW_ACCOUNTS", "MANAGE_ACCOUNTS", "ADMIN_FUNCTIONS"]
+          exp: "token expiration timestamp"
+          iat: "token issued at timestamp"
+        roleExtractionTest:
+          extractedRoles: ["ROLE_ADMIN", "ROLE_USER"]
+          authorizationResult: "admin access granted"
+
+      - tokenType: "Regular user JWT"
+        expectedClaims:
+          sub: "USER001"
+          user_type: "U"
+          roles: ["ROLE_USER"]
+          authorities: ["ROLE_USER", "VIEW_ACCOUNTS", "PROCESS_TRANSACTIONS"]
+          exp: "token expiration timestamp"
+          iat: "token issued at timestamp"
+        roleExtractionTest:
+          extractedRoles: ["ROLE_USER"]
+          authorizationResult: "user access granted"
+
+    # JWT validation tests
+    jwt_validation_tests:
+      - testName: "Valid JWT processing"
+        jwtToken: "valid_jwt_with_roles"
+        expectedResult: "authentication successful"
+        roleExtraction: "successful"
+        authorizationDecision: "based on extracted roles"
+      
+      - testName: "Invalid JWT rejection"
+        jwtToken: "invalid_jwt_signature"
+        expectedResult: "authentication failed"
+        httpStatus: 401
+        errorMessage: "Invalid token signature"
+      
+      - testName: "Expired JWT handling"
+        jwtToken: "expired_jwt_token"
+        expectedResult: "authentication failed"
+        httpStatus: 401
+        errorMessage: "Token expired"
+
+# Test execution metadata
+testExecution:
+  framework: "Spring Boot Test with Spring Security Test"
+  annotations:
+    - "@SpringBootTest"
+    - "@WithMockUser"
+    - "@AutoConfigureTestDatabase"
+  dependencies:
+    - "spring-security-test:6.2.x"
+    - "junit-jupiter-engine:5.13.3"
+    - "spring-boot-starter-test:3.2.x"
+  executionEnvironment:
+    profiles: ["test"]
+    database: "H2 in-memory for testing"
+    security: "Mock security context"
+    redis: "Embedded Redis for session testing"
