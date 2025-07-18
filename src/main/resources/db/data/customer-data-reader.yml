@@ -1,0 +1,520 @@
+# =====================================================================================
+# Spring Batch Customer Data Reader Configuration
+# Description: FlatFileItemReader configuration for processing 312-character fixed-width
+#              customer records from custdata.txt with PII protection and validation
+# Author: Blitzy Agent
+# Version: 1.0
+# =====================================================================================
+
+# Spring Batch Job Configuration for Customer Data Processing
+spring:
+  batch:
+    job:
+      customer-data-import:
+        enabled: true
+        name: "CustomerDataImportJob"
+        description: "Import customer data from custdata.txt with PII protection and validation"
+        
+        # Step Configuration
+        step:
+          customer-data-reader-step:
+            name: "CustomerDataReaderStep"
+            description: "Process 312-character fixed-width customer records"
+            
+            # Chunk Configuration
+            chunk:
+              size: 100
+              commit-interval: 100
+              skip-limit: 10
+              retry-limit: 3
+              
+            # Reader Configuration
+            reader:
+              type: "FlatFileItemReader"
+              resource: "classpath:data/custdata.txt"
+              encoding: "UTF-8"
+              strict: true
+              line-mapper:
+                type: "FixedLengthLineMapper"
+                field-set-mapper:
+                  type: "BeanWrapperFieldSetMapper"
+                  target-type: "com.carddemo.common.entity.Customer"
+                  
+                # Fixed-width field definitions for 312-character records
+                fixed-length-tokenizer:
+                  names:
+                    - "customerId"
+                    - "firstName"
+                    - "middleName"
+                    - "lastName"
+                    - "addressLine1"
+                    - "addressLine2"
+                    - "addressLine3"
+                    - "stateCode"
+                    - "countryCode"
+                    - "zipCode"
+                    - "phoneNumber1"
+                    - "phoneNumber2"
+                    - "ssn"
+                    - "padding"
+                    - "governmentId"
+                    - "dateOfBirth"
+                    - "ficoCreditScore"
+                    - "primaryCardholderIndicator"
+                    - "reserved"
+                    
+                  # Field positions and lengths for 312-character records
+                  ranges:
+                    - "1-9"      # customerId (9 chars)
+                    - "10-30"    # firstName (21 chars)
+                    - "31-51"    # middleName (21 chars)
+                    - "52-72"    # lastName (21 chars)
+                    - "73-114"   # addressLine1 (42 chars)
+                    - "115-156"  # addressLine2 (42 chars)
+                    - "157-198"  # addressLine3 (42 chars)
+                    - "199-200"  # stateCode (2 chars)
+                    - "201-203"  # countryCode (3 chars)
+                    - "204-213"  # zipCode (10 chars)
+                    - "214-227"  # phoneNumber1 (14 chars)
+                    - "228-241"  # phoneNumber2 (14 chars)
+                    - "242-250"  # ssn (9 chars)
+                    - "251-262"  # padding (12 chars - not mapped)
+                    - "263-280"  # governmentId (18 chars)
+                    - "281-290"  # dateOfBirth (10 chars - YYYY-MM-DD)
+                    - "291-300"  # ficoCreditScore (10 chars)
+                    - "301-301"  # primaryCardholderIndicator (1 char)
+                    - "302-312"  # reserved (11 chars - not mapped)
+                    
+            # Processor Configuration
+            processor:
+              type: "CustomerDataProcessor"
+              
+              # Data Validation Rules
+              validation:
+                enabled: true
+                rules:
+                  - field: "customerId"
+                    pattern: "^[0-9]{9}$"
+                    required: true
+                    message: "Customer ID must be exactly 9 digits"
+                    
+                  - field: "firstName"
+                    max-length: 25
+                    required: true
+                    trim: true
+                    message: "First name is required and cannot exceed 25 characters"
+                    
+                  - field: "lastName"
+                    max-length: 25
+                    required: true
+                    trim: true
+                    message: "Last name is required and cannot exceed 25 characters"
+                    
+                  - field: "middleName"
+                    max-length: 25
+                    trim: true
+                    message: "Middle name cannot exceed 25 characters"
+                    
+                  - field: "addressLine1"
+                    max-length: 50
+                    required: true
+                    trim: true
+                    message: "Address line 1 is required and cannot exceed 50 characters"
+                    
+                  - field: "addressLine2"
+                    max-length: 50
+                    trim: true
+                    message: "Address line 2 cannot exceed 50 characters"
+                    
+                  - field: "addressLine3"
+                    max-length: 50
+                    trim: true
+                    message: "Address line 3 cannot exceed 50 characters"
+                    
+                  - field: "stateCode"
+                    pattern: "^[A-Z]{2}$"
+                    required: true
+                    message: "State code must be exactly 2 uppercase letters"
+                    
+                  - field: "countryCode"
+                    pattern: "^[A-Z]{3}$"
+                    required: true
+                    message: "Country code must be exactly 3 uppercase letters"
+                    
+                  - field: "zipCode"
+                    pattern: "^[0-9]{5}(-[0-9]{4})?$"
+                    required: true
+                    message: "ZIP code must be in format 12345 or 12345-1234"
+                    
+                  - field: "phoneNumber1"
+                    pattern: "^\\([0-9]{3}\\)[0-9]{3}-[0-9]{4}$"
+                    trim: true
+                    message: "Phone number 1 must be in format (XXX)XXX-XXXX"
+                    
+                  - field: "phoneNumber2"
+                    pattern: "^\\([0-9]{3}\\)[0-9]{3}-[0-9]{4}$"
+                    trim: true
+                    message: "Phone number 2 must be in format (XXX)XXX-XXXX"
+                    
+                  - field: "ssn"
+                    pattern: "^[0-9]{9}$"
+                    required: true
+                    message: "SSN must be exactly 9 digits"
+                    
+                  - field: "governmentId"
+                    max-length: 20
+                    trim: true
+                    message: "Government ID cannot exceed 20 characters"
+                    
+                  - field: "dateOfBirth"
+                    pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+                    required: true
+                    message: "Date of birth must be in YYYY-MM-DD format"
+                    
+                  - field: "ficoCreditScore"
+                    min-value: 300
+                    max-value: 850
+                    required: true
+                    message: "FICO credit score must be between 300 and 850"
+                    
+                  - field: "primaryCardholderIndicator"
+                    pattern: "^[YN]$"
+                    required: true
+                    message: "Primary cardholder indicator must be Y or N"
+                    
+              # PII Protection Configuration
+              pii-protection:
+                enabled: true
+                encryption:
+                  enabled: true
+                  algorithm: "AES-256-GCM"
+                  key-alias: "customer-pii-key"
+                  
+                # Fields requiring PII protection
+                protected-fields:
+                  - field: "ssn"
+                    protection-type: "ENCRYPT"
+                    masking-pattern: "***-**-####"
+                    
+                  - field: "governmentId"
+                    protection-type: "ENCRYPT"
+                    masking-pattern: "****-****-****-####"
+                    
+                  - field: "phoneNumber1"
+                    protection-type: "MASK"
+                    masking-pattern: "(XXX)XXX-####"
+                    
+                  - field: "phoneNumber2"
+                    protection-type: "MASK"
+                    masking-pattern: "(XXX)XXX-####"
+                    
+                # Privacy compliance settings
+                privacy-compliance:
+                  gdpr-enabled: true
+                  data-retention-days: 2555  # 7 years
+                  audit-trail-enabled: true
+                  consent-tracking: true
+                  
+              # Data Transformation Rules
+              transformation:
+                enabled: true
+                rules:
+                  - field: "customerId"
+                    transformation: "TRIM_LEADING_ZEROS"
+                    
+                  - field: "firstName"
+                    transformation: "TRIM_AND_TITLE_CASE"
+                    
+                  - field: "middleName"
+                    transformation: "TRIM_AND_TITLE_CASE"
+                    
+                  - field: "lastName"
+                    transformation: "TRIM_AND_TITLE_CASE"
+                    
+                  - field: "addressLine1"
+                    transformation: "TRIM_AND_NORMALIZE"
+                    
+                  - field: "addressLine2"
+                    transformation: "TRIM_AND_NORMALIZE"
+                    
+                  - field: "addressLine3"
+                    transformation: "TRIM_AND_NORMALIZE"
+                    
+                  - field: "stateCode"
+                    transformation: "TRIM_AND_UPPERCASE"
+                    
+                  - field: "countryCode"
+                    transformation: "TRIM_AND_UPPERCASE"
+                    
+                  - field: "zipCode"
+                    transformation: "TRIM_AND_NORMALIZE_ZIP"
+                    
+                  - field: "phoneNumber1"
+                    transformation: "NORMALIZE_PHONE_NUMBER"
+                    
+                  - field: "phoneNumber2"
+                    transformation: "NORMALIZE_PHONE_NUMBER"
+                    
+                  - field: "dateOfBirth"
+                    transformation: "PARSE_DATE_YYYY_MM_DD"
+                    
+                  - field: "ficoCreditScore"
+                    transformation: "PARSE_INTEGER"
+                    
+                  - field: "primaryCardholderIndicator"
+                    transformation: "CONVERT_Y_N_TO_BOOLEAN"
+                    
+              # Address Normalization Configuration
+              address-normalization:
+                enabled: true
+                provider: "USPS"
+                validation-level: "STREET"
+                
+                # Address standardization rules
+                standardization:
+                  street-suffix-normalization: true
+                  directional-normalization: true
+                  unit-designation-normalization: true
+                  case-normalization: "PROPER"
+                  
+                # Address validation settings
+                validation:
+                  validate-address: true
+                  validate-zip-code: true
+                  validate-state-zip-combination: true
+                  
+            # Writer Configuration
+            writer:
+              type: "JdbcBatchItemWriter"
+              data-source: "customerDataSource"
+              sql: |
+                INSERT INTO customers (
+                  customer_id, first_name, middle_name, last_name,
+                  address_line_1, address_line_2, address_line_3,
+                  state_code, country_code, zip_code,
+                  phone_number_1, phone_number_2, ssn, government_id,
+                  date_of_birth, fico_credit_score, primary_cardholder_indicator,
+                  created_at, updated_at
+                ) VALUES (
+                  :customerId, :firstName, :middleName, :lastName,
+                  :addressLine1, :addressLine2, :addressLine3,
+                  :stateCode, :countryCode, :zipCode,
+                  :phoneNumber1, :phoneNumber2, :ssn, :governmentId,
+                  :dateOfBirth, :ficoCreditScore, :primaryCardholderIndicator,
+                  CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                )
+                ON CONFLICT (customer_id) DO UPDATE SET
+                  first_name = EXCLUDED.first_name,
+                  middle_name = EXCLUDED.middle_name,
+                  last_name = EXCLUDED.last_name,
+                  address_line_1 = EXCLUDED.address_line_1,
+                  address_line_2 = EXCLUDED.address_line_2,
+                  address_line_3 = EXCLUDED.address_line_3,
+                  state_code = EXCLUDED.state_code,
+                  country_code = EXCLUDED.country_code,
+                  zip_code = EXCLUDED.zip_code,
+                  phone_number_1 = EXCLUDED.phone_number_1,
+                  phone_number_2 = EXCLUDED.phone_number_2,
+                  ssn = EXCLUDED.ssn,
+                  government_id = EXCLUDED.government_id,
+                  date_of_birth = EXCLUDED.date_of_birth,
+                  fico_credit_score = EXCLUDED.fico_credit_score,
+                  primary_cardholder_indicator = EXCLUDED.primary_cardholder_indicator,
+                  updated_at = CURRENT_TIMESTAMP
+                  
+              # Batch settings
+              batch-size: 100
+              isolation-level: "SERIALIZABLE"
+              
+    # Job Parameters
+    job-parameters:
+      input-file: "classpath:data/custdata.txt"
+      output-table: "customers"
+      chunk-size: 100
+      skip-limit: 10
+      retry-limit: 3
+      
+    # Monitoring and Metrics
+    monitoring:
+      enabled: true
+      metrics:
+        - name: "records-processed"
+          type: "COUNTER"
+          description: "Total number of customer records processed"
+          
+        - name: "records-skipped"
+          type: "COUNTER"
+          description: "Number of customer records skipped due to validation errors"
+          
+        - name: "records-failed"
+          type: "COUNTER"
+          description: "Number of customer records that failed processing"
+          
+        - name: "processing-time"
+          type: "TIMER"
+          description: "Time taken to process customer data batch"
+          
+        - name: "validation-errors"
+          type: "COUNTER"
+          description: "Number of validation errors encountered"
+          
+        - name: "pii-protection-operations"
+          type: "COUNTER"
+          description: "Number of PII protection operations performed"
+          
+    # Error Handling
+    error-handling:
+      skip-policy: "VALIDATION_ERRORS"
+      skip-exceptions:
+        - "ValidationException"
+        - "DataFormatException"
+        - "NumberFormatException"
+        
+      retry-policy: "TRANSIENT_ERRORS"
+      retry-exceptions:
+        - "DataAccessException"
+        - "TransactionException"
+        - "ConnectionException"
+        
+      # Fault tolerance settings
+      fault-tolerance:
+        max-skip-count: 10
+        max-retry-count: 3
+        skip-on-validation-failure: true
+        
+    # Audit Configuration
+    audit:
+      enabled: true
+      audit-trail:
+        table: "customer_data_audit"
+        capture-before-after: true
+        capture-user-context: true
+        capture-processing-timestamp: true
+        
+      # Compliance logging
+      compliance-logging:
+        pii-access-log: true
+        data-modification-log: true
+        security-event-log: true
+        
+# Database Configuration
+datasource:
+  customer-data:
+    url: "jdbc:postgresql://localhost:5432/carddemo"
+    username: "${DB_USERNAME:carddemo}"
+    password: "${DB_PASSWORD:carddemo123}"
+    driver-class-name: "org.postgresql.Driver"
+    
+    # Connection pool settings
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+      
+    # Transaction settings
+    transaction:
+      isolation-level: "SERIALIZABLE"
+      timeout: 300
+      rollback-on-exception: true
+      
+# Logging Configuration
+logging:
+  level:
+    com.carddemo.batch: DEBUG
+    org.springframework.batch: INFO
+    org.springframework.jdbc: DEBUG
+    
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    
+  file:
+    name: "logs/customer-data-import.log"
+    max-size: "100MB"
+    max-history: 30
+    
+# Security Configuration
+security:
+  encryption:
+    # PII encryption settings
+    pii:
+      key-store: "classpath:security/pii-keystore.jks"
+      key-store-password: "${PII_KEYSTORE_PASSWORD:changeit}"
+      key-alias: "customer-pii-key"
+      algorithm: "AES-256-GCM"
+      
+    # Data at rest encryption
+    data-at-rest:
+      enabled: true
+      provider: "PostgreSQL-TDE"
+      
+  # Access control
+  access-control:
+    authentication-required: true
+    authorization-enabled: true
+    required-roles:
+      - "BATCH_ADMIN"
+      - "DATA_PROCESSOR"
+      
+# Performance Tuning
+performance:
+  # Memory settings
+  memory:
+    heap-size: "2g"
+    gc-algorithm: "G1GC"
+    
+  # I/O optimization
+  io:
+    buffer-size: 65536
+    read-ahead-size: 1048576
+    batch-flush-size: 1000
+    
+  # Parallel processing
+  parallel:
+    enabled: true
+    thread-pool-size: 4
+    partition-size: 1000
+    
+# Environment-specific Configuration
+---
+spring:
+  profiles: development
+  batch:
+    monitoring:
+      enabled: true
+    audit:
+      enabled: true
+      
+performance:
+  memory:
+    heap-size: "1g"
+  parallel:
+    thread-pool-size: 2
+    
+---
+spring:
+  profiles: production
+  batch:
+    monitoring:
+      enabled: true
+    audit:
+      enabled: true
+      
+performance:
+  memory:
+    heap-size: "4g"
+  parallel:
+    thread-pool-size: 8
+    
+security:
+  encryption:
+    pii:
+      key-store: "file:/opt/carddemo/security/pii-keystore.jks"
+      
+logging:
+  level:
+    com.carddemo.batch: INFO
+    root: WARN
