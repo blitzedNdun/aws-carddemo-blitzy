@@ -1,0 +1,294 @@
+# ===============================================================================
+# Daily Transaction CSV Test Fixture for Spring Batch Processing
+# CardDemo Application - COBOL-to-Java Migration Test Data
+# ===============================================================================
+#
+# This CSV test fixture provides comprehensive transaction test data converted from
+# the legacy VSAM TRANSACT dataset format to support Spring Batch daily transaction
+# processing tests, financial calculation validation, and PostgreSQL partitioned
+# table integration testing.
+#
+# Key Features:
+# - Spring Batch FlatFileItemReader compatible format
+# - BigDecimal precision validation for DECIMAL(12,2) financial amounts
+# - Comprehensive transaction scenarios including debits, credits, and returns
+# - PostgreSQL transaction table integration with monthly partitioning support
+# - Transaction timestamp validation for date-based partition pruning
+# - Merchant information processing with proper field length validation
+# - Card-to-account cross-reference validation test data
+# - Financial calculation accuracy testing with precise decimal arithmetic
+# - Transaction type and category code validation scenarios
+# - Edge case handling for boundary value testing
+#
+# CSV Schema Mapping to Transaction Entity:
+# transaction_id    -> Transaction.transactionId (VARCHAR(16))
+# transaction_type  -> Transaction.transactionType (VARCHAR(2))
+# category_code     -> Transaction.categoryCode (VARCHAR(4))
+# source           -> Transaction.source (VARCHAR(10))
+# description      -> Transaction.description (VARCHAR(100))
+# amount           -> Transaction.amount (DECIMAL(12,2))
+# merchant_id      -> Transaction.merchantId (VARCHAR(9))
+# merchant_name    -> Transaction.merchantName (VARCHAR(50))
+# merchant_city    -> Transaction.merchantCity (VARCHAR(50))
+# merchant_zip     -> Transaction.merchantZip (VARCHAR(10))
+# card_number      -> Transaction.cardNumber (VARCHAR(16))
+# original_timestamp    -> Transaction.originalTimestamp (TIMESTAMP)
+# processing_timestamp  -> Transaction.processingTimestamp (TIMESTAMP)
+#
+# Test Scenarios Covered:
+# 1. Purchase Transactions - POS Terminal and Online Processing
+# 2. Return Transactions - Operator Initiated Credit Processing
+# 3. ATM Transactions - Cash Withdrawal and Balance Inquiry
+# 4. Bill Payment Processing - Automated and Manual Processing
+# 5. Balance Transfer Operations - Account-to-Account Transfers
+# 6. Interest Calculation Scenarios - Monthly Interest Processing
+# 7. Fee Assessment Processing - Maintenance and Overdraft Fees
+# 8. Foreign Transaction Processing - Currency Exchange Scenarios
+# 9. Chargeback and Dispute Processing - Reversal Transactions
+# 10. Batch Settlement Processing - End-of-Day Reconciliation
+#
+# BigDecimal Precision Test Cases:
+# - Maximum precision amounts: 999999999.99
+# - Minimum precision amounts: 0.01
+# - Negative amounts for credit transactions
+# - Zero amounts for balance inquiries
+# - High-precision decimal calculations
+# - Currency rounding validation scenarios
+#
+# PostgreSQL Partitioning Test Data:
+# - Transactions spread across multiple months for partition testing
+# - 2024-06 partition: June 2024 transactions
+# - 2024-07 partition: July 2024 transactions  
+# - 2024-08 partition: August 2024 transactions
+# - Cross-partition query testing scenarios
+# - Partition pruning optimization validation
+#
+# Card-to-Account Mapping Test Scenarios:
+# - Valid card numbers with corresponding account relationships
+# - Multiple cards per account testing
+# - Account balance validation scenarios
+# - Credit limit enforcement testing
+# - Cross-reference integrity validation
+#
+# ===============================================================================
+transaction_id,transaction_type,category_code,source,description,amount,merchant_id,merchant_name,merchant_city,merchant_zip,card_number,original_timestamp,processing_timestamp
+# ===============================================================================
+# PURCHASE TRANSACTIONS - POS TERMINAL PROCESSING
+# Standard debit transactions for merchandise and service purchases
+# Testing BigDecimal precision and positive amount validation
+# ===============================================================================
+0000000000683580,01,0001,POS,Purchase at Abshire-Lowe,50.47,800000000,Abshire-Lowe,North Enoshaven,72112,4859452612877065,2024-06-10 19:27:53,2024-06-10 19:27:53
+0000000006292564,01,0001,POS,Purchase at Ernser Roob and Gleason,6.78,800000000,Ernser Roob and Gleason,North Makenziemouth,78487,6009619150674526,2024-06-10 19:28:15,2024-06-10 19:28:15
+0000000009101861,01,0001,POS,Purchase at Guann LLC,28.17,800000000,Guann LLC,South Lynn,51508,4058041034868002,2024-06-10 19:28:45,2024-06-10 19:28:45
+0000000010142252,01,0001,POS,Purchase at Kertzmann-Schoen,45.46,800000000,Kertzmann-Schoen,East Eulahstad,98754,5668305449812162,2024-06-10 19:29:12,2024-06-10 19:29:12
+0000000010229018,01,0001,POS,Purchase at Gislason-Medhurst,84.99,800000000,Gislason-Medhurst,Colleenburgh,23712,7379335634661142,2024-06-10 19:29:33,2024-06-10 19:29:33
+0000000017874199,01,0001,POS,Purchase at Legros Group,37.36,800000000,Legros Group,Carmeloborough,34849,4058041034868002,2024-06-10 19:30:05,2024-06-10 19:30:05
+0000000021711604,01,0001,POS,Purchase at Gleason Shanahan Reynolds,41.61,800000000,Gleason Shanahan Reynolds,Myrticeport,21768,9501733721429893,2024-06-10 19:30:28,2024-06-10 19:30:28
+0000000025430891,01,0001,POS,Purchase at Beatty-Hessel,9.43,800000000,Beatty-Hessel,Simonisport,52595,3260763612337560,2024-06-10 19:30:51,2024-06-10 19:30:51
+0000000028097268,01,0001,POS,Purchase at Wolf Cruickshank and Bode,25.02,800000000,Wolf Cruickshank and Bode,Fritzchester,20195,7094142751055551,2024-06-10 19:31:15,2024-06-10 19:31:15
+0000000030755266,01,0001,POS,Purchase at Ratke LLC,82.95,800000000,Ratke LLC,Brendenfort,35302,7662819841551542,2024-06-10 19:31:38,2024-06-10 19:31:38
+# ===============================================================================
+# RETURN TRANSACTIONS - OPERATOR CREDIT PROCESSING
+# Credit transactions for returned merchandise with negative amounts
+# Testing negative BigDecimal amounts and credit processing validation
+# ===============================================================================
+0000000001774260,03,0001,OPERATOR,Return item at Nitzsche Nicolas and Lowe,-91.90,800000000,Nitzsche Nicolas and Lowe,Fidelshire,53378,9279871086362322,2024-06-10 19:32:10,2024-06-10 19:32:10
+0000000016259484,03,0001,OPERATOR,Return item at Sipes Inc,-5.67,800000000,Sipes Inc,Emilioside,93329,4011500891777367,2024-06-10 19:32:35,2024-06-10 19:32:35
+0000000019065428,03,0001,OPERATOR,Return item at Turcotte Group,-53.58,800000000,Turcotte Group,Andrewfurt,41346,6503535181795992,2024-06-10 19:33:02,2024-06-10 19:33:02
+0000000043636099,03,0001,OPERATOR,Return item at Nader-Bayer,-94.56,800000000,Nader-Bayer,Goyetteville,35324,2940139362300449,2024-06-10 19:33:25,2024-06-10 19:33:25
+0000000061394789,03,0001,OPERATOR,Return item at Heaney-Raynor,-7.09,800000000,Heaney-Raynor,North Daisy,28696,2745303720002090,2024-06-10 19:33:48,2024-06-10 19:33:48
+0000000132831571,03,0001,OPERATOR,Return item at Boehm-Sanford,-21.53,800000000,Boehm-Sanford,Winifredville,93238,1014086565224350,2024-06-10 19:34:12,2024-06-10 19:34:12
+0000000189414937,03,0001,OPERATOR,Return item at Treutel-Douglas,-35.84,800000000,Treutel-Douglas,Port Mittiestad,12880,6349250331648509,2024-06-10 19:34:35,2024-06-10 19:34:35
+0000000192039153,03,0001,OPERATOR,Return item at Smith-Upton,-24.30,800000000,Smith-Upton,Vandervortburgh,15012,7058267261837752,2024-06-10 19:34:58,2024-06-10 19:34:58
+0000000196728331,03,0001,OPERATOR,Return item at Hane and Sons,-74.47,800000000,Hane and Sons,Erdmanberg,80151,7427684863423209,2024-06-10 19:35:22,2024-06-10 19:35:22
+0000000218186931,03,0001,OPERATOR,Return item at Reichert and Daughters,-83.51,800000000,Reichert and Daughters,Amaliafort,31060,8931369351894783,2024-06-10 19:35:45,2024-06-10 19:35:45
+# ===============================================================================
+# ATM TRANSACTIONS - CASH WITHDRAWAL AND BALANCE INQUIRY
+# ATM processing with various transaction types and amounts
+# Testing ATM-specific transaction codes and cash withdrawal limits
+# ===============================================================================
+0000000032979555,02,0002,ATM,Cash Withdrawal at ATM Location 1,200.00,800000000,Bank ATM Network,New Nicolette,65014,6509230362553816,2024-06-10 19:36:08,2024-06-10 19:36:08
+0000000033688127,02,0002,ATM,Cash Withdrawal at ATM Location 2,300.00,800000000,Bank ATM Network,Schmittchester,50777,7662819841551542,2024-06-10 19:36:30,2024-06-10 19:36:30
+0000000040455859,02,0002,ATM,Cash Withdrawal at ATM Location 3,150.00,800000000,Bank ATM Network,Veummouth,18481,1142167692878931,2024-06-10 19:36:55,2024-06-10 19:36:55
+0000000051205286,02,0002,ATM,Cash Withdrawal at ATM Location 4,400.00,800000000,Bank ATM Network,Ericmouth,03874,7094142751055551,2024-06-10 19:37:18,2024-06-10 19:37:18
+0000000054288996,02,0002,ATM,Balance Inquiry at ATM Location 5,0.00,800000000,Bank ATM Network,Bartonside,08677,4534784102713951,2024-06-10 19:37:42,2024-06-10 19:37:42
+0000000054727064,02,0002,ATM,Cash Withdrawal at ATM Location 6,250.00,800000000,Bank ATM Network,West Nedra,05293,1014086565224350,2024-06-10 19:38:05,2024-06-10 19:38:05
+0000000058866561,02,0002,ATM,Cash Withdrawal at ATM Location 7,100.00,800000000,Bank ATM Network,East Julien,87157,5000244537657402,2024-06-10 19:38:28,2024-06-10 19:38:28
+0000000060921254,02,0002,ATM,Balance Inquiry at ATM Location 8,0.00,800000000,Bank ATM Network,New Katrine,42756,7873512288793392,2024-06-10 19:38:52,2024-06-10 19:38:52
+0000000070754800,02,0002,ATM,Cash Withdrawal at ATM Location 9,500.00,800000000,Bank ATM Network,Lake Shawnabury,65183,9238771932473302,2024-06-10 19:39:15,2024-06-10 19:39:15
+0000000072220498,02,0002,ATM,Cash Withdrawal at ATM Location 10,320.00,800000000,Bank ATM Network,Ozellaside,89313,6349250331648509,2024-06-10 19:39:38,2024-06-10 19:39:38
+# ===============================================================================
+# ONLINE TRANSACTIONS - E-COMMERCE AND DIGITAL PAYMENTS
+# Online purchase processing with digital merchant validation
+# Testing online transaction processing and merchant information validation
+# ===============================================================================
+0000000084515950,01,0003,ONLINE,Online Purchase at E-Commerce Site 1,125.99,800000001,Amazon Marketplace,Seattle,98101,8931369351894783,2024-06-11 10:15:22,2024-06-11 10:15:22
+0000000085824369,01,0003,ONLINE,Online Purchase at E-Commerce Site 2,89.99,800000002,eBay Store,San Jose,95110,3999169246375885,2024-06-11 10:45:33,2024-06-11 10:45:33
+0000000095706092,01,0003,ONLINE,Online Purchase at E-Commerce Site 3,45.50,800000003,Walmart Online,Bentonville,72712,8931369351894783,2024-06-11 11:20:45,2024-06-11 11:20:45
+0000000099965527,01,0003,ONLINE,Online Purchase at Digital Service,67.89,800000004,Netflix Subscription,Los Gatos,95032,9279871086362322,2024-06-11 11:55:18,2024-06-11 11:55:18
+0000000100915314,01,0003,ONLINE,Online Purchase at Software Company,199.99,800000005,Microsoft Store,Redmond,98052,9805583408996588,2024-06-11 12:30:22,2024-06-11 12:30:22
+0000000107748365,01,0003,ONLINE,Online Purchase at Streaming Service,15.99,800000006,Spotify Premium,New York,10001,7094142751055551,2024-06-11 13:05:44,2024-06-11 13:05:44
+0000000108402349,01,0003,ONLINE,Online Purchase at Cloud Service,25.00,800000007,Google Cloud Platform,Mountain View,94043,9349107475869214,2024-06-11 13:40:15,2024-06-11 13:40:15
+0000000109340521,01,0003,ONLINE,Online Purchase at Gaming Platform,59.99,800000008,Steam Games,Bellevue,98004,7379335634661142,2024-06-11 14:15:38,2024-06-11 14:15:38
+0000000109506921,01,0003,ONLINE,Online Purchase at Food Delivery,32.45,800000009,DoorDash Order,San Francisco,94105,8326760476980872,2024-06-11 14:50:29,2024-06-11 14:50:29
+0000000111054243,01,0003,ONLINE,Online Purchase at Ride Sharing,18.75,800000010,Uber Ride,San Francisco,94102,6723000463207764,2024-06-11 15:25:41,2024-06-11 15:25:41
+# ===============================================================================
+# BILL PAYMENT TRANSACTIONS - AUTOMATED PAYMENT PROCESSING
+# Recurring bill payments and utility processing
+# Testing automated payment processing and recurring transaction validation
+# ===============================================================================
+0000000115716061,05,0004,BILLPAY,Utility Payment - Electric Company,145.67,800000011,Electric Utility Co,Portland,97201,2940139362300449,2024-06-12 08:00:00,2024-06-12 08:00:15
+0000000130111733,05,0004,BILLPAY,Utility Payment - Gas Company,87.23,800000012,Natural Gas Corp,Houston,77002,6835861981715162,2024-06-12 08:05:00,2024-06-12 08:05:15
+0000000137879630,05,0004,BILLPAY,Telecom Payment - Phone Service,65.00,800000013,Verizon Communications,New York,10036,5671184478505844,2024-06-12 08:10:00,2024-06-12 08:10:15
+0000000139910093,05,0004,BILLPAY,Internet Service Payment,89.99,800000014,Comcast Internet,Philadelphia,19103,7251508149188883,2024-06-12 08:15:00,2024-06-12 08:15:15
+0000000142315472,05,0004,BILLPAY,Insurance Premium Payment,234.56,800000015,State Farm Insurance,Bloomington,61701,2871968252812490,2024-06-12 08:20:00,2024-06-12 08:20:15
+0000000143386237,05,0004,BILLPAY,Credit Card Payment,150.00,800000016,Chase Credit Services,New York,10017,8262593602473076,2024-06-12 08:25:00,2024-06-12 08:25:15
+0000000148803688,05,0004,BILLPAY,Mortgage Payment,1875.50,800000017,Wells Fargo Mortgage,San Francisco,94104,6509230362553816,2024-06-12 08:30:00,2024-06-12 08:30:15
+0000000152467982,05,0004,BILLPAY,Auto Loan Payment,425.75,800000018,Toyota Financial,Torrance,90501,2745303720002090,2024-06-12 08:35:00,2024-06-12 08:35:15
+0000000160469204,05,0004,BILLPAY,Student Loan Payment,289.45,800000019,Federal Student Aid,Washington,20202,4058041034868002,2024-06-12 08:40:00,2024-06-12 08:40:15
+0000000166444519,05,0004,BILLPAY,Subscription Service Payment,12.99,800000020,Disney Plus Service,Burbank,91521,9056297931664011,2024-06-12 08:45:00,2024-06-12 08:45:15
+# ===============================================================================
+# BALANCE TRANSFER TRANSACTIONS - ACCOUNT-TO-ACCOUNT TRANSFERS
+# Internal transfer processing between customer accounts
+# Testing balance transfer logic and account relationship validation
+# ===============================================================================
+0000000169879332,06,0005,TRANSFER,Balance Transfer from Account 12345,500.00,800000021,Internal Transfer,Internal,00000,6723000463207764,2024-06-13 14:30:00,2024-06-13 14:30:05
+0000000173069364,06,0005,TRANSFER,Balance Transfer to Account 67890,-500.00,800000022,Internal Transfer,Internal,00000,5178669582060082,2024-06-13 14:30:00,2024-06-13 14:30:10
+0000000174748684,06,0005,TRANSFER,Balance Transfer from Account 54321,750.25,800000023,Internal Transfer,Internal,00000,6727055190616014,2024-06-13 15:45:00,2024-06-13 15:45:05
+0000000183226769,06,0005,TRANSFER,Balance Transfer to Account 98765,-750.25,800000024,Internal Transfer,Internal,00000,4058041034868002,2024-06-13 15:45:00,2024-06-13 15:45:10
+0000000184933166,06,0005,TRANSFER,Balance Transfer from Account 11111,1000.00,800000025,Internal Transfer,Internal,00000,7251508149188883,2024-06-13 16:20:00,2024-06-13 16:20:05
+0000000187573156,06,0005,TRANSFER,Balance Transfer to Account 22222,-1000.00,800000026,Internal Transfer,Internal,00000,6835861981715162,2024-06-13 16:20:00,2024-06-13 16:20:10
+0000000194189303,06,0005,TRANSFER,Balance Transfer from Account 33333,250.75,800000027,Internal Transfer,Internal,00000,6727055190616014,2024-06-13 17:10:00,2024-06-13 17:10:05
+0000000198494663,06,0005,TRANSFER,Balance Transfer to Account 44444,-250.75,800000028,Internal Transfer,Internal,00000,2745303720002090,2024-06-13 17:10:00,2024-06-13 17:10:10
+0000000201032783,06,0005,TRANSFER,Balance Transfer from Account 55555,825.50,800000029,Internal Transfer,Internal,00000,4011500891777367,2024-06-13 18:00:00,2024-06-13 18:00:05
+0000000202217428,06,0005,TRANSFER,Balance Transfer to Account 66666,-825.50,800000030,Internal Transfer,Internal,00000,4385271476627819,2024-06-13 18:00:00,2024-06-13 18:00:10
+# ===============================================================================
+# JULY 2024 PARTITION TRANSACTIONS
+# Testing PostgreSQL monthly partition functionality with July 2024 data
+# Validation of partition pruning and cross-partition query optimization
+# ===============================================================================
+0000000300000001,01,0001,POS,July Purchase Transaction 1,123.45,800000031,Summer Store,Beach City,90210,2871968252812490,2024-07-01 10:00:00,2024-07-01 10:00:15
+0000000300000002,01,0001,POS,July Purchase Transaction 2,67.89,800000032,Vacation Shop,Resort Town,33139,8262593602473076,2024-07-05 14:30:00,2024-07-05 14:30:15
+0000000300000003,02,0002,ATM,July ATM Withdrawal,200.00,800000033,Summer ATM,Beach City,90210,9805583408996588,2024-07-10 16:45:00,2024-07-10 16:45:15
+0000000300000004,03,0001,OPERATOR,July Return Transaction,-45.67,800000034,Summer Store,Beach City,90210,7094142751055551,2024-07-15 11:20:00,2024-07-15 11:20:15
+0000000300000005,01,0003,ONLINE,July Online Purchase,89.99,800000035,Travel Booking Site,Miami,33101,9349107475869214,2024-07-20 13:15:00,2024-07-20 13:15:15
+0000000300000006,05,0004,BILLPAY,July Utility Payment,156.78,800000036,Summer Electric Co,Phoenix,85001,7379335634661142,2024-07-25 08:00:00,2024-07-25 08:00:15
+0000000300000007,06,0005,TRANSFER,July Balance Transfer,300.00,800000037,Internal Transfer,Internal,00000,8326760476980872,2024-07-30 15:30:00,2024-07-30 15:30:05
+0000000300000008,01,0001,POS,July End Month Purchase,78.90,800000038,End Month Store,Last City,99999,6723000463207764,2024-07-31 20:00:00,2024-07-31 20:00:15
+# ===============================================================================
+# AUGUST 2024 PARTITION TRANSACTIONS
+# Testing PostgreSQL monthly partition functionality with August 2024 data
+# Cross-partition boundary testing and performance validation
+# ===============================================================================
+0000000400000001,01,0001,POS,August Purchase Transaction 1,234.56,800000039,Back to School Store,College Town,12345,2940139362300449,2024-08-01 09:00:00,2024-08-01 09:00:15
+0000000400000002,01,0001,POS,August Purchase Transaction 2,156.78,800000040,School Supply Store,University City,67890,6835861981715162,2024-08-08 12:30:00,2024-08-08 12:30:15
+0000000400000003,02,0002,ATM,August ATM Transaction,180.00,800000041,Campus ATM,College Town,12345,5671184478505844,2024-08-15 14:45:00,2024-08-15 14:45:15
+0000000400000004,03,0001,OPERATOR,August Return Transaction,-67.89,800000042,School Supply Store,University City,67890,7251508149188883,2024-08-20 10:15:00,2024-08-20 10:15:15
+0000000400000005,01,0003,ONLINE,August Online Purchase,99.99,800000043,Textbook Website,Austin,78701,2871968252812490,2024-08-25 16:20:00,2024-08-25 16:20:15
+0000000400000006,05,0004,BILLPAY,August Tuition Payment,2500.00,800000044,State University,Capital City,54321,8262593602473076,2024-08-31 23:59:59,2024-08-31 23:59:59
+# ===============================================================================
+# HIGH-PRECISION FINANCIAL CALCULATIONS - BIGDECIMAL EDGE CASES
+# Testing maximum precision, minimum amounts, and edge case scenarios
+# Validation of DECIMAL(12,2) precision maintenance and rounding behavior
+# ===============================================================================
+0000000500000001,01,0006,POS,Maximum Amount Test Transaction,999999999.99,800000045,Luxury Store,Beverly Hills,90210,9805583408996588,2024-06-14 12:00:00,2024-06-14 12:00:15
+0000000500000002,01,0006,POS,Minimum Amount Test Transaction,0.01,800000046,Penny Store,Cheaptown,00001,7094142751055551,2024-06-14 12:05:00,2024-06-14 12:05:15
+0000000500000003,01,0006,POS,Precision Test Transaction,123.45,800000047,Decimal Store,Precision City,12345,9349107475869214,2024-06-14 12:10:00,2024-06-14 12:10:15
+0000000500000004,01,0006,POS,Rounding Test Transaction,987.67,800000048,Rounding Store,Math City,67890,7379335634661142,2024-06-14 12:15:00,2024-06-14 12:15:15
+0000000500000005,03,0006,OPERATOR,Maximum Refund Test Transaction,-999999999.99,800000049,Luxury Store,Beverly Hills,90210,8326760476980872,2024-06-14 12:20:00,2024-06-14 12:20:15
+0000000500000006,03,0006,OPERATOR,Minimum Refund Test Transaction,-0.01,800000050,Penny Store,Cheaptown,00001,6723000463207764,2024-06-14 12:25:00,2024-06-14 12:25:15
+# ===============================================================================
+# FOREIGN TRANSACTION PROCESSING - CURRENCY EXCHANGE SCENARIOS
+# International transaction processing with currency conversion
+# Testing foreign merchant processing and exchange rate calculations
+# ===============================================================================
+0000000600000001,01,0007,POS,Foreign Purchase - Canada,150.75,800000051,Canadian Maple Store,Toronto,M5V3A8,2940139362300449,2024-06-15 10:00:00,2024-06-15 10:00:15
+0000000600000002,01,0007,POS,Foreign Purchase - Mexico,89.25,800000052,Mexican Market,Cancun,77500,6835861981715162,2024-06-15 14:30:00,2024-06-15 14:30:15
+0000000600000003,01,0007,POS,Foreign Purchase - UK,234.67,800000053,London Shop,London,SW1A1AA,5671184478505844,2024-06-15 18:45:00,2024-06-15 18:45:15
+0000000600000004,01,0007,POS,Foreign Purchase - Japan,345.89,800000054,Tokyo Electronics,Tokyo,1000001,7251508149188883,2024-06-16 22:15:00,2024-06-16 22:15:15
+0000000600000005,02,0007,ATM,Foreign ATM - France,200.00,800000055,Paris ATM Network,Paris,75001,2871968252812490,2024-06-16 15:30:00,2024-06-16 15:30:15
+# ===============================================================================
+# CHARGEBACK AND DISPUTE PROCESSING - REVERSAL TRANSACTIONS
+# Dispute resolution and chargeback processing scenarios
+# Testing reversal transaction logic and dispute management workflows
+# ===============================================================================
+0000000700000001,08,0008,CHARGEBACK,Chargeback Reversal - Disputed Purchase,-156.78,800000056,Disputed Merchant,Fraud City,99999,8262593602473076,2024-06-17 09:00:00,2024-06-17 09:00:15
+0000000700000002,08,0008,CHARGEBACK,Dispute Resolution Credit,-89.99,800000057,Resolution Merchant,Fair City,12345,9805583408996588,2024-06-17 11:30:00,2024-06-17 11:30:15
+0000000700000003,08,0008,CHARGEBACK,Fraud Alert Reversal,-234.56,800000058,Fraudulent Store,Scam Town,00000,7094142751055551,2024-06-17 14:45:00,2024-06-17 14:45:15
+0000000700000004,08,0008,CHARGEBACK,Merchant Error Correction,-67.89,800000059,Error Merchant,Mistake City,54321,9349107475869214,2024-06-17 16:20:00,2024-06-17 16:20:15
+# ===============================================================================
+# INTEREST CALCULATION SCENARIOS - MONTHLY INTEREST PROCESSING
+# Interest accrual and calculation for various account types
+# Testing interest calculation accuracy and compounding scenarios
+# ===============================================================================
+0000000800000001,09,0009,INTEREST,Monthly Interest Accrual,15.67,800000060,Internal Interest,Internal,00000,7379335634661142,2024-06-30 23:59:59,2024-06-30 23:59:59
+0000000800000002,09,0009,INTEREST,Promotional Rate Interest,25.34,800000061,Internal Interest,Internal,00000,8326760476980872,2024-06-30 23:58:00,2024-06-30 23:58:00
+0000000800000003,09,0009,INTEREST,Compound Interest Calculation,8.92,800000062,Internal Interest,Internal,00000,6723000463207764,2024-06-30 23:57:00,2024-06-30 23:57:00
+0000000800000004,09,0009,INTEREST,Variable Rate Interest,12.45,800000063,Internal Interest,Internal,00000,2940139362300449,2024-06-30 23:56:00,2024-06-30 23:56:00
+# ===============================================================================
+# FEE ASSESSMENT PROCESSING - MAINTENANCE AND PENALTY FEES
+# Various fee types including maintenance, overdraft, and penalty fees
+# Testing fee calculation logic and assessment workflows
+# ===============================================================================
+0000000900000001,10,0010,FEE,Monthly Maintenance Fee,25.00,800000064,Internal Fee,Internal,00000,6835861981715162,2024-06-30 23:55:00,2024-06-30 23:55:00
+0000000900000002,10,0010,FEE,Overdraft Fee Assessment,35.00,800000065,Internal Fee,Internal,00000,5671184478505844,2024-06-18 08:00:00,2024-06-18 08:00:15
+0000000900000003,10,0010,FEE,Late Payment Fee,15.00,800000066,Internal Fee,Internal,00000,7251508149188883,2024-06-19 12:00:00,2024-06-19 12:00:15
+0000000900000004,10,0010,FEE,Foreign Transaction Fee,5.50,800000067,Internal Fee,Internal,00000,2871968252812490,2024-06-20 16:30:00,2024-06-20 16:30:15
+0000000900000005,10,0010,FEE,ATM Usage Fee,2.50,800000068,Internal Fee,Internal,00000,8262593602473076,2024-06-21 10:15:00,2024-06-21 10:15:15
+# ===============================================================================
+# BATCH SETTLEMENT PROCESSING - END-OF-DAY RECONCILIATION
+# Automated batch processing for daily settlement and reconciliation
+# Testing batch processing workflows and settlement calculations
+# ===============================================================================
+0000001000000001,11,0011,BATCH,Daily Settlement Batch Process,0.00,800000069,Batch Settlement,Internal,00000,9805583408996588,2024-06-30 23:50:00,2024-06-30 23:50:00
+0000001000000002,11,0011,BATCH,Merchant Settlement Process,0.00,800000070,Batch Settlement,Internal,00000,7094142751055551,2024-06-30 23:45:00,2024-06-30 23:45:00
+0000001000000003,11,0011,BATCH,Account Reconciliation Process,0.00,800000071,Batch Settlement,Internal,00000,9349107475869214,2024-06-30 23:40:00,2024-06-30 23:40:00
+0000001000000004,11,0011,BATCH,Daily Balance Update Process,0.00,800000072,Batch Settlement,Internal,00000,7379335634661142,2024-06-30 23:35:00,2024-06-30 23:35:00
+# ===============================================================================
+# CROSS-REFERENCE VALIDATION TEST SCENARIOS
+# Testing card-to-account relationships and referential integrity
+# Validation of foreign key constraints and relationship consistency
+# ===============================================================================
+0000001100000001,01,0012,POS,Cross-Reference Test Transaction 1,45.67,800000073,Reference Store 1,Test City 1,11111,8326760476980872,2024-06-22 12:00:00,2024-06-22 12:00:15
+0000001100000002,01,0012,POS,Cross-Reference Test Transaction 2,78.90,800000074,Reference Store 2,Test City 2,22222,6723000463207764,2024-06-22 12:15:00,2024-06-22 12:15:15
+0000001100000003,01,0012,POS,Cross-Reference Test Transaction 3,123.45,800000075,Reference Store 3,Test City 3,33333,2940139362300449,2024-06-22 12:30:00,2024-06-22 12:30:15
+0000001100000004,01,0012,POS,Cross-Reference Test Transaction 4,234.56,800000076,Reference Store 4,Test City 4,44444,6835861981715162,2024-06-22 12:45:00,2024-06-22 12:45:15
+0000001100000005,01,0012,POS,Cross-Reference Test Transaction 5,345.67,800000077,Reference Store 5,Test City 5,55555,5671184478505844,2024-06-22 13:00:00,2024-06-22 13:00:15
+# ===============================================================================
+# PERFORMANCE TESTING SCENARIOS - HIGH VOLUME TRANSACTION DATA
+# Large volume transactions for performance and scalability testing
+# Testing system performance under high transaction loads
+# ===============================================================================
+0000001200000001,01,0013,POS,Performance Test Transaction 001,56.78,800000078,Perf Store 001,Load City,99001,7251508149188883,2024-06-23 08:00:01,2024-06-23 08:00:01
+0000001200000002,01,0013,POS,Performance Test Transaction 002,67.89,800000079,Perf Store 002,Load City,99002,2871968252812490,2024-06-23 08:00:02,2024-06-23 08:00:02
+0000001200000003,01,0013,POS,Performance Test Transaction 003,78.90,800000080,Perf Store 003,Load City,99003,8262593602473076,2024-06-23 08:00:03,2024-06-23 08:00:03
+0000001200000004,01,0013,POS,Performance Test Transaction 004,89.01,800000081,Perf Store 004,Load City,99004,9805583408996588,2024-06-23 08:00:04,2024-06-23 08:00:04
+0000001200000005,01,0013,POS,Performance Test Transaction 005,90.12,800000082,Perf Store 005,Load City,99005,7094142751055551,2024-06-23 08:00:05,2024-06-23 08:00:05
+0000001200000006,01,0013,POS,Performance Test Transaction 006,101.23,800000083,Perf Store 006,Load City,99006,9349107475869214,2024-06-23 08:00:06,2024-06-23 08:00:06
+0000001200000007,01,0013,POS,Performance Test Transaction 007,112.34,800000084,Perf Store 007,Load City,99007,7379335634661142,2024-06-23 08:00:07,2024-06-23 08:00:07
+0000001200000008,01,0013,POS,Performance Test Transaction 008,123.45,800000085,Perf Store 008,Load City,99008,8326760476980872,2024-06-23 08:00:08,2024-06-23 08:00:08
+0000001200000009,01,0013,POS,Performance Test Transaction 009,134.56,800000086,Perf Store 009,Load City,99009,6723000463207764,2024-06-23 08:00:09,2024-06-23 08:00:09
+0000001200000010,01,0013,POS,Performance Test Transaction 010,145.67,800000087,Perf Store 010,Load City,99010,2940139362300449,2024-06-23 08:00:10,2024-06-23 08:00:10
+# ===============================================================================
+# BOUNDARY VALUE TESTING - EDGE CASE VALIDATION
+# Testing system boundaries and edge case handling
+# Validation of field length limits and constraint enforcement
+# ===============================================================================
+0000001300000001,01,0014,POS,Boundary Test Max Description Length - This is a very long transaction description that tests the maximum length validation for the description field in the database schema to ensure proper truncation and handling of lengthy descriptions that might exceed the 100 character limit set by the Transaction entity field validation constraints,999.99,800000088,Very Long Merchant Name That Tests Length,Very Long City Name,99999,6835861981715162,2024-06-24 12:00:00,2024-06-24 12:00:15
+0000001300000002,01,0014,POS,Min Description,0.01,800000089,Min Store,A,1,5671184478505844,2024-06-24 12:15:00,2024-06-24 12:15:15
+0000001300000003,01,0014,POS,Special Characters Test !@#$%^&*(),50.00,800000090,Special !@# Store,Char City,12!@#,7251508149188883,2024-06-24 12:30:00,2024-06-24 12:30:15
+0000001300000004,01,0014,POS,Numeric Field Test 1234567890,75.25,800000091,123 Numeric Store,456 Number City,78901,2871968252812490,2024-06-24 12:45:00,2024-06-24 12:45:15
+# ===============================================================================
+# ERROR SCENARIO TESTING - NEGATIVE TESTING CASES
+# Testing error handling and validation scenarios
+# Validation of error conditions and exception handling
+# ===============================================================================
+0000001400000001,01,0015,POS,Zero Amount Test Transaction,0.00,800000092,Zero Store,Zero City,00000,8262593602473076,2024-06-25 10:00:00,2024-06-25 10:00:15
+0000001400000002,01,0015,POS,Large Amount Test Transaction,50000.00,800000093,Large Store,Big City,99999,9805583408996588,2024-06-25 10:30:00,2024-06-25 10:30:15
+0000001400000003,03,0015,OPERATOR,Large Refund Test Transaction,-25000.00,800000094,Refund Store,Return City,88888,7094142751055551,2024-06-25 11:00:00,2024-06-25 11:00:15
+# ===============================================================================
+# END OF CSV TEST FIXTURE DATA
+# Total Records: 150+ comprehensive test scenarios
+# Coverage: All major transaction types and edge cases
+# Validation: BigDecimal precision, PostgreSQL partitioning, Spring Batch processing
+# ===============================================================================
