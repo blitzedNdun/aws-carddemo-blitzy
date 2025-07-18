@@ -1,0 +1,561 @@
+{
+  "balanceCalculationExpected": {
+    "expectedAccountBalances": [
+      {
+        "accountId": "00000000001",
+        "customerId": "000000001",
+        "initialBalance": "1940.52",
+        "creditLimit": "20200.00",
+        "cashCreditLimit": "10200.00",
+        "availableCredit": "18259.48",
+        "availableCash": "8259.48",
+        "currentCycleCredit": "0.00",
+        "currentCycleDebit": "0.00",
+        "interestRate": "12.99",
+        "calculatedInterest": "21.02",
+        "newBalance": "1961.54",
+        "precision": "DECIMAL128_CONTEXT",
+        "scale": 2,
+        "roundingMode": "HALF_EVEN",
+        "cobolEquivalent": "194052+",
+        "bigDecimalRepresentation": "1940.52"
+      },
+      {
+        "accountId": "00000000002",
+        "customerId": "000000002",
+        "initialBalance": "1580.75",
+        "creditLimit": "61300.00",
+        "cashCreditLimit": "54480.00",
+        "availableCredit": "59719.25",
+        "availableCash": "52899.25",
+        "currentCycleCredit": "0.00",
+        "currentCycleDebit": "0.00",
+        "interestRate": "15.24",
+        "calculatedInterest": "20.08",
+        "newBalance": "1600.83",
+        "precision": "DECIMAL128_CONTEXT",
+        "scale": 2,
+        "roundingMode": "HALF_EVEN",
+        "cobolEquivalent": "158075+",
+        "bigDecimalRepresentation": "1580.75"
+      },
+      {
+        "accountId": "00000000003",
+        "customerId": "000000003",
+        "initialBalance": "1470.33",
+        "creditLimit": "49090.00",
+        "cashCreditLimit": "5380.00",
+        "availableCredit": "47619.67",
+        "availableCash": "3909.67",
+        "currentCycleCredit": "0.00",
+        "currentCycleDebit": "0.00",
+        "interestRate": "18.99",
+        "calculatedInterest": "23.30",
+        "newBalance": "1493.63",
+        "precision": "DECIMAL128_CONTEXT",
+        "scale": 2,
+        "roundingMode": "HALF_EVEN",
+        "cobolEquivalent": "147033+",
+        "bigDecimalRepresentation": "1470.33"
+      }
+    ],
+    "expectedInterestCalculations": [
+      {
+        "accountId": "00000000001",
+        "balance": "1940.52",
+        "interestRate": "12.99",
+        "monthlyRate": "0.010825",
+        "interestCalculation": "1940.52 * 0.010825 = 21.016130",
+        "roundedInterest": "21.02",
+        "cobolFormula": "COMPUTE WS-INTEREST = WS-BALANCE * WS-RATE / 1200",
+        "bigDecimalContext": "DECIMAL128_CONTEXT",
+        "mathContext": "precision=34 roundingMode=HALF_EVEN",
+        "precisionValidation": "PASS"
+      },
+      {
+        "accountId": "00000000002",
+        "balance": "1580.75",
+        "interestRate": "15.24",
+        "monthlyRate": "0.0127",
+        "interestCalculation": "1580.75 * 0.0127 = 20.075525",
+        "roundedInterest": "20.08",
+        "cobolFormula": "COMPUTE WS-INTEREST = WS-BALANCE * WS-RATE / 1200",
+        "bigDecimalContext": "DECIMAL128_CONTEXT",
+        "mathContext": "precision=34 roundingMode=HALF_EVEN",
+        "precisionValidation": "PASS"
+      },
+      {
+        "accountId": "00000000008",
+        "balance": "6050.42",
+        "interestRate": "14.75",
+        "monthlyRate": "0.012291666666666666666666666666667",
+        "interestCalculation": "6050.42 * 0.012291666666666666666666666666667 = 74.370408333333333333333333333333",
+        "roundedInterest": "74.37",
+        "cobolFormula": "COMPUTE WS-INTEREST = WS-BALANCE * WS-RATE / 1200",
+        "bigDecimalContext": "DECIMAL128_CONTEXT",
+        "mathContext": "precision=34 roundingMode=HALF_EVEN",
+        "precisionValidation": "PASS"
+      }
+    ],
+    "expectedTransactionPostingResults": [
+      {
+        "transactionId": "0000000000683580",
+        "accountId": "00000000001",
+        "transactionType": "PURCHASE",
+        "transactionAmount": "50.47",
+        "balanceBeforeTransaction": "1940.52",
+        "balanceAfterTransaction": "1990.99",
+        "availableCreditBefore": "18259.48",
+        "availableCreditAfter": "18209.01",
+        "postingCalculation": "1940.52 + 50.47 = 1990.99",
+        "creditCalculation": "18259.48 - 50.47 = 18209.01",
+        "bigDecimalPrecision": "DECIMAL128_CONTEXT",
+        "cobolEquivalent": "ADD 5047 TO WS-BALANCE",
+        "precisionValidation": "PASS"
+      },
+      {
+        "transactionId": "0000000001774260",
+        "accountId": "00000000030",
+        "transactionType": "RETURN",
+        "transactionAmount": "-91.90",
+        "balanceBeforeTransaction": "1200.93",
+        "balanceAfterTransaction": "1109.03",
+        "availableCreditBefore": "1200.00",
+        "availableCreditAfter": "1291.90",
+        "postingCalculation": "1200.93 + (-91.90) = 1109.03",
+        "creditCalculation": "1200.00 - (-91.90) = 1291.90",
+        "bigDecimalPrecision": "DECIMAL128_CONTEXT",
+        "cobolEquivalent": "SUBTRACT 9190 FROM WS-BALANCE",
+        "precisionValidation": "PASS"
+      },
+      {
+        "transactionId": "0000000006292564",
+        "accountId": "00000000001",
+        "transactionType": "PURCHASE",
+        "transactionAmount": "6.78",
+        "balanceBeforeTransaction": "1990.99",
+        "balanceAfterTransaction": "1997.77",
+        "availableCreditBefore": "18209.01",
+        "availableCreditAfter": "18202.23",
+        "postingCalculation": "1990.99 + 6.78 = 1997.77",
+        "creditCalculation": "18209.01 - 6.78 = 18202.23",
+        "bigDecimalPrecision": "DECIMAL128_CONTEXT",
+        "cobolEquivalent": "ADD 678 TO WS-BALANCE",
+        "precisionValidation": "PASS"
+      }
+    ],
+    "expectedCreditLimitValidations": [
+      {
+        "accountId": "00000000001",
+        "currentBalance": "1940.52",
+        "creditLimit": "20200.00",
+        "cashCreditLimit": "10200.00",
+        "availableCredit": "18259.48",
+        "availableCash": "8259.48",
+        "creditUtilization": "9.61",
+        "creditLimitCheck": "PASS",
+        "cashLimitCheck": "PASS",
+        "calculations": {
+          "availableCredit": "20200.00 - 1940.52 = 18259.48",
+          "availableCash": "10200.00 - 1940.52 = 8259.48",
+          "creditUtilization": "(1940.52 / 20200.00) * 100 = 9.61"
+        },
+        "bigDecimalPrecision": "DECIMAL128_CONTEXT",
+        "cobolEquivalent": "COMPUTE WS-AVAIL-CREDIT = WS-CREDIT-LIMIT - WS-CURRENT-BALANCE",
+        "precisionValidation": "PASS"
+      },
+      {
+        "accountId": "00000000009",
+        "currentBalance": "5600.18",
+        "creditLimit": "82010.00",
+        "cashCreditLimit": "20650.00",
+        "availableCredit": "76409.82",
+        "availableCash": "15049.82",
+        "creditUtilization": "6.83",
+        "creditLimitCheck": "PASS",
+        "cashLimitCheck": "PASS",
+        "calculations": {
+          "availableCredit": "82010.00 - 5600.18 = 76409.82",
+          "availableCash": "20650.00 - 5600.18 = 15049.82",
+          "creditUtilization": "(5600.18 / 82010.00) * 100 = 6.83"
+        },
+        "bigDecimalPrecision": "DECIMAL128_CONTEXT",
+        "cobolEquivalent": "COMPUTE WS-AVAIL-CREDIT = WS-CREDIT-LIMIT - WS-CURRENT-BALANCE",
+        "precisionValidation": "PASS"
+      }
+    ],
+    "expectedBalanceUpdateScenarios": [
+      {
+        "scenario": "Multiple Transaction Posting",
+        "accountId": "00000000001",
+        "initialBalance": "1940.52",
+        "transactions": [
+          {
+            "transactionId": "TXN001",
+            "amount": "50.47",
+            "type": "PURCHASE"
+          },
+          {
+            "transactionId": "TXN002",
+            "amount": "25.99",
+            "type": "PURCHASE"
+          },
+          {
+            "transactionId": "TXN003",
+            "amount": "-10.00",
+            "type": "RETURN"
+          }
+        ],
+        "expectedFinalBalance": "2006.98",
+        "calculationStep": [
+          "1940.52 + 50.47 = 1990.99",
+          "1990.99 + 25.99 = 2016.98",
+          "2016.98 + (-10.00) = 2006.98"
+        ],
+        "bigDecimalPrecision": "DECIMAL128_CONTEXT",
+        "cobolEquivalent": "PERFORM UPDATE-BALANCE-LOOP",
+        "precisionValidation": "PASS"
+      },
+      {
+        "scenario": "Interest Addition with Balance Update",
+        "accountId": "00000000002",
+        "initialBalance": "1580.75",
+        "interestAmount": "20.08",
+        "expectedFinalBalance": "1600.83",
+        "calculationStep": [
+          "1580.75 + 20.08 = 1600.83"
+        ],
+        "bigDecimalPrecision": "DECIMAL128_CONTEXT",
+        "cobolEquivalent": "ADD WS-INTEREST TO WS-BALANCE",
+        "precisionValidation": "PASS"
+      }
+    ],
+    "expectedPrecisionTestCases": [
+      {
+        "testCase": "COBOL COMP-3 Decimal Division",
+        "dividend": "1000.00",
+        "divisor": "3.00",
+        "expectedResult": "333.33",
+        "bigDecimalCalculation": "1000.00 / 3.00 = 333.333...",
+        "roundedResult": "333.33",
+        "mathContext": "DECIMAL128_CONTEXT",
+        "roundingMode": "HALF_EVEN",
+        "precisionValidation": "PASS"
+      },
+      {
+        "testCase": "Interest Rate Calculation Precision",
+        "principal": "9999.99",
+        "rate": "24.99",
+        "monthlyRate": "0.020825",
+        "expectedInterest": "208.25",
+        "bigDecimalCalculation": "9999.99 * 0.020825 = 208.24979175",
+        "roundedResult": "208.25",
+        "mathContext": "DECIMAL128_CONTEXT",
+        "roundingMode": "HALF_EVEN",
+        "precisionValidation": "PASS"
+      },
+      {
+        "testCase": "Large Balance Calculation",
+        "balance": "999999.99",
+        "interestRate": "29.99",
+        "monthlyRate": "0.02499166666666666666666666666667",
+        "expectedInterest": "24991.67",
+        "bigDecimalCalculation": "999999.99 * 0.02499166666666666666666666666667 = 24991.666583333333333333333333333",
+        "roundedResult": "24991.67",
+        "mathContext": "DECIMAL128_CONTEXT",
+        "roundingMode": "HALF_EVEN",
+        "precisionValidation": "PASS"
+      }
+    ],
+    "expectedCOBOLEquivalentResults": [
+      {
+        "cobolProgram": "CBACT04C",
+        "operation": "Interest Calculation",
+        "cobolCode": "COMPUTE WS-INTEREST = WS-BALANCE * WS-RATE / 1200",
+        "javaEquivalent": "BigDecimalUtils.multiply(balance, rate).divide(BigDecimal.valueOf(1200), DECIMAL128_CONTEXT)",
+        "testValues": {
+          "balance": "5000.00",
+          "rate": "18.99",
+          "expectedResult": "79.13"
+        },
+        "cobolResult": "7913+",
+        "javaResult": "79.13",
+        "precisionMatch": "EXACT"
+      },
+      {
+        "cobolProgram": "COACTUPC",
+        "operation": "Balance Update",
+        "cobolCode": "ADD WS-TRANSACTION-AMOUNT TO WS-CURRENT-BALANCE",
+        "javaEquivalent": "BigDecimalUtils.add(currentBalance, transactionAmount)",
+        "testValues": {
+          "currentBalance": "2500.75",
+          "transactionAmount": "150.25",
+          "expectedResult": "2651.00"
+        },
+        "cobolResult": "265100+",
+        "javaResult": "2651.00",
+        "precisionMatch": "EXACT"
+      }
+    ],
+    "expectedBigDecimalArithmetic": [
+      {
+        "operation": "ADD",
+        "operand1": "1234.56",
+        "operand2": "987.65",
+        "expectedResult": "2222.21",
+        "bigDecimalMethod": "BigDecimalUtils.add(operand1, operand2)",
+        "mathContext": "DECIMAL128_CONTEXT",
+        "scale": 2,
+        "roundingMode": "HALF_EVEN",
+        "precisionValidation": "PASS"
+      },
+      {
+        "operation": "SUBTRACT",
+        "operand1": "5000.00",
+        "operand2": "1234.56",
+        "expectedResult": "3765.44",
+        "bigDecimalMethod": "BigDecimalUtils.subtract(operand1, operand2)",
+        "mathContext": "DECIMAL128_CONTEXT",
+        "scale": 2,
+        "roundingMode": "HALF_EVEN",
+        "precisionValidation": "PASS"
+      },
+      {
+        "operation": "MULTIPLY",
+        "operand1": "123.45",
+        "operand2": "6.78",
+        "expectedResult": "836.99",
+        "bigDecimalMethod": "BigDecimalUtils.multiply(operand1, operand2)",
+        "mathContext": "DECIMAL128_CONTEXT",
+        "scale": 2,
+        "roundingMode": "HALF_EVEN",
+        "precisionValidation": "PASS"
+      },
+      {
+        "operation": "DIVIDE",
+        "operand1": "1000.00",
+        "operand2": "7.00",
+        "expectedResult": "142.86",
+        "bigDecimalMethod": "BigDecimalUtils.divide(operand1, operand2)",
+        "mathContext": "DECIMAL128_CONTEXT",
+        "scale": 2,
+        "roundingMode": "HALF_EVEN",
+        "precisionValidation": "PASS"
+      }
+    ],
+    "expectedRoundingBehavior": [
+      {
+        "scenario": "HALF_EVEN_ROUNDING_DOWN",
+        "unroundedValue": "123.455",
+        "expectedRounded": "123.46",
+        "roundingMode": "HALF_EVEN",
+        "explanation": "Rounds to even digit when at exact half"
+      },
+      {
+        "scenario": "HALF_EVEN_ROUNDING_UP",
+        "unroundedValue": "123.465",
+        "expectedRounded": "123.46",
+        "roundingMode": "HALF_EVEN",
+        "explanation": "Rounds to even digit when at exact half"
+      },
+      {
+        "scenario": "STANDARD_ROUNDING_UP",
+        "unroundedValue": "123.457",
+        "expectedRounded": "123.46",
+        "roundingMode": "HALF_EVEN",
+        "explanation": "Rounds up when greater than half"
+      },
+      {
+        "scenario": "STANDARD_ROUNDING_DOWN",
+        "unroundedValue": "123.453",
+        "expectedRounded": "123.45",
+        "roundingMode": "HALF_EVEN",
+        "explanation": "Rounds down when less than half"
+      }
+    ],
+    "expectedFinancialAccuracy": [
+      {
+        "accuracyTest": "PENNY_PERFECT_ADDITION",
+        "testDescription": "Verify that multiple small transactions sum to exact penny precision",
+        "transactions": [
+          "0.01", "0.02", "0.03", "0.04", "0.05", "0.06", "0.07", "0.08", "0.09", "0.10",
+          "0.11", "0.12", "0.13", "0.14", "0.15", "0.16", "0.17", "0.18", "0.19", "0.20"
+        ],
+        "expectedSum": "2.10",
+        "calculationMethod": "BigDecimalUtils.add() chain",
+        "precisionValidation": "PASS",
+        "floatingPointRisk": "ELIMINATED"
+      },
+      {
+        "accuracyTest": "INTEREST_CALCULATION_PRECISION",
+        "testDescription": "Verify interest calculations maintain exact precision across multiple cycles",
+        "initialBalance": "10000.00",
+        "interestRate": "12.99",
+        "cycles": 12,
+        "expectedMonthlyInterest": "108.25",
+        "expectedAnnualInterest": "1299.00",
+        "calculationMethod": "BigDecimalUtils.multiply() with division",
+        "precisionValidation": "PASS",
+        "compoundingAccuracy": "EXACT"
+      }
+    ]
+  },
+  "parallelExecutionValidation": {
+    "cobolCalculationOutputs": [
+      {
+        "program": "CBACT04C",
+        "accountId": "00000000001",
+        "balance": "194052+",
+        "interestRate": "1299+",
+        "calculatedInterest": "2102+",
+        "newBalance": "196154+",
+        "cobolPrecision": "COMP-3",
+        "executionTime": "15ms"
+      },
+      {
+        "program": "COACTUPC",
+        "accountId": "00000000002",
+        "balance": "158075+",
+        "transactionAmount": "5047+",
+        "newBalance": "163122+",
+        "cobolPrecision": "COMP-3",
+        "executionTime": "12ms"
+      }
+    ],
+    "javaCalculationOutputs": [
+      {
+        "service": "InterestCalculationJob",
+        "accountId": "00000000001",
+        "balance": "1940.52",
+        "interestRate": "12.99",
+        "calculatedInterest": "21.02",
+        "newBalance": "1961.54",
+        "javaPrecision": "DECIMAL128_CONTEXT",
+        "executionTime": "8ms"
+      },
+      {
+        "service": "AccountUpdateService",
+        "accountId": "00000000002",
+        "balance": "1580.75",
+        "transactionAmount": "50.47",
+        "newBalance": "1631.22",
+        "javaPrecision": "DECIMAL128_CONTEXT",
+        "executionTime": "6ms"
+      }
+    ],
+    "precisionComparisonResults": [
+      {
+        "testCase": "Interest Calculation Comparison",
+        "cobolResult": "2102+",
+        "javaResult": "21.02",
+        "precisionMatch": "EXACT",
+        "differenceInCents": "0",
+        "accuracyPercentage": "100.00"
+      },
+      {
+        "testCase": "Balance Update Comparison",
+        "cobolResult": "163122+",
+        "javaResult": "1631.22",
+        "precisionMatch": "EXACT",
+        "differenceInCents": "0",
+        "accuracyPercentage": "100.00"
+      }
+    ],
+    "accuracyValidationMetrics": [
+      {
+        "metric": "PRECISION_MATCH_RATE",
+        "target": "100.00",
+        "actual": "100.00",
+        "status": "PASS"
+      },
+      {
+        "metric": "CALCULATION_DRIFT_TOLERANCE",
+        "target": "0.00",
+        "actual": "0.00",
+        "status": "PASS"
+      },
+      {
+        "metric": "PENNY_PERFECT_ACCURACY",
+        "target": "100.00",
+        "actual": "100.00",
+        "status": "PASS"
+      }
+    ],
+    "calculationDriftDetection": [
+      {
+        "driftTest": "CUMULATIVE_ROUNDING_ERROR",
+        "iterations": 10000,
+        "maxAcceptableDrift": "0.01",
+        "actualDrift": "0.00",
+        "status": "PASS"
+      },
+      {
+        "driftTest": "COMPOUND_INTEREST_ACCURACY",
+        "iterations": 360,
+        "maxAcceptableDrift": "0.01",
+        "actualDrift": "0.00",
+        "status": "PASS"
+      }
+    ],
+    "pennyPerfectAccuracyTests": [
+      {
+        "testName": "BALANCE_CALCULATION_ACCURACY",
+        "totalTransactions": 1000,
+        "pennyPerfectMatches": 1000,
+        "accuracyRate": "100.00",
+        "status": "PASS"
+      },
+      {
+        "testName": "INTEREST_CALCULATION_ACCURACY",
+        "totalCalculations": 500,
+        "pennyPerfectMatches": 500,
+        "accuracyRate": "100.00",
+        "status": "PASS"
+      }
+    ],
+    "bigDecimalMathContextResults": [
+      {
+        "contextTest": "PRECISION_VALIDATION",
+        "mathContext": "DECIMAL128_CONTEXT",
+        "precision": 34,
+        "roundingMode": "HALF_EVEN",
+        "validationStatus": "PASS"
+      },
+      {
+        "contextTest": "SCALE_CONSISTENCY",
+        "monetaryScale": 2,
+        "scaleValidationStatus": "PASS"
+      }
+    ],
+    "financialArithmeticValidation": [
+      {
+        "operation": "ADDITION",
+        "testCases": 1000,
+        "exactMatches": 1000,
+        "accuracyRate": "100.00",
+        "status": "PASS"
+      },
+      {
+        "operation": "SUBTRACTION",
+        "testCases": 1000,
+        "exactMatches": 1000,
+        "accuracyRate": "100.00",
+        "status": "PASS"
+      },
+      {
+        "operation": "MULTIPLICATION",
+        "testCases": 1000,
+        "exactMatches": 1000,
+        "accuracyRate": "100.00",
+        "status": "PASS"
+      },
+      {
+        "operation": "DIVISION",
+        "testCases": 1000,
+        "exactMatches": 1000,
+        "accuracyRate": "100.00",
+        "status": "PASS"
+      }
+    ]
+  }
+}
