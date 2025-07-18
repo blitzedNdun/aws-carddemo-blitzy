@@ -1,0 +1,53 @@
+group_id,disclosure_text,interest_rate,effective_date
+A000000001,"Standard credit terms with variable APR based on creditworthiness and market conditions. Rate applies to purchases and cash advances.",0.0150,2024-01-01T00:00:00
+A000000002,"Premium credit terms with enhanced benefits and lower APR for qualified customers. Promotional rates available for balance transfers.",0.0250,2024-01-01T00:00:00
+A000000003,"Business credit terms with commercial lending rates and extended payment terms. Corporate discounts may apply.",0.0250,2024-01-01T00:00:00
+A000000004,"Student credit terms with reduced rates for educational expenses. Grace period applies during enrollment.",0.0250,2024-01-01T00:00:00
+A000000005,"Secured credit terms backed by collateral or deposit. Lower risk profile enables competitive rates.",0.0000,2024-01-01T00:00:00
+A000000006,"Rewards credit terms with cashback and points programs. Higher rates offset by reward value.",0.0000,2024-01-01T00:00:00
+A000000007,"Travel credit terms with no foreign transaction fees and travel insurance coverage.",0.0000,2024-01-01T00:00:00
+A000000008,"Cash back credit terms with tiered rewards on purchases. Quarterly bonus categories available.",0.0000,2024-01-01T00:00:00
+A000000009,"Balance transfer credit terms with promotional 0% APR for qualifying transfers. Standard rate applies after promotional period.",0.0000,2024-01-01T00:00:00
+A000000010,"Platinum credit terms with premium benefits and concierge services. Higher credit limits available.",0.0000,2024-01-01T00:00:00
+A000000011,"Gold credit terms with moderate benefits and competitive rates. Standard credit requirements apply.",0.0150,2024-01-01T00:00:00
+A000000012,"Silver credit terms with basic benefits and fair rates. Good credit score required for approval.",0.0150,2024-01-01T00:00:00
+A000000013,"Bronze credit terms with entry-level benefits. Building credit history customers welcome.",0.0150,2024-01-01T00:00:00
+A000000014,"Corporate credit terms for business accounts with volume discounts and extended payment terms.",0.0150,2024-01-01T00:00:00
+A000000015,"Government credit terms with special rates for public sector employees. Military discounts available.",0.0150,2024-01-01T00:00:00
+A000000016,"Healthcare credit terms for medical professionals with specialized benefits and flexible payment options.",0.0150,2024-01-01T00:00:00
+A000000017,"Education credit terms for teachers and educational staff with reduced rates and summer payment deferrals.",0.0150,2024-01-01T00:00:00
+DEFAULT,"Default disclosure terms apply with standard interest rates and fees. APR varies based on creditworthiness and payment history. Late payment fees and over-limit charges may apply.",0.0150,2024-01-01T00:00:00
+DEFPROMO,"Default promotional terms with limited-time offers and special rates. Promotional APR reverts to standard rate after introductory period.",0.0250,2024-01-01T00:00:00
+DEFPREMIUM,"Default premium terms with enhanced credit limits and reduced fees. Premium service level with dedicated customer support.",0.0250,2024-01-01T00:00:00
+DEFBASIC,"Default basic terms with standard credit features and rates. Entry-level product with growth potential.",0.0250,2024-01-01T00:00:00
+DEFZERO,"Default zero APR promotional terms for qualified customers. Limited time offer with specific eligibility requirements.",0.0000,2024-01-01T00:00:00
+DEFCASH,"Default cash advance terms with higher APR and immediate interest accrual. No grace period for cash transactions.",0.0000,2024-01-01T00:00:00
+DEFBALANCE,"Default balance transfer terms with promotional rates and transfer fees. Standard APR applies after promotional period.",0.0000,2024-01-01T00:00:00
+DEFBUSINESS,"Default business terms with commercial lending rates and business-specific benefits. Corporate credit requirements apply.",0.0000,2024-01-01T00:00:00
+DEFSTUDENT,"Default student terms with educational discounts and deferred payment options. Student status verification required.",0.0000,2024-01-01T00:00:00
+DEFSECURED,"Default secured terms with collateral requirements and reduced risk pricing. Deposit or security interest required.",0.0000,2024-01-01T00:00:00
+DEFTRAVEL,"Default travel terms with no foreign transaction fees and travel-related benefits. Enhanced fraud protection included.",0.0150,2024-01-01T00:00:00
+DEFCASHBACK,"Default cash back terms with percentage rewards on purchases. Quarterly bonus categories and redemption options available.",0.0150,2024-01-01T00:00:00
+DEFREWARDS,"Default rewards terms with points-based system and redemption catalog. Bonus point opportunities and tier benefits.",0.0150,2024-01-01T00:00:00
+DEFVIP,"Default VIP terms with exclusive benefits and personalized service. Invitation-only program with enhanced features.",0.0150,2024-01-01T00:00:00
+DEFGOLD,"Default gold terms with premium benefits and competitive rates. Mid-tier product with upgrade potential.",0.0150,2024-01-01T00:00:00
+DEFPLATINUM,"Default platinum terms with top-tier benefits and concierge services. Premium credit product with exclusive perks.",0.0150,2024-01-01T00:00:00
+ZEROAPR,"Zero percent APR promotional offer for qualified customers. Limited time promotional rate for purchases and balance transfers. Standard APR applies after promotional period expires.",0.0000,2024-01-01T00:00:00
+ZEROPROMO,"Zero percent promotional terms with limited-time offers and special qualification requirements. Promotional benefits expire after introductory period.",0.0000,2024-01-01T00:00:00
+ZEROCASH,"Zero percent cash advance promotional terms with waived fees and no immediate interest accrual. Limited time offer with specific conditions.",0.0000,2024-01-01T00:00:00
+ZEROBALANCE,"Zero percent balance transfer promotional terms with reduced or waived transfer fees. Promotional rate applies to transferred balances only.",0.0000,2024-01-01T00:00:00
+ZEROBUSINESS,"Zero percent business promotional terms for commercial customers. Limited time offer with business credit requirements.",0.0000,2024-01-01T00:00:00
+ZEROSTUDENT,"Zero percent student promotional terms for educational expenses. Student status verification and academic requirements apply.",0.0000,2024-01-01T00:00:00
+ZEROSECURED,"Zero percent secured promotional terms with collateral requirements. Deposit or security interest required for promotional rate.",0.0000,2024-01-01T00:00:00
+ZEROTRAVEL,"Zero percent travel promotional terms with enhanced travel benefits. No foreign transaction fees and travel insurance included.",0.0000,2024-01-01T00:00:00
+ZEROCASHBACK,"Zero percent cash back promotional terms with enhanced reward rates. Bonus categories and accelerated earning opportunities.",0.0000,2024-01-01T00:00:00
+ZEROREWARDS,"Zero percent rewards promotional terms with bonus point opportunities. Enhanced redemption values and tier benefits.",0.0000,2024-01-01T00:00:00
+ZEROVIP,"Zero percent VIP promotional terms with exclusive benefits and personalized service. Invitation-only program with premium features.",0.0000,2024-01-01T00:00:00
+ZEROGOLD,"Zero percent gold promotional terms with premium benefits and competitive rates. Mid-tier promotional product with upgrade potential.",0.0000,2024-01-01T00:00:00
+ZEROPLATINUM,"Zero percent platinum promotional terms with top-tier benefits and concierge services. Premium promotional product with exclusive perks.",0.0000,2024-01-01T00:00:00
+ZEROMILITARY,"Zero percent military promotional terms with enhanced benefits for service members. Military verification required for promotional rate.",0.0000,2024-01-01T00:00:00
+ZEROFAMILY,"Zero percent family promotional terms with shared benefits and family account management. Multiple cardholder options available.",0.0000,2024-01-01T00:00:00
+ZEROSENIOR,"Zero percent senior promotional terms with age-specific benefits and reduced fees. Senior citizen verification required.",0.0000,2024-01-01T00:00:00
+ZEROEMPLOYEE,"Zero percent employee promotional terms for company staff and affiliates. Employment verification and special qualification requirements.",0.0000,2024-01-01T00:00:00
+ZERONEW,"Zero percent new customer promotional terms with welcome bonuses and introductory benefits. New customer status verification required.",0.0000,2024-01-01T00:00:00
+ZEROLOYALTY,"Zero percent loyalty promotional terms for existing customers with good payment history. Loyalty program benefits and extended promotional periods.",0.0000,2024-01-01T00:00:00
