@@ -1,0 +1,629 @@
+# ===============================================================================
+# Spring Batch Data Loading Job Configuration for CardDemo ASCII Files
+# Description: Orchestrates complete data loading pipeline for 9 ASCII files from 
+#              legacy VSAM system into PostgreSQL tables with exact BigDecimal 
+#              precision preservation and efficient bulk loading operations
+# Author: Blitzy Agent
+# Date: 2024
+# Version: 1.0
+# Dependencies: PostgreSQL tables, Spring Batch 5.x, BigDecimal processors
+# ===============================================================================
+#
+# This configuration file defines a comprehensive Spring Batch job that loads
+# all 9 ASCII data files exported from the VSAM system into PostgreSQL tables
+# while maintaining exact COBOL COMP-3 decimal precision and ensuring referential
+# integrity through proper dependency ordering.
+#
+# Processing Order:
+# 1. Reference Data (required for foreign key constraints)
+# 2. Customer Data (required for account relationships)
+# 3. Account Data (required for card relationships)
+# 4. Card Data (required for transaction relationships)
+# 5. Transaction Data (requires all previous data)
+# 6. Cross-reference Data (requires existing entities)
+#
+# Performance Requirements:
+# - Chunk-based processing with 1000-record chunks for optimal memory usage
+# - Bulk loading procedures using PostgreSQL COPY commands
+# - BigDecimal precision preservation with DECIMAL128 context
+# - Transaction boundaries per Section 0.3.1 technical approach
+# - Completion within 4-hour batch window per Section 0.1.2 constraints
+# ===============================================================================
+
+# Spring Batch Job Configuration
+spring:
+  batch:
+    # Main Data Loading Job Definition
+    job:
+      # Primary data loading job for CardDemo system
+      carddemo-data-loading-job:
+        # Job metadata and configuration
+        name: "CardDemo Data Loading Job"
+        description: "Complete ASCII data loading pipeline for COBOL-to-Java migration"
+        version: "1.0"
+        author: "Blitzy Agent"
+        
+        # Job execution configuration
+        execution:
+          # Job restart configuration for fault tolerance
+          restartable: true
+          prevent-restart: false
+          allow-start-if-complete: false
+          
+          # Job timeout configuration (4 hours for batch window)
+          timeout: 14400000  # 4 hours in milliseconds
+          
+          # Job listener configuration for monitoring
+          listeners:
+            - name: "dataLoadingJobListener"
+              type: "com.carddemo.batch.listener.DataLoadingJobListener"
+              
+        # Job Parameters
+        parameters:
+          # Processing configuration
+          chunk-size: 1000
+          skip-limit: 10
+          retry-limit: 3
+          
+          # Data source configuration
+          input-path: "classpath:data/ASCII/"
+          output-path: "/tmp/batch-output/"
+          
+          # BigDecimal precision configuration
+          math-context: "DECIMAL128"
+          rounding-mode: "HALF_UP"
+          
+          # Performance tuning
+          thread-pool-size: 10
+          max-memory-usage: 85
+          
+        # Job Flow Configuration - Dependency-ordered steps
+        flow:
+          # Step 1: Load Reference Data (Foundation for all foreign keys)
+          - step:
+              name: "loadReferenceDataStep"
+              description: "Load reference data from 5 ASCII files for foreign key constraints"
+              
+              # Step configuration
+              chunk-size: 1000
+              commit-interval: 500
+              skip-limit: 10
+              retry-limit: 3
+              
+              # ItemReader configuration using MultiResourceItemReader
+              reader:
+                type: "org.springframework.batch.item.file.MultiResourceItemReader"
+                name: "referenceDataMultiReader"
+                
+                # Resource configuration for 5 reference files
+                resources:
+                  - resource: "classpath:data/ASCII/discgrp.txt"
+                    description: "Disclosure groups with interest rate precision"
+                    delegate-reader-ref: "disclosureGroupReader"
+                  - resource: "classpath:data/ASCII/trantype.txt"
+                    description: "Transaction types for classification"
+                    delegate-reader-ref: "transactionTypeReader"
+                  - resource: "classpath:data/ASCII/trancatg.txt"
+                    description: "Transaction categories for grouping"
+                    delegate-reader-ref: "transactionCategoryReader"
+                  - resource: "classpath:data/ASCII/tcatbal.txt"
+                    description: "Transaction category balances"
+                    delegate-reader-ref: "transactionCategoryBalanceReader"
+                
+                # Multi-resource processing configuration
+                comparative: true
+                strict: true
+                save-state: true
+                
+              # ItemProcessor configuration for BigDecimal precision
+              processor:
+                type: "com.carddemo.batch.processor.ReferenceDataProcessor"
+                name: "referenceDataProcessor"
+                
+                # BigDecimal processing configuration
+                decimal-precision:
+                  math-context: "DECIMAL128"
+                  rounding-mode: "HALF_UP"
+                  scale: 4
+                  
+                # Validation configuration
+                validation:
+                  enabled: true
+                  strict-mode: false
+                  business-rules: true
+                  
+              # ItemWriter configuration for bulk PostgreSQL operations
+              writer:
+                type: "org.springframework.batch.item.database.JdbcBatchItemWriter"
+                name: "referenceDataWriter"
+                
+                # Database configuration
+                data-source-ref: "dataSource"
+                assertion-updates: true
+                
+                # Bulk insert configuration
+                sql-statements:
+                  disclosure-groups: >
+                    INSERT INTO disclosure_groups 
+                    (group_id, transaction_code, interest_rate, effective_date, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    ON CONFLICT (group_id) DO NOTHING
+                    
+                  transaction-types: >
+                    INSERT INTO transaction_types
+                    (type_id, type_name, type_description, created_at, updated_at)
+                    VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    ON CONFLICT (type_id) DO NOTHING
+                    
+                  transaction-categories: >
+                    INSERT INTO transaction_categories
+                    (category_id, category_name, category_description, created_at, updated_at)
+                    VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    ON CONFLICT (category_id) DO NOTHING
+                    
+                  transaction-category-balances: >
+                    INSERT INTO transaction_category_balances
+                    (category_id, balance_type, balance_amount, created_at, updated_at)
+                    VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    ON CONFLICT (category_id, balance_type) DO NOTHING
+                
+              # Step listeners for monitoring
+              listeners:
+                - name: "referenceDataStepListener"
+                  type: "com.carddemo.batch.listener.ReferenceDataStepListener"
+                  
+          # Step 2: Load Customer Data (Required for account relationships)
+          - step:
+              name: "loadCustomerDataStep"
+              description: "Load customer data from custdata.txt with PII protection"
+              
+              # Step configuration
+              chunk-size: 1000
+              commit-interval: 1000
+              skip-limit: 10
+              retry-limit: 3
+              
+              # ItemReader configuration using customer-data-reader.yml
+              reader:
+                type: "org.springframework.batch.item.file.FlatFileItemReader"
+                name: "customerDataReader"
+                config-ref: "src/main/resources/db/data/customer-data-reader.yml"
+                
+                # Resource configuration
+                resource: "classpath:data/ASCII/custdata.txt"
+                encoding: "UTF-8"
+                lines-to-skip: 0
+                strict: true
+                save-state: true
+                
+                # Line processing for 312-character records
+                line-mapper:
+                  type: "org.springframework.batch.item.file.mapping.FixedLengthLineMapper"
+                  tokenizer-ref: "customerFixedLengthTokenizer"
+                  field-set-mapper-ref: "customerFieldSetMapper"
+                  
+              # ItemProcessor for customer data validation
+              processor:
+                type: "com.carddemo.batch.processor.CustomerDataProcessor"
+                name: "customerDataProcessor"
+                
+                # PII protection configuration
+                pii-protection:
+                  enabled: true
+                  hash-ssn: true
+                  mask-phone: false
+                  
+                # Validation configuration
+                validation:
+                  enabled: true
+                  fico-score-range: [300, 850]
+                  age-validation: true
+                  
+              # ItemWriter for customer table
+              writer:
+                type: "org.springframework.batch.item.database.JdbcBatchItemWriter"
+                name: "customerDataWriter"
+                
+                # Database configuration
+                data-source-ref: "dataSource"
+                assertion-updates: true
+                
+                # SQL configuration
+                sql: >
+                  INSERT INTO customers
+                  (customer_id, first_name, middle_name, last_name, address_line1, address_line2,
+                   city, state, country, zip_code, phone_home, phone_work, ssn_hash, 
+                   date_of_birth, fico_credit_score, created_at, updated_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                  ON CONFLICT (customer_id) DO UPDATE SET
+                  updated_at = CURRENT_TIMESTAMP
+                  
+              # Step listeners
+              listeners:
+                - name: "customerDataStepListener"
+                  type: "com.carddemo.batch.listener.CustomerDataStepListener"
+                  
+          # Step 3: Load Account Data (Required for card relationships)
+          - step:
+              name: "loadAccountDataStep"
+              description: "Load account data from acctdata.txt with BigDecimal precision"
+              
+              # Step configuration
+              chunk-size: 1000
+              commit-interval: 1000
+              skip-limit: 10
+              retry-limit: 3
+              
+              # ItemReader configuration using account-data-reader.yml
+              reader:
+                type: "org.springframework.batch.item.file.FlatFileItemReader"
+                name: "accountDataReader"
+                config-ref: "src/main/resources/db/data/account-data-reader.yml"
+                
+                # Resource configuration
+                resource: "classpath:data/ASCII/acctdata.txt"
+                encoding: "UTF-8"
+                lines-to-skip: 0
+                strict: true
+                save-state: true
+                
+                # Line processing for 300-byte records
+                line-mapper:
+                  type: "org.springframework.batch.item.file.mapping.FixedLengthLineMapper"
+                  tokenizer-ref: "accountFixedLengthTokenizer"
+                  field-set-mapper-ref: "accountFieldSetMapper"
+                  
+              # ItemProcessor for account data with financial precision
+              processor:
+                type: "com.carddemo.batch.processor.AccountDataProcessor"
+                name: "accountDataProcessor"
+                
+                # BigDecimal processing for financial fields
+                decimal-precision:
+                  math-context: "DECIMAL128"
+                  rounding-mode: "HALF_UP"
+                  scale: 2
+                  precision: 12
+                  
+                # Validation configuration
+                validation:
+                  enabled: true
+                  balance-validation: true
+                  credit-limit-validation: true
+                  
+              # ItemWriter for accounts table
+              writer:
+                type: "org.springframework.batch.item.database.JdbcBatchItemWriter"
+                name: "accountDataWriter"
+                
+                # Database configuration
+                data-source-ref: "dataSource"
+                assertion-updates: true
+                
+                # SQL configuration
+                sql: >
+                  INSERT INTO accounts
+                  (account_id, customer_id, active_status, current_balance, credit_limit,
+                   cash_credit_limit, open_date, expiration_date, reissue_date,
+                   current_cycle_credit, current_cycle_debit, address_zip, group_id,
+                   created_at, updated_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                  ON CONFLICT (account_id) DO UPDATE SET
+                  current_balance = EXCLUDED.current_balance,
+                  updated_at = CURRENT_TIMESTAMP
+                  
+              # Step listeners
+              listeners:
+                - name: "accountDataStepListener"
+                  type: "com.carddemo.batch.listener.AccountDataStepListener"
+                  
+          # Step 4: Load Card Data (Required for transaction relationships)
+          - step:
+              name: "loadCardDataStep"
+              description: "Load card data from carddata.txt with Luhn validation"
+              
+              # Step configuration
+              chunk-size: 1000
+              commit-interval: 1000
+              skip-limit: 10
+              retry-limit: 3
+              
+              # ItemReader configuration using card-data-reader.yml
+              reader:
+                type: "org.springframework.batch.item.file.FlatFileItemReader"
+                name: "cardDataReader"
+                config-ref: "src/main/resources/db/data/card-data-reader.yml"
+                
+                # Resource configuration
+                resource: "classpath:data/ASCII/carddata.txt"
+                encoding: "UTF-8"
+                lines-to-skip: 0
+                strict: true
+                save-state: true
+                
+                # Line processing for 150-character records
+                line-mapper:
+                  type: "org.springframework.batch.item.file.mapping.FixedLengthLineMapper"
+                  tokenizer-ref: "cardFixedLengthTokenizer"
+                  field-set-mapper-ref: "cardFieldSetMapper"
+                  
+              # ItemProcessor for card data with PCI compliance
+              processor:
+                type: "com.carddemo.batch.processor.CardDataProcessor"
+                name: "cardDataProcessor"
+                
+                # Security configuration
+                security:
+                  luhn-validation: true
+                  pci-compliance: true
+                  
+                # Validation configuration
+                validation:
+                  enabled: true
+                  expiry-validation: true
+                  account-linkage: true
+                  
+              # ItemWriter for cards table
+              writer:
+                type: "org.springframework.batch.item.database.JdbcBatchItemWriter"
+                name: "cardDataWriter"
+                
+                # Database configuration
+                data-source-ref: "dataSource"
+                assertion-updates: true
+                
+                # SQL configuration
+                sql: >
+                  INSERT INTO cards
+                  (card_number, account_id, customer_id, card_type, expiry_date,
+                   active_status, created_at, updated_at)
+                  VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                  ON CONFLICT (card_number) DO UPDATE SET
+                  expiry_date = EXCLUDED.expiry_date,
+                  updated_at = CURRENT_TIMESTAMP
+                  
+              # Step listeners
+              listeners:
+                - name: "cardDataStepListener"
+                  type: "com.carddemo.batch.listener.CardDataStepListener"
+                  
+          # Step 5: Load Transaction Data (High-volume processing)
+          - step:
+              name: "loadTransactionDataStep"
+              description: "Load transaction data from dailytran.txt with timestamp precision"
+              
+              # Step configuration
+              chunk-size: 1000
+              commit-interval: 1000
+              skip-limit: 10
+              retry-limit: 3
+              
+              # ItemReader configuration using transaction-data-reader.yml
+              reader:
+                type: "org.springframework.batch.item.file.FlatFileItemReader"
+                name: "transactionDataReader"
+                config-ref: "src/main/resources/db/data/transaction-data-reader.yml"
+                
+                # Resource configuration
+                resource: "classpath:data/ASCII/dailytran.txt"
+                encoding: "UTF-8"
+                lines-to-skip: 0
+                strict: true
+                save-state: true
+                
+                # Line processing for 189-character records
+                line-mapper:
+                  type: "org.springframework.batch.item.file.mapping.FixedLengthLineMapper"
+                  tokenizer-ref: "transactionFixedLengthTokenizer"
+                  field-set-mapper-ref: "transactionFieldSetMapper"
+                  
+              # ItemProcessor for transaction data with BigDecimal precision
+              processor:
+                type: "com.carddemo.batch.processor.TransactionDataProcessor"
+                name: "transactionDataProcessor"
+                
+                # BigDecimal processing for financial amounts
+                decimal-precision:
+                  math-context: "DECIMAL128"
+                  rounding-mode: "HALF_UP"
+                  scale: 2
+                  precision: 12
+                  
+                # Timestamp processing configuration
+                timestamp-processing:
+                  precision: "MICROSECOND"
+                  timezone: "UTC"
+                  
+                # Validation configuration
+                validation:
+                  enabled: true
+                  amount-validation: true
+                  timestamp-validation: true
+                  
+              # ItemWriter for transactions table with partitioning support
+              writer:
+                type: "org.springframework.batch.item.database.JdbcBatchItemWriter"
+                name: "transactionDataWriter"
+                
+                # Database configuration
+                data-source-ref: "dataSource"
+                assertion-updates: true
+                
+                # SQL configuration with partitioning
+                sql: >
+                  INSERT INTO transactions
+                  (transaction_id, account_id, card_number, transaction_type_id,
+                   transaction_category_id, transaction_source, transaction_description,
+                   transaction_amount, orig_transaction_amount, transaction_date,
+                   confirmation_number, created_at, updated_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                  ON CONFLICT (transaction_id) DO NOTHING
+                  
+              # Step listeners
+              listeners:
+                - name: "transactionDataStepListener"
+                  type: "com.carddemo.batch.listener.TransactionDataStepListener"
+                  
+          # Step 6: Load Card Cross-Reference Data (Final step)
+          - step:
+              name: "loadCardCrossRefStep"
+              description: "Load card cross-reference data from cardxref.txt"
+              
+              # Step configuration
+              chunk-size: 1000
+              commit-interval: 1000
+              skip-limit: 10
+              retry-limit: 3
+              
+              # ItemReader configuration for cross-reference data
+              reader:
+                type: "org.springframework.batch.item.file.FlatFileItemReader"
+                name: "cardCrossRefReader"
+                
+                # Resource configuration
+                resource: "classpath:data/ASCII/cardxref.txt"
+                encoding: "UTF-8"
+                lines-to-skip: 0
+                strict: true
+                save-state: true
+                
+                # Line processing for cross-reference records
+                line-mapper:
+                  type: "org.springframework.batch.item.file.mapping.DelimitedLineMapper"
+                  delimiter: ","
+                  field-set-mapper:
+                    type: "org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper"
+                    target-type: "com.carddemo.common.dto.CardCrossRefDTO"
+                    strict: true
+                  
+              # ItemProcessor for cross-reference validation
+              processor:
+                type: "com.carddemo.batch.processor.CardCrossRefProcessor"
+                name: "cardCrossRefProcessor"
+                
+                # Validation configuration
+                validation:
+                  enabled: true
+                  foreign-key-validation: true
+                  
+              # ItemWriter for cross-reference table
+              writer:
+                type: "org.springframework.batch.item.database.JdbcBatchItemWriter"
+                name: "cardCrossRefWriter"
+                
+                # Database configuration
+                data-source-ref: "dataSource"
+                assertion-updates: true
+                
+                # SQL configuration
+                sql: >
+                  INSERT INTO card_cross_ref
+                  (card_number, account_id, customer_id, cross_ref_type,
+                   created_at, updated_at)
+                  VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                  ON CONFLICT (card_number, account_id) DO NOTHING
+                  
+              # Step listeners
+              listeners:
+                - name: "cardCrossRefStepListener"
+                  type: "com.carddemo.batch.listener.CardCrossRefStepListener"
+                  
+        # Global Job Configuration
+        global-configuration:
+          # Transaction management
+          transaction-manager-ref: "transactionManager"
+          
+          # Job repository configuration
+          job-repository-ref: "jobRepository"
+          
+          # Job launcher configuration
+          job-launcher-ref: "jobLauncher"
+          
+          # Error handling configuration
+          error-handling:
+            skip-policy:
+              enabled: true
+              skip-limit: 10
+              skippable-exceptions:
+                - "org.springframework.dao.DataIntegrityViolationException"
+                - "org.springframework.batch.item.validator.ValidationException"
+                - "org.springframework.batch.item.file.FlatFileParseException"
+                - "java.lang.NumberFormatException"
+                
+            retry-policy:
+              enabled: true
+              retry-limit: 3
+              initial-delay: 1000
+              max-delay: 30000
+              multiplier: 2.0
+              retryable-exceptions:
+                - "org.springframework.dao.TransientDataAccessException"
+                - "org.springframework.dao.DataAccessResourceFailureException"
+                - "org.springframework.batch.item.ItemStreamException"
+                - "java.sql.SQLTransientException"
+                
+          # Performance monitoring
+          monitoring:
+            enabled: true
+            metrics-collection: true
+            execution-tracking: true
+            memory-monitoring: true
+            
+          # Cleanup configuration
+          cleanup:
+            enabled: true
+            retention-days: 7
+            archive-completed-jobs: true
+            
+    # Common Configuration References
+    common:
+      # BigDecimal configuration for COBOL precision
+      decimal-precision:
+        math-context: "DECIMAL128"
+        rounding-mode: "HALF_UP"
+        default-scale: 2
+        default-precision: 12
+        
+      # Date/Time configuration
+      date-time:
+        default-timezone: "UTC"
+        date-format: "yyyy-MM-dd"
+        timestamp-format: "yyyy-MM-dd HH:mm:ss.SSSSSS"
+        
+      # File processing configuration
+      file-processing:
+        buffer-size: 8192
+        encoding: "UTF-8"
+        strict-mode: true
+        
+      # Database configuration
+      database:
+        batch-size: 1000
+        fetch-size: 1000
+        isolation-level: "SERIALIZABLE"
+        
+      # Monitoring configuration
+      monitoring:
+        progress-reporting: true
+        performance-metrics: true
+        error-tracking: true
+        
+# ===============================================================================
+# Data Loading Job Configuration Complete
+# 
+# This configuration orchestrates the complete ASCII data loading pipeline:
+# 1. Reference data loading (5 files) - Foundation for constraints
+# 2. Customer data loading - Required for account relationships
+# 3. Account data loading - Required for card relationships  
+# 4. Card data loading - Required for transaction relationships
+# 5. Transaction data loading - High-volume processing
+# 6. Cross-reference data loading - Final relationships
+#
+# Key Features:
+# - Chunk-based processing with 1000-record chunks
+# - BigDecimal precision preservation with DECIMAL128 context
+# - Comprehensive error handling and retry logic
+# - Restart capability for fault tolerance
+# - Performance monitoring and metrics collection
+# - Referential integrity through dependency ordering
+# ===============================================================================
