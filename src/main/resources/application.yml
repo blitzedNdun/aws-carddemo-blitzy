@@ -1,0 +1,816 @@
+# ===============================================================================
+# Spring Boot Application Configuration for CardDemo
+# COBOL-to-Java Migration: CICS SIT Parameter Replacement
+# ===============================================================================
+#
+# This configuration file replaces IBM CICS SIT (System Initialization Table) 
+# parameters with Spring Boot externalized configuration, supporting the complete
+# VSAM-to-PostgreSQL transformation and cloud-native microservices architecture.
+#
+# Performance Requirements:
+# - 10,000 TPS peak throughput with sub-200ms response times at 95th percentile
+# - Memory usage within 10% increase compared to CICS baseline allocation
+# - 4-hour batch processing window maintenance
+# - SERIALIZABLE transaction isolation for VSAM-equivalent record locking
+#
+# Features:
+# - PostgreSQL primary database with exact numeric precision matching COBOL
+# - Redis distributed session management for stateless REST APIs
+# - HikariCP connection pooling optimized for enterprise-grade performance
+# - Liquibase database migrations with semantic versioning
+# - Spring Security JWT authentication replacing RACF
+# - Comprehensive logging and monitoring integration
+# - Spring Batch job repository for batch processing orchestration
+# ===============================================================================
+
+# Spring Boot Core Configuration
+spring:
+  application:
+    name: carddemo
+    version: 1.0.0
+  profiles:
+    active: dev
+  
+  # ===============================================================================
+  # PostgreSQL Database Configuration
+  # Replaces VSAM dataset connections with relational database access
+  # ===============================================================================
+  datasource:
+    # PostgreSQL JDBC connection configuration
+    url: jdbc:postgresql://localhost:5432/carddemo
+    username: carddemo_user
+    password: ${DB_PASSWORD:carddemo_password}
+    driver-class-name: org.postgresql.Driver
+    
+    # HikariCP Connection Pool Configuration
+    # Optimized for 10,000 TPS peak throughput with enterprise-grade monitoring
+    hikari:
+      # Connection pool sizing based on PostgreSQL best practices
+      # Formula: (core_count * 2) + effective_spindle_count, scaled for cloud deployment
+      maximum-pool-size: 50
+      minimum-idle: 10
+      
+      # Connection lifecycle management
+      connection-timeout: 30000      # 30 seconds with exponential backoff
+      idle-timeout: 600000           # 10 minutes idle connection timeout
+      max-lifetime: 1800000          # 30 minutes maximum connection lifetime
+      
+      # Performance optimization settings
+      leak-detection-threshold: 60000  # 60 seconds leak detection for monitoring
+      validation-timeout: 5000        # 5 seconds connection validation
+      
+      # Connection pool monitoring and health checks
+      pool-name: CardDemoHikariCP
+      register-mbeans: true
+      
+      # PostgreSQL-specific connection properties
+      data-source-properties:
+        ssl: true
+        sslmode: require
+        reWriteBatchedInserts: true
+        defaultRowFetchSize: 1000
+        prepareThreshold: 3
+        
+  # ===============================================================================
+  # JPA and Hibernate Configuration
+  # Configured for COBOL COMP-3 precision preservation and VSAM-equivalent locking
+  # ===============================================================================
+  jpa:
+    # Hibernate JPA provider configuration
+    hibernate:
+      ddl-auto: validate  # Liquibase manages schema, Hibernate validates only
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl
+      
+      # Hibernate performance optimizations
+      jdbc:
+        batch_size: 25
+        fetch_size: 50
+        order_inserts: true
+        order_updates: true
+        batch_versioned_data: true
+    
+    # Database platform and dialect
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    
+    # JPA properties for COBOL precision compatibility
+    properties:
+      hibernate:
+        # SQL generation and logging
+        format_sql: true
+        show_sql: false  # Use logging configuration instead
+        use_sql_comments: true
+        
+        # Transaction isolation for VSAM-equivalent locking
+        connection:
+          isolation: SERIALIZABLE
+        
+        # JDBC and connection optimizations
+        jdbc:
+          time_zone: UTC
+          batch_size: 25
+          fetch_size: 50
+          lob:
+            non_contextual_creation: true
+        
+        # Query optimization
+        query:
+          plan_cache_max_size: 2048
+          plan_parameter_metadata_max_size: 128
+        
+        # Second-level cache configuration
+        cache:
+          use_second_level_cache: true
+          region:
+            factory_class: org.hibernate.cache.jcache.JCacheRegionFactory
+    
+    # JPA open-in-view disabled for performance
+    open-in-view: false
+    
+  # ===============================================================================
+  # Liquibase Database Migration Configuration
+  # Replaces VSAM catalog administration with semantic versioning strategy
+  # ===============================================================================
+  liquibase:
+    change-log: classpath:db/liquibase-changelog.xml
+    contexts: ${spring.profiles.active}
+    drop-first: false
+    enabled: true
+    
+    # Database migration parameters
+    parameters:
+      # Environment-specific configuration
+      app.name: ${spring.application.name}
+      app.version: ${spring.application.version}
+      
+      # Database schema evolution settings
+      schema.version: 1.0.0
+      migration.author: blitzy-agent
+      migration.timestamp: ${spring.application.instance_id:default}
+    
+    # Rollback and validation settings
+    rollback-on-error: true
+    validate-on-migrate: true
+    
+  # ===============================================================================
+  # Redis Session Management Configuration
+  # Replaces CICS pseudo-conversational processing with distributed session storage
+  # ===============================================================================
+  data:
+    redis:
+      # Redis connection configuration
+      host: localhost
+      port: 6379
+      password: ${REDIS_PASSWORD:}
+      timeout: 5000ms
+      
+      # Connection pool configuration using Lettuce
+      lettuce:
+        pool:
+          max-active: 50
+          max-idle: 20
+          min-idle: 5
+          max-wait: 10000ms
+          time-between-eviction-runs: 30000ms
+        
+        # Redis cluster configuration (when enabled)
+        cluster:
+          refresh:
+            adaptive: true
+            period: 30000ms
+      
+      # Redis serialization and compression
+      serialize-options:
+        key-serializer: org.springframework.data.redis.serializer.StringRedisSerializer
+        value-serializer: org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer
+        hash-key-serializer: org.springframework.data.redis.serializer.StringRedisSerializer
+        hash-value-serializer: org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer
+  
+  # ===============================================================================
+  # Spring Session Configuration
+  # Distributed session management for stateless REST APIs
+  # ===============================================================================
+  session:
+    store-type: redis
+    redis:
+      # Session storage configuration
+      namespace: carddemo:sessions
+      flush-mode: immediate
+      cleanup-cron: 0 */10 * * * *  # Clean up expired sessions every 10 minutes
+      
+      # Session timeout equivalent to CICS terminal timeout
+      timeout: 30m
+      
+      # Session serialization
+      serializer: json
+      
+      # Session configuration
+      configure-action: notify_keyspace_events
+  
+  # ===============================================================================
+  # Spring Security Configuration
+  # JWT authentication and authorization replacing RACF
+  # ===============================================================================
+  security:
+    # JWT token configuration
+    jwt:
+      secret: ${JWT_SECRET:cardDemo2024SecretKeyForJWTSigningAndValidation}
+      expiration: 1800000  # 30 minutes in milliseconds
+      refresh-expiration: 86400000  # 24 hours in milliseconds
+      
+      # Token validation settings
+      algorithm: HS256
+      issuer: carddemo
+      audience: carddemo-users
+    
+    # OAuth2 resource server configuration
+    oauth2:
+      resource-server:
+        jwt:
+          issuer-uri: ${JWT_ISSUER_URI:http://localhost:8080/auth}
+          jwk-set-uri: ${JWT_JWK_SET_URI:http://localhost:8080/auth/.well-known/jwks.json}
+    
+    # Password encoding configuration
+    password:
+      encoder:
+        strength: 12  # BCrypt strength - minimum 12 rounds for enterprise security
+        
+  # ===============================================================================
+  # Spring Batch Configuration
+  # Batch job repository and metadata tables for COBOL batch job conversion
+  # ===============================================================================
+  batch:
+    job:
+      enabled: true
+      
+      # Job repository configuration
+      repository:
+        initialize-schema: never  # Liquibase manages schema
+        isolation-level-for-create: serializable
+        
+        # Job execution settings
+        execution:
+          async: false
+          pool-size: 10
+          queue-capacity: 100
+          
+      # Job scheduling configuration
+      scheduling:
+        enabled: true
+        pool-size: 5
+        
+    # Batch processing configuration
+    processing:
+      chunk-size: 1000
+      commit-interval: 1000
+      skip-limit: 10
+      retry-limit: 3
+      
+  # ===============================================================================
+  # Jackson JSON Configuration
+  # Optimized for BigDecimal precision preservation and COBOL data compatibility
+  # ===============================================================================
+  jackson:
+    # Date and time handling
+    date-format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
+    time-zone: UTC
+    
+    # Serialization configuration
+    serialization:
+      write-dates-as-timestamps: false
+      write-numbers-as-strings: false
+      write-bigdecimal-as-plain: true  # Preserve COBOL COMP-3 precision
+      indent-output: false
+      
+    # Deserialization configuration
+    deserialization:
+      use-big-decimal-for-floats: true  # Exact precision for financial calculations
+      use-big-integer-for-ints: false
+      accept-single-value-as-array: true
+      fail-on-unknown-properties: false
+      
+    # Property naming and null handling
+    property-naming-strategy: SNAKE_CASE
+    default-property-inclusion: non_null
+    
+  # ===============================================================================
+  # Spring Cloud Configuration
+  # Service discovery and configuration management
+  # ===============================================================================
+  cloud:
+    # Spring Cloud Config client configuration
+    config:
+      enabled: true
+      uri: ${CONFIG_SERVER_URI:http://localhost:8888}
+      profile: ${spring.profiles.active}
+      label: main
+      
+      # Configuration refresh settings
+      refresh:
+        enabled: true
+        rate: 30000  # 30 seconds
+        
+      # Retry configuration
+      retry:
+        initial-interval: 1000
+        max-interval: 10000
+        max-attempts: 6
+        multiplier: 1.1
+        
+    # Service discovery configuration
+    discovery:
+      enabled: true
+      service-id: ${spring.application.name}
+      
+    # Circuit breaker configuration
+    circuitbreaker:
+      hystrix:
+        enabled: true
+      resilience4j:
+        enabled: true
+        
+  # ===============================================================================
+  # Validation Configuration
+  # Bean validation with custom validators for COBOL field format compliance
+  # ===============================================================================
+  validation:
+    # Bean validation provider
+    provider: org.hibernate.validator.HibernateValidator
+    
+    # Validation messages configuration
+    messages:
+      basename: classpath:messages/validation
+      encoding: UTF-8
+      cache-seconds: 300
+      
+# ===============================================================================
+# Server Configuration
+# Embedded Tomcat configuration for optimal performance
+# ===============================================================================
+server:
+  port: 8080
+  servlet:
+    context-path: /
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+      
+  # Tomcat configuration
+  tomcat:
+    # Connection and thread pool settings
+    accept-count: 200
+    max-connections: 8192
+    max-threads: 200
+    min-spare-threads: 10
+    
+    # Keep-alive and timeout settings
+    connection-timeout: 20000
+    keep-alive-timeout: 15000
+    max-keep-alive-requests: 100
+    
+    # Performance optimizations
+    uri-encoding: UTF-8
+    use-relative-redirects: true
+    
+  # Compression settings
+  compression:
+    enabled: true
+    min-response-size: 1024
+    mime-types: text/html,text/plain,text/css,application/javascript,application/json
+    
+  # HTTP/2 support
+  http2:
+    enabled: true
+    
+  # SSL configuration (when enabled)
+  ssl:
+    enabled: false
+    key-store: ${SSL_KEYSTORE_PATH:}
+    key-store-password: ${SSL_KEYSTORE_PASSWORD:}
+    key-store-type: PKCS12
+    
+# ===============================================================================
+# Logging Configuration
+# Structured logging with JSON formatting for centralized log aggregation
+# ===============================================================================
+logging:
+  level:
+    # Application logging levels
+    com.carddemo: DEBUG
+    org.springframework.security: INFO
+    org.springframework.web: INFO
+    org.springframework.data: INFO
+    org.springframework.batch: INFO
+    org.springframework.cloud: INFO
+    
+    # Database logging
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.engine.jdbc.batch.internal.BatchingBatch: DEBUG
+    
+    # Connection pool logging
+    com.zaxxer.hikari: INFO
+    com.zaxxer.hikari.pool.HikariPool: INFO
+    
+    # Spring Boot actuator
+    org.springframework.boot.actuate: INFO
+    
+    # Root logging level
+    root: INFO
+    
+  # Log file configuration
+  file:
+    name: /var/log/carddemo/carddemo.log
+    path: /var/log/carddemo
+    
+  # Logging pattern
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{correlationId:-}] %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{correlationId:-}] %logger{36} - %msg%n"
+    
+# ===============================================================================
+# Spring Boot Actuator Configuration
+# Production-ready monitoring and management endpoints
+# ===============================================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,loggers,env,configprops,httptrace,auditevents
+      base-path: /actuator
+      cors:
+        allowed-origins: "*"
+        allowed-methods: GET,POST
+        
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+      
+    info:
+      enabled: true
+      
+    metrics:
+      enabled: true
+      
+    prometheus:
+      enabled: true
+      
+    loggers:
+      enabled: true
+      
+    env:
+      enabled: true
+      show-values: when-authorized
+      
+    auditevents:
+      enabled: true
+      
+  # Health checks configuration
+  health:
+    # Database health check
+    db:
+      enabled: true
+      
+    # Redis health check
+    redis:
+      enabled: true
+      
+    # Diskspace health check
+    diskspace:
+      enabled: true
+      threshold: 100MB
+      
+    # Custom health indicators
+    custom:
+      enabled: true
+      
+  # Metrics configuration
+  metrics:
+    enabled: true
+    export:
+      prometheus:
+        enabled: true
+        descriptions: true
+        
+    # JVM metrics
+    jvm:
+      enabled: true
+      
+    # System metrics
+    system:
+      enabled: true
+      
+    # Web metrics
+    web:
+      server:
+        enabled: true
+        request:
+          autotime:
+            enabled: true
+            
+  # Audit events configuration
+  auditevents:
+    enabled: true
+    
+  # Application info
+  info:
+    app:
+      name: ${spring.application.name}
+      version: ${spring.application.version}
+      description: CardDemo COBOL-to-Java Migration Application
+      
+    build:
+      artifact: ${spring.application.name}
+      version: ${spring.application.version}
+      
+    git:
+      mode: full
+      
+    java:
+      version: ${java.version}
+      vendor: ${java.vendor}
+      
+# ===============================================================================
+# Custom Application Properties
+# CardDemo-specific configuration properties
+# ===============================================================================
+carddemo:
+  # Application metadata
+  application:
+    name: CardDemo
+    description: COBOL-to-Java Migration Application
+    version: ${spring.application.version}
+    
+  # Business configuration
+  business:
+    # Transaction processing settings
+    transaction:
+      timeout: 30000  # 30 seconds transaction timeout
+      retry-attempts: 3
+      batch-size: 1000
+      
+    # Account management settings
+    account:
+      max-accounts-per-customer: 10
+      default-credit-limit: 5000.00
+      
+    # Card management settings
+    card:
+      expiration-years: 3
+      cvv-regeneration-interval: 365  # days
+      
+  # Security configuration
+  security:
+    # Session management
+    session:
+      timeout: 1800  # 30 minutes
+      max-concurrent-sessions: 1
+      
+    # Authentication settings
+    authentication:
+      max-login-attempts: 3
+      lockout-duration: 900  # 15 minutes
+      
+    # Authorization settings
+    authorization:
+      admin-role: ROLE_ADMIN
+      user-role: ROLE_USER
+      
+  # Performance tuning
+  performance:
+    # Connection pool settings
+    database:
+      pool-size: 50
+      connection-timeout: 30000
+      
+    # Cache settings
+    cache:
+      ttl: 300  # 5 minutes
+      max-entries: 10000
+      
+    # Batch processing settings
+    batch:
+      chunk-size: 1000
+      thread-pool-size: 10
+      
+  # Integration settings
+  integration:
+    # External services
+    external:
+      timeout: 10000  # 10 seconds
+      retry-attempts: 3
+      
+    # Internal services
+    internal:
+      timeout: 5000  # 5 seconds
+      retry-attempts: 2
+      
+# ===============================================================================
+# Profile-Specific Configuration
+# Environment-specific overrides for development, testing, and production
+# ===============================================================================
+
+---
+# Development Profile
+spring:
+  profiles: dev
+  
+  # Development-specific database configuration
+  datasource:
+    url: jdbc:postgresql://localhost:5432/carddemo_dev
+    username: carddemo_dev
+    password: ${DB_PASSWORD:dev_password}
+    
+    # Development connection pool settings
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      
+  # Development JPA settings
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        
+  # Development Redis configuration
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      
+  # Development security settings
+  security:
+    jwt:
+      secret: ${JWT_SECRET:devSecretKeyForJWTSigning}
+      expiration: 3600000  # 1 hour for development
+      
+# Development logging
+logging:
+  level:
+    com.carddemo: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    
+---
+# Test Profile
+spring:
+  profiles: test
+  
+  # Test-specific database configuration
+  datasource:
+    url: jdbc:postgresql://localhost:5432/carddemo_test
+    username: carddemo_test
+    password: ${DB_PASSWORD:test_password}
+    
+    # Test connection pool settings
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      
+  # Test JPA settings
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    
+  # Test Redis configuration
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      
+  # Test security settings
+  security:
+    jwt:
+      secret: ${JWT_SECRET:testSecretKeyForJWTSigning}
+      expiration: 900000  # 15 minutes for testing
+      
+# Test logging
+logging:
+  level:
+    com.carddemo: INFO
+    org.springframework.security: INFO
+    org.springframework.web: INFO
+    org.hibernate.SQL: INFO
+    root: WARN
+    
+---
+# Production Profile
+spring:
+  profiles: prod
+  
+  # Production-specific database configuration
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://prod-db:5432/carddemo}
+    username: ${DB_USERNAME:carddemo_prod}
+    password: ${DB_PASSWORD}
+    
+    # Production connection pool settings
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 10
+      leak-detection-threshold: 60000
+      
+  # Production JPA settings
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        
+  # Production Redis configuration
+  data:
+    redis:
+      host: ${REDIS_HOST:prod-redis}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+      
+  # Production security settings
+  security:
+    jwt:
+      secret: ${JWT_SECRET}
+      expiration: 1800000  # 30 minutes
+      
+# Production logging
+logging:
+  level:
+    com.carddemo: INFO
+    org.springframework.security: INFO
+    org.springframework.web: INFO
+    org.hibernate.SQL: WARN
+    root: INFO
+  
+  # Production log file configuration
+  file:
+    name: /var/log/carddemo/carddemo.log
+    path: /var/log/carddemo
+    
+# Production management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+      
+  endpoint:
+    health:
+      show-details: when-authorized
+      
+  security:
+    enabled: true
+    
+---
+# Kubernetes Profile
+spring:
+  profiles: kubernetes
+  
+  # Kubernetes-specific database configuration
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    
+  # Kubernetes Redis configuration
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+      
+  # Kubernetes security settings
+  security:
+    jwt:
+      secret: ${JWT_SECRET}
+      
+# Kubernetes logging
+logging:
+  level:
+    com.carddemo: INFO
+    root: INFO
+    
+  # Console logging for container environments
+  file:
+    name: /dev/stdout
+    
+# Kubernetes management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
