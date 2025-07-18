@@ -7,9 +7,6 @@ package com.carddemo.menu;
 
 import com.carddemo.common.dto.MenuOptionDTO;
 import com.carddemo.common.dto.MenuResponseDTO;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -60,7 +57,6 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/menu")
-@Tag(name = "Menu Navigation", description = "API endpoints for menu navigation and role-based access control")
 public class MenuController {
 
     private final MenuNavigationService menuNavigationService;
@@ -96,28 +92,18 @@ public class MenuController {
      */
     @GetMapping("/options")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_ADMIN')")
+    /* OpenAPI Documentation - Add when OpenAPI dependency is available:
     @Operation(
         summary = "Get menu options for authenticated user",
         description = "Returns role-based filtered menu options for the currently authenticated user. " +
                      "Implements the main menu functionality from COBOL COMEN01C.cbl with " +
                      "Spring Security integration for JWT token validation and role-based filtering."
     )
-    @ApiResponse(
-        responseCode = "200", 
-        description = "Menu options retrieved successfully"
-    )
-    @ApiResponse(
-        responseCode = "401", 
-        description = "Unauthorized - Invalid or missing JWT token"
-    )
-    @ApiResponse(
-        responseCode = "403", 
-        description = "Forbidden - User does not have required role"
-    )
-    @ApiResponse(
-        responseCode = "500", 
-        description = "Internal server error - Menu processing failed"
-    )
+    @ApiResponse(responseCode = "200", description = "Menu options retrieved successfully")
+    @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token")
+    @ApiResponse(responseCode = "403", description = "Forbidden - User does not have required role")
+    @ApiResponse(responseCode = "500", description = "Internal server error - Menu processing failed")
+    */
     public ResponseEntity<MenuResponseDTO> getMenuOptions() {
         try {
             // Delegate to service layer for business logic processing
@@ -159,32 +145,19 @@ public class MenuController {
      */
     @GetMapping("/{userRole}")
     @PreAuthorize("hasRole('ROLE_ADMIN') or (hasRole('ROLE_USER') and #userRole == 'USER')")
+    /* OpenAPI Documentation - Add when OpenAPI dependency is available:
     @Operation(
         summary = "Get menu options for specific user role",
         description = "Returns menu options for the specified user role with access control validation. " +
                      "Admin users can access both USER and ADMIN menus, while regular users can only " +
                      "access USER menus. Implements role-based access control from COBOL COMEN01C.cbl."
     )
-    @ApiResponse(
-        responseCode = "200", 
-        description = "Role-specific menu options retrieved successfully"
-    )
-    @ApiResponse(
-        responseCode = "400", 
-        description = "Bad request - Invalid user role parameter"
-    )
-    @ApiResponse(
-        responseCode = "401", 
-        description = "Unauthorized - Invalid or missing JWT token"
-    )
-    @ApiResponse(
-        responseCode = "403", 
-        description = "Forbidden - User cannot access requested role menu"
-    )
-    @ApiResponse(
-        responseCode = "500", 
-        description = "Internal server error - Menu processing failed"
-    )
+    @ApiResponse(responseCode = "200", description = "Role-specific menu options retrieved successfully")
+    @ApiResponse(responseCode = "400", description = "Bad request - Invalid user role parameter")
+    @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token")
+    @ApiResponse(responseCode = "403", description = "Forbidden - User cannot access requested role menu")
+    @ApiResponse(responseCode = "500", description = "Internal server error - Menu processing failed")
+    */
     public ResponseEntity<MenuResponseDTO> getMenuOptionsByRole(
             @PathVariable 
             @NotBlank(message = "User role is required")
