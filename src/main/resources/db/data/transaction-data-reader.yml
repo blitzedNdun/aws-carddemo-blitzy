@@ -1,0 +1,640 @@
+# Spring Batch FlatFileItemReader Configuration for Transaction Data Loading
+# Processes dailytran.txt fixed-width ASCII file with 189-character records
+# Supporting COBOL-to-Java migration with exact decimal precision preservation
+# Enables high-volume financial transaction processing with partitioning support
+
+# Transaction Data Reader Configuration
+# Maintains Spring Batch 5.x compatibility with Java 21 LTS
+# Processes 189-character fixed-width records from VSAM TRANSACT dataset
+transaction-data-reader:
+  # Global processing configuration for high-volume transaction data
+  processing:
+    chunk-size: 5000         # Optimized chunk size for transaction processing
+    skip-limit: 100          # Maximum skippable records per batch
+    retry-limit: 3           # Maximum retry attempts for transient failures
+    commit-interval: 2500    # Commit frequency for transaction management
+    max-items-per-partition: 500000  # Maximum items per monthly partition
+    
+  # Transaction Data ItemReader Configuration
+  # Handles dailytran.txt with 189-character fixed-width records
+  # Maps to Transaction entity with exact financial precision
+  daily-transaction-reader:
+    resource-pattern: "classpath:data/ASCII/dailytran.txt"
+    encoding: "UTF-8"
+    line-mapper:
+      type: "FixedLengthLineMapper"
+      field-set-mapper:
+        type: "BeanWrapperFieldSetMapper"
+        target-type: "com.carddemo.common.entity.Transaction"
+        strict: true
+        validation: true
+        
+    # Fixed-width field definitions for 189-character transaction records
+    # Preserves COBOL TRANSACT dataset structure with exact field positioning
+    column-ranges:
+      # Transaction identifier - Primary key field
+      - name: "transactionId"
+        start: 1
+        end: 10
+        required: true
+        validation: "^[0-9]{10}$"
+        description: "10-digit transaction identifier from TRAN-ID field"
+        
+      # Account identifier - Foreign key to accounts table
+      - name: "accountIdRaw"
+        start: 11
+        end: 20
+        required: true
+        validation: "^[0-9]{10}$"
+        description: "10-digit account identifier mapping to 11-digit account_id"
+        
+      # Transaction type code - Foreign key to transaction_types table
+      - name: "transactionTypeCode"
+        start: 21
+        end: 22
+        required: true
+        validation: "^[0-9]{2}$"
+        description: "2-character transaction type code for classification"
+        
+      # Transaction source - Channel identification
+      - name: "transactionSource"
+        start: 23
+        end: 31
+        required: false
+        default: "POS TERM"
+        description: "Transaction source channel (POS TERM, OPERATOR, etc.)"
+        
+      # Transaction description - Business context
+      - name: "description"
+        start: 32
+        end: 131
+        required: true
+        validation: "^.{1,100}$"
+        description: "Transaction description with merchant and activity details"
+        
+      # Transaction amount - Financial value with packed decimal format
+      - name: "transactionAmountRaw"
+        start: 132
+        end: 143
+        required: true
+        validation: "^[0-9A-Za-z\\{\\}\\-]+$"
+        description: "Transaction amount in packed decimal format (12 bytes)"
+        
+      # Reserved field - Future use
+      - name: "reservedField"
+        start: 144
+        end: 153
+        required: false
+        description: "Reserved field for future enhancements"
+        
+      # Merchant name - Transaction location
+      - name: "merchantName"
+        start: 154
+        end: 203
+        required: false
+        validation: "^.{0,50}$"
+        description: "Merchant name where transaction occurred"
+        
+      # Merchant city - Transaction location
+      - name: "merchantCity"
+        start: 204
+        end: 253
+        required: false
+        validation: "^.{0,50}$"
+        description: "Merchant city where transaction occurred"
+        
+      # Merchant ZIP code - Transaction location
+      - name: "merchantZip"
+        start: 254
+        end: 263
+        required: false
+        validation: "^[0-9\\-\\s]{0,10}$"
+        description: "Merchant ZIP code in various formats"
+        
+      # Card number - Foreign key to cards table
+      - name: "cardNumberRaw"
+        start: 264
+        end: 280
+        required: true
+        validation: "^[0-9]{16,17}$"
+        description: "16-digit card number with potential extra digit"
+        
+      # Transaction timestamp - Partitioning key
+      - name: "transactionTimestampRaw"
+        start: 281
+        end: 306
+        required: true
+        validation: "^[0-9]{4}-[0-9]{2}-[0-9]{2}\\s[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}$"
+        description: "Transaction timestamp with microsecond precision"
+        
+    # Custom field processing for COBOL-to-Java data transformation
+    # Maintains exact financial precision and proper data type conversion
+    field-processors:
+      # Transaction ID processing with padding to 16 characters
+      - field: "transactionId"
+        processor: "TransactionIdProcessor"
+        target-field: "transactionId"
+        description: "Pad 10-digit ID to 16-character format for UUID compatibility"
+        padding: "left"
+        padding-character: "0"
+        target-length: 16
+        
+      # Account ID processing with padding to 11 characters
+      - field: "accountIdRaw"
+        processor: "AccountIdProcessor"
+        target-field: "accountId"
+        description: "Pad 10-digit account ID to 11-digit format"
+        padding: "left"
+        padding-character: "0"
+        target-length: 11
+        
+      # Transaction type validation and entity lookup
+      - field: "transactionTypeCode"
+        processor: "TransactionTypeProcessor"
+        target-field: "transactionType"
+        description: "Validate and lookup TransactionType entity"
+        lookup-table: "transaction_types"
+        lookup-key: "transaction_type"
+        validation: "FOREIGN_KEY_EXISTS"
+        cache-enabled: true
+        
+      # Transaction source trimming and validation
+      - field: "transactionSource"
+        processor: "StringTrimProcessor"
+        target-field: "transactionSource"
+        description: "Trim whitespace from transaction source"
+        max-length: 10
+        
+      # Description processing with length validation
+      - field: "description"
+        processor: "StringTrimProcessor"
+        target-field: "description"
+        description: "Trim and validate transaction description"
+        max-length: 100
+        required: true
+        
+      # Transaction amount processing with BigDecimal precision
+      - field: "transactionAmountRaw"
+        processor: "PackedDecimalProcessor"
+        target-field: "transactionAmount"
+        description: "Convert packed decimal to BigDecimal with DECIMAL(12,2) precision"
+        precision: 12
+        scale: 2
+        cobol-format: "PIC S9(10)V99 COMP-3"
+        math-context: "DECIMAL128"
+        rounding-mode: "HALF_UP"
+        example: "0000005047G8 -> 50.47"
+        
+      # Merchant name processing
+      - field: "merchantName"
+        processor: "StringTrimProcessor"
+        target-field: "merchantName"
+        description: "Trim whitespace from merchant name"
+        max-length: 50
+        
+      # Merchant city processing
+      - field: "merchantCity"
+        processor: "StringTrimProcessor"
+        target-field: "merchantCity"
+        description: "Trim whitespace from merchant city"
+        max-length: 50
+        
+      # Merchant ZIP processing with format validation
+      - field: "merchantZip"
+        processor: "ZipCodeProcessor"
+        target-field: "merchantZip"
+        description: "Process and validate ZIP code format"
+        format: "US_ZIP_CODE"
+        allow-extensions: true
+        max-length: 10
+        
+      # Card number processing with length normalization
+      - field: "cardNumberRaw"
+        processor: "CardNumberProcessor"
+        target-field: "cardNumber"
+        description: "Extract 16-digit card number from 17-digit field"
+        extraction-rule: "SUBSTRING"
+        start-position: 1
+        length: 16
+        validation: "LUHN_ALGORITHM"
+        
+      # Transaction timestamp processing with microsecond precision
+      - field: "transactionTimestampRaw"
+        processor: "TimestampProcessor"
+        target-field: "transactionTimestamp"
+        description: "Parse timestamp with microsecond precision and timezone handling"
+        input-format: "yyyy-MM-dd HH:mm:ss.SSSSSS"
+        output-format: "LocalDateTime"
+        timezone: "UTC"
+        preserve-microseconds: true
+        
+      # Transaction category derivation from transaction type
+      - field: "transactionTypeCode"
+        processor: "TransactionCategoryProcessor"
+        target-field: "transactionCategory"
+        description: "Derive transaction category from transaction type"
+        lookup-table: "transaction_categories"
+        lookup-key: "transaction_category"
+        derivation-rule: "TYPE_TO_CATEGORY_MAPPING"
+        default-category: "0100"
+        cache-enabled: true
+        
+      # Account entity lookup and validation
+      - field: "accountId"
+        processor: "AccountEntityProcessor"
+        target-field: "account"
+        description: "Lookup and validate Account entity"
+        lookup-table: "accounts"
+        lookup-key: "account_id"
+        validation: "FOREIGN_KEY_EXISTS"
+        cache-enabled: true
+        
+      # Card entity lookup and validation
+      - field: "cardNumber"
+        processor: "CardEntityProcessor"
+        target-field: "card"
+        description: "Lookup and validate Card entity"
+        lookup-table: "cards"
+        lookup-key: "card_number"
+        validation: "FOREIGN_KEY_EXISTS"
+        cache-enabled: true
+        
+    # Comprehensive validation rules for financial data integrity
+    # Enforces business rules and prevents data corruption
+    validation-rules:
+      # Transaction ID validation
+      - field: "transactionId"
+        rule: "FIXED_LENGTH"
+        expected-length: 16
+        error-message: "Transaction ID must be exactly 16 characters"
+        
+      # Account ID validation
+      - field: "accountId"
+        rule: "FIXED_LENGTH"
+        expected-length: 11
+        error-message: "Account ID must be exactly 11 digits"
+        
+      # Transaction type validation
+      - field: "transactionType"
+        rule: "FOREIGN_KEY_EXISTS"
+        reference-table: "transaction_types"
+        reference-field: "transaction_type"
+        error-message: "Transaction type must exist in transaction_types table"
+        
+      # Transaction amount validation
+      - field: "transactionAmount"
+        rule: "DECIMAL_RANGE"
+        min-value: "-99999999.99"
+        max-value: "99999999.99"
+        error-message: "Transaction amount must be within DECIMAL(12,2) range"
+        
+      # Description validation
+      - field: "description"
+        rule: "NOT_NULL_OR_EMPTY"
+        error-message: "Transaction description cannot be null or empty"
+        
+      - field: "description"
+        rule: "MAX_LENGTH"
+        max-length: 100
+        error-message: "Transaction description cannot exceed 100 characters"
+        
+      # Timestamp validation
+      - field: "transactionTimestamp"
+        rule: "NOT_NULL"
+        error-message: "Transaction timestamp cannot be null"
+        
+      - field: "transactionTimestamp"
+        rule: "DATE_RANGE"
+        min-value: "2000-01-01"
+        max-value: "2099-12-31"
+        error-message: "Transaction timestamp must be within valid date range"
+        
+      # Card number validation
+      - field: "cardNumber"
+        rule: "FIXED_LENGTH"
+        expected-length: 16
+        error-message: "Card number must be exactly 16 digits"
+        
+      - field: "cardNumber"
+        rule: "LUHN_VALIDATION"
+        error-message: "Card number must pass Luhn algorithm validation"
+        
+      # Merchant field validation
+      - field: "merchantName"
+        rule: "MAX_LENGTH"
+        max-length: 50
+        error-message: "Merchant name cannot exceed 50 characters"
+        
+      - field: "merchantCity"
+        rule: "MAX_LENGTH"
+        max-length: 50
+        error-message: "Merchant city cannot exceed 50 characters"
+        
+      - field: "merchantZip"
+        rule: "ZIP_CODE_FORMAT"
+        format: "US_ZIP_CODE"
+        error-message: "Merchant ZIP code must be in valid US format"
+        
+    # Foreign key validation for referential integrity
+    # Ensures all relationships exist before transaction processing
+    foreign-key-validation:
+      - field: "accountId"
+        reference-table: "accounts"
+        reference-field: "account_id"
+        error-message: "Account must exist in accounts table"
+        cache-enabled: true
+        
+      - field: "cardNumber"
+        reference-table: "cards"
+        reference-field: "card_number"
+        error-message: "Card must exist in cards table"
+        cache-enabled: true
+        
+      - field: "transactionType"
+        reference-table: "transaction_types"
+        reference-field: "transaction_type"
+        error-message: "Transaction type must exist in transaction_types table"
+        cache-enabled: true
+        
+      - field: "transactionCategory"
+        reference-table: "transaction_categories"
+        reference-field: "transaction_category"
+        error-message: "Transaction category must exist in transaction_categories table"
+        cache-enabled: true
+        
+    # Monthly partitioning configuration for high-volume processing
+    # Supports 4-hour batch processing window with optimal partition pruning
+    partitioning-config:
+      partition-key: "transactionTimestamp"
+      partition-type: "RANGE"
+      partition-interval: "MONTHLY"
+      partition-naming: "transactions_YYYY_MM"
+      auto-create-partitions: true
+      partition-retention: "24_MONTHS"
+      
+    # Performance optimization for high-volume transaction processing
+    # Maintains sub-200ms response times with efficient resource utilization
+    performance-optimization:
+      # Connection pool configuration
+      connection-pool:
+        initial-size: 5
+        max-active: 20
+        max-idle: 10
+        max-wait: 30000
+        validation-query: "SELECT 1"
+        
+      # Batch processing optimization
+      batch-processing:
+        batch-size: 2500
+        fetch-size: 5000
+        use-jdbc-batch: true
+        batch-timeout: 300000
+        
+      # Memory management
+      memory-management:
+        max-items-in-memory: 50000
+        flush-interval: 2500
+        enable-compression: true
+        gc-optimization: true
+        
+      # Index optimization hints
+      index-hints:
+        - "USE INDEX (idx_transactions_timestamp)"
+        - "USE INDEX (idx_transactions_account_id)"
+        - "USE INDEX (idx_transactions_card_number)"
+        
+    # Cache configuration for reference data lookup optimization
+    # Reduces database load and improves processing performance
+    cache-config:
+      # Transaction type cache
+      transaction-types:
+        cache-name: "transactionTypes"
+        ttl: 86400  # 24 hours
+        max-entries: 1000
+        enable-warming: true
+        
+      # Transaction category cache
+      transaction-categories:
+        cache-name: "transactionCategories"
+        ttl: 86400  # 24 hours
+        max-entries: 10000
+        enable-warming: true
+        
+      # Account cache (limited caching for active accounts)
+      accounts:
+        cache-name: "accounts"
+        ttl: 3600   # 1 hour
+        max-entries: 100000
+        enable-warming: false
+        
+      # Card cache (limited caching for active cards)
+      cards:
+        cache-name: "cards"
+        ttl: 3600   # 1 hour
+        max-entries: 500000
+        enable-warming: false
+
+# Global Error Handling Configuration
+# Provides comprehensive error recovery and data quality assurance
+error-handling:
+  # Skip policy for recoverable errors
+  skip-policy:
+    skip-limit: 1000
+    skippable-exceptions:
+      - "org.springframework.batch.item.file.FlatFileParseException"
+      - "org.springframework.batch.item.validator.ValidationException"
+      - "java.lang.NumberFormatException"
+      - "java.time.format.DateTimeParseException"
+      - "java.math.ArithmeticException"
+      
+  # Retry policy for transient failures
+  retry-policy:
+    retry-limit: 3
+    retry-delay: 1000
+    backoff-multiplier: 2.0
+    max-retry-delay: 10000
+    retryable-exceptions:
+      - "org.springframework.dao.DataAccessException"
+      - "java.sql.SQLException"
+      - "java.net.ConnectException"
+      - "org.springframework.transaction.TransactionException"
+      
+  # Listener configuration for comprehensive monitoring
+  listeners:
+    - type: "StepExecutionListener"
+      class: "com.carddemo.batch.TransactionDataStepListener"
+      log-level: "INFO"
+      
+    - type: "ItemReadListener"
+      class: "com.carddemo.batch.TransactionDataReadListener"
+      log-level: "DEBUG"
+      
+    - type: "ItemProcessListener"
+      class: "com.carddemo.batch.TransactionDataProcessListener"
+      log-level: "DEBUG"
+      
+    - type: "ItemWriteListener"
+      class: "com.carddemo.batch.TransactionDataWriteListener"
+      log-level: "INFO"
+      
+    - type: "ChunkListener"
+      class: "com.carddemo.batch.TransactionDataChunkListener"
+      log-level: "INFO"
+
+# Performance Optimization Configuration
+# Ensures 4-hour batch processing window compliance
+performance:
+  # Threading configuration for parallel processing
+  thread-pool:
+    core-pool-size: 8
+    max-pool-size: 16
+    queue-capacity: 1000
+    thread-name-prefix: "transaction-batch-"
+    keep-alive-seconds: 60
+    
+  # Database optimization settings
+  database:
+    batch-size: 2500
+    fetch-size: 5000
+    connection-timeout: 30000
+    query-timeout: 300000
+    validation-query: "SELECT 1"
+    isolation-level: "READ_COMMITTED"
+    
+  # Memory management for high-volume processing
+  memory:
+    max-heap-size: "8g"
+    max-items-in-memory: 50000
+    flush-interval: 2500
+    enable-compression: true
+    gc-optimization: true
+    
+  # Partition processing optimization
+  partition-processing:
+    partition-size: 100000
+    max-partitions: 24
+    partition-timeout: 3600000  # 1 hour per partition
+    enable-parallel-partitioning: true
+
+# Monitoring and Observability Configuration
+# Provides comprehensive transaction processing visibility
+monitoring:
+  # Metrics collection for performance monitoring
+  metrics:
+    enabled: true
+    export-interval: 30000  # 30 seconds
+    metrics-registry: "prometheus"
+    include-jvm-metrics: true
+    
+  # Application-specific metrics
+  custom-metrics:
+    - name: "transactions.processed.count"
+      type: "counter"
+      description: "Total number of transactions processed"
+      
+    - name: "transactions.processed.rate"
+      type: "gauge"
+      description: "Transaction processing rate per second"
+      
+    - name: "transactions.amount.total"
+      type: "counter"
+      description: "Total transaction amount processed"
+      
+    - name: "transactions.validation.errors"
+      type: "counter"
+      description: "Number of validation errors encountered"
+      
+    - name: "transactions.partition.processing.time"
+      type: "timer"
+      description: "Time taken to process each partition"
+      
+  # Logging configuration for audit trail
+  logging:
+    level: "INFO"
+    file-pattern: "transaction-data-loader-%d{yyyy-MM-dd}.log"
+    max-file-size: "100MB"
+    max-history: 30
+    include-mdc: true
+    
+  # Health check configuration
+  health-check:
+    enabled: true
+    check-interval: 30000  # 30 seconds
+    timeout: 15000  # 15 seconds
+    endpoints:
+      - "database-connection"
+      - "reference-data-availability"
+      - "partition-availability"
+
+# Security Configuration
+# Ensures data protection and audit compliance
+security:
+  # Data encryption settings
+  encryption:
+    enabled: false  # ASCII files are not encrypted
+    algorithm: "AES-256-GCM"
+    key-rotation-interval: "90_DAYS"
+    
+  # Access control configuration
+  access-control:
+    require-authentication: true
+    required-roles: ["BATCH_ADMIN", "TRANSACTION_LOADER"]
+    session-timeout: 3600000  # 1 hour
+    
+  # Audit logging for compliance
+  audit:
+    enabled: true
+    log-level: "INFO"
+    include-data-values: false  # Don't log sensitive financial data
+    audit-events:
+      - "BATCH_START"
+      - "BATCH_COMPLETE"
+      - "BATCH_FAILURE"
+      - "VALIDATION_ERROR"
+      - "FOREIGN_KEY_ERROR"
+      - "PARTITION_CREATION"
+      
+  # Data privacy protection
+  data-privacy:
+    mask-sensitive-fields: true
+    sensitive-fields:
+      - "cardNumber"
+      - "transactionAmount"
+      - "merchantName"
+    masking-pattern: "***"
+    
+# Integration Configuration
+# Supports microservices architecture and event-driven processing
+integration:
+  # Event publishing for transaction processing
+  event-publishing:
+    enabled: true
+    event-broker: "kafka"
+    topics:
+      - "transaction.loaded"
+      - "transaction.validated"
+      - "transaction.error"
+      - "batch.completed"
+      
+  # Notification configuration
+  notifications:
+    enabled: true
+    channels:
+      - "email"
+      - "slack"
+    events:
+      - "BATCH_COMPLETION"
+      - "BATCH_FAILURE"
+      - "VALIDATION_THRESHOLD_EXCEEDED"
+      
+  # External service integration
+  external-services:
+    account-service:
+      url: "http://account-service:8080"
+      timeout: 5000
+      retry-count: 3
+      
+    card-service:
+      url: "http://card-service:8080"
+      timeout: 5000
+      retry-count: 3
