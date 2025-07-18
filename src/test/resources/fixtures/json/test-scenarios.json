@@ -1,0 +1,1412 @@
+{
+  "ComprehensiveTestScenarios": {
+    "metadata": {
+      "description": "Comprehensive end-to-end test scenarios combining multiple entities for complete business journey validation, golden file comparison, and cross-component integration testing",
+      "version": "1.0.0",
+      "generated": "2024-01-15T00:00:00Z",
+      "source": "Combined from all entity fixtures supporting Section 6.6.4.2 React component E2E scenarios",
+      "testingFramework": "JUnit 5 with Spring Boot Test, Testcontainers, and React Testing Library",
+      "supportedTestTypes": [
+        "End-to-end business journey testing",
+        "Golden file comparison validation",
+        "BigDecimal precision validation",
+        "Cross-component integration testing",
+        "React component E2E scenarios",
+        "REST API validation",
+        "PostgreSQL database integration"
+      ],
+      "precisionValidation": {
+        "enabled": true,
+        "mathContext": "DECIMAL128",
+        "roundingMode": "HALF_UP",
+        "cobolCompatibility": "COMP-3 exact precision"
+      }
+    },
+    "businessJourneyScenarios": [
+      {
+        "scenarioId": "BJT_001",
+        "name": "complete_customer_onboarding_journey",
+        "description": "Complete customer onboarding from authentication through first transaction",
+        "testType": "END_TO_END_BUSINESS_JOURNEY",
+        "estimatedDuration": "45 seconds",
+        "entities": {
+          "user": {
+            "userId": "USER0001",
+            "firstName": "John",
+            "lastName": "Customer",
+            "userType": "U",
+            "passwordHash": "$2a$12$L9KpR4TnX6WjMgNsY8VcQuH5JmGdK3BnFhLkOxPv7SaWiUyTrEpLm",
+            "plainPassword": "UserPass123!",
+            "authorities": ["USER"],
+            "menuAccess": ["USER_MENU", "ACCOUNT_MENU"]
+          },
+          "customer": {
+            "customerId": "000000001",
+            "firstName": "John",
+            "middleName": "Michael",
+            "lastName": "Anderson",
+            "addressLine1": "123 Main Street",
+            "addressLine2": "Apt 4B",
+            "stateCode": "NY",
+            "countryCode": "USA",
+            "zipCode": "10001",
+            "phoneNumber1": "(555) 123-4567",
+            "phoneNumber2": "(555) 987-6543",
+            "ssn": "123456789",
+            "governmentId": "DL123456789NY",
+            "dateOfBirth": "1985-06-15",
+            "ficoCreditScore": 750,
+            "primaryCardholderIndicator": true
+          },
+          "account": {
+            "accountId": "00000000001",
+            "activeStatus": "ACTIVE",
+            "currentBalance": "19.40",
+            "creditLimit": "2020.00",
+            "cashCreditLimit": "1020.00",
+            "openDate": "2014-11-20",
+            "expirationDate": "2025-05-20",
+            "reissueDate": "2025-05-20",
+            "currentCycleCredit": "0.00",
+            "currentCycleDebit": "0.00",
+            "addressZip": "A000000000",
+            "groupId": "A000000000"
+          },
+          "card": {
+            "cardNumber": "4859452612877065",
+            "accountId": "00000000001",
+            "customerId": "000000001",
+            "cvvCode": "123",
+            "embossedName": "John Anderson",
+            "expirationDate": "2025-12-31",
+            "activeStatus": "Y",
+            "cardType": "Visa",
+            "isActive": true,
+            "isExpired": false
+          }
+        },
+        "journeySteps": [
+          {
+            "stepId": 1,
+            "name": "user_authentication",
+            "description": "User authenticates with credentials",
+            "apiEndpoint": "/api/auth/login",
+            "httpMethod": "POST",
+            "requestPayload": {
+              "userId": "USER0001",
+              "password": "UserPass123!"
+            },
+            "expectedResponse": {
+              "statusCode": 200,
+              "jwtToken": "present",
+              "userAuthorities": ["USER"],
+              "sessionId": "generated"
+            },
+            "reactComponent": "LoginComponent",
+            "reactTestSteps": [
+              "Render login form",
+              "Enter user credentials",
+              "Submit authentication request",
+              "Validate JWT token receipt",
+              "Verify redirect to main menu"
+            ]
+          },
+          {
+            "stepId": 2,
+            "name": "main_menu_navigation",
+            "description": "Navigate to main menu with role-based access",
+            "apiEndpoint": "/api/menu/main",
+            "httpMethod": "GET",
+            "requestHeaders": {
+              "Authorization": "Bearer {jwt_token}"
+            },
+            "expectedResponse": {
+              "statusCode": 200,
+              "availableMenus": ["USER_MENU", "ACCOUNT_MENU"],
+              "restrictedMenus": ["ADMIN_MENU"]
+            },
+            "reactComponent": "MainMenuComponent",
+            "reactTestSteps": [
+              "Render main menu",
+              "Validate role-based menu items",
+              "Verify admin options hidden",
+              "Test navigation links"
+            ]
+          },
+          {
+            "stepId": 3,
+            "name": "account_view_access",
+            "description": "Access account details with balance display",
+            "apiEndpoint": "/api/account/view/00000000001",
+            "httpMethod": "GET",
+            "requestHeaders": {
+              "Authorization": "Bearer {jwt_token}"
+            },
+            "expectedResponse": {
+              "statusCode": 200,
+              "accountDetails": {
+                "accountId": "00000000001",
+                "currentBalance": "19.40",
+                "creditLimit": "2020.00",
+                "availableCredit": "2000.60"
+              }
+            },
+            "reactComponent": "AccountViewComponent",
+            "reactTestSteps": [
+              "Render account details",
+              "Validate BigDecimal precision",
+              "Test balance calculations",
+              "Verify credit limit display"
+            ],
+            "bigDecimalValidation": {
+              "currentBalance": {
+                "value": "19.40",
+                "precision": 2,
+                "scale": 2,
+                "cobolEquivalent": "PIC S9(10)V99"
+              },
+              "creditLimit": {
+                "value": "2020.00",
+                "precision": 2,
+                "scale": 2,
+                "cobolEquivalent": "PIC S9(10)V99"
+              }
+            }
+          },
+          {
+            "stepId": 4,
+            "name": "card_list_display",
+            "description": "Display associated cards with pagination",
+            "apiEndpoint": "/api/card/list",
+            "httpMethod": "GET",
+            "requestHeaders": {
+              "Authorization": "Bearer {jwt_token}"
+            },
+            "requestParams": {
+              "accountId": "00000000001",
+              "page": 0,
+              "size": 7
+            },
+            "expectedResponse": {
+              "statusCode": 200,
+              "cards": [
+                {
+                  "cardNumber": "4859452612877065",
+                  "embossedName": "John Anderson",
+                  "expirationDate": "2025-12-31",
+                  "activeStatus": "Y"
+                }
+              ],
+              "totalElements": 1,
+              "totalPages": 1
+            },
+            "reactComponent": "CardListComponent",
+            "reactTestSteps": [
+              "Render card list",
+              "Validate pagination controls",
+              "Test card status display",
+              "Verify expiration date formatting"
+            ]
+          },
+          {
+            "stepId": 5,
+            "name": "transaction_history_display",
+            "description": "Display transaction history with date filtering",
+            "apiEndpoint": "/api/transaction/history",
+            "httpMethod": "GET",
+            "requestHeaders": {
+              "Authorization": "Bearer {jwt_token}"
+            },
+            "requestParams": {
+              "accountId": "00000000001",
+              "startDate": "2022-01-01",
+              "endDate": "2024-12-31",
+              "page": 0,
+              "size": 10
+            },
+            "expectedResponse": {
+              "statusCode": 200,
+              "transactions": [
+                {
+                  "transactionId": "0000000000683580",
+                  "amount": "50.47",
+                  "merchantName": "Abshire-Lowe",
+                  "transactionDate": "2022-06-10T19:27:53.000"
+                }
+              ],
+              "totalElements": 1,
+              "currentBalance": "19.40"
+            },
+            "reactComponent": "TransactionHistoryComponent",
+            "reactTestSteps": [
+              "Render transaction list",
+              "Validate date range filtering",
+              "Test transaction amount display",
+              "Verify running balance calculation"
+            ]
+          },
+          {
+            "stepId": 6,
+            "name": "new_transaction_processing",
+            "description": "Process a new purchase transaction",
+            "apiEndpoint": "/api/transaction/process",
+            "httpMethod": "POST",
+            "requestHeaders": {
+              "Authorization": "Bearer {jwt_token}",
+              "Content-Type": "application/json"
+            },
+            "requestPayload": {
+              "cardNumber": "4859452612877065",
+              "amount": "25.99",
+              "merchantName": "Test Merchant",
+              "merchantCity": "New York",
+              "merchantZip": "10001",
+              "transactionType": "01",
+              "categoryCode": "0001"
+            },
+            "expectedResponse": {
+              "statusCode": 201,
+              "transactionId": "generated",
+              "authorizationCode": "generated",
+              "newAccountBalance": "-6.59"
+            },
+            "reactComponent": "TransactionProcessingComponent",
+            "reactTestSteps": [
+              "Render transaction form",
+              "Enter transaction details",
+              "Submit transaction request",
+              "Validate authorization response",
+              "Verify balance update"
+            ],
+            "bigDecimalValidation": {
+              "transactionAmount": {
+                "value": "25.99",
+                "precision": 2,
+                "scale": 2,
+                "cobolEquivalent": "PIC S9(09)V99"
+              },
+              "newBalance": {
+                "value": "-6.59",
+                "calculation": "19.40 - 25.99",
+                "precision": 2,
+                "scale": 2,
+                "cobolEquivalent": "PIC S9(10)V99"
+              }
+            }
+          }
+        ],
+        "validationCriteria": {
+          "endToEndSuccess": "All steps complete successfully",
+          "dataConsistency": "All entity relationships maintained",
+          "precisionAccuracy": "All BigDecimal calculations exact",
+          "uiResponsiveness": "All React components render correctly",
+          "apiCompliance": "All REST endpoints return expected responses",
+          "databaseIntegrity": "All database operations succeed"
+        }
+      },
+      {
+        "scenarioId": "BJT_002",
+        "name": "admin_user_management_journey",
+        "description": "Administrative user manages accounts and processes batch operations",
+        "testType": "END_TO_END_ADMIN_JOURNEY",
+        "estimatedDuration": "60 seconds",
+        "entities": {
+          "user": {
+            "userId": "ADMIN001",
+            "firstName": "System",
+            "lastName": "Administrator",
+            "userType": "A",
+            "passwordHash": "$2a$12$N.6MuX5QTrF8kAYjFrTwjOJTH8fKnqHZHbOkDHjF5HgGQaVmjgKRG",
+            "plainPassword": "AdminPass123!",
+            "authorities": ["ADMIN", "USER", "VIEWER"],
+            "menuAccess": ["ADMIN_MENU", "USER_MENU", "REPORTS_MENU", "SYSTEM_MENU"]
+          },
+          "targetAccount": {
+            "accountId": "00000000002",
+            "activeStatus": "ACTIVE",
+            "currentBalance": "15.80",
+            "creditLimit": "6130.00",
+            "cashCreditLimit": "5448.00"
+          }
+        },
+        "journeySteps": [
+          {
+            "stepId": 1,
+            "name": "admin_authentication",
+            "description": "Admin user authenticates with elevated privileges",
+            "apiEndpoint": "/api/auth/login",
+            "httpMethod": "POST",
+            "requestPayload": {
+              "userId": "ADMIN001",
+              "password": "AdminPass123!"
+            },
+            "expectedResponse": {
+              "statusCode": 200,
+              "jwtToken": "present",
+              "userAuthorities": ["ADMIN", "USER", "VIEWER"],
+              "sessionId": "generated"
+            }
+          },
+          {
+            "stepId": 2,
+            "name": "admin_menu_access",
+            "description": "Access administrative menu with full privileges",
+            "apiEndpoint": "/api/menu/admin",
+            "httpMethod": "GET",
+            "requestHeaders": {
+              "Authorization": "Bearer {jwt_token}"
+            },
+            "expectedResponse": {
+              "statusCode": 200,
+              "availableMenus": ["ADMIN_MENU", "USER_MENU", "REPORTS_MENU", "SYSTEM_MENU"],
+              "adminFeatures": ["USER_MANAGEMENT", "ACCOUNT_MANAGEMENT", "BATCH_PROCESSING", "SYSTEM_REPORTS"]
+            }
+          },
+          {
+            "stepId": 3,
+            "name": "account_management_operations",
+            "description": "Perform account management operations",
+            "apiEndpoint": "/api/admin/account/update/00000000002",
+            "httpMethod": "PUT",
+            "requestHeaders": {
+              "Authorization": "Bearer {jwt_token}",
+              "Content-Type": "application/json"
+            },
+            "requestPayload": {
+              "creditLimit": "7000.00",
+              "cashCreditLimit": "6000.00",
+              "activeStatus": "ACTIVE"
+            },
+            "expectedResponse": {
+              "statusCode": 200,
+              "updatedAccount": {
+                "accountId": "00000000002",
+                "creditLimit": "7000.00",
+                "cashCreditLimit": "6000.00",
+                "lastModified": "timestamp"
+              }
+            }
+          },
+          {
+            "stepId": 4,
+            "name": "batch_processing_initiation",
+            "description": "Initiate batch processing job",
+            "apiEndpoint": "/api/admin/batch/interest-calculation",
+            "httpMethod": "POST",
+            "requestHeaders": {
+              "Authorization": "Bearer {jwt_token}",
+              "Content-Type": "application/json"
+            },
+            "requestPayload": {
+              "processingDate": "2024-01-15",
+              "accountSelection": "ALL_ACTIVE"
+            },
+            "expectedResponse": {
+              "statusCode": 202,
+              "jobId": "generated",
+              "jobStatus": "STARTED",
+              "estimatedCompletion": "2024-01-15T04:00:00Z"
+            }
+          },
+          {
+            "stepId": 5,
+            "name": "system_reports_generation",
+            "description": "Generate system reports",
+            "apiEndpoint": "/api/admin/reports/daily-summary",
+            "httpMethod": "GET",
+            "requestHeaders": {
+              "Authorization": "Bearer {jwt_token}"
+            },
+            "requestParams": {
+              "reportDate": "2024-01-15",
+              "format": "JSON"
+            },
+            "expectedResponse": {
+              "statusCode": 200,
+              "reportData": {
+                "totalAccounts": 50,
+                "totalTransactions": 100,
+                "totalAmount": "125000.00",
+                "reportGenerated": "timestamp"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "scenarioId": "BJT_003",
+        "name": "multi_transaction_batch_processing",
+        "description": "Process multiple transactions in batch with balance calculations",
+        "testType": "BATCH_PROCESSING_JOURNEY",
+        "estimatedDuration": "90 seconds",
+        "entities": {
+          "batchTransactions": [
+            {
+              "transactionId": "0000000000683580",
+              "accountId": "00000000001",
+              "amount": "50.47",
+              "transactionType": "01",
+              "categoryCode": "0001",
+              "merchantName": "Abshire-Lowe",
+              "cardNumber": "4859452612877065"
+            },
+            {
+              "transactionId": "0000000001774260",
+              "accountId": "00000000002",
+              "amount": "-91.90",
+              "transactionType": "03",
+              "categoryCode": "0001",
+              "merchantName": "Nitzsche, Nicolas and Lowe",
+              "cardNumber": "0927987108636232"
+            },
+            {
+              "transactionId": "0000000006292564",
+              "accountId": "00000000003",
+              "amount": "6.78",
+              "transactionType": "01",
+              "categoryCode": "0001",
+              "merchantName": "Ernser, Roob and Gleason",
+              "cardNumber": "6009619150674526"
+            }
+          ]
+        },
+        "journeySteps": [
+          {
+            "stepId": 1,
+            "name": "batch_job_initialization",
+            "description": "Initialize Spring Batch job for transaction processing",
+            "apiEndpoint": "/api/batch/transaction-processing",
+            "httpMethod": "POST",
+            "requestHeaders": {
+              "Authorization": "Bearer {admin_jwt_token}",
+              "Content-Type": "application/json"
+            },
+            "requestPayload": {
+              "jobName": "DAILY_TRANSACTION_POSTING",
+              "processingDate": "2024-01-15",
+              "transactionFile": "dailytran.txt"
+            },
+            "expectedResponse": {
+              "statusCode": 202,
+              "jobExecutionId": "generated",
+              "jobStatus": "STARTED",
+              "totalTransactions": 3
+            }
+          },
+          {
+            "stepId": 2,
+            "name": "transaction_validation_step",
+            "description": "Validate all transactions in batch",
+            "springBatchStep": "transactionValidationStep",
+            "expectedResults": {
+              "validTransactions": 3,
+              "invalidTransactions": 0,
+              "validationErrors": []
+            }
+          },
+          {
+            "stepId": 3,
+            "name": "account_balance_calculation",
+            "description": "Calculate account balances with BigDecimal precision",
+            "springBatchStep": "balanceCalculationStep",
+            "expectedResults": {
+              "account_00000000001": {
+                "previousBalance": "19.40",
+                "transactionAmount": "50.47",
+                "newBalance": "-31.07",
+                "calculation": "19.40 - 50.47 = -31.07"
+              },
+              "account_00000000002": {
+                "previousBalance": "15.80",
+                "transactionAmount": "-91.90",
+                "newBalance": "107.70",
+                "calculation": "15.80 - (-91.90) = 107.70"
+              },
+              "account_00000000003": {
+                "previousBalance": "14.70",
+                "transactionAmount": "6.78",
+                "newBalance": "7.92",
+                "calculation": "14.70 - 6.78 = 7.92"
+              }
+            },
+            "bigDecimalValidation": {
+              "mathContext": "DECIMAL128",
+              "roundingMode": "HALF_UP",
+              "precisionChecks": [
+                {
+                  "field": "account_00000000001.newBalance",
+                  "expectedValue": "-31.07",
+                  "cobolEquivalent": "PIC S9(10)V99"
+                },
+                {
+                  "field": "account_00000000002.newBalance",
+                  "expectedValue": "107.70",
+                  "cobolEquivalent": "PIC S9(10)V99"
+                },
+                {
+                  "field": "account_00000000003.newBalance",
+                  "expectedValue": "7.92",
+                  "cobolEquivalent": "PIC S9(10)V99"
+                }
+              ]
+            }
+          },
+          {
+            "stepId": 4,
+            "name": "database_update_step",
+            "description": "Update PostgreSQL database with new balances",
+            "springBatchStep": "databaseUpdateStep",
+            "expectedResults": {
+              "updatedAccounts": 3,
+              "updatedTransactions": 3,
+              "databaseIntegrityCheck": "PASSED"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "BusinessJourneyTestData": {
+    "description": "Complete business journey test data supporting React component testing, REST API validation, and database integration scenarios",
+    "authenticationScenarios": [
+      {
+        "scenarioName": "successful_user_authentication",
+        "user": {
+          "userId": "USER0001",
+          "password": "UserPass123!",
+          "expectedRole": "ROLE_USER",
+          "expectedAuthorities": ["USER"]
+        },
+        "expectedJwtClaims": {
+          "sub": "USER0001",
+          "role": "ROLE_USER",
+          "authorities": ["USER"],
+          "iat": "timestamp",
+          "exp": "timestamp + 1800"
+        },
+        "reactComponentTests": [
+          "LoginComponent renders correctly",
+          "Form validation works",
+          "Authentication request submitted",
+          "JWT token stored in localStorage",
+          "Redirect to main menu occurs"
+        ]
+      },
+      {
+        "scenarioName": "failed_authentication_invalid_credentials",
+        "user": {
+          "userId": "USER0001",
+          "password": "WrongPassword",
+          "expectedResult": "AUTHENTICATION_FAILED"
+        },
+        "expectedResponse": {
+          "statusCode": 401,
+          "message": "Invalid credentials",
+          "jwtToken": null
+        },
+        "reactComponentTests": [
+          "Error message displays correctly",
+          "Form remains visible",
+          "No token stored",
+          "No redirect occurs"
+        ]
+      }
+    ],
+    "accountManagementScenarios": [
+      {
+        "scenarioName": "account_view_with_balance_calculation",
+        "account": {
+          "accountId": "00000000001",
+          "currentBalance": "19.40",
+          "creditLimit": "2020.00",
+          "cashCreditLimit": "1020.00",
+          "availableCredit": "2000.60"
+        },
+        "calculations": {
+          "availableCredit": {
+            "formula": "creditLimit - currentBalance",
+            "calculation": "2020.00 - 19.40 = 2000.60",
+            "precision": "BigDecimal(2000.60, 2)"
+          },
+          "cashAvailableCredit": {
+            "formula": "cashCreditLimit - currentBalance",
+            "calculation": "1020.00 - 19.40 = 1000.60",
+            "precision": "BigDecimal(1000.60, 2)"
+          }
+        },
+        "reactComponentTests": [
+          "AccountViewComponent renders balance",
+          "Credit limit displays correctly",
+          "Available credit calculated accurately",
+          "BigDecimal precision maintained"
+        ]
+      },
+      {
+        "scenarioName": "account_update_with_optimistic_locking",
+        "account": {
+          "accountId": "00000000001",
+          "version": 1,
+          "updatedCreditLimit": "2500.00",
+          "updatedCashCreditLimit": "1250.00"
+        },
+        "expectedOutcome": {
+          "statusCode": 200,
+          "updatedAccount": {
+            "accountId": "00000000001",
+            "creditLimit": "2500.00",
+            "cashCreditLimit": "1250.00",
+            "version": 2
+          }
+        },
+        "reactComponentTests": [
+          "AccountUpdateComponent renders form",
+          "Validation rules enforced",
+          "Optimistic locking handled",
+          "Success message displayed"
+        ]
+      }
+    ],
+    "cardOperationScenarios": [
+      {
+        "scenarioName": "card_list_with_pagination",
+        "request": {
+          "accountId": "00000000001",
+          "page": 0,
+          "size": 7
+        },
+        "expectedResponse": {
+          "cards": [
+            {
+              "cardNumber": "4859452612877065",
+              "embossedName": "John Anderson",
+              "expirationDate": "2025-12-31",
+              "activeStatus": "Y",
+              "maskedCardNumber": "4859****7065"
+            }
+          ],
+          "totalElements": 1,
+          "totalPages": 1,
+          "currentPage": 0
+        },
+        "reactComponentTests": [
+          "CardListComponent renders cards",
+          "Pagination controls work",
+          "Card numbers properly masked",
+          "Expiration dates formatted correctly"
+        ]
+      },
+      {
+        "scenarioName": "card_activation_process",
+        "card": {
+          "cardNumber": "4859452612877065",
+          "currentStatus": "INACTIVE",
+          "activationCode": "123456"
+        },
+        "expectedOutcome": {
+          "statusCode": 200,
+          "updatedCard": {
+            "cardNumber": "4859452612877065",
+            "activeStatus": "Y",
+            "activationDate": "2024-01-15"
+          }
+        },
+        "reactComponentTests": [
+          "CardActivationComponent renders form",
+          "Activation code validated",
+          "Status update confirmed",
+          "Success notification shown"
+        ]
+      }
+    ],
+    "transactionProcessingScenarios": [
+      {
+        "scenarioName": "purchase_transaction_processing",
+        "transaction": {
+          "cardNumber": "4859452612877065",
+          "amount": "25.99",
+          "merchantName": "Test Merchant",
+          "transactionType": "01",
+          "categoryCode": "0001"
+        },
+        "accountState": {
+          "beforeTransaction": {
+            "accountId": "00000000001",
+            "currentBalance": "19.40",
+            "creditLimit": "2020.00",
+            "availableCredit": "2000.60"
+          },
+          "afterTransaction": {
+            "accountId": "00000000001",
+            "currentBalance": "-6.59",
+            "creditLimit": "2020.00",
+            "availableCredit": "2026.59"
+          }
+        },
+        "bigDecimalCalculations": {
+          "newBalance": {
+            "formula": "currentBalance - transactionAmount",
+            "calculation": "19.40 - 25.99 = -6.59",
+            "precision": "BigDecimal(-6.59, 2)",
+            "mathContext": "DECIMAL128"
+          },
+          "newAvailableCredit": {
+            "formula": "creditLimit - newBalance",
+            "calculation": "2020.00 - (-6.59) = 2026.59",
+            "precision": "BigDecimal(2026.59, 2)",
+            "mathContext": "DECIMAL128"
+          }
+        },
+        "reactComponentTests": [
+          "TransactionFormComponent renders correctly",
+          "Amount validation works",
+          "Transaction authorization confirmed",
+          "Balance update reflected immediately"
+        ]
+      },
+      {
+        "scenarioName": "payment_transaction_processing",
+        "transaction": {
+          "accountId": "00000000001",
+          "amount": "100.00",
+          "transactionType": "02",
+          "categoryCode": "0002",
+          "paymentMethod": "BANK_TRANSFER"
+        },
+        "accountState": {
+          "beforeTransaction": {
+            "accountId": "00000000001",
+            "currentBalance": "-6.59",
+            "creditLimit": "2020.00",
+            "availableCredit": "2026.59"
+          },
+          "afterTransaction": {
+            "accountId": "00000000001",
+            "currentBalance": "93.41",
+            "creditLimit": "2020.00",
+            "availableCredit": "1926.59"
+          }
+        },
+        "bigDecimalCalculations": {
+          "newBalance": {
+            "formula": "currentBalance + paymentAmount",
+            "calculation": "-6.59 + 100.00 = 93.41",
+            "precision": "BigDecimal(93.41, 2)",
+            "mathContext": "DECIMAL128"
+          },
+          "newAvailableCredit": {
+            "formula": "creditLimit - newBalance",
+            "calculation": "2020.00 - 93.41 = 1926.59",
+            "precision": "BigDecimal(1926.59, 2)",
+            "mathContext": "DECIMAL128"
+          }
+        },
+        "reactComponentTests": [
+          "PaymentFormComponent renders correctly",
+          "Payment method selection works",
+          "Payment processing confirmed",
+          "Balance update reflected correctly"
+        ]
+      }
+    ],
+    "batchJobValidationScenarios": [
+      {
+        "scenarioName": "interest_calculation_batch_job",
+        "jobParameters": {
+          "processingDate": "2024-01-15",
+          "accountSelection": "ALL_ACTIVE",
+          "interestRate": "0.1995"
+        },
+        "testAccounts": [
+          {
+            "accountId": "00000000001",
+            "currentBalance": "93.41",
+            "interestRate": "0.1995",
+            "daysInCycle": 30,
+            "expectedInterest": "1.53",
+            "expectedNewBalance": "94.94"
+          },
+          {
+            "accountId": "00000000002",
+            "currentBalance": "107.70",
+            "interestRate": "0.1995",
+            "daysInCycle": 30,
+            "expectedInterest": "1.76",
+            "expectedNewBalance": "109.46"
+          }
+        ],
+        "bigDecimalCalculations": {
+          "account_00000000001": {
+            "interestCalculation": {
+              "formula": "balance * (rate / 365) * days",
+              "calculation": "93.41 * (0.1995 / 365) * 30 = 1.53",
+              "precision": "BigDecimal(1.53, 2)",
+              "mathContext": "DECIMAL128"
+            },
+            "newBalanceCalculation": {
+              "formula": "currentBalance + interest",
+              "calculation": "93.41 + 1.53 = 94.94",
+              "precision": "BigDecimal(94.94, 2)",
+              "mathContext": "DECIMAL128"
+            }
+          },
+          "account_00000000002": {
+            "interestCalculation": {
+              "formula": "balance * (rate / 365) * days",
+              "calculation": "107.70 * (0.1995 / 365) * 30 = 1.76",
+              "precision": "BigDecimal(1.76, 2)",
+              "mathContext": "DECIMAL128"
+            },
+            "newBalanceCalculation": {
+              "formula": "currentBalance + interest",
+              "calculation": "107.70 + 1.76 = 109.46",
+              "precision": "BigDecimal(109.46, 2)",
+              "mathContext": "DECIMAL128"
+            }
+          }
+        },
+        "springBatchValidation": {
+          "jobStatus": "COMPLETED",
+          "stepExecutions": [
+            {
+              "stepName": "accountReadStep",
+              "readCount": 2,
+              "writeCount": 2,
+              "status": "COMPLETED"
+            },
+            {
+              "stepName": "interestCalculationStep",
+              "readCount": 2,
+              "writeCount": 2,
+              "status": "COMPLETED"
+            },
+            {
+              "stepName": "balanceUpdateStep",
+              "readCount": 2,
+              "writeCount": 2,
+              "status": "COMPLETED"
+            }
+          ]
+        }
+      },
+      {
+        "scenarioName": "statement_generation_batch_job",
+        "jobParameters": {
+          "processingDate": "2024-01-15",
+          "statementCycle": "MONTHLY",
+          "outputFormat": "PDF"
+        },
+        "testAccounts": [
+          {
+            "accountId": "00000000001",
+            "statementPeriod": "2023-12-15 to 2024-01-14",
+            "transactionCount": 5,
+            "totalPurchases": "125.47",
+            "totalPayments": "100.00",
+            "interestCharges": "1.53",
+            "newBalance": "94.94"
+          }
+        ],
+        "springBatchValidation": {
+          "jobStatus": "COMPLETED",
+          "statementsGenerated": 1,
+          "outputFiles": ["statement_00000000001_202401.pdf"]
+        }
+      }
+    ]
+  },
+  "GoldenFileValidationData": {
+    "description": "COBOL COMP-3 precision reference values and BigDecimal calculation validation data for exact financial accuracy testing",
+    "cobolPrecisionValidation": [
+      {
+        "testCase": "account_balance_precision",
+        "cobolDefinition": "ACCT-CURR-BAL PIC S9(10)V99 COMP-3",
+        "javaEquivalent": "BigDecimal with precision 12, scale 2",
+        "testValues": [
+          {
+            "description": "Positive balance with cents",
+            "cobolValue": "000000019.40",
+            "javaValue": "19.40",
+            "bigDecimalString": "19.40",
+            "mathContext": "DECIMAL128",
+            "expectedBytes": "0x00000194C",
+            "validationCriteria": "Exact match to COBOL COMP-3 representation"
+          },
+          {
+            "description": "Negative balance with cents",
+            "cobolValue": "-000000006.59",
+            "javaValue": "-6.59",
+            "bigDecimalString": "-6.59",
+            "mathContext": "DECIMAL128",
+            "expectedBytes": "0x00000659D",
+            "validationCriteria": "Exact match to COBOL COMP-3 representation"
+          },
+          {
+            "description": "Zero balance",
+            "cobolValue": "000000000.00",
+            "javaValue": "0.00",
+            "bigDecimalString": "0.00",
+            "mathContext": "DECIMAL128",
+            "expectedBytes": "0x00000000C",
+            "validationCriteria": "Exact match to COBOL COMP-3 representation"
+          },
+          {
+            "description": "Maximum positive balance",
+            "cobolValue": "999999999.99",
+            "javaValue": "999999999.99",
+            "bigDecimalString": "999999999.99",
+            "mathContext": "DECIMAL128",
+            "expectedBytes": "0x99999999C",
+            "validationCriteria": "Exact match to COBOL COMP-3 representation"
+          },
+          {
+            "description": "Maximum negative balance",
+            "cobolValue": "-999999999.99",
+            "javaValue": "-999999999.99",
+            "bigDecimalString": "-999999999.99",
+            "mathContext": "DECIMAL128",
+            "expectedBytes": "0x99999999D",
+            "validationCriteria": "Exact match to COBOL COMP-3 representation"
+          }
+        ]
+      },
+      {
+        "testCase": "transaction_amount_precision",
+        "cobolDefinition": "TRAN-AMT PIC S9(09)V99 COMP-3",
+        "javaEquivalent": "BigDecimal with precision 11, scale 2",
+        "testValues": [
+          {
+            "description": "Standard purchase amount",
+            "cobolValue": "000050.47",
+            "javaValue": "50.47",
+            "bigDecimalString": "50.47",
+            "mathContext": "DECIMAL128",
+            "expectedBytes": "0x005047C",
+            "validationCriteria": "Exact match to COBOL COMP-3 representation"
+          },
+          {
+            "description": "Refund amount (negative)",
+            "cobolValue": "-000091.90",
+            "javaValue": "-91.90",
+            "bigDecimalString": "-91.90",
+            "mathContext": "DECIMAL128",
+            "expectedBytes": "0x009190D",
+            "validationCriteria": "Exact match to COBOL COMP-3 representation"
+          },
+          {
+            "description": "Large transaction amount",
+            "cobolValue": "999999.99",
+            "javaValue": "999999.99",
+            "bigDecimalString": "999999.99",
+            "mathContext": "DECIMAL128",
+            "expectedBytes": "0x99999999C",
+            "validationCriteria": "Exact match to COBOL COMP-3 representation"
+          }
+        ]
+      },
+      {
+        "testCase": "credit_limit_precision",
+        "cobolDefinition": "ACCT-CREDIT-LIMIT PIC S9(10)V99 COMP-3",
+        "javaEquivalent": "BigDecimal with precision 12, scale 2",
+        "testValues": [
+          {
+            "description": "Standard credit limit",
+            "cobolValue": "000002020.00",
+            "javaValue": "2020.00",
+            "bigDecimalString": "2020.00",
+            "mathContext": "DECIMAL128",
+            "expectedBytes": "0x00202000C",
+            "validationCriteria": "Exact match to COBOL COMP-3 representation"
+          },
+          {
+            "description": "High credit limit",
+            "cobolValue": "000050000.00",
+            "javaValue": "50000.00",
+            "bigDecimalString": "50000.00",
+            "mathContext": "DECIMAL128",
+            "expectedBytes": "0x05000000C",
+            "validationCriteria": "Exact match to COBOL COMP-3 representation"
+          },
+          {
+            "description": "Premium credit limit",
+            "cobolValue": "000100000.00",
+            "javaValue": "100000.00",
+            "bigDecimalString": "100000.00",
+            "mathContext": "DECIMAL128",
+            "expectedBytes": "0x10000000C",
+            "validationCriteria": "Exact match to COBOL COMP-3 representation"
+          }
+        ]
+      }
+    ],
+    "financialCalculationValidation": [
+      {
+        "testCase": "interest_calculation_precision",
+        "description": "Validate interest calculations maintain exact precision",
+        "testData": [
+          {
+            "accountBalance": "93.41",
+            "interestRate": "0.1995",
+            "daysInCycle": 30,
+            "cobolCalculation": "93.41 * 0.1995 / 365 * 30 = 1.534891780821918",
+            "javaCalculation": "93.41 * 0.1995 / 365 * 30 = 1.534891780821918",
+            "expectedResult": "1.53",
+            "roundingMode": "HALF_UP",
+            "mathContext": "DECIMAL128",
+            "validationCriteria": "Results must match COBOL COMP-3 precision exactly"
+          },
+          {
+            "accountBalance": "107.70",
+            "interestRate": "0.1995",
+            "daysInCycle": 30,
+            "cobolCalculation": "107.70 * 0.1995 / 365 * 30 = 1.769945205479452",
+            "javaCalculation": "107.70 * 0.1995 / 365 * 30 = 1.769945205479452",
+            "expectedResult": "1.77",
+            "roundingMode": "HALF_UP",
+            "mathContext": "DECIMAL128",
+            "validationCriteria": "Results must match COBOL COMP-3 precision exactly"
+          }
+        ]
+      },
+      {
+        "testCase": "balance_calculation_precision",
+        "description": "Validate balance calculations maintain exact precision",
+        "testData": [
+          {
+            "currentBalance": "19.40",
+            "transactionAmount": "25.99",
+            "operation": "SUBTRACT",
+            "cobolCalculation": "19.40 - 25.99 = -6.59",
+            "javaCalculation": "new BigDecimal(\"19.40\").subtract(new BigDecimal(\"25.99\"))",
+            "expectedResult": "-6.59",
+            "mathContext": "DECIMAL128",
+            "validationCriteria": "Results must match COBOL COMP-3 precision exactly"
+          },
+          {
+            "currentBalance": "-6.59",
+            "transactionAmount": "100.00",
+            "operation": "ADD",
+            "cobolCalculation": "-6.59 + 100.00 = 93.41",
+            "javaCalculation": "new BigDecimal(\"-6.59\").add(new BigDecimal(\"100.00\"))",
+            "expectedResult": "93.41",
+            "mathContext": "DECIMAL128",
+            "validationCriteria": "Results must match COBOL COMP-3 precision exactly"
+          }
+        ]
+      }
+    ],
+    "zeroToleranceValidation": [
+      {
+        "testCase": "exact_precision_validation",
+        "description": "Zero tolerance validation for financial calculations",
+        "testScenarios": [
+          {
+            "scenario": "Balance after transaction",
+            "originalBalance": "1000.00",
+            "transaction1": "-250.50",
+            "transaction2": "-125.25",
+            "transaction3": "+50.75",
+            "expectedBalance": "675.00",
+            "calculationSteps": [
+              "1000.00 - 250.50 = 749.50",
+              "749.50 - 125.25 = 624.25",
+              "624.25 + 50.75 = 675.00"
+            ],
+            "toleranceAllowed": "0.00",
+            "validationCriteria": "Must equal exactly 675.00 with no variance"
+          },
+          {
+            "scenario": "Interest compounding",
+            "principal": "1000.00",
+            "rate": "0.05",
+            "periods": 12,
+            "expectedResult": "1051.16",
+            "calculationFormula": "1000.00 * (1 + 0.05/12)^12",
+            "toleranceAllowed": "0.00",
+            "validationCriteria": "Must equal exactly 1051.16 with no variance"
+          }
+        ]
+      }
+    ]
+  },
+  "CrossComponentIntegrationTestData": {
+    "description": "Integration test scenarios spanning React components, REST APIs, and PostgreSQL database operations",
+    "fullStackIntegrationTests": [
+      {
+        "testName": "user_authentication_full_stack",
+        "description": "End-to-end authentication from React login to database validation",
+        "components": ["LoginComponent", "AuthenticationService", "UserRepository", "PostgreSQL"],
+        "testSteps": [
+          {
+            "step": 1,
+            "component": "LoginComponent",
+            "action": "Render login form",
+            "validation": "Form fields present and functional"
+          },
+          {
+            "step": 2,
+            "component": "LoginComponent",
+            "action": "Submit credentials",
+            "validation": "POST request sent to /api/auth/login"
+          },
+          {
+            "step": 3,
+            "component": "AuthenticationService",
+            "action": "Validate credentials",
+            "validation": "User lookup in PostgreSQL database"
+          },
+          {
+            "step": 4,
+            "component": "UserRepository",
+            "action": "Query user table",
+            "validation": "User found with matching password hash"
+          },
+          {
+            "step": 5,
+            "component": "AuthenticationService",
+            "action": "Generate JWT token",
+            "validation": "Token contains correct user claims"
+          },
+          {
+            "step": 6,
+            "component": "LoginComponent",
+            "action": "Receive authentication response",
+            "validation": "Token stored in localStorage"
+          },
+          {
+            "step": 7,
+            "component": "LoginComponent",
+            "action": "Redirect to main menu",
+            "validation": "Navigation occurs with authenticated state"
+          }
+        ]
+      },
+      {
+        "testName": "account_balance_display_full_stack",
+        "description": "End-to-end account balance display from React component to database",
+        "components": ["AccountViewComponent", "AccountService", "AccountRepository", "PostgreSQL"],
+        "testSteps": [
+          {
+            "step": 1,
+            "component": "AccountViewComponent",
+            "action": "Component mounts with account ID",
+            "validation": "Loading state displayed"
+          },
+          {
+            "step": 2,
+            "component": "AccountViewComponent",
+            "action": "Fetch account data",
+            "validation": "GET request sent to /api/account/view/{id}"
+          },
+          {
+            "step": 3,
+            "component": "AccountService",
+            "action": "Query account repository",
+            "validation": "Database query executed with account ID"
+          },
+          {
+            "step": 4,
+            "component": "AccountRepository",
+            "action": "Execute SQL query",
+            "validation": "SELECT from accounts table with proper joins"
+          },
+          {
+            "step": 5,
+            "component": "PostgreSQL",
+            "action": "Return account data",
+            "validation": "Account record with BigDecimal precision"
+          },
+          {
+            "step": 6,
+            "component": "AccountService",
+            "action": "Calculate derived values",
+            "validation": "Available credit calculated accurately"
+          },
+          {
+            "step": 7,
+            "component": "AccountViewComponent",
+            "action": "Display account information",
+            "validation": "All values displayed with proper formatting"
+          }
+        ]
+      },
+      {
+        "testName": "transaction_processing_full_stack",
+        "description": "End-to-end transaction processing from React form to database update",
+        "components": ["TransactionFormComponent", "TransactionService", "TransactionRepository", "AccountRepository", "PostgreSQL"],
+        "testSteps": [
+          {
+            "step": 1,
+            "component": "TransactionFormComponent",
+            "action": "Render transaction form",
+            "validation": "Form fields and validation rules present"
+          },
+          {
+            "step": 2,
+            "component": "TransactionFormComponent",
+            "action": "Submit transaction",
+            "validation": "POST request sent to /api/transaction/process"
+          },
+          {
+            "step": 3,
+            "component": "TransactionService",
+            "action": "Validate transaction",
+            "validation": "Business rules and card validation"
+          },
+          {
+            "step": 4,
+            "component": "TransactionService",
+            "action": "Begin database transaction",
+            "validation": "@Transactional annotation activated"
+          },
+          {
+            "step": 5,
+            "component": "TransactionRepository",
+            "action": "Insert transaction record",
+            "validation": "Transaction saved with generated ID"
+          },
+          {
+            "step": 6,
+            "component": "AccountRepository",
+            "action": "Update account balance",
+            "validation": "Balance updated with BigDecimal precision"
+          },
+          {
+            "step": 7,
+            "component": "PostgreSQL",
+            "action": "Commit transaction",
+            "validation": "Both transaction and account updates committed"
+          },
+          {
+            "step": 8,
+            "component": "TransactionFormComponent",
+            "action": "Display success message",
+            "validation": "Transaction confirmation shown"
+          }
+        ]
+      }
+    ],
+    "databaseIntegrationTests": [
+      {
+        "testName": "jpa_entity_relationship_validation",
+        "description": "Validate JPA entity relationships and constraints",
+        "testScenarios": [
+          {
+            "scenario": "Customer-Account relationship",
+            "entities": ["Customer", "Account"],
+            "relationship": "OneToMany",
+            "validation": "Cascade operations work correctly"
+          },
+          {
+            "scenario": "Account-Card relationship",
+            "entities": ["Account", "Card"],
+            "relationship": "OneToMany",
+            "validation": "Foreign key constraints enforced"
+          },
+          {
+            "scenario": "Card-Transaction relationship",
+            "entities": ["Card", "Transaction"],
+            "relationship": "OneToMany",
+            "validation": "Transaction history accessible"
+          }
+        ]
+      },
+      {
+        "testName": "postgresql_partition_testing",
+        "description": "Test PostgreSQL partition functionality for transactions",
+        "testScenarios": [
+          {
+            "scenario": "Monthly transaction partitioning",
+            "testData": [
+              {
+                "transactionDate": "2024-01-15",
+                "expectedPartition": "transactions_2024_01"
+              },
+              {
+                "transactionDate": "2024-02-15",
+                "expectedPartition": "transactions_2024_02"
+              }
+            ],
+            "validation": "Transactions inserted into correct partitions"
+          }
+        ]
+      }
+    ],
+    "performanceIntegrationTests": [
+      {
+        "testName": "transaction_throughput_testing",
+        "description": "Validate transaction processing performance",
+        "testParameters": {
+          "concurrentUsers": 100,
+          "transactionsPerUser": 10,
+          "targetThroughput": "10000 TPS",
+          "maxResponseTime": "200ms"
+        },
+        "validationCriteria": [
+          "All transactions processed successfully",
+          "Response times under 200ms at 95th percentile",
+          "Database connections managed efficiently",
+          "No transaction deadlocks or timeouts"
+        ]
+      },
+      {
+        "testName": "batch_processing_performance",
+        "description": "Validate batch processing performance",
+        "testParameters": {
+          "batchSize": 1000,
+          "totalRecords": 10000,
+          "maxProcessingTime": "4 hours",
+          "memoryUsage": "< 2GB"
+        },
+        "validationCriteria": [
+          "All records processed within time limit",
+          "Memory usage remains under threshold",
+          "No batch job failures or restarts",
+          "Database performance remains stable"
+        ]
+      }
+    ]
+  },
+  "TestExecutionMetadata": {
+    "description": "Metadata and configuration for comprehensive test execution",
+    "testEnvironment": {
+      "framework": "JUnit 5",
+      "springBootVersion": "3.2.x",
+      "springSecurityVersion": "6.x",
+      "reactVersion": "18.x",
+      "postgresqlVersion": "15.x",
+      "testcontainersVersion": "1.21.3"
+    },
+    "testConfiguration": {
+      "database": {
+        "url": "jdbc:postgresql://localhost:5432/carddemo_test",
+        "username": "test_user",
+        "password": "test_password",
+        "schema": "carddemo_test"
+      },
+      "redis": {
+        "host": "localhost",
+        "port": 6379,
+        "database": 0
+      },
+      "jwt": {
+        "secret": "testSecretKeyForJWTTokenGeneration",
+        "expiration": 1800000,
+        "issuer": "carddemo-test"
+      }
+    },
+    "testDataManagement": {
+      "dataLoadingStrategy": "CLEAN_INSERT",
+      "testDataFiles": [
+        "test-scenarios.json",
+        "users.json",
+        "customers.json",
+        "accounts.json",
+        "cards.json",
+        "transactions.json",
+        "transaction-categories.json",
+        "transaction-types.json"
+      ],
+      "cleanupStrategy": "TRUNCATE_TABLES"
+    }
+  }
+}
