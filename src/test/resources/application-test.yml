@@ -1,0 +1,831 @@
+# ===============================================================================
+# Spring Boot Test Configuration for CardDemo Application
+# COBOL-to-Java Migration: Comprehensive Testing Environment Setup
+# ===============================================================================
+#
+# This test configuration file provides comprehensive test environment setup for
+# the CardDemo system modernization, supporting:
+# 
+# - Testcontainers integration testing with PostgreSQL and Redis
+# - Spring Security mock authentication and role-based testing
+# - Parallel test execution with isolated database instances
+# - H2 in-memory database for rapid unit testing
+# - Complete test data management and environment isolation
+# - Performance testing with baseline comparisons
+# - Security testing with JWT authentication validation
+# - Comprehensive logging and monitoring for test execution
+#
+# Key Features:
+# - PostgreSQL Testcontainers for integration testing per Section 6.6.3.2
+# - Redis Testcontainers for session management testing
+# - Spring Security test slices with @WithMockUser per Section 6.6.2.4
+# - Parallel test execution with isolated environments per Section 6.6.5.4
+# - BigDecimal precision validation for financial calculations
+# - Complete test environment resource management
+# - Automated test data loading and cleanup procedures
+# ===============================================================================
+
+# ===============================================================================
+# Core Spring Boot Test Configuration
+# ===============================================================================
+spring:
+  profiles:
+    active: test
+  application:
+    name: carddemo-test
+    version: 1.0.0-TEST
+  
+  # ===============================================================================
+  # Test Database Configuration - Multiple Database Support
+  # Supports both H2 in-memory for unit tests and PostgreSQL Testcontainers
+  # ===============================================================================
+  datasource:
+    # H2 In-Memory Database Configuration for Unit Tests
+    # Provides fast, lightweight testing with PostgreSQL compatibility mode
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+    
+    # H2 Database initialization and compatibility
+    initialization-mode: always
+    continue-on-error: false
+    
+    # Connection pool configuration for test environments
+    hikari:
+      # Optimized for test execution performance
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 10000      # 10 seconds for test environment
+      idle-timeout: 300000           # 5 minutes idle timeout
+      max-lifetime: 600000           # 10 minutes maximum connection lifetime
+      leak-detection-threshold: 30000 # 30 seconds for test leak detection
+      
+      # Test-specific connection pool naming and monitoring
+      pool-name: CardDemo-Test-HikariCP
+      register-mbeans: true
+      
+      # H2 specific connection properties
+      data-source-properties:
+        # H2 performance optimizations for testing
+        cache_size: 32768
+        trace_level_system_out: 0
+        trace_level_file: 0
+        database_event_listener: ""
+        
+  # ===============================================================================
+  # Testcontainers Configuration
+  # PostgreSQL and Redis containers for integration testing
+  # ===============================================================================
+  testcontainers:
+    # PostgreSQL Testcontainer Configuration
+    postgresql:
+      enabled: true
+      image: postgres:15-alpine
+      database: carddemo_test
+      username: carddemo_test
+      password: test_password
+      
+      # Container configuration for optimal test performance
+      container:
+        memory: 512m
+        cpu: 1
+        tmpfs:
+          /tmp: rw,noexec,nosuid,size=256m
+          /var/lib/postgresql/data: rw,size=256m
+        
+        # Environment variables for PostgreSQL test optimization
+        env:
+          POSTGRES_INITDB_ARGS: "--auth-host=md5 --encoding=UTF8 --locale=C"
+          POSTGRES_HOST_AUTH_METHOD: md5
+          POSTGRES_DB: carddemo_test
+          POSTGRES_USER: carddemo_test
+          POSTGRES_PASSWORD: test_password
+          
+        # Port configuration for parallel test execution
+        ports:
+          - "5432"  # Dynamic port allocation for parallel testing
+          
+        # Health check configuration
+        health-check:
+          test: ["CMD-SHELL", "pg_isready -U carddemo_test -d carddemo_test"]
+          interval: 10s
+          timeout: 5s
+          retries: 5
+          start-period: 30s
+          
+      # Schema initialization for test data
+      schema:
+        create-if-not-exists: true
+        migration-path: classpath:db/test-migrations
+        
+    # Redis Testcontainer Configuration
+    redis:
+      enabled: true
+      image: redis:7-alpine
+      
+      # Container configuration for session testing
+      container:
+        memory: 256m
+        cpu: 0.5
+        
+        # Redis-specific configuration
+        command: ["redis-server", "--appendonly", "no", "--save", ""]
+        
+        # Environment variables
+        env:
+          REDIS_PASSWORD: test_redis_password
+          
+        # Port configuration
+        ports:
+          - "6379"  # Dynamic port allocation
+          
+        # Health check configuration
+        health-check:
+          test: ["CMD", "redis-cli", "ping"]
+          interval: 10s
+          timeout: 5s
+          retries: 3
+          start-period: 15s
+          
+  # ===============================================================================
+  # JPA and Hibernate Test Configuration
+  # Optimized for test execution with H2 and PostgreSQL compatibility
+  # ===============================================================================
+  jpa:
+    # Test-specific JPA configuration
+    hibernate:
+      ddl-auto: create-drop  # Recreate schema for each test
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl
+        
+      # Test environment performance settings
+      jdbc:
+        batch_size: 10
+        fetch_size: 20
+        order_inserts: true
+        order_updates: true
+        batch_versioned_data: true
+        
+    # Database platform configuration
+    database-platform: org.hibernate.dialect.H2Dialect
+    
+    # JPA properties for test environment
+    properties:
+      hibernate:
+        # SQL logging for test debugging
+        format_sql: true
+        show_sql: false  # Controlled by logging configuration
+        use_sql_comments: true
+        
+        # Transaction configuration for test isolation
+        connection:
+          isolation: READ_COMMITTED  # Appropriate for test environment
+          autocommit: false
+          
+        # Test-specific JDBC settings
+        jdbc:
+          time_zone: UTC
+          batch_size: 10
+          fetch_size: 20
+          lob:
+            non_contextual_creation: true
+            
+        # Query optimization for tests
+        query:
+          plan_cache_max_size: 128
+          plan_parameter_metadata_max_size: 32
+          
+        # Disable caching for test consistency
+        cache:
+          use_second_level_cache: false
+          use_query_cache: false
+          
+    # Test-specific settings
+    open-in-view: false
+    generate-ddl: true
+    show-sql: false
+    
+  # ===============================================================================
+  # Redis Test Configuration
+  # Session management and caching for integration tests
+  # ===============================================================================
+  data:
+    redis:
+      # Test Redis configuration (overridden by Testcontainers)
+      host: localhost
+      port: 6379
+      password: test_redis_password
+      timeout: 2000ms
+      
+      # Connection pool configuration for tests
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 5
+          min-idle: 2
+          max-wait: 5000ms
+          time-between-eviction-runs: 30000ms
+          
+      # Test-specific Redis configuration
+      client-type: lettuce
+      connect-timeout: 5000ms
+      
+  # ===============================================================================
+  # Spring Session Test Configuration
+  # Session management testing for pseudo-conversational processing
+  # ===============================================================================
+  session:
+    store-type: redis
+    redis:
+      # Session configuration for testing
+      namespace: carddemo:test:sessions
+      flush-mode: immediate
+      cleanup-cron: "0 */5 * * * *"  # Clean up every 5 minutes during tests
+      
+      # Session timeout for test scenarios
+      timeout: 10m  # Shorter timeout for test efficiency
+      
+      # Session serialization
+      serializer: json
+      
+      # Redis configuration for session testing
+      configure-action: notify_keyspace_events
+      
+  # ===============================================================================
+  # Spring Security Test Configuration
+  # Mock authentication and authorization for comprehensive testing
+  # ===============================================================================
+  security:
+    # JWT token configuration for testing
+    jwt:
+      secret: testSecretKeyForJWTSigningAndValidationInTestEnvironment
+      expiration: 300000  # 5 minutes for test scenarios
+      refresh-expiration: 600000  # 10 minutes for refresh token testing
+      
+      # Test token validation settings
+      algorithm: HS256
+      issuer: carddemo-test
+      audience: carddemo-test-users
+      
+    # Test-specific security configuration
+    test:
+      # Mock user configuration for @WithMockUser
+      mock-users:
+        admin:
+          username: admin
+          password: admin123
+          roles:
+            - ADMIN
+            - USER
+          authorities:
+            - ROLE_ADMIN
+            - ROLE_USER
+            - VIEW_ACCOUNTS
+            - MANAGE_ACCOUNTS
+            - PROCESS_TRANSACTIONS
+            
+        user:
+          username: user
+          password: user123
+          roles:
+            - USER
+          authorities:
+            - ROLE_USER
+            - VIEW_ACCOUNTS
+            - PROCESS_TRANSACTIONS
+            
+        viewer:
+          username: viewer
+          password: viewer123
+          roles:
+            - VIEWER
+          authorities:
+            - ROLE_VIEWER
+            - VIEW_ACCOUNTS
+            
+      # Security test configuration
+      csrf:
+        enabled: false  # Disabled for API testing
+        
+      # Authentication testing configuration
+      authentication:
+        enabled: true
+        form-login: false
+        http-basic: false
+        jwt: true
+        
+    # Password encoding configuration for tests
+    password:
+      encoder:
+        strength: 4  # Reduced for test performance
+        
+  # ===============================================================================
+  # Test Data Configuration
+  # Comprehensive test data management and loading
+  # ===============================================================================
+  test:
+    # Test data configuration
+    data:
+      # Test data loading configuration
+      loading:
+        enabled: true
+        mode: sql  # Use SQL scripts for test data
+        
+        # Test data paths
+        paths:
+          - classpath:test-data/customers.sql
+          - classpath:test-data/accounts.sql
+          - classpath:test-data/cards.sql
+          - classpath:test-data/transactions.sql
+          
+        # Data loading order
+        order:
+          - users
+          - customers
+          - accounts
+          - cards
+          - transactions
+          
+      # Test data cleanup configuration
+      cleanup:
+        enabled: true
+        mode: automatic
+        tables:
+          - transactions
+          - cards
+          - accounts
+          - customers
+          - users
+          
+      # Test data validation
+      validation:
+        enabled: true
+        strict: true
+        
+    # Test execution configuration
+    execution:
+      # Parallel test execution configuration
+      parallel:
+        enabled: true
+        mode: concurrent
+        strategy: dynamic
+        max-pool-size: 4
+        core-pool-size: 2
+        keep-alive-time: 60
+        
+      # Test timeout configuration
+      timeout:
+        default: 30000  # 30 seconds
+        integration: 120000  # 2 minutes for integration tests
+        e2e: 300000  # 5 minutes for end-to-end tests
+        
+      # Test retry configuration
+      retry:
+        enabled: true
+        max-attempts: 3
+        backoff-delay: 1000
+        
+  # ===============================================================================
+  # Jackson Test Configuration
+  # JSON serialization/deserialization for test scenarios
+  # ===============================================================================
+  jackson:
+    # Test-specific Jackson configuration
+    date-format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
+    time-zone: UTC
+    
+    # Serialization configuration for tests
+    serialization:
+      write-dates-as-timestamps: false
+      write-numbers-as-strings: false
+      write-bigdecimal-as-plain: true  # Preserve financial precision
+      indent-output: true  # Pretty print for test debugging
+      
+    # Deserialization configuration for tests
+    deserialization:
+      use-big-decimal-for-floats: true
+      use-big-integer-for-ints: false
+      accept-single-value-as-array: true
+      fail-on-unknown-properties: false
+      
+    # Test-specific property handling
+    property-naming-strategy: SNAKE_CASE
+    default-property-inclusion: always  # Include all properties in tests
+    
+  # ===============================================================================
+  # Test Liquibase Configuration
+  # Database migration testing and validation
+  # ===============================================================================
+  liquibase:
+    # Test-specific Liquibase configuration
+    change-log: classpath:db/test-changelog.xml
+    contexts: test
+    default-schema: public
+    drop-first: true  # Clean slate for each test run
+    enabled: true
+    
+    # Test migration parameters
+    parameters:
+      app.name: ${spring.application.name}
+      app.version: ${spring.application.version}
+      test.environment: true
+      cobol.precision: 31
+      cobol.scale: 2
+      
+    # Test-specific rollback configuration
+    rollback-on-error: true
+    validate-on-migrate: true
+    
+# ===============================================================================
+# Test Server Configuration
+# Embedded server configuration for integration testing
+# ===============================================================================
+server:
+  port: 0  # Random port for parallel test execution
+  servlet:
+    context-path: /
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+      
+  # Test-specific server configuration
+  tomcat:
+    # Connection settings for test environment
+    accept-count: 10
+    max-connections: 100
+    max-threads: 20
+    min-spare-threads: 5
+    
+    # Performance settings for tests
+    connection-timeout: 10000
+    keep-alive-timeout: 5000
+    max-keep-alive-requests: 100
+    
+  # Test environment settings
+  compression:
+    enabled: false  # Disabled for test clarity
+    
+  # SSL configuration for test environment
+  ssl:
+    enabled: false
+    
+# ===============================================================================
+# Test Logging Configuration
+# Comprehensive test logging for debugging and monitoring
+# ===============================================================================
+logging:
+  level:
+    # Root logging level for tests
+    root: INFO
+    
+    # Application logging levels
+    com.carddemo: DEBUG
+    
+    # Spring Framework logging
+    org.springframework: INFO
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.data: DEBUG
+    org.springframework.test: DEBUG
+    org.springframework.batch: DEBUG
+    org.springframework.transaction: DEBUG
+    
+    # Database and JPA logging
+    org.hibernate: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.engine.jdbc.batch.internal.BatchingBatch: DEBUG
+    
+    # Connection pool logging
+    com.zaxxer.hikari: DEBUG
+    com.zaxxer.hikari.pool.HikariPool: DEBUG
+    
+    # Test framework logging
+    org.junit: INFO
+    org.testcontainers: INFO
+    org.testcontainers.containers: DEBUG
+    
+    # Security logging
+    org.springframework.security.web: DEBUG
+    org.springframework.security.config: DEBUG
+    
+    # JSON and serialization logging
+    com.fasterxml.jackson: INFO
+    
+    # Redis and session logging
+    org.springframework.session: DEBUG
+    org.springframework.data.redis: DEBUG
+    
+  # Test-specific logging configuration
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{testName:-}] %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{testName:-}] %logger{36} - %msg%n"
+    
+  # Test log file configuration
+  file:
+    name: target/test-logs/carddemo-test.log
+    path: target/test-logs
+    
+# ===============================================================================
+# Test Management and Monitoring Configuration
+# Spring Boot Actuator for test environment monitoring
+# ===============================================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,env,configprops,loggers,httptrace
+      base-path: /actuator
+      
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+      
+    info:
+      enabled: true
+      
+    metrics:
+      enabled: true
+      
+    env:
+      enabled: true
+      show-values: always
+      
+    loggers:
+      enabled: true
+      
+  # Test health indicators
+  health:
+    # Database health check
+    db:
+      enabled: true
+      
+    # Redis health check
+    redis:
+      enabled: true
+      
+    # Diskspace health check
+    diskspace:
+      enabled: true
+      threshold: 10MB
+      
+  # Test metrics configuration
+  metrics:
+    enabled: true
+    export:
+      simple:
+        enabled: true
+        
+  # Test application info
+  info:
+    app:
+      name: ${spring.application.name}
+      version: ${spring.application.version}
+      description: CardDemo Test Environment
+      
+# ===============================================================================
+# Custom Test Configuration Properties
+# CardDemo-specific test configuration
+# ===============================================================================
+carddemo:
+  test:
+    # Test environment configuration
+    environment:
+      name: test
+      type: automated
+      cleanup: true
+      
+    # Test data configuration
+    data:
+      # Sample data sizes for different test scenarios
+      customers: 100
+      accounts: 500
+      cards: 1000
+      transactions: 5000
+      
+      # Test data generation configuration
+      generation:
+        enabled: true
+        seed: 12345  # Fixed seed for reproducible tests
+        faker:
+          locale: en_US
+          
+    # Test execution configuration
+    execution:
+      # Performance test thresholds
+      performance:
+        response-time-threshold: 200  # milliseconds
+        throughput-threshold: 1000   # TPS
+        memory-threshold: 110        # percent of baseline
+        
+      # Test retry configuration
+      retry:
+        max-attempts: 3
+        enabled-for:
+          - integration
+          - e2e
+          
+    # Test security configuration
+    security:
+      # JWT test configuration
+      jwt:
+        test-tokens:
+          admin: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.TEST_ADMIN_TOKEN"
+          user: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.TEST_USER_TOKEN"
+          viewer: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.TEST_VIEWER_TOKEN"
+          
+      # Mock authentication configuration
+      mock:
+        enabled: true
+        default-user: user
+        default-roles:
+          - USER
+          
+    # Test validation configuration
+    validation:
+      # BigDecimal precision validation
+      financial:
+        precision: 31
+        scale: 2
+        rounding-mode: HALF_UP
+        
+      # Database validation
+      database:
+        foreign-keys: true
+        constraints: true
+        indexes: true
+        
+      # API validation
+      api:
+        contracts: true
+        schemas: true
+        responses: true
+        
+    # Test monitoring configuration
+    monitoring:
+      enabled: true
+      metrics:
+        - response-time
+        - throughput
+        - error-rate
+        - memory-usage
+        
+      alerts:
+        enabled: true
+        thresholds:
+          response-time: 500ms
+          error-rate: 5%
+          memory-usage: 80%
+          
+# ===============================================================================
+# Test Profile-Specific Configuration Overrides
+# Environment-specific test configurations
+# ===============================================================================
+
+---
+# Unit Test Profile Configuration
+spring:
+  profiles: unit-test
+  
+  # H2 database configuration for unit tests
+  datasource:
+    url: jdbc:h2:mem:unittest;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      
+  # Disable external integrations for unit tests
+  testcontainers:
+    postgresql:
+      enabled: false
+    redis:
+      enabled: false
+      
+  # Faster test execution
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+      
+logging:
+  level:
+    root: WARN
+    com.carddemo: DEBUG
+    org.springframework.test: INFO
+
+---
+# Integration Test Profile Configuration  
+spring:
+  profiles: integration-test
+  
+  # Enable Testcontainers for integration tests
+  testcontainers:
+    postgresql:
+      enabled: true
+    redis:
+      enabled: true
+      
+  # Integration test data configuration
+  test:
+    data:
+      loading:
+        enabled: true
+        mode: comprehensive
+        
+logging:
+  level:
+    root: INFO
+    com.carddemo: DEBUG
+    org.testcontainers: DEBUG
+    
+---
+# End-to-End Test Profile Configuration
+spring:
+  profiles: e2e-test
+  
+  # Full environment simulation
+  testcontainers:
+    postgresql:
+      enabled: true
+    redis:
+      enabled: true
+      
+  # E2E test configuration
+  test:
+    execution:
+      timeout:
+        default: 60000
+        e2e: 300000
+        
+    data:
+      customers: 1000
+      accounts: 5000
+      transactions: 50000
+      
+logging:
+  level:
+    root: INFO
+    com.carddemo: INFO
+    
+---
+# Performance Test Profile Configuration
+spring:
+  profiles: performance-test
+  
+  # Performance-optimized configuration
+  datasource:
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 10
+      
+  # Large dataset configuration
+  test:
+    data:
+      customers: 10000
+      accounts: 50000
+      transactions: 500000
+      
+    execution:
+      parallel:
+        max-pool-size: 8
+        core-pool-size: 4
+        
+logging:
+  level:
+    root: WARN
+    com.carddemo: INFO
+    
+---
+# Security Test Profile Configuration
+spring:
+  profiles: security-test
+  
+  # Security-focused test configuration
+  security:
+    test:
+      mock-users:
+        hacker:
+          username: hacker
+          password: invalid
+          roles: []
+          authorities: []
+          
+    jwt:
+      expiration: 5000  # Very short expiration for security tests
+      
+  # Security test data
+  test:
+    security:
+      invalid-tokens:
+        - "invalid.jwt.token"
+        - "expired.jwt.token"
+        - "malformed.jwt.token"
+        
+logging:
+  level:
+    root: INFO
+    com.carddemo: DEBUG
+    org.springframework.security: DEBUG
