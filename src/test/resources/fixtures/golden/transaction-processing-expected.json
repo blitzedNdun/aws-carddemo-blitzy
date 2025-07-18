@@ -1,0 +1,969 @@
+{
+  "metadata": {
+    "description": "Golden file containing expected transaction processing outputs for validating real-time transaction calculations, fees, and categorization logic against legacy COBOL transaction processing behavior",
+    "version": "1.0",
+    "created": "2024-01-01",
+    "purpose": "Validate microservice transaction pipeline accuracy against original mainframe processing with exact BigDecimal precision",
+    "requirements": [
+      "Transaction processing must produce exact amount and fee calculations with no deviations from legacy COBOL transaction logic",
+      "Real-time transaction calculation files must validate microservice transaction pipeline accuracy against original mainframe processing",
+      "Transaction validation must ensure proper handling of transaction types, categories, and associated financial calculations"
+    ]
+  },
+  "transaction_service_expected_outputs": {
+    "findTransactions": {
+      "description": "Expected outputs for transaction listing operations with pagination and filtering",
+      "test_scenarios": [
+        {
+          "scenario": "basic_transaction_listing",
+          "input": {
+            "pageNumber": 0,
+            "pageSize": 10,
+            "sortBy": "processingTimestamp",
+            "sortDirection": "DESC"
+          },
+          "expected_response": {
+            "success": true,
+            "transactions": [
+              {
+                "transactionId": "0000000000683580",
+                "transactionType": "PURCHASE",
+                "categoryCode": "REGULAR_SALES_DRAFT",
+                "amount": "50.47",
+                "description": "Purchase at Abshire-Lowe",
+                "cardNumber": "4859452612877065",
+                "merchantName": "Abshire-Lowe",
+                "merchantCity": "North Enoshaven",
+                "merchantZip": "72112",
+                "originalTimestamp": "2022-06-10T19:27:53.000Z",
+                "processingTimestamp": "2022-06-10T19:27:53.000Z",
+                "accountId": "00000000001"
+              },
+              {
+                "transactionId": "0000000001774260",
+                "transactionType": "RETURN",
+                "categoryCode": "REGULAR_SALES_DRAFT",
+                "amount": "-91.90",
+                "description": "Return item at Nitzsche, Nicolas and Lowe",
+                "cardNumber": "0927987108636232",
+                "merchantName": "Nitzsche, Nicolas and Lowe",
+                "merchantCity": "Fidelshire",
+                "merchantZip": "53378",
+                "originalTimestamp": "2022-06-10T19:27:53.000Z",
+                "processingTimestamp": "2022-06-10T19:27:53.000Z",
+                "accountId": "00000000003"
+              }
+            ],
+            "paginationMetadata": {
+              "currentPage": 1,
+              "totalPages": 15,
+              "totalRecords": 150,
+              "pageSize": 10,
+              "hasNextPage": true,
+              "hasPreviousPage": false,
+              "firstPage": true,
+              "lastPage": false
+            },
+            "timestamp": "2024-01-01T12:00:00.000Z",
+            "correlationId": "TX1704110400000_1"
+          }
+        },
+        {
+          "scenario": "filtered_transaction_search",
+          "input": {
+            "accountId": "00000000001",
+            "fromDate": "2022-06-01",
+            "toDate": "2022-06-30",
+            "transactionType": "PURCHASE",
+            "pageNumber": 0,
+            "pageSize": 5
+          },
+          "expected_response": {
+            "success": true,
+            "transactions": [
+              {
+                "transactionId": "0000000000683580",
+                "transactionType": "PURCHASE",
+                "categoryCode": "REGULAR_SALES_DRAFT",
+                "amount": "50.47",
+                "description": "Purchase at Abshire-Lowe",
+                "cardNumber": "4859452612877065",
+                "merchantName": "Abshire-Lowe",
+                "merchantCity": "North Enoshaven",
+                "merchantZip": "72112",
+                "originalTimestamp": "2022-06-10T19:27:53.000Z",
+                "processingTimestamp": "2022-06-10T19:27:53.000Z",
+                "accountId": "00000000001",
+                "feeAmount": "0.00",
+                "totalAmount": "50.47"
+              }
+            ],
+            "paginationMetadata": {
+              "currentPage": 1,
+              "totalPages": 1,
+              "totalRecords": 1,
+              "pageSize": 5,
+              "hasNextPage": false,
+              "hasPreviousPage": false,
+              "firstPage": true,
+              "lastPage": true
+            },
+            "timestamp": "2024-01-01T12:00:00.000Z",
+            "correlationId": "TX1704110400000_2"
+          }
+        }
+      ]
+    },
+    "searchTransactions": {
+      "description": "Expected outputs for advanced transaction search with complex filtering",
+      "test_scenarios": [
+        {
+          "scenario": "date_range_search",
+          "input": {
+            "fromDate": "2022-06-10",
+            "toDate": "2022-06-10",
+            "pageNumber": 0,
+            "pageSize": 3
+          },
+          "expected_response": {
+            "success": true,
+            "transactions": [
+              {
+                "transactionId": "0000000000683580",
+                "transactionType": "PURCHASE",
+                "categoryCode": "REGULAR_SALES_DRAFT",
+                "amount": "50.47",
+                "feeAmount": "0.00",
+                "totalAmount": "50.47",
+                "accountId": "00000000001"
+              },
+              {
+                "transactionId": "0000000001774260",
+                "transactionType": "RETURN",
+                "categoryCode": "REGULAR_SALES_DRAFT",
+                "amount": "-91.90",
+                "feeAmount": "0.00",
+                "totalAmount": "-91.90",
+                "accountId": "00000000003"
+              },
+              {
+                "transactionId": "0000000006292564",
+                "transactionType": "PURCHASE",
+                "categoryCode": "REGULAR_SALES_DRAFT",
+                "amount": "6.78",
+                "feeAmount": "0.00",
+                "totalAmount": "6.78",
+                "accountId": "00000000001"
+              }
+            ],
+            "paginationMetadata": {
+              "currentPage": 1,
+              "totalPages": 50,
+              "totalRecords": 150,
+              "pageSize": 3,
+              "hasNextPage": true,
+              "hasPreviousPage": false,
+              "firstPage": true,
+              "lastPage": false
+            }
+          }
+        }
+      ]
+    },
+    "getTransactionPage": {
+      "description": "Expected outputs for paginated transaction retrieval",
+      "test_scenarios": [
+        {
+          "scenario": "page_navigation",
+          "input": {
+            "pageNumber": 2,
+            "pageSize": 5,
+            "sortBy": "amount",
+            "sortDirection": "ASC"
+          },
+          "expected_response": {
+            "success": true,
+            "transactions": [
+              {
+                "transactionId": "0000000016259484",
+                "transactionType": "RETURN",
+                "categoryCode": "REGULAR_SALES_DRAFT",
+                "amount": "-5.67",
+                "feeAmount": "0.00",
+                "totalAmount": "-5.67"
+              },
+              {
+                "transactionId": "0000000006292564",
+                "transactionType": "PURCHASE",
+                "categoryCode": "REGULAR_SALES_DRAFT",
+                "amount": "6.78",
+                "feeAmount": "0.00",
+                "totalAmount": "6.78"
+              }
+            ],
+            "paginationMetadata": {
+              "currentPage": 3,
+              "totalPages": 30,
+              "totalRecords": 150,
+              "pageSize": 5,
+              "hasNextPage": true,
+              "hasPreviousPage": true,
+              "firstPage": false,
+              "lastPage": false
+            }
+          }
+        }
+      ]
+    }
+  },
+  "transaction_view_service_expected_outputs": {
+    "getTransactionDetails": {
+      "description": "Expected outputs for transaction detail viewing with security validation",
+      "test_scenarios": [
+        {
+          "scenario": "valid_transaction_lookup",
+          "input": {
+            "transactionId": "0000000000683580",
+            "userRole": "USER"
+          },
+          "expected_response": {
+            "success": true,
+            "transactionDetails": {
+              "transactionId": "0000000000683580",
+              "transactionType": "PURCHASE",
+              "categoryCode": "REGULAR_SALES_DRAFT",
+              "amount": "50.47",
+              "feeAmount": "0.00",
+              "totalAmount": "50.47",
+              "description": "Purchase at Abshire-Lowe",
+              "cardNumber": "4859452612877065",
+              "merchantId": "800000000",
+              "merchantName": "Abshire-Lowe",
+              "merchantCity": "North Enoshaven",
+              "merchantZip": "72112",
+              "originalTimestamp": "2022-06-10T19:27:53.000Z",
+              "processingTimestamp": "2022-06-10T19:27:53.000Z",
+              "accountId": "00000000001",
+              "authorizationCode": "G",
+              "transactionSource": "POS TERM",
+              "referenceNumber": "48594526128770652022-06-10 19:27:53.000000"
+            },
+            "auditInfo": {
+              "operationType": "TRANSACTION_VIEW",
+              "operationResult": "SUCCESS",
+              "userId": "testuser",
+              "timestamp": "2024-01-01T12:00:00.000Z"
+            },
+            "timestamp": "2024-01-01T12:00:00.000Z",
+            "correlationId": "TV1704110400000_1"
+          }
+        },
+        {
+          "scenario": "transaction_not_found",
+          "input": {
+            "transactionId": "9999999999999999",
+            "userRole": "USER"
+          },
+          "expected_response": {
+            "success": false,
+            "errorMessage": "Transaction ID NOT found...",
+            "auditInfo": {
+              "operationType": "TRANSACTION_VIEW",
+              "operationResult": "FAILURE",
+              "userId": "testuser",
+              "timestamp": "2024-01-01T12:00:00.000Z"
+            },
+            "timestamp": "2024-01-01T12:00:00.000Z",
+            "correlationId": "TV1704110400000_2"
+          }
+        },
+        {
+          "scenario": "invalid_transaction_id_format",
+          "input": {
+            "transactionId": "INVALID123",
+            "userRole": "USER"
+          },
+          "expected_response": {
+            "success": false,
+            "errorMessage": "Invalid transaction ID format",
+            "auditInfo": {
+              "operationType": "TRANSACTION_VIEW",
+              "operationResult": "FAILURE",
+              "userId": "testuser",
+              "timestamp": "2024-01-01T12:00:00.000Z"
+            },
+            "timestamp": "2024-01-01T12:00:00.000Z",
+            "correlationId": "TV1704110400000_3"
+          }
+        }
+      ]
+    },
+    "findTransactionById": {
+      "description": "Expected outputs for transaction lookup operations",
+      "test_scenarios": [
+        {
+          "scenario": "successful_lookup",
+          "input": {
+            "transactionId": "0000000000683580"
+          },
+          "expected_response": {
+            "present": true,
+            "transaction": {
+              "transactionId": "0000000000683580",
+              "transactionType": "01",
+              "categoryCode": "010001",
+              "amount": "50.47",
+              "description": "Purchase at Abshire-Lowe",
+              "cardNumber": "4859452612877065",
+              "merchantName": "Abshire-Lowe",
+              "originalTimestamp": "2022-06-10T19:27:53.000Z",
+              "processingTimestamp": "2022-06-10T19:27:53.000Z"
+            }
+          }
+        },
+        {
+          "scenario": "transaction_not_found",
+          "input": {
+            "transactionId": "9999999999999999"
+          },
+          "expected_response": {
+            "present": false,
+            "transaction": null
+          }
+        }
+      ]
+    },
+    "formatTransactionView": {
+      "description": "Expected outputs for transaction view formatting with security masking",
+      "test_scenarios": [
+        {
+          "scenario": "admin_user_full_view",
+          "input": {
+            "transactionId": "0000000000683580",
+            "userRole": "ADMIN"
+          },
+          "expected_response": {
+            "success": true,
+            "transactionView": {
+              "transactionId": "0000000000683580",
+              "transactionType": "PURCHASE",
+              "categoryCode": "REGULAR_SALES_DRAFT",
+              "amount": "50.47",
+              "cardNumber": "4859452612877065",
+              "merchantName": "Abshire-Lowe",
+              "merchantCity": "North Enoshaven",
+              "merchantZip": "72112",
+              "securityLevel": "FULL_ACCESS"
+            }
+          }
+        },
+        {
+          "scenario": "regular_user_masked_view",
+          "input": {
+            "transactionId": "0000000000683580",
+            "userRole": "USER"
+          },
+          "expected_response": {
+            "success": true,
+            "transactionView": {
+              "transactionId": "0000000000683580",
+              "transactionType": "PURCHASE",
+              "categoryCode": "REGULAR_SALES_DRAFT",
+              "amount": "50.47",
+              "cardNumber": "****-****-****-7065",
+              "merchantName": "Abshire-Lowe",
+              "merchantCity": "North Enoshaven",
+              "merchantZip": "72112",
+              "securityLevel": "MASKED_VIEW"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "add_transaction_service_expected_outputs": {
+    "addTransaction": {
+      "description": "Expected outputs for transaction addition with comprehensive validation",
+      "test_scenarios": [
+        {
+          "scenario": "successful_transaction_addition",
+          "input": {
+            "accountId": "00000000001",
+            "cardNumber": "4859452612877065",
+            "transactionType": "01",
+            "categoryCode": "010001",
+            "amount": "125.50",
+            "description": "Test Purchase Transaction",
+            "merchantName": "Test Merchant",
+            "merchantCity": "Test City",
+            "merchantZip": "12345",
+            "confirmed": true
+          },
+          "expected_response": {
+            "success": true,
+            "message": "Transaction added successfully",
+            "transactionId": "0000000999999999",
+            "confirmationDetails": {
+              "transactionAmount": "125.50",
+              "feeAmount": "0.00",
+              "totalAmount": "125.50",
+              "balanceBeforeTransaction": "1000.00",
+              "balanceAfterTransaction": "1125.50",
+              "availableCreditBefore": "2000.00",
+              "availableCreditAfter": "1874.50"
+            },
+            "auditTrail": {
+              "operationType": "TRANSACTION_ADD",
+              "operationResult": "SUCCESS",
+              "userId": "testuser",
+              "timestamp": "2024-01-01T12:00:00.000Z"
+            },
+            "httpStatus": 200,
+            "confirmationTimestamp": "2024-01-01T12:00:00.000Z",
+            "correlationId": "AT1704110400000_1"
+          }
+        },
+        {
+          "scenario": "transaction_validation_failure",
+          "input": {
+            "accountId": "00000000001",
+            "cardNumber": "4859452612877065",
+            "transactionType": "01",
+            "categoryCode": "010001",
+            "amount": "-50.00",
+            "description": "Invalid Amount Transaction",
+            "merchantName": "Test Merchant",
+            "merchantCity": "Test City",
+            "merchantZip": "12345",
+            "confirmed": true
+          },
+          "expected_response": {
+            "success": false,
+            "message": "Transaction validation failed",
+            "validationErrors": [
+              "Transaction amount must be positive for purchase transactions",
+              "Amount format validation failed"
+            ],
+            "httpStatus": 400,
+            "confirmationTimestamp": "2024-01-01T12:00:00.000Z",
+            "correlationId": "AT1704110400000_2"
+          }
+        },
+        {
+          "scenario": "confirmation_required",
+          "input": {
+            "accountId": "00000000001",
+            "cardNumber": "4859452612877065",
+            "transactionType": "01",
+            "categoryCode": "010001",
+            "amount": "75.25",
+            "description": "Test Purchase Transaction",
+            "merchantName": "Test Merchant",
+            "merchantCity": "Test City",
+            "merchantZip": "12345",
+            "confirmed": false
+          },
+          "expected_response": {
+            "success": false,
+            "message": "Confirm to add this transaction...",
+            "httpStatus": 400,
+            "confirmationTimestamp": "2024-01-01T12:00:00.000Z",
+            "correlationId": "AT1704110400000_3"
+          }
+        }
+      ]
+    },
+    "validateTransaction": {
+      "description": "Expected outputs for transaction validation pipeline",
+      "test_scenarios": [
+        {
+          "scenario": "valid_transaction_data",
+          "input": {
+            "accountId": "00000000001",
+            "cardNumber": "4859452612877065",
+            "transactionType": "01",
+            "categoryCode": "010001",
+            "amount": "100.00",
+            "description": "Valid Transaction",
+            "merchantName": "Valid Merchant",
+            "merchantCity": "Valid City",
+            "merchantZip": "12345"
+          },
+          "expected_response": {
+            "validationErrors": [],
+            "isValid": true,
+            "validationResults": {
+              "accountIdValid": true,
+              "cardNumberValid": true,
+              "transactionTypeValid": true,
+              "categoryCodeValid": true,
+              "amountValid": true,
+              "descriptionValid": true,
+              "merchantDataValid": true,
+              "crossReferenceValid": true
+            }
+          }
+        },
+        {
+          "scenario": "multiple_validation_errors",
+          "input": {
+            "accountId": "INVALID",
+            "cardNumber": "1234",
+            "transactionType": "99",
+            "categoryCode": "999999",
+            "amount": "INVALID",
+            "description": "",
+            "merchantName": "",
+            "merchantCity": "",
+            "merchantZip": "INVALID"
+          },
+          "expected_response": {
+            "validationErrors": [
+              "Account ID must be exactly 11 digits",
+              "Card number must be exactly 16 digits",
+              "Invalid transaction type code",
+              "Invalid category code",
+              "Amount must be a valid decimal number",
+              "Description cannot be empty",
+              "Merchant name cannot be empty",
+              "Merchant city cannot be empty",
+              "ZIP code must be 5 digits"
+            ],
+            "isValid": false,
+            "validationResults": {
+              "accountIdValid": false,
+              "cardNumberValid": false,
+              "transactionTypeValid": false,
+              "categoryCodeValid": false,
+              "amountValid": false,
+              "descriptionValid": false,
+              "merchantDataValid": false,
+              "crossReferenceValid": false
+            }
+          }
+        }
+      ]
+    },
+    "processTransaction": {
+      "description": "Expected outputs for transaction processing with balance updates",
+      "test_scenarios": [
+        {
+          "scenario": "successful_purchase_processing",
+          "input": {
+            "accountId": "00000000001",
+            "cardNumber": "4859452612877065",
+            "transactionType": "01",
+            "categoryCode": "010001",
+            "amount": "150.75",
+            "description": "Purchase Transaction",
+            "merchantName": "Test Merchant",
+            "merchantCity": "Test City",
+            "merchantZip": "12345"
+          },
+          "expected_response": {
+            "success": true,
+            "message": "Transaction processed successfully",
+            "transactionId": "0000000999999998",
+            "processingDetails": {
+              "transactionAmount": "150.75",
+              "feeAmount": "0.00",
+              "totalAmount": "150.75",
+              "balanceCalculations": {
+                "previousBalance": "1000.00",
+                "newBalance": "1150.75",
+                "availableCreditBefore": "2000.00",
+                "availableCreditAfter": "1849.25"
+              },
+              "processingTimestamp": "2024-01-01T12:00:00.000Z",
+              "authorizationCode": "A",
+              "referenceNumber": "REF1704110400000001"
+            },
+            "auditTrail": {
+              "operationType": "TRANSACTION_PROCESS",
+              "operationResult": "SUCCESS",
+              "balanceUpdateApplied": true,
+              "userId": "testuser",
+              "timestamp": "2024-01-01T12:00:00.000Z"
+            },
+            "httpStatus": 200,
+            "confirmationTimestamp": "2024-01-01T12:00:00.000Z"
+          }
+        },
+        {
+          "scenario": "credit_limit_exceeded",
+          "input": {
+            "accountId": "00000000001",
+            "cardNumber": "4859452612877065",
+            "transactionType": "01",
+            "categoryCode": "010001",
+            "amount": "5000.00",
+            "description": "Large Purchase Transaction",
+            "merchantName": "Test Merchant",
+            "merchantCity": "Test City",
+            "merchantZip": "12345"
+          },
+          "expected_response": {
+            "success": false,
+            "message": "Transaction declined - Credit limit exceeded",
+            "errorCode": "CREDIT_LIMIT_EXCEEDED",
+            "processingDetails": {
+              "transactionAmount": "5000.00",
+              "feeAmount": "0.00",
+              "totalAmount": "5000.00",
+              "balanceCalculations": {
+                "previousBalance": "1000.00",
+                "projectedBalance": "6000.00",
+                "availableCredit": "2000.00",
+                "creditLimitExceeded": true,
+                "exceedsBy": "3000.00"
+              },
+              "processingTimestamp": "2024-01-01T12:00:00.000Z",
+              "authorizationCode": "D",
+              "declineReason": "INSUFFICIENT_CREDIT"
+            },
+            "httpStatus": 400,
+            "confirmationTimestamp": "2024-01-01T12:00:00.000Z"
+          }
+        }
+      ]
+    }
+  },
+  "financial_calculation_validation": {
+    "description": "Expected outputs for financial calculations with BigDecimal precision validation",
+    "test_scenarios": [
+      {
+        "scenario": "interest_calculation_precision",
+        "input": {
+          "principalAmount": "1000.00",
+          "annualInterestRate": "18.99",
+          "daysInPeriod": 30
+        },
+        "expected_response": {
+          "dailyInterestRate": "0.00052027397260273972602739726027397",
+          "interestAmount": "15.608219178082191780821917808219178",
+          "roundedInterestAmount": "15.61",
+          "precision": 31,
+          "scale": 2,
+          "mathContext": "DECIMAL128",
+          "calculationMethod": "COBOL_COMP3_EQUIVALENT"
+        }
+      },
+      {
+        "scenario": "balance_update_precision",
+        "input": {
+          "currentBalance": "1234.56",
+          "transactionAmount": "78.90",
+          "transactionType": "PURCHASE"
+        },
+        "expected_response": {
+          "newBalance": "1313.46",
+          "precision": 6,
+          "scale": 2,
+          "calculationSteps": [
+            {
+              "step": "add_transaction_amount",
+              "operation": "1234.56 + 78.90",
+              "result": "1313.46"
+            }
+          ],
+          "mathContext": "DECIMAL128",
+          "roundingMode": "HALF_UP"
+        }
+      },
+      {
+        "scenario": "fee_calculation_precision",
+        "input": {
+          "transactionAmount": "100.00",
+          "feeRate": "2.5",
+          "feeType": "PERCENTAGE"
+        },
+        "expected_response": {
+          "feeAmount": "2.50",
+          "totalAmount": "102.50",
+          "precision": 4,
+          "scale": 2,
+          "calculationSteps": [
+            {
+              "step": "calculate_fee",
+              "operation": "100.00 * 0.025",
+              "result": "2.50"
+            },
+            {
+              "step": "add_fee_to_amount",
+              "operation": "100.00 + 2.50",
+              "result": "102.50"
+            }
+          ],
+          "mathContext": "DECIMAL128"
+        }
+      }
+    ]
+  },
+  "transaction_type_validation": {
+    "description": "Expected outputs for transaction type and category validation",
+    "transaction_types": [
+      {
+        "code": "01",
+        "name": "Purchase",
+        "description": "Regular purchase transaction"
+      },
+      {
+        "code": "02",
+        "name": "Payment",
+        "description": "Payment transaction"
+      },
+      {
+        "code": "03",
+        "name": "Credit",
+        "description": "Credit transaction"
+      },
+      {
+        "code": "04",
+        "name": "Authorization",
+        "description": "Authorization transaction"
+      },
+      {
+        "code": "05",
+        "name": "Refund",
+        "description": "Refund transaction"
+      },
+      {
+        "code": "06",
+        "name": "Reversal",
+        "description": "Reversal transaction"
+      },
+      {
+        "code": "07",
+        "name": "Adjustment",
+        "description": "Adjustment transaction"
+      }
+    ],
+    "transaction_categories": [
+      {
+        "code": "010001",
+        "name": "Regular Sales Draft",
+        "description": "Regular sales transaction"
+      },
+      {
+        "code": "010002",
+        "name": "Regular Cash Advance",
+        "description": "Cash advance transaction"
+      },
+      {
+        "code": "010003",
+        "name": "Convenience Check Debit",
+        "description": "Convenience check transaction"
+      },
+      {
+        "code": "010004",
+        "name": "ATM Cash Advance",
+        "description": "ATM cash advance transaction"
+      },
+      {
+        "code": "010005",
+        "name": "Interest Amount",
+        "description": "Interest charge transaction"
+      },
+      {
+        "code": "020001",
+        "name": "Cash payment",
+        "description": "Cash payment transaction"
+      },
+      {
+        "code": "020002",
+        "name": "Electronic payment",
+        "description": "Electronic payment transaction"
+      },
+      {
+        "code": "020003",
+        "name": "Check payment",
+        "description": "Check payment transaction"
+      },
+      {
+        "code": "030001",
+        "name": "Credit to Account",
+        "description": "Credit to account transaction"
+      },
+      {
+        "code": "030002",
+        "name": "Credit to Purchase balance",
+        "description": "Credit to purchase balance"
+      },
+      {
+        "code": "030003",
+        "name": "Credit to Cash balance",
+        "description": "Credit to cash balance"
+      },
+      {
+        "code": "040001",
+        "name": "Zero dollar authorization",
+        "description": "Zero dollar authorization"
+      },
+      {
+        "code": "040002",
+        "name": "Online purchase authorization",
+        "description": "Online purchase authorization"
+      },
+      {
+        "code": "040003",
+        "name": "Travel booking authorization",
+        "description": "Travel booking authorization"
+      },
+      {
+        "code": "050001",
+        "name": "Refund credit",
+        "description": "Refund credit transaction"
+      },
+      {
+        "code": "060001",
+        "name": "Fraud reversal",
+        "description": "Fraud reversal transaction"
+      },
+      {
+        "code": "060002",
+        "name": "Non-fraud reversal",
+        "description": "Non-fraud reversal transaction"
+      },
+      {
+        "code": "070001",
+        "name": "Sales draft credit adjustment",
+        "description": "Sales draft credit adjustment"
+      }
+    ]
+  },
+  "performance_validation": {
+    "description": "Expected performance metrics for transaction processing operations",
+    "metrics": [
+      {
+        "operation": "findTransactions",
+        "expectedResponseTime": "200ms",
+        "maxResponseTime": "500ms",
+        "throughput": "10000 TPS",
+        "memoryUsage": "<=110% baseline"
+      },
+      {
+        "operation": "getTransactionDetails",
+        "expectedResponseTime": "150ms",
+        "maxResponseTime": "300ms",
+        "throughput": "15000 TPS",
+        "memoryUsage": "<=110% baseline"
+      },
+      {
+        "operation": "addTransaction",
+        "expectedResponseTime": "300ms",
+        "maxResponseTime": "500ms",
+        "throughput": "8000 TPS",
+        "memoryUsage": "<=110% baseline"
+      }
+    ]
+  },
+  "error_handling_validation": {
+    "description": "Expected error handling scenarios and responses",
+    "error_scenarios": [
+      {
+        "scenario": "invalid_transaction_id",
+        "input": {
+          "transactionId": "INVALID"
+        },
+        "expected_response": {
+          "success": false,
+          "errorCode": "INVALID_TRANSACTION_ID",
+          "errorMessage": "Invalid transaction ID format",
+          "httpStatus": 400
+        }
+      },
+      {
+        "scenario": "transaction_not_found",
+        "input": {
+          "transactionId": "9999999999999999"
+        },
+        "expected_response": {
+          "success": false,
+          "errorCode": "TRANSACTION_NOT_FOUND",
+          "errorMessage": "Transaction ID NOT found...",
+          "httpStatus": 404
+        }
+      },
+      {
+        "scenario": "insufficient_funds",
+        "input": {
+          "accountId": "00000000001",
+          "transactionAmount": "10000.00",
+          "availableCredit": "2000.00"
+        },
+        "expected_response": {
+          "success": false,
+          "errorCode": "INSUFFICIENT_FUNDS",
+          "errorMessage": "Transaction declined - Credit limit exceeded",
+          "httpStatus": 400
+        }
+      },
+      {
+        "scenario": "validation_error",
+        "input": {
+          "accountId": "",
+          "transactionAmount": "invalid"
+        },
+        "expected_response": {
+          "success": false,
+          "errorCode": "VALIDATION_ERROR",
+          "errorMessage": "Transaction validation failed",
+          "validationErrors": [
+            "Account ID cannot be null or empty",
+            "Transaction amount must be a valid decimal number"
+          ],
+          "httpStatus": 400
+        }
+      }
+    ]
+  },
+  "audit_trail_validation": {
+    "description": "Expected audit trail information for transaction operations",
+    "audit_scenarios": [
+      {
+        "scenario": "successful_transaction_add",
+        "expected_audit_entry": {
+          "operationType": "TRANSACTION_ADD",
+          "operationResult": "SUCCESS",
+          "userId": "testuser",
+          "transactionId": "0000000999999999",
+          "accountId": "00000000001",
+          "amount": "100.00",
+          "timestamp": "2024-01-01T12:00:00.000Z",
+          "correlationId": "AT1704110400000_1",
+          "sessionId": "SESSION123",
+          "ipAddress": "192.168.1.100",
+          "userAgent": "Mozilla/5.0 (CardDemo Client)"
+        }
+      },
+      {
+        "scenario": "failed_transaction_validation",
+        "expected_audit_entry": {
+          "operationType": "TRANSACTION_ADD",
+          "operationResult": "VALIDATION_FAILURE",
+          "userId": "testuser",
+          "failureReason": "Invalid amount format",
+          "timestamp": "2024-01-01T12:00:00.000Z",
+          "correlationId": "AT1704110400000_2",
+          "sessionId": "SESSION123",
+          "ipAddress": "192.168.1.100",
+          "userAgent": "Mozilla/5.0 (CardDemo Client)"
+        }
+      },
+      {
+        "scenario": "transaction_view_access",
+        "expected_audit_entry": {
+          "operationType": "TRANSACTION_VIEW",
+          "operationResult": "SUCCESS",
+          "userId": "testuser",
+          "transactionId": "0000000000683580",
+          "timestamp": "2024-01-01T12:00:00.000Z",
+          "correlationId": "TV1704110400000_1",
+          "sessionId": "SESSION123",
+          "ipAddress": "192.168.1.100",
+          "userAgent": "Mozilla/5.0 (CardDemo Client)"
+        }
+      }
+    ]
+  }
+}
