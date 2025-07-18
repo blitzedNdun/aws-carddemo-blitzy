@@ -1,0 +1,669 @@
+# ===============================================================================
+# CardDemo Docker Compose Orchestration for Local Development Environment
+# COBOL-to-Java Microservices Architecture Development Stack
+# ===============================================================================
+#
+# This Docker Compose file provides comprehensive local development environment
+# orchestration for the CardDemo COBOL-to-Java transformation project. It enables
+# complete local testing of the Spring Boot microservices architecture without
+# requiring Kubernetes deployment, supporting the full technology stack conversion
+# from IBM COBOL/CICS/VSAM to Java 21/Spring Boot/PostgreSQL/Redis.
+#
+# Key Features:
+# - PostgreSQL 15 database replacing VSAM KSDS datasets
+# - Redis 7 cluster for distributed session management
+# - Spring Boot microservices with optimized JVM configuration
+# - Spring Cloud Gateway for API routing and load balancing
+# - Spring Cloud Config Server for centralized configuration
+# - Development-optimized performance and debugging capabilities
+# - Complete network isolation and service discovery
+# - Volume persistence for database and application data
+# - Health checks and monitoring integration
+# - Hot-reload development capabilities
+#
+# Performance Targets:
+# - Sub-200ms response times at 95th percentile for REST APIs
+# - 10,000+ TPS throughput capacity through horizontal scaling
+# - Memory usage within 110% of CICS baseline allocation
+# - 4-hour batch processing window support
+# ===============================================================================
+
+version: '3.8'
+
+# ===============================================================================
+# DOCKER NETWORKS
+# Service isolation and communication infrastructure
+# ===============================================================================
+networks:
+  carddemo-network:
+    driver: bridge
+    name: carddemo-network
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+    labels:
+      - "com.carddemo.network.purpose=microservices-communication"
+      - "com.carddemo.network.environment=development"
+      - "com.carddemo.network.scope=local-development"
+
+# ===============================================================================
+# DOCKER VOLUMES
+# Persistent storage for database, cache, and application data
+# ===============================================================================
+volumes:
+  # PostgreSQL Database Storage
+  carddemo-postgres-data:
+    driver: local
+    name: carddemo-postgres-data
+    labels:
+      - "com.carddemo.volume.type=database"
+      - "com.carddemo.volume.service=postgresql"
+      - "com.carddemo.volume.purpose=primary-data-storage"
+      - "com.carddemo.volume.backup=required"
+
+  # Redis Persistent Storage
+  carddemo-redis-data:
+    driver: local
+    name: carddemo-redis-data
+    labels:
+      - "com.carddemo.volume.type=cache"
+      - "com.carddemo.volume.service=redis"
+      - "com.carddemo.volume.purpose=session-storage"
+      - "com.carddemo.volume.backup=optional"
+
+  # Spring Boot Application Logs
+  carddemo-app-logs:
+    driver: local
+    name: carddemo-app-logs
+    labels:
+      - "com.carddemo.volume.type=logs"
+      - "com.carddemo.volume.service=spring-boot"
+      - "com.carddemo.volume.purpose=application-logging"
+      - "com.carddemo.volume.backup=optional"
+
+  # Spring Cloud Config Repository
+  carddemo-config-repo:
+    driver: local
+    name: carddemo-config-repo
+    labels:
+      - "com.carddemo.volume.type=configuration"
+      - "com.carddemo.volume.service=config-server"
+      - "com.carddemo.volume.purpose=centralized-configuration"
+      - "com.carddemo.volume.backup=required"
+
+# ===============================================================================
+# SERVICES CONFIGURATION
+# Spring Boot microservices and supporting infrastructure
+# ===============================================================================
+services:
+
+  # =============================================================================
+  # POSTGRESQL DATABASE SERVICE
+  # Primary relational database replacing VSAM KSDS datasets
+  # =============================================================================
+  postgresql:
+    image: postgres:15-alpine
+    container_name: carddemo-postgresql
+    restart: unless-stopped
+    
+    # Network Configuration
+    networks:
+      carddemo-network:
+        ipv4_address: 172.20.0.10
+    
+    # Port Mapping
+    ports:
+      - "5432:5432"
+    
+    # Environment Configuration
+    environment:
+      # Database Configuration
+      POSTGRES_DB: carddemo_dev
+      POSTGRES_USER: carddemo_dev
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C"
+      
+      # Performance Configuration
+      POSTGRES_SHARED_BUFFERS: 256MB
+      POSTGRES_EFFECTIVE_CACHE_SIZE: 1GB
+      POSTGRES_MAINTENANCE_WORK_MEM: 64MB
+      POSTGRES_CHECKPOINT_COMPLETION_TARGET: 0.9
+      POSTGRES_WAL_BUFFERS: 16MB
+      POSTGRES_DEFAULT_STATISTICS_TARGET: 100
+      
+      # Connection Configuration
+      POSTGRES_MAX_CONNECTIONS: 100
+      POSTGRES_MAX_WORKER_PROCESSES: 8
+      POSTGRES_MAX_PARALLEL_WORKERS: 8
+      POSTGRES_MAX_PARALLEL_WORKERS_PER_GATHER: 4
+      
+      # Logging Configuration
+      POSTGRES_LOG_STATEMENT: all
+      POSTGRES_LOG_MIN_DURATION_STATEMENT: 1000
+      POSTGRES_LOG_LINE_PREFIX: '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+      
+      # Development Configuration
+      POSTGRES_LOG_DESTINATION: stderr
+      POSTGRES_LOGGING_COLLECTOR: off
+      
+    # Volume Mounts
+    volumes:
+      - carddemo-postgres-data:/var/lib/postgresql/data
+      - ./src/main/resources/db/migration:/docker-entrypoint-initdb.d:ro
+      - ./logs/postgresql:/var/log/postgresql
+    
+    # Health Check Configuration
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U carddemo_dev -d carddemo_dev"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    
+    # Resource Configuration
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+    
+    # Container Labels
+    labels:
+      - "com.carddemo.service.name=postgresql"
+      - "com.carddemo.service.type=database"
+      - "com.carddemo.service.purpose=primary-data-storage"
+      - "com.carddemo.service.tier=data"
+      - "com.carddemo.service.environment=development"
+      - "com.carddemo.service.version=15"
+      - "com.carddemo.service.backup=required"
+      - "com.carddemo.service.monitoring=enabled"
+
+  # =============================================================================
+  # REDIS CACHE SERVICE
+  # Distributed session management and application caching
+  # =============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: carddemo-redis
+    restart: unless-stopped
+    
+    # Network Configuration
+    networks:
+      carddemo-network:
+        ipv4_address: 172.20.0.11
+    
+    # Port Mapping
+    ports:
+      - "6379:6379"
+    
+    # Command Configuration
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --auto-aof-rewrite-percentage 100
+      --auto-aof-rewrite-min-size 64mb
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --timeout 300
+      --tcp-keepalive 60
+      --databases 16
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --loglevel notice
+      --logfile /var/log/redis/redis-server.log
+    
+    # Volume Mounts
+    volumes:
+      - carddemo-redis-data:/data
+      - ./logs/redis:/var/log/redis
+    
+    # Health Check Configuration
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    
+    # Resource Configuration
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    
+    # Container Labels
+    labels:
+      - "com.carddemo.service.name=redis"
+      - "com.carddemo.service.type=cache"
+      - "com.carddemo.service.purpose=session-management"
+      - "com.carddemo.service.tier=cache"
+      - "com.carddemo.service.environment=development"
+      - "com.carddemo.service.version=7"
+      - "com.carddemo.service.backup=optional"
+      - "com.carddemo.service.monitoring=enabled"
+
+  # =============================================================================
+  # SPRING CLOUD CONFIG SERVER
+  # Centralized configuration management for microservices
+  # =============================================================================
+  config-server:
+    image: eclipse-temurin:21-jre-alpine
+    container_name: carddemo-config-server
+    restart: unless-stopped
+    
+    # Network Configuration
+    networks:
+      carddemo-network:
+        ipv4_address: 172.20.0.12
+    
+    # Port Mapping
+    ports:
+      - "8888:8888"
+    
+    # Environment Configuration
+    environment:
+      # Spring Boot Configuration
+      SPRING_APPLICATION_NAME: config-server
+      SPRING_PROFILES_ACTIVE: dev,native
+      SERVER_PORT: 8888
+      
+      # Config Server Configuration
+      SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS: file:///config
+      SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL: main
+      SPRING_CLOUD_CONFIG_SERVER_NATIVE_ADD_LABEL_LOCATIONS: false
+      
+      # JVM Configuration
+      JAVA_OPTS: >
+        -server
+        -Xms256m
+        -Xmx512m
+        -XX:+UseG1GC
+        -XX:MaxGCPauseMillis=200
+        -XX:+UseCompressedOops
+        -XX:+UseCompressedClassPointers
+        -XX:+HeapDumpOnOutOfMemoryError
+        -XX:HeapDumpPath=/tmp/heapdump.hprof
+        -Djava.security.egd=file:/dev/./urandom
+        -Dspring.profiles.active=dev
+        -Dlogging.level.org.springframework.cloud.config=DEBUG
+    
+    # Volume Mounts
+    volumes:
+      - carddemo-config-repo:/config
+      - ./src/main/resources:/config
+      - carddemo-app-logs:/logs
+    
+    # Health Check Configuration
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8888/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+    
+    # Startup Command
+    command: >
+      sh -c "
+        echo 'Starting Spring Cloud Config Server...' &&
+        java $$JAVA_OPTS -jar /tmp/spring-cloud-config-server.jar
+      "
+    
+    # Resource Configuration
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 768M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    
+    # Container Labels
+    labels:
+      - "com.carddemo.service.name=config-server"
+      - "com.carddemo.service.type=infrastructure"
+      - "com.carddemo.service.purpose=configuration-management"
+      - "com.carddemo.service.tier=infrastructure"
+      - "com.carddemo.service.environment=development"
+      - "com.carddemo.service.version=spring-cloud-2023.0.0"
+      - "com.carddemo.service.backup=required"
+      - "com.carddemo.service.monitoring=enabled"
+
+  # =============================================================================
+  # CARDDEMO SPRING BOOT APPLICATION
+  # Main microservices application with Spring Cloud Gateway
+  # =============================================================================
+  carddemo-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+      args:
+        - JAR_FILE=target/*.jar
+        - SPRING_PROFILES_ACTIVE=dev
+    
+    image: carddemo/spring-boot-service:dev
+    container_name: carddemo-application
+    restart: unless-stopped
+    
+    # Network Configuration
+    networks:
+      carddemo-network:
+        ipv4_address: 172.20.0.20
+    
+    # Port Mapping
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+      - "35729:35729"  # LiveReload port for development
+    
+    # Environment Configuration
+    environment:
+      # Spring Boot Configuration
+      SPRING_APPLICATION_NAME: carddemo
+      SPRING_PROFILES_ACTIVE: dev
+      SERVER_PORT: 8080
+      
+      # Database Configuration
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/carddemo_dev
+      SPRING_DATASOURCE_USERNAME: carddemo_dev
+      SPRING_DATASOURCE_PASSWORD: dev_password
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      
+      # Redis Configuration
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_TIMEOUT: 5000ms
+      SPRING_DATA_REDIS_DATABASE: 0
+      
+      # Session Configuration
+      SPRING_SESSION_STORE_TYPE: redis
+      SPRING_SESSION_REDIS_NAMESPACE: carddemo:dev:sessions
+      SPRING_SESSION_REDIS_FLUSH_MODE: immediate
+      SPRING_SESSION_TIMEOUT: 60m
+      
+      # Config Server Configuration
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      SPRING_CLOUD_CONFIG_PROFILE: dev
+      SPRING_CLOUD_CONFIG_LABEL: main
+      SPRING_CLOUD_CONFIG_ENABLED: false  # Disabled for local development
+      
+      # Security Configuration
+      SPRING_SECURITY_JWT_SECRET: devSecretKeyForJWTSigningAndValidationInDevelopmentOnly
+      SPRING_SECURITY_JWT_EXPIRATION: 3600000  # 1 hour
+      SPRING_SECURITY_PASSWORD_ENCODER_STRENGTH: 8
+      
+      # JPA Configuration
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SPRING_JPA_SHOW_SQL: true
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: true
+      SPRING_JPA_PROPERTIES_HIBERNATE_CONNECTION_ISOLATION: READ_COMMITTED
+      SPRING_JPA_OPEN_IN_VIEW: true
+      
+      # Liquibase Configuration
+      SPRING_LIQUIBASE_CHANGE_LOG: classpath:db/liquibase-changelog.xml
+      SPRING_LIQUIBASE_CONTEXTS: dev
+      SPRING_LIQUIBASE_ENABLED: true
+      
+      # Logging Configuration
+      LOGGING_LEVEL_COM_CARDDEMO: DEBUG
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: DEBUG
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB: DEBUG
+      LOGGING_LEVEL_ORG_HIBERNATE_SQL: DEBUG
+      LOGGING_LEVEL_ORG_HIBERNATE_TYPE_DESCRIPTOR_SQL_BASICBINDER: TRACE
+      LOGGING_LEVEL_ROOT: INFO
+      LOGGING_FILE_NAME: /logs/carddemo-dev.log
+      
+      # Actuator Configuration
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+      MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: always
+      MANAGEMENT_ENDPOINT_HEALTH_SHOW_COMPONENTS: always
+      MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: true
+      MANAGEMENT_HEALTH_LIVENESSSTATE_ENABLED: true
+      MANAGEMENT_HEALTH_READINESSSTATE_ENABLED: true
+      
+      # Development Configuration
+      SPRING_DEVTOOLS_RESTART_ENABLED: true
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: true
+      SPRING_DEVTOOLS_LIVERELOAD_PORT: 35729
+      
+      # JVM Configuration
+      JAVA_OPTS: >
+        -server
+        -Xms512m
+        -Xmx1024m
+        -XX:+UseG1GC
+        -XX:MaxGCPauseMillis=200
+        -XX:+UseCompressedOops
+        -XX:+UseCompressedClassPointers
+        -XX:+HeapDumpOnOutOfMemoryError
+        -XX:HeapDumpPath=/tmp/heapdump.hprof
+        -XX:+ExitOnOutOfMemoryError
+        -Djava.security.egd=file:/dev/./urandom
+        -Djava.awt.headless=true
+        -Dfile.encoding=UTF-8
+        -Duser.timezone=UTC
+        -Dspring.profiles.active=dev
+      
+      # Performance Configuration
+      JAVA_MEMORY_OPTS: >
+        -Xms512m
+        -Xmx1024m
+        -XX:MetaspaceSize=128m
+        -XX:MaxMetaspaceSize=256m
+    
+    # Volume Mounts
+    volumes:
+      - carddemo-app-logs:/logs
+      - ./src/main/resources:/app/resources:ro
+      - ./target:/app/target:ro
+      - /tmp:/tmp
+    
+    # Service Dependencies
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    
+    # Health Check Configuration
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health/liveness"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    
+    # Resource Configuration
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+    
+    # Container Labels
+    labels:
+      - "com.carddemo.service.name=carddemo-application"
+      - "com.carddemo.service.type=application"
+      - "com.carddemo.service.purpose=business-logic"
+      - "com.carddemo.service.tier=application"
+      - "com.carddemo.service.environment=development"
+      - "com.carddemo.service.version=1.0.0"
+      - "com.carddemo.service.backup=optional"
+      - "com.carddemo.service.monitoring=enabled"
+      - "com.carddemo.service.framework=spring-boot"
+      - "com.carddemo.service.java-version=21"
+
+  # =============================================================================
+  # DEVELOPMENT TOOLS AND MONITORING
+  # Additional services for development productivity
+  # =============================================================================
+  
+  # PostgreSQL Administration Interface
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: carddemo-pgadmin
+    restart: unless-stopped
+    
+    # Network Configuration
+    networks:
+      carddemo-network:
+        ipv4_address: 172.20.0.30
+    
+    # Port Mapping
+    ports:
+      - "5050:80"
+    
+    # Environment Configuration
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@carddemo.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    
+    # Volume Mounts
+    volumes:
+      - ./config/pgadmin:/var/lib/pgadmin
+    
+    # Service Dependencies
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    
+    # Container Labels
+    labels:
+      - "com.carddemo.service.name=pgadmin"
+      - "com.carddemo.service.type=development-tool"
+      - "com.carddemo.service.purpose=database-administration"
+      - "com.carddemo.service.tier=development"
+      - "com.carddemo.service.environment=development"
+      - "com.carddemo.service.monitoring=disabled"
+
+  # Redis Commander for Redis Management
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: carddemo-redis-commander
+    restart: unless-stopped
+    
+    # Network Configuration
+    networks:
+      carddemo-network:
+        ipv4_address: 172.20.0.31
+    
+    # Port Mapping
+    ports:
+      - "8081:8081"
+    
+    # Environment Configuration
+    environment:
+      REDIS_HOSTS: redis:redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+      HTTP_USER: admin
+      HTTP_PASSWORD: admin
+    
+    # Service Dependencies
+    depends_on:
+      redis:
+        condition: service_healthy
+    
+    # Container Labels
+    labels:
+      - "com.carddemo.service.name=redis-commander"
+      - "com.carddemo.service.type=development-tool"
+      - "com.carddemo.service.purpose=redis-administration"
+      - "com.carddemo.service.tier=development"
+      - "com.carddemo.service.environment=development"
+      - "com.carddemo.service.monitoring=disabled"
+
+# ===============================================================================
+# DOCKER COMPOSE CONFIGURATION
+# Global configuration and development environment setup
+# ===============================================================================
+
+# Development Environment Information
+x-development-info:
+  description: "CardDemo COBOL-to-Java Transformation Development Environment"
+  version: "1.0.0"
+  architecture: "Spring Boot Microservices"
+  java-version: "21"
+  spring-boot-version: "3.2.0"
+  database: "PostgreSQL 15"
+  cache: "Redis 7"
+  
+  # Service Access Information
+  services:
+    - name: "CardDemo Application"
+      url: "http://localhost:8080"
+      health: "http://localhost:8080/actuator/health"
+      swagger: "http://localhost:8080/swagger-ui.html"
+      
+    - name: "PostgreSQL Database"
+      host: "localhost"
+      port: 5432
+      database: "carddemo_dev"
+      username: "carddemo_dev"
+      
+    - name: "Redis Cache"
+      host: "localhost"
+      port: 6379
+      database: 0
+      
+    - name: "Config Server"
+      url: "http://localhost:8888"
+      actuator: "http://localhost:8888/actuator"
+      
+    - name: "pgAdmin"
+      url: "http://localhost:5050"
+      username: "admin@carddemo.com"
+      
+    - name: "Redis Commander"
+      url: "http://localhost:8081"
+      username: "admin"
+  
+  # Development Commands
+  commands:
+    build: "docker-compose build"
+    start: "docker-compose up -d"
+    stop: "docker-compose down"
+    logs: "docker-compose logs -f"
+    restart: "docker-compose restart"
+    clean: "docker-compose down -v --remove-orphans"
+    
+  # Performance Monitoring
+  monitoring:
+    application-health: "http://localhost:8080/actuator/health"
+    application-metrics: "http://localhost:8080/actuator/metrics"
+    application-info: "http://localhost:8080/actuator/info"
+    database-metrics: "docker stats carddemo-postgresql"
+    redis-metrics: "docker stats carddemo-redis"
+    
+  # Development Notes
+  notes:
+    - "This environment provides complete local development capabilities"
+    - "All services are configured for development with enhanced logging"
+    - "Hot-reload is enabled for Spring Boot application development"
+    - "Database migrations run automatically on startup"
+    - "Redis session management is configured for stateless APIs"
+    - "Performance monitoring is available through Spring Boot Actuator"
+    - "All services include comprehensive health checks"
+    - "Development tools (pgAdmin, Redis Commander) are included"
+    - "Resource limits are optimized for local development"
+    - "Network isolation ensures secure service communication"
