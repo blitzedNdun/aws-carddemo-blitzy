@@ -1,0 +1,802 @@
+{
+  "TestUserDataset": {
+    "admin_user_credentials": [
+      {
+        "userId": "ADMIN001",
+        "firstName": "System",
+        "lastName": "Administrator",
+        "passwordHash": "$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/8B6pURAaZvMKU8E/i",
+        "userType": "A",
+        "createdAt": "2024-01-15T10:00:00.000Z",
+        "lastLogin": "2024-01-20T14:30:45.123Z",
+        "testPassword": "admin123",
+        "description": "Primary system administrator account for comprehensive admin function testing",
+        "expectedRoles": ["ROLE_ADMIN", "ROLE_USER"],
+        "expectedAuthorities": ["VIEW_ACCOUNTS", "MANAGE_ACCOUNTS", "PROCESS_TRANSACTIONS", "ADMIN_FUNCTIONS", "USER_MANAGEMENT"],
+        "jwtClaims": {
+          "sub": "ADMIN001",
+          "user_type": "A",
+          "roles": ["ROLE_ADMIN", "ROLE_USER"],
+          "authorities": ["ROLE_ADMIN", "ROLE_USER", "VIEW_ACCOUNTS", "MANAGE_ACCOUNTS", "ADMIN_FUNCTIONS"]
+        },
+        "testScenarios": {
+          "canAccessAdminEndpoints": true,
+          "canAccessUserEndpoints": true,
+          "canManageUsers": true,
+          "canViewAllAccounts": true,
+          "canProcessAllTransactions": true
+        }
+      },
+      {
+        "userId": "TESTADM",
+        "firstName": "Test",
+        "lastName": "Admin",
+        "passwordHash": "$2a$12$R9h/cIPz0gi.URNNX3kh2OPST9/PgBkqquzi.Ss7KIUgO2t0jWMUW",
+        "userType": "A", 
+        "createdAt": "2024-01-16T09:15:22.456Z",
+        "lastLogin": "2024-01-21T16:22:11.789Z",
+        "testPassword": "testpass",
+        "description": "Secondary admin account for JWT authentication testing and role validation",
+        "expectedRoles": ["ROLE_ADMIN", "ROLE_USER"],
+        "expectedAuthorities": ["VIEW_ACCOUNTS", "MANAGE_ACCOUNTS", "PROCESS_TRANSACTIONS", "ADMIN_FUNCTIONS", "USER_MANAGEMENT"],
+        "jwtClaims": {
+          "sub": "TESTADM",
+          "user_type": "A",
+          "roles": ["ROLE_ADMIN", "ROLE_USER"],
+          "authorities": ["ROLE_ADMIN", "ROLE_USER", "VIEW_ACCOUNTS", "MANAGE_ACCOUNTS", "ADMIN_FUNCTIONS"]
+        },
+        "testScenarios": {
+          "canAccessAdminEndpoints": true,
+          "canAccessUserEndpoints": true,
+          "canManageUsers": true,
+          "canViewSystemConfig": true,
+          "canDeleteUsers": true
+        }
+      },
+      {
+        "userId": "SUPRADM",
+        "firstName": "Super",
+        "lastName": "Administrator",
+        "passwordHash": "$2a$12$WJ1QcCDNhLaGqmOVBadqMOGnM8b8y0oJiWo0qY5zKrYg8F2qQJ9kS",
+        "userType": "A",
+        "createdAt": "2024-01-10T08:00:00.000Z",
+        "lastLogin": "2024-01-22T10:45:33.567Z",
+        "testPassword": "superadm",
+        "description": "Super admin for comprehensive authorization boundary testing",
+        "expectedRoles": ["ROLE_ADMIN", "ROLE_USER"],
+        "expectedAuthorities": ["VIEW_ACCOUNTS", "MANAGE_ACCOUNTS", "PROCESS_TRANSACTIONS", "ADMIN_FUNCTIONS", "USER_MANAGEMENT", "SYSTEM_CONFIGURATION"],
+        "jwtClaims": {
+          "sub": "SUPRADM",
+          "user_type": "A", 
+          "roles": ["ROLE_ADMIN", "ROLE_USER"],
+          "authorities": ["ROLE_ADMIN", "ROLE_USER", "VIEW_ACCOUNTS", "MANAGE_ACCOUNTS", "ADMIN_FUNCTIONS", "SYSTEM_CONFIGURATION"]
+        },
+        "testScenarios": {
+          "canAccessAdminEndpoints": true,
+          "canAccessUserEndpoints": true,
+          "canManageUsers": true,
+          "canModifySystemSettings": true,
+          "canViewAuditLogs": true
+        }
+      }
+    ],
+    
+    "regular_user_credentials": [
+      {
+        "userId": "USER001",
+        "firstName": "Regular",
+        "lastName": "User",
+        "passwordHash": "$2a$12$GRLdNijSMi1JlpwvKfuRP.xmgXYEF7.C2NR9oJ5gFvj4gFfB7hG7O",
+        "userType": "U",
+        "createdAt": "2024-01-17T11:30:15.234Z",
+        "lastLogin": "2024-01-21T13:15:28.890Z",
+        "testPassword": "user123",
+        "description": "Standard user account for regular transaction processing and account access testing",
+        "expectedRoles": ["ROLE_USER"],
+        "expectedAuthorities": ["VIEW_ACCOUNTS", "PROCESS_TRANSACTIONS"],
+        "jwtClaims": {
+          "sub": "USER001",
+          "user_type": "U",
+          "roles": ["ROLE_USER"],
+          "authorities": ["ROLE_USER", "VIEW_ACCOUNTS", "PROCESS_TRANSACTIONS"]
+        },
+        "testScenarios": {
+          "canAccessAdminEndpoints": false,
+          "canAccessUserEndpoints": true,
+          "canManageUsers": false,
+          "canViewOwnAccounts": true,
+          "canProcessOwnTransactions": true
+        }
+      },
+      {
+        "userId": "TESTUSER",
+        "firstName": "Test",
+        "lastName": "User",
+        "passwordHash": "$2a$12$/Y8z1JHqKV0g1QT8yZ6jd.fB7JGw9BvJr0xTxD2K7oA5sE8mH9nCq",
+        "userType": "U",
+        "createdAt": "2024-01-18T14:45:30.567Z",
+        "lastLogin": "2024-01-20T09:22:17.123Z",
+        "testPassword": "testuser",
+        "description": "Test user for Spring Security role validation and authorization boundary testing",
+        "expectedRoles": ["ROLE_USER"],
+        "expectedAuthorities": ["VIEW_ACCOUNTS", "PROCESS_TRANSACTIONS"],
+        "jwtClaims": {
+          "sub": "TESTUSER",
+          "user_type": "U",
+          "roles": ["ROLE_USER"],
+          "authorities": ["ROLE_USER", "VIEW_ACCOUNTS", "PROCESS_TRANSACTIONS"]
+        },
+        "testScenarios": {
+          "canAccessAdminEndpoints": false,
+          "canAccessUserEndpoints": true,
+          "canManageUsers": false,
+          "canViewAccountHistory": true,
+          "canUpdatePersonalInfo": true
+        }
+      },
+      {
+        "userId": "STDUSER",
+        "firstName": "Standard",
+        "lastName": "Customer",
+        "passwordHash": "$2a$12$K9h3cIPz0gi.URNNX3kh2OPST9/PgBkqquzi.Ss7KIUgO2t0jWMUX",
+        "userType": "U",
+        "createdAt": "2024-01-19T16:20:45.890Z",
+        "lastLogin": "2024-01-22T11:33:52.456Z",
+        "testPassword": "standard",
+        "description": "Standard customer account for transaction processing and card management testing",
+        "expectedRoles": ["ROLE_USER"],
+        "expectedAuthorities": ["VIEW_ACCOUNTS", "PROCESS_TRANSACTIONS"],
+        "jwtClaims": {
+          "sub": "STDUSER",
+          "user_type": "U",
+          "roles": ["ROLE_USER"],
+          "authorities": ["ROLE_USER", "VIEW_ACCOUNTS", "PROCESS_TRANSACTIONS"]
+        },
+        "testScenarios": {
+          "canAccessAdminEndpoints": false,
+          "canAccessUserEndpoints": true,
+          "canManageUsers": false,
+          "canViewCardList": true,
+          "canMakePayments": true
+        }
+      }
+    ],
+    
+    "disabled_user_accounts": [
+      {
+        "userId": "DISABLED1",
+        "firstName": "Disabled",
+        "lastName": "Account",
+        "passwordHash": "$2a$12$XJ1QcCDNhLaGqmOVBadqMOGnM8b8y0oJiWo0qY5zKrYg8F2qQJ9kT",
+        "userType": "U",
+        "createdAt": "2024-01-05T10:00:00.000Z",
+        "lastLogin": "2024-01-10T15:30:00.000Z",
+        "testPassword": "disabled",
+        "description": "Disabled user account for authentication failure testing",
+        "accountStatus": "DISABLED",
+        "disabledReason": "Account suspended for security review",
+        "disabledDate": "2024-01-12T09:00:00.000Z",
+        "expectedAuthResult": "AUTHENTICATION_DISABLED",
+        "expectedStatusCode": 401,
+        "testScenarios": {
+          "canLogin": false,
+          "canReceiveJWT": false,
+          "canAccessAnyEndpoints": false,
+          "shouldReturnDisabledError": true
+        }
+      },
+      {
+        "userId": "LOCKED01",
+        "firstName": "Locked",
+        "lastName": "User",
+        "passwordHash": "$2a$12$L9h2cIPz0gi.URNNX3kh2OPST9/PgBkqquzi.Ss7KIUgO2t0jWMUY",
+        "userType": "A",
+        "createdAt": "2024-01-08T12:15:30.456Z",
+        "lastLogin": "2024-01-15T10:45:00.000Z",
+        "testPassword": "locked123",
+        "description": "Locked admin account for security testing scenarios",
+        "accountStatus": "LOCKED",
+        "lockReason": "Multiple failed login attempts",
+        "lockDate": "2024-01-16T14:22:11.789Z",
+        "failedAttempts": 5,
+        "expectedAuthResult": "ACCOUNT_LOCKED",
+        "expectedStatusCode": 401,
+        "testScenarios": {
+          "canLogin": false,
+          "canReceiveJWT": false,
+          "canAccessAnyEndpoints": false,
+          "shouldReturnLockedError": true
+        }
+      }
+    ],
+    
+    "expired_password_users": [
+      {
+        "userId": "EXPIRED1",
+        "firstName": "Expired",
+        "lastName": "Password",
+        "passwordHash": "$2a$12$E9h1cIPz0gi.URNNX3kh2OPST9/PgBkqquzi.Ss7KIUgO2t0jWMUZ",
+        "userType": "U",
+        "createdAt": "2023-12-01T10:00:00.000Z",
+        "lastLogin": "2023-12-15T14:30:00.000Z",
+        "testPassword": "oldpass123",
+        "description": "User with expired password for authentication testing",
+        "passwordExpired": true,
+        "passwordExpiryDate": "2024-01-01T00:00:00.000Z",
+        "passwordAge": 90,
+        "expectedAuthResult": "PASSWORD_EXPIRED",
+        "expectedStatusCode": 401,
+        "testScenarios": {
+          "canLogin": false,
+          "canReceiveJWT": false,
+          "shouldRequirePasswordChange": true,
+          "shouldReturnExpiredError": true
+        }
+      }
+    ],
+    
+    "invalid_role_users": [
+      {
+        "userId": "INVALID1",
+        "firstName": "Invalid",
+        "lastName": "Role",
+        "passwordHash": "$2a$12$I9h0cIPz0gi.URNNX3kh2OPST9/PgBkqquzi.Ss7KIUgO2t0jWMU1",
+        "userType": "X",
+        "createdAt": "2024-01-20T10:00:00.000Z",
+        "lastLogin": null,
+        "testPassword": "invalid123",
+        "description": "User with invalid role type for role validation testing",
+        "expectedAuthResult": "INVALID_ROLE",
+        "expectedStatusCode": 401,
+        "testScenarios": {
+          "canLogin": false,
+          "canReceiveJWT": false,
+          "shouldReturnRoleError": true,
+          "shouldFailRoleValidation": true
+        }
+      },
+      {
+        "userId": "MALFORM1",
+        "firstName": "Malformed",
+        "lastName": "Data", 
+        "passwordHash": "$2a$12$M9h9cIPz0gi.URNNX3kh2OPST9/PgBkqquzi.Ss7KIUgO2t0jWMU2",
+        "userType": "",
+        "createdAt": "2024-01-21T15:30:00.000Z",
+        "lastLogin": null,
+        "testPassword": "malform123",
+        "description": "User with empty role type for data validation testing",
+        "expectedAuthResult": "VALIDATION_ERROR",
+        "expectedStatusCode": 400,
+        "testScenarios": {
+          "canLogin": false,
+          "canReceiveJWT": false,
+          "shouldReturnValidationError": true,
+          "shouldFailDataValidation": true
+        }
+      }
+    ],
+    
+    "bcrypt_password_test_cases": [
+      {
+        "testCase": "Standard BCrypt 12 Rounds",
+        "plainPassword": "password123",
+        "bcryptHash": "$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/8B6pURAaZvMKU8E/i",
+        "rounds": 12,
+        "description": "Standard 12-round BCrypt hash for performance testing"
+      },
+      {
+        "testCase": "High Security 15 Rounds",
+        "plainPassword": "securepass456",
+        "bcryptHash": "$2a$15$2KP8qY9kgD5t7WxJ8F9pQ.1yJ3nR5L7mN9pK4lG8hS6vU2cX7dA9e",
+        "rounds": 15,
+        "description": "High security 15-round BCrypt hash for security testing"
+      },
+      {
+        "testCase": "Minimum Security 10 Rounds",
+        "plainPassword": "testpass789",
+        "bcryptHash": "$2a$10$N9qo8uCWE8iHYmW9JHqJWOhN4T6r3fF0mS8vB7cG2uK1xY5zE7pL3",
+        "rounds": 10,
+        "description": "Minimum 10-round BCrypt hash for compatibility testing"
+      },
+      {
+        "testCase": "Special Characters Password",
+        "plainPassword": "P@ssw0rd!@#",
+        "bcryptHash": "$2a$12$T5qr9vCYF3iJZnX2KJrKXOjP6U8s4F2nT9wC8dH3vL6yA0fM5kQ8b",
+        "rounds": 12,
+        "description": "BCrypt hash with special characters for validation testing"
+      }
+    ],
+    
+    "authentication_flow_test_data": [
+      {
+        "flowType": "SUCCESSFUL_ADMIN_LOGIN",
+        "user": {
+          "userId": "ADMIN001",
+          "password": "admin123"
+        },
+        "expectedSteps": [
+          {
+            "step": "credential_validation",
+            "expected": "SUCCESS"
+          },
+          {
+            "step": "jwt_generation",
+            "expected": "SUCCESS",
+            "claims": ["sub", "user_type", "roles", "authorities", "exp", "iat"]
+          },
+          {
+            "step": "redis_session_creation", 
+            "expected": "SUCCESS",
+            "ttl": 1800000
+          },
+          {
+            "step": "response_generation",
+            "expected": "SUCCESS",
+            "statusCode": 200
+          }
+        ],
+        "expectedJWT": {
+          "sub": "ADMIN001",
+          "user_type": "A",
+          "roles": ["ROLE_ADMIN", "ROLE_USER"]
+        }
+      },
+      {
+        "flowType": "SUCCESSFUL_USER_LOGIN",
+        "user": {
+          "userId": "USER001", 
+          "password": "user123"
+        },
+        "expectedSteps": [
+          {
+            "step": "credential_validation",
+            "expected": "SUCCESS"
+          },
+          {
+            "step": "jwt_generation",
+            "expected": "SUCCESS",
+            "claims": ["sub", "user_type", "roles", "authorities", "exp", "iat"]
+          },
+          {
+            "step": "redis_session_creation",
+            "expected": "SUCCESS", 
+            "ttl": 1800000
+          },
+          {
+            "step": "response_generation",
+            "expected": "SUCCESS",
+            "statusCode": 200
+          }
+        ],
+        "expectedJWT": {
+          "sub": "USER001",
+          "user_type": "U", 
+          "roles": ["ROLE_USER"]
+        }
+      },
+      {
+        "flowType": "FAILED_LOGIN_INVALID_CREDENTIALS",
+        "user": {
+          "userId": "USER001",
+          "password": "wrongpassword"
+        },
+        "expectedSteps": [
+          {
+            "step": "credential_validation",
+            "expected": "FAILURE"
+          },
+          {
+            "step": "security_logging",
+            "expected": "LOGGED"
+          },
+          {
+            "step": "response_generation",
+            "expected": "ERROR",
+            "statusCode": 401
+          }
+        ],
+        "expectedResponse": {
+          "error": "Invalid credentials",
+          "message": "Authentication failed"
+        }
+      }
+    ],
+    
+    "authorization_boundary_test_scenarios": [
+      {
+        "scenario": "Admin Access to User Management",
+        "user": "ADMIN001",
+        "endpoint": "/api/admin/users",
+        "method": "GET",
+        "expectedResult": "ACCESS_GRANTED",
+        "expectedStatusCode": 200,
+        "preAuthorizeAnnotation": "@PreAuthorize('hasRole(ADMIN)')"
+      },
+      {
+        "scenario": "User Denied Access to Admin Functions",
+        "user": "USER001",
+        "endpoint": "/api/admin/users",
+        "method": "GET", 
+        "expectedResult": "ACCESS_DENIED",
+        "expectedStatusCode": 403,
+        "preAuthorizeAnnotation": "@PreAuthorize('hasRole(ADMIN)')"
+      },
+      {
+        "scenario": "Admin Access to User Endpoints",
+        "user": "ADMIN001",
+        "endpoint": "/api/account/view/12345",
+        "method": "GET",
+        "expectedResult": "ACCESS_GRANTED",
+        "expectedStatusCode": 200,
+        "preAuthorizeAnnotation": "@PreAuthorize('hasAnyRole(USER,ADMIN)')"
+      },
+      {
+        "scenario": "User Access to Own Account",
+        "user": "USER001",
+        "endpoint": "/api/account/view/12345",
+        "method": "GET",
+        "expectedResult": "ACCESS_GRANTED", 
+        "expectedStatusCode": 200,
+        "preAuthorizeAnnotation": "@PreAuthorize('hasAnyRole(USER,ADMIN)')"
+      },
+      {
+        "scenario": "Anonymous Access Denied",
+        "user": null,
+        "endpoint": "/api/account/view/12345",
+        "method": "GET",
+        "expectedResult": "AUTHENTICATION_REQUIRED",
+        "expectedStatusCode": 401,
+        "preAuthorizeAnnotation": "@PreAuthorize('hasAnyRole(USER,ADMIN)')"
+      }
+    ]
+  },
+  
+  "RACFMigrationTestScenarios": {
+    "legacy_racf_user_mappings": [
+      {
+        "racfUserId": "ADMIN001",
+        "racfProfile": {
+          "userType": "A",
+          "groupMemberships": ["CARDDEMO.ADMIN", "CARDDEMO.USER"],
+          "resourceAccess": ["DATASET.ADMIN", "TRANSACTION.ALL"],
+          "passwordPolicy": "8_CHAR_FIXED"
+        },
+        "springSecurityMapping": {
+          "userId": "ADMIN001",
+          "userType": "A",
+          "roles": ["ROLE_ADMIN", "ROLE_USER"],
+          "authorities": ["ROLE_ADMIN", "ROLE_USER", "VIEW_ACCOUNTS", "MANAGE_ACCOUNTS", "ADMIN_FUNCTIONS"],
+          "passwordPolicy": "BCRYPT_12_ROUNDS"
+        },
+        "migrationStatus": "COMPLETED",
+        "validationTests": [
+          "login_equivalence_test",
+          "role_mapping_test", 
+          "authority_inheritance_test",
+          "password_upgrade_test"
+        ]
+      },
+      {
+        "racfUserId": "USER001",
+        "racfProfile": {
+          "userType": "U",
+          "groupMemberships": ["CARDDEMO.USER"],
+          "resourceAccess": ["DATASET.USER", "TRANSACTION.LIMITED"],
+          "passwordPolicy": "8_CHAR_FIXED"
+        },
+        "springSecurityMapping": {
+          "userId": "USER001",
+          "userType": "U",
+          "roles": ["ROLE_USER"],
+          "authorities": ["ROLE_USER", "VIEW_ACCOUNTS", "PROCESS_TRANSACTIONS"],
+          "passwordPolicy": "BCRYPT_12_ROUNDS"
+        },
+        "migrationStatus": "COMPLETED",
+        "validationTests": [
+          "login_equivalence_test",
+          "role_restriction_test",
+          "authority_limitation_test",
+          "password_upgrade_test"
+        ]
+      }
+    ],
+    
+    "spring_security_role_conversions": [
+      {
+        "conversionType": "RACF_TO_SPRING_ADMIN",
+        "source": {
+          "racfGroup": "CARDDEMO.ADMIN",
+          "racfUserType": "A",
+          "racfPermissions": ["ALTER", "UPDATE", "READ"]
+        },
+        "target": {
+          "springRole": "ROLE_ADMIN",
+          "springAuthorities": ["ROLE_ADMIN", "ROLE_USER", "VIEW_ACCOUNTS", "MANAGE_ACCOUNTS", "ADMIN_FUNCTIONS"],
+          "methodSecurity": "@PreAuthorize('hasRole(ADMIN)')"
+        },
+        "testValidation": {
+          "canAccessAdminEndpoints": true,
+          "canAccessUserEndpoints": true,
+          "canManageUsers": true,
+          "canModifySystemConfig": true
+        }
+      },
+      {
+        "conversionType": "RACF_TO_SPRING_USER", 
+        "source": {
+          "racfGroup": "CARDDEMO.USER",
+          "racfUserType": "U",
+          "racfPermissions": ["READ", "UPDATE"]
+        },
+        "target": {
+          "springRole": "ROLE_USER",
+          "springAuthorities": ["ROLE_USER", "VIEW_ACCOUNTS", "PROCESS_TRANSACTIONS"],
+          "methodSecurity": "@PreAuthorize('hasAnyRole(USER,ADMIN)')"
+        },
+        "testValidation": {
+          "canAccessAdminEndpoints": false,
+          "canAccessUserEndpoints": true,
+          "canManageUsers": false,
+          "canViewOwnData": true
+        }
+      }
+    ],
+    
+    "admin_to_role_admin_scenarios": [
+      {
+        "testName": "Admin User Management Access",
+        "adminUser": "ADMIN001",
+        "testEndpoints": [
+          {
+            "endpoint": "/api/admin/users",
+            "method": "GET",
+            "expectedAccess": true,
+            "annotation": "@PreAuthorize('hasRole(ADMIN)')"
+          },
+          {
+            "endpoint": "/api/admin/users",
+            "method": "POST",
+            "expectedAccess": true,
+            "annotation": "@PreAuthorize('hasRole(ADMIN)')"
+          },
+          {
+            "endpoint": "/api/admin/users/{id}",
+            "method": "DELETE",
+            "expectedAccess": true,
+            "annotation": "@PreAuthorize('hasRole(ADMIN)')"
+          }
+        ],
+        "jwtTokenValidation": {
+          "sub": "ADMIN001",
+          "user_type": "A",
+          "roles": ["ROLE_ADMIN", "ROLE_USER"],
+          "authorities": ["ROLE_ADMIN", "ROLE_USER", "VIEW_ACCOUNTS", "MANAGE_ACCOUNTS", "ADMIN_FUNCTIONS"]
+        }
+      },
+      {
+        "testName": "Admin System Configuration Access",
+        "adminUser": "TESTADM",
+        "testEndpoints": [
+          {
+            "endpoint": "/api/admin/system/config",
+            "method": "GET",
+            "expectedAccess": true,
+            "annotation": "@PreAuthorize('hasRole(ADMIN)')"
+          },
+          {
+            "endpoint": "/api/admin/system/settings",
+            "method": "POST", 
+            "expectedAccess": true,
+            "annotation": "@PreAuthorize('hasRole(ADMIN)')"
+          }
+        ],
+        "roleInheritanceTest": {
+          "primaryRole": "ROLE_ADMIN",
+          "inheritedRoles": ["ROLE_USER"],
+          "canAccessUserEndpoints": true,
+          "canAccessAdminEndpoints": true
+        }
+      }
+    ],
+    
+    "user_to_role_user_scenarios": [
+      {
+        "testName": "User Account Operations Access",
+        "regularUser": "USER001",
+        "testEndpoints": [
+          {
+            "endpoint": "/api/account/view/{accountId}",
+            "method": "GET",
+            "expectedAccess": true,
+            "annotation": "@PreAuthorize('hasAnyRole(USER,ADMIN)')",
+            "accessControl": "OWNER_ONLY"
+          },
+          {
+            "endpoint": "/api/account/update/{accountId}",
+            "method": "PUT",
+            "expectedAccess": true,
+            "annotation": "@PreAuthorize('hasAnyRole(USER,ADMIN)')",
+            "accessControl": "OWNER_ONLY"
+          }
+        ],
+        "restrictedEndpoints": [
+          {
+            "endpoint": "/api/admin/users",
+            "method": "GET",
+            "expectedAccess": false,
+            "expectedStatusCode": 403,
+            "annotation": "@PreAuthorize('hasRole(ADMIN)')"
+          }
+        ],
+        "jwtTokenValidation": {
+          "sub": "USER001",
+          "user_type": "U", 
+          "roles": ["ROLE_USER"],
+          "authorities": ["ROLE_USER", "VIEW_ACCOUNTS", "PROCESS_TRANSACTIONS"]
+        }
+      },
+      {
+        "testName": "User Transaction Processing Access",
+        "regularUser": "TESTUSER",
+        "testEndpoints": [
+          {
+            "endpoint": "/api/transaction/add",
+            "method": "POST",
+            "expectedAccess": true,
+            "annotation": "@PreAuthorize('hasAnyRole(USER,ADMIN)')"
+          },
+          {
+            "endpoint": "/api/transaction/history/{accountId}",
+            "method": "GET",
+            "expectedAccess": true,
+            "annotation": "@PreAuthorize('hasAnyRole(USER,ADMIN)')",
+            "accessControl": "OWNER_ONLY"
+          }
+        ],
+        "dataAccessRestrictions": {
+          "canViewOwnAccounts": true,
+          "canViewOtherAccounts": false,
+          "canProcessOwnTransactions": true,
+          "canProcessOtherTransactions": false
+        }
+      }
+    ],
+    
+    "authentication_migration_validation": [
+      {
+        "migrationPhase": "PRE_MIGRATION_VALIDATION",
+        "racfUsers": [
+          {
+            "userId": "ADMIN001",
+            "racfAuthentication": "SUCCESS",
+            "racfGroups": ["CARDDEMO.ADMIN", "CARDDEMO.USER"]
+          },
+          {
+            "userId": "USER001", 
+            "racfAuthentication": "SUCCESS",
+            "racfGroups": ["CARDDEMO.USER"]
+          }
+        ]
+      },
+      {
+        "migrationPhase": "POST_MIGRATION_VALIDATION",
+        "springSecurityUsers": [
+          {
+            "userId": "ADMIN001",
+            "springAuthentication": "SUCCESS",
+            "bcryptValidation": "SUCCESS",
+            "jwtGeneration": "SUCCESS",
+            "roleMapping": ["ROLE_ADMIN", "ROLE_USER"]
+          },
+          {
+            "userId": "USER001",
+            "springAuthentication": "SUCCESS", 
+            "bcryptValidation": "SUCCESS",
+            "jwtGeneration": "SUCCESS",
+            "roleMapping": ["ROLE_USER"]
+          }
+        ]
+      },
+      {
+        "migrationPhase": "EQUIVALENCE_TESTING",
+        "functionalEquivalence": [
+          {
+            "function": "User Authentication",
+            "racfBehavior": "8-character password validation",
+            "springBehavior": "BCrypt hash validation",
+            "equivalenceStatus": "FUNCTIONALLY_EQUIVALENT"
+          },
+          {
+            "function": "Role-Based Authorization",
+            "racfBehavior": "RACF group membership checks",
+            "springBehavior": "@PreAuthorize role validation",
+            "equivalenceStatus": "FUNCTIONALLY_EQUIVALENT"
+          }
+        ]
+      }
+    ],
+    
+    "password_hash_upgrade_tests": [
+      {
+        "upgradeScenario": "RACF_TO_BCRYPT_MIGRATION",
+        "originalPassword": {
+          "format": "8_CHARACTER_PLAINTEXT",
+          "value": "ADMIN123",
+          "storage": "RACF_DATASET"
+        },
+        "upgradedPassword": {
+          "format": "BCRYPT_HASH",
+          "hash": "$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/8B6pURAaZvMKU8E/i",
+          "rounds": 12,
+          "storage": "POSTGRESQL_USERS_TABLE"
+        },
+        "validationTests": [
+          {
+            "testType": "PASSWORD_VERIFICATION",
+            "inputPassword": "ADMIN123",
+            "expectedResult": "VALID"
+          },
+          {
+            "testType": "HASH_STRENGTH_VALIDATION",
+            "expectedRounds": 12,
+            "expectedAlgorithm": "BCRYPT"
+          }
+        ]
+      },
+      {
+        "upgradeScenario": "FORCED_PASSWORD_RESET",
+        "user": {
+          "userId": "MIGRATED1",
+          "legacyPassword": "OLDPASS1",
+          "requiresReset": true
+        },
+        "resetProcess": {
+          "initialLogin": "REQUIRE_PASSWORD_CHANGE",
+          "newPasswordValidation": "BCRYPT_12_ROUNDS",
+          "postResetAccess": "FULL_ACCESS_GRANTED"
+        }
+      }
+    ],
+    
+    "audit_trail_comparison_data": [
+      {
+        "auditCategory": "AUTHENTICATION_EVENTS",
+        "racfAuditMethod": {
+          "mechanism": "SMF_RECORD_LOGGING",
+          "recordTypes": ["SMF80", "SMF81"],
+          "storage": "RACF_SMF_DATASET"
+        },
+        "springAuditMethod": {
+          "mechanism": "SPRING_BOOT_ACTUATOR_AUDIT",
+          "eventTypes": ["AUTHENTICATION_SUCCESS", "AUTHENTICATION_FAILURE"],
+          "storage": "ELK_STACK_ELASTICSEARCH"
+        },
+        "comparisonMetrics": {
+          "dataCompleteness": "EQUIVALENT",
+          "realTimeAvailability": "ENHANCED_IN_SPRING",
+          "searchCapability": "ENHANCED_IN_SPRING",
+          "retentionCompliance": "EQUIVALENT"
+        }
+      },
+      {
+        "auditCategory": "AUTHORIZATION_EVENTS",
+        "racfAuditMethod": {
+          "mechanism": "RACF_ACCESS_LOGGING",
+          "recordTypes": ["RESOURCE_ACCESS", "GROUP_CHECK"],
+          "storage": "RACF_ACCESS_LOG"
+        },
+        "springAuditMethod": {
+          "mechanism": "SPRING_SECURITY_EVENT_PUBLISHER",
+          "eventTypes": ["AUTHORIZATION_SUCCESS", "ACCESS_DENIED"],
+          "storage": "STRUCTURED_JSON_LOGS"
+        },
+        "comparisonMetrics": {
+          "granularity": "ENHANCED_IN_SPRING",
+          "contextInformation": "ENHANCED_IN_SPRING",
+          "analyticsCapability": "ENHANCED_IN_SPRING",
+          "complianceReporting": "EQUIVALENT"
+        }
+      }
+    ]
+  }
+}
