@@ -5,6 +5,7 @@ import com.carddemo.account.entity.Customer;
 import com.carddemo.account.repository.AccountRepository;
 import com.carddemo.account.dto.AccountDto;
 import com.carddemo.account.dto.CustomerDto;
+import com.carddemo.account.dto.AddressDto;
 import com.carddemo.account.AccountBalanceDto;
 import com.carddemo.common.dto.AuditInfo;
 import com.carddemo.common.dto.ValidationResult;
@@ -250,10 +251,15 @@ public class CardSelectionService {
             result.addErrorMessage("CARD_NUMBER_REQUIRED", 
                 "Card number is required for card selection",
                 ValidationSeverity.ERROR);
-        } else if (!ValidationUtils.validateCardNumber(request.getCardNumber())) {
-            result.addErrorMessage("INVALID_CARD_NUMBER", 
-                ERROR_INVALID_CARD_NUMBER,
-                ValidationSeverity.ERROR);
+        } else {
+            // Validate card number using ValidationUtils
+            com.carddemo.common.enums.ValidationResult cardValidation = 
+                ValidationUtils.validateCardNumber(request.getCardNumber());
+            if (cardValidation != com.carddemo.common.enums.ValidationResult.VALID) {
+                result.addErrorMessage("INVALID_CARD_NUMBER", 
+                    ERROR_INVALID_CARD_NUMBER,
+                    ValidationSeverity.ERROR);
+            }
         }
         
         // Validate account ID
@@ -261,10 +267,15 @@ public class CardSelectionService {
             result.addErrorMessage("ACCOUNT_ID_REQUIRED", 
                 "Account ID is required for cross-reference validation",
                 ValidationSeverity.ERROR);
-        } else if (!ValidationUtils.validateAccountNumber(request.getAccountId())) {
-            result.addErrorMessage("INVALID_ACCOUNT_ID", 
-                ERROR_INVALID_ACCOUNT_ID,
-                ValidationSeverity.ERROR);
+        } else {
+            // Validate account ID using ValidationUtils
+            com.carddemo.common.enums.ValidationResult accountValidation = 
+                ValidationUtils.validateAccountNumber(request.getAccountId());
+            if (accountValidation != com.carddemo.common.enums.ValidationResult.VALID) {
+                result.addErrorMessage("INVALID_ACCOUNT_ID", 
+                    ERROR_INVALID_ACCOUNT_ID,
+                    ValidationSeverity.ERROR);
+            }
         }
         
         // Validate user role
@@ -319,18 +330,27 @@ public class CardSelectionService {
         accountDto.setCurrentBalance(account.getCurrentBalance());
         accountDto.setCreditLimit(account.getCreditLimit());
         accountDto.setActiveStatus(account.getActiveStatus());
-        accountDto.setOpenDate(account.getOpenDate());
+        accountDto.setOpenDate(account.getOpenDate() != null ? account.getOpenDate().toString() : null);
         
         // Create customer DTO
         Customer customer = account.getCustomer();
         CustomerDto customerDto = new CustomerDto();
         if (customer != null) {
-            customerDto.setCustomerId(customer.getCustomerId());
+            customerDto.setCustomerId(customer.getCustomerId() != null ? Long.parseLong(customer.getCustomerId()) : null);
             customerDto.setFirstName(customer.getFirstName());
             customerDto.setLastName(customer.getLastName());
-            customerDto.setAddress(customer.getAddressLine1() + " " + 
-                                 (customer.getAddressLine2() != null ? customer.getAddressLine2() + " " : "") +
-                                 (customer.getAddressLine3() != null ? customer.getAddressLine3() : ""));
+            // Create address DTO from customer address fields
+            AddressDto addressDto = new AddressDto();
+            addressDto.setAddressLine1(customer.getAddressLine1());
+            if (customer.getAddressLine2() != null) {
+                addressDto.setAddressLine2(customer.getAddressLine2());
+            }
+            if (customer.getAddressLine3() != null) {
+                addressDto.setAddressLine3(customer.getAddressLine3());
+            }
+            addressDto.setStateCode(customer.getStateCode());
+            addressDto.setZipCode(customer.getZipCode());
+            customerDto.setAddress(addressDto);
             customerDto.setFicoCreditScore(customer.getFicoCreditScore());
         }
         
