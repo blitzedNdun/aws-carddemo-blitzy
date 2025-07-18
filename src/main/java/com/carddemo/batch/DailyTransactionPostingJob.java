@@ -22,12 +22,14 @@ import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.StepExecutionListener;
-import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
-import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
@@ -48,9 +50,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.WritableResource;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import jakarta.persistence.EntityManagerFactory;
 
@@ -122,8 +126,8 @@ public class DailyTransactionPostingJob {
     private static final Logger logger = LoggerFactory.getLogger(DailyTransactionPostingJob.class);
 
     // Dependencies injected via constructor
-    private final JobBuilderFactory jobBuilderFactory;
-    private final StepBuilderFactory stepBuilderFactory;
+    private final JobRepository jobRepository;
+    private final PlatformTransactionManager transactionManager;
     private final EntityManagerFactory entityManagerFactory;
     private final TransactionRepository transactionRepository;
     private final CardRepository cardRepository;
@@ -148,8 +152,8 @@ public class DailyTransactionPostingJob {
     /**
      * Constructor for dependency injection.
      * 
-     * @param jobBuilderFactory Spring Batch job builder factory
-     * @param stepBuilderFactory Spring Batch step builder factory
+     * @param jobRepository Spring Batch job repository
+     * @param transactionManager Platform transaction manager
      * @param entityManagerFactory JPA entity manager factory
      * @param transactionRepository Transaction repository for database operations
      * @param cardRepository Card repository for cross-reference validation
@@ -158,15 +162,15 @@ public class DailyTransactionPostingJob {
      */
     @Autowired
     public DailyTransactionPostingJob(
-            JobBuilderFactory jobBuilderFactory,
-            StepBuilderFactory stepBuilderFactory,
+            JobRepository jobRepository,
+            PlatformTransactionManager transactionManager,
             EntityManagerFactory entityManagerFactory,
             TransactionRepository transactionRepository,
             CardRepository cardRepository,
             AccountRepository accountRepository,
             BatchConfiguration batchConfiguration) {
-        this.jobBuilderFactory = jobBuilderFactory;
-        this.stepBuilderFactory = stepBuilderFactory;
+        this.jobRepository = jobRepository;
+        this.transactionManager = transactionManager;
         this.entityManagerFactory = entityManagerFactory;
         this.transactionRepository = transactionRepository;
         this.cardRepository = cardRepository;
@@ -187,7 +191,7 @@ public class DailyTransactionPostingJob {
     public Job dailyTransactionPostingJob() {
         logger.info("Configuring daily transaction posting job");
         
-        return jobBuilderFactory.get("dailyTransactionPostingJob")
+        return new JobBuilder("dailyTransactionPostingJob", jobRepository)
                 .incrementer(new RunIdIncrementer())
                 .start(dailyTransactionPostingStep())
                 .listener(new DailyTransactionJobExecutionListener())
@@ -206,8 +210,8 @@ public class DailyTransactionPostingJob {
     public Step dailyTransactionPostingStep() {
         logger.info("Configuring daily transaction posting step with chunk size: {}", chunkSize);
         
-        return stepBuilderFactory.get("dailyTransactionPostingStep")
-                .<DailyTransactionDTO, ProcessedTransaction>chunk(chunkSize)
+        return new StepBuilder("dailyTransactionPostingStep", jobRepository)
+                .<DailyTransactionDTO, ProcessedTransaction>chunk(chunkSize, transactionManager)
                 .reader(dailyTransactionItemReader())
                 .processor(dailyTransactionItemProcessor())
                 .writer(dailyTransactionItemWriter())
@@ -348,8 +352,8 @@ public class DailyTransactionPostingJob {
     public ItemWriter<ProcessedTransaction> validTransactionItemWriter() {
         return new ItemWriter<ProcessedTransaction>() {
             @Override
-            public void write(List<? extends ProcessedTransaction> items) throws Exception {
-                List<Transaction> validTransactions = items.stream()
+            public void write(Chunk<? extends ProcessedTransaction> chunk) throws Exception {
+                List<Transaction> validTransactions = chunk.getItems().stream()
                     .filter(pt -> pt.getTransaction() != null)
                     .map(ProcessedTransaction::getTransaction)
                     .collect(Collectors.toList());
@@ -362,7 +366,7 @@ public class DailyTransactionPostingJob {
                         .usePersist(true)
                         .build();
                     
-                    jpaWriter.write(validTransactions);
+                    jpaWriter.write(Chunk.of(validTransactions.toArray(new Transaction[0])));
                 }
             }
         };
@@ -380,8 +384,8 @@ public class DailyTransactionPostingJob {
     public ItemWriter<ProcessedTransaction> rejectedTransactionItemWriter() {
         return new ItemWriter<ProcessedTransaction>() {
             @Override
-            public void write(List<? extends ProcessedTransaction> items) throws Exception {
-                List<RejectionRecord> rejectedRecords = items.stream()
+            public void write(Chunk<? extends ProcessedTransaction> chunk) throws Exception {
+                List<RejectionRecord> rejectedRecords = chunk.getItems().stream()
                     .filter(pt -> pt.getRejectionRecord() != null)
                     .map(ProcessedTransaction::getRejectionRecord)
                     .collect(Collectors.toList());
@@ -389,7 +393,7 @@ public class DailyTransactionPostingJob {
                 if (!rejectedRecords.isEmpty()) {
                     logger.info("Writing {} rejected transactions to rejection file", rejectedRecords.size());
                     
-                    Resource outputFile = new FileSystemResource(outputDirectory + "/rejected_transactions.csv");
+                    WritableResource outputFile = new FileSystemResource(outputDirectory + "/rejected_transactions.csv");
                     
                     BeanWrapperFieldExtractor<RejectionRecord> fieldExtractor = new BeanWrapperFieldExtractor<>();
                     fieldExtractor.setNames(new String[]{
@@ -408,7 +412,7 @@ public class DailyTransactionPostingJob {
                         .shouldDeleteIfExists(true)
                         .build();
                     
-                    rejectionWriter.write(rejectedRecords);
+                    rejectionWriter.write(Chunk.of(rejectedRecords.toArray(new RejectionRecord[0])));
                 }
             }
         };
@@ -427,15 +431,15 @@ public class DailyTransactionPostingJob {
         logger.debug("Validating transaction: {}", transaction.getTransactionId());
         
         // Basic field validation
-        if (!ValidationUtils.validateRequiredField(transaction.getTransactionId())) {
+        if (!ValidationUtils.validateRequiredField(transaction.getTransactionId()).isValid()) {
             return new ValidationResult(false, 100, "Transaction ID is required");
         }
         
-        if (!ValidationUtils.validateRequiredField(transaction.getCardNumber())) {
+        if (!ValidationUtils.validateRequiredField(transaction.getCardNumber()).isValid()) {
             return new ValidationResult(false, 100, "Card number is required");
         }
         
-        if (!ValidationUtils.validateAmountField(transaction.getTransactionAmount())) {
+        if (!ValidationUtils.validateCurrency(transaction.getTransactionAmount()).isValid()) {
             return new ValidationResult(false, 100, "Invalid transaction amount");
         }
         
@@ -529,9 +533,9 @@ public class DailyTransactionPostingJob {
             Account account = accountOptional.get();
             
             // Credit limit validation equivalent to COBOL credit limit calculation
-            BigDecimal currentBalance = BigDecimalUtils.createDecimal(account.getCurrentCycleCredit())
-                .subtract(BigDecimalUtils.createDecimal(account.getCurrentCycleDebit()))
-                .add(BigDecimalUtils.createDecimal(transaction.getTransactionAmount()));
+            BigDecimal currentBalance = account.getCurrentCycleCredit()
+                .subtract(account.getCurrentCycleDebit())
+                .add(transaction.getTransactionAmount());
             
             if (BigDecimalUtils.compare(account.getCreditLimit(), currentBalance) < 0) {
                 logger.warn("Credit limit exceeded for account: {}", accountId);
@@ -579,7 +583,7 @@ public class DailyTransactionPostingJob {
         transaction.setCategoryCode(dto.getTransactionCategoryCode());
         transaction.setSource(dto.getTransactionSource());
         transaction.setDescription(dto.getTransactionDescription());
-        transaction.setAmount(BigDecimalUtils.createDecimal(dto.getTransactionAmount()));
+        transaction.setAmount(dto.getTransactionAmount());
         transaction.setMerchantId(dto.getMerchantId());
         transaction.setMerchantName(dto.getMerchantName());
         transaction.setMerchantCity(dto.getMerchantCity());
@@ -625,8 +629,8 @@ public class DailyTransactionPostingJob {
             Account account = accountOptional.get();
             
             // Update balances with exact BigDecimal precision
-            BigDecimal transactionAmount = BigDecimalUtils.createDecimal(transaction.getAmount());
-            BigDecimal currentBalance = BigDecimalUtils.createDecimal(account.getCurrentBalance());
+            BigDecimal transactionAmount = transaction.getAmount();
+            BigDecimal currentBalance = account.getCurrentBalance();
             BigDecimal newBalance = BigDecimalUtils.add(currentBalance, transactionAmount);
             
             account.setCurrentBalance(newBalance);
@@ -634,12 +638,12 @@ public class DailyTransactionPostingJob {
             // Update cycle credit/debit based on transaction amount sign
             if (BigDecimalUtils.compare(transactionAmount, BigDecimal.ZERO) >= 0) {
                 // Credit transaction
-                BigDecimal currentCredit = BigDecimalUtils.createDecimal(account.getCurrentCycleCredit());
+                BigDecimal currentCredit = account.getCurrentCycleCredit();
                 BigDecimal newCredit = BigDecimalUtils.add(currentCredit, transactionAmount);
                 account.setCurrentCycleCredit(newCredit);
             } else {
                 // Debit transaction
-                BigDecimal currentDebit = BigDecimalUtils.createDecimal(account.getCurrentCycleDebit());
+                BigDecimal currentDebit = account.getCurrentCycleDebit();
                 BigDecimal newDebit = BigDecimalUtils.add(currentDebit, transactionAmount);
                 account.setCurrentCycleDebit(newDebit);
             }
