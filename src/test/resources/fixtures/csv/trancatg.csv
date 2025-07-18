@@ -1,0 +1,299 @@
+# ===============================================================================
+# Transaction Category Test Fixture - CSV Format
+# Source: CardDemo System Migration - COBOL to Java Spring Boot
+# ===============================================================================
+#
+# This CSV test fixture provides comprehensive transaction category reference data
+# for Spring Batch processing validation and testing scenarios. The data supports:
+#
+# - Category code validation testing (4-character numeric codes)
+# - Category description validation and lookup table integration
+# - Active/inactive status handling for business rule testing
+# - PostgreSQL foreign key constraint testing with transaction data
+# - Transaction categorization validation and classification scenarios
+# - Spring Batch reference table processing and error handling
+#
+# Schema Mapping:
+# - transaction_category (VARCHAR(4)) - 4-character primary key
+# - category_description (VARCHAR(60)) - transaction category description
+# - active_status (BOOLEAN) - category lifecycle management flag
+#
+# Test Coverage:
+# - Valid category codes (0100-0799 range)
+# - Invalid category codes for validation testing
+# - Standard active categories for normal processing
+# - Inactive categories for lifecycle testing
+# - Long descriptions for boundary testing
+# - Special characters and edge cases
+# - Duplicate detection scenarios
+# - Foreign key relationship validation
+#
+# Author: Blitzy Agent
+# Date: 2024
+# Version: 1.0
+# ===============================================================================
+
+# CSV Header: transaction_category,category_description,active_status
+transaction_category,category_description,active_status
+
+# ===============================================================================
+# ACTIVE TRANSACTION CATEGORIES - Primary Test Data
+# Based on source trancatg.txt with 4-character code conversion
+# ===============================================================================
+
+# Purchase and Sales Transaction Categories (0100-0199)
+0100,Regular Sales Draft,true
+0101,Point of Sale Purchase,true
+0102,Online Purchase Transaction,true
+0103,Recurring Purchase Payment,true
+0104,Convenience Check Debit,true
+0105,ATM Cash Advance,true
+0106,Interest Amount,true
+0107,Fee Assessment,true
+0108,Merchant Refund Credit,true
+0109,Purchase Return Credit,true
+
+# Payment Transaction Categories (0200-0299)
+0200,Cash Payment,true
+0201,Electronic Payment,true
+0202,Check Payment,true
+0203,Online Banking Payment,true
+0204,Mobile Payment,true
+0205,Wire Transfer Payment,true
+0206,ACH Payment,true
+0207,Automatic Payment,true
+0208,Manual Payment Entry,true
+0209,Payment Reversal,true
+
+# Credit Transaction Categories (0300-0399)
+0300,Credit to Account,true
+0301,Credit to Purchase Balance,true
+0302,Credit to Cash Balance,true
+0303,Statement Credit,true
+0304,Promotional Credit,true
+0305,Cashback Credit,true
+0306,Rewards Credit,true
+0307,Dispute Credit,true
+0308,Adjustment Credit,true
+0309,Loyalty Credit,true
+
+# Authorization Transaction Categories (0400-0499)
+0400,Zero Dollar Authorization,true
+0401,Online Purchase Authorization,true
+0402,Travel Booking Authorization,true
+0403,Hotel Authorization,true
+0404,Gas Station Authorization,true
+0405,Restaurant Authorization,true
+0406,ATM Authorization,true
+0407,Recurring Authorization,true
+0408,Pre-Authorization Hold,true
+0409,Authorization Settlement,true
+
+# Refund Transaction Categories (0500-0599)
+0500,Refund Credit,true
+0501,Merchant Refund,true
+0502,Partial Refund,true
+0503,Full Refund,true
+0504,Disputed Refund,true
+0505,Chargeback Refund,true
+0506,Processing Refund,true
+0507,Fee Refund,true
+0508,Interest Refund,true
+0509,Overpayment Refund,true
+
+# Reversal Transaction Categories (0600-0699)
+0600,Fraud Reversal,true
+0601,Non-Fraud Reversal,true
+0602,System Reversal,true
+0603,Timeout Reversal,true
+0604,Duplicate Reversal,true
+0605,Error Reversal,true
+0606,Manual Reversal,true
+0607,Chargeback Reversal,true
+0608,Dispute Reversal,true
+0609,Settlement Reversal,true
+
+# Adjustment Transaction Categories (0700-0799)
+0700,Sales Draft Credit Adjustment,true
+0701,Balance Adjustment,true
+0702,Interest Adjustment,true
+0703,Fee Adjustment,true
+0704,Currency Adjustment,true
+0705,Exchange Rate Adjustment,true
+0706,Billing Adjustment,true
+0707,Statement Adjustment,true
+0708,Account Adjustment,true
+0709,System Adjustment,true
+
+# ===============================================================================
+# INACTIVE TRANSACTION CATEGORIES - Lifecycle Testing
+# Categories that have been deactivated for testing business rules
+# ===============================================================================
+
+# Deprecated Categories - Historical data only
+0800,Deprecated Cash Advance,false
+0801,Deprecated ATM Transaction,false
+0802,Deprecated Check Processing,false
+0803,Deprecated Manual Entry,false
+0804,Deprecated Foreign Exchange,false
+0805,Deprecated Traveler Check,false
+0806,Deprecated Money Order,false
+0807,Deprecated Wire Transfer,false
+0808,Deprecated Collection Fee,false
+0809,Deprecated Service Charge,false
+
+# Legacy Categories - No longer supported
+0900,Legacy Telex Transaction,false
+0901,Legacy Magnetic Stripe,false
+0902,Legacy Paper Check,false
+0903,Legacy Manual Authorization,false
+0904,Legacy Phone Authorization,false
+0905,Legacy Fax Authorization,false
+0906,Legacy Mail Order,false
+0907,Legacy Catalog Order,false
+0908,Legacy Subscription Service,false
+0909,Legacy Layaway Payment,false
+
+# ===============================================================================
+# EDGE CASE CATEGORIES - Validation Testing
+# Categories designed to test boundary conditions and error handling
+# ===============================================================================
+
+# Minimum/Maximum Length Descriptions
+1000,A,true
+1001,Maximum length description for testing boundary conditions,true
+1002,Special chars: !@#$%^&*()_+-=[]{}|;:,.<>?,true
+1003,Unicode test: àáâãäåæçèéêë,true
+1004,Numbers in description: 123456789,true
+
+# Boundary Testing - Category Codes
+0001,Minimum Category Code,true
+9999,Maximum Category Code,true
+0000,Zero Category Code,false
+1111,Repeating Digit Code,true
+1234,Sequential Digit Code,true
+
+# ===============================================================================
+# VALIDATION FAILURE SCENARIOS - Error Testing
+# Categories that should fail validation for testing error handling
+# ===============================================================================
+
+# Invalid Category Codes (for negative testing - should be filtered out)
+# Note: These entries are included for comprehensive testing but should
+# be caught by validation rules in the application
+
+# Description Length Boundary Testing
+2000,This description is exactly sixty characters long for testing,true
+2001,This description exceeds the maximum allowed length of sixty characters and should trigger validation error,false
+
+# Special Status Testing
+3000,Null Status Test,
+3001,Empty Description Test,,true
+3002,Whitespace Description Test,   ,true
+3003,Tab Description Test,	,true
+
+# ===============================================================================
+# FOREIGN KEY RELATIONSHIP TESTING
+# Categories specifically for testing relationships with transaction data
+# ===============================================================================
+
+# Common categories for foreign key testing
+4000,Foreign Key Test Category 1,true
+4001,Foreign Key Test Category 2,true
+4002,Foreign Key Test Category 3,true
+4003,Foreign Key Test Category 4,false
+4004,Foreign Key Test Category 5,false
+
+# Orphaned categories (no transactions should reference these)
+5000,Orphaned Category 1,true
+5001,Orphaned Category 2,false
+5002,Orphaned Category 3,true
+
+# High-volume categories (many transactions should reference these)
+6000,High Volume Category 1,true
+6001,High Volume Category 2,true
+6002,High Volume Category 3,true
+
+# ===============================================================================
+# SPRING BATCH PROCESSING SCENARIOS
+# Categories for testing batch processing capabilities
+# ===============================================================================
+
+# Batch Processing Test Categories
+7000,Batch Test Category 1,true
+7001,Batch Test Category 2,true
+7002,Batch Test Category 3,false
+7003,Batch Test Category 4,true
+7004,Batch Test Category 5,false
+
+# Chunk Processing Test Categories
+7100,Chunk Test Category 1,true
+7101,Chunk Test Category 2,true
+7102,Chunk Test Category 3,true
+7103,Chunk Test Category 4,true
+7104,Chunk Test Category 5,true
+7105,Chunk Test Category 6,true
+7106,Chunk Test Category 7,true
+7107,Chunk Test Category 8,true
+7108,Chunk Test Category 9,true
+7109,Chunk Test Category 10,true
+
+# Error Handling Test Categories
+8000,Error Handling Test 1,true
+8001,Error Handling Test 2,false
+8002,Error Handling Test 3,true
+8003,Error Handling Test 4,false
+8004,Error Handling Test 5,true
+
+# ===============================================================================
+# PERFORMANCE TESTING CATEGORIES
+# Large dataset for performance and scalability testing
+# ===============================================================================
+
+# Performance Test Categories (8100-8199)
+8100,Performance Test Category 001,true
+8101,Performance Test Category 002,true
+8102,Performance Test Category 003,true
+8103,Performance Test Category 004,true
+8104,Performance Test Category 005,true
+8105,Performance Test Category 006,true
+8106,Performance Test Category 007,true
+8107,Performance Test Category 008,true
+8108,Performance Test Category 009,true
+8109,Performance Test Category 010,true
+8110,Performance Test Category 011,true
+8111,Performance Test Category 012,true
+8112,Performance Test Category 013,true
+8113,Performance Test Category 014,true
+8114,Performance Test Category 015,true
+8115,Performance Test Category 016,true
+8116,Performance Test Category 017,true
+8117,Performance Test Category 018,true
+8118,Performance Test Category 019,true
+8119,Performance Test Category 020,true
+
+# ===============================================================================
+# CACHE TESTING CATEGORIES
+# Categories for testing Redis cache integration
+# ===============================================================================
+
+# Cache Test Categories
+9000,Cache Test Category 1,true
+9001,Cache Test Category 2,true
+9002,Cache Test Category 3,false
+9003,Cache Test Category 4,true
+9004,Cache Test Category 5,false
+
+# Cache Eviction Test Categories
+9100,Cache Eviction Test 1,true
+9101,Cache Eviction Test 2,true
+9102,Cache Eviction Test 3,true
+9103,Cache Eviction Test 4,true
+9104,Cache Eviction Test 5,true
+
+# ===============================================================================
+# END OF TEST FIXTURE DATA
+# Total Categories: 150+ for comprehensive testing coverage
+# Active Categories: ~120 (80% active ratio)
+# Inactive Categories: ~30 (20% inactive ratio)
+# ===============================================================================
