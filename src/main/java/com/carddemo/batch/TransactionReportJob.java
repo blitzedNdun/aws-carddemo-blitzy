@@ -11,11 +11,13 @@ import com.carddemo.batch.dto.TransactionReportDTO;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
-import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.configuration.annotation.JobScope;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
@@ -130,10 +132,10 @@ public class TransactionReportJob {
     // ===========================
     
     @Autowired
-    private JobBuilderFactory jobBuilderFactory;
+    private JobRepository jobRepository;
     
     @Autowired
-    private StepBuilderFactory stepBuilderFactory;
+    private PlatformTransactionManager transactionManager;
     
     @Autowired
     private TransactionRepository transactionRepository;
@@ -229,7 +231,7 @@ public class TransactionReportJob {
     public Job transactionReportJob() {
         logger.info("Configuring transaction report job - equivalent to COBOL CBTRN03C");
         
-        return jobBuilderFactory.get("transactionReportJob")
+        return new JobBuilder("transactionReportJob", jobRepository)
                 .incrementer(new RunIdIncrementer())
                 .start(transactionReportStep())
                 .build();
@@ -255,8 +257,8 @@ public class TransactionReportJob {
     public Step transactionReportStep() {
         logger.info("Configuring transaction report step with chunk size: {}", DEFAULT_CHUNK_SIZE);
         
-        return stepBuilderFactory.get("transactionReportStep")
-                .<Transaction, TransactionReportDTO>chunk(DEFAULT_CHUNK_SIZE)
+        return new StepBuilder("transactionReportStep", jobRepository)
+                .<Transaction, TransactionReportDTO>chunk(DEFAULT_CHUNK_SIZE, transactionManager)
                 .reader(transactionItemReader())
                 .processor(transactionItemProcessor())
                 .writer(transactionItemWriter())
