@@ -294,6 +294,60 @@ public class TransactionReportDTO {
     }
     
     /**
+     * Gets the transaction source
+     * 
+     * @return Transaction source
+     */
+    public String getSource() {
+        return source;
+    }
+    
+    /**
+     * Sets the transaction source
+     * 
+     * @param source Transaction source
+     */
+    public void setSource(String source) {
+        this.source = source;
+    }
+    
+    /**
+     * Gets the transaction type description
+     * 
+     * @return Transaction type description
+     */
+    public String getTransactionTypeDescription() {
+        return transactionTypeDescription;
+    }
+    
+    /**
+     * Sets the transaction type description
+     * 
+     * @param transactionTypeDescription Transaction type description
+     */
+    public void setTransactionTypeDescription(String transactionTypeDescription) {
+        this.transactionTypeDescription = transactionTypeDescription;
+    }
+    
+    /**
+     * Gets the transaction category description
+     * 
+     * @return Transaction category description
+     */
+    public String getTransactionCategoryDescription() {
+        return transactionCategoryDescription;
+    }
+    
+    /**
+     * Sets the transaction category description
+     * 
+     * @param transactionCategoryDescription Transaction category description
+     */
+    public void setTransactionCategoryDescription(String transactionCategoryDescription) {
+        this.transactionCategoryDescription = transactionCategoryDescription;
+    }
+    
+    /**
      * Gets the report start date
      * 
      * @return Report start date as string
