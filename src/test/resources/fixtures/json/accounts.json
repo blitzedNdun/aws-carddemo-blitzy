@@ -1,0 +1,1002 @@
+[
+  {
+    "accountId": "00000000001",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "19.40",
+    "creditLimit": "2020.00",
+    "cashCreditLimit": "1020.00",
+    "openDate": "2014-11-20",
+    "expirationDate": "2025-05-20",
+    "reissueDate": "2025-05-20",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000001",
+      "firstName": "John",
+      "lastName": "Doe",
+      "ficoCreditScore": 750
+    }
+  },
+  {
+    "accountId": "00000000002",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "15.80",
+    "creditLimit": "6130.00",
+    "cashCreditLimit": "5448.00",
+    "openDate": "2013-06-19",
+    "expirationDate": "2024-08-11",
+    "reissueDate": "2024-08-11",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000002",
+      "firstName": "Jane",
+      "lastName": "Smith",
+      "ficoCreditScore": 680
+    }
+  },
+  {
+    "accountId": "00000000003",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "14.70",
+    "creditLimit": "4909.00",
+    "cashCreditLimit": "538.00",
+    "openDate": "2013-08-23",
+    "expirationDate": "2024-01-10",
+    "reissueDate": "2024-01-10",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000003",
+      "firstName": "Robert",
+      "lastName": "Johnson",
+      "ficoCreditScore": 720
+    }
+  },
+  {
+    "accountId": "00000000004",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "4.00",
+    "creditLimit": "3503.00",
+    "cashCreditLimit": "2789.00",
+    "openDate": "2012-11-17",
+    "expirationDate": "2023-12-16",
+    "reissueDate": "2023-12-16",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000004",
+      "firstName": "Mary",
+      "lastName": "Williams",
+      "ficoCreditScore": 650
+    }
+  },
+  {
+    "accountId": "00000000005",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "34.50",
+    "creditLimit": "3819.00",
+    "cashCreditLimit": "2430.00",
+    "openDate": "2012-10-03",
+    "expirationDate": "2025-03-09",
+    "reissueDate": "2025-03-09",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000005",
+      "firstName": "David",
+      "lastName": "Brown",
+      "ficoCreditScore": 710
+    }
+  },
+  {
+    "accountId": "00000000006",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "21.80",
+    "creditLimit": "3584.00",
+    "cashCreditLimit": "2948.00",
+    "openDate": "2017-12-23",
+    "expirationDate": "2025-10-08",
+    "reissueDate": "2025-10-08",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000006",
+      "firstName": "Susan",
+      "lastName": "Davis",
+      "ficoCreditScore": 780
+    }
+  },
+  {
+    "accountId": "00000000007",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "19.30",
+    "creditLimit": "2065.00",
+    "cashCreditLimit": "264.00",
+    "openDate": "2012-10-12",
+    "expirationDate": "2024-12-13",
+    "reissueDate": "2024-12-13",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000007",
+      "firstName": "Michael",
+      "lastName": "Miller",
+      "ficoCreditScore": 670
+    }
+  },
+  {
+    "accountId": "00000000008",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "60.50",
+    "creditLimit": "6104.00",
+    "cashCreditLimit": "1318.00",
+    "openDate": "2012-01-04",
+    "expirationDate": "2024-05-20",
+    "reissueDate": "2024-05-20",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000008",
+      "firstName": "Linda",
+      "lastName": "Wilson",
+      "ficoCreditScore": 690
+    }
+  },
+  {
+    "accountId": "00000000009",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "56.00",
+    "creditLimit": "8201.00",
+    "cashCreditLimit": "2065.00",
+    "openDate": "2016-08-27",
+    "expirationDate": "2024-12-27",
+    "reissueDate": "2024-12-27",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000009",
+      "firstName": "James",
+      "lastName": "Moore",
+      "ficoCreditScore": 800
+    }
+  },
+  {
+    "accountId": "00000000010",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "15.90",
+    "creditLimit": "5401.00",
+    "cashCreditLimit": "4442.00",
+    "openDate": "2015-09-13",
+    "expirationDate": "2023-01-27",
+    "reissueDate": "2023-01-27",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000010",
+      "firstName": "Patricia",
+      "lastName": "Taylor",
+      "ficoCreditScore": 730
+    }
+  },
+  {
+    "accountId": "00000000011",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "21.20",
+    "creditLimit": "4998.00",
+    "cashCreditLimit": "3175.00",
+    "openDate": "2014-09-12",
+    "expirationDate": "2025-03-12",
+    "reissueDate": "2025-03-12",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000011",
+      "firstName": "Christopher",
+      "lastName": "Anderson",
+      "ficoCreditScore": 740
+    }
+  },
+  {
+    "accountId": "00000000012",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "17.60",
+    "creditLimit": "4636.00",
+    "cashCreditLimit": "388.00",
+    "openDate": "2009-06-17",
+    "expirationDate": "2023-07-07",
+    "reissueDate": "2023-07-07",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000012",
+      "firstName": "Jennifer",
+      "lastName": "Thomas",
+      "ficoCreditScore": 760
+    }
+  },
+  {
+    "accountId": "00000000013",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "4.10",
+    "creditLimit": "7542.00",
+    "cashCreditLimit": "4922.00",
+    "openDate": "2017-10-01",
+    "expirationDate": "2024-08-04",
+    "reissueDate": "2024-08-04",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000013",
+      "firstName": "Daniel",
+      "lastName": "Jackson",
+      "ficoCreditScore": 820
+    }
+  },
+  {
+    "accountId": "00000000014",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "1.50",
+    "creditLimit": "2254.00",
+    "cashCreditLimit": "212.00",
+    "openDate": "2010-12-04",
+    "expirationDate": "2025-12-11",
+    "reissueDate": "2025-12-11",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000014",
+      "firstName": "Sarah",
+      "lastName": "White",
+      "ficoCreditScore": 640
+    }
+  },
+  {
+    "accountId": "00000000015",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "48.90",
+    "creditLimit": "8441.00",
+    "cashCreditLimit": "3833.00",
+    "openDate": "2009-10-06",
+    "expirationDate": "2025-06-09",
+    "reissueDate": "2025-06-09",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000015",
+      "firstName": "Matthew",
+      "lastName": "Harris",
+      "ficoCreditScore": 770
+    }
+  },
+  {
+    "accountId": "00000000016",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "73.30",
+    "creditLimit": "8922.00",
+    "cashCreditLimit": "2632.00",
+    "openDate": "2014-09-11",
+    "expirationDate": "2024-01-25",
+    "reissueDate": "2024-01-25",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000016",
+      "firstName": "Jessica",
+      "lastName": "Martin",
+      "ficoCreditScore": 700
+    }
+  },
+  {
+    "accountId": "00000000017",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "3.30",
+    "creditLimit": "568.00",
+    "cashCreditLimit": "510.00",
+    "openDate": "2014-05-17",
+    "expirationDate": "2025-03-01",
+    "reissueDate": "2025-03-01",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000017",
+      "firstName": "Anthony",
+      "lastName": "Thompson",
+      "ficoCreditScore": 580
+    }
+  },
+  {
+    "accountId": "00000000018",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "14.40",
+    "creditLimit": "2903.00",
+    "cashCreditLimit": "1496.00",
+    "openDate": "2018-11-15",
+    "expirationDate": "2023-09-10",
+    "reissueDate": "2023-09-10",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000018",
+      "firstName": "Ashley",
+      "lastName": "Garcia",
+      "ficoCreditScore": 660
+    }
+  },
+  {
+    "accountId": "00000000019",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "48.00",
+    "creditLimit": "6986.00",
+    "cashCreditLimit": "3723.00",
+    "openDate": "2011-12-14",
+    "expirationDate": "2025-07-23",
+    "reissueDate": "2025-07-23",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000019",
+      "firstName": "Mark",
+      "lastName": "Martinez",
+      "ficoCreditScore": 790
+    }
+  },
+  {
+    "accountId": "00000000020",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "36.90",
+    "creditLimit": "3767.00",
+    "cashCreditLimit": "1040.00",
+    "openDate": "2014-02-27",
+    "expirationDate": "2024-03-13",
+    "reissueDate": "2024-03-13",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000020",
+      "firstName": "Amanda",
+      "lastName": "Robinson",
+      "ficoCreditScore": 720
+    }
+  },
+  {
+    "accountId": "00000000021",
+    "activeStatus": "INACTIVE",
+    "currentBalance": "11.20",
+    "creditLimit": "1264.00",
+    "cashCreditLimit": "180.00",
+    "openDate": "2011-10-19",
+    "expirationDate": "2023-01-06",
+    "reissueDate": "2023-01-06",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000021",
+      "firstName": "Kenneth",
+      "lastName": "Clark",
+      "ficoCreditScore": 610
+    }
+  },
+  {
+    "accountId": "00000000022",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "5.50",
+    "creditLimit": "8599.00",
+    "cashCreditLimit": "4712.00",
+    "openDate": "2016-11-21",
+    "expirationDate": "2025-12-28",
+    "reissueDate": "2025-12-28",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000022",
+      "firstName": "Stephanie",
+      "lastName": "Rodriguez",
+      "ficoCreditScore": 850
+    }
+  },
+  {
+    "accountId": "00000000023",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "10.40",
+    "creditLimit": "3377.00",
+    "cashCreditLimit": "2904.00",
+    "openDate": "2012-03-15",
+    "expirationDate": "2025-03-18",
+    "reissueDate": "2025-03-18",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000023",
+      "firstName": "Joshua",
+      "lastName": "Lewis",
+      "ficoCreditScore": 750
+    }
+  },
+  {
+    "accountId": "00000000024",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "40.00",
+    "creditLimit": "5174.00",
+    "cashCreditLimit": "4129.00",
+    "openDate": "2015-08-08",
+    "expirationDate": "2025-02-11",
+    "reissueDate": "2025-02-11",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000024",
+      "firstName": "Michelle",
+      "lastName": "Lee",
+      "ficoCreditScore": 680
+    }
+  },
+  {
+    "accountId": "00000000025",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "6.10",
+    "creditLimit": "8194.00",
+    "cashCreditLimit": "6582.00",
+    "openDate": "2012-10-26",
+    "expirationDate": "2025-07-10",
+    "reissueDate": "2025-07-10",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000025",
+      "firstName": "Brian",
+      "lastName": "Walker",
+      "ficoCreditScore": 780
+    }
+  },
+  {
+    "accountId": "00000000026",
+    "activeStatus": "INACTIVE",
+    "currentBalance": "4.60",
+    "creditLimit": "2181.00",
+    "cashCreditLimit": "1375.00",
+    "openDate": "2009-04-20",
+    "expirationDate": "2024-12-19",
+    "reissueDate": "2024-12-19",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000026",
+      "firstName": "Nicole",
+      "lastName": "Hall",
+      "ficoCreditScore": 620
+    }
+  },
+  {
+    "accountId": "00000000027",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "28.40",
+    "creditLimit": "5572.00",
+    "cashCreditLimit": "2075.00",
+    "openDate": "2012-09-30",
+    "expirationDate": "2025-07-13",
+    "reissueDate": "2025-07-13",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000027",
+      "firstName": "Kevin",
+      "lastName": "Allen",
+      "ficoCreditScore": 710
+    }
+  },
+  {
+    "accountId": "00000000028",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "6.80",
+    "creditLimit": "868.00",
+    "cashCreditLimit": "547.00",
+    "openDate": "2015-05-20",
+    "expirationDate": "2024-05-09",
+    "reissueDate": "2024-05-09",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000028",
+      "firstName": "Rachel",
+      "lastName": "Young",
+      "ficoCreditScore": 590
+    }
+  },
+  {
+    "accountId": "00000000029",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "33.90",
+    "creditLimit": "5511.00",
+    "cashCreditLimit": "4361.00",
+    "openDate": "2015-11-03",
+    "expirationDate": "2024-06-04",
+    "reissueDate": "2024-06-04",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000029",
+      "firstName": "Ryan",
+      "lastName": "Hernandez",
+      "ficoCreditScore": 760
+    }
+  },
+  {
+    "accountId": "00000000030",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "0.20",
+    "creditLimit": "120.00",
+    "cashCreditLimit": "93.00",
+    "openDate": "2011-08-26",
+    "expirationDate": "2024-06-27",
+    "reissueDate": "2024-06-27",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000030",
+      "firstName": "Laura",
+      "lastName": "King",
+      "ficoCreditScore": 520
+    }
+  },
+  {
+    "accountId": "00000000031",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "3.10",
+    "creditLimit": "1140.00",
+    "cashCreditLimit": "1077.00",
+    "openDate": "2017-02-25",
+    "expirationDate": "2025-06-08",
+    "reissueDate": "2025-06-08",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000031",
+      "firstName": "Gregory",
+      "lastName": "Wright",
+      "ficoCreditScore": 640
+    }
+  },
+  {
+    "accountId": "00000000032",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "3.00",
+    "creditLimit": "1175.00",
+    "cashCreditLimit": "846.00",
+    "openDate": "2013-11-10",
+    "expirationDate": "2025-05-19",
+    "reissueDate": "2025-05-19",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000032",
+      "firstName": "Amy",
+      "lastName": "Lopez",
+      "ficoCreditScore": 600
+    }
+  },
+  {
+    "accountId": "00000000033",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "41.00",
+    "creditLimit": "6404.00",
+    "cashCreditLimit": "951.00",
+    "openDate": "2012-10-11",
+    "expirationDate": "2025-10-07",
+    "reissueDate": "2025-10-07",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000033",
+      "firstName": "Jason",
+      "lastName": "Hill",
+      "ficoCreditScore": 720
+    }
+  },
+  {
+    "accountId": "00000000034",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "25.30",
+    "creditLimit": "3642.00",
+    "cashCreditLimit": "2770.00",
+    "openDate": "2009-05-10",
+    "expirationDate": "2025-10-06",
+    "reissueDate": "2025-10-06",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000034",
+      "firstName": "Kimberly",
+      "lastName": "Scott",
+      "ficoCreditScore": 690
+    }
+  },
+  {
+    "accountId": "00000000035",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "16.60",
+    "creditLimit": "1947.00",
+    "cashCreditLimit": "1525.00",
+    "openDate": "2018-02-02",
+    "expirationDate": "2025-09-23",
+    "reissueDate": "2025-09-23",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000035",
+      "firstName": "Brandon",
+      "lastName": "Green",
+      "ficoCreditScore": 650
+    }
+  },
+  {
+    "accountId": "00000000036",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "11.00",
+    "creditLimit": "3328.00",
+    "cashCreditLimit": "839.00",
+    "openDate": "2018-07-18",
+    "expirationDate": "2024-12-23",
+    "reissueDate": "2024-12-23",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000036",
+      "firstName": "Danielle",
+      "lastName": "Adams",
+      "ficoCreditScore": 730
+    }
+  },
+  {
+    "accountId": "00000000037",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "0.70",
+    "creditLimit": "446.00",
+    "cashCreditLimit": "166.00",
+    "openDate": "2016-09-10",
+    "expirationDate": "2023-10-24",
+    "reissueDate": "2023-10-24",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000037",
+      "firstName": "Tyler",
+      "lastName": "Baker",
+      "ficoCreditScore": 540
+    }
+  },
+  {
+    "accountId": "00000000038",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "61.20",
+    "creditLimit": "6505.00",
+    "cashCreditLimit": "3476.00",
+    "openDate": "2010-08-12",
+    "expirationDate": "2023-07-23",
+    "reissueDate": "2023-07-23",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000038",
+      "firstName": "Rebecca",
+      "lastName": "Gonzalez",
+      "ficoCreditScore": 770
+    }
+  },
+  {
+    "accountId": "00000000039",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "84.30",
+    "creditLimit": "9750.00",
+    "cashCreditLimit": "6212.00",
+    "openDate": "2018-08-26",
+    "expirationDate": "2025-09-08",
+    "reissueDate": "2025-09-08",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000039",
+      "firstName": "Aaron",
+      "lastName": "Nelson",
+      "ficoCreditScore": 810
+    }
+  },
+  {
+    "accountId": "00000000040",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "4.30",
+    "creditLimit": "5823.00",
+    "cashCreditLimit": "1674.00",
+    "openDate": "2010-02-13",
+    "expirationDate": "2023-10-27",
+    "reissueDate": "2023-10-27",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000040",
+      "firstName": "Heather",
+      "lastName": "Carter",
+      "ficoCreditScore": 700
+    }
+  },
+  {
+    "accountId": "00000000041",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "37.50",
+    "creditLimit": "6721.00",
+    "cashCreditLimit": "3429.00",
+    "openDate": "2015-02-07",
+    "expirationDate": "2023-04-24",
+    "reissueDate": "2023-04-24",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000041",
+      "firstName": "Jeremy",
+      "lastName": "Mitchell",
+      "ficoCreditScore": 750
+    }
+  },
+  {
+    "accountId": "00000000042",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "30.20",
+    "creditLimit": "6563.00",
+    "cashCreditLimit": "5103.00",
+    "openDate": "2016-09-19",
+    "expirationDate": "2025-09-19",
+    "reissueDate": "2025-09-19",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000042",
+      "firstName": "Samantha",
+      "lastName": "Perez",
+      "ficoCreditScore": 720
+    }
+  },
+  {
+    "accountId": "00000000043",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "61.00",
+    "creditLimit": "6168.00",
+    "cashCreditLimit": "1206.00",
+    "openDate": "2012-04-09",
+    "expirationDate": "2025-08-29",
+    "reissueDate": "2025-08-29",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000043",
+      "firstName": "Nathan",
+      "lastName": "Roberts",
+      "ficoCreditScore": 780
+    }
+  },
+  {
+    "accountId": "00000000044",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "26.30",
+    "creditLimit": "6899.00",
+    "cashCreditLimit": "4432.00",
+    "openDate": "2018-12-01",
+    "expirationDate": "2024-01-17",
+    "reissueDate": "2024-01-17",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000044",
+      "firstName": "Crystal",
+      "lastName": "Turner",
+      "ficoCreditScore": 680
+    }
+  },
+  {
+    "accountId": "00000000045",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "18.60",
+    "creditLimit": "2719.00",
+    "cashCreditLimit": "688.00",
+    "openDate": "2010-12-31",
+    "expirationDate": "2025-07-09",
+    "reissueDate": "2025-07-09",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000045",
+      "firstName": "Jacob",
+      "lastName": "Phillips",
+      "ficoCreditScore": 620
+    }
+  },
+  {
+    "accountId": "00000000046",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "39.60",
+    "creditLimit": "7007.00",
+    "cashCreditLimit": "5438.00",
+    "openDate": "2013-09-06",
+    "expirationDate": "2025-06-20",
+    "reissueDate": "2025-06-20",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000046",
+      "firstName": "Julie",
+      "lastName": "Campbell",
+      "ficoCreditScore": 740
+    }
+  },
+  {
+    "accountId": "00000000047",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "3.20",
+    "creditLimit": "2338.00",
+    "cashCreditLimit": "159.00",
+    "openDate": "2014-04-03",
+    "expirationDate": "2025-08-23",
+    "reissueDate": "2025-08-23",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000047",
+      "firstName": "Carl",
+      "lastName": "Parker",
+      "ficoCreditScore": 580
+    }
+  },
+  {
+    "accountId": "00000000048",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "22.60",
+    "creditLimit": "2306.00",
+    "cashCreditLimit": "612.00",
+    "openDate": "2017-03-18",
+    "expirationDate": "2025-02-06",
+    "reissueDate": "2025-02-06",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000048",
+      "firstName": "Victoria",
+      "lastName": "Evans",
+      "ficoCreditScore": 650
+    }
+  },
+  {
+    "accountId": "00000000049",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "10.00",
+    "creditLimit": "9048.00",
+    "cashCreditLimit": "4807.00",
+    "openDate": "2019-04-06",
+    "expirationDate": "2023-09-17",
+    "reissueDate": "2023-09-17",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000049",
+      "firstName": "Sean",
+      "lastName": "Edwards",
+      "ficoCreditScore": 800
+    }
+  },
+  {
+    "accountId": "00000000050",
+    "activeStatus": "ACTIVE",
+    "currentBalance": "49.20",
+    "creditLimit": "6169.00",
+    "cashCreditLimit": "4587.00",
+    "openDate": "2011-04-22",
+    "expirationDate": "2023-03-09",
+    "reissueDate": "2023-03-09",
+    "currentCycleCredit": "0.00",
+    "currentCycleDebit": "0.00",
+    "addressZip": "A000000000",
+    "groupId": "A000000000",
+    "customer": {
+      "customerId": "000000050",
+      "firstName": "Brittany",
+      "lastName": "Collins",
+      "ficoCreditScore": 760
+    }
+  }
+]
