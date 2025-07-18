@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "description": "Golden file containing expected transaction processing outputs for validating real-time transaction calculations, fees, and categorization logic against legacy COBOL transaction processing behavior",
+    "description": "Golden file containing expected transaction processing outputs for validating real-time transaction calculations, fees, and categorization logic against legacy COBOL transaction processing behavior with exact BigDecimal precision equivalent to COBOL COMP-3 arithmetic",
     "version": "1.0",
     "created": "2024-01-01",
     "purpose": "Validate microservice transaction pipeline accuracy against original mainframe processing with exact BigDecimal precision",
@@ -615,7 +615,7 @@
                 "projectedBalance": "6000.00",
                 "availableCredit": "2000.00",
                 "creditLimitExceeded": true,
-                "exceedsBy": "3000.00"
+                "exceedsBy": "4000.00"
               },
               "processingTimestamp": "2024-01-01T12:00:00.000Z",
               "authorizationCode": "D",
@@ -850,7 +850,7 @@
       },
       {
         "operation": "addTransaction",
-        "expectedResponseTime": "300ms",
+        "expectedResponseTime": "200ms",
         "maxResponseTime": "500ms",
         "throughput": "8000 TPS",
         "memoryUsage": "<=110% baseline"
