@@ -4,601 +4,375 @@ import com.carddemo.common.enums.TransactionType;
 import com.carddemo.common.enums.TransactionCategory;
 import com.carddemo.common.validator.ValidCardNumber;
 import com.carddemo.common.validator.ValidCurrency;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.validation.constraints.DecimalMin;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Objects;
+import jakarta.validation.constraints.DecimalMin;
 
 /**
- * Transaction Data Transfer Object providing consistent transaction representation across
- * all API operations with exact COBOL field correspondence.
+ * Common transaction data transfer object providing consistent transaction representation 
+ * across all API operations with exact COBOL field correspondence.
  * 
- * This DTO maintains complete functional equivalence with the original COBOL TRAN-RECORD
- * structure from CVTRA05Y.cpy copybook, ensuring seamless migration from mainframe
- * VSAM data structures to modern PostgreSQL-based REST API communication.
+ * <p>This DTO maintains complete structural fidelity with the original COBOL TRAN-RECORD
+ * from CVTRA05Y.cpy, ensuring all transaction fields are accurately represented with
+ * appropriate Java data types and BigDecimal precision for financial calculations.</p>
  * 
- * Key Features:
- * - Exact field mapping to COBOL transaction record structure (RECLN = 350)
- * - Jackson JSON serialization for consistent REST API communication
- * - Jakarta Bean Validation for comprehensive data integrity
- * - BigDecimal precision matching COBOL COMP-3 financial calculations
- * - Integration with Spring Boot microservices architecture
+ * <p><strong>COBOL Field Mappings:</strong></p>
+ * <ul>
+ *   <li>TRAN-ID PIC X(16) → transactionId String</li>
+ *   <li>TRAN-TYPE-CD PIC X(02) → transactionType TransactionType enum</li>
+ *   <li>TRAN-CAT-CD PIC 9(04) → categoryCode String</li>
+ *   <li>TRAN-SOURCE PIC X(10) → source String</li>
+ *   <li>TRAN-DESC PIC X(100) → description String</li>
+ *   <li>TRAN-AMT PIC S9(09)V99 → amount BigDecimal</li>
+ *   <li>TRAN-MERCHANT-ID PIC 9(09) → merchantId String</li>
+ *   <li>TRAN-MERCHANT-NAME PIC X(50) → merchantName String</li>
+ *   <li>TRAN-MERCHANT-CITY PIC X(50) → merchantCity String</li>
+ *   <li>TRAN-MERCHANT-ZIP PIC X(10) → merchantZip String</li>
+ *   <li>TRAN-CARD-NUM PIC X(16) → cardNumber String</li>
+ *   <li>TRAN-ORIG-TS PIC X(26) → originalTimestamp LocalDateTime</li>
+ *   <li>TRAN-PROC-TS PIC X(26) → processingTimestamp LocalDateTime</li>
+ * </ul>
  * 
- * Field Mapping from COBOL TRAN-RECORD:
- * - TRAN-ID (PIC X(16)) → transactionId
- * - TRAN-TYPE-CD (PIC X(02)) → transactionType
- * - TRAN-CAT-CD (PIC 9(04)) → categoryCode
- * - TRAN-SOURCE (PIC X(10)) → source
- * - TRAN-DESC (PIC X(100)) → description
- * - TRAN-AMT (PIC S9(09)V99) → amount
- * - TRAN-MERCHANT-ID (PIC 9(09)) → merchantId
- * - TRAN-MERCHANT-NAME (PIC X(50)) → merchantName
- * - TRAN-MERCHANT-CITY (PIC X(50)) → merchantCity
- * - TRAN-MERCHANT-ZIP (PIC X(10)) → merchantZip
- * - TRAN-CARD-NUM (PIC X(16)) → cardNumber
- * - TRAN-ORIG-TS (PIC X(26)) → originalTimestamp
- * - TRAN-PROC-TS (PIC X(26)) → processingTimestamp
- * 
- * Performance Requirements:
- * - Supports 10,000+ TPS transaction processing capacity
- * - Maintains sub-200ms response times for authorization operations
- * - Optimized for Spring Boot microservices communication
- * - Memory-efficient serialization for high-volume operations
- * 
- * Technical Implementation:
- * - JSON property naming consistent with React frontend expectations
- * - Date/time fields use ISO-8601 format for API compatibility
- * - BigDecimal amounts preserve exact financial precision
- * - Validation annotations ensure data integrity across service boundaries
- * 
- * Based on COBOL sources:
- * - CVTRA05Y.cpy: Transaction record structure definition
- * - COTRN00C.cbl: Transaction listing program
- * - COTRN01C.cbl: Transaction viewing program
- * - COTRN02C.cbl: Transaction addition program
- * 
- * @author Blitzy Platform
+ * @author Blitzy Agent
  * @version 1.0
  * @since 2024-01-01
  */
 public class TransactionDTO {
     
     /**
-     * Transaction ID - unique identifier for each transaction
-     * Maps to COBOL TRAN-ID field (PIC X(16))
-     * System-generated primary key for transaction record
+     * Transaction identifier - 16-character unique identifier.
+     * Maps to TRAN-ID PIC X(16) from CVTRA05Y.cpy
      */
     @JsonProperty("transactionId")
     private String transactionId;
     
     /**
-     * Transaction Type - categorizes the type of transaction
-     * Maps to COBOL TRAN-TYPE-CD field (PIC X(02))
-     * Must match valid TransactionType enum values
+     * Transaction type enumeration value.
+     * Maps to TRAN-TYPE-CD PIC X(02) from CVTRA05Y.cpy
      */
     @JsonProperty("transactionType")
     private TransactionType transactionType;
     
     /**
-     * Category Code - specifies the transaction category
-     * Maps to COBOL TRAN-CAT-CD field (PIC 9(04))
-     * Must match valid TransactionCategory enum values
+     * Transaction category code.
+     * Maps to TRAN-CAT-CD PIC 9(04) from CVTRA05Y.cpy
      */
     @JsonProperty("categoryCode")
-    private TransactionCategory categoryCode;
+    private String categoryCode;
     
     /**
-     * Transaction Source - identifies the originating system or channel
-     * Maps to COBOL TRAN-SOURCE field (PIC X(10))
-     * Examples: "ONLINE", "ATM", "POS", "BATCH"
+     * Transaction source identifier.
+     * Maps to TRAN-SOURCE PIC X(10) from CVTRA05Y.cpy
      */
     @JsonProperty("source")
     private String source;
     
     /**
-     * Transaction Description - human-readable description of the transaction
-     * Maps to COBOL TRAN-DESC field (PIC X(100))
-     * Free-form text describing the transaction details
+     * Transaction description.
+     * Maps to TRAN-DESC PIC X(100) from CVTRA05Y.cpy
      */
     @JsonProperty("description")
     private String description;
     
     /**
-     * Transaction Amount - monetary value of the transaction
-     * Maps to COBOL TRAN-AMT field (PIC S9(09)V99)
-     * Uses BigDecimal for exact financial precision matching COBOL COMP-3
+     * Transaction amount with exact financial precision.
+     * Maps to TRAN-AMT PIC S9(09)V99 from CVTRA05Y.cpy
      */
     @JsonProperty("amount")
-    @ValidCurrency(
-        min = "-999999999.99",
-        max = "999999999.99",
-        precision = 11,
-        scale = 2,
-        message = "Transaction amount must be a valid currency value with 2 decimal places"
-    )
-    @DecimalMin(
-        value = "-999999999.99",
-        message = "Transaction amount cannot be less than -999,999,999.99"
-    )
+    @ValidCurrency(min = "-999999999.99", max = "999999999.99")
+    @DecimalMin(value = "0.0", inclusive = false)
     private BigDecimal amount;
     
     /**
-     * Merchant ID - identifies the merchant for purchase transactions
-     * Maps to COBOL TRAN-MERCHANT-ID field (PIC 9(09))
-     * Numeric identifier for merchant processing
+     * Merchant identifier.
+     * Maps to TRAN-MERCHANT-ID PIC 9(09) from CVTRA05Y.cpy
      */
     @JsonProperty("merchantId")
     private String merchantId;
     
     /**
-     * Merchant Name - name of the merchant or business
-     * Maps to COBOL TRAN-MERCHANT-NAME field (PIC X(50))
-     * Text description of the merchant
+     * Merchant name.
+     * Maps to TRAN-MERCHANT-NAME PIC X(50) from CVTRA05Y.cpy
      */
     @JsonProperty("merchantName")
     private String merchantName;
     
     /**
-     * Merchant City - city where the merchant is located
-     * Maps to COBOL TRAN-MERCHANT-CITY field (PIC X(50))
-     * Geographic location information
+     * Merchant city.
+     * Maps to TRAN-MERCHANT-CITY PIC X(50) from CVTRA05Y.cpy
      */
     @JsonProperty("merchantCity")
     private String merchantCity;
     
     /**
-     * Merchant ZIP Code - postal code for merchant location
-     * Maps to COBOL TRAN-MERCHANT-ZIP field (PIC X(10))
-     * Postal code for merchant address
+     * Merchant ZIP code.
+     * Maps to TRAN-MERCHANT-ZIP PIC X(10) from CVTRA05Y.cpy
      */
     @JsonProperty("merchantZip")
     private String merchantZip;
     
     /**
-     * Card Number - credit card number used for the transaction
-     * Maps to COBOL TRAN-CARD-NUM field (PIC X(16))
-     * Must be a valid 16-digit credit card number
+     * Card number associated with transaction.
+     * Maps to TRAN-CARD-NUM PIC X(16) from CVTRA05Y.cpy
      */
     @JsonProperty("cardNumber")
-    @ValidCardNumber(
-        message = "Card number must be a valid 16-digit credit card number",
-        allowNullOrEmpty = true
-    )
+    @ValidCardNumber
     private String cardNumber;
     
     /**
-     * Original Timestamp - when the transaction was first initiated
-     * Maps to COBOL TRAN-ORIG-TS field (PIC X(26))
-     * ISO-8601 formatted timestamp
+     * Original transaction timestamp.
+     * Maps to TRAN-ORIG-TS PIC X(26) from CVTRA05Y.cpy
      */
     @JsonProperty("originalTimestamp")
     private LocalDateTime originalTimestamp;
     
     /**
-     * Processing Timestamp - when the transaction was processed by the system
-     * Maps to COBOL TRAN-PROC-TS field (PIC X(26))
-     * ISO-8601 formatted timestamp
+     * Processing timestamp.
+     * Maps to TRAN-PROC-TS PIC X(26) from CVTRA05Y.cpy
      */
     @JsonProperty("processingTimestamp")
     private LocalDateTime processingTimestamp;
     
     /**
-     * Default constructor for TransactionDTO
+     * Default constructor for TransactionDTO.
      */
     public TransactionDTO() {
-        // Default constructor for serialization frameworks
+        // Default constructor for serialization
     }
     
     /**
-     * Constructor with all required fields for transaction creation
+     * Gets the transaction identifier.
      * 
-     * @param transactionId unique transaction identifier
-     * @param transactionType type of transaction
-     * @param categoryCode transaction category
-     * @param source originating system or channel
-     * @param description transaction description
-     * @param amount transaction amount
-     * @param cardNumber credit card number
-     * @param originalTimestamp original transaction timestamp
-     * @param processingTimestamp processing timestamp
-     */
-    public TransactionDTO(String transactionId, TransactionType transactionType, 
-                         TransactionCategory categoryCode, String source, String description, 
-                         BigDecimal amount, String cardNumber, LocalDateTime originalTimestamp, 
-                         LocalDateTime processingTimestamp) {
-        this.transactionId = transactionId;
-        this.transactionType = transactionType;
-        this.categoryCode = categoryCode;
-        this.source = source;
-        this.description = description;
-        this.amount = amount;
-        this.cardNumber = cardNumber;
-        this.originalTimestamp = originalTimestamp;
-        this.processingTimestamp = processingTimestamp;
-    }
-    
-    /**
-     * Get the transaction ID
-     * 
-     * @return transaction ID string
+     * @return transaction ID
      */
     public String getTransactionId() {
         return transactionId;
     }
     
     /**
-     * Set the transaction ID
+     * Sets the transaction identifier.
      * 
-     * @param transactionId transaction ID to set
+     * @param transactionId transaction ID
      */
     public void setTransactionId(String transactionId) {
         this.transactionId = transactionId;
     }
     
     /**
-     * Get the transaction type
+     * Gets the transaction type.
      * 
-     * @return TransactionType enum value
+     * @return transaction type enum
      */
     public TransactionType getTransactionType() {
         return transactionType;
     }
     
     /**
-     * Set the transaction type
+     * Sets the transaction type.
      * 
-     * @param transactionType TransactionType enum value to set
+     * @param transactionType transaction type enum
      */
     public void setTransactionType(TransactionType transactionType) {
         this.transactionType = transactionType;
     }
     
     /**
-     * Get the category code
+     * Gets the category code.
      * 
-     * @return TransactionCategory enum value
+     * @return category code
      */
-    public TransactionCategory getCategoryCode() {
+    public String getCategoryCode() {
         return categoryCode;
     }
     
     /**
-     * Set the category code
+     * Sets the category code.
      * 
-     * @param categoryCode TransactionCategory enum value to set
+     * @param categoryCode category code
      */
-    public void setCategoryCode(TransactionCategory categoryCode) {
+    public void setCategoryCode(String categoryCode) {
         this.categoryCode = categoryCode;
     }
     
     /**
-     * Get the transaction source
+     * Gets the source.
      * 
-     * @return source string
+     * @return source
      */
     public String getSource() {
         return source;
     }
     
     /**
-     * Set the transaction source
+     * Sets the source.
      * 
-     * @param source source string to set
+     * @param source source
      */
     public void setSource(String source) {
         this.source = source;
     }
     
     /**
-     * Get the transaction description
+     * Gets the description.
      * 
-     * @return description string
+     * @return description
      */
     public String getDescription() {
         return description;
     }
     
     /**
-     * Set the transaction description
+     * Sets the description.
      * 
-     * @param description description string to set
+     * @param description description
      */
     public void setDescription(String description) {
         this.description = description;
     }
     
     /**
-     * Get the transaction amount
+     * Gets the amount.
      * 
-     * @return BigDecimal amount with exact financial precision
+     * @return amount
      */
     public BigDecimal getAmount() {
         return amount;
     }
     
     /**
-     * Set the transaction amount
+     * Sets the amount.
      * 
-     * @param amount BigDecimal amount to set
+     * @param amount amount
      */
     public void setAmount(BigDecimal amount) {
         this.amount = amount;
     }
     
     /**
-     * Get the merchant ID
+     * Gets the merchant identifier.
      * 
-     * @return merchant ID string
+     * @return merchant ID
      */
     public String getMerchantId() {
         return merchantId;
     }
     
     /**
-     * Set the merchant ID
+     * Sets the merchant identifier.
      * 
-     * @param merchantId merchant ID string to set
+     * @param merchantId merchant ID
      */
     public void setMerchantId(String merchantId) {
         this.merchantId = merchantId;
     }
     
     /**
-     * Get the merchant name
+     * Gets the merchant name.
      * 
-     * @return merchant name string
+     * @return merchant name
      */
     public String getMerchantName() {
         return merchantName;
     }
     
     /**
-     * Set the merchant name
+     * Sets the merchant name.
      * 
-     * @param merchantName merchant name string to set
+     * @param merchantName merchant name
      */
     public void setMerchantName(String merchantName) {
         this.merchantName = merchantName;
     }
     
     /**
-     * Get the merchant city
+     * Gets the merchant city.
      * 
-     * @return merchant city string
+     * @return merchant city
      */
     public String getMerchantCity() {
         return merchantCity;
     }
     
     /**
-     * Set the merchant city
+     * Sets the merchant city.
      * 
-     * @param merchantCity merchant city string to set
+     * @param merchantCity merchant city
      */
     public void setMerchantCity(String merchantCity) {
         this.merchantCity = merchantCity;
     }
     
     /**
-     * Get the merchant ZIP code
+     * Gets the merchant ZIP code.
      * 
-     * @return merchant ZIP code string
+     * @return merchant ZIP
      */
     public String getMerchantZip() {
         return merchantZip;
     }
     
     /**
-     * Set the merchant ZIP code
+     * Sets the merchant ZIP code.
      * 
-     * @param merchantZip merchant ZIP code string to set
+     * @param merchantZip merchant ZIP
      */
     public void setMerchantZip(String merchantZip) {
         this.merchantZip = merchantZip;
     }
     
     /**
-     * Get the card number
+     * Gets the card number.
      * 
-     * @return card number string
+     * @return card number
      */
     public String getCardNumber() {
         return cardNumber;
     }
     
     /**
-     * Set the card number
+     * Sets the card number.
      * 
-     * @param cardNumber card number string to set
+     * @param cardNumber card number
      */
     public void setCardNumber(String cardNumber) {
         this.cardNumber = cardNumber;
     }
     
     /**
-     * Get the original timestamp
+     * Gets the original timestamp.
      * 
-     * @return LocalDateTime of original transaction
+     * @return original timestamp
      */
     public LocalDateTime getOriginalTimestamp() {
         return originalTimestamp;
     }
     
     /**
-     * Set the original timestamp
+     * Sets the original timestamp.
      * 
-     * @param originalTimestamp LocalDateTime to set
+     * @param originalTimestamp original timestamp
      */
     public void setOriginalTimestamp(LocalDateTime originalTimestamp) {
         this.originalTimestamp = originalTimestamp;
     }
     
     /**
-     * Get the processing timestamp
+     * Gets the processing timestamp.
      * 
-     * @return LocalDateTime of processing time
+     * @return processing timestamp
      */
     public LocalDateTime getProcessingTimestamp() {
         return processingTimestamp;
     }
     
     /**
-     * Set the processing timestamp
+     * Sets the processing timestamp.
      * 
-     * @param processingTimestamp LocalDateTime to set
+     * @param processingTimestamp processing timestamp
      */
     public void setProcessingTimestamp(LocalDateTime processingTimestamp) {
         this.processingTimestamp = processingTimestamp;
-    }
-    
-    /**
-     * Check if this transaction is a debit transaction (increases account balance)
-     * 
-     * @return true if transaction is a debit, false otherwise
-     */
-    public boolean isDebitTransaction() {
-        return transactionType != null && transactionType.isDebit();
-    }
-    
-    /**
-     * Check if this transaction is a credit transaction (decreases account balance)
-     * 
-     * @return true if transaction is a credit, false otherwise
-     */
-    public boolean isCreditTransaction() {
-        return transactionType != null && transactionType.isCredit();
-    }
-    
-    /**
-     * Check if this transaction affects the account balance
-     * 
-     * @return true if transaction affects balance, false otherwise
-     */
-    public boolean affectsBalance() {
-        return categoryCode != null && categoryCode.affectsBalance();
-    }
-    
-    /**
-     * Check if this transaction is eligible for interest calculations
-     * 
-     * @return true if eligible for interest, false otherwise
-     */
-    public boolean isInterestEligible() {
-        return categoryCode != null && categoryCode.isInterestEligible();
-    }
-    
-    /**
-     * Get the absolute amount value for calculations
-     * 
-     * @return BigDecimal absolute value of amount
-     */
-    public BigDecimal getAbsoluteAmount() {
-        return amount != null ? amount.abs() : BigDecimal.ZERO;
-    }
-    
-    /**
-     * Get the signed amount based on transaction type
-     * For debit transactions, amount is positive
-     * For credit transactions, amount is negative
-     * 
-     * @return BigDecimal signed amount
-     */
-    public BigDecimal getSignedAmount() {
-        if (amount == null) {
-            return BigDecimal.ZERO;
-        }
-        return isCreditTransaction() ? amount.negate() : amount;
-    }
-    
-    /**
-     * Validate the transaction data for completeness
-     * 
-     * @return true if all required fields are present, false otherwise
-     */
-    public boolean isValid() {
-        return transactionId != null && !transactionId.trim().isEmpty() &&
-               transactionType != null &&
-               categoryCode != null &&
-               amount != null &&
-               originalTimestamp != null;
-    }
-    
-    /**
-     * Create a formatted string representation of the transaction
-     * 
-     * @return formatted transaction string
-     */
-    public String getFormattedTransaction() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Transaction ID: ").append(transactionId).append(" | ");
-        sb.append("Type: ").append(transactionType != null ? transactionType.getDescription() : "N/A").append(" | ");
-        sb.append("Amount: $").append(amount != null ? amount.toString() : "0.00").append(" | ");
-        sb.append("Date: ").append(originalTimestamp != null ? originalTimestamp.toString() : "N/A");
-        return sb.toString();
-    }
-    
-    /**
-     * Equals method for transaction comparison
-     * 
-     * @param obj object to compare
-     * @return true if transactions are equal, false otherwise
-     */
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
-        
-        TransactionDTO that = (TransactionDTO) obj;
-        return Objects.equals(transactionId, that.transactionId) &&
-               Objects.equals(transactionType, that.transactionType) &&
-               Objects.equals(categoryCode, that.categoryCode) &&
-               Objects.equals(source, that.source) &&
-               Objects.equals(description, that.description) &&
-               Objects.equals(amount, that.amount) &&
-               Objects.equals(merchantId, that.merchantId) &&
-               Objects.equals(merchantName, that.merchantName) &&
-               Objects.equals(merchantCity, that.merchantCity) &&
-               Objects.equals(merchantZip, that.merchantZip) &&
-               Objects.equals(cardNumber, that.cardNumber) &&
-               Objects.equals(originalTimestamp, that.originalTimestamp) &&
-               Objects.equals(processingTimestamp, that.processingTimestamp);
-    }
-    
-    /**
-     * Hash code method for transaction hashing
-     * 
-     * @return hash code based on transaction fields
-     */
-    @Override
-    public int hashCode() {
-        return Objects.hash(transactionId, transactionType, categoryCode, source, description,
-                           amount, merchantId, merchantName, merchantCity, merchantZip,
-                           cardNumber, originalTimestamp, processingTimestamp);
-    }
-    
-    /**
-     * String representation of the transaction
-     * 
-     * @return string representation
-     */
-    @Override
-    public String toString() {
-        return "TransactionDTO{" +
-                "transactionId='" + transactionId + '\'' +
-                ", transactionType=" + transactionType +
-                ", categoryCode=" + categoryCode +
-                ", source='" + source + '\'' +
-                ", description='" + description + '\'' +
-                ", amount=" + amount +
-                ", merchantId='" + merchantId + '\'' +
-                ", merchantName='" + merchantName + '\'' +
-                ", merchantCity='" + merchantCity + '\'' +
-                ", merchantZip='" + merchantZip + '\'' +
-                ", cardNumber='" + (cardNumber != null ? "****" + cardNumber.substring(cardNumber.length() - 4) : null) + '\'' +
-                ", originalTimestamp=" + originalTimestamp +
-                ", processingTimestamp=" + processingTimestamp +
-                '}';
     }
 }
