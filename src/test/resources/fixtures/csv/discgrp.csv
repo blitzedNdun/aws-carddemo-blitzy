@@ -1,0 +1,216 @@
+# =====================================================================================
+# CardDemo Disclosure Group CSV Test Fixture
+# Purpose: Comprehensive test data for disclosure group interest rate configuration
+# Original Source: app/data/ASCII/discgrp.txt (mainframe VSAM KSDS)
+# Target Entity: com.carddemo.common.entity.DisclosureGroup
+# Database Table: disclosure_groups (PostgreSQL)
+# =====================================================================================
+#
+# Test Scenarios Covered:
+# 1. Interest rate precision testing with BigDecimal DECIMAL(5,4) format
+# 2. Group-based account configuration and rate assignment validation  
+# 3. Effective date processing for temporal rate tracking
+# 4. Legal disclosure text validation for compliance testing
+# 5. Spring Batch FlatFileItemReader processing scenarios
+# 6. PostgreSQL foreign key relationship testing with accounts table
+# 7. Interest rate calculation validation (0.01% to 999.99% range)
+# 8. BigDecimal arithmetic precision for financial calculations
+#
+# Data Format:
+# - group_id: VARCHAR(10) - Alphanumeric group identifier
+# - disclosure_text: TEXT - Legal compliance disclosure content
+# - interest_rate: DECIMAL(5,4) - Precise interest rate (0.0001 to 9.9999)
+# - effective_date: TIMESTAMP - Rate effective date in ISO 8601 format
+#
+# Key Test Data Categories:
+# - A-prefixed groups: Specific customer segments with varied rates
+# - DEFAULT: Standard disclosure group for general customers
+# - ZEROAPR: Promotional zero-interest rate group
+# - Edge cases: Minimum/maximum precision boundaries for BigDecimal testing
+# =====================================================================================
+
+group_id,disclosure_text,interest_rate,effective_date
+
+# =====================================================================================
+# 1. A-PREFIXED GROUPS - Customer Segment Specific Interest Rates
+# =====================================================================================
+
+# A00000000001 Group - Premium Customer Segment with Low Interest Rates
+A000000001,"Premium customer segment with preferred interest rates. Terms subject to creditworthiness and account standing. Variable APR based on Prime Rate plus margin.",0.0150,2024-01-01T00:00:00Z
+A000000001,"Premium customer segment with promotional rate for first 6 months. After promotional period, standard variable APR applies based on creditworthiness.",0.0250,2024-07-01T00:00:00Z
+
+# A00000000002 Group - Standard Customer Segment with Zero Interest Promotional Offers
+A000000002,"Standard customer segment eligible for zero-interest promotional periods. Promotional rate applies to qualifying transactions during offer period.",0.0000,2024-01-01T00:00:00Z
+A000000002,"Standard customer segment post-promotional period. Standard variable APR applies based on Prime Rate plus applicable margin.",0.0000,2024-06-01T00:00:00Z
+
+# A00000000003 Group - High-Risk Customer Segment with Higher Rates  
+A000000003,"Higher risk customer segment with elevated interest rates reflecting increased credit risk. Rate subject to periodic review and adjustment.",0.0000,2024-01-01T00:00:00Z
+A000000003,"Higher risk customer segment with rate adjustment based on payment history and credit utilization patterns.",0.0000,2024-03-01T00:00:00Z
+
+# A00000000004 Group - Business Customer Segment with Commercial Rates
+A000000004,"Business customer segment with commercial interest rate structure. Rates may vary based on business credit profile and relationship.",0.0150,2024-01-01T00:00:00Z
+A000000004,"Business customer segment with quarterly rate review. Rate adjustments based on market conditions and business performance metrics.",0.0150,2024-04-01T00:00:00Z
+
+# A00000000005 Group - Student Customer Segment with Educational Benefits
+A000000005,"Student customer segment with educational interest rate benefits. Special terms available for qualifying educational expenses.",0.0150,2024-01-01T00:00:00Z
+
+# A00000000006 Group - Senior Customer Segment with Age-Based Benefits
+A000000006,"Senior customer segment with age-based interest rate benefits. Preferential rates for customers 65 and older with qualifying accounts.",0.0150,2024-01-01T00:00:00Z
+A000000006,"Senior customer segment with enhanced benefits. Additional rate reductions available for customers with qualifying direct deposits.",0.0150,2024-02-01T00:00:00Z
+
+# A00000000007 Group - Military Customer Segment with Service Member Benefits
+A000000007,"Military customer segment with service member interest rate benefits. Special terms available for active duty and veteran customers.",0.0150,2024-01-01T00:00:00Z
+
+# =====================================================================================
+# 2. DEFAULT GROUP - Standard Disclosure Terms for General Population
+# =====================================================================================
+
+# DEFAULT Group with Various Interest Rate Scenarios
+DEFAULT,"Default disclosure group with standard variable APR. Interest rate determined by creditworthiness, payment history, and current market conditions.",0.0150,2024-01-01T00:00:00Z
+DEFAULT,"Default disclosure group with promotional rate adjustment. Limited time offer for qualifying customers with excellent payment history.",0.0250,2024-02-01T00:00:00Z
+DEFAULT,"Default disclosure group with market-based rate adjustment. Rate changes reflect current Prime Rate movements and competitive positioning.",0.0250,2024-03-01T00:00:00Z
+DEFAULT,"Default disclosure group with credit-based tiered pricing. Rate varies based on individual credit score and account utilization patterns.",0.0250,2024-04-01T00:00:00Z
+DEFAULT,"Default disclosure group with zero promotional rate. Special offer for balance transfers and new purchase transactions.",0.0000,2024-05-01T00:00:00Z
+DEFAULT,"Default disclosure group with standard terms resumption. Return to variable APR after promotional period expiration.",0.0000,2024-08-01T00:00:00Z
+DEFAULT,"Default disclosure group with annual rate review adjustment. Rate modification based on portfolio performance and risk assessment.",0.0000,2024-12-01T00:00:00Z
+DEFAULT,"Default disclosure group with competitive rate positioning. Rate adjustments to maintain market competitiveness.",0.0000,2024-06-01T00:00:00Z
+DEFAULT,"Default disclosure group with relationship-based pricing. Enhanced rates available for customers with multiple account relationships.",0.0000,2024-09-01T00:00:00Z
+DEFAULT,"Default disclosure group with seasonal promotional rates. Limited time offers during peak spending seasons.",0.0000,2024-11-01T00:00:00Z
+DEFAULT,"Default disclosure group with standard rate restoration. Return to base variable APR after promotional period conclusion.",0.0150,2024-07-01T00:00:00Z
+DEFAULT,"Default disclosure group with loyalty program benefits. Rate reductions available for long-term customers with excellent standing.",0.0150,2024-10-01T00:00:00Z
+DEFAULT,"Default disclosure group with payment behavior incentives. Rate benefits for customers maintaining consistent payment patterns.",0.0150,2024-04-15T00:00:00Z
+DEFAULT,"Default disclosure group with zero interest holiday promotion. Special rates for qualifying purchases during promotional windows.",0.0000,2024-12-15T00:00:00Z
+
+# =====================================================================================
+# 3. ZEROAPR GROUP - Zero Interest Rate Promotional Offers
+# =====================================================================================
+
+# ZEROAPR Group - Comprehensive Zero Interest Scenarios
+ZEROAPR,"Zero APR promotional offer for qualified customers. Promotional rate applies to qualifying transactions for specified period.",0.0000,2024-01-01T00:00:00Z
+ZEROAPR,"Zero APR promotional offer for balance transfers. Special terms for customers transferring balances from other financial institutions.",0.0000,2024-01-15T00:00:00Z
+ZEROAPR,"Zero APR promotional offer for new purchases. Special promotional rate for new account holders during introductory period.",0.0000,2024-02-01T00:00:00Z
+ZEROAPR,"Zero APR promotional offer for seasonal campaigns. Limited time offers during holiday and peak spending periods.",0.0000,2024-02-14T00:00:00Z
+ZEROAPR,"Zero APR promotional offer for customer retention. Special rates offered to retain high-value customers considering account closure.",0.0000,2024-03-01T00:00:00Z
+ZEROAPR,"Zero APR promotional offer for credit building. Special terms for customers working to establish or improve credit history.",0.0000,2024-03-15T00:00:00Z
+ZEROAPR,"Zero APR promotional offer for large purchases. Special financing terms for customers making significant qualifying purchases.",0.0000,2024-04-01T00:00:00Z
+ZEROAPR,"Zero APR promotional offer for loyalty program members. Enhanced benefits for customers participating in rewards programs.",0.0000,2024-04-15T00:00:00Z
+ZEROAPR,"Zero APR promotional offer for referral incentives. Special rates for customers referred by existing account holders.",0.0000,2024-05-01T00:00:00Z
+ZEROAPR,"Zero APR promotional offer for account upgrade incentives. Special terms for customers upgrading to premium account types.",0.0000,2024-05-15T00:00:00Z
+ZEROAPR,"Zero APR promotional offer for partnership campaigns. Special rates through strategic partner relationships and affiliations.",0.0000,2024-06-01T00:00:00Z
+ZEROAPR,"Zero APR promotional offer for educational expenses. Special financing terms for qualifying educational and training costs.",0.0000,2024-06-15T00:00:00Z
+ZEROAPR,"Zero APR promotional offer for emergency financing. Special terms for customers experiencing temporary financial hardship.",0.0000,2024-07-01T00:00:00Z
+ZEROAPR,"Zero APR promotional offer for business startup financing. Special rates for new business customers establishing commercial relationships.",0.0000,2024-07-15T00:00:00Z
+ZEROAPR,"Zero APR promotional offer for debt consolidation. Special terms for customers consolidating high-interest debt from other sources.",0.0000,2024-08-01T00:00:00Z
+ZEROAPR,"Zero APR promotional offer for home improvement financing. Special rates for customers financing qualifying home renovation projects.",0.0000,2024-08-15T00:00:00Z
+
+# =====================================================================================
+# 4. EDGE CASE TESTING - BigDecimal Precision Boundary Validation
+# =====================================================================================
+
+# Minimum Precision Testing - 0.01% (0.0001 as decimal)
+MINRATE001,"Minimum interest rate precision testing for BigDecimal validation. Rate represents 0.01% annual percentage rate.",0.0001,2024-01-01T00:00:00Z
+MINRATE002,"Minimum interest rate precision boundary testing. Validates DECIMAL(5,4) column precision handling at lowest acceptable rate.",0.0002,2024-01-01T00:00:00Z
+MINRATE005,"Low precision interest rate testing for financial calculation accuracy. Ensures proper handling of fractional percentage rates.",0.0005,2024-01-01T00:00:00Z
+
+# Medium Precision Testing - Standard Rate Ranges
+MEDRATE100,"Medium precision interest rate testing for typical customer rates. Represents 10.00% annual percentage rate for validation.",1.0000,2024-01-01T00:00:00Z
+MEDRATE150,"Medium precision interest rate testing at 15.00% APR. Validates typical credit card interest rate calculations and precision.",1.5000,2024-01-01T00:00:00Z
+MEDRATE200,"Medium precision interest rate testing at 20.00% APR. Tests BigDecimal arithmetic for higher standard interest rate ranges.",2.0000,2024-01-01T00:00:00Z
+MEDRATE250,"Medium precision interest rate testing at 25.00% APR. Validates precision maintenance in higher interest rate calculations.",2.5000,2024-01-01T00:00:00Z
+
+# High Precision Testing - Near Maximum Rates
+HIGHRATE01,"High precision interest rate testing approaching maximum allowed rate. Validates DECIMAL(5,4) handling near upper bounds.",9.0000,2024-01-01T00:00:00Z
+HIGHRATE02,"High precision interest rate testing at 95.00% APR. Tests BigDecimal precision at elevated interest rate levels.",9.5000,2024-01-01T00:00:00Z
+HIGHRATE03,"High precision interest rate testing near maximum precision boundary. Validates proper handling of extreme rate scenarios.",9.9000,2024-01-01T00:00:00Z
+
+# Maximum Precision Testing - 999.99% (9.9999 as decimal)
+MAXRATE001,"Maximum interest rate precision testing for DECIMAL(5,4) boundary validation. Rate represents 999.99% theoretical maximum.",9.9999,2024-01-01T00:00:00Z
+MAXRATE002,"Maximum precision boundary testing for BigDecimal arithmetic validation. Ensures proper handling at column precision limits.",9.9998,2024-01-01T00:00:00Z
+MAXRATE003,"Near-maximum precision testing for financial calculation accuracy. Validates BigDecimal operations near upper precision bounds.",9.9997,2024-01-01T00:00:00Z
+
+# =====================================================================================
+# 5. TEMPORAL TESTING - Effective Date Scenarios for Rate Change Tracking
+# =====================================================================================
+
+# Historical Rate Testing
+HISTRATE01,"Historical interest rate testing for temporal validation. Effective date in past for testing date-based rate lookups.",2.5000,2023-01-01T00:00:00Z
+HISTRATE02,"Historical interest rate testing with quarterly changes. Validates temporal rate tracking and historical rate retrieval.",1.8000,2023-04-01T00:00:00Z
+HISTRATE03,"Historical interest rate testing with mid-year adjustments. Tests effective date processing for rate change scenarios.",2.2000,2023-07-01T00:00:00Z
+
+# Future Rate Testing
+FUTRATE001,"Future interest rate testing for scheduled rate changes. Effective date in future for testing pending rate implementations.",1.7500,2025-01-01T00:00:00Z
+FUTRATE002,"Future interest rate testing for planned promotional rates. Validates future-dated rate schedules and activation processing.",0.0000,2025-06-01T00:00:00Z
+FUTRATE003,"Future interest rate testing for market-based adjustments. Tests scheduled rate changes based on projected market conditions.",2.8000,2025-12-01T00:00:00Z
+
+# Current Date Testing - Various Time Zones and Precision
+CURRRATE01,"Current date interest rate testing for immediate activation. Effective date set to current timestamp for real-time processing.",1.9500,2024-01-01T12:00:00Z
+CURRRATE02,"Current date interest rate testing with timezone handling. Validates proper UTC timestamp processing and conversion.",2.1250,2024-01-01T18:30:00Z
+CURRRATE03,"Current date interest rate testing with millisecond precision. Tests timestamp precision handling in rate effective calculations.",1.6750,2024-01-01T09:15:30Z
+
+# =====================================================================================
+# 6. BUSINESS RULE VALIDATION - Comprehensive Disclosure Text Scenarios
+# =====================================================================================
+
+# Long Disclosure Text Testing
+LONGTEXT01,"Extended disclosure text for comprehensive compliance testing and validation of TEXT column storage capacity. This disclosure includes detailed terms and conditions for interest rate application, including but not limited to: rate calculation methodology, compounding frequency, payment allocation procedures, rate change notification requirements, and customer rights regarding rate modifications. Additional terms cover promotional rate expiration, penalty rate application, and dispute resolution procedures.",1.2500,2024-01-01T00:00:00Z
+
+# Special Character Testing
+SPECIALTXT,"Disclosure text with special characters for validation: 'quotes', ""double quotes"", & ampersands, % percentages, $dollar signs, and (parentheses) for comprehensive text processing validation.",1.3750,2024-01-01T00:00:00Z
+
+# Multi-Language Support Testing
+MULTILANG1,"Disclosure text with accented characters: café, résumé, naïve, and señor for international customer support validation.",1.4500,2024-01-01T00:00:00Z
+
+# Empty and Minimal Text Testing
+EMPTYTEST1,"",0.0000,2024-01-01T00:00:00Z
+MINIMALTEXT,"Minimal disclosure text.",0.5000,2024-01-01T00:00:00Z
+
+# =====================================================================================
+# 7. INTEGRATION TESTING - Spring Batch and PostgreSQL Reference Table Scenarios
+# =====================================================================================
+
+# Batch Processing Chunk Size Testing
+BATCH001,"Batch processing test record 1 for Spring Batch chunk-oriented processing validation and FlatFileItemReader testing.",1.1000,2024-01-01T00:00:00Z
+BATCH002,"Batch processing test record 2 for Spring Batch chunk-oriented processing validation and FlatFileItemReader testing.",1.1100,2024-01-01T00:00:00Z
+BATCH003,"Batch processing test record 3 for Spring Batch chunk-oriented processing validation and FlatFileItemReader testing.",1.1200,2024-01-01T00:00:00Z
+BATCH004,"Batch processing test record 4 for Spring Batch chunk-oriented processing validation and FlatFileItemReader testing.",1.1300,2024-01-01T00:00:00Z
+BATCH005,"Batch processing test record 5 for Spring Batch chunk-oriented processing validation and FlatFileItemReader testing.",1.1400,2024-01-01T00:00:00Z
+
+# Foreign Key Relationship Testing
+FKTEST001,"Foreign key relationship testing for accounts table integration. Validates disclosure group assignment to customer accounts.",1.5500,2024-01-01T00:00:00Z
+FKTEST002,"Foreign key relationship testing for referential integrity. Ensures proper cascade behavior and constraint enforcement.",1.6500,2024-01-01T00:00:00Z
+FKTEST003,"Foreign key relationship testing for bulk operations. Validates batch processing with foreign key constraint checking.",1.7500,2024-01-01T00:00:00Z
+
+# =====================================================================================
+# 8. PERFORMANCE TESTING - Large Dataset Scenarios for Load Testing
+# =====================================================================================
+
+# Performance Testing Records - Simulated High-Volume Data
+PERF001,"Performance testing record for high-volume disclosure group processing and database operation validation.",2.0000,2024-01-01T00:00:00Z
+PERF002,"Performance testing record for bulk insert operations and index optimization validation in PostgreSQL environment.",2.0100,2024-01-01T01:00:00Z
+PERF003,"Performance testing record for concurrent access patterns and transaction isolation testing under load conditions.",2.0200,2024-01-01T02:00:00Z
+PERF004,"Performance testing record for query optimization and materialized view refresh performance validation.",2.0300,2024-01-01T03:00:00Z
+PERF005,"Performance testing record for connection pool utilization and resource management under sustained load conditions.",2.0400,2024-01-01T04:00:00Z
+
+# =====================================================================================
+# 9. ERROR HANDLING TESTING - Invalid Data Scenarios for Validation
+# =====================================================================================
+
+# Note: The following records would typically cause validation errors in real processing
+# They are included as comments for reference but excluded from active test data
+
+# Invalid group_id length (too long)
+# TOOLONGGRPID,"Group ID exceeding maximum length validation for error handling testing.",1.0000,2024-01-01T00:00:00Z
+
+# Invalid interest rate (exceeds maximum)
+# INVALIDRT1,"Invalid interest rate exceeding DECIMAL(5,4) maximum for boundary testing.",10.0000,2024-01-01T00:00:00Z
+
+# Invalid interest rate (negative value)
+# INVALIDRT2,"Invalid negative interest rate for validation error testing.",-1.0000,2024-01-01T00:00:00Z
+
+# Invalid effective date (malformed)
+# INVALIDDT1,"Invalid date format for date parsing error testing.",1.0000,invalid-date
+
+# =====================================================================================
+# END OF DISCLOSURE GROUP TEST FIXTURE
+# Total Records: 75 valid test records covering comprehensive testing scenarios
+# =====================================================================================
