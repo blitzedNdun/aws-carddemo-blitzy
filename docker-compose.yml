@@ -146,7 +146,7 @@ services:
       
       # Development Configuration
       POSTGRES_LOG_DESTINATION: stderr
-      POSTGRES_LOGGING_COLLECTOR: off
+      POSTGRES_LOGGING_COLLECTOR: "off"
       
     # Volume Mounts
     volumes:
@@ -281,7 +281,7 @@ services:
       # Config Server Configuration
       SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS: file:///config
       SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL: main
-      SPRING_CLOUD_CONFIG_SERVER_NATIVE_ADD_LABEL_LOCATIONS: false
+      SPRING_CLOUD_CONFIG_SERVER_NATIVE_ADD_LABEL_LOCATIONS: "false"
       
       # JVM Configuration
       JAVA_OPTS: >
@@ -300,7 +300,6 @@ services:
     
     # Volume Mounts
     volumes:
-      - carddemo-config-repo:/config
       - ./src/main/resources:/config
       - carddemo-app-logs:/logs
     
@@ -397,7 +396,7 @@ services:
       SPRING_CLOUD_CONFIG_URI: http://config-server:8888
       SPRING_CLOUD_CONFIG_PROFILE: dev
       SPRING_CLOUD_CONFIG_LABEL: main
-      SPRING_CLOUD_CONFIG_ENABLED: false  # Disabled for local development
+      SPRING_CLOUD_CONFIG_ENABLED: "false"  # Disabled for local development
       
       # Security Configuration
       SPRING_SECURITY_JWT_SECRET: devSecretKeyForJWTSigningAndValidationInDevelopmentOnly
@@ -406,15 +405,15 @@ services:
       
       # JPA Configuration
       SPRING_JPA_HIBERNATE_DDL_AUTO: validate
-      SPRING_JPA_SHOW_SQL: true
-      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: true
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
       SPRING_JPA_PROPERTIES_HIBERNATE_CONNECTION_ISOLATION: READ_COMMITTED
-      SPRING_JPA_OPEN_IN_VIEW: true
+      SPRING_JPA_OPEN_IN_VIEW: "true"
       
       # Liquibase Configuration
       SPRING_LIQUIBASE_CHANGE_LOG: classpath:db/liquibase-changelog.xml
       SPRING_LIQUIBASE_CONTEXTS: dev
-      SPRING_LIQUIBASE_ENABLED: true
+      SPRING_LIQUIBASE_ENABLED: "true"
       
       # Logging Configuration
       LOGGING_LEVEL_COM_CARDDEMO: DEBUG
@@ -429,13 +428,13 @@ services:
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
       MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: always
       MANAGEMENT_ENDPOINT_HEALTH_SHOW_COMPONENTS: always
-      MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: true
-      MANAGEMENT_HEALTH_LIVENESSSTATE_ENABLED: true
-      MANAGEMENT_HEALTH_READINESSSTATE_ENABLED: true
+      MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "true"
+      MANAGEMENT_HEALTH_LIVENESSSTATE_ENABLED: "true"
+      MANAGEMENT_HEALTH_READINESSSTATE_ENABLED: "true"
       
       # Development Configuration
-      SPRING_DEVTOOLS_RESTART_ENABLED: true
-      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: true
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
       SPRING_DEVTOOLS_LIVERELOAD_PORT: 35729
       
       # JVM Configuration
@@ -533,7 +532,7 @@ services:
     # Environment Configuration
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@carddemo.com
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_PASSWORD: carddemo_admin_2024
       PGADMIN_CONFIG_SERVER_MODE: 'False'
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
     
@@ -577,7 +576,7 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ""
       HTTP_USER: admin
-      HTTP_PASSWORD: admin
+      HTTP_PASSWORD: carddemo_redis_2024
     
     # Service Dependencies
     depends_on:
