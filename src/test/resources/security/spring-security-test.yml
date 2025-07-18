@@ -1,0 +1,895 @@
+# ===============================================================================
+# Spring Security Test Configuration for CardDemo Application
+# COBOL-to-Java Migration: Comprehensive Security Testing Framework
+# ===============================================================================
+#
+# This Spring Security test configuration provides comprehensive JWT authentication
+# testing, role-based authorization validation, and security context propagation
+# testing for microservice boundaries per Section 6.4 Security Architecture.
+#
+# Key Features:
+# - JWT token validation testing per Section 6.4.1.5 implementation
+# - RACF-to-Spring Security role mapping validation for ADMIN and USER roles
+# - Method-level @PreAuthorize validation per Section 6.4.2.2 framework
+# - OAuth2 resource server test configuration with token validation
+# - Spring Security test slices with @WebMvcTest integration
+# - Security context propagation testing across service boundaries
+# - Comprehensive authentication and authorization test scenarios
+#
+# This configuration replaces traditional RACF testing with modern Spring Security
+# testing patterns while maintaining equivalent security validation coverage.
+# ===============================================================================
+
+# ===============================================================================
+# Primary Spring Security Test Configuration (Default Export)
+# Comprehensive JWT authentication and authorization testing framework
+# ===============================================================================
+SpringSecurityTestConfiguration:
+  # JWT Authentication Test Profiles
+  jwt-authentication-profiles:
+    # HS256 Algorithm Testing Configuration
+    algorithm-testing:
+      secret-key: "testSecretKeyForJWTSigningAndValidationInTestEnvironmentMinimum32Characters"
+      algorithm: "HS256"
+      test-token-expiration: 300000  # 5 minutes for test scenarios
+      validation-timeout: 10000      # 10 seconds for token validation
+      
+      # JWT Claims Structure for Testing
+      test-claims:
+        issuer: "carddemo-test-auth-service"
+        audience: "carddemo-test-users"
+        expiration-buffer: 30000     # 30 second buffer for test reliability
+        
+        # RACF-to-Spring Security Role Claims Mapping
+        role-claims-mapping:
+          admin-user-type: "A"       # RACF Admin -> ROLE_ADMIN
+          standard-user-type: "U"    # RACF User -> ROLE_USER
+          
+    # Token Validation Test Scenarios
+    token-validation-tests:
+      valid-token-scenarios:
+        - description: "Valid admin token with proper claims"
+          user-id: "ADMIN001"
+          user-type: "A"
+          roles: ["ROLE_ADMIN", "ROLE_USER"]
+          authorities: ["VIEW_ACCOUNTS", "MANAGE_ACCOUNTS", "PROCESS_TRANSACTIONS", "ADMIN_FUNCTIONS"]
+          expected-result: "AUTHENTICATION_SUCCESS"
+          
+        - description: "Valid user token with standard claims"
+          user-id: "USER001"
+          user-type: "U"
+          roles: ["ROLE_USER"]
+          authorities: ["VIEW_ACCOUNTS", "PROCESS_TRANSACTIONS"]
+          expected-result: "AUTHENTICATION_SUCCESS"
+          
+      invalid-token-scenarios:
+        - description: "Expired JWT token"
+          token-type: "EXPIRED"
+          expected-result: "TOKEN_EXPIRED_EXCEPTION"
+          expected-status-code: 401
+          
+        - description: "Invalid signature"
+          token-type: "INVALID_SIGNATURE"
+          expected-result: "JWT_SIGNATURE_EXCEPTION"
+          expected-status-code: 401
+          
+        - description: "Malformed token structure"
+          token-type: "MALFORMED"
+          expected-result: "JWT_DECODE_EXCEPTION"
+          expected-status-code: 401
+
+  # Role-Based Access Control Test Scenarios
+  role-based-access-control-tests:
+    # @WithMockUser Test Configurations
+    mock-user-configurations:
+      admin-mock-user:
+        username: "testadmin"
+        password: "admin123"
+        roles: ["ADMIN", "USER"]
+        authorities: 
+          - "ROLE_ADMIN"
+          - "ROLE_USER"
+          - "VIEW_ACCOUNTS"
+          - "MANAGE_ACCOUNTS"
+          - "PROCESS_TRANSACTIONS"
+          - "ADMIN_FUNCTIONS"
+          - "USER_MANAGEMENT"
+        test-scenarios:
+          - endpoint: "/api/admin/users"
+            method: "GET"
+            expected-result: "ACCESS_GRANTED"
+          - endpoint: "/api/account/view/12345"
+            method: "GET" 
+            expected-result: "ACCESS_GRANTED"
+          - endpoint: "/api/user/profile"
+            method: "GET"
+            expected-result: "ACCESS_GRANTED"
+            
+      user-mock-user:
+        username: "testuser"
+        password: "user123"
+        roles: ["USER"]
+        authorities:
+          - "ROLE_USER"
+          - "VIEW_ACCOUNTS"
+          - "PROCESS_TRANSACTIONS"
+        test-scenarios:
+          - endpoint: "/api/admin/users"
+            method: "GET"
+            expected-result: "ACCESS_DENIED"
+            expected-status-code: 403
+          - endpoint: "/api/account/view/12345"
+            method: "GET"
+            expected-result: "ACCESS_GRANTED"
+          - endpoint: "/api/transaction/add"
+            method: "POST"
+            expected-result: "ACCESS_GRANTED"
+            
+      viewer-mock-user:
+        username: "testviewer"
+        password: "viewer123"
+        roles: ["VIEWER"]
+        authorities:
+          - "ROLE_VIEWER"
+          - "VIEW_ACCOUNTS"
+        test-scenarios:
+          - endpoint: "/api/account/view/12345"
+            method: "GET"
+            expected-result: "ACCESS_GRANTED"
+          - endpoint: "/api/account/update/12345"
+            method: "PUT"
+            expected-result: "ACCESS_DENIED"
+            expected-status-code: 403
+
+  # OAuth2 Resource Server Test Setup
+  oauth2-resource-server-testing:
+    # Resource Server Configuration for Testing
+    resource-server-config:
+      jwt-decoder-configuration:
+        issuer-uri: "http://localhost:8080/auth/realms/carddemo-test"
+        jwk-set-uri: "http://localhost:8080/auth/realms/carddemo-test/protocol/openid-connect/certs"
+        audiences: ["carddemo-test-users", "carddemo-api"]
+        
+      # Token Introspection Configuration
+      introspection-config:
+        enabled: true
+        introspection-uri: "http://localhost:8080/auth/realms/carddemo-test/protocol/openid-connect/token/introspect"
+        client-id: "carddemo-test-client"
+        client-secret: "test-client-secret"
+        
+    # Security Context Propagation Tests
+    security-context-propagation:
+      cross-service-tests:
+        - description: "Authentication context propagation between microservices"
+          source-service: "authentication-service"
+          target-service: "account-service"
+          authentication-method: "JWT_BEARER_TOKEN"
+          expected-result: "CONTEXT_PROPAGATED"
+          
+        - description: "Role information preservation across service calls"
+          authentication-role: "ROLE_ADMIN"
+          service-chain: ["gateway", "auth-service", "account-service"]
+          expected-role-preservation: true
+          
+        - description: "Session timeout handling across services"
+          session-timeout: 300000  # 5 minutes
+          expected-behavior: "GRACEFUL_TIMEOUT_HANDLING"
+
+  # Method-Level Security Testing Configuration
+  method-level-security-testing:
+    # @PreAuthorize Validation Scenarios
+    pre-authorize-test-scenarios:
+      admin-only-methods:
+        - method: "UserManagementService.createUser()"
+          annotation: "@PreAuthorize('hasRole(ADMIN)')"
+          test-cases:
+            - user-role: "ROLE_ADMIN"
+              expected-result: "ACCESS_GRANTED"
+            - user-role: "ROLE_USER"
+              expected-result: "ACCESS_DENIED"
+              expected-exception: "AccessDeniedException"
+              
+        - method: "UserManagementService.deleteUser()"
+          annotation: "@PreAuthorize('hasRole(ADMIN)')"
+          test-cases:
+            - user-role: "ROLE_ADMIN"
+              expected-result: "ACCESS_GRANTED"
+            - user-role: "ROLE_USER"
+              expected-result: "ACCESS_DENIED"
+              
+      user-accessible-methods:
+        - method: "AccountService.viewAccount()"
+          annotation: "@PreAuthorize('hasAnyRole(USER, ADMIN)')"
+          test-cases:
+            - user-role: "ROLE_USER"
+              expected-result: "ACCESS_GRANTED"
+            - user-role: "ROLE_ADMIN"
+              expected-result: "ACCESS_GRANTED"
+            - user-role: "ROLE_VIEWER"
+              expected-result: "ACCESS_DENIED"
+              
+        - method: "TransactionService.processTransaction()"
+          annotation: "@PreAuthorize('hasAnyRole(USER, ADMIN)')"
+          test-cases:
+            - user-role: "ROLE_USER"
+              expected-result: "ACCESS_GRANTED"
+            - user-role: "ROLE_ADMIN"
+              expected-result: "ACCESS_GRANTED"
+
+  # Test Security Filter Chains
+  test-security-filter-chains:
+    # Mock Authentication Filter Configuration
+    mock-authentication-filter:
+      enabled: true
+      order: -100
+      authentication-providers:
+        - type: "JWT_AUTHENTICATION_PROVIDER"
+          configuration:
+            token-validation: true
+            role-extraction: true
+            session-management: false
+            
+    # Test-Specific CORS Configuration
+    cors-configuration:
+      allowed-origins: 
+        - "http://localhost:3000"
+        - "http://localhost:3001"
+        - "https://carddemo-test.local"
+      allowed-methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+      allowed-headers: ["Authorization", "Content-Type", "X-Requested-With"]
+      allow-credentials: true
+      max-age: 3600
+
+  # Authentication Failure Test Scenarios
+  authentication-failure-scenarios:
+    - scenario: "Missing Authorization Header"
+      request-configuration:
+        headers: {}
+      expected-status: 401
+      expected-response: "Missing Authorization header"
+      
+    - scenario: "Invalid Bearer Token Format"
+      request-configuration:
+        headers:
+          Authorization: "Invalid token-format"
+      expected-status: 401
+      expected-response: "Invalid token format"
+      
+    - scenario: "Expired JWT Token"
+      request-configuration:
+        headers:
+          Authorization: "Bearer expired.jwt.token"
+      expected-status: 401
+      expected-response: "Token expired"
+
+  # Authorization Boundary Validation
+  authorization-boundary-tests:
+    endpoint-protection-matrix:
+      public-endpoints:
+        - path: "/api/auth/login"
+          method: "POST"
+          authentication-required: false
+          
+        - path: "/actuator/health"
+          method: "GET"
+          authentication-required: false
+          
+      protected-endpoints:
+        - path: "/api/account/**"
+          method: "GET"
+          required-roles: ["USER", "ADMIN"]
+          
+        - path: "/api/admin/**"
+          method: "*"
+          required-roles: ["ADMIN"]
+          
+        - path: "/api/transaction/**"
+          method: "POST"
+          required-roles: ["USER", "ADMIN"]
+
+# ===============================================================================
+# Role-Based Security Test Scenarios (Non-Default Export)
+# RACF-to-Spring Security role mapping validation and testing
+# ===============================================================================
+RoleBasedSecurityTestScenarios:
+  # ADMIN Role Test Configurations
+  admin-role-test-configurations:
+    # RACF Admin User Type 'A' -> ROLE_ADMIN Mapping Tests
+    racf-admin-mapping:
+      original-racf-profile:
+        user-type: "A"
+        group-memberships: ["CARDDEMO.ADMIN", "CARDDEMO.USER"]
+        resource-access: ["DATASET.ADMIN", "TRANSACTION.ALL"]
+        
+      spring-security-equivalent:
+        roles: ["ROLE_ADMIN", "ROLE_USER"]
+        authorities:
+          - "ROLE_ADMIN"
+          - "ROLE_USER"
+          - "VIEW_ACCOUNTS"
+          - "MANAGE_ACCOUNTS"
+          - "PROCESS_TRANSACTIONS" 
+          - "ADMIN_FUNCTIONS"
+          - "USER_MANAGEMENT"
+          - "SYSTEM_CONFIGURATION"
+          
+    # Admin-Specific Test Scenarios
+    admin-access-tests:
+      user-management-operations:
+        - operation: "Create User"
+          endpoint: "/api/admin/users"
+          method: "POST"
+          required-authority: "ROLE_ADMIN"
+          test-data:
+            username: "newuser"
+            user-type: "U"
+          expected-result: "SUCCESS"
+          
+        - operation: "List All Users"
+          endpoint: "/api/admin/users"
+          method: "GET"
+          required-authority: "ROLE_ADMIN"
+          expected-result: "USER_LIST_RETURNED"
+          
+        - operation: "Update User Role"
+          endpoint: "/api/admin/users/USER001"
+          method: "PUT"
+          required-authority: "ROLE_ADMIN"
+          test-data:
+            user-type: "A"
+          expected-result: "ROLE_UPDATED"
+          
+        - operation: "Delete User"
+          endpoint: "/api/admin/users/USER001"
+          method: "DELETE"
+          required-authority: "ROLE_ADMIN"
+          expected-result: "USER_DELETED"
+
+      system-administration-tests:
+        - operation: "View System Configuration"
+          endpoint: "/api/admin/system/config"
+          method: "GET"
+          required-authority: "ROLE_ADMIN"
+          expected-result: "CONFIG_DISPLAYED"
+          
+        - operation: "Update System Settings"
+          endpoint: "/api/admin/system/settings"
+          method: "POST"
+          required-authority: "ROLE_ADMIN"
+          expected-result: "SETTINGS_UPDATED"
+
+  # USER Role Test Configurations  
+  user-role-test-configurations:
+    # RACF User Type 'U' -> ROLE_USER Mapping Tests
+    racf-user-mapping:
+      original-racf-profile:
+        user-type: "U"
+        group-memberships: ["CARDDEMO.USER"]
+        resource-access: ["DATASET.USER", "TRANSACTION.LIMITED"]
+        
+      spring-security-equivalent:
+        roles: ["ROLE_USER"]
+        authorities:
+          - "ROLE_USER"
+          - "VIEW_ACCOUNTS"
+          - "PROCESS_TRANSACTIONS"
+          
+    # User-Specific Test Scenarios
+    user-access-tests:
+      account-operations:
+        - operation: "View Own Accounts"
+          endpoint: "/api/account/view/{accountId}"
+          method: "GET"
+          required-authority: "ROLE_USER"
+          access-control: "OWNER_ONLY"
+          expected-result: "ACCOUNT_DATA_RETURNED"
+          
+        - operation: "Update Account Information"
+          endpoint: "/api/account/update/{accountId}"
+          method: "PUT"
+          required-authority: "ROLE_USER"
+          access-control: "OWNER_ONLY"
+          expected-result: "ACCOUNT_UPDATED"
+          
+      transaction-operations:
+        - operation: "Process Transaction"
+          endpoint: "/api/transaction/add"
+          method: "POST"
+          required-authority: "ROLE_USER"
+          test-data:
+            account-id: "12345"
+            amount: "100.00"
+            transaction-type: "PURCHASE"
+          expected-result: "TRANSACTION_PROCESSED"
+          
+        - operation: "View Transaction History"
+          endpoint: "/api/transaction/history/{accountId}"
+          method: "GET"
+          required-authority: "ROLE_USER"
+          access-control: "OWNER_ONLY"
+          expected-result: "TRANSACTION_HISTORY_RETURNED"
+          
+      restricted-operations:
+        - operation: "Access Admin Functions (Should Fail)"
+          endpoint: "/api/admin/users"
+          method: "GET"
+          user-role: "ROLE_USER"
+          expected-result: "ACCESS_DENIED"
+          expected-status: 403
+          
+        - operation: "Manage Other Users (Should Fail)"
+          endpoint: "/api/admin/users/OTHER001"
+          method: "PUT"
+          user-role: "ROLE_USER"
+          expected-result: "ACCESS_DENIED"
+          expected-status: 403
+
+  # JWT Token Role Claims Testing
+  jwt-token-role-claims-testing:
+    # Token Generation with Role Claims
+    token-generation-tests:
+      admin-token-generation:
+        user-profile:
+          user-id: "ADMIN001"
+          user-type: "A"
+          first-name: "Test"
+          last-name: "Admin"
+        expected-jwt-claims:
+          sub: "ADMIN001"
+          user_type: "A"
+          roles: ["ROLE_ADMIN", "ROLE_USER"]
+          authorities: ["ROLE_ADMIN", "ROLE_USER", "VIEW_ACCOUNTS", "MANAGE_ACCOUNTS"]
+          iss: "carddemo-auth-service"
+          aud: "carddemo-users"
+          
+      user-token-generation:
+        user-profile:
+          user-id: "USER001"
+          user-type: "U"
+          first-name: "Test"
+          last-name: "User"
+        expected-jwt-claims:
+          sub: "USER001"
+          user_type: "U"
+          roles: ["ROLE_USER"]
+          authorities: ["ROLE_USER", "VIEW_ACCOUNTS", "PROCESS_TRANSACTIONS"]
+
+  # Authorization Matrix Validation
+  authorization-matrix-tests:
+    # Comprehensive Role vs Endpoint Access Matrix
+    access-control-matrix:
+      endpoints:
+        "/api/auth/login":
+          POST:
+            ANONYMOUS: "ALLOWED"
+            ROLE_USER: "ALLOWED"
+            ROLE_ADMIN: "ALLOWED"
+            
+        "/api/account/view/{id}":
+          GET:
+            ANONYMOUS: "DENIED_401"
+            ROLE_USER: "ALLOWED_IF_OWNER"
+            ROLE_ADMIN: "ALLOWED"
+            
+        "/api/account/update/{id}":
+          PUT:
+            ANONYMOUS: "DENIED_401"
+            ROLE_USER: "ALLOWED_IF_OWNER"
+            ROLE_ADMIN: "ALLOWED"
+            
+        "/api/admin/users":
+          GET:
+            ANONYMOUS: "DENIED_401"
+            ROLE_USER: "DENIED_403"
+            ROLE_ADMIN: "ALLOWED"
+          POST:
+            ANONYMOUS: "DENIED_401"
+            ROLE_USER: "DENIED_403"
+            ROLE_ADMIN: "ALLOWED"
+            
+        "/api/transaction/add":
+          POST:
+            ANONYMOUS: "DENIED_401"
+            ROLE_USER: "ALLOWED"
+            ROLE_ADMIN: "ALLOWED"
+
+  # Cross-Service Security Propagation Tests
+  cross-service-security-tests:
+    # Service-to-Service Authentication
+    microservice-authentication-chain:
+      - service-name: "Spring Cloud Gateway"
+        role: "API_GATEWAY"
+        authentication-method: "JWT_VALIDATION"
+        next-service: "authentication-service"
+        
+      - service-name: "Authentication Service"
+        role: "AUTH_PROVIDER"
+        authentication-method: "DATABASE_VALIDATION"
+        next-service: "account-service"
+        
+      - service-name: "Account Service"
+        role: "BUSINESS_SERVICE"
+        authentication-method: "CONTEXT_PROPAGATION"
+        authorization-check: "@PreAuthorize('hasAnyRole(USER,ADMIN)')"
+
+  # Role Hierarchy Validation Scenarios
+  role-hierarchy-tests:
+    # ADMIN inherits USER privileges
+    inheritance-validation:
+      admin-user-inheritance:
+        primary-role: "ROLE_ADMIN"
+        inherited-roles: ["ROLE_USER"]
+        test-scenarios:
+          - description: "Admin can access user-only endpoints"
+            endpoint: "/api/account/view/12345"
+            annotation: "@PreAuthorize('hasRole(USER)')"
+            expected-result: "ACCESS_GRANTED"
+            
+          - description: "Admin can access admin-only endpoints"
+            endpoint: "/api/admin/users"
+            annotation: "@PreAuthorize('hasRole(ADMIN)')"
+            expected-result: "ACCESS_GRANTED"
+
+  # Administrative Access Restriction Tests
+  admin-restriction-tests:
+    # Ensure regular users cannot access admin functions
+    user-admin-boundary-tests:
+      - test-name: "User Cannot Create Users"
+        user-role: "ROLE_USER"
+        endpoint: "/api/admin/users"
+        method: "POST"
+        expected-status: 403
+        expected-message: "Access Denied"
+        
+      - test-name: "User Cannot View Admin Dashboard"
+        user-role: "ROLE_USER"
+        endpoint: "/api/admin/dashboard"
+        method: "GET"
+        expected-status: 403
+        expected-message: "Insufficient privileges"
+
+# ===============================================================================
+# JWT Authentication Test Configuration (Non-Default Export)
+# Comprehensive JWT token validation and authentication testing
+# ===============================================================================
+JWTAuthenticationTestConfiguration:
+  # JWT Token Validation Test Scenarios
+  token-validation-scenarios:
+    # Valid Token Test Cases
+    valid-token-tests:
+      standard-authentication-flow:
+        description: "Complete JWT authentication with valid credentials"
+        test-steps:
+          - step: "User Login Request"
+            endpoint: "/api/auth/login"
+            method: "POST"
+            request-body:
+              username: "USER001"
+              password: "password123"
+            expected-response:
+              status: 200
+              jwt-token-present: true
+              token-expiration-set: true
+              
+          - step: "Token Validation"
+            token-source: "LOGIN_RESPONSE"
+            validation-checks:
+              signature-valid: true
+              expiration-valid: true
+              issuer-valid: true
+              audience-valid: true
+              
+          - step: "Authenticated Request"
+            endpoint: "/api/account/view/12345"
+            method: "GET"
+            headers:
+              Authorization: "Bearer {JWT_TOKEN}"
+            expected-response:
+              status: 200
+              authentication-context-present: true
+              user-roles-available: true
+
+      # HS256 Algorithm Testing Configuration
+      hs256-algorithm-tests:
+        algorithm-validation:
+          supported-algorithm: "HS256"
+          secret-key-length: 256
+          signature-verification: "HMAC_SHA256"
+          
+        token-structure-validation:
+          header-validation:
+            alg: "HS256"
+            typ: "JWT"
+            
+          payload-validation:
+            iss: "carddemo-auth-service"
+            aud: "carddemo-users"
+            exp: "NUMERIC_TIMESTAMP"
+            iat: "NUMERIC_TIMESTAMP"
+            sub: "USER_IDENTIFIER"
+            user_type: "A_OR_U"
+            roles: "ARRAY_OF_ROLES"
+            
+          signature-validation:
+            method: "HMAC_SHA256"
+            secret-based: true
+
+    # Token Expiration Validation Tests
+    expiration-validation-tests:
+      short-lived-token-test:
+        description: "Token with short expiration for testing timeout scenarios"
+        token-lifetime: 30000  # 30 seconds
+        test-sequence:
+          - action: "Generate token"
+            expected-result: "TOKEN_CREATED"
+            
+          - action: "Immediate validation"
+            delay: 0
+            expected-result: "TOKEN_VALID"
+            
+          - action: "Validation after expiration"
+            delay: 35000  # 35 seconds
+            expected-result: "TOKEN_EXPIRED"
+            expected-exception: "JwtExpiredException"
+
+      # Invalid Token Handling Tests
+      invalid-token-scenarios:
+        malformed-token-tests:
+          - test-name: "Missing Header"
+            token-structure: "payload.signature"
+            expected-exception: "MalformedJwtException"
+            expected-status: 401
+            
+          - test-name: "Missing Payload"
+            token-structure: "header..signature"
+            expected-exception: "MalformedJwtException"
+            expected-status: 401
+            
+          - test-name: "Missing Signature"
+            token-structure: "header.payload."
+            expected-exception: "MalformedJwtException"
+            expected-status: 401
+            
+          - test-name: "Invalid Base64 Encoding"
+            token-structure: "invalid@#$.base64!@#.encoding$%^"
+            expected-exception: "IllegalArgumentException"
+            expected-status: 401
+
+        signature-validation-tests:
+          - test-name: "Wrong Secret Key"
+            token-generation-secret: "wrong-secret-key"
+            validation-secret: "correct-secret-key"
+            expected-exception: "SignatureException"
+            expected-status: 401
+            
+          - test-name: "Tampered Payload"
+            token-manipulation: "MODIFY_PAYLOAD"
+            expected-exception: "SignatureException"
+            expected-status: 401
+
+  # JWT Decoder Test Configuration
+  jwt-decoder-configuration:
+    # Spring Security JWT Decoder Setup
+    decoder-bean-configuration:
+      decoder-type: "NimbusJwtDecoder"
+      algorithm-support: ["HS256"]
+      key-source: "HMAC_SECRET"
+      
+      # Decoder Validation Settings
+      validation-settings:
+        validate-signature: true
+        validate-expiration: true
+        validate-issuer: true
+        validate-audience: true
+        clock-skew-tolerance: 60  # 60 seconds
+        
+    # Custom JWT Decoder Tests
+    custom-decoder-tests:
+      - test-name: "Decoder Bean Initialization"
+        validation-points:
+          - bean-created-successfully: true
+          - algorithm-configured: "HS256"
+          - secret-key-loaded: true
+          
+      - test-name: "Decoder Validation Rules"
+        test-token-scenarios:
+          valid-token: "DECODE_SUCCESS"
+          expired-token: "DECODE_FAILURE_EXPIRED"
+          invalid-signature: "DECODE_FAILURE_SIGNATURE"
+
+  # Security Context Establishment Testing
+  security-context-tests:
+    # Authentication Context Population
+    context-population-tests:
+      successful-authentication:
+        description: "Security context populated after successful JWT validation"
+        test-steps:
+          - step: "JWT Token Validation"
+            token-status: "VALID"
+            expected-authentication: "JWT_AUTHENTICATION_TOKEN"
+            
+          - step: "Principal Extraction"
+            expected-principal-type: "JwtAuthenticationPrincipal"
+            expected-username-present: true
+            expected-authorities-present: true
+            
+          - step: "Security Context Access"
+            context-check: "SecurityContextHolder.getContext()"
+            expected-authentication-present: true
+            expected-authenticated: true
+
+      # Role and Authority Mapping Tests
+      role-mapping-tests:
+        admin-role-mapping:
+          jwt-claim-user-type: "A"
+          expected-roles: ["ROLE_ADMIN", "ROLE_USER"]
+          expected-authorities:
+            - "ROLE_ADMIN"
+            - "ROLE_USER"
+            - "VIEW_ACCOUNTS"
+            - "MANAGE_ACCOUNTS"
+            - "ADMIN_FUNCTIONS"
+            
+        user-role-mapping:
+          jwt-claim-user-type: "U"
+          expected-roles: ["ROLE_USER"]
+          expected-authorities:
+            - "ROLE_USER"
+            - "VIEW_ACCOUNTS"
+            - "PROCESS_TRANSACTIONS"
+
+  # Authentication Bypass Prevention Tests
+  bypass-prevention-tests:
+    # Security Filter Chain Validation
+    filter-chain-tests:
+      - test-name: "JWT Filter Applied to Protected Endpoints"
+        endpoint: "/api/account/view/12345"
+        no-token-request:
+          expected-status: 401
+          expected-filter-execution: "JWT_AUTHENTICATION_FILTER"
+          
+      - test-name: "Public Endpoints Bypass JWT Filter"
+        endpoint: "/api/auth/login"
+        no-token-request:
+          expected-status: 200
+          expected-filter-bypass: true
+
+    # Authentication State Management
+    authentication-state-tests:
+      - test-name: "Stateless Authentication Verification"
+        description: "Ensure no server-side session state for JWT authentication"
+        test-sequence:
+          - request: "First authenticated request"
+            expected-session-created: false
+            expected-stateless: true
+            
+          - request: "Second authenticated request with same token"
+            expected-session-reuse: false
+            expected-independent-validation: true
+
+  # Token Signature Verification Tests
+  signature-verification-tests:
+    # HMAC-SHA256 Signature Testing
+    hmac-signature-tests:
+      signature-creation:
+        description: "JWT signature creation with HS256"
+        test-components:
+          header: '{"alg":"HS256","typ":"JWT"}'
+          payload: '{"sub":"USER001","user_type":"U","exp":1234567890}'
+          secret: "test-secret-key-minimum-256-bits"
+          expected-signature-format: "Base64URL"
+          
+      signature-validation:
+        description: "JWT signature verification process"
+        validation-steps:
+          - step: "Extract signature from token"
+            expected-format: "Base64URL"
+            
+          - step: "Recreate signature with secret"
+            algorithm: "HMAC-SHA256"
+            expected-match: true
+            
+          - step: "Compare signatures"
+            expected-result: "SIGNATURE_VALID"
+
+  # Token Refresh Mechanism Tests
+  token-refresh-tests:
+    # Refresh Token Workflow
+    refresh-workflow-tests:
+      standard-refresh-flow:
+        description: "Standard JWT refresh token workflow"
+        test-steps:
+          - step: "Initial authentication"
+            endpoint: "/api/auth/login"
+            expected-tokens:
+              access-token-present: true
+              refresh-token-present: true
+              access-token-expiration: 1800000  # 30 minutes
+              refresh-token-expiration: 86400000  # 24 hours
+              
+          - step: "Access token expires"
+            action: "WAIT_FOR_EXPIRATION"
+            expected-access-status: "EXPIRED"
+            
+          - step: "Refresh token usage"
+            endpoint: "/api/auth/refresh"
+            method: "POST"
+            request-body:
+              refresh-token: "{REFRESH_TOKEN}"
+            expected-response:
+              new-access-token: true
+              token-expiration-reset: true
+
+  # JWT Claims Validation Scenarios
+  claims-validation-tests:
+    # Standard Claims Testing
+    standard-claims-tests:
+      issuer-validation:
+        test-scenarios:
+          - valid-issuer: "carddemo-auth-service"
+            expected-result: "VALIDATION_SUCCESS"
+            
+          - invalid-issuer: "untrusted-issuer"
+            expected-result: "VALIDATION_FAILURE"
+            expected-exception: "InvalidIssuerException"
+            
+      audience-validation:
+        test-scenarios:
+          - valid-audience: "carddemo-users"
+            expected-result: "VALIDATION_SUCCESS"
+            
+          - invalid-audience: "wrong-audience"
+            expected-result: "VALIDATION_FAILURE"
+            expected-exception: "InvalidAudienceException"
+
+    # Custom Claims Testing
+    custom-claims-tests:
+      user-type-claim:
+        description: "RACF user type mapping validation"
+        test-cases:
+          - user-type-claim: "A"
+            expected-role-mapping: ["ROLE_ADMIN", "ROLE_USER"]
+            
+          - user-type-claim: "U"
+            expected-role-mapping: ["ROLE_USER"]
+            
+          - user-type-claim: "INVALID"
+            expected-role-mapping: []
+            expected-authentication-failure: true
+
+# ===============================================================================
+# Test Configuration Metadata and Validation
+# ===============================================================================
+test-configuration-metadata:
+  version: "1.0.0"
+  last-updated: "2024-01-15"
+  spring-security-version: "6.2.x"
+  spring-boot-version: "3.2.x"
+  
+  # Test Environment Requirements
+  test-environment-requirements:
+    minimum-memory: "512Mi"
+    recommended-memory: "1Gi"
+    cpu-requirements: "500m"
+    
+    # Required Test Dependencies
+    required-dependencies:
+      - "spring-boot-starter-test"
+      - "spring-security-test"
+      - "junit-jupiter-engine"
+      - "testcontainers-postgresql"
+      - "mockito-core"
+      
+  # Validation Rules for Test Configuration
+  validation-rules:
+    jwt-token-format: "BEARER_TOKEN"
+    role-naming-convention: "ROLE_PREFIX_REQUIRED"
+    endpoint-pattern-validation: "ANT_MATCHER_STYLE"
+    test-data-anonymization: "REQUIRED"
+    
+  # Test Execution Guidelines
+  execution-guidelines:
+    parallel-execution: "SUPPORTED"
+    test-isolation: "REQUIRED"
+    resource-cleanup: "AUTOMATIC"
+    test-data-reset: "BEFORE_EACH_TEST_CLASS"
