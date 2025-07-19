@@ -791,7 +791,7 @@ public class AccountService {
             return ValidationResult.BLANK_FIELD;
         }
 
-        if (!account.getActiveStatus().isValid()) {
+        if (!account.getActiveStatus().isValid(account.getActiveStatus().name())) {
             return ValidationResult.INVALID_FORMAT;
         }
 
