@@ -893,4 +893,22 @@ public final class DateUtils {
         // Use the comprehensive date validation method
         return validateDate(cobolDate);
     }
+
+    /**
+     * Validates a LocalDate object for business rules.
+     * Convenience method for LocalDate validation.
+     * 
+     * @param date the LocalDate to validate
+     * @return true if date is valid, false if null or invalid
+     */
+    public static boolean validateDate(LocalDate date) {
+        if (date == null) {
+            return false;
+        }
+        
+        // Convert to CCYYMMDD format and use existing validation
+        String dateString = date.format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+        ValidationResult result = validateDate(dateString);
+        return result.isValid();
+    }
 }
