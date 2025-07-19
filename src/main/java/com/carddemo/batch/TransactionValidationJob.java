@@ -1,14 +1,14 @@
 package com.carddemo.batch;
 
-import com.carddemo.common.entity.Transaction;
-import com.carddemo.common.entity.Customer;
-import com.carddemo.common.entity.Account;
-import com.carddemo.common.entity.Card;
+import com.carddemo.transaction.Transaction;
 import com.carddemo.common.config.BatchConfiguration;
 import com.carddemo.transaction.TransactionRepository;
 import com.carddemo.card.CardRepository;
+import com.carddemo.card.Card;
 import com.carddemo.account.repository.AccountRepository;
+import com.carddemo.account.entity.Account;
 import com.carddemo.account.repository.CustomerRepository;
+import com.carddemo.account.entity.Customer;
 import com.carddemo.common.util.BigDecimalUtils;
 import com.carddemo.common.util.ValidationUtils;
 import com.carddemo.common.util.DateUtils;
@@ -23,6 +23,7 @@ import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
@@ -140,6 +141,12 @@ public class TransactionValidationJob {
     private CustomerRepository customerRepository;
 
     /**
+     * Transaction manager for batch step transaction handling
+     */
+    @Autowired
+    private org.springframework.transaction.PlatformTransactionManager transactionManager;
+
+    /**
      * Input file path for daily transaction records
      */
     @Value("${batch.transaction.input.file:data/dalytran.txt}")
@@ -186,7 +193,7 @@ public class TransactionValidationJob {
         logger.info("Configuring TransactionValidationStep with chunk size: {}", CHUNK_SIZE);
         
         return new StepBuilder("transactionValidationStep", batchConfiguration.jobRepository())
-                .<DailyTransactionRecord, Transaction>chunk(CHUNK_SIZE, batchConfiguration.jobRepository().getTransactionManager())
+                .<DailyTransactionRecord, Transaction>chunk(CHUNK_SIZE, transactionManager)
                 .reader(transactionItemReader())
                 .processor(transactionItemProcessor())
                 .writer(transactionItemWriter())
@@ -272,19 +279,19 @@ public class TransactionValidationJob {
         return new ItemWriter<Transaction>() {
             @Override
             @Transactional
-            public void write(List<? extends Transaction> items) throws Exception {
+            public void write(org.springframework.batch.item.Chunk<? extends Transaction> items) throws Exception {
                 logger.debug("Writing {} validated transactions to database", items.size());
                 
                 List<Transaction> validTransactions = new ArrayList<>();
-                for (Transaction transaction : items) {
-                    if (transaction != null && transaction.isValidForProcessing()) {
+                for (Transaction transaction : items.getItems()) {
+                    if (transaction != null && transaction.isValid()) {
                         validTransactions.add(transaction);
                     }
                 }
                 
                 if (!validTransactions.isEmpty()) {
                     try {
-                        transactionRepository.saveAll(validTransactions);
+                        transactionRepository.saveAll((Iterable<Transaction>) validTransactions);
                         logger.info("Successfully saved {} transactions to database", validTransactions.size());
                     } catch (Exception e) {
                         logger.error("Error saving transactions to database: {}", e.getMessage());
@@ -348,7 +355,7 @@ public class TransactionValidationJob {
         logger.debug("Performing cross-reference lookup for card: {}", cardNumber);
         
         // Validate card number format
-        if (!ValidationUtils.validateRequiredField(cardNumber) || cardNumber.length() != 16) {
+        if (!ValidationUtils.validateRequiredField(cardNumber).isValid() || cardNumber.length() != 16) {
             return new CrossReferenceResult(false, "Invalid card number format", null, null, null);
         }
         
@@ -393,7 +400,7 @@ public class TransactionValidationJob {
     private Account validateAccountExistence(String accountId) {
         logger.debug("Validating account existence: {}", accountId);
         
-        if (!ValidationUtils.validateAccountNumber(accountId)) {
+        if (!ValidationUtils.validateAccountNumber(accountId).isValid()) {
             logger.warn("Invalid account number format: {}", accountId);
             return null;
         }
@@ -451,12 +458,12 @@ public class TransactionValidationJob {
         
         // Note: Setting to null for now - proper entity relationships need to be implemented
         transaction.setTransactionType(null);
-        transaction.setTransactionCategory(null);
+        transaction.setCategoryCode(null);
         
         // Set transaction amount with BigDecimal precision
         try {
             BigDecimal amount = BigDecimalUtils.createDecimal(Double.parseDouble(record.getAmount()));
-            transaction.setTransactionAmount(amount);
+            transaction.setAmount(amount);
         } catch (NumberFormatException e) {
             logger.warn("Invalid transaction amount: {}", record.getAmount());
             throw new ValidationException("Invalid transaction amount: " + record.getAmount());
@@ -465,9 +472,9 @@ public class TransactionValidationJob {
         // Set transaction description
         transaction.setDescription(record.getDescription());
         
-        // Set card and account relationships
-        transaction.setCard(card);
-        transaction.setAccount(account);
+        // Set card and account relationships - convert entity types
+        transaction.setCard(convertToCommonCard(card));
+        transaction.setAccount(convertToCommonAccount(account));
         
         // Set merchant information
         transaction.setMerchantId(record.getMerchantId());
@@ -476,12 +483,14 @@ public class TransactionValidationJob {
         transaction.setMerchantZip(record.getMerchantZip());
         
         // Set transaction source
-        transaction.setTransactionSource(record.getSource());
+        transaction.setSource(record.getSource());
         
         // Set transaction timestamps
-        LocalDateTime originalTimestamp = DateUtils.parseDate(record.getOriginalTimestamp());
+        LocalDateTime originalTimestamp = DateUtils.parseDate(record.getOriginalTimestamp())
+                .map(date -> date.atStartOfDay())
+                .orElse(LocalDateTime.now());
         
-        transaction.setTransactionTimestamp(originalTimestamp);
+        transaction.setOriginalTimestamp(originalTimestamp);
         // Note: ProcessingTimestamp is captured in the original record but not stored in the Transaction entity
         // This maintains the original COBOL data structure while adapting to the JPA entity design
         
@@ -498,39 +507,39 @@ public class TransactionValidationJob {
      */
     private ValidationResult validateRequiredFields(DailyTransactionRecord record) {
         // Validate transaction ID
-        if (!ValidationUtils.validateRequiredField(record.getTransactionId())) {
+        if (!ValidationUtils.validateRequiredField(record.getTransactionId()).isValid()) {
             return ValidationResult.BLANK_FIELD;
         }
         
         // Validate card number
-        if (!ValidationUtils.validateRequiredField(record.getCardNumber())) {
+        if (!ValidationUtils.validateRequiredField(record.getCardNumber()).isValid()) {
             return ValidationResult.BLANK_FIELD;
         }
         
         // Validate amount
-        if (!ValidationUtils.validateRequiredField(record.getAmount())) {
+        if (!ValidationUtils.validateRequiredField(record.getAmount()).isValid()) {
             return ValidationResult.BLANK_FIELD;
         }
         
         // Validate numeric fields
-        if (!ValidationUtils.validateNumericField(record.getAmount())) {
+        if (!ValidationUtils.validateNumericField(record.getAmount()).isValid()) {
             return ValidationResult.INVALID_FORMAT;
         }
         
         // Validate description
-        if (!ValidationUtils.validateRequiredField(record.getDescription())) {
+        if (!ValidationUtils.validateRequiredField(record.getDescription()).isValid()) {
             return ValidationResult.BLANK_FIELD;
         }
         
         // Validate timestamps
-        if (!ValidationUtils.validateRequiredField(record.getOriginalTimestamp()) ||
-            !ValidationUtils.validateRequiredField(record.getProcessingTimestamp())) {
+        if (!ValidationUtils.validateRequiredField(record.getOriginalTimestamp()).isValid() ||
+            !ValidationUtils.validateRequiredField(record.getProcessingTimestamp()).isValid()) {
             return ValidationResult.BLANK_FIELD;
         }
         
         // Validate date formats
-        if (!DateUtils.validateDate(record.getOriginalTimestamp()) ||
-            !DateUtils.validateDate(record.getProcessingTimestamp())) {
+        if (!DateUtils.validateDate(record.getOriginalTimestamp()).isValid() ||
+            !DateUtils.validateDate(record.getProcessingTimestamp()).isValid()) {
             return ValidationResult.INVALID_DATE;
         }
         
@@ -701,5 +710,52 @@ public class TransactionValidationJob {
             
             return org.springframework.batch.core.ExitStatus.COMPLETED;
         }
+    }
+
+    /**
+     * Converts Card entity from specialized package to common entity package.
+     * 
+     * @param card specialized Card entity
+     * @return common Card entity
+     */
+    private com.carddemo.common.entity.Card convertToCommonCard(com.carddemo.card.Card card) {
+        if (card == null) {
+            return null;
+        }
+        
+        com.carddemo.common.entity.Card commonCard = new com.carddemo.common.entity.Card();
+        commonCard.setCardNumber(card.getCardNumber());
+        commonCard.setAccountId(card.getAccountId());
+        commonCard.setCustomerId(card.getCustomerId());
+        commonCard.setExpirationDate(card.getExpirationDate());
+        commonCard.setEmbossedName(card.getEmbossedName());
+        commonCard.setCvvCode(card.getCvvCode());
+        commonCard.setActiveStatus(card.getActiveStatus().toString());
+        
+        return commonCard;
+    }
+
+    /**
+     * Converts Account entity from specialized package to common entity package.
+     * 
+     * @param account specialized Account entity
+     * @return common Account entity
+     */
+    private com.carddemo.common.entity.Account convertToCommonAccount(com.carddemo.account.entity.Account account) {
+        if (account == null) {
+            return null;
+        }
+        
+        com.carddemo.common.entity.Account commonAccount = new com.carddemo.common.entity.Account();
+        commonAccount.setAccountId(account.getAccountId());
+        commonAccount.setCurrentBalance(account.getCurrentBalance());
+        commonAccount.setCreditLimit(account.getCreditLimit());
+        commonAccount.setOpenDate(account.getOpenDate());
+        // Set default values for fields not available in the specialized Account entity
+        commonAccount.setCustomerId(""); // Will be set from card relationship
+        commonAccount.setActiveStatus(account.getActiveStatus().toString());
+        commonAccount.setCashCreditLimit(account.getCashCreditLimit());
+        
+        return commonAccount;
     }
 }
