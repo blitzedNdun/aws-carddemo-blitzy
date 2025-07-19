@@ -349,7 +349,7 @@ public class AccountDataItemReader extends FlatFileItemReader<Account> {
      * @param fieldName Field name for error reporting
      * @throws IllegalArgumentException if validation fails
      */
-    public void validateAccountData(String accountId, String fieldName) throws IllegalArgumentException {
+    public static void validateAccountData(String accountId, String fieldName) throws IllegalArgumentException {
         if (accountId == null || accountId.isEmpty()) {
             throw new IllegalArgumentException(fieldName + " cannot be null or empty");
         }
