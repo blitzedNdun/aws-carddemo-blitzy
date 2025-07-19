@@ -1,0 +1,491 @@
+{
+  "JWTTokenTestDataset": {
+    "valid_admin_token": {
+      "description": "Valid JWT token for admin user ADMIN001 with 30-minute expiration",
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiQURNSU4wMDEiLCJ1c2VyX3R5cGUiOiJBIiwicm9sZXMiOlsiUk9MRV9BRE1JTiIsIlJPTEVfVVNFUiJdLCJzZXNzaW9uX2lkIjoiYWRtaW4tc2Vzc2lvbi0xMjM0NSIsInRva2VuX3R5cGUiOiJhY2Nlc3MiLCJzdWIiOiJBRE1JTjAwMSIsImlhdCI6MTcwNTY2MDgwMCwiZXhwIjoxNzA1NjYyNjAwfQ.K9_x4fvQZQwYVJi7ZH8k2N3mR6sP5wLx8YqA9cB2dE0",
+      "payload": {
+        "user_id": "ADMIN001",
+        "user_type": "A",
+        "roles": ["ROLE_ADMIN", "ROLE_USER"],
+        "session_id": "admin-session-12345",
+        "token_type": "access",
+        "sub": "ADMIN001",
+        "iat": 1705660800,
+        "exp": 1705662600
+      },
+      "header": {
+        "alg": "HS256",
+        "typ": "JWT"
+      },
+      "expected_authorities": ["ROLE_ADMIN", "ROLE_USER", "VIEW_ACCOUNTS", "MANAGE_ACCOUNTS", "ADMIN_FUNCTIONS"],
+      "expiration_minutes": 30,
+      "test_scenarios": {
+        "can_access_admin_endpoints": true,
+        "can_access_user_endpoints": true,
+        "can_manage_users": true,
+        "can_view_all_accounts": true,
+        "spring_security_validation": "should_pass"
+      }
+    },
+    
+    "valid_user_token": {
+      "description": "Valid JWT token for regular user USER001 with 30-minute expiration",
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVNFUjAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlcyI6WyJST0xFX1VTRVIiXSwic2Vzc2lvbl9pZCI6InVzZXItc2Vzc2lvbi02Nzg5MCIsInRva2VuX3R5cGUiOiJhY2Nlc3MiLCJzdWIiOiJVU0VSMDAxIiwiaWF0IjoxNzA1NjYwODAwLCJleHAiOjE3MDU2NjI2MDB9.M7_y5gwR1QxZWKj8AI9l3O4nS7tQ6xMz9ZrB0dC3eF1",
+      "payload": {
+        "user_id": "USER001",
+        "user_type": "U",
+        "roles": ["ROLE_USER"],
+        "session_id": "user-session-67890",
+        "token_type": "access",
+        "sub": "USER001",
+        "iat": 1705660800,
+        "exp": 1705662600
+      },
+      "header": {
+        "alg": "HS256",
+        "typ": "JWT"
+      },
+      "expected_authorities": ["ROLE_USER", "VIEW_ACCOUNTS", "PROCESS_TRANSACTIONS"],
+      "expiration_minutes": 30,
+      "test_scenarios": {
+        "can_access_admin_endpoints": false,
+        "can_access_user_endpoints": true,
+        "can_manage_users": false,
+        "can_view_own_accounts": true,
+        "spring_security_validation": "should_pass"
+      }
+    },
+    
+    "expired_token": {
+      "description": "Expired JWT token for validation testing - expired 1 hour ago",
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVNFUjAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlcyI6WyJST0xFX1VTRVIiXSwic2Vzc2lvbl9pZCI6ImV4cGlyZWQtc2Vzc2lvbi0xMjM0NSIsInRva2VuX3R5cGUiOiJhY2Nlc3MiLCJzdWIiOiJVU0VSMDAxIiwiaWF0IjoxNzA1NjU3MjAwLCJleHAiOjE3MDU2NTkwMDB9.N8_z6hxS2RyaXLk9BJ0m4P5oT8uR7yO0AasC1eD4fG2",
+      "payload": {
+        "user_id": "USER001",
+        "user_type": "U",
+        "roles": ["ROLE_USER"],
+        "session_id": "expired-session-12345",
+        "token_type": "access",
+        "sub": "USER001",
+        "iat": 1705657200,
+        "exp": 1705659000
+      },
+      "header": {
+        "alg": "HS256",
+        "typ": "JWT"
+      },
+      "expiration_status": "expired",
+      "expired_by_seconds": 3600,
+      "test_scenarios": {
+        "should_be_rejected": true,
+        "expected_error": "Token expired",
+        "spring_security_validation": "should_fail",
+        "expected_status_code": 401
+      }
+    },
+    
+    "invalid_signature_token": {
+      "description": "JWT token with invalid signature for security testing",
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiQURNSU4wMDEiLCJ1c2VyX3R5cGUiOiJBIiwicm9sZXMiOlsiUk9MRV9BRE1JTiIsIlJPTEVfVVNFUiJdLCJzZXNzaW9uX2lkIjoidGFtcGVyZWQtc2Vzc2lvbi0xMjM0NSIsInRva2VuX3R5cGUiOiJhY2Nlc3MiLCJzdWIiOiJBRE1JTjAwMSIsImlhdCI6MTcwNTY2MDgwMCwiZXhwIjoxNzA1NjYyNjAwfQ.InvalidSignatureForSecurityTesting123456789012345",
+      "payload": {
+        "user_id": "ADMIN001",
+        "user_type": "A",
+        "roles": ["ROLE_ADMIN", "ROLE_USER"],
+        "session_id": "tampered-session-12345",
+        "token_type": "access",
+        "sub": "ADMIN001",
+        "iat": 1705660800,
+        "exp": 1705662600
+      },
+      "header": {
+        "alg": "HS256",
+        "typ": "JWT"
+      },
+      "signature_status": "invalid",
+      "tampering_type": "signature_modified",
+      "test_scenarios": {
+        "should_be_rejected": true,
+        "expected_error": "Invalid signature",
+        "spring_security_validation": "should_fail",
+        "expected_status_code": 401,
+        "security_test_type": "signature_tampering"
+      }
+    },
+    
+    "malformed_token": {
+      "description": "Malformed JWT token for parsing error testing",
+      "token": "InvalidJWTStructure.MissingProperBase64Encoding.NoValidSignature",
+      "malformation_type": "structure_invalid",
+      "issues": [
+        "Missing proper JWT structure",
+        "Invalid Base64 encoding",
+        "No valid JSON payload",
+        "Missing signature section"
+      ],
+      "test_scenarios": {
+        "should_be_rejected": true,
+        "expected_error": "Malformed JWT token",
+        "spring_security_validation": "should_fail",
+        "expected_status_code": 401,
+        "parsing_should_fail": true
+      }
+    },
+    
+    "refresh_token_samples": [
+      {
+        "description": "Valid refresh token for admin user with 24-hour expiration",
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiQURNSU4wMDEiLCJzZXNzaW9uX2lkIjoicmVmcmVzaC1hZG1pbi0xMjM0NSIsInRva2VuX3R5cGUiOiJyZWZyZXNoIiwic3ViIjoiQURNSU4wMDEiLCJpYXQiOjE3MDU2NjA4MDAsImV4cCI6MTcwNTc0NzIwMH0.P9_a7iyT3SzbYMk0CK1n5Q6pU9vS8xN1BbtD2fE5gH3",
+        "payload": {
+          "user_id": "ADMIN001",
+          "session_id": "refresh-admin-12345",
+          "token_type": "refresh",
+          "sub": "ADMIN001",
+          "iat": 1705660800,
+          "exp": 1705747200
+        },
+        "expiration_hours": 24,
+        "token_type": "refresh",
+        "usage": "generate_new_access_token"
+      },
+      {
+        "description": "Valid refresh token for regular user with 24-hour expiration",
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVNFUjAwMSIsInNlc3Npb25faWQiOiJyZWZyZXNoLXVzZXItNjc4OTAiLCJ0b2tlbl90eXBlIjoicmVmcmVzaCIsInN1YiI6IlVTRVIwMDEiLCJpYXQiOjE3MDU2NjA4MDAsImV4cCI6MTcwNTc0NzIwMH0.Q0_b8jzU4TabZNl1DL2o6R7qV0wT9yO2CtE3gG6hI4",
+        "payload": {
+          "user_id": "USER001",
+          "session_id": "refresh-user-67890",
+          "token_type": "refresh",
+          "sub": "USER001",
+          "iat": 1705660800,
+          "exp": 1705747200
+        },
+        "expiration_hours": 24,
+        "token_type": "refresh",
+        "usage": "generate_new_access_token"
+      }
+    ],
+    
+    "role_based_jwt_claims": {
+      "admin_role_claims": {
+        "user_type": "A",
+        "roles": ["ROLE_ADMIN", "ROLE_USER"],
+        "authorities": ["ROLE_ADMIN", "ROLE_USER", "VIEW_ACCOUNTS", "MANAGE_ACCOUNTS", "ADMIN_FUNCTIONS"],
+        "spring_security_mapping": {
+          "hasRole_ADMIN": true,
+          "hasRole_USER": true,
+          "hasAnyRole_USER_ADMIN": true,
+          "can_access_admin_endpoints": true
+        },
+        "racf_equivalent": {
+          "racf_group": "CARDDEMO.ADMIN",
+          "resource_access": ["DATASET.ADMIN", "TRANSACTION.ALL"]
+        }
+      },
+      "user_role_claims": {
+        "user_type": "U",
+        "roles": ["ROLE_USER"],
+        "authorities": ["ROLE_USER", "VIEW_ACCOUNTS", "PROCESS_TRANSACTIONS"],
+        "spring_security_mapping": {
+          "hasRole_ADMIN": false,
+          "hasRole_USER": true,
+          "hasAnyRole_USER_ADMIN": true,
+          "can_access_admin_endpoints": false
+        },
+        "racf_equivalent": {
+          "racf_group": "CARDDEMO.USER", 
+          "resource_access": ["DATASET.USER", "TRANSACTION.LIMITED"]
+        }
+      }
+    },
+    
+    "session_correlation_ids": [
+      {
+        "session_id": "admin-session-12345",
+        "user_id": "ADMIN001",
+        "user_type": "A",
+        "created_at": "2024-01-19T14:00:00.000Z",
+        "expires_at": "2024-01-19T14:30:00.000Z",
+        "redis_key": "session:admin-session-12345",
+        "correlation_purpose": "distributed_session_tracking"
+      },
+      {
+        "session_id": "user-session-67890",
+        "user_id": "USER001",
+        "user_type": "U",
+        "created_at": "2024-01-19T14:00:00.000Z",
+        "expires_at": "2024-01-19T14:30:00.000Z",
+        "redis_key": "session:user-session-67890",
+        "correlation_purpose": "stateless_authentication_with_session_correlation"
+      },
+      {
+        "session_id": "microservice-correlation-abc123",
+        "user_id": "TESTADM",
+        "user_type": "A",
+        "created_at": "2024-01-19T14:15:00.000Z",
+        "expires_at": "2024-01-19T14:45:00.000Z",
+        "redis_key": "session:microservice-correlation-abc123",
+        "correlation_purpose": "cross_microservice_request_tracking"
+      }
+    ]
+  },
+  
+  "SecurityTestTokenSamples": {
+    "HS256_algorithm_tokens": [
+      {
+        "test_name": "Valid HS256 Admin Token",
+        "algorithm": "HS256",
+        "secret_key": "CardDemo2024SecretKeyForJWTTokenGeneration",
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiQURNSU4wMDEiLCJ1c2VyX3R5cGUiOiJBIiwicm9sZXMiOlsiUk9MRV9BRE1JTiIsIlJPTEVfVVNFUiJdLCJzZXNzaW9uX2lkIjoiaHMyNTYtdGVzdC0xMjM0NSIsInRva2VuX3R5cGUiOiJhY2Nlc3MiLCJzdWIiOiJBRE1JTjAwMSIsImlhdCI6MTcwNTY2MDgwMCwiZXhwIjoxNzA1NjYyNjAwfQ.R1_c9kxV5UeYbOm2FK3p7S8rW2vU0zQ3DduF4hG7jI5",
+        "validation_method": "signature_verification",
+        "expected_result": "valid"
+      },
+      {
+        "test_name": "Invalid Algorithm - None",
+        "algorithm": "none",
+        "token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJ1c2VyX2lkIjoiSEFDS0VSMSIsInVzZXJfdHlwZSI6IkEiLCJyb2xlcyI6WyJST0xFX0FETUlOIiwiUk9MRV9VU0VSIl0sInN1YiI6IkhBQ0tFUjEiLCJpYXQiOjE3MDU2NjA4MDAsImV4cCI6MTcwNTY2MjYwMH0.",
+        "security_vulnerability": "none_algorithm_attack",
+        "expected_result": "rejected",
+        "expected_error": "Algorithm 'none' not allowed"
+      },
+      {
+        "test_name": "Algorithm Confusion - RS256",
+        "algorithm": "RS256",
+        "token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiSEFDS0VSMiIsInVzZXJfdHlwZSI6IkEiLCJyb2xlcyI6WyJST0xFX0FETUlOIiwiUk9MRV9VU0VSIl0sInN1YiI6IkhBQ0tFUjIiLCJpYXQiOjE3MDU2NjA4MDAsImV4cCI6MTcwNTY2MjYwMH0.InvalidRSASignature",
+        "security_vulnerability": "algorithm_confusion_attack",
+        "expected_result": "rejected",
+        "expected_error": "Algorithm mismatch"
+      }
+    ],
+    
+    "30_minute_expiration_samples": [
+      {
+        "test_scenario": "Token expires in exactly 30 minutes",
+        "issued_at": 1705660800,
+        "expires_at": 1705662600,
+        "expiration_seconds": 1800,
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVNFUjAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlcyI6WyJST0xFX1VTRVIiXSwic2Vzc2lvbl9pZCI6IjMwLW1pbi10ZXN0LTEyMzQ1IiwidG9rZW5fdHlwZSI6ImFjY2VzcyIsInN1YiI6IlVTRVIwMDEiLCJpYXQiOjE3MDU2NjA4MDAsImV4cCI6MTcwNTY2MjYwMH0.S2_d0lyW6VfZcPn3GL4q8T9sX3wV1aR4EevG5iH8kJ6",
+        "validation_time": 1705661400,
+        "remaining_seconds": 1200,
+        "status": "valid"
+      },
+      {
+        "test_scenario": "Token expires in 5 minutes - near expiration warning",
+        "issued_at": 1705660800,
+        "expires_at": 1705662600,
+        "expiration_seconds": 1800,
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVNFUjAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlcyI6WyJST0xFX1VTRVIiXSwic2Vzc2lvbl9pZCI6Im5lYXItZXhwaXJ5LTEyMzQ1IiwidG9rZW5fdHlwZSI6ImFjY2VzcyIsInN1YiI6IlVTRVIwMDEiLCJpYXQiOjE3MDU2NjA4MDAsImV4cCI6MTcwNTY2MjYwMH0.T3_e1mzX7WgadQo4HM5r9U0tY4xW2bS5FfvH6jI9lK7",
+        "validation_time": 1705662300,
+        "remaining_seconds": 300,
+        "status": "valid_but_expiring_soon"
+      },
+      {
+        "test_scenario": "Token expired 1 minute ago",
+        "issued_at": 1705660800,
+        "expires_at": 1705662600,
+        "expiration_seconds": 1800,
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVNFUjAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlcyI6WyJST0xFX1VTRVIiXSwic2Vzc2lvbl9pZCI6ImV4cGlyZWQtMS1taW4tMTIzNDUiLCJ0b2tlbl90eXBlIjoiYWNjZXNzIiwic3ViIjoiVVNFUjAwMSIsImlhdCI6MTcwNTY2MDgwMCwiZXhwIjoxNzA1NjYyNjAwfQ.U4_f2n0Y8XhbeRp5IN6s0V1uZ5yX3cT6GgwI7kJ0mL8",
+        "validation_time": 1705662660,
+        "remaining_seconds": -60,
+        "status": "expired"
+      }
+    ],
+    
+    "admin_role_claims": {
+      "standard_admin_token": {
+        "user_id": "ADMIN001",
+        "user_type": "A",
+        "roles": ["ROLE_ADMIN", "ROLE_USER"],
+        "authorities": ["ROLE_ADMIN", "ROLE_USER", "VIEW_ACCOUNTS", "MANAGE_ACCOUNTS", "ADMIN_FUNCTIONS"],
+        "spring_security_tests": [
+          {
+            "annotation": "@PreAuthorize('hasRole(ADMIN)')",
+            "expected_access": true
+          },
+          {
+            "annotation": "@PreAuthorize('hasRole(USER)')",
+            "expected_access": true
+          },
+          {
+            "annotation": "@PreAuthorize('hasAnyRole(USER,ADMIN)')",
+            "expected_access": true
+          },
+          {
+            "annotation": "@PreAuthorize('hasAuthority(ADMIN_FUNCTIONS)')",
+            "expected_access": true
+          }
+        ]
+      },
+      "super_admin_token": {
+        "user_id": "SUPRADM",
+        "user_type": "A",
+        "roles": ["ROLE_ADMIN", "ROLE_USER"],
+        "authorities": ["ROLE_ADMIN", "ROLE_USER", "VIEW_ACCOUNTS", "MANAGE_ACCOUNTS", "ADMIN_FUNCTIONS", "SYSTEM_CONFIGURATION"],
+        "enhanced_permissions": ["SYSTEM_CONFIGURATION", "AUDIT_ACCESS", "USER_MANAGEMENT"],
+        "spring_security_tests": [
+          {
+            "annotation": "@PreAuthorize('hasRole(ADMIN) and hasAuthority(SYSTEM_CONFIGURATION)')",
+            "expected_access": true
+          }
+        ]
+      }
+    },
+    
+    "user_role_claims": {
+      "standard_user_token": {
+        "user_id": "USER001",
+        "user_type": "U",
+        "roles": ["ROLE_USER"],
+        "authorities": ["ROLE_USER", "VIEW_ACCOUNTS", "PROCESS_TRANSACTIONS"],
+        "spring_security_tests": [
+          {
+            "annotation": "@PreAuthorize('hasRole(ADMIN)')",
+            "expected_access": false
+          },
+          {
+            "annotation": "@PreAuthorize('hasRole(USER)')",
+            "expected_access": true
+          },
+          {
+            "annotation": "@PreAuthorize('hasAnyRole(USER,ADMIN)')",
+            "expected_access": true
+          },
+          {
+            "annotation": "@PreAuthorize('hasAuthority(ADMIN_FUNCTIONS)')",
+            "expected_access": false
+          }
+        ]
+      },
+      "restricted_user_token": {
+        "user_id": "RESTRICTED1",
+        "user_type": "U",
+        "roles": ["ROLE_USER"],
+        "authorities": ["ROLE_USER", "VIEW_ACCOUNTS"],
+        "restrictions": ["LIMITED_TRANSACTION_ACCESS"],
+        "spring_security_tests": [
+          {
+            "annotation": "@PreAuthorize('hasRole(USER) and hasAuthority(PROCESS_TRANSACTIONS)')",
+            "expected_access": false
+          }
+        ]
+      }
+    },
+    
+    "negative_test_scenarios": [
+      {
+        "test_name": "Token with invalid user type",
+        "token_payload": {
+          "user_id": "INVALID1",
+          "user_type": "X",
+          "roles": ["INVALID_ROLE"],
+          "sub": "INVALID1"
+        },
+        "expected_validation_result": "invalid",
+        "expected_error": "Invalid user type",
+        "test_purpose": "role_validation_failure"
+      },
+      {
+        "test_name": "Token with missing required claims",
+        "token_payload": {
+          "user_id": "MISSING1",
+          "sub": "MISSING1"
+        },
+        "missing_claims": ["user_type", "roles", "token_type"],
+        "expected_validation_result": "invalid",
+        "expected_error": "Missing required claims",
+        "test_purpose": "claim_validation_failure"
+      },
+      {
+        "test_name": "Token with privilege escalation attempt",
+        "token_payload": {
+          "user_id": "HACKER1",
+          "user_type": "U",
+          "roles": ["ROLE_ADMIN", "ROLE_USER"],
+          "sub": "HACKER1"
+        },
+        "security_issue": "role_escalation_attempt",
+        "expected_validation_result": "invalid",
+        "expected_error": "Role mismatch with user type",
+        "test_purpose": "privilege_escalation_prevention"
+      },
+      {
+        "test_name": "Token with SQL injection in claims",
+        "token_payload": {
+          "user_id": "'; DROP TABLE users; --",
+          "user_type": "U",
+          "roles": ["ROLE_USER"],
+          "sub": "'; DROP TABLE users; --"
+        },
+        "security_issue": "sql_injection_attempt",
+        "expected_validation_result": "invalid",
+        "expected_error": "Invalid characters in user ID",
+        "test_purpose": "input_sanitization_testing"
+      }
+    ],
+    
+    "jwt_validation_test_cases": [
+      {
+        "test_category": "Signature Validation",
+        "test_cases": [
+          {
+            "name": "Valid HS256 signature",
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVEVTVFVTRVIiLCJ1c2VyX3R5cGUiOiJVIiwicm9sZXMiOlsiUk9MRV9VU0VSIl0sInN1YiI6IlRFU1RVU0VSIiwiaWF0IjoxNzA1NjYwODAwLCJleHAiOjE3MDU2NjI2MDB9.V5_g3ozZ9YjfeSq6JO7t1W2vY6zY4dU7HhxJ8lK2nM9",
+            "expected_result": "valid"
+          },
+          {
+            "name": "Tampered signature",
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVEVTVFVTRVIiLCJ1c2VyX3R5cGUiOiJVIiwicm9sZXMiOlsiUk9MRV9VU0VSIl0sInN1YiI6IlRFU1RVU0VSIiwiaWF0IjoxNzA1NjYwODAwLCJleHAiOjE3MDU2NjI2MDB9.TamperedSignature12345",
+            "expected_result": "invalid"
+          }
+        ]
+      },
+      {
+        "test_category": "Expiration Validation",
+        "test_cases": [
+          {
+            "name": "Token not yet expired",
+            "current_time": 1705661400,
+            "token_exp": 1705662600,
+            "expected_result": "valid"
+          },
+          {
+            "name": "Token just expired",
+            "current_time": 1705662601,
+            "token_exp": 1705662600,
+            "expected_result": "expired"
+          }
+        ]
+      },
+      {
+        "test_category": "Claim Validation",
+        "test_cases": [
+          {
+            "name": "All required claims present",
+            "claims": ["user_id", "user_type", "roles", "sub", "iat", "exp"],
+            "expected_result": "valid"
+          },
+          {
+            "name": "Missing user_id claim",
+            "claims": ["user_type", "roles", "sub", "iat", "exp"],
+            "missing_claim": "user_id",
+            "expected_result": "invalid"
+          }
+        ]
+      },
+      {
+        "test_category": "Role Authorization",
+        "test_cases": [
+          {
+            "name": "Admin role access to admin endpoint",
+            "user_roles": ["ROLE_ADMIN", "ROLE_USER"],
+            "required_role": "ROLE_ADMIN",
+            "expected_result": "authorized"
+          },
+          {
+            "name": "User role denied admin endpoint",
+            "user_roles": ["ROLE_USER"],
+            "required_role": "ROLE_ADMIN",
+            "expected_result": "unauthorized"
+          }
+        ]
+      }
+    ]
+  }
+}
