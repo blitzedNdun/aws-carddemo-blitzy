@@ -2,867 +2,1578 @@
   "metadata": {
     "version": "1.0.0",
     "description": "Comprehensive penetration testing scenarios for CardDemo Spring Security implementation validation",
-    "target_system": "CardDemo Spring Boot Microservices with JWT Authentication",
-    "compliance_standards": ["PCI DSS 4.0", "OWASP Top 10 2023", "Spring Security 6.x"],
-    "last_updated": "2024-01-19",
-    "test_environment": "Kubernetes test cluster with containerized security validation"
+    "targetArchitecture": "Spring Boot microservices with JWT authentication and PostgreSQL database",
+    "complianceFrameworks": ["PCI DSS 4.0", "SOX 404", "OWASP Top 10 2021"],
+    "lastUpdated": "2024-01-15",
+    "author": "CardDemo Security Testing Team"
   },
 
   "PenetrationTestScenarios": {
-    "authentication_bypass_attacks": {
-      "description": "Authentication bypass and credential manipulation testing scenarios targeting Spring Security JWT implementation",
-      "test_categories": {
-        "jwt_token_manipulation": {
-          "scenarios": [
-            {
-              "test_id": "AUTH_BYPASS_001",
-              "name": "JWT Signature Tampering Attack",
-              "description": "Attempt to modify JWT token signature to bypass Spring Security validation",
-              "attack_vector": "Token signature manipulation",
-              "target_endpoint": "/api/auth/validate",
-              "test_data": {
-                "original_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVNFUjAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlcyI6WyJST0xFX1VTRVIiXSwic2Vzc2lvbl9pZCI6InVzZXItc2Vzc2lvbi02Nzg5MCIsInRva2VuX3R5cGUiOiJhY2Nlc3MiLCJzdWIiOiJVU0VSMDAxIiwiaWF0IjoxNzA1NjYwODAwLCJleHAiOjE3MDU2NjI2MDB9.M7_y5gwR1QxZWKj8AI9l3O4nS7tQ6xMz9ZrB0dC3eF1",
-                "tampered_tokens": [
-                  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVNFUjAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlcyI6WyJST0xFX1VTRVIiXSwic2Vzc2lvbl9pZCI6InVzZXItc2Vzc2lvbi02Nzg5MCIsInRva2VuX3R5cGUiOiJhY2Nlc3MiLCJzdWIiOiJVU0VSMDAxIiwiaWF0IjoxNzA1NjYwODAwLCJleHAiOjE3MDU2NjI2MDB9.INVALID_SIGNATURE_TEST",
-                  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiQURNSU4wMDEiLCJ1c2VyX3R5cGUiOiJBIiwicm9sZXMiOlsiUk9MRV9BRE1JTiIsIlJPTEVfVVNFUiJdLCJzZXNzaW9uX2lkIjoidGFtcGVyZWQtc2Vzc2lvbi0xMjM0NSIsInRva2VuX3R5cGUiOiJhY2Nlc3MiLCJzdWIiOiJBRE1JTjAwMSIsImlhdCI6MTcwNTY2MDgwMCwiZXhwIjoxNzA1NjYyNjAwfQ.PRIVILEGE_ESCALATION_ATTEMPT"
-                ]
-              },
-              "expected_behavior": {
-                "response_code": 401,
-                "response_body_contains": ["Invalid or missing CSRF token", "JWT validation failed"],
-                "security_headers_present": ["X-Frame-Options", "X-Content-Type-Options"],
-                "audit_log_entry": "JWT signature validation failure"
-              },
-              "validation_rules": [
-                "Spring Security must reject all tampered tokens",
-                "No successful authentication with invalid signatures",
-                "Proper error logging to Spring Boot Actuator audit events",
-                "Rate limiting should trigger after repeated attempts"
-              ]
-            },
-            {
-              "test_id": "AUTH_BYPASS_002", 
-              "name": "JWT Claims Manipulation Attack",
-              "description": "Attempt to modify JWT claims to escalate privileges from USER to ADMIN role",
-              "attack_vector": "JWT payload manipulation",
-              "target_endpoint": "/api/admin/users",
-              "test_data": {
-                "user_token_payload": {
-                  "user_id": "USER001",
-                  "user_type": "U", 
-                  "roles": ["ROLE_USER"],
-                  "session_id": "user-session-67890",
-                  "sub": "USER001",
-                  "iat": 1705660800,
-                  "exp": 1705662600
-                },
-                "manipulated_payloads": [
-                  {
-                    "user_id": "USER001",
-                    "user_type": "A",
-                    "roles": ["ROLE_ADMIN", "ROLE_USER"],
-                    "session_id": "escalated-session-12345",
-                    "sub": "USER001",
-                    "iat": 1705660800,
-                    "exp": 1705662600
-                  },
-                  {
-                    "user_id": "ADMIN001",
-                    "user_type": "A",
-                    "roles": ["ROLE_ADMIN", "ROLE_USER"],
-                    "session_id": "hijacked-admin-session",
-                    "sub": "ADMIN001", 
-                    "iat": 1705660800,
-                    "exp": 1705662600
-                  }
-                ]
-              },
-              "expected_behavior": {
-                "response_code": 401,
-                "response_body_contains": ["Authentication failed", "Invalid token"],
-                "spring_security_context": "No authentication context established",
-                "audit_log_entry": "Token validation failure - claims manipulation detected"
-              },
-              "validation_rules": [
-                "Spring Security JWT decoder must validate token integrity",
-                "@PreAuthorize annotations must block unauthorized access",
-                "No privilege escalation should succeed",
-                "Comprehensive audit logging of failed attempts"
-              ]
-            }
+    "description": "Primary penetration testing scenario collection providing comprehensive security validation through simulated attacks, vulnerability exploitation attempts, and security control effectiveness testing",
+    
+    "sqlInjectionAttackScenarios": {
+      "description": "SQL injection vulnerability testing scenarios targeting PostgreSQL database interactions through Spring Data JPA repositories",
+      "testEnvironment": {
+        "targetEndpoints": [
+          "/api/auth/login",
+          "/api/cavw/accounts/{accountId}",
+          "/api/accounts/{accountId}",
+          "/api/admin/users",
+          "/api/admin/users/{userId}"
+        ],
+        "databaseLayer": "PostgreSQL 15+ with Spring Data JPA",
+        "securityControls": ["Parameterized queries", "Input validation", "SQL injection prevention"]
+      },
+      
+      "attackVectors": [
+        {
+          "scenarioId": "SQL_INJ_001",
+          "name": "Authentication Bypass via SQL Injection",
+          "description": "Attempt to bypass authentication by injecting SQL into login credentials",
+          "targetEndpoint": "/api/auth/login",
+          "httpMethod": "POST",
+          "payloadType": "JSON",
+          "attackPayload": {
+            "username": "admin' OR '1'='1' --",
+            "password": "password' OR '1'='1' --"
+          },
+          "expectedResult": {
+            "responseCode": 401,
+            "securityMeasure": "BCrypt password hashing prevents SQL injection in credentials",
+            "validationCriteria": "Authentication should fail with proper error handling"
+          },
+          "validationSteps": [
+            "Send malicious SQL injection payload in login request",
+            "Verify authentication fails with 401 Unauthorized",
+            "Confirm no SQL errors exposed in response",
+            "Validate proper error logging without sensitive information leakage"
           ]
         },
-        "session_hijacking_attacks": {
-          "scenarios": [
-            {
-              "test_id": "SESSION_HIJACK_001",
-              "name": "Redis Session Store Manipulation",
-              "description": "Attempt to manipulate Redis session data to hijack user sessions",
-              "attack_vector": "Session store manipulation",
-              "target_components": ["Redis Session Store", "Spring Session"],
-              "test_data": {
-                "valid_session_id": "spring:session:sessions:12345-67890-abcdef",
-                "session_manipulation_attempts": [
-                  "Direct Redis key modification",
-                  "Session ID brute force enumeration",
-                  "Session fixation attacks",
-                  "Cross-session contamination tests"
-                ]
-              },
-              "expected_behavior": {
-                "response_code": 403,
-                "session_validation": "Spring Session should detect tampering",
-                "redis_security": "Access denied to unauthorized session modifications",
-                "audit_log_entry": "Session security violation detected"
-              },
-              "validation_rules": [
-                "Redis access controls must prevent unauthorized modifications", 
-                "Spring Session TTL enforcement must be maintained",
-                "Session correlation ID validation required",
-                "Automatic session invalidation on tampering detection"
-              ]
-            },
-            {
-              "test_id": "SESSION_HIJACK_002",
-              "name": "JWT Token Replay Attack",
-              "description": "Attempt to reuse valid JWT tokens across different sessions and endpoints",
-              "attack_vector": "Token replay and reuse",
-              "target_endpoint": "/api/account/view/{accountId}",
-              "test_data": {
-                "captured_tokens": [
-                  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVNFUjAwMSIsInNlc3Npb25faWQiOiJ2YWxpZC1zZXNzaW9uLTEyMzQ1In0.ValidSignatureForReplayTest",
-                  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVNFUjAwMiIsInNlc3Npb25faWQiOiJhbm90aGVyLXZhbGlkLXNlc3Npb24ifQ.AnotherValidSignatureForReplayTest"
-                ],
-                "replay_scenarios": [
-                  "Token reuse after logout",
-                  "Cross-user token replay",
-                  "Expired token reuse attempts",
-                  "Token replay from different IP addresses"
-                ]
-              },
-              "expected_behavior": {
-                "response_code": 401,
-                "jwt_validation": "Spring Security should reject replayed tokens",
-                "session_validation": "Redis session correlation must fail",
-                "audit_log_entry": "Token replay attempt detected"
-              },
-              "validation_rules": [
-                "JWT expiration times must be enforced",
-                "Session correlation validation required",
-                "IP address validation for sensitive operations",
-                "Token blacklisting after logout"
-              ]
+        {
+          "scenarioId": "SQL_INJ_002", 
+          "name": "Account ID Parameter SQL Injection",
+          "description": "Attempt SQL injection through account ID path parameter",
+          "targetEndpoint": "/api/cavw/accounts/{accountId}",
+          "httpMethod": "GET",
+          "authRequired": true,
+          "attackPayload": {
+            "pathParameter": "12345'; DROP TABLE accounts; --"
+          },
+          "expectedResult": {
+            "responseCode": 400,
+            "securityMeasure": "Spring Data JPA parameterized queries prevent injection",
+            "validationCriteria": "Request should fail with bad request error"
+          },
+          "validationSteps": [
+            "Authenticate with valid JWT token",
+            "Send request with SQL injection in accountId path parameter",
+            "Verify 400 Bad Request response with proper validation error",
+            "Confirm database integrity remains intact"
+          ]
+        },
+        {
+          "scenarioId": "SQL_INJ_003",
+          "name": "User Search SQL Injection",
+          "description": "Test SQL injection via user search parameters in admin endpoints",
+          "targetEndpoint": "/api/admin/users",
+          "httpMethod": "GET",
+          "authRequired": true,
+          "requiredRole": "ROLE_ADMIN",
+          "attackPayload": {
+            "queryParameters": {
+              "search": "admin' UNION SELECT password_hash FROM users WHERE '1'='1"
             }
+          },
+          "expectedResult": {
+            "responseCode": 400,
+            "securityMeasure": "Input validation and parameterized queries prevent data exfiltration",
+            "validationCriteria": "Search should fail with validation error"
+          },
+          "validationSteps": [
+            "Authenticate with admin role JWT token", 
+            "Send user search request with UNION-based SQL injection",
+            "Verify proper input validation prevents malicious query execution",
+            "Confirm sensitive data is not exposed in error responses"
           ]
         }
-      }
+      ]
     },
 
-    "sql_injection_attacks": {
-      "description": "SQL injection vulnerability testing against PostgreSQL database integration",
-      "test_categories": {
-        "parameter_injection": {
-          "scenarios": [
-            {
-              "test_id": "SQL_INJ_001",
-              "name": "Account ID Parameter SQL Injection",
-              "description": "Attempt SQL injection through account ID parameters in JPA queries",
-              "attack_vector": "Path parameter injection",
-              "target_endpoint": "/api/account/view/{accountId}",
-              "test_data": {
-                "malicious_payloads": [
-                  "12345'; DROP TABLE accounts; --",
-                  "12345' OR '1'='1",
-                  "12345' UNION SELECT * FROM users --",
-                  "12345'; INSERT INTO accounts VALUES('MALICIOUS'); --",
-                  "12345' AND 1=1 --",
-                  "12345' AND 1=2 --"
-                ],
-                "expected_account_id_format": "[0-9]{11}"
-              },
-              "expected_behavior": {
-                "response_code": 400,
-                "response_body_contains": ["Invalid account ID format", "Bad Request"],
-                "database_state": "No unauthorized queries executed",
-                "audit_log_entry": "Invalid parameter format detected"
-              },
-              "validation_rules": [
-                "Spring Data JPA parameterized queries must prevent injection",
-                "Jakarta Bean Validation must reject malformed input",
-                "PostgreSQL query logs should show only safe parameterized queries",
-                "No database schema modification allowed"
-              ]
-            },
-            {
-              "test_id": "SQL_INJ_002",
-              "name": "Search Parameter SQL Injection",
-              "description": "Attempt SQL injection through search and filter parameters",
-              "attack_vector": "Query parameter injection",
-              "target_endpoint": "/api/transaction/search",
-              "test_data": {
-                "malicious_search_queries": [
-                  "test'; DELETE FROM transactions; --",
-                  "' OR 1=1; --",
-                  "' UNION SELECT password_hash FROM users --",
-                  "test'; UPDATE accounts SET balance=999999; --",
-                  "'; GRANT ALL PRIVILEGES TO 'attacker'; --"
-                ],
-                "legitimate_search_pattern": "^[a-zA-Z0-9\\s-_.]{1,50}$"
-              },
-              "expected_behavior": {
-                "response_code": 400,
-                "response_body_contains": ["Invalid search criteria", "Validation failed"],
-                "database_integrity": "All original data preserved",
-                "audit_log_entry": "Malicious search attempt blocked"
-              },
-              "validation_rules": [
-                "Spring Security input validation must sanitize parameters",
-                "Hibernate/JPA named queries must prevent injection",
-                "PostgreSQL function calls must use safe parameters",
-                "Comprehensive input validation with custom validators"
-              ]
-            }
+    "xssVulnerabilityTesting": {
+      "description": "Cross-Site Scripting (XSS) vulnerability testing scenarios for React frontend and Spring Boot API responses",
+      "testEnvironment": {
+        "frontendFramework": "React 18+ with Material-UI components",
+        "securityControls": ["Content Security Policy", "Output encoding", "Input sanitization"],
+        "targetComponents": ["LoginComponent.jsx", "MainMenuComponent.jsx", "AccountViewComponent.jsx"]
+      },
+
+      "attackVectors": [
+        {
+          "scenarioId": "XSS_001",
+          "name": "Stored XSS in User Profile Data",
+          "description": "Attempt to store malicious JavaScript in user profile fields",
+          "targetEndpoint": "/api/admin/users/{userId}",
+          "httpMethod": "PUT",
+          "authRequired": true,
+          "requiredRole": "ROLE_ADMIN",
+          "attackPayload": {
+            "userId": "12345",
+            "firstName": "<script>alert('XSS')</script>",
+            "lastName": "User<img src=x onerror=alert('XSS')>",
+            "userType": "U"
+          },
+          "expectedResult": {
+            "responseCode": 400,
+            "securityMeasure": "Input validation and sanitization prevent XSS payload storage",
+            "validationCriteria": "Malicious scripts should be rejected or sanitized"
+          },
+          "validationSteps": [
+            "Authenticate with admin role JWT token",
+            "Send user update request with XSS payloads in name fields",
+            "Verify input validation rejects or sanitizes malicious content",
+            "Confirm stored data does not contain executable scripts"
           ]
         },
-        "stored_procedure_injection": {
-          "scenarios": [
-            {
-              "test_id": "SQL_INJ_003",
-              "name": "Batch Processing SQL Injection",
-              "description": "Attempt SQL injection through Spring Batch job parameters",
-              "attack_vector": "Batch job parameter injection",
-              "target_component": "Spring Batch Interest Calculation Job",
-              "test_data": {
-                "malicious_batch_parameters": [
-                  "job.parameter='; DROP TABLE transactions; --",
-                  "account.filter=' OR '1'='1",
-                  "date.range='; UPDATE accounts SET balance=0; --"
-                ]
-              },
-              "expected_behavior": {
-                "batch_job_status": "FAILED",
-                "parameter_validation": "JobParameters validation must reject malicious input",
-                "database_state": "No unauthorized modifications",
-                "audit_log_entry": "Batch job parameter validation failure"
-              },
-              "validation_rules": [
-                "Spring Batch JobParametersValidator must sanitize input",
-                "Database stored procedures must use parameterized queries",
-                "Batch execution context must be validated",
-                "Job restart capabilities must not allow parameter tampering"
-              ]
+        {
+          "scenarioId": "XSS_002",
+          "name": "Reflected XSS in Error Messages",
+          "description": "Test for reflected XSS in API error responses",
+          "targetEndpoint": "/api/cavw/accounts/{accountId}",
+          "httpMethod": "GET", 
+          "authRequired": true,
+          "attackPayload": {
+            "pathParameter": "<script>alert('Reflected XSS')</script>"
+          },
+          "expectedResult": {
+            "responseCode": 400,
+            "securityMeasure": "Output encoding prevents XSS in error messages",
+            "validationCriteria": "Error response should not contain unescaped script tags"
+          },
+          "validationSteps": [
+            "Send request with XSS payload in path parameter",
+            "Verify error response properly encodes/escapes the input",
+            "Confirm no executable JavaScript in response headers or body",
+            "Validate Content-Security-Policy header prevents inline script execution"
+          ]
+        },
+        {
+          "scenarioId": "XSS_003",
+          "name": "DOM-based XSS in React Components",
+          "description": "Test for DOM-based XSS vulnerabilities in React frontend components",
+          "targetComponent": "AccountViewComponent.jsx",
+          "attackVector": "Client-side rendering",
+          "attackPayload": {
+            "accountData": {
+              "accountName": "Test Account<script>alert('DOM XSS')</script>",
+              "accountDescription": "Description<img src=x onerror=alert('XSS')>"
             }
+          },
+          "expectedResult": {
+            "securityMeasure": "React's built-in XSS protection and proper output encoding",
+            "validationCriteria": "Malicious scripts should not execute in DOM"
+          },
+          "validationSteps": [
+            "Load AccountViewComponent with malicious account data",
+            "Verify React properly escapes dynamic content",
+            "Confirm no JavaScript execution occurs from injected payloads",
+            "Validate CSP headers prevent inline script execution"
           ]
         }
-      }
+      ]
     },
 
-    "xss_vulnerability_testing": {
-      "description": "Cross-Site Scripting (XSS) vulnerability testing for React frontend and API responses",
-      "test_categories": {
-        "reflected_xss": {
-          "scenarios": [
-            {
-              "test_id": "XSS_001",
-              "name": "API Response XSS Injection",
-              "description": "Attempt to inject malicious scripts through API response data",
-              "attack_vector": "Response data injection",
-              "target_endpoint": "/api/customer/search",
-              "test_data": {
-                "malicious_payloads": [
-                  "<script>alert('XSS')</script>",
-                  "<img src=x onerror=alert('XSS')>",
-                  "javascript:alert('XSS')",
-                  "<svg onload=alert('XSS')>",
-                  "<iframe src='javascript:alert(\"XSS\")'></iframe>",
-                  "'\"><script>alert('XSS')</script>"
-                ],
-                "injection_fields": ["firstName", "lastName", "address", "notes"]
-              },
-              "expected_behavior": {
-                "response_content_type": "application/json",
-                "response_data_escaped": "All HTML entities properly escaped",
-                "security_headers": {
-                  "Content-Security-Policy": "present",
-                  "X-XSS-Protection": "1; mode=block",
-                  "X-Content-Type-Options": "nosniff"
-                },
-                "audit_log_entry": "XSS attempt detected and blocked"
-              },
-              "validation_rules": [
-                "Spring MVC @ResponseBody must escape HTML entities",
-                "Jackson JSON serialization must prevent script injection",
-                "Content Security Policy headers must block inline scripts",
-                "All user-generated content must be sanitized"
-              ]
+    "csrfAttackSimulation": {
+      "description": "Cross-Site Request Forgery (CSRF) attack simulation testing Spring Security CSRF protection mechanisms",
+      "testEnvironment": {
+        "csrfProtection": "CsrfSecurityConfig with CookieCsrfTokenRepository",
+        "tokenValidation": "X-CSRF-TOKEN header and _csrf parameter support",
+        "securityControls": ["CSRF token validation", "SameSite cookie attributes", "Referrer validation"]
+      },
+
+      "attackVectors": [
+        {
+          "scenarioId": "CSRF_001",
+          "name": "Account Update without CSRF Token",
+          "description": "Attempt to update account information without valid CSRF token",
+          "targetEndpoint": "/api/accounts/{accountId}",
+          "httpMethod": "PUT",
+          "authRequired": true,
+          "attackMethod": "Missing CSRF token",
+          "attackPayload": {
+            "headers": {
+              "Authorization": "Bearer valid_jwt_token",
+              "Content-Type": "application/json"
             },
-            {
-              "test_id": "XSS_002",
-              "name": "React Component XSS Prevention",
-              "description": "Validate React component XSS protection mechanisms",
-              "attack_vector": "Frontend component injection",
-              "target_component": "React data display components",
-              "test_data": {
-                "malicious_data_payloads": [
-                  "dangerouslySetInnerHTML: {__html: '<script>alert(1)</script>'}",
-                  "props.userInput = '<img src=x onerror=alert(1)>'",
-                  "this.state.content = 'javascript:alert(1)'",
-                  "document.createElement('script').innerHTML = 'alert(1)'"
-                ]
-              },
-              "expected_behavior": {
-                "react_rendering": "Automatic HTML escaping by React",
-                "dom_manipulation": "No direct DOM modification allowed",
-                "event_handlers": "Sanitized event handler attributes",
-                "browser_security": "CSP headers prevent script execution"
-              },
-              "validation_rules": [
-                "React JSX must automatically escape dangerous content",
-                "No dangerouslySetInnerHTML usage without sanitization",
-                "DOMPurify integration for any HTML rendering",
-                "Strict Content Security Policy enforcement"
-              ]
+            "body": {
+              "accountId": "12345678901",
+              "accountName": "Malicious Update",
+              "accountStatus": "A"
             }
+          },
+          "expectedResult": {
+            "responseCode": 403,
+            "securityMeasure": "CSRF protection blocks requests without valid token",
+            "validationCriteria": "Request should be rejected with CSRF protection violation"
+          },
+          "validationSteps": [
+            "Authenticate and obtain valid JWT token",
+            "Send account update request without X-CSRF-TOKEN header",
+            "Verify 403 Forbidden response with CSRF violation message",
+            "Confirm account data remains unchanged"
           ]
         },
-        "stored_xss": {
-          "scenarios": [
-            {
-              "test_id": "XSS_003",
-              "name": "Database Stored XSS Testing",
-              "description": "Attempt to store malicious scripts in PostgreSQL and verify output sanitization",
-              "attack_vector": "Persistent script storage",
-              "target_endpoints": ["/api/customer/create", "/api/customer/update"],
-              "test_data": {
-                "malicious_customer_data": {
-                  "firstName": "<script>alert('Stored XSS')</script>",
-                  "lastName": "<img src=x onerror=alert('XSS')>",
-                  "address": "javascript:alert('XSS')",
-                  "notes": "<svg onload=alert('XSS')>"
+        {
+          "scenarioId": "CSRF_002",
+          "name": "Cross-Origin CSRF Attack Simulation",
+          "description": "Simulate CSRF attack from malicious external website",
+          "targetEndpoint": "/api/admin/users",
+          "httpMethod": "POST",
+          "authRequired": true,
+          "requiredRole": "ROLE_ADMIN",
+          "attackMethod": "Cross-origin form submission",
+          "attackPayload": {
+            "origin": "https://malicious-site.com",
+            "headers": {
+              "Authorization": "Bearer valid_admin_token",
+              "Content-Type": "application/json",
+              "Origin": "https://malicious-site.com",
+              "Referer": "https://malicious-site.com/attack.html"
+            },
+            "body": {
+              "userId": "MALICIOUS",
+              "firstName": "Malicious",
+              "lastName": "User",
+              "userType": "A"
+            }
+          },
+          "expectedResult": {
+            "responseCode": 403,
+            "securityMeasure": "CORS policy and CSRF protection prevent cross-origin attacks",
+            "validationCriteria": "Request should be blocked by CORS and CSRF protection"
+          },
+          "validationSteps": [
+            "Simulate request from external malicious domain",
+            "Include valid authentication but no CSRF token",
+            "Verify CORS policy blocks the cross-origin request",
+            "Confirm CSRF protection provides additional security layer"
+          ]
+        },
+        {
+          "scenarioId": "CSRF_003",
+          "name": "CSRF Token Tampering Attack",
+          "description": "Test CSRF protection against token tampering and replay attacks",
+          "targetEndpoint": "/api/accounts/{accountId}",
+          "httpMethod": "PUT",
+          "authRequired": true,
+          "attackMethod": "Invalid/tampered CSRF token",
+          "attackPayload": {
+            "headers": {
+              "Authorization": "Bearer valid_jwt_token",
+              "Content-Type": "application/json",
+              "X-CSRF-TOKEN": "tampered-csrf-token-value"
+            },
+            "body": {
+              "accountId": "12345678901",
+              "accountStatus": "I"
+            }
+          },
+          "expectedResult": {
+            "responseCode": 403,
+            "securityMeasure": "CSRF token validation prevents tampering attacks",
+            "validationCriteria": "Tampered token should be rejected"
+          },
+          "validationSteps": [
+            "Obtain valid CSRF token from /api/csrf/token endpoint",
+            "Modify the token value before sending request",
+            "Verify server rejects the tampered token",
+            "Confirm proper error response without token information leakage"
+          ]
+        }
+      ]
+    },
+
+    "authenticationBypassAttempts": {
+      "description": "Authentication bypass testing scenarios targeting Spring Security JWT authentication mechanisms",
+      "testEnvironment": {
+        "authenticationService": "AuthenticationService.java with JWT token generation",
+        "jwtConfiguration": "Spring Security OAuth2 Resource Server with HS256 algorithm",
+        "securityControls": ["JWT signature validation", "Token expiration", "User credential verification"]
+      },
+
+      "attackVectors": [
+        {
+          "scenarioId": "AUTH_BYPASS_001",
+          "name": "JWT Signature Manipulation",
+          "description": "Attempt to bypass authentication by manipulating JWT token signature",
+          "targetEndpoint": "/api/cavw/accounts/12345678901",
+          "httpMethod": "GET",
+          "attackMethod": "JWT signature tampering",
+          "attackPayload": {
+            "headers": {
+              "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVNFUjAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlcyI6WyJST0xFX0FETUlOIl0sInNlc3Npb25faWQiOiJ0YW1wZXJlZC1zZXNzaW9uIiwic3ViIjoiVVNFUjAwMSIsImlhdCI6MTcwNTY2MDgwMCwiZXhwIjoxNzA1NjYyNjAwfQ.TAMPERED_SIGNATURE_FOR_TESTING"
+            }
+          },
+          "expectedResult": {
+            "responseCode": 401,
+            "securityMeasure": "Spring Security JWT signature validation prevents token tampering",
+            "validationCriteria": "Invalid signature should result in authentication failure"
+          },
+          "validationSteps": [
+            "Create JWT token with elevated privileges in payload",
+            "Modify signature to simulate tampering attack",
+            "Send request with tampered token",
+            "Verify authentication fails with 401 Unauthorized",
+            "Confirm no access to protected resources"
+          ]
+        },
+        {
+          "scenarioId": "AUTH_BYPASS_002",
+          "name": "Algorithm Confusion Attack",
+          "description": "Test JWT algorithm confusion vulnerability (HS256 to none)",
+          "targetEndpoint": "/api/admin/users",
+          "httpMethod": "GET",
+          "attackMethod": "JWT algorithm manipulation",
+          "attackPayload": {
+            "headers": {
+              "Authorization": "Bearer eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJ1c2VyX2lkIjoiVVNFUjAwMSIsInVzZXJfdHlwZSI6IkEiLCJyb2xlcyI6WyJST0xFX0FETUlOIl0sInNlc3Npb25faWQiOiJhZG1pbi1zZXNzaW9uIiwic3ViIjoiVVNFUjAwMSIsImlhdCI6MTcwNTY2MDgwMCwiZXhwIjoxNzA1NjYyNjAwfQ."
+            }
+          },
+          "expectedResult": {
+            "responseCode": 401,
+            "securityMeasure": "JWT decoder rejects 'none' algorithm tokens",
+            "validationCriteria": "Algorithm confusion attack should be prevented"
+          },
+          "validationSteps": [
+            "Create JWT token with 'none' algorithm header",
+            "Include admin privileges in token payload",
+            "Attempt to access admin-only endpoint",
+            "Verify Spring Security rejects unsigned token",
+            "Confirm proper algorithm validation enforcement"
+          ]
+        },
+        {
+          "scenarioId": "AUTH_BYPASS_003",
+          "name": "JWT Token Replay Attack",
+          "description": "Test protection against expired and replayed JWT tokens",
+          "targetEndpoint": "/api/accounts/12345678901",
+          "httpMethod": "PUT",
+          "attackMethod": "Expired token replay",
+          "attackPayload": {
+            "headers": {
+              "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVNFUjAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlcyI6WyJST0xFX1VTRVIiXSwic2Vzc2lvbl9pZCI6ImV4cGlyZWQtc2Vzc2lvbiIsInN1YiI6IlVTRVIwMDEiLCJpYXQiOjE3MDU2NTcyMDAsImV4cCI6MTcwNTY1OTAwMH0.EXPIRED_TOKEN_SIGNATURE"
+            },
+            "body": {
+              "accountStatus": "I"
+            }
+          },
+          "expectedResult": {
+            "responseCode": 401,
+            "securityMeasure": "JWT expiration validation prevents token replay",
+            "validationCriteria": "Expired token should be rejected"
+          },
+          "validationSteps": [
+            "Use previously valid but expired JWT token",
+            "Attempt to perform account update operation",
+            "Verify token expiration is properly validated",
+            "Confirm 401 response with appropriate error message",
+            "Validate session cleanup prevents token reuse"
+          ]
+        }
+      ]
+    },
+
+    "sessionHijackingScenarios": {
+      "description": "Session hijacking and session management security testing for Redis-backed Spring Session implementation",
+      "testEnvironment": {
+        "sessionStore": "Redis 7+ with Spring Session configuration",
+        "sessionSecurity": "Secure session tokens with TTL-based expiration",
+        "securityControls": ["Session token rotation", "Secure cookie attributes", "Session invalidation"]
+      },
+
+      "attackVectors": [
+        {
+          "scenarioId": "SESSION_HIJ_001",
+          "name": "Session Token Interception Attack",
+          "description": "Test protection against intercepted session tokens",
+          "attackMethod": "Session token theft simulation",
+          "testScenario": {
+            "step1": "Legitimate user establishes authenticated session",
+            "step2": "Attacker attempts to use intercepted session token",
+            "step3": "System should detect and prevent unauthorized session use"
+          },
+          "attackPayload": {
+            "stolenSessionId": "intercepted-session-12345",
+            "maliciousRequests": [
+              {
+                "endpoint": "/api/accounts/12345678901",
+                "method": "GET",
+                "headers": {
+                  "Cookie": "SESSION=intercepted-session-12345"
                 }
+              }
+            ]
+          },
+          "expectedResult": {
+            "securityMeasure": "Session validation and user agent checking",
+            "validationCriteria": "Hijacked session should be invalidated"
+          },
+          "validationSteps": [
+            "Simulate session token interception",
+            "Attempt to use stolen session from different source",
+            "Verify session security controls detect anomaly",
+            "Confirm automatic session invalidation occurs"
+          ]
+        },
+        {
+          "scenarioId": "SESSION_HIJ_002",
+          "name": "Session Fixation Attack",
+          "description": "Test protection against session fixation vulnerabilities",
+          "attackMethod": "Pre-authentication session fixation",
+          "testScenario": {
+            "step1": "Attacker provides predetermined session ID to victim",
+            "step2": "Victim authenticates with fixed session ID",
+            "step3": "System should regenerate session after authentication"
+          },
+          "attackPayload": {
+            "fixedSessionId": "attacker-controlled-session-id",
+            "authenticationRequest": {
+              "endpoint": "/api/auth/login",
+              "method": "POST",
+              "headers": {
+                "Cookie": "SESSION=attacker-controlled-session-id"
               },
-              "expected_behavior": {
-                "data_storage": "Raw data stored in PostgreSQL",
-                "data_retrieval": "Sanitized output on display",
-                "api_response": "JSON-escaped content",
-                "audit_log_entry": "Stored XSS attempt logged"
-              },
-              "validation_rules": [
-                "Input validation must allow storage of raw data",
-                "Output encoding must sanitize on display",
-                "API responses must escape special characters",
-                "React components must render safely"
-              ]
+              "body": {
+                "username": "USER001",
+                "password": "validpassword"
+              }
             }
+          },
+          "expectedResult": {
+            "securityMeasure": "Session regeneration after authentication",
+            "validationCriteria": "New session ID should be generated post-authentication"
+          },
+          "validationSteps": [
+            "Provide fixed session ID before authentication",
+            "Authenticate with valid credentials",
+            "Verify new session ID is generated",
+            "Confirm fixed session ID is invalidated"
+          ]
+        },
+        {
+          "scenarioId": "SESSION_HIJ_003",
+          "name": "Concurrent Session Attack",
+          "description": "Test protection against multiple concurrent sessions per user",
+          "attackMethod": "Multiple simultaneous sessions",
+          "testScenario": {
+            "step1": "User authenticates from multiple locations simultaneously",
+            "step2": "System should enforce session limits or detect anomalies",
+            "step3": "Appropriate security measures should be triggered"
+          },
+          "attackPayload": {
+            "concurrentLogins": [
+              {
+                "location": "Location1",
+                "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                "ipAddress": "192.168.1.100"
+              },
+              {
+                "location": "Location2", 
+                "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+                "ipAddress": "10.0.0.50"
+              }
+            ]
+          },
+          "expectedResult": {
+            "securityMeasure": "Concurrent session monitoring and controls",
+            "validationCriteria": "Suspicious concurrent sessions should be flagged"
+          },
+          "validationSteps": [
+            "Establish multiple simultaneous sessions for same user",
+            "Monitor session management behavior", 
+            "Verify security controls detect anomalous activity",
+            "Confirm appropriate security response is triggered"
           ]
         }
-      }
+      ]
     },
 
-    "csrf_attack_simulation": {
-      "description": "Cross-Site Request Forgery (CSRF) attack simulation against Spring Security CSRF protection",
-      "test_categories": {
-        "state_changing_requests": {
-          "scenarios": [
-            {
-              "test_id": "CSRF_001", 
-              "name": "Account Update CSRF Attack",
-              "description": "Attempt to perform unauthorized account updates without valid CSRF tokens",
-              "attack_vector": "Cross-site request forgery",
-              "target_endpoint": "/api/account/update/{accountId}",
-              "test_data": {
-                "attack_requests": [
-                  {
-                    "method": "PUT",
-                    "headers": {
-                      "Content-Type": "application/json",
-                      "Authorization": "Bearer valid_jwt_token"
-                    },
-                    "csrf_token": "missing",
-                    "body": {
-                      "accountId": "12345678901",
-                      "creditLimit": "999999.99"
-                    }
-                  },
-                  {
-                    "method": "PUT", 
-                    "headers": {
-                      "Content-Type": "application/json",
-                      "Authorization": "Bearer valid_jwt_token",
-                      "X-CSRF-TOKEN": "invalid_token_12345"
-                    },
-                    "body": {
-                      "accountId": "12345678901", 
-                      "creditLimit": "999999.99"
-                    }
-                  }
-                ]
-              },
-              "expected_behavior": {
-                "response_code": 403,
-                "response_body_contains": ["CSRF Protection Violation", "Invalid or missing CSRF token"],
-                "account_data": "No unauthorized modifications",
-                "audit_log_entry": "CSRF attack blocked"
-              },
-              "validation_rules": [
-                "Spring Security CSRF filter must block requests without valid tokens",
-                "CsrfTokenRepository must validate token authenticity",
-                "State-changing operations must require CSRF protection",
-                "Comprehensive audit logging of CSRF violations"
-              ]
+    "jwtTokenManipulationTests": {
+      "description": "Comprehensive JWT token manipulation testing covering signature validation, payload tampering, and cryptographic attacks",
+      "testEnvironment": {
+        "jwtImplementation": "Spring Security OAuth2 Resource Server with NimbusJwtDecoder",
+        "algorithm": "HS256 with configurable secret key rotation",
+        "securityControls": ["Signature validation", "Expiration checking", "Algorithm verification"]
+      },
+
+      "attackVectors": [
+        {
+          "scenarioId": "JWT_MANIP_001",
+          "name": "JWT Payload Privilege Escalation",
+          "description": "Attempt to escalate privileges by modifying JWT payload claims",
+          "attackMethod": "Token payload manipulation",
+          "testCase": {
+            "originalToken": {
+              "header": {"alg": "HS256", "typ": "JWT"},
+              "payload": {
+                "user_id": "USER001",
+                "user_type": "U", 
+                "roles": ["ROLE_USER"],
+                "session_id": "user-session-12345",
+                "sub": "USER001",
+                "iat": 1705660800,
+                "exp": 1705662600
+              }
             },
-            {
-              "test_id": "CSRF_002",
-              "name": "Transaction Processing CSRF Attack", 
-              "description": "Attempt unauthorized transaction processing without CSRF protection",
-              "attack_vector": "Financial transaction forgery",
-              "target_endpoint": "/api/transaction/add",
-              "test_data": {
-                "malicious_transaction": {
-                  "accountId": "12345678901",
-                  "amount": "9999.99",
-                  "transactionType": "DEBIT",
-                  "description": "Unauthorized transfer"
-                },
-                "csrf_attack_scenarios": [
-                  "HTML form submission without token",
-                  "AJAX request with stolen token",
-                  "Cross-origin request with credentials",
-                  "Token replay from different session"
-                ]
-              },
-              "expected_behavior": {
-                "response_code": 403,
-                "transaction_status": "REJECTED",
-                "balance_change": "No unauthorized balance modifications",
-                "audit_log_entry": "Financial CSRF attack prevented"
-              },
-              "validation_rules": [
-                "All financial operations must require valid CSRF tokens",
-                "Spring Security sessionAuthenticationStrategy must validate tokens",
-                "Cross-origin requests must be properly validated",
-                "Transaction audit trail must log all failed attempts"
-              ]
+            "manipulatedToken": {
+              "header": {"alg": "HS256", "typ": "JWT"},
+              "payload": {
+                "user_id": "USER001",
+                "user_type": "A",
+                "roles": ["ROLE_ADMIN", "ROLE_USER"],
+                "session_id": "elevated-session-12345",
+                "sub": "USER001", 
+                "iat": 1705660800,
+                "exp": 1705662600
+              }
             }
+          },
+          "attackPayload": {
+            "targetEndpoint": "/api/admin/users",
+            "method": "GET",
+            "headers": {
+              "Authorization": "Bearer MANIPULATED_JWT_WITH_ADMIN_CLAIMS"
+            }
+          },
+          "expectedResult": {
+            "responseCode": 401,
+            "securityMeasure": "JWT signature validation prevents payload tampering",
+            "validationCriteria": "Modified payload should invalidate token signature"
+          },
+          "validationSteps": [
+            "Decode legitimate user JWT token",
+            "Modify payload to include admin privileges",
+            "Re-encode token with original signature",
+            "Attempt to access admin-only endpoint",
+            "Verify signature validation prevents privilege escalation"
           ]
         },
-        "csrf_token_validation": {
-          "scenarios": [
-            {
-              "test_id": "CSRF_003",
-              "name": "CSRF Token Lifecycle Testing",
-              "description": "Validate CSRF token generation, validation, and expiration mechanisms",
-              "attack_vector": "Token lifecycle manipulation",
-              "target_endpoint": "/api/csrf/token",
-              "test_data": {
-                "token_manipulation_tests": [
-                  "Expired token usage attempt",
-                  "Token reuse across sessions",
-                  "Token generation without authentication",
-                  "Cross-session token contamination"
-                ]
+        {
+          "scenarioId": "JWT_MANIP_002",
+          "name": "JWT Algorithm Substitution Attack",
+          "description": "Test protection against algorithm substitution attacks (RS256 to HS256)",
+          "attackMethod": "Algorithm downgrade attack",
+          "testCase": {
+            "scenario": "Attempt to change RSA signature to HMAC using public key as secret",
+            "riskAssessment": "Could allow token forgery if public key is used as HMAC secret"
+          },
+          "attackPayload": {
+            "maliciousToken": {
+              "header": {"alg": "HS256", "typ": "JWT"},
+              "payload": {
+                "user_id": "ADMIN001",
+                "user_type": "A",
+                "roles": ["ROLE_ADMIN"],
+                "sub": "ADMIN001",
+                "iat": 1705660800,
+                "exp": 1705662600
               },
-              "expected_behavior": {
-                "token_generation": "Only for authenticated users",
-                "token_validation": "Proper session correlation",
-                "token_expiration": "TTL enforcement",
-                "audit_log_entry": "CSRF token lifecycle events logged"
-              },
-              "validation_rules": [
-                "CookieCsrfTokenRepository must enforce proper token lifecycle",
-                "Session correlation must be maintained",
-                "Token expiration must be respected",
-                "Proper CORS integration for React frontend"
-              ]
+              "signature": "HMAC_SIGNATURE_WITH_PUBLIC_KEY_AS_SECRET"
             }
+          },
+          "expectedResult": {
+            "responseCode": 401,
+            "securityMeasure": "Algorithm validation prevents substitution attacks",
+            "validationCriteria": "JWT decoder should reject algorithm mismatch"
+          },
+          "validationSteps": [
+            "Create token with algorithm different from server configuration",
+            "Attempt authentication with substituted algorithm token",
+            "Verify server rejects algorithm mismatch",
+            "Confirm no fallback to weaker algorithm occurs"
+          ]
+        },
+        {
+          "scenarioId": "JWT_MANIP_003",
+          "name": "JWT Key Confusion Attack",
+          "description": "Test protection against key confusion and weak key attacks",
+          "attackMethod": "Weak key/key confusion exploitation",
+          "testCase": {
+            "scenario": "Attempt to exploit predictable or weak JWT signing keys",
+            "commonWeakKeys": ["secret", "key", "jwt", "token", "password"]
+          },
+          "attackPayload": {
+            "bruteForceAttempts": [
+              {
+                "guessedKey": "secret",
+                "forgedToken": "JWT_SIGNED_WITH_WEAK_KEY_SECRET"
+              },
+              {
+                "guessedKey": "key",
+                "forgedToken": "JWT_SIGNED_WITH_WEAK_KEY_KEY"
+              }
+            ]
+          },
+          "expectedResult": {
+            "securityMeasure": "Strong key configuration prevents weak key attacks",
+            "validationCriteria": "Server should use cryptographically strong signing keys"
+          },
+          "validationSteps": [
+            "Attempt to forge tokens using common weak keys",
+            "Test token validation against guessed keys", 
+            "Verify strong key configuration prevents exploitation",
+            "Confirm proper key rotation mechanisms are in place"
           ]
         }
-      }
+      ]
     },
 
-    "authorization_boundary_testing": {
-      "description": "Authorization boundary testing for Spring Security role-based access control",
-      "test_categories": {
-        "role_escalation_attacks": {
-          "scenarios": [
-            {
-              "test_id": "AUTHZ_001",
-              "name": "Horizontal Privilege Escalation",
-              "description": "Attempt to access other users' data with same role level", 
-              "attack_vector": "Cross-user data access",
-              "target_endpoint": "/api/account/view/{accountId}",
-              "test_data": {
-                "authenticated_user": {
-                  "user_id": "USER001",
-                  "role": "ROLE_USER",
-                  "owned_accounts": ["11111111111", "22222222222"]
-                },
-                "unauthorized_access_attempts": ["33333333333", "44444444444", "55555555555"]
-              },
-              "expected_behavior": {
-                "response_code": 403,
-                "response_body_contains": ["Access denied", "Insufficient privileges"],
-                "data_exposure": "No unauthorized account data returned",
-                "audit_log_entry": "Unauthorized access attempt blocked"
-              },
-              "validation_rules": [
-                "@PreAuthorize annotations must enforce ownership validation",
-                "Spring Security SecurityContext must validate user permissions",
-                "Account ownership verification required",
-                "Comprehensive authorization failure logging"
-              ]
+    "authorizationBoundaryTesting": {
+      "description": "Authorization boundary testing for Spring Security role-based access control and method-level security",
+      "testEnvironment": {
+        "authorizationFramework": "Spring Security with @PreAuthorize annotations",
+        "roleMapping": "RACF groups to Spring Security roles (ADMIN/USER)",
+        "securityControls": ["Method-level authorization", "Role-based access control", "Resource-level permissions"]
+      },
+
+      "attackVectors": [
+        {
+          "scenarioId": "AUTHZ_BOUND_001",
+          "name": "Horizontal Privilege Escalation",
+          "description": "Test protection against accessing other users' data at same privilege level",
+          "attackMethod": "Cross-user data access attempt",
+          "testCase": {
+            "authenticatedUser": {
+              "userId": "USER001",
+              "role": "ROLE_USER",
+              "allowedAccounts": ["12345678901", "12345678902"]
             },
-            {
-              "test_id": "AUTHZ_002",
-              "name": "Vertical Privilege Escalation",
-              "description": "Attempt to access admin functions with user-level privileges",
-              "attack_vector": "Role-based access control bypass",
-              "target_endpoints": [
-                "/api/admin/users",
-                "/api/admin/users/{userId}",
-                "/api/admin/system/config"
-              ],
-              "test_data": {
-                "user_credentials": {
-                  "user_id": "USER001",
-                  "role": "ROLE_USER",
-                  "jwt_token": "valid_user_token"
-                },
-                "admin_operations": [
-                  "List all users",
-                  "Create new user",
-                  "Delete user account", 
-                  "Modify system configuration"
-                ]
-              },
-              "expected_behavior": {
-                "response_code": 403,
-                "response_body_contains": ["Access denied", "Admin privileges required"],
-                "admin_data": "No administrative data exposed",
-                "audit_log_entry": "Admin access attempt by non-admin user"
-              },
-              "validation_rules": [
-                "@PreAuthorize(\"hasRole('ADMIN')\") annotations must block access",
-                "Spring Security FilterChain must enforce role hierarchy",
-                "No data leakage in error responses",
-                "Proper role validation throughout request processing"
-              ]
+            "targetResource": {
+              "endpoint": "/api/cavw/accounts/98765432101",
+              "owner": "USER002",
+              "accessLevel": "user-only"
             }
-          ]
-        },
-        "endpoint_enumeration": {
-          "scenarios": [
-            {
-              "test_id": "AUTHZ_003",
-              "name": "Hidden Endpoint Discovery",
-              "description": "Attempt to discover and access undocumented or debug endpoints",
-              "attack_vector": "Endpoint enumeration",
-              "test_data": {
-                "enumeration_targets": [
-                  "/actuator/env",
-                  "/actuator/beans", 
-                  "/actuator/configprops",
-                  "/actuator/mappings",
-                  "/debug/logs",
-                  "/admin/console",
-                  "/test/endpoints",
-                  "/api/internal/debug"
-                ]
-              },
-              "expected_behavior": {
-                "response_code": 404,
-                "response_body": "Endpoint not found or access denied",
-                "security_headers": "Proper security headers present",
-                "audit_log_entry": "Endpoint enumeration attempt logged"
-              },
-              "validation_rules": [
-                "Spring Boot Actuator endpoints must be secured",
-                "Debug endpoints must be disabled in production",
-                "Proper 404 responses without information leakage",
-                "Comprehensive request logging for security monitoring"
-              ]
-            }
-          ]
-        }
-      }
-    },
-
-    "container_security_validation": {
-      "description": "Container and Kubernetes security validation for cloud-native deployment protection",
-      "test_categories": {
-        "kubernetes_rbac_testing": {
-          "scenarios": [
-            {
-              "test_id": "K8S_SEC_001",
-              "name": "Pod Security Policy Validation",
-              "description": "Validate Kubernetes pod security policies and RBAC controls",
-              "attack_vector": "Container escape and privilege escalation",
-              "target_components": ["Kubernetes Pods", "RBAC Policies", "Security Contexts"],
-              "test_data": {
-                "security_policy_tests": [
-                  "Privileged container execution attempt",
-                  "Host filesystem access attempt",
-                  "Host network access attempt",
-                  "Container breakout attempt"
-                ]
-              },
-              "expected_behavior": {
-                "pod_security": "Security policies enforced",
-                "rbac_validation": "Proper role-based access control",
-                "resource_limits": "CPU and memory limits enforced",
-                "audit_log_entry": "Kubernetes security policy enforcement"
-              },
-              "validation_rules": [
-                "Pod Security Standards must prevent privileged containers",
-                "RBAC policies must limit service account permissions",
-                "Network policies must restrict inter-pod communication",
-                "Resource quotas must prevent resource exhaustion"
-              ]
+          },
+          "attackPayload": {
+            "headers": {
+              "Authorization": "Bearer USER001_VALID_JWT_TOKEN"
             },
-            {
-              "test_id": "K8S_SEC_002",
-              "name": "Service Account Token Validation",
-              "description": "Validate Kubernetes service account token security and scope",
-              "attack_vector": "Service account privilege abuse",
-              "target_components": ["Service Accounts", "Token Validation", "API Server Access"],
-              "test_data": {
-                "service_account_tests": [
-                  "Default service account usage",
-                  "Cross-namespace token access",
-                  "API server unauthorized requests",
-                  "Token volume mounting validation"
-                ]
-              },
-              "expected_behavior": {
-                "token_scope": "Limited to necessary permissions",
-                "api_access": "Restricted to authorized operations",
-                "token_rotation": "Automatic token rotation enforced",
-                "audit_log_entry": "Service account activity logged"
-              },
-              "validation_rules": [
-                "Service accounts must follow least privilege principle",
-                "Token scope must be limited to necessary resources",
-                "API server access must be properly validated",
-                "Comprehensive audit logging of service account activity"
-              ]
-            }
+            "targetEndpoint": "/api/cavw/accounts/98765432101"
+          },
+          "expectedResult": {
+            "responseCode": 403,
+            "securityMeasure": "Resource-level authorization prevents cross-user access",
+            "validationCriteria": "Access should be denied to other users' accounts"
+          },
+          "validationSteps": [
+            "Authenticate as USER001 with valid credentials",
+            "Attempt to access account belonging to USER002",
+            "Verify 403 Forbidden response",
+            "Confirm no sensitive data leaked in error response"
           ]
         },
-        "network_security_testing": {
-          "scenarios": [
-            {
-              "test_id": "NET_SEC_001",
-              "name": "Network Policy Enforcement",
-              "description": "Validate Kubernetes network policies and service mesh security",
-              "attack_vector": "Lateral movement and network exploitation",
-              "target_components": ["Network Policies", "Service Mesh", "Ingress Controllers"],
-              "test_data": {
-                "network_attack_scenarios": [
-                  "Cross-namespace communication attempt",
-                  "Database direct access bypass",
-                  "Redis cache unauthorized access",
-                  "Service mesh traffic interception"
-                ]
-              },
-              "expected_behavior": {
-                "network_isolation": "Proper namespace isolation",
-                "service_communication": "Authorized communication only",
-                "traffic_encryption": "TLS encryption enforced",
-                "audit_log_entry": "Network security policy enforcement"
-              },
-              "validation_rules": [
-                "Network policies must prevent unauthorized communication",
-                "Service mesh must enforce mTLS",
-                "Ingress controllers must validate traffic",
-                "Comprehensive network activity monitoring"
-              ]
+        {
+          "scenarioId": "AUTHZ_BOUND_002",
+          "name": "Vertical Privilege Escalation",
+          "description": "Test protection against accessing higher privilege level functions",
+          "attackMethod": "Role elevation attempt",
+          "testCase": {
+            "authenticatedUser": {
+              "userId": "USER001",
+              "role": "ROLE_USER",
+              "limitations": "Cannot access admin functions"
+            },
+            "targetResource": {
+              "endpoint": "/api/admin/users",
+              "requiredRole": "ROLE_ADMIN",
+              "function": "User management"
             }
+          },
+          "attackPayload": {
+            "headers": {
+              "Authorization": "Bearer USER001_ROLE_USER_JWT_TOKEN"
+            },
+            "targetEndpoint": "/api/admin/users",
+            "method": "GET"
+          },
+          "expectedResult": {
+            "responseCode": 403,
+            "securityMeasure": "@PreAuthorize annotation prevents role escalation",
+            "validationCriteria": "Regular user should not access admin endpoints"
+          },
+          "validationSteps": [
+            "Authenticate as regular user (ROLE_USER)",
+            "Attempt to access admin-only endpoint",
+            "Verify @PreAuthorize('hasRole(ADMIN)') blocks access",
+            "Confirm proper 403 Forbidden response"
+          ]
+        },
+        {
+          "scenarioId": "AUTHZ_BOUND_003",
+          "name": "Method-Level Security Bypass",
+          "description": "Test method-level security enforcement and bypass attempts",
+          "attackMethod": "Direct method invocation bypass",
+          "testCase": {
+            "scenario": "Attempt to bypass @PreAuthorize through alternative access paths",
+            "protectedMethod": "UserManagementService.deleteUser()"
+          },
+          "attackPayload": {
+            "directMethodAccess": {
+              "endpoint": "/api/admin/users/USER001",
+              "method": "DELETE",
+              "headers": {
+                "Authorization": "Bearer ROLE_USER_JWT_TOKEN"
+              }
+            },
+            "alternativeEndpoints": [
+              "/api/users/USER001/delete",
+              "/api/user-management/delete/USER001"
+            ]
+          },
+          "expectedResult": {
+            "responseCode": 403,
+            "securityMeasure": "Method-level security prevents unauthorized operations",
+            "validationCriteria": "All access paths should enforce @PreAuthorize rules"
+          },
+          "validationSteps": [
+            "Attempt user deletion with insufficient privileges",
+            "Test alternative endpoint patterns for same operation",
+            "Verify consistent authorization enforcement",
+            "Confirm no bypass paths exist for protected methods"
           ]
         }
-      }
+      ]
     },
 
-    "api_security_testing": {
-      "description": "API security testing for Spring Cloud Gateway and microservice endpoints",
-      "test_categories": {
-        "rate_limiting_validation": {
-          "scenarios": [
-            {
-              "test_id": "API_SEC_001",
-              "name": "API Gateway Rate Limiting",
-              "description": "Validate Spring Cloud Gateway rate limiting and circuit breaker protection",
-              "attack_vector": "API flooding and DoS attacks",
-              "target_component": "Spring Cloud Gateway",
-              "test_data": {
-                "rate_limit_tests": [
-                  {
-                    "endpoint": "/api/auth/login",
-                    "requests_per_minute": 150,
-                    "expected_limit": 100
-                  },
-                  {
-                    "endpoint": "/api/account/view/*",
-                    "requests_per_minute": 200,
-                    "expected_limit": 100
-                  }
-                ]
+    "containerSecurityValidation": {
+      "description": "Container and Kubernetes security testing for cloud-native security patterns and container protection",
+      "testEnvironment": {
+        "containerRuntime": "Docker with Spring Boot containerized microservices",
+        "orchestration": "Kubernetes with namespace isolation and RBAC",
+        "securityControls": ["Pod security policies", "Network policies", "Service mesh security"]
+      },
+
+      "attackVectors": [
+        {
+          "scenarioId": "CONTAINER_SEC_001",
+          "name": "Container Escape Attempt",
+          "description": "Test container isolation and escape prevention mechanisms",
+          "attackMethod": "Container breakout simulation",
+          "testCase": {
+            "scenario": "Attempt to break out of Spring Boot application container",
+            "techniques": ["Privileged container exploitation", "Host namespace access"]
+          },
+          "attackPayload": {
+            "techniques": [
+              {
+                "method": "Privileged escalation",
+                "command": "Access host filesystem from container",
+                "expectedBlocked": true
               },
-              "expected_behavior": {
-                "response_code": 429,
-                "response_headers": {
-                  "X-RateLimit-Remaining": "0",
-                  "Retry-After": "60"
-                },
-                "circuit_breaker": "Activated after threshold",
-                "audit_log_entry": "Rate limit exceeded"
-              },
-              "validation_rules": [
-                "Rate limiting must be enforced per user/IP",
-                "Circuit breaker must protect downstream services",
-                "Proper HTTP 429 responses with retry information",
-                "Redis-backed rate limiting for distributed enforcement"
-              ]
-            }
+              {
+                "method": "Namespace bypass",
+                "command": "Escape container network namespace",
+                "expectedBlocked": true
+              }
+            ]
+          },
+          "expectedResult": {
+            "securityMeasure": "Container security constraints prevent escapes",
+            "validationCriteria": "All escape attempts should be blocked"
+          },
+          "validationSteps": [
+            "Deploy Spring Boot microservice in restricted container",
+            "Attempt various container escape techniques",
+            "Verify security constraints prevent host access",
+            "Confirm container isolation boundaries are maintained"
           ]
         },
-        "input_validation_testing": {
-          "scenarios": [
-            {
-              "test_id": "API_SEC_002",
-              "name": "API Input Validation",
-              "description": "Comprehensive input validation testing for all API endpoints",
-              "attack_vector": "Malformed input and boundary testing",
-              "target_endpoints": [
-                "/api/account/create",
-                "/api/transaction/add",
-                "/api/customer/update"
-              ],
-              "test_data": {
-                "malformed_inputs": [
-                  {
-                    "field": "accountId",
-                    "invalid_values": ["", "abc", "123456789012", "-1", "null"]
-                  },
-                  {
-                    "field": "amount",
-                    "invalid_values": ["abc", "-999999", "999999999999999999", "0.001"]
-                  },
-                  {
-                    "field": "email",
-                    "invalid_values": ["invalid-email", "@domain.com", "test@"]
-                  }
-                ]
-              },
-              "expected_behavior": {
-                "response_code": 400,
-                "response_body_contains": ["Validation failed", "Invalid input"],
-                "data_integrity": "No invalid data stored",
-                "audit_log_entry": "Input validation failure"
-              },
-              "validation_rules": [
-                "Jakarta Bean Validation must validate all inputs",
-                "Custom validators must enforce business rules",
-                "No SQL injection through malformed inputs",
-                "Proper error messages without information leakage"
-              ]
-            }
+        {
+          "scenarioId": "CONTAINER_SEC_002",
+          "name": "Inter-Container Communication Attack",
+          "description": "Test network policies and inter-service communication security",
+          "attackMethod": "Unauthorized inter-container access",
+          "testCase": {
+            "scenario": "Attempt to access other microservices without authorization",
+            "networkSegmentation": "Kubernetes network policies for service isolation"
+          },
+          "attackPayload": {
+            "sourceContainer": "carddemo-account-service",
+            "targetContainer": "carddemo-admin-service", 
+            "unauthorizedRequests": [
+              "HTTP requests to admin endpoints",
+              "Database connection attempts",
+              "Service discovery exploitation"
+            ]
+          },
+          "expectedResult": {
+            "securityMeasure": "Network policies block unauthorized inter-service communication",
+            "validationCriteria": "Service-to-service communication should be properly restricted"
+          },
+          "validationSteps": [
+            "Deploy microservices with network policy restrictions",
+            "Attempt unauthorized inter-service communication",
+            "Verify network policies block illegal traffic",
+            "Confirm legitimate service communication still works"
+          ]
+        },
+        {
+          "scenarioId": "CONTAINER_SEC_003",
+          "name": "Container Image Vulnerability Exploitation",
+          "description": "Test protection against vulnerabilities in container images",
+          "attackMethod": "Known CVE exploitation attempt",
+          "testCase": {
+            "scenario": "Attempt to exploit known vulnerabilities in base images or dependencies",
+            "vulnCategories": ["Base image CVEs", "Dependency vulnerabilities", "Configuration weaknesses"]
+          },
+          "attackPayload": {
+            "cveExploits": [
+              {
+                "cveId": "CVE-2023-XXXX",
+                "component": "Base OS vulnerability",
+                "exploitAttempt": "Remote code execution"
+              }
+            ]
+          },
+          "expectedResult": {
+            "securityMeasure": "Vulnerability scanning and patch management prevent exploitation", 
+            "validationCriteria": "No high/critical vulnerabilities should be exploitable"
+          },
+          "validationSteps": [
+            "Scan container images for known vulnerabilities",
+            "Attempt to exploit discovered vulnerabilities",
+            "Verify patching and mitigation effectiveness",
+            "Confirm vulnerability management processes work"
           ]
         }
-      }
+      ]
+    },
+
+    "kubernetesRBACTesting": {
+      "description": "Kubernetes Role-Based Access Control (RBAC) security testing for namespace isolation and service account permissions",
+      "testEnvironment": {
+        "kubernetesVersion": "1.28+",
+        "rbacConfiguration": "Namespace-based isolation with service account restrictions",
+        "securityControls": ["Service account tokens", "Role bindings", "Cluster role restrictions"]
+      },
+
+      "attackVectors": [
+        {
+          "scenarioId": "K8S_RBAC_001", 
+          "name": "Service Account Token Abuse",
+          "description": "Test protection against service account token misuse and privilege escalation",
+          "attackMethod": "Service account token exploitation",
+          "testCase": {
+            "scenario": "Attempt to use service account tokens for unauthorized cluster access",
+            "serviceAccounts": [
+              "carddemo-dev-service-account",
+              "carddemo-admin-service-account"
+            ]
+          },
+          "attackPayload": {
+            "stolenToken": "eyJhbGciOiJSUzI1NiIs...KUBERNETES_SA_TOKEN",
+            "unauthorizedOperations": [
+              "List pods in other namespaces",
+              "Access cluster secrets",
+              "Modify cluster configurations"
+            ]
+          },
+          "expectedResult": {
+            "securityMeasure": "RBAC policies restrict service account permissions",
+            "validationCriteria": "Service accounts should have minimal required permissions"
+          },
+          "validationSteps": [
+            "Extract service account token from pod",
+            "Attempt to perform unauthorized cluster operations",
+            "Verify RBAC policies prevent privilege escalation",
+            "Confirm least privilege principle enforcement"
+          ]
+        },
+        {
+          "scenarioId": "K8S_RBAC_002",
+          "name": "Cross-Namespace Access Attempt",
+          "description": "Test namespace isolation and cross-namespace access prevention",
+          "attackMethod": "Namespace boundary violation",
+          "testCase": {
+            "sourceNamespace": "carddemo-dev",
+            "targetNamespace": "carddemo-production",
+            "unauthorizedAccess": "Access production secrets from dev namespace"
+          },
+          "attackPayload": {
+            "crossNamespaceRequests": [
+              "kubectl get secrets -n carddemo-production",
+              "kubectl get pods -n kube-system",
+              "Access to production database credentials"
+            ]
+          },
+          "expectedResult": {
+            "securityMeasure": "Namespace isolation prevents cross-namespace access",
+            "validationCriteria": "Dev namespace should not access production resources"
+          },
+          "validationSteps": [
+            "Authenticate with dev namespace service account",
+            "Attempt to access production namespace resources",
+            "Verify namespace isolation is enforced",
+            "Confirm proper RBAC role binding restrictions"
+          ]
+        },
+        {
+          "scenarioId": "K8S_RBAC_003",
+          "name": "Cluster Admin Privilege Escalation",
+          "description": "Test protection against cluster administrator privilege escalation attempts",
+          "attackMethod": "RBAC privilege escalation",
+          "testCase": {
+            "scenario": "Attempt to escalate from namespace admin to cluster admin",
+            "targetPermissions": [
+              "cluster-admin ClusterRole",
+              "system:masters group access"
+            ]
+          },
+          "attackPayload": {
+            "escalationAttempts": [
+              {
+                "method": "ClusterRoleBinding creation",
+                "payload": "Create binding to cluster-admin role"
+              },
+              {
+                "method": "ServiceAccount modification",
+                "payload": "Modify SA to gain cluster access"
+              }
+            ]
+          },
+          "expectedResult": {
+            "securityMeasure": "RBAC prevents unauthorized privilege escalation",
+            "validationCriteria": "Namespace admins should not gain cluster admin access"
+          },
+          "validationSteps": [
+            "Authenticate with namespace admin permissions",
+            "Attempt various privilege escalation techniques",
+            "Verify RBAC policies prevent escalation",
+            "Confirm audit logging captures escalation attempts"
+          ]
+        }
+      ]
     }
   },
 
   "SecurityTestConfiguration": {
-    "owasp_zap_integration": {
-      "scanner_version": "2.16.1",
-      "scan_policies": {
-        "authentication_scan": {
+    "description": "Security testing configuration providing OWASP ZAP integration settings, vulnerability assessment profiles, attack vector definitions, and automated penetration test execution parameters",
+    
+    "owaspZAPIntegrationSettings": {
+      "zapVersion": "2.16.1",
+      "baseConfiguration": {
+        "host": "localhost",
+        "port": 8080,
+        "apiKey": "${ZAP_API_KEY}",
+        "timeout": 300000,
+        "maxConcurrentScans": 3
+      },
+      
+      "authenticationConfiguration": {
+        "jwtAuthentication": {
           "enabled": true,
-          "target_endpoints": [
-            "/api/auth/login",
-            "/api/auth/validate", 
-            "/api/auth/refresh"
-          ],
-          "authentication_method": "JWT Bearer Token",
-          "session_management": "Redis-backed Spring Session"
+          "loginEndpoint": "/api/auth/login",
+          "tokenExtractor": "response.body.token",
+          "tokenHeader": "Authorization",
+          "tokenPrefix": "Bearer ",
+          "testCredentials": {
+            "adminUser": {
+              "username": "ADMIN001",
+              "password": "adminpassword"
+            },
+            "regularUser": {
+              "username": "USER001", 
+              "password": "userpassword"
+            }
+          }
         },
-        "api_security_scan": {
+        
+        "csrfConfiguration": {
           "enabled": true,
-          "target_endpoints": [
-            "/api/account/*",
-            "/api/transaction/*",
-            "/api/customer/*",
-            "/api/admin/*"
-          ],
-          "scan_intensity": "HIGH",
-          "vulnerability_threshold": "MEDIUM"
+          "tokenEndpoint": "/api/csrf/token",
+          "tokenHeader": "X-CSRF-TOKEN",
+          "cookieName": "XSRF-TOKEN"
         }
       },
-      "vulnerability_assessment_profiles": [
-        {
-          "profile_name": "Spring Security Validation",
-          "scan_rules": [
-            "10202 - Absence of Anti-CSRF Tokens",
-            "40012 - Cross Site Scripting (Reflected)",
-            "40014 - Cross Site Scripting (Persistent)",
-            "40018 - SQL Injection",
-            "40019 - SQL Injection - MySQL",
-            "40022 - SQL Injection - PostgreSQL"
-          ]
+      
+      "scanningProfiles": {
+        "quickScan": {
+          "description": "Fast vulnerability scan for CI/CD pipeline",
+          "spiderMaxDepth": 5,
+          "activeScanStrength": "LOW",
+          "passiveScanning": true,
+          "maxScanTime": "10m"
         },
-        {
-          "profile_name": "JWT Token Security",
-          "scan_rules": [
-            "10036 - Server Leaks Version Information",
-            "10021 - X-Content-Type-Options Header Missing",
-            "10020 - X-Frame-Options Header Not Set",
-            "10038 - Content Security Policy (CSP) Header Not Set"
-          ]
-        }
-      ],
-      "compliance_testing_scenarios": {
-        "pci_dss_validation": {
-          "enabled": true,
-          "requirements": [
-            "6.2.4 - Server-side scripts prevent injection",
-            "6.2.5 - Authentication and authorization",
-            "8.2.1 - Strong authentication mechanisms"
+        
+        "comprehensiveScan": {
+          "description": "Thorough security assessment for release validation",
+          "spiderMaxDepth": 15,
+          "activeScanStrength": "HIGH", 
+          "passiveScanning": true,
+          "maxScanTime": "60m",
+          "customPayloads": true
+        },
+        
+        "pciDSSComplianceScan": {
+          "description": "PCI DSS compliance validation scan",
+          "focusAreas": [
+            "Cardholder data protection",
+            "Strong access control measures",
+            "Regularly monitor network access",
+            "Maintain information security policy"
+          ],
+          "requiredTests": [
+            "SQL injection protection",
+            "XSS prevention validation",
+            "CSRF token enforcement",
+            "Authentication bypass prevention"
           ]
         }
       }
     },
-    "automated_penetration_test_execution": {
-      "test_scheduling": {
-        "frequency": "daily",
-        "execution_time": "02:00 UTC",
-        "environment": "carddemo-security-testing"
+
+    "vulnerabilityAssessmentProfiles": {
+      "description": "Comprehensive vulnerability assessment profiles targeting different attack categories and security domains",
+      
+      "webApplicationSecurity": {
+        "owaspTop10Testing": {
+          "enabled": true,
+          "categories": [
+            {
+              "id": "A01:2021",
+              "name": "Broken Access Control",
+              "testScenarios": [
+                "Vertical privilege escalation",
+                "Horizontal privilege escalation", 
+                "IDOR vulnerabilities",
+                "Directory traversal"
+              ]
+            },
+            {
+              "id": "A03:2021",
+              "name": "Injection",
+              "testScenarios": [
+                "SQL injection in all parameters",
+                "NoSQL injection attempts",
+                "Command injection testing",
+                "LDAP injection validation"
+              ]
+            },
+            {
+              "id": "A05:2021",
+              "name": "Security Misconfiguration", 
+              "testScenarios": [
+                "Default credentials testing",
+                "Unnecessary features enabled",
+                "Error message information disclosure",
+                "Security header analysis"
+              ]
+            }
+          ]
+        },
+        
+        "apiSecurityTesting": {
+          "restApiValidation": {
+            "enabled": true,
+            "testAreas": [
+              "Authentication bypass attempts",
+              "Authorization boundary testing",
+              "Input validation failures",
+              "Rate limiting effectiveness",
+              "API versioning security"
+            ]
+          },
+          
+          "graphqlSecurity": {
+            "enabled": false,
+            "reason": "CardDemo uses REST APIs only"
+          }
+        }
       },
-      "failure_criteria": {
-        "high_vulnerabilities": 0,
-        "critical_vulnerabilities": 0,
-        "medium_vulnerabilities_threshold": 5
+      
+      "authenticationSecurity": {
+        "jwtSecurityTesting": {
+          "enabled": true,
+          "testCategories": [
+            {
+              "category": "Token Structure Attacks",
+              "tests": [
+                "Algorithm confusion (none, HS256, RS256)",
+                "Signature verification bypass",
+                "Payload manipulation attempts",
+                "Key confusion attacks"
+              ]
+            },
+            {
+              "category": "Token Lifecycle Attacks",
+              "tests": [
+                "Token replay attacks",
+                "Expired token usage",
+                "Token refresh vulnerabilities",
+                "Session fixation through JWT"
+              ]
+            }
+          ]
+        },
+        
+        "sessionManagementTesting": {
+          "enabled": true,
+          "redisSessionSecurity": {
+            "sessionHijacking": "Test session token theft protection",
+            "sessionFixation": "Validate session regeneration after auth",
+            "concurrentSessions": "Test multiple session handling",
+            "sessionTimeout": "Verify proper session expiration"
+          }
+        }
       },
-      "notification_settings": {
-        "slack_webhook": "${SECURITY_SLACK_WEBHOOK}",
-        "email_alerts": true,
-        "security_team_notifications": true
+      
+      "infrastructureSecurity": {
+        "containerSecurityTesting": {
+          "enabled": true,
+          "dockerSecurity": {
+            "privilegeEscalation": "Test container escape prevention",
+            "networkIsolation": "Validate inter-container communication",
+            "secretsManagement": "Test environment variable protection",
+            "imageSecurity": "Scan for vulnerable base images"
+          }
+        },
+        
+        "kubernetesSecurity": {
+          "enabled": true,
+          "rbacTesting": {
+            "serviceAccountSecurity": "Test SA token abuse prevention",
+            "namespaceIsolation": "Validate cross-namespace access controls",
+            "privilegeEscalation": "Test cluster admin escalation prevention",
+            "networkPolicies": "Validate pod-to-pod communication restrictions"
+          }
+        }
       }
     },
-    "security_control_validation": {
-      "spring_security_controls": [
-        "JWT authentication validation",
-        "CSRF protection enforcement",
-        "Role-based authorization",
-        "Session management security",
-        "Input validation and sanitization"
-      ],
-      "kubernetes_security_controls": [
-        "Pod security policies",
-        "RBAC enforcement",
-        "Network policy validation",
-        "Service account restrictions",
-        "Resource quota enforcement"
-      ]
+
+    "attackVectorDefinitions": {
+      "description": "Comprehensive attack vector definitions for systematic security testing across all application layers",
+      
+      "applicationLayer": {
+        "injectionAttacks": {
+          "sqlInjection": {
+            "payloads": [
+              "' OR '1'='1' --",
+              "'; DROP TABLE users; --", 
+              "' UNION SELECT * FROM users --",
+              "1' AND (SELECT COUNT(*) FROM users) > 0 --"
+            ],
+            "targetParameters": ["username", "accountId", "userId", "search"],
+            "expectedPrevention": "Parameterized queries and input validation"
+          },
+          
+          "nosqlInjection": {
+            "enabled": false,
+            "reason": "CardDemo uses PostgreSQL relational database"
+          },
+          
+          "commandInjection": {
+            "payloads": [
+              "; ls -la",
+              "| whoami",
+              "&& cat /etc/passwd",
+              "`id`"
+            ],
+            "targetParameters": ["file", "command", "path"],
+            "expectedPrevention": "Input sanitization and command filtering"
+          }
+        },
+        
+        "xssAttacks": {
+          "reflectedXSS": {
+            "payloads": [
+              "<script>alert('XSS')</script>",
+              "<img src=x onerror=alert('XSS')>",
+              "javascript:alert('XSS')",
+              "<svg onload=alert('XSS')>"
+            ],
+            "targetParameters": ["search", "name", "comment", "description"],
+            "expectedPrevention": "Output encoding and CSP headers"
+          },
+          
+          "storedXSS": {
+            "payloads": [
+              "<script>document.cookie='stolen'</script>",
+              "<iframe src='javascript:alert(1)'></iframe>",
+              "<object data='data:text/html,<script>alert(1)</script>'></object>"
+            ],
+            "targetFields": ["firstName", "lastName", "address", "notes"],
+            "expectedPrevention": "Input validation and output encoding"
+          },
+          
+          "domXSS": {
+            "enabled": true,
+            "reactComponentTesting": true,
+            "targetComponents": ["AccountViewComponent", "TransactionComponent"],
+            "expectedPrevention": "React built-in XSS protection"
+          }
+        }
+      },
+      
+      "authenticationLayer": {
+        "credentialAttacks": {
+          "bruteForce": {
+            "enabled": true,
+            "targetEndpoint": "/api/auth/login",
+            "attemptPattern": "Common password list against valid usernames",
+            "expectedPrevention": "Account lockout and rate limiting"
+          },
+          
+          "credentialStuffing": {
+            "enabled": true,
+            "technique": "Known credential pairs from breach databases",
+            "expectedPrevention": "Rate limiting and account monitoring"
+          }
+        },
+        
+        "sessionAttacks": {
+          "sessionFixation": {
+            "technique": "Pre-authentication session ID injection",
+            "expectedPrevention": "Session regeneration after authentication"
+          },
+          
+          "sessionHijacking": {
+            "technique": "Session token interception and reuse",
+            "expectedPrevention": "Secure session management and rotation"
+          }
+        }
+      },
+      
+      "authorizationLayer": {
+        "privilegeEscalation": {
+          "horizontal": {
+            "description": "Access other users' data at same privilege level",
+            "testScenario": "USER001 accessing USER002's account data",
+            "expectedPrevention": "Resource-level authorization checks"
+          },
+          
+          "vertical": {
+            "description": "Access higher privilege level functions",
+            "testScenario": "Regular user accessing admin endpoints",
+            "expectedPrevention": "@PreAuthorize annotations and role checks"
+          }
+        },
+        
+        "accessControlBypass": {
+          "directObjectReference": {
+            "technique": "Manipulate object references to access unauthorized data",
+            "testParameters": ["accountId", "userId", "transactionId"],
+            "expectedPrevention": "Authorization checks on all object access"
+          }
+        }
+      }
+    },
+
+    "securityControlValidation": {
+      "description": "Security control validation framework for verifying effectiveness of implemented security measures",
+      
+      "inputValidation": {
+        "serverSideValidation": {
+          "enabled": true,
+          "framework": "Jakarta Bean Validation with Spring Boot",
+          "testAreas": [
+            "Data type validation",
+            "Length constraints",
+            "Format validation",
+            "Business rule enforcement"
+          ],
+          "bypassAttempts": [
+            "Client-side validation bypass",
+            "Parameter pollution attacks",
+            "Encoding manipulation"
+          ]
+        },
+        
+        "clientSideValidation": {
+          "enabled": true,
+          "framework": "React component validation",
+          "validationPoints": [
+            "Form field constraints",
+            "Real-time validation feedback",
+            "User input sanitization"
+          ],
+          "securityNote": "Client-side validation for UX only, server-side for security"
+        }
+      },
+      
+      "outputEncoding": {
+        "contextualEncoding": {
+          "enabled": true,
+          "contexts": [
+            "HTML content encoding",
+            "JavaScript context encoding", 
+            "CSS context encoding",
+            "URL parameter encoding"
+          ],
+          "framework": "React built-in encoding + manual encoding where needed"
+        }
+      },
+      
+      "cryptographicControls": {
+        "passwordHashing": {
+          "algorithm": "BCrypt",
+          "configuration": "Minimum 12 salt rounds",
+          "testValidation": "Password verification without plaintext storage"
+        },
+        
+        "jwtSigning": {
+          "algorithm": "HS256",
+          "keyManagement": "Kubernetes secrets with rotation capability",
+          "testValidation": "Signature verification and key strength"
+        },
+        
+        "dataEncryption": {
+          "inTransit": "TLS 1.3 for all communications",
+          "atRest": "PostgreSQL encryption with pgcrypto",
+          "testValidation": "Encryption strength and proper implementation"
+        }
+      }
+    },
+
+    "complianceTestingScenarios": {
+      "description": "Compliance-specific testing scenarios for regulatory requirements and industry standards",
+      
+      "pciDSSCompliance": {
+        "version": "4.0",
+        "applicableRequirements": [
+          {
+            "requirement": "3.2.1",
+            "description": "Do not store sensitive authentication data after authorization",
+            "testScenario": "Verify no CVV, PIN, or full PAN stored in database",
+            "validationMethod": "Database content analysis and application testing"
+          },
+          {
+            "requirement": "4.2.1", 
+            "description": "Use strong cryptography for transmission over open networks",
+            "testScenario": "Verify TLS 1.3 usage for all data transmission",
+            "validationMethod": "Network traffic analysis and cipher suite validation"
+          },
+          {
+            "requirement": "6.2.4",
+            "description": "Build secure applications and systems",
+            "testScenario": "Comprehensive vulnerability assessment of application",
+            "validationMethod": "OWASP ZAP scanning and manual security testing"
+          },
+          {
+            "requirement": "8.2.1",
+            "description": "Strong user authentication for cardholder data environment",
+            "testScenario": "JWT authentication strength and session management",
+            "validationMethod": "Authentication bypass testing and token security analysis"
+          }
+        ]
+      },
+      
+      "soxCompliance": {
+        "section": "404 - Management Assessment of Internal Controls",
+        "requirements": [
+          {
+            "control": "Access Control Testing",
+            "description": "Verify proper access controls over financial systems",
+            "testScenario": "Role-based access control validation for financial functions",
+            "validationMethod": "Authorization boundary testing and privilege escalation attempts"
+          },
+          {
+            "control": "Audit Trail Completeness",
+            "description": "Ensure complete audit trails for financial transactions",
+            "testScenario": "Verify all financial operations are logged and traceable",
+            "validationMethod": "Transaction logging analysis and audit trail validation"
+          }
+        ]
+      }
+    },
+
+    "automatedPenetrationTestExecution": {
+      "description": "Automated penetration test execution framework with CI/CD integration and comprehensive reporting",
+      
+      "executionFramework": {
+        "testOrchestration": {
+          "enabled": true,
+          "framework": "JUnit 5 with custom security test annotations",
+          "parallelExecution": true,
+          "maxConcurrentTests": 5,
+          "testTimeout": "30m"
+        },
+        
+        "environmentSetup": {
+          "testEnvironment": "Kubernetes namespace: carddemo-security-testing",
+          "dataPreparation": "Automated test data loading with anonymized records",
+          "serviceDeployment": "Temporary microservice deployment for testing",
+          "cleanupProcedure": "Automatic environment teardown after test completion"
+        }
+      },
+      
+      "cicdIntegration": {
+        "githubActions": {
+          "enabled": true,
+          "triggerConditions": [
+            "Pull request to main branch",
+            "Scheduled weekly full scan",
+            "Manual security test execution"
+          ],
+          "workflowSteps": [
+            "Deploy test environment",
+            "Execute OWASP ZAP baseline scan", 
+            "Run custom penetration tests",
+            "Generate security report",
+            "Clean up test environment"
+          ]
+        },
+        
+        "qualityGates": {
+          "failureCriteria": {
+            "highVulnerabilities": 0,
+            "criticalVulnerabilities": 0,
+            "authenticationBypass": "Not tolerated",
+            "dataExposure": "Not tolerated"
+          },
+          "warningCriteria": {
+            "mediumVulnerabilities": 5,
+            "lowVulnerabilities": 20,
+            "performanceImpact": "Response time degradation > 10%"
+          }
+        }
+      },
+      
+      "reportGeneration": {
+        "formats": [
+          "HTML security dashboard",
+          "JSON machine-readable results",
+          "PDF executive summary",
+          "SARIF for development tools integration"
+        ],
+        
+        "reportSections": [
+          {
+            "section": "Executive Summary",
+            "content": "High-level security posture assessment with risk scoring"
+          },
+          {
+            "section": "Vulnerability Details",
+            "content": "Detailed findings with proof of concept and remediation guidance"
+          },
+          {
+            "section": "Compliance Assessment", 
+            "content": "PCI DSS and SOX compliance validation results"
+          },
+          {
+            "section": "Trend Analysis",
+            "content": "Security improvement tracking over time"
+          }
+        ]
+      }
+    },
+
+    "securityScanningParameters": {
+      "description": "Detailed security scanning parameters for comprehensive vulnerability assessment and penetration testing execution",
+      
+      "scanConfiguration": {
+        "scope": {
+          "includedEndpoints": [
+            "/api/auth/*",
+            "/api/cavw/*", 
+            "/api/accounts/*",
+            "/api/admin/*",
+            "/api/transactions/*"
+          ],
+          "excludedEndpoints": [
+            "/actuator/health",
+            "/actuator/info",
+            "/swagger-ui/*",
+            "/v3/api-docs/*"
+          ],
+          "domainRestrictions": [
+            "localhost:8080",
+            "carddemo-test.local"
+          ]
+        },
+        
+        "intensity": {
+          "spiderConfiguration": {
+            "maxDepth": 10,
+            "maxChildren": 50,
+            "maxDuration": "15m",
+            "threadCount": 5
+          },
+          
+          "activeScanConfiguration": {
+            "strength": "HIGH",
+            "alertThreshold": "MEDIUM",
+            "maxRuleDuration": "5m",
+            "maxScanDuration": "45m"
+          }
+        }
+      },
+      
+      "authenticationParameters": {
+        "jwtTokenManagement": {
+          "automaticTokenRefresh": true,
+          "tokenExpirationHandling": "Auto-refresh before expiration",
+          "multiUserTesting": {
+            "adminUser": "Test admin role access patterns",
+            "regularUser": "Test user role limitations",
+            "unauthorizedAccess": "Test unauthenticated access blocking"
+          }
+        },
+        
+        "sessionParameters": {
+          "sessionTimeout": "30m",
+          "concurrentSessionLimit": 1,
+          "sessionInvalidationTesting": true
+        }
+      },
+      
+      "customSecurityTests": {
+        "cardDemoSpecific": {
+          "financialDataProtection": {
+            "enabled": true,
+            "testAreas": [
+              "Account balance exposure prevention",
+              "Transaction data access control", 
+              "Card number masking validation",
+              "SSN protection verification"
+            ]
+          },
+          
+          "businessLogicTesting": {
+            "enabled": true,
+            "scenarios": [
+              "Account balance manipulation attempts",
+              "Transaction amount tampering",
+              "Interest calculation bypass attempts",
+              "Batch processing security validation"
+            ]
+          }
+        }
+      },
+      
+      "reportingParameters": {
+        "detailLevel": "COMPREHENSIVE",
+        "includeProofOfConcept": true,
+        "includeFalsePositiveAnalysis": true,
+        "customMetrics": [
+          "Authentication bypass attempts blocked",
+          "Authorization violations prevented", 
+          "Data exposure incidents (should be 0)",
+          "Security control effectiveness percentage"
+        ],
+        
+        "alertingConfiguration": {
+          "immediateAlerts": [
+            "Critical vulnerability discovered",
+            "Authentication bypass successful",
+            "Data exposure detected",
+            "Compliance violation identified"
+          ],
+          "summaryReports": [
+            "Daily security scan summary",
+            "Weekly trend analysis",
+            "Monthly compliance report"
+          ]
+        }
+      }
     }
   }
 }
