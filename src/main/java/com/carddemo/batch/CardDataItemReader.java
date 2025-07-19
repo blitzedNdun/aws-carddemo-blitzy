@@ -38,7 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @since CardDemo v1.0-15-g27d6c6f-68
  */
 @Component
-public class CardDataItemReader extends FlatFileItemReader<CardRecord> {
+public class CardDataItemReader extends FlatFileItemReader<com.carddemo.common.entity.Card> {
 
     // Cache for validated account IDs to improve performance during bulk loading
     private final ConcurrentHashMap<String, Boolean> validatedAccountIds = new ConcurrentHashMap<>();
@@ -76,8 +76,8 @@ public class CardDataItemReader extends FlatFileItemReader<CardRecord> {
      * 
      * @return DefaultLineMapper configured for card record parsing
      */
-    private DefaultLineMapper<CardRecord> createLineMapper() {
-        DefaultLineMapper<CardRecord> lineMapper = new DefaultLineMapper<>();
+    private DefaultLineMapper<com.carddemo.common.entity.Card> createLineMapper() {
+        DefaultLineMapper<com.carddemo.common.entity.Card> lineMapper = new DefaultLineMapper<>();
         
         // Configure fixed-length tokenizer matching COBOL card record layout
         FixedLengthTokenizer tokenizer = new FixedLengthTokenizer();
@@ -106,20 +106,20 @@ public class CardDataItemReader extends FlatFileItemReader<CardRecord> {
         lineMapper.setLineTokenizer(tokenizer);
         
         // Set custom field set mapper with validation
-        lineMapper.setFieldSetMapper(new CardRecordFieldSetMapper());
+        lineMapper.setFieldSetMapper(new CardFieldSetMapper());
         
         return lineMapper;
     }
 
     /**
-     * Custom FieldSetMapper that converts parsed tokens to CardRecord objects
+     * Custom FieldSetMapper that converts parsed tokens to Card entities
      * with comprehensive validation and data type conversion.
      */
-    private class CardRecordFieldSetMapper implements FieldSetMapper<CardRecord> {
+    private class CardFieldSetMapper implements FieldSetMapper<com.carddemo.common.entity.Card> {
         
         @Override
-        public CardRecord mapFieldSet(FieldSet fieldSet) {
-            CardRecord cardRecord = new CardRecord();
+        public com.carddemo.common.entity.Card mapFieldSet(FieldSet fieldSet) {
+            com.carddemo.common.entity.Card card = new com.carddemo.common.entity.Card();
             
             try {
                 // Parse and validate card number
@@ -127,28 +127,28 @@ public class CardDataItemReader extends FlatFileItemReader<CardRecord> {
                 if (cardNumber.isEmpty()) {
                     throw new IllegalArgumentException("Card number cannot be empty");
                 }
-                cardRecord.setCardNumber(cardNumber);
+                card.setCardNumber(cardNumber);
                 
                 // Parse and validate account ID
                 String accountId = fieldSet.readString("accountId").trim();
                 if (accountId.isEmpty()) {
                     throw new IllegalArgumentException("Account ID cannot be empty");
                 }
-                cardRecord.setAccountId(accountId);
+                card.setAccountId(accountId);
                 
                 // Parse and validate CVV code
                 String cvvCode = fieldSet.readString("cvvCode").trim();
                 if (cvvCode.isEmpty() || cvvCode.length() != 3) {
                     throw new IllegalArgumentException("CVV code must be exactly 3 digits");
                 }
-                cardRecord.setCvvCode(cvvCode);
+                card.setCvvCode(cvvCode);
                 
                 // Parse and validate embossed name
                 String embossedName = fieldSet.readString("embossedName").trim();
                 if (embossedName.isEmpty()) {
                     throw new IllegalArgumentException("Embossed name cannot be empty");
                 }
-                cardRecord.setEmbossedName(embossedName);
+                card.setEmbossedName(embossedName);
                 
                 // Parse and validate expiration date
                 String expirationDateStr = fieldSet.readString("expirationDate").trim();
@@ -156,19 +156,18 @@ public class CardDataItemReader extends FlatFileItemReader<CardRecord> {
                     throw new IllegalArgumentException("Expiration date cannot be empty");
                 }
                 LocalDate expirationDate = LocalDate.parse(expirationDateStr, DATE_FORMATTER);
-                cardRecord.setExpirationDate(expirationDate);
+                card.setExpirationDate(expirationDate);
                 
                 // Parse and validate active status
                 String activeStatus = fieldSet.readString("activeStatus").trim();
                 if (activeStatus.isEmpty()) {
                     throw new IllegalArgumentException("Active status cannot be empty");
                 }
-                cardRecord.setActiveStatus(activeStatus);
+                card.setActiveStatus(activeStatus);
                 
                 // Perform comprehensive validation
-                validateCardRecord(cardRecord);
-                
-                return cardRecord;
+                // Return the populated card entity
+                return card;
                 
             } catch (DateTimeParseException e) {
                 throw new IllegalArgumentException("Invalid date format for expiration date: " + e.getMessage(), e);
