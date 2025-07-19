@@ -32,6 +32,7 @@ import org.thymeleaf.context.Context;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -227,8 +228,9 @@ public class StatementGenerationJob {
                     statementData.setAccount(account);
                     
                     // Get customer information - equivalent to COBOL CUSTFILE-GET
-                    Customer customer = customerRepository.findByCustomerIdWithAccounts(account.getCustomer().getCustomerId());
-                    if (customer != null) {
+                    Optional<Customer> customerOpt = customerRepository.findByCustomerIdWithAccounts(account.getCustomer().getCustomerId());
+                    if (customerOpt.isPresent()) {
+                        Customer customer = customerOpt.get();
                         statementData.setCustomer(customer);
                         
                         // Get transactions for this account - equivalent to COBOL TRNXFILE-GET
@@ -311,7 +313,7 @@ public class StatementGenerationJob {
         
         return new ItemWriter<StatementData>() {
             @Override
-            public void write(List<? extends StatementData> items) throws Exception {
+            public void write(org.springframework.batch.item.Chunk<? extends StatementData> items) throws Exception {
                 logger.debug("Writing {} statements", items.size());
                 
                 for (StatementData item : items) {
@@ -352,7 +354,7 @@ public class StatementGenerationJob {
         // Generate statement filename
         String filename = String.format("statement_%s_%s.txt", 
                 statementData.getAccountId(), 
-                DateUtils.formatDate(statementData.getStatementDate().toLocalDate()));
+                DateUtils.formatDateForDisplay(statementData.getStatementDate().toLocalDate()));
         
         Path statementFile = textOutputPath.resolve(filename);
         
@@ -430,7 +432,7 @@ public class StatementGenerationJob {
         // Generate statement filename
         String filename = String.format("statement_%s_%s.html", 
                 statementData.getAccountId(), 
-                DateUtils.formatDate(statementData.getStatementDate().toLocalDate()));
+                DateUtils.formatDateForDisplay(statementData.getStatementDate().toLocalDate()));
         
         Path statementFile = htmlOutputPath.resolve(filename);
         
