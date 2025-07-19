@@ -579,7 +579,7 @@ public class TransactionService {
             .ifPresent(dto::setTransactionType);
         
         TransactionCategory.fromCode(transaction.getCategoryCode())
-            .ifPresent(dto::setCategoryCode);
+            .ifPresent(category -> dto.setCategoryCode(category.getCode()));
         
         dto.setAmount(transaction.getAmount());
         dto.setDescription(transaction.getDescription());
