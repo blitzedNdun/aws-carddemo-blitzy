@@ -145,6 +145,14 @@ public class Card {
     private Customer customer;
 
     /**
+     * Version field for optimistic locking
+     * Automatically managed by JPA for concurrent update protection
+     */
+    @Version
+    @Column(name = "version")
+    private Long version;
+
+    /**
      * Default constructor for JPA
      */
     public Card() {
@@ -341,6 +349,25 @@ public class Card {
         if (customer != null) {
             this.customerId = customer.getCustomerId();
         }
+    }
+
+    /**
+     * Gets the version for optimistic locking
+     * 
+     * @return Version number for optimistic locking
+     */
+    public Long getVersion() {
+        return version;
+    }
+
+    /**
+     * Sets the version for optimistic locking
+     * Note: This is typically managed automatically by JPA
+     * 
+     * @param version Version number for optimistic locking
+     */
+    public void setVersion(Long version) {
+        this.version = version;
     }
 
     // Business methods
