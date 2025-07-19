@@ -1,0 +1,587 @@
+# OWASP ZAP 2.16.1 Security Scanning Configuration
+# CardDemo Spring Boot Microservices Automated Security Testing
+# 
+# This configuration provides comprehensive vulnerability assessment for Spring Boot 
+# REST API endpoints with JWT authentication flow testing and PCI DSS compliance 
+# validation, ensuring zero HIGH/CRITICAL vulnerabilities per Section 6.6.9.9.
+
+# =============================================================================
+# ZAP CORE CONFIGURATION
+# =============================================================================
+zap:
+  version: "2.16.1"
+  host: "localhost"
+  port: 8080
+  
+  # ZAP Session Configuration
+  session:
+    name: "carddemo-security-scan"
+    description: "Automated security scanning for CardDemo Spring Boot microservices"
+    create_new: true
+    persistence: false
+    
+  # Global Security Scanning Options
+  options:
+    api:
+      disablekey: false
+      secure: true
+      
+    spider:
+      maxdepth: 10
+      maxchildren: 20
+      recurse: true
+      subtreeonly: false
+      postform: true
+      
+    ascan:
+      attackpolicy: "Default Policy"
+      alertthreshold: "Medium"
+      scanpolicy: "Default Policy"
+      
+    pscan:
+      enabled: true
+      scanonlyinscope: false
+
+# =============================================================================
+# API ENDPOINT SCAN CONFIGURATIONS
+# =============================================================================
+targets:
+  base_url: "http://localhost:8080"
+  
+  # Spring Boot Microservice Endpoints for Security Scanning
+  endpoints:
+    # Authentication Service Endpoints (AuthenticationService.java)
+    authentication:
+      - path: "/api/auth/login"
+        method: "POST"
+        description: "JWT authentication endpoint"
+        authentication_required: false
+        scan_priority: "HIGH"
+        
+      - path: "/api/auth/logout"
+        method: "POST"
+        description: "Session termination endpoint"
+        authentication_required: true
+        scan_priority: "HIGH"
+        
+      - path: "/api/auth/validate"
+        method: "GET"
+        description: "JWT token validation endpoint"
+        authentication_required: true
+        scan_priority: "HIGH"
+        
+      - path: "/api/auth/refresh"
+        method: "POST"
+        description: "JWT token refresh endpoint"
+        authentication_required: true
+        scan_priority: "HIGH"
+    
+    # Account Management Endpoints (AccountViewController.java)
+    account_view:
+      - path: "/api/cavw/accounts/{accountId}"
+        method: "GET"
+        description: "Account view REST API endpoint"
+        authentication_required: true
+        authorization_roles: ["ROLE_USER", "ROLE_ADMIN"]
+        scan_priority: "HIGH"
+        parameters:
+          - name: "accountId"
+            type: "path"
+            pattern: "[0-9]{11}"
+            test_values: ["12345678901", "00000000001", "99999999999"]
+    
+    # Account Update Endpoints (AccountUpdateController.java)  
+    account_update:
+      - path: "/api/accounts/{accountId}"
+        method: "PUT"
+        description: "Account update with optimistic locking"
+        authentication_required: true
+        authorization_roles: ["ROLE_ACCOUNT_UPDATE", "ROLE_ADMIN"]
+        scan_priority: "HIGH"
+        parameters:
+          - name: "accountId"
+            type: "path"
+            pattern: "[0-9]{11}"
+            test_values: ["12345678901"]
+    
+    # User Management Endpoints (UserManagementController.java)
+    user_management:
+      - path: "/api/admin/users"
+        method: "GET"
+        description: "List users with pagination"
+        authentication_required: true
+        authorization_roles: ["ROLE_ADMIN"]
+        scan_priority: "CRITICAL"
+        
+      - path: "/api/admin/users/{userId}"
+        method: "GET"
+        description: "Get user by ID"
+        authentication_required: true
+        authorization_roles: ["ROLE_ADMIN"]
+        scan_priority: "CRITICAL"
+        
+      - path: "/api/admin/users"
+        method: "POST"
+        description: "Create new user"
+        authentication_required: true
+        authorization_roles: ["ROLE_ADMIN"]
+        scan_priority: "CRITICAL"
+        
+      - path: "/api/admin/users/{userId}"
+        method: "PUT"
+        description: "Update existing user"
+        authentication_required: true
+        authorization_roles: ["ROLE_ADMIN"]
+        scan_priority: "CRITICAL"
+        
+      - path: "/api/admin/users/{userId}"
+        method: "DELETE"
+        description: "Delete user account"
+        authentication_required: true
+        authorization_roles: ["ROLE_ADMIN"]
+        scan_priority: "CRITICAL"
+
+# =============================================================================
+# AUTHENTICATION ENDPOINT TESTING SCENARIOS
+# =============================================================================
+authentication:
+  # JWT Token-Based Authentication Configuration
+  jwt:
+    enabled: true
+    header_name: "Authorization"
+    header_prefix: "Bearer "
+    
+    # Test Scenarios Using jwt-tokens.json Data
+    test_scenarios:
+      # Valid Admin Token Testing
+      valid_admin_authentication:
+        description: "Valid JWT token for admin user ADMIN001"
+        token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiQURNSU4wMDEiLCJ1c2VyX3R5cGUiOiJBIiwicm9sZXMiOlsiUk9MRV9BRE1JTiIsIlJPTEVfVVNFUiJdLCJzZXNzaW9uX2lkIjoiYWRtaW4tc2Vzc2lvbi0xMjM0NSIsInRva2VuX3R5cGUiOiJhY2Nlc3MiLCJzdWIiOiJBRE1JTjAwMSIsImlhdCI6MTcwNTY2MDgwMCwiZXhwIjoxNzA1NjYyNjAwfQ.K9_x4fvQZQwYVJi7ZH8k2N3mR6sP5wLx8YqA9cB2dE0"
+        expected_access:
+          admin_endpoints: true
+          user_endpoints: true
+          user_management: true
+        test_cases:
+          - endpoint: "/api/admin/users"
+            expected_status: 200
+          - endpoint: "/api/cavw/accounts/12345678901"
+            expected_status: 200
+            
+      # Valid User Token Testing
+      valid_user_authentication:
+        description: "Valid JWT token for regular user USER001"
+        token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVNFUjAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlcyI6WyJST0xFX1VTRVIiXSwic2Vzc2lvbl9pZCI6InVzZXItc2Vzc2lvbi02Nzg5MCIsInRva2VuX3R5cGUiOiJhY2Nlc3MiLCJzdWIiOiJVU0VSMDAxIiwiaWF0IjoxNzA1NjYwODAwLCJleHAiOjE3MDU2NjI2MDB9.M7_y5gwR1QxZWKj8AI9l3O4nS7tQ6xMz9ZrB0dC3eF1"
+        expected_access:
+          admin_endpoints: false
+          user_endpoints: true
+          user_management: false
+        test_cases:
+          - endpoint: "/api/admin/users"
+            expected_status: 403
+          - endpoint: "/api/cavw/accounts/12345678901"
+            expected_status: 200
+            
+      # Expired Token Testing
+      expired_token_authentication:
+        description: "Expired JWT token for validation testing"
+        token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVNFUjAwMSIsInVzZXJfdHlwZSI6IlUiLCJyb2xlcyI6WyJST0xFX1VTRVIiXSwic2Vzc2lvbl9pZCI6ImV4cGlyZWQtc2Vzc2lvbi0xMjM0NSIsInRva2VuX3R5cGUiOiJhY2Nlc3MiLCJzdWIiOiJVU0VSMDAxIiwiaWF0IjoxNzA1NjU3MjAwLCJleHAiOjE3MDU2NTkwMDB9.N8_z6hxS2RyaXLk9BJ0m4P5oT8uR7yO0AasC1eD4fG2"
+        expected_access:
+          all_endpoints: false
+        test_cases:
+          - endpoint: "/api/cavw/accounts/12345678901"
+            expected_status: 401
+          - endpoint: "/api/admin/users"
+            expected_status: 401
+            
+      # Invalid Signature Testing
+      invalid_signature_authentication:
+        description: "JWT token with invalid signature"
+        token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiQURNSU4wMDEiLCJ1c2VyX3R5cGUiOiJBIiwicm9sZXMiOlsiUk9MRV9BRE1JTiIsIlJPTEVfVVNFUiJdLCJzZXNzaW9uX2lkIjoidGFtcGVyZWQtc2Vzc2lvbi0xMjM0NSIsInRva2VuX3R5cGUiOiJhY2Nlc3MiLCJzdWIiOiJBRE1JTjAwMSIsImlhdCI6MTcwNTY2MDgwMCwiZXhwIjoxNzA1NjYyNjAwfQ.InvalidSignatureForSecurityTesting123456789012345"
+        expected_access:
+          all_endpoints: false
+        test_cases:
+          - endpoint: "/api/cavw/accounts/12345678901"
+            expected_status: 401
+          - endpoint: "/api/admin/users"
+            expected_status: 401
+            
+      # Malformed Token Testing
+      malformed_token_authentication:
+        description: "Malformed JWT token for parsing error testing"
+        token: "InvalidJWTStructure.MissingProperBase64Encoding.NoValidSignature"
+        expected_access:
+          all_endpoints: false
+        test_cases:
+          - endpoint: "/api/cavw/accounts/12345678901"
+            expected_status: 401
+          - endpoint: "/api/admin/users"
+            expected_status: 401
+
+# =============================================================================
+# VULNERABILITY SCANNING PROFILES
+# =============================================================================
+scan_profiles:
+  # SQL Injection Testing
+  sql_injection:
+    enabled: true
+    strength: "HIGH"
+    threshold: "MEDIUM"
+    target_parameters: ["accountId", "userId", "customerId", "cardId"]
+    payloads:
+      - "' OR '1'='1"
+      - "'; DROP TABLE users; --"
+      - "' UNION SELECT * FROM users --"
+      - "1' AND 1=1 --"
+      - "1' AND 1=2 --"
+      
+  # Cross-Site Scripting (XSS) Testing
+  xss_vulnerability:
+    enabled: true
+    strength: "HIGH"
+    threshold: "MEDIUM"
+    target_parameters: ["firstName", "lastName", "address", "notes"]
+    payloads:
+      - "<script>alert('XSS')</script>"
+      - "<img src=x onerror=alert('XSS')>"
+      - "javascript:alert('XSS')"
+      - "<svg onload=alert('XSS')>"
+      
+  # CSRF Protection Validation
+  csrf_protection:
+    enabled: true
+    test_state_changing_requests: true
+    target_methods: ["POST", "PUT", "DELETE"]
+    csrf_token_validation: true
+    
+  # Authentication Bypass Testing
+  authentication_bypass:
+    enabled: true
+    test_scenarios:
+      - description: "Direct endpoint access without authentication"
+        method: "direct_access"
+      - description: "Token manipulation attempts"
+        method: "token_tampering"
+      - description: "Session fixation testing"
+        method: "session_fixation"
+        
+  # Authorization Flow Security
+  authorization_flow:
+    enabled: true
+    role_escalation_tests: true
+    horizontal_privilege_tests: true
+    vertical_privilege_tests: true
+    
+  # API Security Validation
+  api_security:
+    enabled: true
+    rest_api_testing: true
+    json_parameter_pollution: true
+    http_method_overrides: true
+    content_type_validation: true
+    
+  # Session Management Testing
+  session_management:
+    enabled: true
+    session_fixation: true
+    session_hijacking: true
+    session_timeout_validation: true
+    redis_session_security: true
+    
+  # Input Validation Scanning
+  input_validation:
+    enabled: true
+    parameter_pollution: true
+    boundary_value_testing: true
+    malformed_data_injection: true
+    oversized_payload_testing: true
+    
+  # Output Encoding Verification
+  output_encoding:
+    enabled: true
+    response_header_injection: true
+    content_type_sniffing: true
+    mime_type_validation: true
+
+# =============================================================================
+# PCI DSS COMPLIANCE TESTING CONFIGURATION
+# =============================================================================
+pci_dss_compliance:
+  enabled: true
+  version: "4.0"
+  
+  # Cardholder Data Protection Testing (Requirement 3)
+  cardholder_data_protection:
+    enabled: true
+    test_scenarios:
+      - description: "Sensitive data exposure in API responses"
+        endpoints:
+          - "/api/cavw/accounts/{accountId}"
+          - "/api/accounts/{accountId}"
+        sensitive_fields: ["cardNumber", "cvv", "expirationDate", "pin"]
+        masking_validation: true
+        
+      - description: "Encryption in transit validation"
+        tls_version_check: "1.3"
+        cipher_suite_validation: true
+        certificate_validation: true
+        
+      - description: "Data storage security"
+        database_encryption_check: true
+        sensitive_data_logging: false
+        
+  # Network Security Testing (Requirement 1)
+  network_security:
+    enabled: true
+    firewall_testing: true
+    network_segmentation: true
+    dmz_configuration: true
+    
+  # Access Control Validation (Requirement 7)
+  access_control:
+    enabled: true
+    role_based_access: true
+    least_privilege_principle: true
+    authentication_mechanisms: true
+    
+  # Vulnerability Management (Requirement 6)
+  vulnerability_management:
+    enabled: true
+    security_patch_validation: true
+    secure_coding_practices: true
+    penetration_testing: true
+    
+  # Security Monitoring (Requirement 10)
+  security_monitoring:
+    enabled: true
+    audit_logging: true
+    log_integrity: true
+    security_incident_detection: true
+    
+  # Data Encryption Validation (Requirement 4)
+  data_encryption:
+    enabled: true
+    encryption_in_transit: true
+    key_management: true
+    cryptographic_controls: true
+    
+  # Authentication Testing (Requirement 8)
+  authentication:
+    enabled: true
+    multi_factor_authentication: false  # Not currently implemented
+    password_security: true
+    user_identification: true
+    
+  # Audit Logging Verification (Requirement 10)
+  audit_logging:
+    enabled: true
+    security_event_logging: true
+    log_protection: true
+    log_review_procedures: true
+
+# =============================================================================
+# AUTOMATED SECURITY TEST EXECUTION
+# =============================================================================
+automation:
+  # Zero HIGH/CRITICAL Vulnerability Tolerance
+  failure_criteria:
+    high_vulnerabilities: 0
+    critical_vulnerabilities: 0
+    medium_vulnerabilities: 10  # Warning threshold
+    low_vulnerabilities: 50     # Information threshold
+    
+  # CI/CD Integration Settings
+  ci_cd:
+    enabled: true
+    fail_build_on_high_critical: true
+    generate_junit_report: true
+    generate_json_report: true
+    generate_html_report: true
+    
+  # Scheduled Scanning
+  scheduling:
+    enabled: true
+    daily_scan: true
+    weekly_full_scan: true
+    on_deployment: true
+    
+  # Notification Configuration
+  notifications:
+    enabled: true
+    slack_webhook: "${SLACK_SECURITY_WEBHOOK}"
+    email_alerts: true
+    security_team_notification: true
+    
+  # Report Generation
+  reporting:
+    output_directory: "target/zap-reports"
+    formats: ["HTML", "XML", "JSON", "JUnit"]
+    include_false_positives: false
+    severity_filter: "MEDIUM"
+    
+  # Scan Performance Settings
+  performance:
+    max_scan_time: "30m"
+    max_concurrent_scanners: 5
+    request_delay: 100  # milliseconds
+    thread_count: 10
+
+# =============================================================================
+# SCAN RULES CONFIGURATION
+# =============================================================================
+scan_rules:
+  # Enable specific security scan rules
+  enabled_rules:
+    - 10202  # Absence of Anti-CSRF Tokens
+    - 10020  # X-Frame-Options Header Not Set
+    - 10021  # X-Content-Type-Options Header Missing
+    - 10023  # Information Disclosure - Debug Error Messages
+    - 10024  # Information Disclosure - Sensitive Information in URL
+    - 10025  # Information Disclosure - Sensitive Information in HTTP Referrer Header
+    - 10026  # HTTP Parameter Override
+    - 10027  # Information Disclosure - Suspicious Comments
+    - 10028  # Open Redirect
+    - 10029  # Cookie Poisoning
+    - 10030  # User Controllable Charset
+    - 10031  # User Controllable HTML Element Attribute (Potential XSS)
+    - 10032  # Viewstate without MAC Signature
+    - 10033  # Directory Browsing
+    - 10034  # Heartbleed OpenSSL Vulnerability
+    - 10035  # Strict-Transport-Security Header Not Set
+    - 10036  # Server Leaks Version Information via "Server" HTTP Response Header Field
+    - 10037  # Server Leaks Information via "X-Powered-By" HTTP Response Header Field(s)
+    - 10038  # Content Security Policy (CSP) Header Not Set
+    - 10039  # X-Backend-Server Header Information Leak
+    - 10040  # Secure Pages Include Mixed Content
+    - 10041  # HTTP to HTTPS Insecure Transition in Form Post
+    - 10042  # HTTPS to HTTP Insecure Transition in Form Post
+    - 10043  # User Controllable JavaScript Event (XSS)
+    - 10044  # Big Redirect Detected (Potential Sensitive Information Leak)
+    - 10045  # Source Code Disclosure - /WEB-INF folder
+    - 10046  # Source Code Disclosure - Git
+    - 10047  # Source Code Disclosure - SVN
+    - 10048  # Remote Code Execution - Shell Injection
+    - 10049  # Content Cacheability
+    - 10050  # Retrieved from Cache
+    - 10051  # Relative Path Confusion
+    - 10052  # X-ChromeLogger-Data Header Information Leak
+    - 10053  # Apache Range Header DoS (CVE-2011-3192)
+    - 10054  # Cookie Without SameSite Attribute
+    - 10055  # CSP
+    - 10056  # X-Debug-Token Information Leak
+    - 10057  # Username Hash Found
+    - 10058  # GET for POST
+    - 10059  # HTTP Parameter Pollution
+    - 10060  # Charset Mismatch
+    - 10061  # Viewstate
+    - 10062  # PII Disclosure
+    - 40003  # CRLF Injection
+    - 40008  # Parameter Tampering
+    - 40009  # Server Side Include
+    - 40012  # Cross Site Scripting (Reflected)
+    - 40013  # Session Fixation
+    - 40014  # Cross Site Scripting (Persistent)
+    - 40016  # Cross Site Scripting (Persistent) - Prime
+    - 40017  # Cross Site Scripting (Persistent) - Spider
+    - 40018  # SQL Injection
+    - 40019  # SQL Injection - MySQL
+    - 40020  # SQL Injection - Hypersonic SQL
+    - 40021  # SQL Injection - Oracle
+    - 40022  # SQL Injection - PostgreSQL
+    - 40023  # Possible Username Enumeration
+    - 40024  # SQL Injection - SQLite
+    - 40025  # Proxy Disclosure
+    - 40026  # Cross Site Scripting (DOM Based)
+    - 40027  # SQL Injection - MsSQL
+    - 40028  # LDAP Injection
+    - 40029  # Trace.axd Information Leak
+    - 90001  # Insecure JSF ViewState
+    - 90002  # Private IP Disclosure
+    - 90003  # Sub Resource Integrity Attribute Missing
+    - 90004  # Insufficient Site Isolation Against Spectre Vulnerability
+    - 90011  # Charset Mismatch (Header Versus Meta Content-Type Charset)
+    - 90017  # XSLT Injection
+    - 90019  # Server Side Code Injection
+    - 90020  # Remote OS Command Injection
+    - 90021  # XPath Injection
+    - 90022  # Application Error Disclosure
+    - 90023  # XML External Entity Attack
+    - 90024  # Generic Padding Oracle
+    - 90025  # Expression Language Injection
+    - 90026  # SOAP Action Spoofing
+    - 90027  # Cookie Slack Detector
+    - 90028  # Insecure Authentication
+    - 90029  # LDAP Injection
+    - 90030  # WSDL File Detection
+    
+  # Disable rules that may cause false positives
+  disabled_rules:
+    - 10015  # Incomplete or No Cache-control and Pragma HTTP Header Set (may not apply to API endpoints)
+    - 10017  # Cross-Domain JavaScript Source File Inclusion (may not apply to API-only services)
+    - 10019  # Content-Type Header Missing (may not apply to all API responses)
+
+# =============================================================================
+# CUSTOM SECURITY POLICIES
+# =============================================================================
+custom_policies:
+  # CardDemo-Specific Security Checks
+  carddemo_security:
+    jwt_token_validation:
+      enabled: true
+      check_algorithm: "HS256"
+      check_expiration: true
+      check_signature: true
+      
+    spring_security_integration:
+      enabled: true
+      check_csrf_protection: true
+      check_session_management: true
+      check_authentication_handlers: true
+      
+    financial_data_protection:
+      enabled: true
+      check_sensitive_data_exposure: true
+      mask_account_numbers: true
+      mask_card_numbers: true
+      
+    audit_trail_validation:
+      enabled: true
+      check_security_event_logging: true
+      validate_log_integrity: true
+      
+# =============================================================================
+# EXPORT CONFIGURATIONS
+# =============================================================================
+exports:
+  # ZAPSecurityScanConfiguration (default export)
+  ZAPSecurityScanConfiguration:
+    api_endpoint_scan_configurations: true
+    authentication_endpoint_testing_scenarios: true
+    jwt_token_validation_profiles: true
+    pci_dss_compliance_testing_rules: true
+    vulnerability_scanning_automation: true
+    zero_high_critical_tolerance_policies: true
+    spring_boot_rest_api_scanning_profiles: true
+    cardholder_data_protection_validation: true
+    
+  # VulnerabilityScanningProfiles
+  VulnerabilityScanningProfiles:
+    sql_injection_testing: true
+    xss_vulnerability_scanning: true
+    csrf_protection_validation: true
+    authentication_bypass_testing: true
+    authorization_flow_security: true
+    api_security_validation: true
+    session_management_testing: true
+    input_validation_scanning: true
+    output_encoding_verification: true
+    
+  # PCIDSSComplianceTestingConfiguration
+  PCIDSSComplianceTestingConfiguration:
+    cardholder_data_protection_testing: true
+    network_security_validation: true
+    access_control_verification: true
+    vulnerability_management_scanning: true
+    security_monitoring_configuration: true
+    data_encryption_validation: true
+    authentication_testing_for_pci_dss: true
+    audit_logging_verification: true
