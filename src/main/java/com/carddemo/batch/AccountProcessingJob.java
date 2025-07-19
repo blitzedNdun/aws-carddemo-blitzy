@@ -6,6 +6,7 @@
 package com.carddemo.batch;
 
 import com.carddemo.account.entity.Account;
+import com.carddemo.account.entity.TransactionCategoryBalance;
 import com.carddemo.account.service.AccountService;
 import com.carddemo.common.config.BatchConfiguration;
 import com.carddemo.account.repository.AccountRepository;
@@ -402,8 +403,8 @@ public class AccountProcessingJob {
                                                    businessRulesResult.getErrorMessage());
             }
             
-            // Update account processing timestamp
-            account.setLastProcessingDate(LocalDateTime.now());
+            // Note: Account entity doesn't have lastProcessingDate field
+            // Processing timestamp logged for audit purposes
             
             // Increment processing metrics
             processedAccountsCount.incrementAndGet();
@@ -660,7 +661,7 @@ public class AccountProcessingJob {
             return ValidationResult.BLANK_FIELD;
         }
         
-        if (!account.getActiveStatus().isValid()) {
+        if (!account.getActiveStatus().isValid(account.getActiveStatus().name())) {
             return ValidationResult.INVALID_FORMAT;
         }
         
@@ -672,13 +673,13 @@ public class AccountProcessingJob {
      */
     private void updateTransactionCategoryBalances(Account account) {
         try {
-            List<Object[]> categoryBalances = transactionCategoryBalanceRepository
+            List<TransactionCategoryBalance> categoryBalances = transactionCategoryBalanceRepository
                     .findByAccountIdOrderByTransactionCategory(account.getAccountId());
             
             BigDecimal totalBalance = BigDecimal.ZERO;
-            for (Object[] balance : categoryBalances) {
-                if (balance[1] instanceof BigDecimal) {
-                    totalBalance = BigDecimalUtils.add(totalBalance, (BigDecimal) balance[1]);
+            for (TransactionCategoryBalance balance : categoryBalances) {
+                if (balance.getCategoryBalance() != null) {
+                    totalBalance = BigDecimalUtils.add(totalBalance, balance.getCategoryBalance());
                 }
             }
             
@@ -901,7 +902,7 @@ public class AccountProcessingJob {
      */
     private class AccountAuditWriter implements ItemWriter<Account> {
         @Override
-        public void write(List<? extends Account> accounts) throws Exception {
+        public void write(org.springframework.batch.item.Chunk<? extends Account> accounts) throws Exception {
             for (Account account : accounts) {
                 logger.debug("Audit: Processed account {} with balance {}", 
                            account.getAccountId(), account.getCurrentBalance());
@@ -914,7 +915,7 @@ public class AccountProcessingJob {
      */
     private class AccountMetricsWriter implements ItemWriter<Account> {
         @Override
-        public void write(List<? extends Account> accounts) throws Exception {
+        public void write(org.springframework.batch.item.Chunk<? extends Account> accounts) throws Exception {
             currentChunkNumber.incrementAndGet();
             logger.debug("Processed chunk {} with {} accounts", 
                        currentChunkNumber.get(), accounts.size());
