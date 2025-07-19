@@ -8,7 +8,7 @@ package com.carddemo.card;
 import com.carddemo.account.AccountViewService;
 import com.carddemo.common.dto.AuditInfo;
 import com.carddemo.common.enums.CardStatus;
-import com.carddemo.common.enums.ValidationResult;
+import com.carddemo.common.dto.ValidationResult;
 import com.carddemo.common.util.BigDecimalUtils;
 import com.carddemo.common.util.DateUtils;
 import com.carddemo.common.util.ValidationUtils;
@@ -219,11 +219,11 @@ public class CardUpdateService {
         // Step 4: Validate update confirmation (equivalent to COBOL confirmation logic)
         if (!request.isConfirmUpdate()) {
             logger.debug("Card update not confirmed by user");
-            return ValidationResult.INVALID_FORMAT;
+            ValidationResult result = new ValidationResult(false); result.addErrorMessage("INVALID_FORMAT", "Invalid format"); return result;
         }
         
         logger.debug("Card update request validation successful for card: {}", request.getCardNumber());
-        return ValidationResult.VALID;
+        return new ValidationResult(true);
     }
 
     /**
@@ -387,10 +387,12 @@ public class CardUpdateService {
         logger.debug("Validating card expiration date: {}", expirationDate);
         
         // Use DateUtils for comprehensive date validation
-        ValidationResult dateValidation = DateUtils.validateDate(expirationDate);
-        if (!dateValidation.isValid()) {
-            logger.debug("Date format validation failed: {}", dateValidation.getErrorMessage());
-            return dateValidation;
+        com.carddemo.common.enums.ValidationResult dateValidationEnum = DateUtils.validateDate(expirationDate);
+        if (dateValidationEnum != com.carddemo.common.enums.ValidationResult.VALID) {
+            logger.debug("Date format validation failed: {}", dateValidationEnum);
+            ValidationResult result = new ValidationResult(false);
+            result.addErrorMessage("INVALID_DATE", dateValidationEnum.toString(), ValidationResult.ValidationSeverity.ERROR);
+            return result;
         }
         
         // Additional business rule validation for expiration date
@@ -401,22 +403,22 @@ public class CardUpdateService {
             // Validate future date requirement
             if (expDate.isBefore(LocalDate.now()) || expDate.isEqual(LocalDate.now())) {
                 logger.debug("Card expiration date must be in the future: {}", expirationDate);
-                return ValidationResult.INVALID_RANGE;
+                ValidationResult result = new ValidationResult(false); result.addErrorMessage("INVALID_RANGE", "Value is outside acceptable range"); return result;
             }
             
             // Validate reasonable expiration range (not more than 10 years in future)
             if (expDate.isAfter(LocalDate.now().plusYears(10))) {
                 logger.debug("Card expiration date too far in future: {}", expirationDate);
-                return ValidationResult.INVALID_RANGE;
+                ValidationResult result = new ValidationResult(false); result.addErrorMessage("INVALID_RANGE", "Value is outside acceptable range"); return result;
             }
             
         } catch (DateTimeParseException e) {
             logger.debug("Card expiration date parsing failed: {}", expirationDate);
-            return ValidationResult.INVALID_FORMAT;
+            ValidationResult result = new ValidationResult(false); result.addErrorMessage("INVALID_FORMAT", "Invalid format"); return result;
         }
         
         logger.debug("Card expiration date validation successful: {}", expirationDate);
-        return ValidationResult.VALID;
+        return new ValidationResult(true);
     }
 
     /**
@@ -440,7 +442,7 @@ public class CardUpdateService {
         // Validate status format and value
         if (activeStatus == null || activeStatus.trim().isEmpty()) {
             logger.debug("Card status is null or empty");
-            return ValidationResult.INVALID_FORMAT;
+            ValidationResult result = new ValidationResult(false); result.addErrorMessage("INVALID_FORMAT", "Invalid format"); return result;
         }
         
         // Validate against CardStatus enum
@@ -455,18 +457,20 @@ public class CardUpdateService {
             }
             
             // Additional business rule validation can be added here
-            if (!cardStatus.isValid()) {
+            if (!cardStatus.isValid(cardStatus.name())) {
                 logger.debug("Invalid card status: {}", activeStatus);
-                return ValidationResult.INVALID_RANGE;
+                ValidationResult result = new ValidationResult(false); result.addErrorMessage("INVALID_RANGE", "Value is outside acceptable range"); return result;
             }
             
         } catch (IllegalArgumentException e) {
             logger.debug("Card status validation failed: {}", activeStatus);
-            return ValidationResult.INVALID_FORMAT;
+            ValidationResult result = new ValidationResult(false);
+            result.addErrorMessage("INVALID_FORMAT", "Update confirmation is required");
+            return result;
         }
         
         logger.debug("Card status validation successful: {}", activeStatus);
-        return ValidationResult.VALID;
+        return new ValidationResult(true);
     }
 
     /**
@@ -489,25 +493,31 @@ public class CardUpdateService {
         logger.debug("Validating account association: {}", accountId);
         
         // Use ValidationUtils for account number validation
-        ValidationResult accountValidation = ValidationUtils.validateAccountNumber(accountId);
-        if (!accountValidation.isValid()) {
-            logger.debug("Account number format validation failed: {}", accountValidation.getErrorMessage());
-            return accountValidation;
+        com.carddemo.common.enums.ValidationResult accountValidationEnum = ValidationUtils.validateAccountNumber(accountId);
+        if (accountValidationEnum != com.carddemo.common.enums.ValidationResult.VALID) {
+            logger.debug("Account number format validation failed: {}", accountValidationEnum);
+            ValidationResult result = new ValidationResult(false);
+            result.addErrorMessage("INVALID_ACCOUNT", accountValidationEnum.toString(), ValidationResult.ValidationSeverity.ERROR);
+            return result;
         }
         
         // Validate account existence using AccountViewService
         try {
             if (!accountViewService.checkAccountExists(accountId)) {
                 logger.debug("Account does not exist: {}", accountId);
-                return ValidationResult.INVALID_CROSS_REFERENCE;
+                ValidationResult result = new ValidationResult(false);
+                result.addErrorMessage("INVALID_CROSS_REFERENCE", "Account does not exist: " + accountId);
+                return result;
             }
         } catch (Exception e) {
             logger.error("Error validating account existence: {}", accountId, e);
-            return ValidationResult.INVALID_CROSS_REFERENCE;
+            ValidationResult result = new ValidationResult(false);
+            result.addErrorMessage("INVALID_CROSS_REFERENCE", "Error validating account existence: " + e.getMessage());
+            return result;
         }
         
         logger.debug("Account association validation successful: {}", accountId);
-        return ValidationResult.VALID;
+        return new ValidationResult(true);
     }
 
     /**
@@ -611,8 +621,8 @@ public class CardUpdateService {
      * @return CardUpdateResponseDto with error information
      */
     private CardUpdateResponseDto createErrorResponse(String errorMessage, String correlationId) {
-        ValidationResult validationResult = ValidationResult.INVALID_FORMAT;
-        validationResult.setErrorMessage(errorMessage);
+        ValidationResult validationResult = new ValidationResult(false);
+        validationResult.addErrorMessage("INVALID_FORMAT", errorMessage);
         
         AuditInfo auditInfo = new AuditInfo();
         auditInfo.setUserId("system");
