@@ -28,6 +28,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.data.domain.Sort;
 
 import java.io.File;
@@ -110,6 +111,9 @@ public class AccountReportJob {
     
     @Autowired
     private BatchConfiguration batchConfiguration;
+    
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     /**
      * Main account report job configuration implementing complete COBOL CBACT01C.cbl functionality.
@@ -156,7 +160,7 @@ public class AccountReportJob {
         logger.info("Configuring account report step with chunk size: {}", DEFAULT_CHUNK_SIZE);
         
         return new StepBuilder(STEP_NAME, batchConfiguration.jobRepository())
-                .<Account, AccountReportDTO>chunk(DEFAULT_CHUNK_SIZE, batchConfiguration.transactionManager())
+                .<Account, AccountReportDTO>chunk(DEFAULT_CHUNK_SIZE, transactionManager)
                 .reader(accountItemReader())
                 .processor(accountItemProcessor())
                 .writer(accountItemWriter())
