@@ -23,6 +23,7 @@ import org.springframework.batch.item.support.ListItemReader;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -103,6 +104,9 @@ public class StatementProcessingJob {
     @Autowired
     private StatementGenerationJob statementGenerationJob;
     
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+    
     // Working storage equivalent to COBOL WS-M03B-AREA
     private Map<String, Object> processingContext = new HashMap<>();
     
@@ -120,7 +124,7 @@ public class StatementProcessingJob {
      * @return Spring Batch Job for statement processing operations
      */
     @Bean
-    public Job statementProcessingJob() {
+    public Job statementProcessingJob() throws Exception {
         logger.info("Initializing StatementProcessingJob - converting COBOL CBSTM03B.CBL");
         
         return new JobBuilder("statementProcessingJob", batchConfiguration.jobRepository())
@@ -149,11 +153,11 @@ public class StatementProcessingJob {
      * @return Spring Batch Step for transaction file processing
      */
     @Bean
-    public Step transactionFileProcessingStep() {
+    public Step transactionFileProcessingStep() throws Exception {
         logger.info("Configuring transactionFileProcessingStep - COBOL 1000-TRNXFILE-PROC equivalent");
         
         return new StepBuilder("transactionFileProcessingStep", batchConfiguration.jobRepository())
-                .<Transaction, TransactionReportDTO>chunk(100, batchConfiguration.jobRepository().getTransactionManager())
+                .<Transaction, TransactionReportDTO>chunk(100, transactionManager)
                 .reader(transactionItemReader())
                 .processor(transactionItemProcessor())
                 .writer(transactionItemWriter())
@@ -177,11 +181,11 @@ public class StatementProcessingJob {
      * @return Spring Batch Step for cross-reference processing
      */
     @Bean
-    public Step crossReferenceProcessingStep() {
+    public Step crossReferenceProcessingStep() throws Exception {
         logger.info("Configuring crossReferenceProcessingStep - COBOL 2000-XREFFILE-PROC equivalent");
         
         return new StepBuilder("crossReferenceProcessingStep", batchConfiguration.jobRepository())
-                .<TransactionReportDTO, TransactionReportDTO>chunk(50, batchConfiguration.jobRepository().getTransactionManager())
+                .<TransactionReportDTO, TransactionReportDTO>chunk(50, transactionManager)
                 .reader(crossReferenceItemReader())
                 .processor(crossReferenceItemProcessor())
                 .writer(crossReferenceItemWriter())
@@ -206,11 +210,11 @@ public class StatementProcessingJob {
      * @return Spring Batch Step for customer file processing
      */
     @Bean
-    public Step customerFileProcessingStep() {
+    public Step customerFileProcessingStep() throws Exception {
         logger.info("Configuring customerFileProcessingStep - COBOL 3000-CUSTFILE-PROC equivalent");
         
         return new StepBuilder("customerFileProcessingStep", batchConfiguration.jobRepository())
-                .<TransactionReportDTO, TransactionReportDTO>chunk(75, batchConfiguration.jobRepository().getTransactionManager())
+                .<TransactionReportDTO, TransactionReportDTO>chunk(75, transactionManager)
                 .reader(customerItemReader())
                 .processor(customerItemProcessor())
                 .writer(customerItemWriter())
@@ -235,11 +239,11 @@ public class StatementProcessingJob {
      * @return Spring Batch Step for account file processing
      */
     @Bean
-    public Step accountFileProcessingStep() {
+    public Step accountFileProcessingStep() throws Exception {
         logger.info("Configuring accountFileProcessingStep - COBOL 4000-ACCTFILE-PROC equivalent");
         
         return new StepBuilder("accountFileProcessingStep", batchConfiguration.jobRepository())
-                .<TransactionReportDTO, TransactionReportDTO>chunk(50, batchConfiguration.jobRepository().getTransactionManager())
+                .<TransactionReportDTO, TransactionReportDTO>chunk(50, transactionManager)
                 .reader(accountItemReader())
                 .processor(accountItemProcessor())
                 .writer(accountItemWriter())
@@ -309,8 +313,8 @@ public class StatementProcessingJob {
                 );
                 
                 // Set additional processing context
-                reportDTO.setStartDate(DateUtils.formatDate(LocalDateTime.now().minusDays(30)));
-                reportDTO.setEndDate(DateUtils.formatDate(LocalDateTime.now()));
+                reportDTO.setStartDate(DateUtils.formatDateForDisplay(LocalDateTime.now().minusDays(30).toLocalDate()));
+                reportDTO.setEndDate(DateUtils.formatDateForDisplay(LocalDateTime.now().toLocalDate()));
                 reportDTO.setReportTimestamp(LocalDateTime.now());
                 
                 logger.debug("Processed transaction: {} -> {}", transaction.getTransactionId(), reportDTO);
@@ -1041,7 +1045,8 @@ public class StatementProcessingJob {
         @Override
         public void afterJob(org.springframework.batch.core.JobExecution jobExecution) {
             logger.info("StatementProcessingJob completed with status: {}", jobExecution.getStatus());
-            logger.info("Job execution time: {} ms", jobExecution.getEndTime().getTime() - jobExecution.getStartTime().getTime());
+            logger.info("Job execution time: {} ms", 
+                java.time.Duration.between(jobExecution.getStartTime(), jobExecution.getEndTime()).toMillis());
         }
     }
     
