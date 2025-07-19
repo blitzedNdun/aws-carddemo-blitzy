@@ -347,14 +347,15 @@ public class DatabaseConfig {
         liquibase.setShouldRun(liquibaseEnabled);
         
         // Performance optimization for large schema changes
-        liquibase.setRollbackFile("target/liquibase-rollback.sql");
+        liquibase.setRollbackFile(new java.io.File("target/liquibase-rollback.sql"));
         
         // Custom parameters for COBOL-to-PostgreSQL mapping
-        liquibase.setParameters(java.util.Map.of(
+        java.util.Map<String, String> parameters = java.util.Map.of(
             "cobol.precision", String.valueOf(COBOL_DECIMAL_PRECISION),
             "cobol.scale", String.valueOf(COBOL_DECIMAL_SCALE),
             "vsam.compatibility", "true"
-        ));
+        );
+        liquibase.setChangeLogParameters(parameters);
         
         return liquibase;
     }
