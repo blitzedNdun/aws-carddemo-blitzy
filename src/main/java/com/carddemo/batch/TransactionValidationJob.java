@@ -174,7 +174,7 @@ public class TransactionValidationJob {
      * @return Configured Spring Batch Job for transaction validation
      */
     @Bean
-    public Job transactionValidationJob() {
+    public Job transactionValidationJob() throws Exception {
         logger.info("Configuring TransactionValidationJob - equivalent to COBOL CBTRN01C");
         
         return new JobBuilder("transactionValidationJob", batchConfiguration.jobRepository())
@@ -189,7 +189,7 @@ public class TransactionValidationJob {
      * @return Configured Spring Batch Step for transaction validation
      */
     @Bean
-    public Step transactionValidationStep() {
+    public Step transactionValidationStep() throws Exception {
         logger.info("Configuring TransactionValidationStep with chunk size: {}", CHUNK_SIZE);
         
         return new StepBuilder("transactionValidationStep", batchConfiguration.jobRepository())
@@ -432,7 +432,7 @@ public class TransactionValidationJob {
      * @param card Validated card entity
      * @return Processed Transaction entity
      */
-    private Transaction processTransactionRecord(DailyTransactionRecord record, Account account, Card card) {
+    private Transaction processTransactionRecord(DailyTransactionRecord record, Account account, Card card) throws ValidationException {
         logger.debug("Processing transaction record: {}", record.getTransactionId());
         
         Transaction transaction = new Transaction();
