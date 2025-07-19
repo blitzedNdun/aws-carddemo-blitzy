@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.extern.slf4j.Slf4j;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.Data;
@@ -78,8 +79,7 @@ import lombok.Data;
 @Configuration
 @EnableRedisHttpSession(
     maxInactiveIntervalInSeconds = 1800, // 30 minutes - equivalent to CICS terminal timeout
-    redisNamespace = "carddemo:sessions",
-    cleanupCron = "0 */10 * * * *" // Clean up expired sessions every 10 minutes
+    redisNamespace = "carddemo:sessions"
 )
 @EnableConfigurationProperties(SessionConfig.SessionProperties.class)
 public class SessionConfig {
