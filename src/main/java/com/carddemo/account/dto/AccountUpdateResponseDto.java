@@ -163,6 +163,15 @@ public class AccountUpdateResponseDto {
     }
 
     /**
+     * Gets the success status of the account update operation.
+     * 
+     * @return true if update was successful, false otherwise
+     */
+    public Boolean getSuccess() {
+        return success;
+    }
+
+    /**
      * Sets the success status of the account update operation.
      * 
      * @param success true if update was successful, false otherwise
