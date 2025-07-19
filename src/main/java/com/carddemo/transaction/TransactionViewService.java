@@ -7,12 +7,14 @@ package com.carddemo.transaction;
 
 import com.carddemo.transaction.TransactionRepository;
 import com.carddemo.transaction.Transaction;
+import com.carddemo.transaction.TransactionDTO;
 import com.carddemo.transaction.TransactionViewResponse;
 import com.carddemo.common.dto.BaseResponseDto;
 import com.carddemo.common.dto.AuditInfo;
 import com.carddemo.account.dto.AccountDto;
 import com.carddemo.account.dto.CustomerDto;
 import com.carddemo.common.enums.TransactionType;
+import com.carddemo.common.enums.ValidationResult;
 import com.carddemo.common.util.ValidationUtils;
 import com.carddemo.account.AccountViewService;
 
@@ -155,7 +157,7 @@ public class TransactionViewService {
         
         try {
             // Validate transaction ID is not empty (equivalent to COBOL lines 147-152)
-            if (ValidationUtils.validateRequiredField(transactionId) != com.carddemo.common.enums.ValidationResult.VALID) {
+            if (ValidationUtils.validateRequiredField(transactionId) != ValidationResult.VALID) {
                 logger.warn("Empty transaction ID provided");
                 return TransactionViewResponse.createErrorResponse(ERROR_TRANSACTION_ID_EMPTY, auditInfo);
             }
@@ -395,7 +397,7 @@ public class TransactionViewService {
             // Create transaction DTO with all details (equivalent to COBOL screen population)
             TransactionDTO transactionDTO = new TransactionDTO();
             transactionDTO.setTransactionId(transaction.getTransactionId());
-            transactionDTO.setTransactionType(TransactionType.fromCode(transaction.getTransactionType()));
+            transactionDTO.setTransactionType(TransactionType.fromCode(transaction.getTransactionType()).orElse(null));
             transactionDTO.setCategoryCode(transaction.getCategoryCode());
             transactionDTO.setSource(transaction.getSource());
             transactionDTO.setDescription(transaction.getDescription());
@@ -430,7 +432,7 @@ public class TransactionViewService {
                         // Convert Customer entity to CustomerDto if available
                         if (account.getCustomer() != null) {
                             customerDto = new CustomerDto();
-                            customerDto.setCustomerId(account.getCustomer().getCustomerId());
+                            customerDto.setCustomerId(Long.parseLong(account.getCustomer().getCustomerId()));
                             customerDto.setFirstName(account.getCustomer().getFirstName());
                             customerDto.setLastName(account.getCustomer().getLastName());
                         }
