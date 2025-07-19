@@ -25,6 +25,7 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.data.RepositoryItemReader;
 import org.springframework.batch.item.data.builder.RepositoryItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -521,7 +522,8 @@ public class InterestCalculationJob {
      */
     private class InterestCalculationWriter implements ItemWriter<InterestCalculationResult> {
         @Override
-        public void write(List<? extends InterestCalculationResult> items) throws Exception {
+        public void write(Chunk<? extends InterestCalculationResult> chunk) throws Exception {
+            List<? extends InterestCalculationResult> items = chunk.getItems();
             logger.info("Writing {} interest calculation results", items.size());
 
             // Track account balance updates to avoid multiple updates per account
