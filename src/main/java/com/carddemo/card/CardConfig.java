@@ -547,7 +547,7 @@ public class CardConfig extends BaseConfig {
         cardTransactionManager.setValidateExistingTransaction(true);
         
         // Transaction manager identification for monitoring
-        cardTransactionManager.setBeanName("cardTransactionManager");
+        // Bean name is automatically set by Spring
         
         logger.info("Card transaction manager configured: timeout=45s, isolation=SERIALIZABLE, " +
                    "rollbackOnCommitFailure=true, nestedTransactions=true");
