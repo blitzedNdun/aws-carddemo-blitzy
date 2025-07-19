@@ -18,6 +18,9 @@
 package com.carddemo.card;
 
 import com.carddemo.common.dto.ValidationResult;
+import com.carddemo.common.exception.CardNotFoundException;
+import com.carddemo.common.exception.ValidationException;
+import com.carddemo.common.exception.UnauthorizedException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
