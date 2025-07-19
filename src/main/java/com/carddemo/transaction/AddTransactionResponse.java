@@ -146,6 +146,14 @@ public class AddTransactionResponse {
     private List<String> validationErrors;
 
     /**
+     * Correlation ID for request tracking and audit logging
+     * Unique identifier that links related log entries and API calls
+     * Provides traceability for debugging and monitoring
+     */
+    @JsonProperty("correlationId")
+    private String correlationId;
+
+    /**
      * Default constructor for AddTransactionResponse
      */
     public AddTransactionResponse() {
@@ -385,6 +393,24 @@ public class AddTransactionResponse {
     }
 
     /**
+     * Get the correlation ID for request tracking
+     * 
+     * @return correlation ID string
+     */
+    public String getCorrelationId() {
+        return correlationId;
+    }
+
+    /**
+     * Set the correlation ID for request tracking
+     * 
+     * @param correlationId correlation ID string to set
+     */
+    public void setCorrelationId(String correlationId) {
+        this.correlationId = correlationId;
+    }
+
+    /**
      * Check if this response represents a successful transaction
      * 
      * @return true if success flag is set and transaction ID is present
@@ -538,7 +564,8 @@ public class AddTransactionResponse {
                Objects.equals(currentBalance, that.currentBalance) &&
                Objects.equals(httpStatus, that.httpStatus) &&
                Objects.equals(errorCode, that.errorCode) &&
-               Objects.equals(validationErrors, that.validationErrors);
+               Objects.equals(validationErrors, that.validationErrors) &&
+               Objects.equals(correlationId, that.correlationId);
     }
 
     /**
@@ -549,7 +576,7 @@ public class AddTransactionResponse {
     @Override
     public int hashCode() {
         return Objects.hash(success, message, transactionId, confirmationTimestamp, transaction,
-                           previousBalance, currentBalance, httpStatus, errorCode, validationErrors);
+                           previousBalance, currentBalance, httpStatus, errorCode, validationErrors, correlationId);
     }
 
     /**
@@ -570,6 +597,7 @@ public class AddTransactionResponse {
                 ", httpStatus=" + httpStatus +
                 ", errorCode='" + errorCode + '\'' +
                 ", validationErrors=" + validationErrors +
+                ", correlationId='" + correlationId + '\'' +
                 '}';
     }
 }
