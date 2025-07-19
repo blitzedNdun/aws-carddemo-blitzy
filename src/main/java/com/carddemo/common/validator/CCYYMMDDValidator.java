@@ -8,7 +8,7 @@ package com.carddemo.common.validator;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
+import java.time.DateTimeException;
 
 /**
  * Jakarta Bean Validation implementation for CCYYMMDD date format validation.
@@ -75,12 +75,19 @@ public class CCYYMMDDValidator implements ConstraintValidator<ValidCCYYMMDD, Str
      */
     @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
+        // Debug output
+        System.out.println("DEBUG: Validating value: " + value);
+        System.out.println("DEBUG: allowNull = " + (annotation != null ? annotation.allowNull() : "annotation is null"));
+        System.out.println("DEBUG: allowBlank = " + (annotation != null ? annotation.allowBlank() : "annotation is null"));
+        
         // Handle null values based on annotation configuration
         // Equivalent to COBOL LOW-VALUES check in EDIT-YEAR-CCYY
         if (value == null) {
             if (annotation.allowNull()) {
+                System.out.println("DEBUG: Null value allowed, returning true");
                 return true;
             } else {
+                System.out.println("DEBUG: Null value not allowed, returning false");
                 buildCustomMessage(context, annotation.fieldName() + " must be supplied.");
                 return false;
             }
@@ -90,8 +97,10 @@ public class CCYYMMDDValidator implements ConstraintValidator<ValidCCYYMMDD, Str
         // Equivalent to COBOL SPACES check in EDIT-YEAR-CCYY
         if (value.trim().isEmpty()) {
             if (annotation.allowBlank()) {
+                System.out.println("DEBUG: Blank value allowed, returning true");
                 return true;
             } else {
+                System.out.println("DEBUG: Blank value not allowed, returning false");
                 buildCustomMessage(context, annotation.fieldName() + " must be supplied.");
                 return false;
             }
@@ -99,15 +108,19 @@ public class CCYYMMDDValidator implements ConstraintValidator<ValidCCYYMMDD, Str
         
         // Validate format: exactly 8 characters
         if (value.length() != 8) {
+            System.out.println("DEBUG: Length check failed. Length = " + value.length());
             buildCustomMessage(context, annotation.fieldName() + " must be 8 characters in CCYYMMDD format.");
             return false;
         }
+        System.out.println("DEBUG: Length check passed");
         
         // Validate numeric format - equivalent to COBOL NUMERIC check
         if (!ValidationConstants.NUMERIC_PATTERN.matcher(value).matches()) {
+            System.out.println("DEBUG: Numeric pattern check failed");
             buildCustomMessage(context, annotation.fieldName() + " must be 8 digit number.");
             return false;
         }
+        System.out.println("DEBUG: Numeric pattern check passed");
         
         // Extract date components
         String centuryStr = value.substring(0, 2);
@@ -122,37 +135,52 @@ public class CCYYMMDDValidator implements ConstraintValidator<ValidCCYYMMDD, Str
             int day = Integer.parseInt(dayStr);
             
             // Validate century - equivalent to THIS-CENTURY/LAST-CENTURY check
+            System.out.println("DEBUG: Validating century = " + century);
             if (!validateCenturyAndYear(century, context)) {
+                System.out.println("DEBUG: Century validation failed");
                 return false;
             }
+            System.out.println("DEBUG: Century validation passed");
             
             // Validate month - equivalent to WS-VALID-MONTH check
+            System.out.println("DEBUG: Validating month = " + month);
             if (!validateMonth(month, context)) {
+                System.out.println("DEBUG: Month validation failed");
                 return false;
             }
+            System.out.println("DEBUG: Month validation passed");
             
             // Validate day - equivalent to WS-VALID-DAY check
+            System.out.println("DEBUG: Validating day = " + day);
             if (!validateDay(day, context)) {
+                System.out.println("DEBUG: Day validation failed");
                 return false;
             }
+            System.out.println("DEBUG: Day validation passed");
             
             // Calculate full year for cross-validation
             int fullYear = (century * 100) + year;
             
             // Cross-validate day/month/year - equivalent to EDIT-DAY-MONTH-YEAR
+            System.out.println("DEBUG: Cross-validating day=" + day + ", month=" + month + ", fullYear=" + fullYear);
             if (!validateDayMonthYear(day, month, fullYear, context)) {
+                System.out.println("DEBUG: Cross-validation failed");
                 return false;
             }
+            System.out.println("DEBUG: Cross-validation passed");
             
             // Final validation using Java LocalDate to catch any edge cases
             // Equivalent to COBOL CEEDAYS API call in EDIT-DATE-LE
             try {
                 LocalDate.of(fullYear, month, day);
-            } catch (DateTimeParseException e) {
+                System.out.println("DEBUG: LocalDate validation passed");
+            } catch (DateTimeException e) {
+                System.out.println("DEBUG: LocalDate validation failed: " + e.getMessage());
                 buildCustomMessage(context, annotation.fieldName() + " validation error: Invalid date.");
                 return false;
             }
             
+            System.out.println("DEBUG: All validations passed, returning true");
             return true;
             
         } catch (NumberFormatException e) {
