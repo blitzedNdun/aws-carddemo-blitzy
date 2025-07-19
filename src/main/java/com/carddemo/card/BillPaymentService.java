@@ -208,7 +208,7 @@ public class BillPaymentService {
         logger.debug("Validating payment request for account: {}", request.getAccountId());
 
         // Validate account ID (equivalent to COBOL: ACTIDINI OF COBIL0AI = SPACES OR LOW-VALUES)
-        if (!ValidationUtils.validateAccountNumber(request.getAccountId())) {
+        if (!ValidationUtils.validateAccountNumber(request.getAccountId()).isValid()) {
             throw new IllegalArgumentException("Account ID cannot be empty...");
         }
 
@@ -238,7 +238,7 @@ public class BillPaymentService {
         }
 
         // Validate account balance for payment processing
-        if (!ValidationUtils.validateBalance(account.getCurrentBalance())) {
+        if (!ValidationUtils.validateBalance(account.getCurrentBalance()).isValid()) {
             throw new IllegalArgumentException("Invalid account balance for payment processing");
         }
 
