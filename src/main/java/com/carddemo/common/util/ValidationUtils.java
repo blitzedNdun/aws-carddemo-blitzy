@@ -289,6 +289,40 @@ public final class ValidationUtils {
         logger.debug("Numeric field validation successful: {}", cleanValue);
         return ValidationResult.VALID;
     }
+
+    /**
+     * Validates that a field contains only numeric characters and has the expected length.
+     * Combines numeric validation with length validation for convenience.
+     * 
+     * @param fieldValue the field value to validate
+     * @param expectedLength the expected length of the field
+     * @return true if field is numeric and has the expected length, false otherwise
+     */
+    public static boolean validateNumericField(String fieldValue, int expectedLength) {
+        logger.debug("Validating numeric field with length: {} (expected: {})", fieldValue, expectedLength);
+        
+        if (StringUtils.isBlank(fieldValue)) {
+            logger.warn("Numeric field with length validation failed: blank field");
+            return false;
+        }
+        
+        String cleanValue = StringUtils.trim(fieldValue);
+        
+        // Check length first
+        if (cleanValue.length() != expectedLength) {
+            logger.warn("Numeric field length validation failed: expected {}, got {}", expectedLength, cleanValue.length());
+            return false;
+        }
+        
+        // Check if field contains only digits
+        if (!ValidationConstants.NUMERIC_PATTERN.matcher(cleanValue).matches()) {
+            logger.warn("Numeric field validation failed: non-numeric characters found");
+            return false;
+        }
+        
+        logger.debug("Numeric field validation with length passed");
+        return true;
+    }
     
     /**
      * Validates date field format and business rules.
