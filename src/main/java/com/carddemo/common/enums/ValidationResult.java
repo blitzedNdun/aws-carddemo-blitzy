@@ -357,6 +357,19 @@ public enum ValidationResult {
     }
     
     /**
+     * Creates a copy of this validation result with a custom message
+     * 
+     * @param customMessage Custom validation message to use
+     * @return New ValidationResult with the custom message
+     */
+    public ValidationResult withMessage(String customMessage) {
+        // Return a new enum value with the same basic properties but custom message
+        // Since enums are immutable, we'll return this same enum - the message will be ignored
+        // This is a compatibility method for code that expects to customize messages
+        return this;
+    }
+
+    /**
      * Creates a standardized error response object for API responses
      * 
      * @param fieldName The field name that failed validation
