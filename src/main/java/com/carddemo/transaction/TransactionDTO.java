@@ -375,4 +375,30 @@ public class TransactionDTO {
     public void setProcessingTimestamp(LocalDateTime processingTimestamp) {
         this.processingTimestamp = processingTimestamp;
     }
+
+    /**
+     * Validates the transaction data for completeness and consistency.
+     * 
+     * @return true if all required fields are present and valid, false otherwise
+     */
+    public boolean isValid() {
+        // Check required fields
+        if (transactionId == null || transactionId.trim().isEmpty()) {
+            return false;
+        }
+        if (transactionType == null) {
+            return false;
+        }
+        if (categoryCode == null || categoryCode.trim().isEmpty()) {
+            return false;
+        }
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) < 0) {
+            return false;
+        }
+        if (cardNumber == null || cardNumber.trim().isEmpty()) {
+            return false;
+        }
+        // All basic validations passed
+        return true;
+    }
 }
