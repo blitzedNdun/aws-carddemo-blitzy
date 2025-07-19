@@ -1,0 +1,1516 @@
+{
+  "APISecurityTestScenarios": {
+    "authentication_bypass_tests": {
+      "description": "Comprehensive authentication bypass testing scenarios validating JWT token validation and Spring Security integration",
+      "test_categories": [
+        {
+          "name": "Missing Authorization Header Tests",
+          "tests": [
+            {
+              "test_id": "AUTH_BYPASS_001",
+              "name": "Access protected endpoint without Authorization header",
+              "method": "GET",
+              "endpoint": "/api/account/view/12345",
+              "headers": {
+                "Content-Type": "application/json"
+              },
+              "expected_status": 401,
+              "expected_response": {
+                "error": "Authentication required",
+                "message": "Invalid or missing authentication credentials",
+                "status": 401
+              },
+              "validation_rules": [
+                "Response must contain 401 status code",
+                "Error message must indicate missing authentication",
+                "SecurityGatewayFilter must reject request"
+              ]
+            },
+            {
+              "test_id": "AUTH_BYPASS_002", 
+              "name": "Access admin endpoint without Authorization header",
+              "method": "GET",
+              "endpoint": "/api/admin/users",
+              "headers": {
+                "Content-Type": "application/json"
+              },
+              "expected_status": 401,
+              "expected_response": {
+                "error": "Authentication required",
+                "message": "Invalid or missing authentication credentials",
+                "status": 401
+              }
+            }
+          ]
+        },
+        {
+          "name": "Malformed Authorization Header Tests",
+          "tests": [
+            {
+              "test_id": "AUTH_BYPASS_003",
+              "name": "Invalid Bearer token format",
+              "method": "GET",
+              "endpoint": "/api/account/view/12345",
+              "headers": {
+                "Authorization": "Bearer invalid-token-format",
+                "Content-Type": "application/json"
+              },
+              "expected_status": 401,
+              "expected_response": {
+                "error": "Authentication required",
+                "message": "Invalid or missing authentication credentials",
+                "status": 401
+              },
+              "validation_rules": [
+                "JWT decoder must reject malformed token",
+                "Spring Security filter chain must return 401",
+                "SecurityGatewayFilter validateJwtToken method must fail"
+              ]
+            },
+            {
+              "test_id": "AUTH_BYPASS_004",
+              "name": "Authorization header without Bearer prefix",
+              "method": "GET", 
+              "endpoint": "/api/account/view/12345",
+              "headers": {
+                "Authorization": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "Content-Type": "application/json"
+              },
+              "expected_status": 401,
+              "expected_response": {
+                "error": "Authentication required",
+                "message": "Invalid or missing authentication credentials",
+                "status": 401
+              }
+            }
+          ]
+        },
+        {
+          "name": "Expired Token Tests",
+          "tests": [
+            {
+              "test_id": "AUTH_BYPASS_005",
+              "name": "Access with expired JWT token",
+              "method": "GET",
+              "endpoint": "/api/account/view/12345",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.expired_token.token}",
+                "Content-Type": "application/json"
+              },
+              "expected_status": 401,
+              "expected_response": {
+                "error": "Authentication required",
+                "message": "Invalid or missing authentication credentials",
+                "status": 401
+              },
+              "validation_rules": [
+                "JWT decoder must validate expiration time",
+                "Expired token must be rejected by Spring Security",
+                "SecurityGatewayFilter must log JWT_TOKEN_VALIDATION_FAILED event"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Invalid Signature Tests",
+          "tests": [
+            {
+              "test_id": "AUTH_BYPASS_006",
+              "name": "Access with tampered JWT signature",
+              "method": "GET",
+              "endpoint": "/api/account/view/12345",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.invalid_signature_token.token}",
+                "Content-Type": "application/json"
+              },
+              "expected_status": 401,
+              "expected_response": {
+                "error": "Authentication required",
+                "message": "Invalid or missing authentication credentials", 
+                "status": 401
+              },
+              "validation_rules": [
+                "JWT signature verification must fail",
+                "Spring Security OAuth2 Resource Server must reject token",
+                "Security event must be logged for signature tampering"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+
+    "authorization_flow_tests": {
+      "description": "Role-based authorization testing validating Spring Security @PreAuthorize annotations and method-level security",
+      "test_categories": [
+        {
+          "name": "Admin Role Authorization Tests",
+          "tests": [
+            {
+              "test_id": "AUTHZ_001",
+              "name": "Admin user accessing admin-only endpoint",
+              "method": "GET",
+              "endpoint": "/api/admin/users",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_admin_token.token}",
+                "Content-Type": "application/json"
+              },
+              "expected_status": 200,
+              "validation_rules": [
+                "Admin role must grant access to admin endpoints",
+                "@PreAuthorize('hasRole(ADMIN)') must evaluate to true",
+                "SecurityGatewayFilter checkAuthorization must return true",
+                "Spring Security context must contain ROLE_ADMIN authority"
+              ]
+            },
+            {
+              "test_id": "AUTHZ_002",
+              "name": "Admin user accessing user management operations",
+              "method": "POST",
+              "endpoint": "/api/users/create",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_admin_token.token}",
+                "Content-Type": "application/json"
+              },
+              "body": {
+                "username": "testuser001",
+                "password": "testpass123",
+                "userType": "U",
+                "firstName": "Test",
+                "lastName": "User"
+              },
+              "expected_status": 201,
+              "validation_rules": [
+                "Admin role must allow user creation",
+                "ROLE_ADMIN authority must grant access",
+                "User management service must validate admin permissions"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "User Role Authorization Tests", 
+          "tests": [
+            {
+              "test_id": "AUTHZ_003",
+              "name": "Regular user accessing user endpoint",
+              "method": "GET",
+              "endpoint": "/api/account/view/12345",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_user_token.token}",
+                "Content-Type": "application/json"
+              },
+              "expected_status": 200,
+              "validation_rules": [
+                "User role must grant access to user endpoints",
+                "@PreAuthorize('hasAnyRole(USER,ADMIN)') must evaluate to true",
+                "ROLE_USER authority must be sufficient for access"
+              ]
+            },
+            {
+              "test_id": "AUTHZ_004",
+              "name": "Regular user denied admin endpoint access",
+              "method": "GET",
+              "endpoint": "/api/admin/users",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_user_token.token}",
+                "Content-Type": "application/json"
+              },
+              "expected_status": 403,
+              "expected_response": {
+                "error": "Access denied",
+                "message": "Insufficient privileges to access this resource",
+                "status": 403
+              },
+              "validation_rules": [
+                "User role must be denied admin endpoint access",
+                "@PreAuthorize('hasRole(ADMIN)') must evaluate to false",
+                "SecurityGatewayFilter must return authorization failure",
+                "Spring Security must log AUTHORIZATION_FAILURE event"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Cross-Service Authorization Tests",
+          "tests": [
+            {
+              "test_id": "AUTHZ_005",
+              "name": "Service-to-service JWT propagation",
+              "method": "GET",
+              "endpoint": "/api/account/view/12345",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_admin_token.token}",
+                "X-Correlation-ID": "service-test-12345",
+                "Content-Type": "application/json"
+              },
+              "expected_status": 200,
+              "validation_rules": [
+                "JWT token must propagate across microservice boundaries",
+                "Spring Cloud Gateway must forward security context",
+                "Correlation ID must be preserved for distributed tracing",
+                "Downstream services must validate JWT claims"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+
+    "rate_limiting_tests": {
+      "description": "Redis-backed rate limiting validation testing Spring Cloud Gateway rate limiting policies",
+      "test_categories": [
+        {
+          "name": "User Rate Limiting Tests",
+          "tests": [
+            {
+              "test_id": "RATE_001",
+              "name": "Regular user rate limit enforcement",
+              "method": "GET",
+              "endpoint": "/api/account/view/12345",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_user_token.token}",
+                "Content-Type": "application/json"
+              },
+              "test_configuration": {
+                "request_count": 101,
+                "time_window_seconds": 60,
+                "expected_limit": 100
+              },
+              "expected_status_after_limit": 429,
+              "expected_response_after_limit": {
+                "error": "Rate limit exceeded",
+                "message": "Too many requests. Please try again later.",
+                "status": 429
+              },
+              "validation_rules": [
+                "Redis rate limiting key must be 'rate_limit:user:USER001'",
+                "100 requests per minute limit must be enforced",
+                "Request 101 must return 429 Too Many Requests",
+                "Rate limit headers must be included in response",
+                "SecurityGatewayFilter enforceRateLimit must track user requests"
+              ],
+              "redis_validation": {
+                "key_pattern": "rate_limit:user:USER001",
+                "expected_value": 100,
+                "ttl_seconds": 60
+              }
+            },
+            {
+              "test_id": "RATE_002", 
+              "name": "Admin user higher rate limit",
+              "method": "GET",
+              "endpoint": "/api/admin/users",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_admin_token.token}",
+                "Content-Type": "application/json"
+              },
+              "test_configuration": {
+                "request_count": 501,
+                "time_window_seconds": 60,
+                "expected_limit": 500
+              },
+              "expected_status_after_limit": 429,
+              "validation_rules": [
+                "Admin users must have 500 requests per minute limit",
+                "Redis key must be 'rate_limit:user:ADMIN001'",
+                "Higher limit must be enforced for admin user type",
+                "Rate limiting logic must differentiate by user type"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Endpoint-Specific Rate Limiting Tests",
+          "tests": [
+            {
+              "test_id": "RATE_003",
+              "name": "Endpoint-specific rate limiting",
+              "method": "POST",
+              "endpoint": "/api/transaction/add",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_user_token.token}",
+                "Content-Type": "application/json"
+              },
+              "body": {
+                "accountId": "12345",
+                "amount": "100.00",
+                "transactionType": "PURCHASE"
+              },
+              "test_configuration": {
+                "request_count": 1001,
+                "time_window_seconds": 60,
+                "expected_limit": 1000
+              },
+              "expected_status_after_limit": 429,
+              "validation_rules": [
+                "Endpoint-specific limit of 1000 requests per minute",
+                "Redis key must be 'rate_limit:endpoint:POST:/api/transaction/add'",
+                "SecurityGatewayFilter must enforce endpoint limits",
+                "Critical transaction endpoints must have dedicated limits"
+              ],
+              "redis_validation": {
+                "key_pattern": "rate_limit:endpoint:POST:/api/transaction/add", 
+                "expected_value": 1000,
+                "ttl_seconds": 60
+              }
+            }
+          ]
+        },
+        {
+          "name": "Global Rate Limiting Tests",
+          "tests": [
+            {
+              "test_id": "RATE_004",
+              "name": "Global system rate limiting",
+              "method": "GET",
+              "endpoint": "/api/account/view/12345",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_user_token.token}",
+                "Content-Type": "application/json"
+              },
+              "test_configuration": {
+                "concurrent_users": 200,
+                "requests_per_user": 60,
+                "total_requests": 12000,
+                "global_limit": 10000
+              },
+              "expected_status_after_limit": 429,
+              "validation_rules": [
+                "Global rate limit of 10,000 requests per minute",
+                "Redis key must be 'rate_limit:global'",
+                "System protection against DDoS attacks",
+                "All users affected when global limit exceeded"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Rate Limit Recovery Tests",
+          "tests": [
+            {
+              "test_id": "RATE_005",
+              "name": "Rate limit window reset",
+              "method": "GET",
+              "endpoint": "/api/account/view/12345",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_user_token.token}",
+                "Content-Type": "application/json"
+              },
+              "test_configuration": {
+                "initial_requests": 100,
+                "wait_seconds": 61,
+                "follow_up_requests": 50
+              },
+              "expected_status_after_reset": 200,
+              "validation_rules": [
+                "Rate limit counters must reset after window expiration",
+                "Redis TTL must automatically expire keys",
+                "Normal requests must be allowed after window reset",
+                "SecurityGatewayFilter must allow requests after TTL expiration"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+
+    "jwt_token_validation_tests": {
+      "description": "Comprehensive JWT token validation testing Spring Security OAuth2 Resource Server configuration",
+      "test_categories": [
+        {
+          "name": "Token Structure Validation Tests",
+          "tests": [
+            {
+              "test_id": "JWT_001",
+              "name": "Valid JWT token acceptance",
+              "method": "GET",
+              "endpoint": "/api/account/view/12345",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_user_token.token}",
+                "Content-Type": "application/json"
+              },
+              "expected_status": 200,
+              "validation_rules": [
+                "Valid JWT token must be accepted by Spring Security",
+                "JWT decoder must successfully parse token",
+                "All required claims must be present and valid",
+                "SecurityGatewayFilter validateJwtToken must return Mono<Jwt>"
+              ]
+            },
+            {
+              "test_id": "JWT_002",
+              "name": "Malformed JWT token rejection",
+              "method": "GET", 
+              "endpoint": "/api/account/view/12345",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.malformed_token.token}",
+                "Content-Type": "application/json"
+              },
+              "expected_status": 401,
+              "validation_rules": [
+                "Malformed JWT must be rejected",
+                "JWT decoder must throw parsing exception",
+                "SecurityGatewayFilter must handle parsing errors",
+                "Security event JWT_TOKEN_INVALID_FORMAT must be logged"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Claims Validation Tests",
+          "tests": [
+            {
+              "test_id": "JWT_003",
+              "name": "Required claims presence validation",
+              "method": "GET",
+              "endpoint": "/api/account/view/12345", 
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_admin_token.token}",
+                "Content-Type": "application/json"
+              },
+              "expected_status": 200,
+              "expected_claims": {
+                "user_id": "ADMIN001",
+                "user_type": "A", 
+                "roles": ["ROLE_ADMIN", "ROLE_USER"],
+                "session_id": "admin-session-12345",
+                "token_type": "access"
+              },
+              "validation_rules": [
+                "user_id claim must be present and non-empty",
+                "user_type claim must be 'A' or 'U'",
+                "roles claim must contain valid Spring Security roles",
+                "session_id claim must be present for Redis correlation",
+                "SecurityGatewayFilter must validate all required claims"
+              ]
+            },
+            {
+              "test_id": "JWT_004",
+              "name": "Invalid user type rejection",
+              "method": "GET",
+              "endpoint": "/api/account/view/12345",
+              "test_token": {
+                "header": {
+                  "alg": "HS256",
+                  "typ": "JWT"
+                },
+                "payload": {
+                  "user_id": "INVALID001",
+                  "user_type": "X",
+                  "roles": ["INVALID_ROLE"],
+                  "sub": "INVALID001",
+                  "iat": 1705660800,
+                  "exp": 1705662600
+                }
+              },
+              "expected_status": 401,
+              "validation_rules": [
+                "Invalid user_type must be rejected",
+                "Only 'A' and 'U' user types must be accepted",
+                "SecurityGatewayFilter validateJwtToken must throw SecurityException",
+                "JWT_TOKEN_INVALID_USER_TYPE event must be logged"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Token Expiration Tests",
+          "tests": [
+            {
+              "test_id": "JWT_005",
+              "name": "Token expiration enforcement",
+              "method": "GET",
+              "endpoint": "/api/account/view/12345",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.30_minute_expiration_samples[2].token}",
+                "Content-Type": "application/json"
+              },
+              "expected_status": 401,
+              "validation_rules": [
+                "Expired tokens must be rejected",
+                "JWT decoder must validate exp claim",
+                "Spring Security must deny access for expired tokens",
+                "Token validation must check current time against exp claim"
+              ]
+            },
+            {
+              "test_id": "JWT_006",
+              "name": "Near expiration warning",
+              "method": "GET",
+              "endpoint": "/api/account/view/12345",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.30_minute_expiration_samples[1].token}",
+                "Content-Type": "application/json"
+              },
+              "expected_status": 200,
+              "expected_headers": {
+                "X-Token-Expires-Soon": "true",
+                "X-Token-Remaining-Seconds": "300"
+              },
+              "validation_rules": [
+                "Tokens expiring soon must still be accepted",
+                "Warning headers should be included for near-expiration",
+                "Client should be notified of upcoming expiration"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+
+    "endpoint_protection_tests": {
+      "description": "Comprehensive endpoint protection validation for all 24 converted CICS transactions",
+      "test_categories": [
+        {
+          "name": "Authentication Service Endpoints",
+          "base_path": "/api/auth",
+          "tests": [
+            {
+              "test_id": "ENDPOINT_001",
+              "name": "Login endpoint public access",
+              "method": "POST",
+              "endpoint": "/api/auth/login",
+              "headers": {
+                "Content-Type": "application/json"
+              },
+              "body": {
+                "username": "USER001",
+                "password": "testpass123"
+              },
+              "expected_status": 200,
+              "validation_rules": [
+                "Login endpoint must be publicly accessible",
+                "No authentication required for login",
+                "SecurityGatewayFilter isPublicEndpoint must return true"
+              ]
+            },
+            {
+              "test_id": "ENDPOINT_002", 
+              "name": "Logout endpoint authenticated access",
+              "method": "POST",
+              "endpoint": "/api/auth/logout",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_user_token.token}",
+                "Content-Type": "application/json"
+              },
+              "expected_status": 200,
+              "validation_rules": [
+                "Logout endpoint requires authentication",
+                "Valid JWT token must be provided",
+                "Session must be invalidated in Redis"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Account Management Endpoints",
+          "base_path": "/api/account",
+          "tests": [
+            {
+              "test_id": "ENDPOINT_003",
+              "name": "Account view requires authentication",
+              "method": "GET",
+              "endpoint": "/api/account/view/{accountId}",
+              "path_params": {
+                "accountId": "12345"
+              },
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_user_token.token}",
+                "Content-Type": "application/json"
+              },
+              "expected_status": 200,
+              "validation_rules": [
+                "Account endpoints require USER or ADMIN role",
+                "@PreAuthorize('hasAnyRole(USER,ADMIN)') must be enforced",
+                "Spring Security must validate role before access"
+              ]
+            },
+            {
+              "test_id": "ENDPOINT_004",
+              "name": "Account update requires authentication", 
+              "method": "PUT",
+              "endpoint": "/api/account/update/{accountId}",
+              "path_params": {
+                "accountId": "12345"
+              },
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_user_token.token}",
+                "Content-Type": "application/json"
+              },
+              "body": {
+                "customerName": "Updated Name",
+                "phoneNumber": "555-0123"
+              },
+              "expected_status": 200,
+              "validation_rules": [
+                "Account update requires authentication",
+                "Optimistic locking must be enforced",
+                "User must have permission to update account"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Card Management Endpoints",
+          "base_path": "/api/card",
+          "tests": [
+            {
+              "test_id": "ENDPOINT_005",
+              "name": "Card list requires authentication",
+              "method": "GET",
+              "endpoint": "/api/card/list/{accountId}",
+              "path_params": {
+                "accountId": "12345"
+              },
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_user_token.token}",
+                "Content-Type": "application/json"
+              },
+              "expected_status": 200,
+              "validation_rules": [
+                "Card endpoints require USER or ADMIN role",
+                "Pagination parameters must be validated",
+                "Role-based filtering must be applied"
+              ]
+            },
+            {
+              "test_id": "ENDPOINT_006",
+              "name": "Card update requires authentication",
+              "method": "PUT", 
+              "endpoint": "/api/card/update/{cardId}",
+              "path_params": {
+                "cardId": "1234567890123456"
+              },
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_user_token.token}",
+                "Content-Type": "application/json"
+              },
+              "body": {
+                "cardStatus": "ACTIVE",
+                "creditLimit": "5000.00"
+              },
+              "expected_status": 200,
+              "validation_rules": [
+                "Card update requires authentication",
+                "Card number validation must be enforced",
+                "Credit limit updates require authorization"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Transaction Processing Endpoints",
+          "base_path": "/api/transaction",
+          "tests": [
+            {
+              "test_id": "ENDPOINT_007",
+              "name": "Transaction add requires authentication",
+              "method": "POST",
+              "endpoint": "/api/transaction/add",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_user_token.token}",
+                "Content-Type": "application/json"
+              },
+              "body": {
+                "accountId": "12345",
+                "cardNumber": "1234567890123456", 
+                "amount": "100.00",
+                "transactionType": "PURCHASE",
+                "merchantName": "Test Merchant"
+              },
+              "expected_status": 201,
+              "validation_rules": [
+                "Transaction endpoints require USER or ADMIN role",
+                "Real-time balance updates must be validated",
+                "Audit trail must be created for transaction"
+              ]
+            },
+            {
+              "test_id": "ENDPOINT_008",
+              "name": "Transaction history requires authentication",
+              "method": "GET",
+              "endpoint": "/api/transaction/history/{accountId}",
+              "path_params": {
+                "accountId": "12345"
+              },
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_user_token.token}",
+                "Content-Type": "application/json"
+              },
+              "expected_status": 200,
+              "validation_rules": [
+                "Transaction history requires authentication",
+                "Date range parameters must be validated",
+                "Pagination must be supported"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Admin-Only Endpoints",
+          "base_path": "/api/admin",
+          "tests": [
+            {
+              "test_id": "ENDPOINT_009",
+              "name": "User management requires admin role",
+              "method": "GET",
+              "endpoint": "/api/admin/users",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_admin_token.token}",
+                "Content-Type": "application/json"
+              },
+              "expected_status": 200,
+              "validation_rules": [
+                "Admin endpoints require ADMIN role only",
+                "@PreAuthorize('hasRole(ADMIN)') must be enforced",
+                "Regular users must be denied access"
+              ]
+            },
+            {
+              "test_id": "ENDPOINT_010",
+              "name": "System configuration requires admin role", 
+              "method": "PUT",
+              "endpoint": "/api/admin/config",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_admin_token.token}",
+                "Content-Type": "application/json"
+              },
+              "body": {
+                "configKey": "system.timeout",
+                "configValue": "300"
+              },
+              "expected_status": 200,
+              "validation_rules": [
+                "System configuration requires ADMIN role",
+                "Configuration changes must be validated",
+                "Audit trail must be maintained for config changes"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Batch Processing Endpoints",
+          "base_path": "/api/batch",
+          "tests": [
+            {
+              "test_id": "ENDPOINT_011",
+              "name": "Interest calculation job requires admin role",
+              "method": "POST",
+              "endpoint": "/api/batch/interest-calculation",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_admin_token.token}",
+                "Content-Type": "application/json"
+              },
+              "body": {
+                "jobParameters": {
+                  "runDate": "2024-01-19",
+                  "accountFilter": "ALL"
+                }
+              },
+              "expected_status": 202,
+              "validation_rules": [
+                "Batch job triggers require ADMIN role",
+                "Spring Batch JobLauncher integration required",
+                "Job parameter validation must be enforced"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+
+    "security_header_tests": {
+      "description": "Security header validation ensuring proper HTTP security headers are enforced",
+      "test_categories": [
+        {
+          "name": "HTTPS Enforcement Tests",
+          "tests": [
+            {
+              "test_id": "HEADER_001",
+              "name": "Strict-Transport-Security header validation",
+              "method": "GET",
+              "endpoint": "/api/account/view/12345",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_user_token.token}",
+                "Content-Type": "application/json"
+              },
+              "expected_status": 200,
+              "expected_headers": {
+                "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+                "X-Content-Type-Options": "nosniff",
+                "X-Frame-Options": "DENY",
+                "X-XSS-Protection": "1; mode=block"
+              },
+              "validation_rules": [
+                "HSTS header must be present for HTTPS enforcement",
+                "Content type sniffing must be disabled",
+                "Clickjacking protection must be enabled",
+                "XSS protection must be enforced"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Content Security Policy Tests",
+          "tests": [
+            {
+              "test_id": "HEADER_002",
+              "name": "CSP header validation",
+              "method": "GET",
+              "endpoint": "/api/account/view/12345",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_user_token.token}",
+                "Content-Type": "application/json"
+              },
+              "expected_status": 200,
+              "expected_headers": {
+                "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'"
+              },
+              "validation_rules": [
+                "CSP header must restrict resource loading",
+                "Script sources must be limited to self",
+                "Style sources must include unsafe-inline for CSS",
+                "Content injection attacks must be prevented"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+
+    "csrf_protection_tests": {
+      "description": "CSRF protection validation for state-changing operations",
+      "test_categories": [
+        {
+          "name": "State-Changing Operations CSRF Tests",
+          "tests": [
+            {
+              "test_id": "CSRF_001",
+              "name": "POST request CSRF protection",
+              "method": "POST",
+              "endpoint": "/api/transaction/add",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_user_token.token}",
+                "Content-Type": "application/json"
+              },
+              "body": {
+                "accountId": "12345",
+                "amount": "100.00",
+                "transactionType": "PURCHASE"
+              },
+              "expected_status": 201,
+              "validation_rules": [
+                "CSRF token must be validated for state-changing operations",
+                "JWT token provides CSRF protection through authorization",
+                "Double-submit cookie pattern implementation",
+                "Spring Security CSRF protection must be enabled"
+              ]
+            },
+            {
+              "test_id": "CSRF_002",
+              "name": "PUT request CSRF protection",
+              "method": "PUT",
+              "endpoint": "/api/account/update/12345",
+              "headers": {
+                "Authorization": "Bearer ${jwt-tokens.valid_user_token.token}",
+                "Content-Type": "application/json"
+              },
+              "body": {
+                "customerName": "Updated Name",
+                "phoneNumber": "555-0123"
+              },
+              "expected_status": 200,
+              "validation_rules": [
+                "PUT requests must include CSRF protection",
+                "JWT authorization provides state-changing operation protection",
+                "Request origin validation must be enforced"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+
+    "cors_validation_tests": {
+      "description": "Cross-Origin Resource Sharing (CORS) configuration validation",
+      "test_categories": [
+        {
+          "name": "CORS Policy Tests",
+          "tests": [
+            {
+              "test_id": "CORS_001",
+              "name": "Preflight OPTIONS request validation",
+              "method": "OPTIONS",
+              "endpoint": "/api/account/view/12345",
+              "headers": {
+                "Origin": "https://carddemo.example.com",
+                "Access-Control-Request-Method": "GET",
+                "Access-Control-Request-Headers": "Authorization, Content-Type"
+              },
+              "expected_status": 200,
+              "expected_headers": {
+                "Access-Control-Allow-Origin": "https://carddemo.example.com",
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                "Access-Control-Allow-Headers": "Authorization, Content-Type, X-Correlation-ID",
+                "Access-Control-Allow-Credentials": "true",
+                "Access-Control-Max-Age": "3600"
+              },
+              "validation_rules": [
+                "CORS preflight requests must be handled properly",
+                "Allowed origins must be restricted to known domains",
+                "Authorization header must be allowed for JWT tokens",
+                "Credentials must be allowed for cookie-based auth"
+              ]
+            },
+            {
+              "test_id": "CORS_002",
+              "name": "Cross-origin request validation",
+              "method": "GET",
+              "endpoint": "/api/account/view/12345",
+              "headers": {
+                "Origin": "https://carddemo.example.com",
+                "Authorization": "Bearer ${jwt-tokens.valid_user_token.token}",
+                "Content-Type": "application/json"
+              },
+              "expected_status": 200,
+              "expected_headers": {
+                "Access-Control-Allow-Origin": "https://carddemo.example.com",
+                "Access-Control-Allow-Credentials": "true"
+              },
+              "validation_rules": [
+                "Cross-origin requests must include proper CORS headers",
+                "JWT authentication must work with CORS",
+                "Response headers must allow credential sharing"
+              ]
+            },
+            {
+              "test_id": "CORS_003",
+              "name": "Unauthorized origin rejection",
+              "method": "GET",
+              "endpoint": "/api/account/view/12345",
+              "headers": {
+                "Origin": "https://malicious.example.com",
+                "Authorization": "Bearer ${jwt-tokens.valid_user_token.token}",
+                "Content-Type": "application/json"
+              },
+              "expected_status": 403,
+              "validation_rules": [
+                "Unauthorized origins must be rejected",
+                "CORS policy must restrict allowed origins",
+                "Malicious cross-origin requests must be blocked"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "RateLimitingTestCases": {
+    "description": "Comprehensive rate limiting test scenarios using Redis-backed enforcement",
+    "redis_backed_rate_limiting": {
+      "test_scenarios": [
+        {
+          "scenario_id": "REDIS_RATE_001",
+          "name": "Redis sliding window rate limiting",
+          "configuration": {
+            "redis_cluster": "testcontainers-redis:7-alpine",
+            "rate_limit_window": 60,
+            "user_limit": 100,
+            "admin_limit": 500,
+            "endpoint_limit": 1000,
+            "global_limit": 10000
+          },
+          "validation_points": [
+            "Redis keys must follow pattern: rate_limit:{type}:{identifier}",
+            "TTL must be automatically set for sliding window",
+            "Atomic increment operations must be used",
+            "Rate limit headers must be returned in response"
+          ]
+        }
+      ]
+    },
+    "user_specific_limits": {
+      "test_scenarios": [
+        {
+          "scenario_id": "USER_RATE_001",
+          "name": "User-specific rate limiting with role differentiation",
+          "test_cases": [
+            {
+              "user_type": "regular_user",
+              "token": "${jwt-tokens.valid_user_token.token}",
+              "limit": 100,
+              "window_seconds": 60,
+              "redis_key": "rate_limit:user:USER001"
+            },
+            {
+              "user_type": "admin_user",
+              "token": "${jwt-tokens.valid_admin_token.token}",
+              "limit": 500,
+              "window_seconds": 60,
+              "redis_key": "rate_limit:user:ADMIN001"
+            }
+          ]
+        }
+      ]
+    },
+    "endpoint_specific_limits": {
+      "test_scenarios": [
+        {
+          "scenario_id": "ENDPOINT_RATE_001",
+          "name": "Critical endpoint protection",
+          "endpoints": [
+            {
+              "path": "/api/transaction/add",
+              "method": "POST",
+              "limit": 1000,
+              "window_seconds": 60,
+              "redis_key": "rate_limit:endpoint:POST:/api/transaction/add"
+            },
+            {
+              "path": "/api/auth/login",
+              "method": "POST", 
+              "limit": 10,
+              "window_seconds": 300,
+              "redis_key": "rate_limit:endpoint:POST:/api/auth/login"
+            }
+          ]
+        }
+      ]
+    },
+    "burst_capacity_tests": {
+      "test_scenarios": [
+        {
+          "scenario_id": "BURST_001",
+          "name": "Burst capacity handling",
+          "configuration": {
+            "base_rate": 100,
+            "burst_capacity": 150,
+            "refill_rate": "10_per_second",
+            "burst_duration": 30
+          },
+          "validation_rules": [
+            "Initial burst of 150 requests must be allowed",
+            "Rate must reduce to 100 requests per minute after burst",
+            "Token bucket algorithm must be implemented in Redis",
+            "Burst capacity must reset after window expiration"
+          ]
+        }
+      ]
+    },
+    "rate_limit_headers": {
+      "expected_headers": {
+        "X-RateLimit-Limit": "100",
+        "X-RateLimit-Remaining": "95",
+        "X-RateLimit-Reset": "1640995200",
+        "X-RateLimit-Window": "60",
+        "Retry-After": "60"
+      },
+      "validation_rules": [
+        "Rate limit headers must be included in all responses",
+        "Remaining count must be accurate",
+        "Reset time must indicate window expiration",
+        "Retry-After header must be included when limit exceeded"
+      ]
+    },
+    "limit_exceeded_responses": {
+      "expected_response": {
+        "status": 429,
+        "error": "Rate limit exceeded",
+        "message": "Too many requests. Please try again later.",
+        "retry_after_seconds": 60,
+        "limit_info": {
+          "type": "user_limit",
+          "limit": 100,
+          "window_seconds": 60,
+          "requests_made": 101
+        }
+      }
+    }
+  },
+
+  "AuthenticationTestCases": {
+    "description": "Comprehensive authentication testing scenarios for JWT validation and Spring Security integration",
+    "jwt_authentication_bypass": {
+      "test_scenarios": [
+        {
+          "scenario_id": "AUTH_BYPASS_001",
+          "name": "Complete authentication bypass attempts",
+          "bypass_techniques": [
+            {
+              "technique": "missing_authorization_header",
+              "endpoint": "/api/account/view/12345",
+              "expected_result": "401_unauthorized"
+            },
+            {
+              "technique": "invalid_bearer_format",
+              "authorization": "Basic dXNlcjpwYXNz",
+              "expected_result": "401_unauthorized"
+            },
+            {
+              "technique": "malformed_jwt",
+              "authorization": "Bearer invalid.jwt.token",
+              "expected_result": "401_unauthorized"
+            }
+          ]
+        }
+      ]
+    },
+    "token_expiration_tests": {
+      "test_scenarios": [
+        {
+          "scenario_id": "TOKEN_EXP_001",
+          "name": "Token expiration validation",
+          "test_cases": [
+            {
+              "token_type": "expired_token",
+              "token": "${jwt-tokens.expired_token.token}",
+              "expected_status": 401,
+              "validation_rule": "Expired tokens must be rejected"
+            },
+            {
+              "token_type": "near_expiry_token",
+              "token": "${jwt-tokens.30_minute_expiration_samples[1].token}",
+              "expected_status": 200,
+              "expected_headers": {
+                "X-Token-Expires-Soon": "true"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "invalid_signature_tests": {
+      "test_scenarios": [
+        {
+          "scenario_id": "SIG_INVALID_001", 
+          "name": "JWT signature tampering detection",
+          "test_cases": [
+            {
+              "attack_type": "signature_modification",
+              "token": "${jwt-tokens.invalid_signature_token.token}",
+              "expected_status": 401,
+              "expected_error": "Invalid signature"
+            },
+            {
+              "attack_type": "algorithm_confusion",
+              "token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJ1c2VyX2lkIjoiSEFDS0VSIiwic3ViIjoiSEFDS0VSIn0.",
+              "expected_status": 401,
+              "expected_error": "Algorithm 'none' not allowed"
+            }
+          ]
+        }
+      ]
+    },
+    "malformed_token_tests": {
+      "test_scenarios": [
+        {
+          "scenario_id": "MALFORMED_001",
+          "name": "Malformed JWT handling",
+          "test_cases": [
+            {
+              "malformation_type": "invalid_base64",
+              "token": "invalid.base64.encoding",
+              "expected_status": 401
+            },
+            {
+              "malformation_type": "missing_segments",
+              "token": "only.two.segments",
+              "expected_status": 401
+            },
+            {
+              "malformation_type": "too_many_segments", 
+              "token": "too.many.segments.in.this.token",
+              "expected_status": 401
+            }
+          ]
+        }
+      ]
+    },
+    "missing_authorization_header": {
+      "test_scenarios": [
+        {
+          "scenario_id": "MISSING_AUTH_001",
+          "name": "Missing Authorization header handling",
+          "endpoints_to_test": [
+            "/api/account/view/12345",
+            "/api/card/list/12345", 
+            "/api/transaction/history/12345",
+            "/api/admin/users"
+          ],
+          "expected_status": 401,
+          "expected_response": {
+            "error": "Authentication required",
+            "message": "Invalid or missing authentication credentials"
+          }
+        }
+      ]
+    },
+    "bearer_token_validation": {
+      "test_scenarios": [
+        {
+          "scenario_id": "BEARER_001",
+          "name": "Bearer token format validation",
+          "test_cases": [
+            {
+              "format": "valid_bearer",
+              "authorization": "Bearer ${jwt-tokens.valid_user_token.token}",
+              "expected_status": 200
+            },
+            {
+              "format": "missing_bearer_prefix",
+              "authorization": "${jwt-tokens.valid_user_token.token}",
+              "expected_status": 401
+            },
+            {
+              "format": "wrong_prefix",
+              "authorization": "Basic ${jwt-tokens.valid_user_token.token}",
+              "expected_status": 401
+            },
+            {
+              "format": "bearer_lowercase",
+              "authorization": "bearer ${jwt-tokens.valid_user_token.token}",
+              "expected_status": 401
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "AuthorizationFlowTests": {
+    "description": "Role-based authorization flow validation with Spring Security @PreAuthorize integration",
+    "role_based_access_control": {
+      "test_scenarios": [
+        {
+          "scenario_id": "RBAC_001",
+          "name": "Spring Security role-based access control",
+          "role_mappings": [
+            {
+              "user_type": "A",
+              "spring_roles": ["ROLE_ADMIN", "ROLE_USER"],
+              "authorities": ["ROLE_ADMIN", "ROLE_USER", "VIEW_ACCOUNTS", "MANAGE_ACCOUNTS", "ADMIN_FUNCTIONS"]
+            },
+            {
+              "user_type": "U",
+              "spring_roles": ["ROLE_USER"],
+              "authorities": ["ROLE_USER", "VIEW_ACCOUNTS", "PROCESS_TRANSACTIONS"]
+            }
+          ]
+        }
+      ]
+    },
+    "admin_only_endpoints": {
+      "test_scenarios": [
+        {
+          "scenario_id": "ADMIN_ONLY_001",
+          "name": "Admin-only endpoint protection",
+          "endpoints": [
+            {
+              "path": "/api/admin/users",
+              "method": "GET",
+              "required_role": "ROLE_ADMIN",
+              "annotation": "@PreAuthorize(\"hasRole('ADMIN')\")"
+            },
+            {
+              "path": "/api/admin/config",
+              "method": "PUT",
+              "required_role": "ROLE_ADMIN",
+              "annotation": "@PreAuthorize(\"hasRole('ADMIN')\")"
+            },
+            {
+              "path": "/api/batch/interest-calculation",
+              "method": "POST",
+              "required_role": "ROLE_ADMIN",
+              "annotation": "@PreAuthorize(\"hasRole('ADMIN')\")"
+            }
+          ],
+          "access_tests": [
+            {
+              "user_token": "${jwt-tokens.valid_admin_token.token}",
+              "expected_status": 200,
+              "test_description": "Admin user should have access"
+            },
+            {
+              "user_token": "${jwt-tokens.valid_user_token.token}",
+              "expected_status": 403,
+              "test_description": "Regular user should be denied access"
+            }
+          ]
+        }
+      ]
+    },
+    "user_role_restrictions": {
+      "test_scenarios": [
+        {
+          "scenario_id": "USER_RESTRICT_001",
+          "name": "User role access restrictions",
+          "endpoints": [
+            {
+              "path": "/api/account/view/{accountId}",
+              "method": "GET",
+              "required_role": "ROLE_USER",
+              "annotation": "@PreAuthorize(\"hasAnyRole('USER','ADMIN')\")",
+              "additional_checks": ["account_ownership_validation"]
+            },
+            {
+              "path": "/api/transaction/add",
+              "method": "POST",
+              "required_role": "ROLE_USER",
+              "annotation": "@PreAuthorize(\"hasAnyRole('USER','ADMIN')\")",
+              "additional_checks": ["transaction_limit_validation"]
+            }
+          ]
+        }
+      ]
+    },
+    "cross_service_authorization": {
+      "test_scenarios": [
+        {
+          "scenario_id": "CROSS_SVC_001",
+          "name": "Cross-service authorization propagation",
+          "flow": [
+            {
+              "step": 1,
+              "service": "SpringCloudGateway",
+              "action": "JWT validation and routing",
+              "validation": "SecurityGatewayFilter.validateJwtToken()"
+            },
+            {
+              "step": 2, 
+              "service": "AccountService",
+              "action": "Method-level authorization",
+              "validation": "@PreAuthorize annotation evaluation"
+            },
+            {
+              "step": 3,
+              "service": "TransactionService",
+              "action": "Cross-service call with JWT",
+              "validation": "JWT token propagation validation"
+            }
+          ]
+        }
+      ]
+    },
+    "method_level_security": {
+      "test_scenarios": [
+        {
+          "scenario_id": "METHOD_SEC_001",
+          "name": "Spring Security method-level authorization",
+          "method_annotations": [
+            {
+              "annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+              "methods": [
+                "UserManagementService.createUser()",
+                "UserManagementService.deleteUser()",
+                "SystemConfigService.updateConfig()"
+              ]
+            },
+            {
+              "annotation": "@PreAuthorize(\"hasAnyRole('USER','ADMIN')\")",
+              "methods": [
+                "AccountService.viewAccount()",
+                "TransactionService.addTransaction()",
+                "CardService.listCards()"
+              ]
+            },
+            {
+              "annotation": "@PreAuthorize(\"hasRole('ADMIN') or #accountId == authentication.name\")",
+              "methods": [
+                "AccountService.updateAccount(Long accountId)"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "resource_access_validation": {
+      "test_scenarios": [
+        {
+          "scenario_id": "RESOURCE_001",
+          "name": "Resource-level access validation",
+          "resource_types": [
+            {
+              "resource": "account_data",
+              "access_rules": [
+                {
+                  "role": "ROLE_ADMIN",
+                  "permissions": ["READ", "WRITE", "DELETE"]
+                },
+                {
+                  "role": "ROLE_USER",
+                  "permissions": ["READ", "WRITE"],
+                  "conditions": ["owns_account"]
+                }
+              ]
+            },
+            {
+              "resource": "user_management",
+              "access_rules": [
+                {
+                  "role": "ROLE_ADMIN",
+                  "permissions": ["READ", "WRITE", "DELETE"]
+                },
+                {
+                  "role": "ROLE_USER",
+                  "permissions": [],
+                  "conditions": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "test_execution_framework": {
+    "description": "Test execution configuration for automated security testing with RestAssured and Spring Boot Test",
+    "restassured_configuration": {
+      "base_uri": "http://localhost",
+      "port": 8080,
+      "base_path": "/api",
+      "default_headers": {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      "request_timeout": 30000,
+      "connection_timeout": 10000
+    },
+    "testcontainers_setup": {
+      "redis_container": {
+        "image": "redis:7-alpine",
+        "ports": [6379],
+        "environment": {
+          "REDIS_PASSWORD": "testpassword"
+        }
+      },
+      "postgresql_container": {
+        "image": "postgres:15-alpine",
+        "ports": [5432],
+        "environment": {
+          "POSTGRES_DB": "carddemo_test",
+          "POSTGRES_USER": "test",
+          "POSTGRES_PASSWORD": "testpassword"
+        }
+      }
+    },
+    "spring_security_test_configuration": {
+      "annotations": [
+        "@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)",
+        "@Testcontainers",
+        "@Transactional"
+      ],
+      "test_slices": [
+        "@WebMvcTest(SecurityGatewayFilter.class)",
+        "@SpringBootTest(classes = SecurityConfig.class)"
+      ]
+    },
+    "validation_utilities": {
+      "jwt_token_validator": "JwtTokenTestValidator.class",
+      "rate_limit_validator": "RedisRateLimitValidator.class",
+      "security_event_validator": "SecurityEventValidator.class"
+    }
+  }
+}
