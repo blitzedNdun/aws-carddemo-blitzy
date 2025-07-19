@@ -267,6 +267,30 @@ public class AddTransactionRequest {
     private String confirm;
 
     /**
+     * Correlation ID for request tracking.
+     * 
+     * Used for tracing requests across microservices for debugging and audit purposes.
+     */
+    @JsonProperty("correlationId")
+    private String correlationId;
+
+    /**
+     * User ID who initiated the transaction request.
+     * 
+     * Used for audit trails and security context tracking.
+     */
+    @JsonProperty("userId")
+    private String userId;
+
+    /**
+     * Timestamp when the request was received.
+     * 
+     * Used for audit trails and request lifecycle tracking.
+     */
+    @JsonProperty("requestTimestamp")
+    private LocalDateTime requestTimestamp;
+
+    /**
      * Default constructor for AddTransactionRequest.
      * 
      * Creates an empty request object for population by Jackson deserialization
@@ -568,6 +592,60 @@ public class AddTransactionRequest {
      */
     public void setConfirm(String confirm) {
         this.confirm = confirm;
+    }
+
+    /**
+     * Gets the correlation ID for request tracking.
+     * 
+     * @return correlation ID
+     */
+    public String getCorrelationId() {
+        return correlationId;
+    }
+
+    /**
+     * Sets the correlation ID for request tracking.
+     * 
+     * @param correlationId correlation ID
+     */
+    public void setCorrelationId(String correlationId) {
+        this.correlationId = correlationId;
+    }
+
+    /**
+     * Gets the user ID who initiated the transaction request.
+     * 
+     * @return user ID
+     */
+    public String getUserId() {
+        return userId;
+    }
+
+    /**
+     * Sets the user ID who initiated the transaction request.
+     * 
+     * @param userId user ID
+     */
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
+    /**
+     * Gets the timestamp when the request was received.
+     * 
+     * @return request timestamp
+     */
+    public LocalDateTime getRequestTimestamp() {
+        return requestTimestamp;
+    }
+
+    /**
+     * Sets the timestamp when the request was received.
+     * 
+     * @param requestTimestamp request timestamp
+     */
+    public void setRequestTimestamp(LocalDateTime requestTimestamp) {
+        this.requestTimestamp = requestTimestamp;
     }
 
     /**
