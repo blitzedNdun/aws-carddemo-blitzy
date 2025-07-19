@@ -1,13 +1,12 @@
 package com.carddemo.common.config;
 
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
-import org.springframework.batch.core.JobRepository;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
-import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+// JobBuilderFactory and StepBuilderFactory are deprecated in Spring Boot 3.x
+// Use JobBuilder and StepBuilder directly with JobRepository
 import org.springframework.batch.core.launch.support.TaskExecutorJobLauncher;
-import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
 import org.springframework.batch.support.transaction.ResourcelessTransactionManager;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,14 +34,17 @@ import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersValidator;
 import org.springframework.batch.core.JobParametersInvalidException;
+import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
+import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
+import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.configuration.support.ReferenceJobFactory;
 import org.springframework.batch.core.configuration.support.MapJobRegistry;
 import org.springframework.batch.repeat.policy.SimpleCompletionPolicy;
 import org.springframework.batch.repeat.policy.TimeoutTerminationPolicy;
-import org.springframework.batch.retry.RetryPolicy;
-import org.springframework.batch.retry.policy.ExceptionClassifierRetryPolicy;
-import org.springframework.batch.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.RetryPolicy;
+import org.springframework.retry.policy.ExceptionClassifierRetryPolicy;
+import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.batch.core.step.skip.SkipPolicy;
 import org.springframework.batch.core.step.skip.LimitCheckingItemSkipPolicy;
 import org.springframework.batch.core.step.skip.SkipLimitExceededException;
@@ -189,7 +191,6 @@ public class BatchConfiguration {
         
         // Enable job execution tracking and validation
         factory.setValidateTransactionState(true);
-        factory.setIncrementerFactory(new RunIdIncrementer());
         
         // Configure table prefix for batch metadata tables
         factory.setTablePrefix("BATCH_");
@@ -198,7 +199,7 @@ public class BatchConfiguration {
         factory.setMaxVarCharLength(2500);
         
         // Configure charset for international character support
-        factory.setCharset("UTF-8");
+        factory.setCharset(java.nio.charset.StandardCharsets.UTF_8);
         
         // Enable job execution serialization for restart capability
         factory.setSerializer(new org.springframework.batch.core.repository.dao.Jackson2ExecutionContextStringSerializer());
@@ -237,29 +238,9 @@ public class BatchConfiguration {
         return new MonitoringJobLauncher(launcher, meterRegistry);
     }
 
-    /**
-     * Creates and configures the StepBuilderFactory for step definition and execution
-     * with optimized chunk processing, transaction management, and error handling.
-     * 
-     * @return configured StepBuilderFactory instance
-     * @throws Exception if factory creation fails
-     */
-    @Bean
-    public StepBuilderFactory stepBuilderFactory() throws Exception {
-        return new StepBuilderFactory(jobRepository(), transactionManager);
-    }
-
-    /**
-     * Creates and configures the JobBuilderFactory for job definition and orchestration
-     * with comprehensive validation, parameter handling, and execution monitoring.
-     * 
-     * @return configured JobBuilderFactory instance
-     * @throws Exception if factory creation fails
-     */
-    @Bean
-    public JobBuilderFactory jobBuilderFactory() throws Exception {
-        return new JobBuilderFactory(jobRepository());
-    }
+    // JobBuilderFactory and StepBuilderFactory are deprecated in Spring Boot 3.x
+    // Use JobBuilder and StepBuilder directly with JobRepository injection
+    // These factory methods are no longer needed
 
     /**
      * Creates and configures the optimized TaskExecutor for batch job execution
@@ -288,7 +269,7 @@ public class BatchConfiguration {
         executor.setAllowCoreThreadTimeOut(true);
         
         // Configure rejection policy for overload scenarios
-        executor.setRejectedExecutionHandler(new ThreadPoolTaskExecutor.CallerRunsPolicy());
+        executor.setRejectedExecutionHandler(new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy());
         
         // Configure graceful shutdown
         executor.setWaitForTasksToCompleteOnShutdown(true);
@@ -350,7 +331,7 @@ public class BatchConfiguration {
         retryPolicy.setPolicyMap(policyMap);
         
         // Default retry policy for unclassified exceptions
-        retryPolicy.setDefaultPolicy(new SimpleRetryPolicy(2));
+        // Note: ExceptionClassifierRetryPolicy handles unclassified exceptions through the policy map
         
         return retryPolicy;
     }
@@ -463,32 +444,29 @@ public class BatchConfiguration {
         try {
             // Update active jobs metric
             long activeJobCount = activeJobs.get();
-            Gauge.builder("batch.jobs.active")
+            Gauge.builder("batch.jobs.active", activeJobs, AtomicLong::doubleValue)
                     .description("Number of currently active batch jobs")
-                    .register(meterRegistry)
-                    .set(activeJobCount);
+                    .register(meterRegistry);
             
             // Update completed jobs metric
-            long completedJobCount = completedJobs.get();
-            Gauge.builder("batch.jobs.completed")
+            Gauge.builder("batch.jobs.completed", completedJobs, AtomicLong::doubleValue)
                     .description("Total number of completed batch jobs")
-                    .register(meterRegistry)
-                    .set(completedJobCount);
+                    .register(meterRegistry);
             
             // Update failed jobs metric
-            long failedJobCount = failedJobs.get();
-            Gauge.builder("batch.jobs.failed")
+            Gauge.builder("batch.jobs.failed", failedJobs, AtomicLong::doubleValue)
                     .description("Total number of failed batch jobs")
-                    .register(meterRegistry)
-                    .set(failedJobCount);
+                    .register(meterRegistry);
             
             // Calculate and update success rate
-            long totalJobs = completedJobCount + failedJobCount;
-            double successRate = totalJobs > 0 ? (double) completedJobCount / totalJobs : 1.0;
-            Gauge.builder("batch.jobs.success.rate")
+            long totalJobs = completedJobs.get() + failedJobs.get();
+            double successRate = totalJobs > 0 ? (double) completedJobs.get() / totalJobs : 1.0;
+            Gauge.builder("batch.jobs.success.rate", this, config -> {
+                long total = config.completedJobs.get() + config.failedJobs.get();
+                return total > 0 ? (double) config.completedJobs.get() / total : 1.0;
+            })
                     .description("Batch job success rate")
-                    .register(meterRegistry)
-                    .set(successRate);
+                    .register(meterRegistry);
             
         } catch (Exception e) {
             // Log monitoring errors without disrupting batch processing
@@ -558,17 +536,17 @@ public class BatchConfiguration {
     private void registerTaskExecutorMetrics(ThreadPoolTaskExecutor executor) {
         if (monitoringEnabled) {
             // Register thread pool metrics
-            Gauge.builder("batch.executor.active.threads")
+            Gauge.builder("batch.executor.active.threads", executor, e -> (double) e.getActiveCount())
                     .description("Number of active threads in batch executor")
-                    .register(meterRegistry, executor, ThreadPoolTaskExecutor::getActiveCount);
+                    .register(meterRegistry);
             
-            Gauge.builder("batch.executor.pool.size")
+            Gauge.builder("batch.executor.pool.size", executor, e -> (double) e.getPoolSize())
                     .description("Current pool size of batch executor")
-                    .register(meterRegistry, executor, ThreadPoolTaskExecutor::getPoolSize);
+                    .register(meterRegistry);
             
-            Gauge.builder("batch.executor.queue.size")
+            Gauge.builder("batch.executor.queue.size", executor, e -> (double) e.getThreadPoolExecutor().getQueue().size())
                     .description("Current queue size of batch executor")
-                    .register(meterRegistry, executor, e -> e.getThreadPoolExecutor().getQueue().size());
+                    .register(meterRegistry);
         }
     }
 
@@ -645,7 +623,8 @@ public class BatchConfiguration {
         @Override
         public org.springframework.batch.core.JobExecution run(
                 org.springframework.batch.core.Job job, 
-                JobParameters jobParameters) throws Exception {
+                JobParameters jobParameters) throws JobExecutionAlreadyRunningException,
+                JobRestartException, JobInstanceAlreadyCompleteException, JobParametersInvalidException {
             
             Timer.Sample sample = Timer.start(meterRegistry);
             
@@ -731,7 +710,7 @@ public class BatchConfiguration {
                     .increment();
             
             // Record job duration
-            long duration = jobExecution.getEndTime().getTime() - jobExecution.getStartTime().getTime();
+            long duration = java.time.Duration.between(jobExecution.getStartTime(), jobExecution.getEndTime()).toMillis();
             Timer.builder("batch.job.duration")
                     .description("Duration of batch job execution")
                     .tag("job", jobName)
@@ -783,23 +762,21 @@ public class BatchConfiguration {
                     .tag("job", jobName)
                     .tag("step", stepName)
                     .register(meterRegistry)
-                    .record(stepExecution.getEndTime().getTime() - stepExecution.getStartTime().getTime(), 
+                    .record(java.time.Duration.between(stepExecution.getStartTime(), stepExecution.getEndTime()).toMillis(), 
                             TimeUnit.MILLISECONDS);
             
             // Record item counts
-            Gauge.builder("batch.step.read.count")
+            Gauge.builder("batch.step.read.count", stepExecution, se -> (double) se.getReadCount())
                     .description("Number of items read in batch step")
                     .tag("job", jobName)
                     .tag("step", stepName)
-                    .register(meterRegistry)
-                    .set(stepExecution.getReadCount());
+                    .register(meterRegistry);
             
-            Gauge.builder("batch.step.write.count")
+            Gauge.builder("batch.step.write.count", stepExecution, se -> (double) se.getWriteCount())
                     .description("Number of items written in batch step")
                     .tag("job", jobName)
                     .tag("step", stepName)
-                    .register(meterRegistry)
-                    .set(stepExecution.getWriteCount());
+                    .register(meterRegistry);
             
             return null;
         }
