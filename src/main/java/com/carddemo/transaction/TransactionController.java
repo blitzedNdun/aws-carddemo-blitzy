@@ -211,10 +211,8 @@ public class TransactionController {
                    userId, request.getPageNumber(), request.getPageSize(), correlationId);
         
         try {
-            // Set audit fields for request tracking
-            request.setCorrelationId(correlationId);
-            request.setUserId(userId);
-            request.setTimestamp(java.time.LocalDateTime.now());
+            // Note: Audit fields (correlationId, userId, timestamp) are tracked in controller
+            // but not set on request object as those fields don't exist in the DTO
             
             // Validate request parameters
             if (!request.isValidRanges()) {
@@ -432,7 +430,7 @@ public class TransactionController {
             // Set audit fields for request tracking
             request.setCorrelationId(correlationId);
             request.setUserId(userId);
-            request.setTimestamp(java.time.LocalDateTime.now());
+            request.setRequestTimestamp(java.time.LocalDateTime.now());
             
             // Process transaction creation request
             AddTransactionResponse response = addTransactionService.addTransaction(request);
@@ -516,10 +514,8 @@ public class TransactionController {
                    userId, request.hasFilters(), correlationId);
         
         try {
-            // Set audit fields for request tracking
-            request.setCorrelationId(correlationId);
-            request.setUserId(userId);
-            request.setTimestamp(java.time.LocalDateTime.now());
+            // Note: Audit fields (correlationId, userId, requestTimestamp) are tracked in controller
+            // but not set on request object as those fields don't exist in the DTO
             
             // Validate search parameters
             if (!request.hasFilters()) {
