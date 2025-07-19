@@ -315,6 +315,30 @@ public class ValidationResult {
     public int getErrorCount() {
         return errorCount;
     }
+
+    /**
+     * Gets the first error message or concatenated error messages.
+     * Convenience method for simple error handling.
+     * 
+     * @return First error message if available, or concatenated messages, or empty string if no errors
+     */
+    public String getErrorMessage() {
+        if (errorMessages.isEmpty()) {
+            return "";
+        }
+        if (errorMessages.size() == 1) {
+            return errorMessages.get(0).getErrorMessage();
+        }
+        // Concatenate multiple error messages
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < errorMessages.size(); i++) {
+            if (i > 0) {
+                sb.append("; ");
+            }
+            sb.append(errorMessages.get(i).getErrorMessage());
+        }
+        return sb.toString();
+    }
     
     /**
      * Gets the overall validation severity.
