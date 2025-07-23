@@ -625,15 +625,12 @@ public enum PhoneAreaCode {
     }
 
     /**
-     * Returns all valid PhoneAreaCode enum constants.
-     * Maintains compatibility with standard Java enum values() method.
+     * Note: The values() method is automatically provided by Java for all enum types.
+     * This replaces the original COBOL VALUES clause functionality for area code lookup.
      * Used by Jakarta Bean Validation and React Hook Form validation.
      * 
-     * @return Array of all PhoneAreaCode enum constants
+     * Standard Java enum values() method returns: Array of all PhoneAreaCode enum constants
      */
-    public static PhoneAreaCode[] values() {
-        return PhoneAreaCode.class.getEnumConstants();
-    }
 
     /**
      * String representation of the area code for debugging and logging.
