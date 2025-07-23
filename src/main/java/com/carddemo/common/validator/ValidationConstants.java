@@ -117,6 +117,9 @@ public final class ValidationConstants {
         
         // US Territories and Districts
         add("DC"); add("AS"); add("GU"); add("MP"); add("PR"); add("VI");
+        
+        // Military Postal Codes
+        add("AA"); add("AE"); add("AP");
     }};
 
     // =======================================================================
