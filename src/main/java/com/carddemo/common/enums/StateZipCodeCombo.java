@@ -692,11 +692,10 @@ public enum StateZipCodeCombo {
      * order as defined in the original COBOL 88-level condition for
      * maintaining exact behavioral compatibility.
      * 
-     * @return Array of all enum values preserving definition order
+     * Note: The standard enum values() method provides this functionality automatically.
+     * This comment documents the COBOL equivalence for reference.
      */
-    public static StateZipCodeCombo[] values() {
-        return StateZipCodeCombo.values();
-    }
+    // No need to override values() - Java enum provides this automatically
     
     /**
      * String representation of this state-ZIP combination
