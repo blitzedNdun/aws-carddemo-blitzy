@@ -229,15 +229,9 @@ public enum TransactionType {
         return fromCode(code).isPresent();
     }
 
-    /**
-     * Get array of all enum values
-     * Supports iteration in transaction processing validation
-     * 
-     * @return TransactionType[] array of all defined transaction types
-     */
-    public static TransactionType[] values() {
-        return TransactionType.values();
-    }
+    // Note: values() method is automatically provided by Java enum
+    // Original COBOL equivalent: iterate through all valid transaction type codes
+    // Usage: TransactionType.values() returns TransactionType[] array
 
     /**
      * String representation of transaction type
@@ -251,29 +245,7 @@ public enum TransactionType {
         return String.format("%s - %s (%s)", code, description, isDebit ? "Debit" : "Credit");
     }
 
-    /**
-     * Check equality based on transaction type code
-     * Supports comparison operations in business logic
-     * 
-     * @param obj Object to compare with
-     * @return true if obj is TransactionType with same code
-     */
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
-        TransactionType that = (TransactionType) obj;
-        return code.equals(that.code);
-    }
-
-    /**
-     * Hash code based on transaction type code
-     * Ensures proper behavior in hash-based collections
-     * 
-     * @return hash code of the transaction type code
-     */
-    @Override
-    public int hashCode() {
-        return code.hashCode();
-    }
+    // Note: equals() and hashCode() methods are automatically provided by Java enum
+    // Java enum equality is based on enum instance identity, which is appropriate
+    // for transaction type comparison in business logic and hash-based collections
 }
