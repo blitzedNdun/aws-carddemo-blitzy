@@ -17,14 +17,13 @@
 
 package com.carddemo.common.enums;
 
-import org.springframework.security.core.GrantedAuthority;
 import java.util.Optional;
 
 /**
  * UserType enumeration defining user classification types converted from COBOL SEC-USR-TYPE field.
  * 
  * This enum replaces the original COBOL 88-level conditions for user type validation with 
- * Spring Security integration for role-based access control and JWT token generation.
+ * role-based access control support for JWT token generation and authorization logic.
  * 
  * Original COBOL field: SEC-USR-TYPE PIC X(01) from CSUSR01Y.cpy
  * Original 88-level conditions:
@@ -32,14 +31,14 @@ import java.util.Optional;
  * - CDEMO-USRTYP-USER for regular users (code 'R') 
  * 
  * Implementation provides:
- * - Spring Security GrantedAuthority integration for role-based access control
+ * - Role-based access control support (ready for Spring Security integration)
  * - Validation methods replicating original COBOL conditional logic  
  * - JWT token role mapping support for authentication service
  * - Type-safe parsing with null-safe validation handling
  * 
  * Usage patterns:
  * - Authentication service for JWT token generation with role claims
- * - Spring Security @PreAuthorize method-level authorization
+ * - Authorization checks for method-level security (when Spring Security is integrated)
  * - Menu navigation service for role-based UI component rendering
  * - User management service for administrative access control
  * 
@@ -47,7 +46,7 @@ import java.util.Optional;
  * @version 1.0 - Converted from COBOL SEC-USR-TYPE validation logic
  * @since Java 21, Spring Boot 3.2.x
  */
-public enum UserType implements GrantedAuthority {
+public enum UserType {
     
     /**
      * Administrative user type - equivalent to COBOL 88-level condition CDEMO-USRTYP-ADMIN.
@@ -156,9 +155,9 @@ public enum UserType implements GrantedAuthority {
     }
     
     /**
-     * Spring Security GrantedAuthority implementation returning role name for authorization framework.
+     * Returns the Spring Security role name for authorization framework integration.
      * 
-     * Enables direct integration with Spring Security authorization mechanisms:
+     * When integrated with Spring Security, enables authorization mechanisms:
      * - @PreAuthorize("hasRole('ADMIN')") method-level security annotations
      * - JWT token role claims for stateless authentication
      * - SecurityContext role population for request processing
@@ -166,21 +165,53 @@ public enum UserType implements GrantedAuthority {
      * 
      * @return Spring Security role name (ROLE_ADMIN or ROLE_USER)
      */
-    @Override
     public String getAuthority() {
         return springRole;
     }
     
     /**
-     * Convenience method creating GrantedAuthority instance for Spring Security integration.
+     * Convenience method creating a simple GrantedAuthority-like object for Spring Security integration.
      * 
-     * Provides type-safe GrantedAuthority creation for authentication service JWT token
-     * generation and Spring Security context population during request processing.
+     * Provides type-safe authority creation for authentication service JWT token
+     * generation and authorization context when Spring Security is integrated.
      * 
-     * @return GrantedAuthority instance with role name for Spring Security framework
+     * @return Authority object with role name for authorization framework
      */
-    public GrantedAuthority asGrantedAuthority() {
-        return this;
+    public Authority asGrantedAuthority() {
+        return new Authority(springRole);
+    }
+    
+    /**
+     * Simple authority class for Spring Security integration when available.
+     */
+    public static class Authority {
+        private final String authority;
+        
+        public Authority(String authority) {
+            this.authority = authority;
+        }
+        
+        public String getAuthority() {
+            return authority;
+        }
+        
+        @Override
+        public String toString() {
+            return authority;
+        }
+        
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (obj == null || getClass() != obj.getClass()) return false;
+            Authority that = (Authority) obj;
+            return authority.equals(that.authority);
+        }
+        
+        @Override
+        public int hashCode() {
+            return authority.hashCode();
+        }
     }
     
     /**
@@ -221,19 +252,7 @@ public enum UserType implements GrantedAuthority {
         return this == USER;
     }
     
-    /**
-     * Static values() method override for enhanced enum iteration support.
-     * 
-     * Provides array of all UserType enum constants for:
-     * - Dynamic UI dropdown population in administrative interfaces
-     * - Validation logic iteration over all possible user types
-     * - Configuration and testing scenarios requiring complete enum coverage
-     * 
-     * @return Array containing all UserType enum constants in declaration order
-     */
-    public static UserType[] values() {
-        return UserType.values();
-    }
+
     
     /**
      * String representation for logging, debugging, and display purposes.
