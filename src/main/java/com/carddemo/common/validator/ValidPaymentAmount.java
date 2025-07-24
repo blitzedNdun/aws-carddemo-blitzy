@@ -97,10 +97,10 @@ import java.lang.annotation.Target;
  * </ul>
  * 
  * @since 1.0.0
- * @see ValidPaymentAmountValidator
+ * @see PaymentAmountValidator
  */
 @Documented
-@Constraint(validatedBy = ValidPaymentAmountValidator.class)
+@Constraint(validatedBy = PaymentAmountValidator.class)
 @Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ValidPaymentAmount {
