@@ -2,12 +2,9 @@ package com.carddemo.common.config;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import liquibase.integration.spring.SpringLiquibase;
 import org.hibernate.cfg.AvailableSettings;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.liquibase.LiquibaseProperties;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -51,7 +48,6 @@ import java.util.Properties;
 @Configuration
 @EnableTransactionManagement
 @EnableJpaRepositories(basePackages = "com.carddemo")
-@EnableConfigurationProperties(LiquibaseProperties.class)
 public class DatabaseConfig {
 
     // Database connection properties
@@ -299,54 +295,20 @@ public class DatabaseConfig {
     }
 
     /**
-     * Liquibase Configuration Bean
+     * Liquibase Auto-Configuration Note
      * 
-     * Configures database schema versioning and migration management
-     * for PostgreSQL. Replaces VSAM catalog administration with
-     * automated DDL deployment and rollback capabilities.
+     * Spring Boot 3.x automatically configures Liquibase when spring-boot-starter-liquibase
+     * is present in the classpath. The configuration is handled through application.properties:
      * 
-     * Migration Features:
-     * - Version-controlled database changes
-     * - Environment-specific configuration management
-     * - Automated schema evolution with rollback support
-     * - COBOL-to-PostgreSQL data type conversion tracking
+     * - spring.liquibase.change-log=classpath:db/changelog/db.changelog-master.xml
+     * - spring.liquibase.enabled=true
+     * - spring.liquibase.contexts=production,test
+     * - spring.liquibase.default-schema=carddemo
      * 
-     * @param dataSource The configured data source for migrations
-     * @param liquibaseProperties Spring Boot Liquibase configuration properties
-     * @return SpringLiquibase for automated database migrations
+     * This provides the same functionality as manual SpringLiquibase bean configuration
+     * while leveraging Spring Boot's auto-configuration capabilities for better integration
+     * with the application lifecycle and configuration management.
      */
-    @Bean
-    @ConditionalOnProperty(name = "spring.liquibase.enabled", havingValue = "true", matchIfMissing = true)
-    public SpringLiquibase liquibase(DataSource dataSource, LiquibaseProperties liquibaseProperties) {
-        SpringLiquibase liquibase = new SpringLiquibase();
-        liquibase.setDataSource(dataSource);
-        
-        // Migration file locations
-        liquibase.setChangeLog(liquibaseProperties.getChangeLog());
-        liquibase.setContexts(liquibaseProperties.getContexts());
-        liquibase.setLabels(liquibaseProperties.getLabels());
-        liquibase.setParameters(liquibaseProperties.getParameters());
-        
-        // Migration behavior
-        liquibase.setShouldRun(liquibaseProperties.isEnabled());
-        liquibase.setDropFirst(liquibaseProperties.isDropFirst());
-        liquibase.setClearCheckSums(liquibaseProperties.isClearChecksums());
-        
-        // Rollback configuration
-        liquibase.setRollbackFile(liquibaseProperties.getRollbackFile());
-        liquibase.setTestRollbackOnUpdate(liquibaseProperties.isTestRollbackOnUpdate());
-        
-        // Database schema management
-        liquibase.setDefaultSchema(liquibaseProperties.getDefaultSchema());
-        liquibase.setLiquibaseSchema(liquibaseProperties.getLiquibaseSchema());
-        liquibase.setLiquibaseTablespace(liquibaseProperties.getLiquibaseTablespace());
-        
-        // Performance and monitoring
-        liquibase.setDatabaseChangeLogTable(liquibaseProperties.getDatabaseChangeLogTable());
-        liquibase.setDatabaseChangeLogLockTable(liquibaseProperties.getDatabaseChangeLogLockTable());
-        
-        return liquibase;
-    }
 
     /**
      * Database Health Check Configuration
