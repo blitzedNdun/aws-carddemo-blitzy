@@ -1,0 +1,899 @@
+/**
+ * BMS Field Attribute Replication CSS
+ * 
+ * This CSS file implements exact visual and behavioral equivalence for BMS field
+ * attributes (ASKIP, UNPROT, PROT, NUM, IC, BRT) in React Material-UI components,
+ * preserving 3270 terminal field behavior while enabling modern responsive design.
+ * 
+ * Technical Specification Reference: Sections 7.4.2, 7.7.2
+ * BMS Copybook Sources: COSGN00.CPY, COMEN01.CPY, COACTVW.CPY, and others
+ * Theme Integration: src/main/webapp/styles/theme.js color palette mappings
+ * 
+ * Repository: CardDemo_v1.0-15-g27d6c6f-68
+ */
+
+/* ========================================================================
+   CORE BMS ATTRIBUTE VARIABLES
+   ======================================================================== */
+
+:root {
+  /* Terminal color palette - exact hex values from theme.js */
+  --bms-dfh-green: #00FF00;      /* DFHGREEN - Normal data display */
+  --bms-dfh-red: #FF0000;        /* DFHRED - Error messages */
+  --bms-dfh-yellow: #FFFF00;     /* DFHYELLOW - Highlighted fields */
+  --bms-dfh-blue: #0080FF;       /* DFHBLUE - Informational messages */
+  --bms-dfh-turquoise: #00FFFF;  /* Terminal turquoise - Instructions */
+  --bms-dfh-neutral: #C0C0C0;    /* Terminal neutral - Standard display */
+  
+  /* Enhanced accessibility variants */
+  --bms-green-dark: #00CC00;     /* Darker green for better contrast */
+  --bms-red-dark: #CC0000;       /* Darker red for accessibility */
+  --bms-yellow-dark: #CCCC00;    /* Darker yellow for readability */
+  --bms-blue-dark: #0066CC;      /* Darker blue for contrast */
+  
+  /* Terminal background and text colors */
+  --bms-terminal-black: #000000; /* Terminal background equivalent */
+  --bms-terminal-white: #FFFFFF; /* Terminal foreground text */
+  --bms-terminal-gray: #808080;  /* Terminal protected field color */
+  
+  /* Field spacing and dimensions matching terminal character layout */
+  --bms-field-height: 40px;      /* Standard field height for consistent terminal feel */
+  --bms-field-padding: 8px 12px; /* Padding maintaining character spacing */
+  --bms-field-margin: 4px 0;     /* Vertical margin for field separation */
+  --bms-border-width: 1px;       /* Standard border width */
+  --bms-border-radius: 4px;      /* Minimal radius maintaining terminal aesthetic */
+  
+  /* Typography matching terminal characteristics */
+  --bms-font-family: "Courier New", Monaco, "Lucida Console", Consolas, monospace;
+  --bms-font-size: 14px;         /* Base font size matching terminal character dimensions */
+  --bms-letter-spacing: 0.05em;  /* Character spacing for financial data precision */
+  --bms-line-height: 1.4;        /* Line height for optimal readability */
+}
+
+/* ========================================================================
+   ASKIP ATTRIBUTE IMPLEMENTATION (Auto-Skip Protected Fields)
+   Purpose: Display-only fields that cannot receive focus or input
+   BMS Equivalent: ASKIP attribute byte for read-only data display
+   ======================================================================== */
+
+.bms-askip,
+.askip-field,
+.display-only,
+.protected-display {
+  /* Base ASKIP field styling */
+  background-color: var(--bms-terminal-white) !important;
+  color: var(--bms-dfh-green) !important;
+  font-family: var(--bms-font-family);
+  font-size: var(--bms-font-size);
+  letter-spacing: var(--bms-letter-spacing);
+  line-height: var(--bms-line-height);
+  
+  /* Field protection and interaction prevention */
+  pointer-events: none !important;
+  user-select: text !important; /* Allow text selection for copy operations */
+  cursor: default !important;
+  
+  /* Visual indicators for protected status */
+  border: var(--bms-border-width) solid var(--bms-dfh-neutral) !important;
+  border-radius: var(--bms-border-radius);
+  padding: var(--bms-field-padding);
+  margin: var(--bms-field-margin);
+  
+  /* Remove input field appearance */
+  outline: none !important;
+  box-shadow: none !important;
+  
+  /* Focus prevention and skip behavior */
+  tab-index: -1 !important;
+}
+
+/* ASKIP field label styling */
+.bms-askip .MuiInputLabel-root,
+.askip-field .MuiInputLabel-root,
+.display-only .MuiInputLabel-root,
+.protected-display .MuiInputLabel-root {
+  color: var(--bms-dfh-green) !important;
+  font-weight: 500;
+  font-size: 13px;
+  transform: translate(12px, -9px) scale(0.85) !important;
+}
+
+/* ASKIP field content area */
+.bms-askip .MuiInputBase-input,
+.askip-field .MuiInputBase-input,
+.display-only .MuiInputBase-input,
+.protected-display .MuiInputBase-input {
+  background-color: transparent !important;
+  color: var(--bms-dfh-green) !important;
+  font-weight: 400;
+  cursor: default !important;
+  
+  /* Disable text editing capabilities */
+  -webkit-user-modify: read-only !important;
+  -moz-user-modify: read-only !important;
+  user-modify: read-only !important;
+}
+
+/* ========================================================================
+   UNPROT ATTRIBUTE IMPLEMENTATION (Unprotected Input Fields)
+   Purpose: Editable input fields allowing user data entry
+   BMS Equivalent: UNPROT attribute byte for user input fields
+   ======================================================================== */
+
+.bms-unprot,
+.unprot-field,
+.input-enabled,
+.editable-field {
+  /* Base UNPROT field styling */
+  background-color: var(--bms-terminal-white) !important;
+  color: var(--bms-terminal-black) !important;
+  font-family: var(--bms-font-family);
+  font-size: var(--bms-font-size);
+  letter-spacing: var(--bms-letter-spacing);
+  line-height: var(--bms-line-height);
+  
+  /* Input field appearance and interaction */
+  border: var(--bms-border-width) solid var(--bms-dfh-blue) !important;
+  border-radius: var(--bms-border-radius);
+  padding: var(--bms-field-padding);
+  margin: var(--bms-field-margin);
+  
+  /* Enable input capabilities */
+  cursor: text !important;
+  user-select: text !important;
+  
+  /* Focus and interaction styling */
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+/* UNPROT field focus state */
+.bms-unprot:focus,
+.unprot-field:focus,
+.input-enabled:focus,
+.editable-field:focus,
+.bms-unprot:focus-within,
+.unprot-field:focus-within,
+.input-enabled:focus-within,
+.editable-field:focus-within {
+  border-color: var(--bms-dfh-blue) !important;
+  box-shadow: 0 0 0 2px rgba(0, 128, 255, 0.2) !important;
+  outline: none !important;
+}
+
+/* UNPROT field label styling */
+.bms-unprot .MuiInputLabel-root,
+.unprot-field .MuiInputLabel-root,
+.input-enabled .MuiInputLabel-root,
+.editable-field .MuiInputLabel-root {
+  color: var(--bms-dfh-blue) !important;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+/* UNPROT field input area */
+.bms-unprot .MuiInputBase-input,
+.unprot-field .MuiInputBase-input,
+.input-enabled .MuiInputBase-input,
+.editable-field .MuiInputBase-input {
+  background-color: transparent !important;
+  color: var(--bms-terminal-black) !important;
+  font-weight: 400;
+  cursor: text !important;
+}
+
+/* UNPROT field placeholder styling */
+.bms-unprot .MuiInputBase-input::placeholder,
+.unprot-field .MuiInputBase-input::placeholder,
+.input-enabled .MuiInputBase-input::placeholder,
+.editable-field .MuiInputBase-input::placeholder {
+  color: var(--bms-terminal-gray) !important;
+  opacity: 0.7;
+  font-style: italic;
+}
+
+/* ========================================================================
+   PROT ATTRIBUTE IMPLEMENTATION (Protected Fields)
+   Purpose: Fields that prevent user modification while maintaining context
+   BMS Equivalent: PROT attribute byte for protected input fields
+   ======================================================================== */
+
+.bms-prot,
+.prot-field,
+.field-disabled,
+.protected-input {
+  /* Base PROT field styling */
+  background-color: #F0F0F0 !important;
+  color: var(--bms-terminal-gray) !important;
+  font-family: var(--bms-font-family);
+  font-size: var(--bms-font-size);
+  letter-spacing: var(--bms-letter-spacing);
+  line-height: var(--bms-line-height);
+  
+  /* Protection and interaction prevention */
+  pointer-events: none !important;
+  cursor: not-allowed !important;
+  user-select: none !important;
+  
+  /* Disabled appearance indicators */
+  border: var(--bms-border-width) solid var(--bms-terminal-gray) !important;
+  border-radius: var(--bms-border-radius);
+  padding: var(--bms-field-padding);
+  margin: var(--bms-field-margin);
+  opacity: 0.7;
+  
+  /* Remove focus capabilities */
+  outline: none !important;
+  box-shadow: none !important;
+  tab-index: -1 !important;
+}
+
+/* PROT field label styling */
+.bms-prot .MuiInputLabel-root,
+.prot-field .MuiInputLabel-root,
+.field-disabled .MuiInputLabel-root,
+.protected-input .MuiInputLabel-root {
+  color: var(--bms-terminal-gray) !important;
+  font-weight: 400;
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+/* PROT field input area */
+.bms-prot .MuiInputBase-input,
+.prot-field .MuiInputBase-input,
+.field-disabled .MuiInputBase-input,
+.protected-input .MuiInputBase-input {
+  background-color: transparent !important;
+  color: var(--bms-terminal-gray) !important;
+  font-weight: 400;
+  cursor: not-allowed !important;
+  
+  /* Prevent any text interaction */
+  -webkit-user-modify: read-only !important;
+  -moz-user-modify: read-only !important;
+  user-modify: read-only !important;
+}
+
+/* ========================================================================
+   NUM ATTRIBUTE IMPLEMENTATION (Numeric Input Fields)
+   Purpose: Numeric-only input with mobile keyboard optimization
+   BMS Equivalent: NUM attribute byte for numeric field validation
+   ======================================================================== */
+
+.bms-num,
+.num-field,
+.numeric-input,
+.mobile-numeric {
+  /* Base NUM field styling inheriting from UNPROT */
+  background-color: var(--bms-terminal-white) !important;
+  color: var(--bms-terminal-black) !important;
+  font-family: var(--bms-font-family);
+  font-size: var(--bms-font-size);
+  letter-spacing: var(--bms-letter-spacing);
+  line-height: var(--bms-line-height);
+  
+  /* Numeric field specific styling */
+  text-align: right !important; /* Right-align numeric values */
+  font-variant-numeric: tabular-nums; /* Ensure consistent numeric spacing */
+  border: var(--bms-border-width) solid var(--bms-dfh-blue) !important;
+  border-radius: var(--bms-border-radius);
+  padding: var(--bms-field-padding);
+  margin: var(--bms-field-margin);
+  
+  /* Enable numeric input capabilities */
+  cursor: text !important;
+  user-select: text !important;
+  
+  /* Focus styling for numeric fields */
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+/* NUM field focus state */
+.bms-num:focus,
+.num-field:focus,
+.numeric-input:focus,
+.mobile-numeric:focus,
+.bms-num:focus-within,
+.num-field:focus-within,
+.numeric-input:focus-within,
+.mobile-numeric:focus-within {
+  border-color: var(--bms-dfh-green) !important;
+  box-shadow: 0 0 0 2px rgba(0, 255, 0, 0.2) !important;
+  outline: none !important;
+}
+
+/* NUM field label styling */
+.bms-num .MuiInputLabel-root,
+.num-field .MuiInputLabel-root,
+.numeric-input .MuiInputLabel-root,
+.mobile-numeric .MuiInputLabel-root {
+  color: var(--bms-dfh-blue) !important;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+/* NUM field input area */
+.bms-num .MuiInputBase-input,
+.num-field .MuiInputBase-input,
+.numeric-input .MuiInputBase-input,
+.mobile-numeric .MuiInputBase-input {
+  background-color: transparent !important;
+  color: var(--bms-terminal-black) !important;
+  font-weight: 500; /* Slightly bolder for numeric emphasis */
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+  cursor: text !important;
+}
+
+/* Mobile-specific numeric keyboard activation */
+.bms-num input[type="text"],
+.num-field input[type="text"],
+.numeric-input input[type="text"],
+.mobile-numeric input[type="text"] {
+  -webkit-appearance: none;
+  -moz-appearance: textfield;
+}
+
+/* Remove number input spinners for cleaner appearance */
+.bms-num input[type="number"]::-webkit-outer-spin-button,
+.bms-num input[type="number"]::-webkit-inner-spin-button,
+.num-field input[type="number"]::-webkit-outer-spin-button,
+.num-field input[type="number"]::-webkit-inner-spin-button,
+.numeric-input input[type="number"]::-webkit-outer-spin-button,
+.numeric-input input[type="number"]::-webkit-inner-spin-button,
+.mobile-numeric input[type="number"]::-webkit-outer-spin-button,
+.mobile-numeric input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ========================================================================
+   IC ATTRIBUTE IMPLEMENTATION (Initial Cursor Positioning)
+   Purpose: Fields that receive initial focus when screen loads
+   BMS Equivalent: IC attribute byte for cursor positioning control
+   ======================================================================== */
+
+.bms-ic,
+.ic-field,
+.initial-cursor,
+.autofocus-field {
+  /* Base IC field styling inheriting from UNPROT */
+  background-color: var(--bms-terminal-white) !important;
+  color: var(--bms-terminal-black) !important;
+  font-family: var(--bms-font-family);
+  font-size: var(--bms-font-size);
+  letter-spacing: var(--bms-letter-spacing);
+  line-height: var(--bms-line-height);
+  
+  /* Initial cursor positioning styling */
+  border: var(--bms-border-width) solid var(--bms-dfh-yellow) !important;
+  border-radius: var(--bms-border-radius);
+  padding: var(--bms-field-padding);
+  margin: var(--bms-field-margin);
+  
+  /* Enhanced visual indication for initial cursor position */
+  box-shadow: 0 0 0 2px rgba(255, 255, 0, 0.3) !important;
+  
+  /* Enable input capabilities */
+  cursor: text !important;
+  user-select: text !important;
+  
+  /* Smooth focus transition */
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+/* IC field active focus state */
+.bms-ic:focus,
+.ic-field:focus,
+.initial-cursor:focus,
+.autofocus-field:focus,
+.bms-ic:focus-within,
+.ic-field:focus-within,
+.initial-cursor:focus-within,
+.autofocus-field:focus-within {
+  border-color: var(--bms-dfh-yellow) !important;
+  box-shadow: 0 0 0 3px rgba(255, 255, 0, 0.4) !important;
+  outline: none !important;
+}
+
+/* IC field label styling */
+.bms-ic .MuiInputLabel-root,
+.ic-field .MuiInputLabel-root,
+.initial-cursor .MuiInputLabel-root,
+.autofocus-field .MuiInputLabel-root {
+  color: var(--bms-dfh-yellow) !important;
+  font-weight: 600; /* Stronger emphasis for initial cursor field */
+  font-size: 13px;
+}
+
+/* IC field input area */
+.bms-ic .MuiInputBase-input,
+.ic-field .MuiInputBase-input,
+.initial-cursor .MuiInputBase-input,
+.autofocus-field .MuiInputBase-input {
+  background-color: transparent !important;
+  color: var(--bms-terminal-black) !important;
+  font-weight: 400;
+  cursor: text !important;
+}
+
+/* Animation for initial cursor positioning */
+@keyframes initialCursorPulse {
+  0% { box-shadow: 0 0 0 2px rgba(255, 255, 0, 0.3); }
+  50% { box-shadow: 0 0 0 4px rgba(255, 255, 0, 0.5); }
+  100% { box-shadow: 0 0 0 2px rgba(255, 255, 0, 0.3); }
+}
+
+.bms-ic:not(:focus),
+.ic-field:not(:focus),
+.initial-cursor:not(:focus),
+.autofocus-field:not(:focus) {
+  animation: initialCursorPulse 2s ease-in-out infinite;
+}
+
+/* ========================================================================
+   BRT ATTRIBUTE IMPLEMENTATION (Bright Intensity)
+   Purpose: Fields with enhanced visual emphasis through bold display
+   BMS Equivalent: BRT attribute byte for highlighting important fields
+   ======================================================================== */
+
+.bms-brt,
+.brt-field,
+.bright-intensity,
+.bold-emphasis {
+  /* Base BRT field styling with enhanced visual prominence */
+  background-color: #FFFFCC !important; /* Light yellow background for attention */
+  color: var(--bms-terminal-black) !important;
+  font-family: var(--bms-font-family);
+  font-size: var(--bms-font-size);
+  font-weight: 700 !important; /* Bold font weight for bright intensity */
+  letter-spacing: var(--bms-letter-spacing);
+  line-height: var(--bms-line-height);
+  
+  /* Enhanced border for visual prominence */
+  border: 2px solid var(--bms-dfh-yellow) !important;
+  border-radius: var(--bms-border-radius);
+  padding: var(--bms-field-padding);
+  margin: var(--bms-field-margin);
+  
+  /* Bright intensity visual effects */
+  box-shadow: 0 2px 4px rgba(255, 255, 0, 0.3) !important;
+  text-shadow: 0 0 1px rgba(0, 0, 0, 0.3);
+  
+  /* Enable input capabilities if not combined with protection */
+  cursor: text !important;
+  user-select: text !important;
+  
+  /* Smooth transition effects */
+  transition: all 0.2s ease-in-out;
+}
+
+/* BRT field focus state */
+.bms-brt:focus,
+.brt-field:focus,
+.bright-intensity:focus,
+.bold-emphasis:focus,
+.bms-brt:focus-within,
+.brt-field:focus-within,
+.bright-intensity:focus-within,
+.bold-emphasis:focus-within {
+  border-color: var(--bms-yellow-dark) !important;
+  box-shadow: 0 0 0 3px rgba(255, 255, 0, 0.5) !important;
+  background-color: #FFFF99 !important; /* Slightly more intense yellow on focus */
+  outline: none !important;
+}
+
+/* BRT field label styling */
+.bms-brt .MuiInputLabel-root,
+.brt-field .MuiInputLabel-root,
+.bright-intensity .MuiInputLabel-root,
+.bold-emphasis .MuiInputLabel-root {
+  color: var(--bms-yellow-dark) !important;
+  font-weight: 700 !important; /* Bold labels for bright fields */
+  font-size: 13px;
+  text-shadow: 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+/* BRT field input area */
+.bms-brt .MuiInputBase-input,
+.brt-field .MuiInputBase-input,
+.bright-intensity .MuiInputBase-input,
+.bold-emphasis .MuiInputBase-input {
+  background-color: transparent !important;
+  color: var(--bms-terminal-black) !important;
+  font-weight: 700 !important; /* Bold input text */
+  cursor: text !important;
+  text-shadow: 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+/* ========================================================================
+   MATERIAL-UI INTEGRATION CLASSES
+   Purpose: Seamless integration with Material-UI TextField components
+   Integration: Preserves Material-UI functionality while adding BMS behavior
+   ======================================================================== */
+
+.mui-textfield-bms {
+  /* Base Material-UI TextField integration */
+  font-family: var(--bms-font-family) !important;
+  
+  /* Override Material-UI default styling for BMS compatibility */
+  .MuiInputBase-root {
+    font-family: var(--bms-font-family) !important;
+    font-size: var(--bms-font-size) !important;
+    letter-spacing: var(--bms-letter-spacing) !important;
+    line-height: var(--bms-line-height) !important;
+  }
+  
+  /* TextField label integration */
+  .MuiInputLabel-root {
+    font-family: var(--bms-font-family) !important;
+    font-size: 13px !important;
+  }
+  
+  /* Remove Material-UI decorative elements for terminal authenticity */
+  .MuiInputBase-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+    border-width: 2px !important;
+  }
+  
+  /* Helper text styling for BMS integration */
+  .MuiFormHelperText-root {
+    font-family: var(--bms-font-family) !important;
+    font-size: 12px !important;
+    margin-left: 12px !important;
+    margin-top: 4px !important;
+  }
+}
+
+/* Material-UI ASKIP integration */
+.mui-input-askip {
+  /* Apply ASKIP styling to Material-UI components */
+  .MuiInputBase-root {
+    background-color: var(--bms-terminal-white) !important;
+    color: var(--bms-dfh-green) !important;
+    pointer-events: none !important;
+    cursor: default !important;
+  }
+  
+  .MuiOutlinedInput-notchedOutline {
+    border-color: var(--bms-dfh-neutral) !important;
+  }
+  
+  .MuiInputLabel-root {
+    color: var(--bms-dfh-green) !important;
+  }
+  
+  /* Remove focus indicators for protected fields */
+  .MuiInputBase-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+    border-color: var(--bms-dfh-neutral) !important;
+    border-width: 1px !important;
+  }
+}
+
+/* Material-UI UNPROT integration */
+.mui-input-unprot {
+  .MuiInputBase-root {
+    background-color: var(--bms-terminal-white) !important;
+    color: var(--bms-terminal-black) !important;
+  }
+  
+  .MuiOutlinedInput-notchedOutline {
+    border-color: var(--bms-dfh-blue) !important;
+  }
+  
+  .MuiInputLabel-root {
+    color: var(--bms-dfh-blue) !important;
+  }
+  
+  .MuiInputBase-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+    border-color: var(--bms-dfh-blue) !important;
+    box-shadow: 0 0 0 2px rgba(0, 128, 255, 0.2) !important;
+  }
+}
+
+/* Material-UI PROT integration */
+.mui-input-prot {
+  .MuiInputBase-root {
+    background-color: #F0F0F0 !important;
+    color: var(--bms-terminal-gray) !important;
+    pointer-events: none !important;
+    cursor: not-allowed !important;
+    opacity: 0.7 !important;
+  }
+  
+  .MuiOutlinedInput-notchedOutline {
+    border-color: var(--bms-terminal-gray) !important;
+  }
+  
+  .MuiInputLabel-root {
+    color: var(--bms-terminal-gray) !important;
+    opacity: 0.7 !important;
+  }
+}
+
+/* Material-UI NUM integration */
+.mui-input-num {
+  .MuiInputBase-root {
+    background-color: var(--bms-terminal-white) !important;
+    color: var(--bms-terminal-black) !important;
+  }
+  
+  .MuiInputBase-input {
+    text-align: right !important;
+    font-variant-numeric: tabular-nums !important;
+    font-weight: 500 !important;
+  }
+  
+  .MuiOutlinedInput-notchedOutline {
+    border-color: var(--bms-dfh-blue) !important;
+  }
+  
+  .MuiInputBase-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+    border-color: var(--bms-dfh-green) !important;
+    box-shadow: 0 0 0 2px rgba(0, 255, 0, 0.2) !important;
+  }
+}
+
+/* Material-UI IC integration */
+.mui-focus-ic {
+  .MuiInputBase-root {
+    background-color: var(--bms-terminal-white) !important;
+    color: var(--bms-terminal-black) !important;
+  }
+  
+  .MuiOutlinedInput-notchedOutline {
+    border-color: var(--bms-dfh-yellow) !important;
+    border-width: 2px !important;
+  }
+  
+  .MuiInputLabel-root {
+    color: var(--bms-dfh-yellow) !important;
+    font-weight: 600 !important;
+  }
+  
+  .MuiInputBase-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+    border-color: var(--bms-dfh-yellow) !important;
+    box-shadow: 0 0 0 3px rgba(255, 255, 0, 0.4) !important;
+  }
+}
+
+/* Material-UI BRT integration */
+.mui-emphasis-brt {
+  .MuiInputBase-root {
+    background-color: #FFFFCC !important;
+    color: var(--bms-terminal-black) !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 4px rgba(255, 255, 0, 0.3) !important;
+  }
+  
+  .MuiInputBase-input {
+    font-weight: 700 !important;
+    text-shadow: 0 0 1px rgba(0, 0, 0, 0.2) !important;
+  }
+  
+  .MuiOutlinedInput-notchedOutline {
+    border-color: var(--bms-dfh-yellow) !important;
+    border-width: 2px !important;
+  }
+  
+  .MuiInputLabel-root {
+    color: var(--bms-yellow-dark) !important;
+    font-weight: 700 !important;
+    text-shadow: 0 0 1px rgba(0, 0, 0, 0.2) !important;
+  }
+  
+  .MuiInputBase-root.Mui-focused {
+    background-color: #FFFF99 !important;
+  }
+  
+  .MuiInputBase-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+    border-color: var(--bms-yellow-dark) !important;
+    box-shadow: 0 0 0 3px rgba(255, 255, 0, 0.5) !important;
+  }
+}
+
+/* ========================================================================
+   RESPONSIVE DESIGN BREAKPOINTS
+   Purpose: Maintain BMS field behavior across different screen sizes
+   Breakpoints: xs, sm, md, lg, xl matching Material-UI theme breakpoints
+   ======================================================================== */
+
+/* Mobile breakpoint (xs: 0-599px) */
+@media (max-width: 599px) {
+  :root {
+    --bms-field-height: 48px; /* Increased height for touch interaction */
+    --bms-field-padding: 12px 16px; /* Enhanced padding for mobile */
+    --bms-font-size: 16px; /* Prevent zoom on iOS devices */
+  }
+  
+  /* Optimize numeric fields for mobile keyboards */
+  .bms-num,
+  .num-field,
+  .numeric-input,
+  .mobile-numeric {
+    font-size: 18px !important; /* Larger font for mobile numeric input */
+  }
+  
+  /* Enhanced touch targets for BRT fields */
+  .bms-brt,
+  .brt-field,
+  .bright-intensity,
+  .bold-emphasis {
+    min-height: 56px !important; /* Larger touch target */
+    padding: 16px !important;
+  }
+}
+
+/* Tablet breakpoint (sm: 600-959px) */
+@media (min-width: 600px) and (max-width: 959px) {
+  :root {
+    --bms-field-height: 44px; /* Medium field height for tablets */
+    --bms-field-padding: 10px 14px; /* Balanced padding */
+    --bms-font-size: 15px; /* Slightly larger font for readability */
+  }
+}
+
+/* Desktop breakpoint (md: 960px and up) */
+@media (min-width: 960px) {
+  :root {
+    --bms-field-height: 40px; /* Standard desktop field height */
+    --bms-field-padding: 8px 12px; /* Original terminal-equivalent padding */
+    --bms-font-size: 14px; /* Standard terminal font size */
+  }
+  
+  /* Desktop-specific enhancements */
+  .bms-ic,
+  .ic-field,
+  .initial-cursor,
+  .autofocus-field {
+    /* More subtle animation on desktop */
+    animation-duration: 3s !important;
+  }
+}
+
+/* Large desktop breakpoint (lg: 1280px and up) */
+@media (min-width: 1280px) {
+  /* Enhanced spacing for large screens */
+  .mui-textfield-bms {
+    margin: 6px 0 !important;
+  }
+  
+  /* Wider fields for better data visibility */
+  .bms-num,
+  .num-field,
+  .numeric-input,
+  .mobile-numeric {
+    min-width: 140px !important;
+  }
+}
+
+/* ========================================================================
+   ERROR STATE INTEGRATION
+   Purpose: Provide consistent error styling for validation failures
+   Integration: Works with Material-UI error states and custom validation
+   ======================================================================== */
+
+.bms-error,
+.field-error,
+.validation-error {
+  /* Error field styling */
+  border-color: var(--bms-dfh-red) !important;
+  background-color: #FFE5E5 !important;
+  color: var(--bms-red-dark) !important;
+  
+  /* Error visual indicators */
+  box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.2) !important;
+  
+  /* Error label styling */
+  .MuiInputLabel-root {
+    color: var(--bms-dfh-red) !important;
+  }
+  
+  /* Error helper text */
+  .MuiFormHelperText-root {
+    color: var(--bms-dfh-red) !important;
+    font-weight: 500 !important;
+  }
+}
+
+/* Material-UI error integration */
+.mui-textfield-bms.Mui-error {
+  .MuiOutlinedInput-notchedOutline {
+    border-color: var(--bms-dfh-red) !important;
+  }
+  
+  .MuiInputLabel-root {
+    color: var(--bms-dfh-red) !important;
+  }
+  
+  .MuiInputBase-root {
+    background-color: #FFE5E5 !important;
+  }
+}
+
+/* ========================================================================
+   ACCESSIBILITY ENHANCEMENTS
+   Purpose: Ensure WCAG 2.1 AA compliance while maintaining BMS behavior
+   Focus: High contrast, keyboard navigation, screen reader support
+   ======================================================================== */
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --bms-dfh-green: #00CC00;
+    --bms-dfh-red: #CC0000;
+    --bms-dfh-blue: #0066CC;
+    --bms-dfh-yellow: #B8860B; /* Darker yellow for better contrast */
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .bms-ic,
+  .ic-field,
+  .initial-cursor,
+  .autofocus-field {
+    animation: none !important;
+  }
+  
+  * {
+    transition: none !important;
+  }
+}
+
+/* Focus indicators for keyboard navigation */
+.bms-askip:focus,
+.bms-unprot:focus,
+.bms-prot:focus,
+.bms-num:focus,
+.bms-ic:focus,
+.bms-brt:focus {
+  /* Enhanced focus indicators for accessibility */
+  outline: 3px solid #005FCC !important;
+  outline-offset: 2px !important;
+}
+
+/* Screen reader support */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* ========================================================================
+   PRINT STYLES
+   Purpose: Ensure proper formatting when screens are printed
+   Behavior: Maintain field visibility and structure in printed output
+   ======================================================================== */
+
+@media print {
+  /* Remove interactive styling for print */
+  .bms-askip,
+  .bms-unprot,
+  .bms-prot,
+  .bms-num,
+  .bms-ic,
+  .bms-brt {
+    background-color: transparent !important;
+    box-shadow: none !important;
+    animation: none !important;
+  }
+  
+  /* Ensure text visibility */
+  * {
+    color: black !important;
+    background: transparent !important;
+  }
+  
+  /* Maintain field structure */
+  .mui-textfield-bms {
+    border: 1px solid black !important;
+    margin: 2px 0 !important;
+    padding: 4px !important;
+  }
+}
