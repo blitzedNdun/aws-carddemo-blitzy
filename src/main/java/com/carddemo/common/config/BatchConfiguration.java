@@ -3,12 +3,11 @@ package com.carddemo.common.config;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.explore.JobExplorer;
-import org.springframework.batch.core.JobRepository;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.TaskExecutorJobLauncher;
-import org.springframework.batch.core.repository.JobRepository;
-import org.springframework.batch.core.step.builder.StepBuilderFactory;
-import org.springframework.batch.core.job.builder.JobBuilderFactory;
+import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.core.configuration.support.DefaultBatchConfiguration;
 import org.springframework.batch.core.listener.JobExecutionListenerSupport;
 import org.springframework.batch.core.listener.StepExecutionListenerSupport;
@@ -28,6 +27,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.retry.policy.ExceptionClassifierRetryPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.backoff.ExponentialBackOffPolicy;
+import org.springframework.batch.core.step.skip.SkipLimitExceededException;
 import org.springframework.batch.core.step.skip.SkipPolicy;
 import org.springframework.batch.core.step.skip.AlwaysSkipItemSkipPolicy;
 import org.springframework.batch.core.step.skip.NeverSkipItemSkipPolicy;
@@ -118,7 +118,7 @@ public class BatchConfiguration extends DefaultBatchConfiguration {
     @Bean
     @Primary
     @Override
-    public JobRepository jobRepository() throws Exception {
+    public JobRepository jobRepository() {
         logger.info("Initializing CardDemo JobRepository with optimized transaction management");
         return super.jobRepository();
     }
@@ -131,36 +131,21 @@ public class BatchConfiguration extends DefaultBatchConfiguration {
     @Bean
     @Primary
     @Override
-    public JobLauncher jobLauncher() throws Exception {
+    public JobLauncher jobLauncher() {
         logger.info("Initializing CardDemo JobLauncher with custom task executor");
         TaskExecutorJobLauncher jobLauncher = new TaskExecutorJobLauncher();
         jobLauncher.setJobRepository(jobRepository());
         jobLauncher.setTaskExecutor(taskExecutor());
-        jobLauncher.afterPropertiesSet();
+        try {
+            jobLauncher.afterPropertiesSet();
+        } catch (Exception e) {
+            logger.error("Failed to initialize JobLauncher", e);
+            throw new RuntimeException("JobLauncher initialization failed", e);
+        }
         return jobLauncher;
     }
 
-    /**
-     * StepBuilderFactory bean providing fluent API for step configuration with
-     * integrated chunk processing, transaction management, and error handling.
-     * Essential for converting COBOL paragraph structures to Spring Batch steps.
-     */
-    @Bean
-    public StepBuilderFactory stepBuilderFactory() throws Exception {
-        logger.info("Creating StepBuilderFactory with chunk processing optimization");
-        return new StepBuilderFactory(jobRepository(), getTransactionManager());
-    }
 
-    /**
-     * JobBuilderFactory bean providing fluent API for job configuration with
-     * integrated parameter validation, listener registration, and restart capabilities.
-     * Supports the conversion of 12 JCL job definitions to Spring Batch jobs.
-     */
-    @Bean
-    public JobBuilderFactory jobBuilderFactory() throws Exception {
-        logger.info("Creating JobBuilderFactory with parameter validation and restart support");
-        return new JobBuilderFactory(jobRepository());
-    }
 
     /**
      * Custom TaskExecutor optimized for CardDemo batch processing requirements.
@@ -176,7 +161,7 @@ public class BatchConfiguration extends DefaultBatchConfiguration {
         executor.setCorePoolSize(corePoolSize);
         executor.setMaxPoolSize(maxPoolSize);
         executor.setQueueCapacity(QUEUE_CAPACITY);
-        executor.setKeepAliveSeconds(KEEP_ALIVE_SECONDS);
+        executor.setKeepAliveSeconds((int) KEEP_ALIVE_SECONDS);
         executor.setThreadNamePrefix("carddemo-batch-");
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(60);
@@ -373,11 +358,11 @@ public class BatchConfiguration extends DefaultBatchConfiguration {
                 meterRegistry.counter("carddemo.batch.step.completed", 
                     "step_name", stepName, "status", exitStatus.getExitCode()).increment();
                 meterRegistry.gauge("carddemo.batch.step.read_count", 
-                    "step_name", stepName, stepExecution.getReadCount());
+                    io.micrometer.core.instrument.Tags.of("step_name", stepName), stepExecution.getReadCount());
                 meterRegistry.gauge("carddemo.batch.step.write_count", 
-                    "step_name", stepName, stepExecution.getWriteCount());
+                    io.micrometer.core.instrument.Tags.of("step_name", stepName), stepExecution.getWriteCount());
                 meterRegistry.gauge("carddemo.batch.step.skip_count", 
-                    "step_name", stepName, stepExecution.getSkipCount());
+                    io.micrometer.core.instrument.Tags.of("step_name", stepName), stepExecution.getSkipCount());
             }
             
             return exitStatus;
@@ -394,7 +379,7 @@ public class BatchConfiguration extends DefaultBatchConfiguration {
         private static final int MAX_SKIP_COUNT = 100; // Maximum skips per step
 
         @Override
-        public boolean shouldSkip(Throwable exception, int skipCount) throws SkipLimitExceededException {
+        public boolean shouldSkip(Throwable exception, long skipCount) throws SkipLimitExceededException {
             // Prevent excessive skipping that could indicate systemic issues
             if (skipCount >= MAX_SKIP_COUNT) {
                 logger.error("Skip limit exceeded: {} skips, failing job", skipCount);
