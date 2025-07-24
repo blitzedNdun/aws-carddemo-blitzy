@@ -87,8 +87,8 @@ public final class ValidationUtils {
      * Replicates COBOL account number validation logic from account processing programs.
      * 
      * Validation Rules (from COBOL ACCT-ID validation):
-     * - Must be exactly 9 digits (PIC 9(09) equivalent)
-     * - Must be within valid account ID range (100000000-999999999)
+     * - Must be exactly 11 digits (PIC 9(11) equivalent)
+     * - Must be within valid account ID range (10000000000-99999999999)
      * - Must be numeric-only content
      * - Cannot be null, empty, or contain non-numeric characters
      * 
