@@ -31,7 +31,7 @@ import java.time.LocalDate;
  * - credit_limit: DECIMAL(12,2) maximum credit allocation with BigDecimal accuracy
  * - Foreign key relationships to Customer entity and DisclosureGroup for interest rate management
  */
-@Entity
+@Entity(name = "CommonAccount")
 @Table(name = "accounts", schema = "public")
 public class Account implements Serializable {
 
