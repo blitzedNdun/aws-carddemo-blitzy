@@ -82,6 +82,16 @@ public class AuditInfo {
     private String ipAddress;
     
     /**
+     * User agent string from the client request for detailed security audit tracking.
+     * Provides browser/client information for security analysis, fraud detection,
+     * and compliance monitoring. Essential for identifying suspicious patterns,
+     * automated bot activity, and ensuring regulatory audit trail completeness.
+     * Used for PCI DSS compliance and security incident investigation.
+     */
+    @JsonProperty("user_agent")
+    private String userAgent;
+    
+    /**
      * Default constructor for JSON deserialization and framework compatibility.
      * Automatically initializes timestamp to current time when audit info is created,
      * ensuring accurate temporal tracking of audit events.
@@ -234,6 +244,24 @@ public class AuditInfo {
     }
     
     /**
+     * Gets the user agent string from the client request.
+     * 
+     * @return The client user agent string
+     */
+    public String getUserAgent() {
+        return userAgent;
+    }
+    
+    /**
+     * Sets the user agent string from the client request.
+     * 
+     * @param userAgent The client user agent string
+     */
+    public void setUserAgent(String userAgent) {
+        this.userAgent = userAgent;
+    }
+    
+    /**
      * Creates a formatted string representation of the audit information.
      * Uses the LocalDateTime.toString() method to provide consistent formatting
      * compatible with structured logging and audit trail requirements.
@@ -242,8 +270,8 @@ public class AuditInfo {
      */
     @Override
     public String toString() {
-        return String.format("AuditInfo{userId='%s', operationType='%s', timestamp='%s', correlationId='%s', sessionId='%s', sourceSystem='%s', ipAddress='%s'}", 
-            userId, operationType, timestamp != null ? timestamp.toString() : null, correlationId, sessionId, sourceSystem, ipAddress);
+        return String.format("AuditInfo{userId='%s', operationType='%s', timestamp='%s', correlationId='%s', sessionId='%s', sourceSystem='%s', ipAddress='%s', userAgent='%s'}", 
+            userId, operationType, timestamp != null ? timestamp.toString() : null, correlationId, sessionId, sourceSystem, ipAddress, userAgent);
     }
     
     /**
@@ -273,6 +301,7 @@ public class AuditInfo {
         copy.setSessionId(this.sessionId);
         copy.setSourceSystem(this.sourceSystem);
         copy.setIpAddress(this.ipAddress);
+        copy.setUserAgent(this.userAgent);
         return copy;
     }
     
