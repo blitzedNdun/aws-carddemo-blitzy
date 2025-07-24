@@ -344,7 +344,7 @@
       ],
       "invalidDescriptions": [
         {"input": "", "length": 0, "valid": false, "reason": "Description cannot be blank"},
-        {"input": "A".repeat(61), "length": 61, "valid": false, "reason": "Description exceeds 60 character limit"}
+        {"input": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "length": 61, "valid": false, "reason": "Description exceeds 60 character limit"}
       ]
     },
     "debitCreditIndicatorValidation": {
