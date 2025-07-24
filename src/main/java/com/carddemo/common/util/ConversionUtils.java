@@ -232,6 +232,13 @@ public final class ConversionUtils {
         try {
             BigDecimal result = BigDecimalUtils.createDecimal(cleanValue);
             
+            // For COBOL COMP-3, the decimal point is implied based on scale
+            // Convert from integer representation to actual decimal value
+            if (scale > 0) {
+                BigDecimal divisor = BigDecimal.TEN.pow(scale);
+                result = result.divide(divisor, BigDecimalUtils.DECIMAL128_CONTEXT);
+            }
+            
             // Apply scale
             result = result.setScale(scale, BigDecimalUtils.DECIMAL128_CONTEXT.getRoundingMode());
             
@@ -1024,11 +1031,12 @@ public final class ConversionUtils {
                 // Check for overpunch in last character
                 char lastChar = cleanValue.charAt(cleanValue.length() - 1);
                 if (lastChar >= 'A' && lastChar <= 'R') {
+                    char digit;
                     if (lastChar >= 'J' && lastChar <= 'R') {
                         isNegative = true;
-                        char digit = (char) ('0' + (lastChar - 'J' + 1));
+                        digit = (char) ('0' + (lastChar - 'J' + 1));
                     } else {
-                        char digit = (char) ('0' + (lastChar - 'A' + 1));
+                        digit = (char) ('0' + (lastChar - 'A' + 1));
                     }
                     cleanValue = cleanValue.substring(0, cleanValue.length() - 1) + digit;
                 }
