@@ -45,6 +45,12 @@
         <!-- JSON Processing -->
         <jackson.version>2.16.1</jackson.version>
         
+        <!-- Logging -->
+        <logstash-logback-encoder.version>7.4</logstash-logback-encoder.version>
+        
+        <!-- Logging -->
+        <logstash-logback-encoder.version>7.4</logstash-logback-encoder.version>
+        
         <!-- Validation -->
         <jakarta-validation.version>3.0.2</jakarta-validation.version>
         
@@ -138,6 +144,13 @@
                 <version>${jakarta-validation.version}</version>
             </dependency>
 
+            <!-- Logging -->
+            <dependency>
+                <groupId>net.logstash.logback</groupId>
+                <artifactId>logstash-logback-encoder</artifactId>
+                <version>${logstash-logback-encoder.version}</version>
+            </dependency>
+            
             <!-- Utilities -->
             <dependency>
                 <groupId>org.apache.commons</groupId>
@@ -237,6 +250,11 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-logging</artifactId>
+        </dependency>
+        
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
         </dependency>
 
         <!-- Metrics -->
