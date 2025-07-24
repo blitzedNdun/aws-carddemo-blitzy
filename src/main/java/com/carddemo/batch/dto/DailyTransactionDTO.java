@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import jakarta.validation.constraints.*;
-import org.apache.commons.lang3.StringUtils;
+// Removed Apache Commons Lang3 dependency - using standard Java String operations
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -198,7 +198,7 @@ public class DailyTransactionDTO implements Serializable {
     }
 
     public void setTransactionId(String transactionId) {
-        this.transactionId = StringUtils.trim(transactionId);
+        this.transactionId = transactionId != null ? transactionId.trim() : null;
     }
 
     public String getTransactionTypeCode() {
@@ -206,7 +206,7 @@ public class DailyTransactionDTO implements Serializable {
     }
 
     public void setTransactionTypeCode(String transactionTypeCode) {
-        this.transactionTypeCode = StringUtils.trim(transactionTypeCode);
+        this.transactionTypeCode = transactionTypeCode != null ? transactionTypeCode.trim() : null;
     }
 
     public String getTransactionCategoryCode() {
@@ -214,7 +214,7 @@ public class DailyTransactionDTO implements Serializable {
     }
 
     public void setTransactionCategoryCode(String transactionCategoryCode) {
-        this.transactionCategoryCode = StringUtils.trim(transactionCategoryCode);
+        this.transactionCategoryCode = transactionCategoryCode != null ? transactionCategoryCode.trim() : null;
     }
 
     public String getTransactionSource() {
@@ -222,7 +222,7 @@ public class DailyTransactionDTO implements Serializable {
     }
 
     public void setTransactionSource(String transactionSource) {
-        this.transactionSource = StringUtils.trim(transactionSource);
+        this.transactionSource = transactionSource != null ? transactionSource.trim() : null;
     }
 
     public String getTransactionDescription() {
@@ -230,7 +230,7 @@ public class DailyTransactionDTO implements Serializable {
     }
 
     public void setTransactionDescription(String transactionDescription) {
-        this.transactionDescription = StringUtils.trim(transactionDescription);
+        this.transactionDescription = transactionDescription != null ? transactionDescription.trim() : null;
     }
 
     public BigDecimal getTransactionAmount() {
@@ -246,7 +246,7 @@ public class DailyTransactionDTO implements Serializable {
     }
 
     public void setMerchantId(String merchantId) {
-        this.merchantId = StringUtils.trim(merchantId);
+        this.merchantId = merchantId != null ? merchantId.trim() : null;
     }
 
     public String getMerchantName() {
@@ -254,7 +254,7 @@ public class DailyTransactionDTO implements Serializable {
     }
 
     public void setMerchantName(String merchantName) {
-        this.merchantName = StringUtils.trim(merchantName);
+        this.merchantName = merchantName != null ? merchantName.trim() : null;
     }
 
     public String getMerchantCity() {
@@ -262,7 +262,7 @@ public class DailyTransactionDTO implements Serializable {
     }
 
     public void setMerchantCity(String merchantCity) {
-        this.merchantCity = StringUtils.trim(merchantCity);
+        this.merchantCity = merchantCity != null ? merchantCity.trim() : null;
     }
 
     public String getMerchantZip() {
@@ -270,7 +270,7 @@ public class DailyTransactionDTO implements Serializable {
     }
 
     public void setMerchantZip(String merchantZip) {
-        this.merchantZip = StringUtils.trim(merchantZip);
+        this.merchantZip = merchantZip != null ? merchantZip.trim() : null;
     }
 
     public String getCardNumber() {
@@ -278,7 +278,7 @@ public class DailyTransactionDTO implements Serializable {
     }
 
     public void setCardNumber(String cardNumber) {
-        this.cardNumber = StringUtils.trim(cardNumber);
+        this.cardNumber = cardNumber != null ? cardNumber.trim() : null;
     }
 
     public String getOriginalTimestamp() {
@@ -286,7 +286,7 @@ public class DailyTransactionDTO implements Serializable {
     }
 
     public void setOriginalTimestamp(String originalTimestamp) {
-        this.originalTimestamp = StringUtils.trim(originalTimestamp);
+        this.originalTimestamp = originalTimestamp != null ? originalTimestamp.trim() : null;
     }
 
     public String getProcessingTimestamp() {
@@ -294,7 +294,7 @@ public class DailyTransactionDTO implements Serializable {
     }
 
     public void setProcessingTimestamp(String processingTimestamp) {
-        this.processingTimestamp = StringUtils.trim(processingTimestamp);
+        this.processingTimestamp = processingTimestamp != null ? processingTimestamp.trim() : null;
     }
 
     // Utility methods for date parsing and formatting
@@ -307,7 +307,7 @@ public class DailyTransactionDTO implements Serializable {
      * @throws DateTimeParseException if timestamp format is invalid
      */
     public LocalDateTime parseOriginalTimestamp() throws DateTimeParseException {
-        if (StringUtils.isBlank(originalTimestamp)) {
+        if (originalTimestamp == null || originalTimestamp.trim().isEmpty()) {
             throw new DateTimeParseException("Original timestamp is null or empty", "", 0);
         }
         
@@ -335,7 +335,7 @@ public class DailyTransactionDTO implements Serializable {
      * @throws DateTimeParseException if timestamp format is invalid
      */
     public LocalDateTime parseProcessingTimestamp() throws DateTimeParseException {
-        if (StringUtils.isBlank(processingTimestamp)) {
+        if (processingTimestamp == null || processingTimestamp.trim().isEmpty()) {
             throw new DateTimeParseException("Processing timestamp is null or empty", "", 0);
         }
         
@@ -394,7 +394,7 @@ public class DailyTransactionDTO implements Serializable {
      * @return Masked card number (e.g., "1234********5678")
      */
     public String getMaskedCardNumber() {
-        if (StringUtils.isBlank(cardNumber) || cardNumber.length() != 16) {
+        if (cardNumber == null || cardNumber.trim().isEmpty() || cardNumber.length() != 16) {
             return "****************";
         }
         
