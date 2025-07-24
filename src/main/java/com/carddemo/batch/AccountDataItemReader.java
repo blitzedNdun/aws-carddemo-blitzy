@@ -65,6 +65,11 @@ import java.util.regex.Pattern;
 public class AccountDataItemReader extends FlatFileItemReader<Account> {
 
     private static final Logger logger = LoggerFactory.getLogger(AccountDataItemReader.class);
+    
+    /**
+     * Resource reference for file access and validation
+     */
+    private Resource resource;
 
     /**
      * MathContext for COBOL COMP-3 decimal precision equivalence
@@ -141,6 +146,17 @@ public class AccountDataItemReader extends FlatFileItemReader<Account> {
         setResource(resource);
         logger.info("Configured AccountDataItemReader with resource: {}", resource.getFilename());
     }
+    
+    /**
+     * Override setResource to store reference for validation and access
+     * 
+     * @param resource The Resource pointing to the account data ASCII file
+     */
+    @Override
+    public void setResource(Resource resource) {
+        this.resource = resource;
+        super.setResource(resource);
+    }
 
     /**
      * Creates and configures the line mapper for fixed-width COBOL data parsing
@@ -196,18 +212,18 @@ public class AccountDataItemReader extends FlatFileItemReader<Account> {
             logger.info("Opened AccountDataItemReader for processing account data migration");
             
             // Validate resource configuration
-            if (getResource() == null) {
+            if (resource == null) {
                 throw new ItemStreamException("Resource not configured for AccountDataItemReader");
             }
             
-            if (!getResource().exists()) {
+            if (!resource.exists()) {
                 throw new ItemStreamException("Account data file does not exist: " + 
-                    getResource().getFilename());
+                    resource.getFilename());
             }
             
             logger.info("Account data file validated: {} ({})", 
-                getResource().getFilename(), 
-                getResource().contentLength() + " bytes");
+                resource.getFilename(), 
+                resource.contentLength() + " bytes");
                 
         } catch (Exception e) {
             logger.error("Failed to open AccountDataItemReader: {}", e.getMessage());
