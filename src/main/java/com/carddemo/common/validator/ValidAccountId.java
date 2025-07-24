@@ -79,7 +79,7 @@ import java.lang.annotation.Target;
  * @since 1.0
  */
 @Documented
-@Constraint(validatedBy = ValidAccountIdValidator.class)
+@Constraint(validatedBy = AccountIdValidator.class)
 @Target({ ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, 
           ElementType.ANNOTATION_TYPE, ElementType.TYPE_USE })
 @Retention(RetentionPolicy.RUNTIME)
