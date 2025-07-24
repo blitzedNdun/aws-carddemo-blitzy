@@ -260,13 +260,17 @@ export const getComponentPath = (code: TransactionCode): string => {
 
 // Validation functions for transaction flow integrity
 export const isValidTransactionFlow = (from: TransactionCode, to: TransactionCode): boolean => {
-  const fromPatterns = TRANSACTION_FLOW.XCTL_PATTERNS[`FROM_${from}` as keyof typeof TRANSACTION_FLOW.XCTL_PATTERNS];
-  return fromPatterns ? fromPatterns.includes(to) : false;
+  const patternKey = `FROM_${from}` as string;
+  const fromPatternsKey = patternKey as keyof typeof TRANSACTION_FLOW.XCTL_PATTERNS;
+  const fromPatterns = TRANSACTION_FLOW.XCTL_PATTERNS[fromPatternsKey];
+  return fromPatterns ? (fromPatterns as readonly string[]).includes(to) : false;
 };
 
 export const getNextTransactionOptions = (current: TransactionCode): TransactionCode[] => {
-  const patternKey = `FROM_${current}` as keyof typeof TRANSACTION_FLOW.XCTL_PATTERNS;
-  return TRANSACTION_FLOW.XCTL_PATTERNS[patternKey] || [];
+  const patternKey = `FROM_${current}` as string;
+  const fromPatternsKey = patternKey as keyof typeof TRANSACTION_FLOW.XCTL_PATTERNS;
+  const patterns = TRANSACTION_FLOW.XCTL_PATTERNS[fromPatternsKey];
+  return patterns ? [...patterns] as TransactionCode[] : [];
 };
 
 // Transaction routing configuration for React Router integration
