@@ -1,0 +1,657 @@
+/**
+ * Function Key Styling for CardDemo Application
+ * 
+ * Implements visual cues, tooltips, and navigation indicators for preserving
+ * mainframe keyboard navigation patterns in the React application. This stylesheet
+ * provides Material-UI component integration for PF key guidance systems that
+ * replicate the original CICS transaction function key behavior.
+ * 
+ * Key Features:
+ * - Function key toolbar with visual guidance (F3=Exit, F7=Page Up, F8=Page Down, F12=Cancel)
+ * - Keyboard shortcuts tooltip system with contextual assistance
+ * - Navigation indicators with primary theme color highlighting
+ * - Key press feedback visualization through Material-UI Button ripple effects
+ * - Help text integration styling for Popover components
+ * 
+ * Technical Specification Reference: Section 7.7.2 UI Styling Requirements
+ * Theme Integration: Uses theme.js color palette and component overrides
+ * Repository: CardDemo_v1.0-15-g27d6c6f-68
+ */
+
+/* ========================================================================
+ * FUNCTION KEY TOOLBAR STYLES
+ * 
+ * Implements the bottom-of-screen function key guidance that preserves
+ * the mainframe pattern of displaying available PF keys and their actions.
+ * Positioned similar to BMS screen help text: "ENTER=Continue  F3=Exit"
+ * ======================================================================== */
+
+.function-key-toolbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--mui-palette-primary-main, #0080FF);
+  border-top: 2px solid var(--mui-palette-primary-dark, #0066CC);
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1100; /* Below modal, above drawer */
+  font-family: 'Courier New', Monaco, 'Lucida Console', Consolas, monospace;
+  font-size: 14px;
+  color: var(--mui-palette-primary-contrastText, #FFFFFF);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease-in-out;
+}
+
+.function-key-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--mui-palette-primary-dark, #0066CC) transparent;
+}
+
+.function-key-container::-webkit-scrollbar {
+  height: 4px;
+}
+
+.function-key-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.function-key-container::-webkit-scrollbar-thumb {
+  background-color: var(--mui-palette-primary-dark, #0066CC);
+  border-radius: 2px;
+}
+
+.function-key-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.toolbar-positioning {
+  /* Responsive positioning adjustments */
+  width: 100%;
+  min-height: 48px;
+  
+  /* Mobile adaptations */
+  @media (max-width: 600px) {
+    padding: 6px 12px;
+    min-height: 40px;
+  }
+  
+  /* Desktop optimizations */
+  @media (min-width: 1280px) {
+    max-width: 1200px;
+    margin: 0 auto;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+/* Hide toolbar on print */
+@media print {
+  .function-key-toolbar {
+    display: none !important;
+  }
+}
+
+/* ========================================================================
+ * KEYBOARD SHORTCUTS TOOLTIP STYLES
+ * 
+ * Provides contextual keyboard navigation guidance through Material-UI
+ * Tooltip components. Displays when users hover over interactive elements
+ * to show available keyboard shortcuts and function key options.
+ * ======================================================================== */
+
+.keyboard-tooltip {
+  background-color: var(--mui-palette-grey-900, #212121) !important;
+  color: var(--mui-palette-warning-main, #FFFF00) !important;
+  font-family: 'Courier New', Monaco, 'Lucida Console', Consolas, monospace !important;
+  font-size: 12px !important;
+  font-weight: bold !important;
+  padding: 8px 12px !important;
+  border-radius: 4px !important;
+  max-width: 300px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid var(--mui-palette-warning-dark, #CCCC00) !important;
+}
+
+.tooltip-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  line-height: 1.4;
+}
+
+.shortcut-hint {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-width: 120px;
+}
+
+.shortcut-hint .key-name {
+  font-weight: bold;
+  color: var(--mui-palette-info-main, #0080FF);
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--mui-palette-info-dark, #0066CC);
+}
+
+.shortcut-hint .key-description {
+  color: var(--mui-palette-warning-main, #FFFF00);
+  font-style: italic;
+}
+
+.tooltip-positioning {
+  /* Enhanced positioning for better visibility */
+  z-index: 1500; /* Above all other elements */
+  pointer-events: none;
+}
+
+/* Tooltip arrow styling */
+.keyboard-tooltip .MuiTooltip-arrow {
+  color: var(--mui-palette-grey-900, #212121) !important;
+}
+
+/* Multi-line tooltip support */
+.keyboard-tooltip.multi-line {
+  white-space: pre-line;
+  max-width: 400px !important;
+}
+
+/* ========================================================================
+ * PF KEY GUIDANCE CHIPS STYLES
+ * 
+ * Material-UI Chip components styled to represent individual function keys
+ * with specific actions (F3=Exit, F7=Page Up, F8=Page Down, F12=Cancel).
+ * Maintains visual consistency with mainframe PF key conventions.
+ * ======================================================================== */
+
+.pf-key-chip {
+  font-family: 'Courier New', Monaco, 'Lucida Console', Consolas, monospace !important;
+  font-size: 12px !important;
+  font-weight: bold !important;
+  letter-spacing: 0.05em;
+  margin: 2px !important;
+  min-width: 60px !important;
+  height: 32px !important;
+  border-radius: 6px !important;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  user-select: none;
+}
+
+.pf-key-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+.pf-key-chip:active {
+  transform: translateY(0);
+}
+
+/* Specific PF key color schemes matching mainframe conventions */
+.chip-f3-exit {
+  background-color: var(--mui-palette-error-main, #FF0000) !important;
+  color: var(--mui-palette-error-contrastText, #FFFFFF) !important;
+  border: 1px solid var(--mui-palette-error-dark, #CC0000) !important;
+}
+
+.chip-f3-exit:hover {
+  background-color: var(--mui-palette-error-dark, #CC0000) !important;
+}
+
+.chip-f7-page-up {
+  background-color: var(--mui-palette-info-main, #0080FF) !important;
+  color: var(--mui-palette-info-contrastText, #FFFFFF) !important;
+  border: 1px solid var(--mui-palette-info-dark, #0066CC) !important;
+}
+
+.chip-f7-page-up:hover {
+  background-color: var(--mui-palette-info-dark, #0066CC) !important;
+}
+
+.chip-f8-page-down {
+  background-color: var(--mui-palette-info-main, #0080FF) !important;
+  color: var(--mui-palette-info-contrastText, #FFFFFF) !important;
+  border: 1px solid var(--mui-palette-info-dark, #0066CC) !important;
+}
+
+.chip-f8-page-down:hover {
+  background-color: var(--mui-palette-info-dark, #0066CC) !important;
+}
+
+.chip-f12-cancel {
+  background-color: var(--mui-palette-warning-main, #FFFF00) !important;
+  color: var(--mui-palette-warning-contrastText, #000000) !important;
+  border: 1px solid var(--mui-palette-warning-dark, #CCCC00) !important;
+}
+
+.chip-f12-cancel:hover {
+  background-color: var(--mui-palette-warning-dark, #CCCC00) !important;
+}
+
+.chip-enter-submit {
+  background-color: var(--mui-palette-success-main, #00FF00) !important;
+  color: var(--mui-palette-success-contrastText, #000000) !important;
+  border: 1px solid var(--mui-palette-success-dark, #00CC00) !important;
+}
+
+.chip-enter-submit:hover {
+  background-color: var(--mui-palette-success-dark, #00CC00) !important;
+}
+
+/* Disabled state for unavailable function keys */
+.pf-key-chip.disabled {
+  background-color: var(--mui-palette-action-disabled, #BDBDBD) !important;
+  color: var(--mui-palette-action-disabledBackground, #F5F5F5) !important;
+  cursor: not-allowed !important;
+  opacity: 0.6;
+}
+
+.pf-key-chip.disabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ========================================================================
+ * KEYBOARD NAVIGATION INDICATORS STYLES
+ * 
+ * Visual indicators that highlight active navigation states and show
+ * available function keys. Uses primary theme colors to maintain
+ * visual hierarchy and accessibility standards.
+ * ======================================================================== */
+
+.nav-indicator-active {
+  position: relative;
+  outline: 2px solid var(--mui-palette-primary-main, #0080FF) !important;
+  outline-offset: 2px;
+  background-color: rgba(0, 128, 255, 0.1);
+  border-radius: 4px;
+  transition: all 0.2s ease-in-out;
+}
+
+.nav-indicator-active::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  background: linear-gradient(45deg, 
+    var(--mui-palette-primary-main, #0080FF) 0%, 
+    var(--mui-palette-primary-light, #4DA6FF) 50%, 
+    var(--mui-palette-primary-main, #0080FF) 100%);
+  opacity: 0.3;
+  border-radius: 6px;
+  z-index: -1;
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+.nav-indicator-focus {
+  box-shadow: 0 0 0 3px var(--mui-palette-primary-main, #0080FF), 
+              0 0 0 6px rgba(0, 128, 255, 0.3) !important;
+  border-radius: 4px;
+  transition: box-shadow 0.15s ease-in-out;
+}
+
+.primary-highlight {
+  background-color: var(--mui-palette-primary-main, #0080FF) !important;
+  color: var(--mui-palette-primary-contrastText, #FFFFFF) !important;
+  font-weight: bold;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.nav-state-visual {
+  position: relative;
+  transition: all 0.3s ease-in-out;
+}
+
+.nav-state-visual.selected {
+  background-color: var(--mui-palette-secondary-main, #00FFFF);
+  color: var(--mui-palette-secondary-contrastText, #000000);
+  transform: scale(1.02);
+}
+
+.nav-state-visual.hover {
+  background-color: var(--mui-palette-action-hover, #E3F2FD);
+  cursor: pointer;
+}
+
+.nav-state-visual.disabled {
+  background-color: var(--mui-palette-action-disabledBackground, #F5F5F5);
+  color: var(--mui-palette-action-disabled, #BDBDBD);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Accessibility improvements for high contrast mode */
+@media (prefers-contrast: high) {
+  .nav-indicator-active {
+    outline-width: 3px;
+    outline-color: currentColor;
+  }
+  
+  .nav-indicator-focus {
+    box-shadow: 0 0 0 4px currentColor !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .nav-indicator-active::before {
+    animation: none;
+  }
+  
+  .nav-state-visual,
+  .pf-key-chip {
+    transition: none;
+  }
+}
+
+/* ========================================================================
+ * KEY PRESS FEEDBACK STYLES
+ * 
+ * Visual feedback for key press events using Material-UI Button ripple
+ * effects and custom animations. Provides immediate user feedback for
+ * keyboard interactions matching mainframe response patterns.
+ * ======================================================================== */
+
+.key-press-visual {
+  position: relative;
+  overflow: hidden;
+  transform-origin: center;
+  transition: transform 0.1s ease-out;
+}
+
+.key-press-visual.pressed {
+  transform: scale(0.98);
+  background-color: var(--mui-palette-action-selected, #BBDEFB);
+}
+
+.ripple-effect {
+  position: absolute;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+  animation: rippleAnimation 0.6s ease-out;
+}
+
+.button-feedback {
+  position: relative;
+  transition: all 0.1s ease-in-out;
+}
+
+.button-feedback:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.button-feedback.function-key:active {
+  background-color: var(--mui-palette-primary-dark, #0066CC);
+  border-color: var(--mui-palette-primary-main, #0080FF);
+}
+
+.press-animation {
+  animation: keyPressSequence 0.3s ease-in-out;
+}
+
+/* Custom animations */
+@keyframes rippleAnimation {
+  from {
+    opacity: 1;
+    transform: scale(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(4);
+  }
+}
+
+@keyframes keyPressSequence {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    transform: scale(0.96);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Enhanced feedback for touch devices */
+@media (hover: none) and (pointer: coarse) {
+  .button-feedback {
+    min-height: 44px; /* Touch target minimum */
+    padding: 12px 16px;
+  }
+  
+  .key-press-visual.pressed {
+    transform: scale(0.95);
+    transition: transform 0.05s ease-out;
+  }
+}
+
+/* ========================================================================
+ * HELP TEXT INTEGRATION STYLES
+ * 
+ * Styling for Material-UI Popover components providing contextual assistance
+ * and function key guidance. Integrates with the help system to display
+ * keyboard shortcuts and navigation instructions.
+ * ======================================================================== */
+
+.help-text-popover {
+  font-family: 'Courier New', Monaco, 'Lucida Console', Consolas, monospace;
+  background-color: var(--mui-palette-background-paper, #F5F5F5);
+  border: 2px solid var(--mui-palette-info-main, #0080FF);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  padding: 16px;
+  max-width: 400px;
+  min-width: 250px;
+}
+
+.contextual-help {
+  color: var(--mui-palette-text-primary, #000000);
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.contextual-help h3 {
+  color: var(--mui-palette-primary-main, #0080FF);
+  font-size: 16px;
+  font-weight: bold;
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--mui-palette-divider, #808080);
+}
+
+.contextual-help ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.contextual-help li {
+  margin: 4px 0;
+  font-size: 13px;
+}
+
+.function-key-help {
+  background-color: rgba(0, 128, 255, 0.05);
+  border-left: 4px solid var(--mui-palette-primary-main, #0080FF);
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 0 4px 4px 0;
+}
+
+.function-key-help .help-title {
+  font-weight: bold;
+  color: var(--mui-palette-primary-main, #0080FF);
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.function-key-help .key-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  align-items: center;
+}
+
+.function-key-help .key-name {
+  font-weight: bold;
+  color: var(--mui-palette-info-main, #0080FF);
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  min-width: 32px;
+  text-align: center;
+}
+
+.function-key-help .key-action {
+  color: var(--mui-palette-text-primary, #000000);
+  font-size: 12px;
+}
+
+.help-integration-mui {
+  /* Material-UI Popover override styles */
+  z-index: 1400; /* Above snackbar, below tooltip */
+}
+
+.help-integration-mui .MuiPaper-root {
+  background-color: var(--mui-palette-background-paper, #F5F5F5);
+  border: 2px solid var(--mui-palette-info-main, #0080FF);
+  border-radius: 8px;
+  font-family: 'Courier New', Monaco, 'Lucida Console', Consolas, monospace;
+}
+
+.help-integration-mui .help-close-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background-color: var(--mui-palette-error-main, #FF0000);
+  color: var(--mui-palette-error-contrastText, #FFFFFF);
+  min-width: 24px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.help-integration-mui .help-close-button:hover {
+  background-color: var(--mui-palette-error-dark, #CC0000);
+}
+
+/* Responsive help text adjustments */
+@media (max-width: 600px) {
+  .help-text-popover {
+    max-width: 90vw;
+    min-width: 200px;
+    padding: 12px;
+  }
+  
+  .function-key-help .key-list {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .function-key-help .key-name {
+    justify-self: start;
+  }
+}
+
+/* Print styles - hide interactive help elements */
+@media print {
+  .help-text-popover,
+  .contextual-help,
+  .function-key-help {
+    display: none !important;
+  }
+}
+
+/* ========================================================================
+ * UTILITY CLASSES AND RESPONSIVE BEHAVIOR
+ * 
+ * Additional utility classes for enhanced keyboard navigation support
+ * and responsive behavior across different device sizes and input methods.
+ * ======================================================================== */
+
+/* Focus management utilities */
+.keyboard-focus-only:focus-visible {
+  outline: 2px solid var(--mui-palette-primary-main, #0080FF);
+  outline-offset: 2px;
+}
+
+.keyboard-focus-only:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Screen reader support */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .pf-key-chip,
+  .function-key-toolbar,
+  .help-text-popover {
+    border-width: 2px;
+    border-style: solid;
+  }
+}
+
+/* Responsive visibility classes */
+@media (max-width: 600px) {
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+@media (min-width: 601px) {
+  .hide-desktop {
+    display: none !important;
+  }
+}
+
+/* Keyboard navigation support for RTL languages */
+[dir="rtl"] .function-key-container {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .shortcut-hint {
+  flex-direction: row-reverse;
+}
