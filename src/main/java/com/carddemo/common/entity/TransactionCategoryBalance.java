@@ -39,7 +39,7 @@ import jakarta.validation.constraints.NotNull;
  *   transaction_type → transaction_types.transaction_type
  * - Indexing: Composite B-tree index on primary key components for optimal query performance
  */
-@Entity
+@Entity(name = "CommonTransactionCategoryBalance")
 @Table(name = "transaction_category_balances", schema = "public")
 public class TransactionCategoryBalance implements Serializable {
 
