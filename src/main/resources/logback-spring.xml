@@ -1,0 +1,475 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+CardDemo Logback Spring Configuration
+Enterprise-grade logging configuration providing structured JSON logging, 
+audit trail capture, and centralized log aggregation for cloud-native observability.
+
+This configuration implements:
+- JSON structured logging with correlation IDs for distributed tracing
+- Centralized log aggregation compatible with ELK stack integration
+- Audit logging configuration capturing same events as mainframe system
+- Container-based log management with rotation policies and archival
+- Production and development profile-specific logging configurations
+- Security event logging and performance monitoring integration
+-->
+<configuration>
+
+    <!-- ============================================================================ -->
+    <!-- SPRING PROFILES AND ENVIRONMENT CONFIGURATION                               -->
+    <!-- ============================================================================ -->
+    
+    <!-- Default Spring profile configuration for development environment -->
+    <springProfile name="!production">
+        <property name="LOG_LEVEL_ROOT" value="INFO"/>
+        <property name="LOG_LEVEL_APPLICATION" value="DEBUG"/>
+        <property name="LOG_LEVEL_SECURITY" value="DEBUG"/>
+        <property name="LOG_LEVEL_AUDIT" value="INFO"/>
+        <property name="CONSOLE_LOG_PATTERN" value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %X{correlationId:-} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
+    </springProfile>
+    
+    <!-- Production Spring profile configuration for enterprise deployment -->
+    <springProfile name="production">
+        <property name="LOG_LEVEL_ROOT" value="WARN"/>
+        <property name="LOG_LEVEL_APPLICATION" value="INFO"/>
+        <property name="LOG_LEVEL_SECURITY" value="INFO"/>
+        <property name="LOG_LEVEL_AUDIT" value="INFO"/>
+        <property name="CONSOLE_LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} ${LOG_LEVEL_PATTERN:-%5p} ${PID:- } --- [%15.15t] %-40.40logger{39} : %X{correlationId:-} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
+    </springProfile>
+
+    <!-- Kubernetes and container environment properties -->
+    <property name="APPLICATION_NAME" value="${spring.application.name:-carddemo}"/>
+    <property name="HOSTNAME" value="${HOSTNAME:-localhost}"/>
+    <property name="POD_NAME" value="${POD_NAME:-${HOSTNAME}}"/>
+    <property name="NAMESPACE" value="${NAMESPACE:-default}"/>
+    
+    <!-- File logging paths for container environments -->
+    <property name="LOG_FILE_PATH" value="${LOG_FILE_PATH:-./logs}"/>
+    <property name="AUDIT_LOG_FILE" value="${LOG_FILE_PATH}/audit.log"/>
+    <property name="APPLICATION_LOG_FILE" value="${LOG_FILE_PATH}/application.log"/>
+    <property name="SECURITY_LOG_FILE" value="${LOG_FILE_PATH}/security.log"/>
+    <property name="PERFORMANCE_LOG_FILE" value="${LOG_FILE_PATH}/performance.log"/>
+
+    <!-- ============================================================================ -->
+    <!-- JSON STRUCTURED LOGGING CONFIGURATION                                       -->
+    <!-- ============================================================================ -->
+
+    <!-- Console Appender with JSON formatting for container stdout -->
+    <appender name="CONSOLE_JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeContext>true</includeContext>
+            <includeMdc>true</includeMdc>
+            <customFields>{"application":"${APPLICATION_NAME}","hostname":"${HOSTNAME}","pod":"${POD_NAME}","namespace":"${NAMESPACE}"}</customFields>
+            <fieldNames>
+                <timestamp>@timestamp</timestamp>
+                <message>message</message>
+                <level>level</level>
+                <thread>thread</thread>
+                <logger>logger</logger>
+            </fieldNames>
+            <mdcKeyFieldName>mdc</mdcKeyFieldName>
+            <logLevelFieldName>level</logLevelName>
+            <loggerNameFieldName>logger</loggerNameFieldName>
+            <threadNameFieldName>thread</threadNameFieldName>
+            <messageFieldName>message</messageFieldName>
+            <timestampFieldName>@timestamp</timestampFieldName>
+            <shortenedLoggerNameLength>40</shortenedLoggerNameLength>
+        </encoder>
+    </appender>
+
+    <!-- Console Appender with human-readable format for development -->
+    <appender name="CONSOLE_READABLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- ============================================================================ -->
+    <!-- FILE APPENDERS WITH ROTATION POLICIES                                       -->
+    <!-- ============================================================================ -->
+
+    <!-- Application Log File Appender with JSON formatting -->
+    <appender name="APPLICATION_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${APPLICATION_LOG_FILE}</file>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeContext>true</includeContext>
+            <includeMdc>true</includeMdc>
+            <customFields>{"application":"${APPLICATION_NAME}","hostname":"${HOSTNAME}","pod":"${POD_NAME}","namespace":"${NAMESPACE}","log_type":"application"}</customFields>
+            <fieldNames>
+                <timestamp>@timestamp</timestamp>
+                <message>message</message>
+                <level>level</level>
+                <thread>thread</thread>
+                <logger>logger</logger>
+            </fieldNames>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${APPLICATION_LOG_FILE}.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>5GB</totalSizeCap>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+    </appender>
+
+    <!-- Audit Log File Appender for compliance and regulatory requirements -->
+    <appender name="AUDIT_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${AUDIT_LOG_FILE}</file>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeContext>true</includeContext>
+            <includeMdc>true</includeMdc>
+            <customFields>{"application":"${APPLICATION_NAME}","hostname":"${HOSTNAME}","pod":"${POD_NAME}","namespace":"${NAMESPACE}","log_type":"audit","compliance":"SOX,PCI_DSS"}</customFields>
+            <fieldNames>
+                <timestamp>@timestamp</timestamp>
+                <message>message</message>
+                <level>level</level>
+                <thread>thread</thread>
+                <logger>logger</logger>
+            </fieldNames>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${AUDIT_LOG_FILE}.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>90</maxHistory>
+            <totalSizeCap>10GB</totalSizeCap>
+            <cleanHistoryOnStart>false</cleanHistoryOnStart>
+        </rollingPolicy>
+        <!-- Audit logs should never be deleted by accident -->
+        <prudent>true</prudent>
+    </appender>
+
+    <!-- Security Log File Appender for authentication and authorization events -->
+    <appender name="SECURITY_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${SECURITY_LOG_FILE}</file>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeContext>true</includeContext>
+            <includeMdc>true</includeMdc>
+            <customFields>{"application":"${APPLICATION_NAME}","hostname":"${HOSTNAME}","pod":"${POD_NAME}","namespace":"${NAMESPACE}","log_type":"security","security_domain":"authentication,authorization,access_control"}</customFields>
+            <fieldNames>
+                <timestamp>@timestamp</timestamp>
+                <message>message</message>
+                <level>level</level>
+                <thread>thread</thread>
+                <logger>logger</logger>
+            </fieldNames>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${SECURITY_LOG_FILE}.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>90</maxHistory>
+            <totalSizeCap>10GB</totalSizeCap>
+            <cleanHistoryOnStart>false</cleanHistoryOnStart>
+        </rollingPolicy>
+    </appender>
+
+    <!-- Performance Log File Appender for monitoring and observability -->
+    <appender name="PERFORMANCE_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${PERFORMANCE_LOG_FILE}</file>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeContext>true</includeContext>
+            <includeMdc>true</includeMdc>
+            <customFields>{"application":"${APPLICATION_NAME}","hostname":"${HOSTNAME}","pod":"${POD_NAME}","namespace":"${NAMESPACE}","log_type":"performance","metrics_type":"transaction_timing,resource_usage"}</customFields>
+            <fieldNames>
+                <timestamp>@timestamp</timestamp>
+                <message>message</message>
+                <level>level</level>
+                <thread>thread</thread>
+                <logger>logger</logger>
+            </fieldNames>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${PERFORMANCE_LOG_FILE}.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>5GB</totalSizeCap>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+    </appender>
+
+    <!-- ============================================================================ -->
+    <!-- ASYNC APPENDERS FOR HIGH-PERFORMANCE LOGGING                                -->
+    <!-- ============================================================================ -->
+
+    <!-- Async wrapper for console logging to prevent blocking -->
+    <appender name="ASYNC_CONSOLE" class="ch.qos.logback.classic.AsyncAppender">
+        <springProfile name="production">
+            <appender-ref ref="CONSOLE_JSON"/>
+        </springProfile>
+        <springProfile name="!production">
+            <appender-ref ref="CONSOLE_READABLE"/>
+        </springProfile>
+        <queueSize>1000</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>true</includeCallerData>
+        <neverBlock>true</neverBlock>
+    </appender>
+
+    <!-- Async wrapper for application file logging -->
+    <appender name="ASYNC_APPLICATION_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="APPLICATION_FILE"/>
+        <queueSize>1000</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>true</includeCallerData>
+        <neverBlock>false</neverBlock>
+    </appender>
+
+    <!-- Async wrapper for audit file logging (never discard audit events) -->
+    <appender name="ASYNC_AUDIT_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="AUDIT_FILE"/>
+        <queueSize>2000</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>true</includeCallerData>
+        <neverBlock>false</neverBlock>
+    </appender>
+
+    <!-- Async wrapper for security file logging -->
+    <appender name="ASYNC_SECURITY_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="SECURITY_FILE"/>
+        <queueSize>1000</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>true</includeCallerData>
+        <neverBlock>false</neverBlock>
+    </appender>
+
+    <!-- Async wrapper for performance file logging -->
+    <appender name="ASYNC_PERFORMANCE_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="PERFORMANCE_FILE"/>
+        <queueSize>1000</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>false</includeCallerData>
+        <neverBlock>true</neverBlock>
+    </appender>
+
+    <!-- ============================================================================ -->
+    <!-- LOGGER CONFIGURATIONS FOR DIFFERENT COMPONENTS                              -->
+    <!-- ============================================================================ -->
+
+    <!-- Root logger configuration -->
+    <root level="${LOG_LEVEL_ROOT}">
+        <appender-ref ref="ASYNC_CONSOLE"/>
+        <appender-ref ref="ASYNC_APPLICATION_FILE"/>
+    </root>
+
+    <!-- CardDemo Application Loggers -->
+    <logger name="com.carddemo" level="${LOG_LEVEL_APPLICATION}" additivity="false">
+        <appender-ref ref="ASYNC_CONSOLE"/>
+        <appender-ref ref="ASYNC_APPLICATION_FILE"/>
+    </logger>
+
+    <!-- Authentication and Authorization Security Loggers -->
+    <logger name="com.carddemo.auth" level="${LOG_LEVEL_SECURITY}" additivity="false">
+        <appender-ref ref="ASYNC_CONSOLE"/>
+        <appender-ref ref="ASYNC_APPLICATION_FILE"/>
+        <appender-ref ref="ASYNC_SECURITY_FILE"/>
+    </logger>
+
+    <!-- Spring Security Framework Loggers -->
+    <logger name="org.springframework.security" level="${LOG_LEVEL_SECURITY}" additivity="false">
+        <appender-ref ref="ASYNC_SECURITY_FILE"/>
+    </logger>
+
+    <!-- JWT Token Processing Loggers -->
+    <logger name="org.springframework.security.oauth2" level="${LOG_LEVEL_SECURITY}" additivity="false">
+        <appender-ref ref="ASYNC_SECURITY_FILE"/>
+    </logger>
+
+    <!-- Spring Boot Actuator Audit Event Loggers -->
+    <logger name="org.springframework.boot.actuate.audit" level="${LOG_LEVEL_AUDIT}" additivity="false">
+        <appender-ref ref="ASYNC_AUDIT_FILE"/>
+        <appender-ref ref="ASYNC_SECURITY_FILE"/>
+    </logger>
+
+    <!-- Database Access and Transaction Audit Loggers -->
+    <logger name="com.carddemo.audit" level="${LOG_LEVEL_AUDIT}" additivity="false">
+        <appender-ref ref="ASYNC_AUDIT_FILE"/>
+    </logger>
+
+    <!-- Performance and Monitoring Loggers -->
+    <logger name="com.carddemo.performance" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_PERFORMANCE_FILE"/>
+    </logger>
+
+    <!-- Spring Cloud Gateway Loggers for API request tracing -->
+    <logger name="org.springframework.cloud.gateway" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_APPLICATION_FILE"/>
+        <appender-ref ref="ASYNC_PERFORMANCE_FILE"/>
+    </logger>
+
+    <!-- Database Query Loggers (PostgreSQL JDBC) -->
+    <logger name="org.postgresql" level="WARN" additivity="false">
+        <appender-ref ref="ASYNC_APPLICATION_FILE"/>
+    </logger>
+
+    <!-- HikariCP Connection Pool Loggers -->
+    <logger name="com.zaxxer.hikari" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_APPLICATION_FILE"/>
+        <appender-ref ref="ASYNC_PERFORMANCE_FILE"/>
+    </logger>
+
+    <!-- Redis Session Management Loggers -->
+    <logger name="org.springframework.data.redis" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_APPLICATION_FILE"/>
+        <appender-ref ref="ASYNC_PERFORMANCE_FILE"/>
+    </logger>
+
+    <!-- Micrometer Metrics Loggers -->
+    <logger name="io.micrometer" level="WARN" additivity="false">
+        <appender-ref ref="ASYNC_PERFORMANCE_FILE"/>
+    </logger>
+
+    <!-- Financial Transaction Processing Loggers -->
+    <logger name="com.carddemo.transaction" level="${LOG_LEVEL_APPLICATION}" additivity="false">
+        <appender-ref ref="ASYNC_CONSOLE"/>
+        <appender-ref ref="ASYNC_APPLICATION_FILE"/>
+        <appender-ref ref="ASYNC_AUDIT_FILE"/>
+    </logger>
+
+    <!-- Account Management Loggers -->
+    <logger name="com.carddemo.account" level="${LOG_LEVEL_APPLICATION}" additivity="false">
+        <appender-ref ref="ASYNC_CONSOLE"/>
+        <appender-ref ref="ASYNC_APPLICATION_FILE"/>
+        <appender-ref ref="ASYNC_AUDIT_FILE"/>
+    </logger>
+
+    <!-- Card Management Loggers -->
+    <logger name="com.carddemo.card" level="${LOG_LEVEL_APPLICATION}" additivity="false">
+        <appender-ref ref="ASYNC_CONSOLE"/>
+        <appender-ref ref="ASYNC_APPLICATION_FILE"/>
+        <appender-ref ref="ASYNC_AUDIT_FILE"/>
+    </logger>
+
+    <!-- User Management Loggers */
+    <logger name="com.carddemo.user" level="${LOG_LEVEL_APPLICATION}" additivity="false">
+        <appender-ref ref="ASYNC_CONSOLE"/>
+        <appender-ref ref="ASYNC_APPLICATION_FILE"/>
+        <appender-ref ref="ASYNC_SECURITY_FILE"/>
+        <appender-ref ref="ASYNC_AUDIT_FILE"/>
+    </logger>
+
+    <!-- Batch Processing Loggers -->
+    <logger name="com.carddemo.batch" level="${LOG_LEVEL_APPLICATION}" additivity="false">
+        <appender-ref ref="ASYNC_CONSOLE"/>
+        <appender-ref ref="ASYNC_APPLICATION_FILE"/>
+        <appender-ref ref="ASYNC_PERFORMANCE_FILE"/>
+    </logger>
+
+    <!-- Menu Navigation and UI Component Loggers -->
+    <logger name="com.carddemo.menu" level="${LOG_LEVEL_APPLICATION}" additivity="false">
+        <appender-ref ref="ASYNC_CONSOLE"/>
+        <appender-ref ref="ASYNC_APPLICATION_FILE"/>
+    </logger>
+
+    <!-- Common Utilities and Cross-cutting Concerns Loggers -->
+    <logger name="com.carddemo.common" level="${LOG_LEVEL_APPLICATION}" additivity="false">
+        <appender-ref ref="ASYNC_CONSOLE"/>
+        <appender-ref ref="ASYNC_APPLICATION_FILE"/>
+    </logger>
+
+    <!-- ============================================================================ -->
+    <!-- FRAMEWORK AND INFRASTRUCTURE LOGGERS                                        -->
+    <!-- ============================================================================ -->
+
+    <!-- Spring Framework Core Loggers -->
+    <logger name="org.springframework" level="WARN" additivity="false">
+        <appender-ref ref="ASYNC_APPLICATION_FILE"/>
+    </logger>
+
+    <!-- Spring Boot Auto-configuration Loggers -->
+    <logger name="org.springframework.boot" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_APPLICATION_FILE"/>
+    </logger>
+
+    <!-- Spring Data JPA Loggers -->
+    <logger name="org.springframework.data" level="WARN" additivity="false">
+        <appender-ref ref="ASYNC_APPLICATION_FILE"/>
+    </logger>
+
+    <!-- Hibernate/JPA SQL Logging for Development -->
+    <springProfile name="!production">
+        <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+            <appender-ref ref="ASYNC_CONSOLE"/>
+            <appender-ref ref="ASYNC_APPLICATION_FILE"/>
+        </logger>
+        <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE" additivity="false">
+            <appender-ref ref="ASYNC_CONSOLE"/>
+            <appender-ref ref="ASYNC_APPLICATION_FILE"/>
+        </logger>
+    </springProfile>
+
+    <!-- Jackson JSON Processing Loggers -->
+    <logger name="com.fasterxml.jackson" level="WARN" additivity="false">
+        <appender-ref ref="ASYNC_APPLICATION_FILE"/>
+    </logger>
+
+    <!-- Tomcat Embedded Server Loggers -->
+    <logger name="org.apache.catalina" level="WARN" additivity="false">
+        <appender-ref ref="ASYNC_APPLICATION_FILE"/>
+    </logger>
+
+    <!-- Netty Framework Loggers (for WebFlux/Reactive components) -->
+    <logger name="io.netty" level="WARN" additivity="false">
+        <appender-ref ref="ASYNC_APPLICATION_FILE"/>
+    </logger>
+
+    <!-- ============================================================================ -->
+    <!-- SHUTDOWN HOOKS AND CLEANUP                                                  -->
+    <!-- ============================================================================ -->
+
+    <!-- Graceful shutdown configuration for container environments -->
+    <shutdownHook class="ch.qos.logback.core.hook.DelayingShutdownHook"/>
+
+    <!-- ============================================================================ -->
+    <!-- ELK STACK INTEGRATION CONFIGURATION                                         -->
+    <!-- ============================================================================ -->
+
+    <!--
+    ELK Stack Integration Notes:
+    
+    This Logback configuration is designed for seamless integration with the ELK stack
+    through Filebeat log shipping:
+    
+    1. JSON Structured Logging: All log entries are formatted as JSON with consistent
+       field mappings compatible with Elasticsearch indexing patterns
+       
+    2. Correlation ID Support: MDC-based correlation IDs are included in all log entries
+       for distributed transaction tracing across microservices
+       
+    3. Log Separation: Different log types (application, audit, security, performance)
+       are written to separate files for targeted Filebeat processing
+       
+    4. Metadata Enrichment: All log entries include application name, hostname, pod name,
+       and namespace for Kubernetes-aware log aggregation
+       
+    5. Compliance Tagging: Audit logs are tagged with compliance frameworks (SOX, PCI DSS)
+       for regulatory reporting and analysis
+    
+    Filebeat Configuration Example:
+    
+    filebeat.inputs:
+    - type: log
+      paths:
+        - /app/logs/application.log
+      fields:
+        log_type: application
+        application: carddemo
+      multiline.pattern: '^{'
+      multiline.negate: true
+      multiline.match: after
+      
+    - type: log
+      paths:
+        - /app/logs/audit.log
+      fields:
+        log_type: audit
+        compliance: [SOX, PCI_DSS]
+        retention_years: 7
+        
+    - type: log
+      paths:
+        - /app/logs/security.log  
+      fields:
+        log_type: security
+        security_classification: restricted
+    -->
+    
+</configuration>
