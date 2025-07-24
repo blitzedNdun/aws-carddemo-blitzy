@@ -341,7 +341,9 @@ public class UserManagementController {
                         request.getUserId(), auditInfo.getUserId(), correlationId, validation.getErrorMessages());
                 
                 CreateUserResponseDto errorResponse = new CreateUserResponseDto(
-                        "Validation failed: " + String.join(", ", validation.getErrorMessages()), correlationId);
+                        "Validation failed: " + validation.getErrorMessages().stream()
+                            .map(ValidationResult.ValidationError::getErrorMessage)
+                            .collect(Collectors.joining(", ")), correlationId);
                 errorResponse.setValidationResult(validation);
                 return ResponseEntity.badRequest().body(errorResponse);
             }
@@ -459,7 +461,9 @@ public class UserManagementController {
                         userId, auditInfo.getUserId(), correlationId, validation.getErrorMessages());
                 
                 UpdateUserResponseDto errorResponse = new UpdateUserResponseDto(
-                        "Validation failed: " + String.join(", ", validation.getErrorMessages()), correlationId);
+                        "Validation failed: " + validation.getErrorMessages().stream()
+                            .map(ValidationResult.ValidationError::getErrorMessage)
+                            .collect(Collectors.joining(", ")), correlationId);
                 errorResponse.setValidationResult(validation);
                 return ResponseEntity.badRequest().body(errorResponse);
             }
@@ -701,49 +705,49 @@ public class UserManagementController {
         
         // User ID validation
         if (request.getUserId() == null || request.getUserId().trim().isEmpty()) {
-            result.addErrorMessage("User ID is required");
+            result.addErrorMessage("userId", "USER_ID_REQUIRED", "User ID is required", ValidationResult.Severity.ERROR);
             result.setValid(false);
         } else if (request.getUserId().length() > 8) {
-            result.addErrorMessage("User ID must not exceed 8 characters");
+            result.addErrorMessage("userId", "USER_ID_TOO_LONG", "User ID must not exceed 8 characters", ValidationResult.Severity.ERROR);
             result.setValid(false);
         } else if (!request.getUserId().matches("^[A-Za-z0-9]+$")) {
-            result.addErrorMessage("User ID must contain only alphanumeric characters");
+            result.addErrorMessage("userId", "USER_ID_INVALID_FORMAT", "User ID must contain only alphanumeric characters", ValidationResult.Severity.ERROR);
             result.setValid(false);
         }
         
         // First name validation
         if (request.getFirstName() == null || request.getFirstName().trim().isEmpty()) {
-            result.addErrorMessage("First name is required");
+            result.addErrorMessage("firstName", "FIRST_NAME_REQUIRED", "First name is required", ValidationResult.Severity.ERROR);
             result.setValid(false);
         } else if (request.getFirstName().length() > 20) {
-            result.addErrorMessage("First name must not exceed 20 characters");
+            result.addErrorMessage("firstName", "FIRST_NAME_TOO_LONG", "First name must not exceed 20 characters", ValidationResult.Severity.ERROR);
             result.setValid(false);
         }
         
         // Last name validation
         if (request.getLastName() == null || request.getLastName().trim().isEmpty()) {
-            result.addErrorMessage("Last name is required");
+            result.addErrorMessage("lastName", "LAST_NAME_REQUIRED", "Last name is required", ValidationResult.Severity.ERROR);
             result.setValid(false);
         } else if (request.getLastName().length() > 20) {
-            result.addErrorMessage("Last name must not exceed 20 characters");
+            result.addErrorMessage("lastName", "LAST_NAME_TOO_LONG", "Last name must not exceed 20 characters", ValidationResult.Severity.ERROR);
             result.setValid(false);
         }
         
         // Password validation
         if (request.getPassword() == null || request.getPassword().trim().isEmpty()) {
-            result.addErrorMessage("Password is required");
+            result.addErrorMessage("password", "PASSWORD_REQUIRED", "Password is required", ValidationResult.Severity.ERROR);
             result.setValid(false);
         } else if (request.getPassword().length() < 8) {
-            result.addErrorMessage("Password must be at least 8 characters");
+            result.addErrorMessage("password", "PASSWORD_TOO_SHORT", "Password must be at least 8 characters", ValidationResult.Severity.ERROR);
             result.setValid(false);
         }
         
         // User type validation
         if (request.getUserType() == null || request.getUserType().trim().isEmpty()) {
-            result.addErrorMessage("User type is required");
+            result.addErrorMessage("userType", "USER_TYPE_REQUIRED", "User type is required", ValidationResult.Severity.ERROR);
             result.setValid(false);
         } else if (!request.getUserType().matches("^[AUau]$")) {
-            result.addErrorMessage("User type must be 'A' for Admin or 'U' for User");
+            result.addErrorMessage("userType", "USER_TYPE_INVALID", "User type must be 'A' for Admin or 'U' for User", ValidationResult.Severity.ERROR);
             result.setValid(false);
         }
         
@@ -764,7 +768,7 @@ public class UserManagementController {
         // First name validation (if provided)
         if (request.getFirstName() != null && !request.getFirstName().trim().isEmpty()) {
             if (request.getFirstName().length() > 20) {
-                result.addErrorMessage("First name must not exceed 20 characters");
+                result.addErrorMessage("firstName", "FIRST_NAME_TOO_LONG", "First name must not exceed 20 characters", ValidationResult.Severity.ERROR);
                 result.setValid(false);
             }
         }
@@ -772,7 +776,7 @@ public class UserManagementController {
         // Last name validation (if provided)
         if (request.getLastName() != null && !request.getLastName().trim().isEmpty()) {
             if (request.getLastName().length() > 20) {
-                result.addErrorMessage("Last name must not exceed 20 characters");
+                result.addErrorMessage("lastName", "LAST_NAME_TOO_LONG", "Last name must not exceed 20 characters", ValidationResult.Severity.ERROR);
                 result.setValid(false);
             }
         }
@@ -780,7 +784,7 @@ public class UserManagementController {
         // Password validation (if provided)
         if (request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
             if (request.getPassword().length() < 8) {
-                result.addErrorMessage("Password must be at least 8 characters");
+                result.addErrorMessage("password", "PASSWORD_TOO_SHORT", "Password must be at least 8 characters", ValidationResult.Severity.ERROR);
                 result.setValid(false);
             }
         }
@@ -788,7 +792,7 @@ public class UserManagementController {
         // User type validation (if provided)
         if (request.getUserType() != null && !request.getUserType().trim().isEmpty()) {
             if (!request.getUserType().matches("^[AUau]$")) {
-                result.addErrorMessage("User type must be 'A' for Admin or 'U' for User");
+                result.addErrorMessage("userType", "USER_TYPE_INVALID", "User type must be 'A' for Admin or 'U' for User", ValidationResult.Severity.ERROR);
                 result.setValid(false);
             }
         }
