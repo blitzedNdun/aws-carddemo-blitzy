@@ -482,8 +482,7 @@ public class AccountUpdateResponseDto {
 
     @Override
     public String toString() {
-        return Objects.toString(this, 
-            "AccountUpdateResponseDto{" +
+        return "AccountUpdateResponseDto{" +
             "success=" + success +
             ", accountId='" + accountId + "'" +
             ", errorMessage='" + errorMessage + "'" +
@@ -492,7 +491,7 @@ public class AccountUpdateResponseDto {
             ", informationalMessageCount=" + (informationalMessages != null ? informationalMessages.size() : 0) +
             ", sessionId='" + sessionId + "'" +
             ", errorFlag=" + errorFlag +
-            "}");
+            "}";
     }
 
     /**
@@ -673,8 +672,7 @@ public class AccountUpdateResponseDto {
 
         @Override
         public String toString() {
-            return Objects.toString(this,
-                "AuditTrailInfo{" +
+            return "AuditTrailInfo{" +
                 "updatedBy='" + updatedBy + "'" +
                 ", updateTimestamp=" + updateTimestamp +
                 ", modifiedFieldCount=" + (modifiedFields != null ? modifiedFields.size() : 0) +
@@ -682,7 +680,7 @@ public class AccountUpdateResponseDto {
                 ", transactionId='" + transactionId + "'" +
                 ", clientIpAddress='" + clientIpAddress + "'" +
                 ", metadataCount=" + (metadata != null ? metadata.size() : 0) +
-                "}");
+                "}";
         }
     }
 
@@ -821,8 +819,7 @@ public class AccountUpdateResponseDto {
 
         @Override
         public String toString() {
-            return Objects.toString(this,
-                "TransactionStatusInfo{" +
+            return "TransactionStatusInfo{" +
                 "springTransactionId='" + springTransactionId + "'" +
                 ", transactionStatus='" + transactionStatus + "'" +
                 ", isolationLevel='" + isolationLevel + "'" +
@@ -830,7 +827,7 @@ public class AccountUpdateResponseDto {
                 ", timeoutSeconds=" + timeoutSeconds +
                 ", operationCount=" + operationCount +
                 ", processingTimeMs=" + processingTimeMs +
-                "}");
+                "}";
         }
     }
 }
