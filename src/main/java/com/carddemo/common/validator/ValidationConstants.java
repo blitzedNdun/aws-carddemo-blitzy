@@ -198,10 +198,11 @@ public final class ValidationConstants {
     public static final Pattern PHONE_PATTERN = Pattern.compile("^[0-9\\s\\-\\(\\)]{1,15}$");
 
     /**
-     * Pattern for account ID validation (9 digits).
-     * Used for account number validation matching COBOL numeric formats.
+     * Pattern for account ID validation (11 digits).
+     * Used for account number validation matching COBOL PIC 9(11) format.
+     * Updated to match ACCT-ID and WS-CARD-RID-ACCT-ID specifications.
      */
-    public static final Pattern ACCOUNT_ID_PATTERN = Pattern.compile("^[0-9]{9}$");
+    public static final Pattern ACCOUNT_ID_PATTERN = Pattern.compile("^[0-9]{11}$");
 
     /**
      * Pattern for credit card number validation (16 digits).
@@ -242,15 +243,15 @@ public final class ValidationConstants {
 
     /**
      * Minimum valid account ID value.
-     * Based on 9-digit account ID format with reasonable lower bound.
+     * Based on 11-digit account ID format matching COBOL PIC 9(11) specification.
      */
-    public static final long MIN_ACCOUNT_ID = 100000000L; // 9-digit minimum
+    public static final long MIN_ACCOUNT_ID = 10000000000L; // 11-digit minimum
 
     /**
      * Maximum valid account ID value.
-     * Based on 9-digit account ID format with reasonable upper bound.
+     * Based on 11-digit account ID format matching COBOL PIC 9(11) specification.
      */
-    public static final long MAX_ACCOUNT_ID = 999999999L; // 9-digit maximum
+    public static final long MAX_ACCOUNT_ID = 99999999999L; // 11-digit maximum
 
     /**
      * Minimum credit limit amount.
