@@ -72,7 +72,7 @@ import java.lang.annotation.Target;
  * @author Blitzy Platform
  */
 @Documented
-@Constraint(validatedBy = ValidFicoScore.FicoScoreValidator.class)
+@Constraint(validatedBy = FicoScoreValidator.class)
 @Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ValidFicoScore {
@@ -120,8 +120,8 @@ public @interface ValidFicoScore {
     /**
      * FICO Score Validator implementation.
      * 
-     * Implements the Jakarta Bean Validation ConstraintValidator interface
-     * to provide the actual validation logic for FICO credit scores.
+     * Note: The actual validation logic is implemented in the standalone
+     * FicoScoreValidator class, not this inner class.
      * 
      * The validator:
      * - Treats null values as valid (supports optional credit scores)
