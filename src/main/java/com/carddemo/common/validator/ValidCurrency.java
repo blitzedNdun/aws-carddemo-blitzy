@@ -89,13 +89,13 @@ import java.lang.annotation.Target;
  * @author AWS CardDemo Migration Team
  * @version 1.0
  * @since CardDemo v1.0-15-g27d6c6f-68
- * @see ValidCurrencyValidator
+ * @see CurrencyValidator
  * @see jakarta.validation.constraints.DecimalMin
  * @see jakarta.validation.constraints.DecimalMax
  * @see jakarta.validation.constraints.Digits
  */
 @Documented
-@Constraint(validatedBy = ValidCurrencyValidator.class)
+@Constraint(validatedBy = CurrencyValidator.class)
 @Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ValidCurrency {
