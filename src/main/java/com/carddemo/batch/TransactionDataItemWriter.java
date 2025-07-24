@@ -1,5 +1,6 @@
 package com.carddemo.batch;
 
+import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -133,7 +134,7 @@ public class TransactionDataItemWriter implements ItemWriter<TransactionRecord> 
      * - Partition-aware insertion reducing query planner overhead
      * - Connection pool integration for optimal resource utilization
      * 
-     * @param chunk List of TransactionRecord items to persist (typically 1000 records)
+     * @param chunk Chunk of TransactionRecord items to persist (typically 1000 records)
      * @throws Exception if validation fails, partition creation fails, or database errors occur
      */
     @Override
@@ -147,7 +148,7 @@ public class TransactionDataItemWriter implements ItemWriter<TransactionRecord> 
         maxAttempts = MAX_RETRY_ATTEMPTS,
         backoff = @Backoff(delay = 1000, multiplier = 2)
     )
-    public void write(List<? extends TransactionRecord> chunk) throws Exception {
+    public void write(Chunk<? extends TransactionRecord> chunk) throws Exception {
         if (chunk == null || chunk.isEmpty()) {
             LOGGER.info("Received empty chunk for transaction data writing - skipping processing");
             return;
@@ -162,7 +163,7 @@ public class TransactionDataItemWriter implements ItemWriter<TransactionRecord> 
         try {
             // Phase 1: Comprehensive data validation for entire chunk
             LOGGER.fine("Starting validation phase for transaction data chunk");
-            for (TransactionRecord record : chunk) {
+            for (TransactionRecord record : chunk.getItems()) {
                 try {
                     validateTransactionData(record);
                 } catch (Exception e) {
@@ -177,7 +178,7 @@ public class TransactionDataItemWriter implements ItemWriter<TransactionRecord> 
             
             // Phase 2: Partition management and creation if necessary
             LOGGER.fine("Checking and creating required partitions for transaction data");
-            for (TransactionRecord record : chunk) {
+            for (TransactionRecord record : chunk.getItems()) {
                 insertIntoPartition(record);
             }
             
@@ -186,7 +187,7 @@ public class TransactionDataItemWriter implements ItemWriter<TransactionRecord> 
             jdbcTemplate.batchUpdate(INSERT_TRANSACTION_SQL, new BatchPreparedStatementSetter() {
                 @Override
                 public void setValues(PreparedStatement ps, int i) throws SQLException {
-                    TransactionRecord record = (TransactionRecord) chunk.get(i);
+                    TransactionRecord record = (TransactionRecord) chunk.getItems().get(i);
                     
                     // Map COBOL CVTRA05Y.cpy fields to PostgreSQL columns with exact precision
                     ps.setString(1, record.getTransactionId());              // TRAN-ID PIC X(16)
@@ -477,9 +478,9 @@ public class TransactionDataItemWriter implements ItemWriter<TransactionRecord> 
      * - Database monitoring and alerting systems
      * 
      * @param error Exception that caused the batch processing failure
-     * @param chunk List of TransactionRecord items being processed when error occurred
+     * @param chunk Chunk of TransactionRecord items being processed when error occurred
      */
-    public void handlePartitionError(Exception error, List<? extends TransactionRecord> chunk) {
+    public void handlePartitionError(Exception error, Chunk<? extends TransactionRecord> chunk) {
         if (error == null) {
             LOGGER.warning("handlePartitionError called with null exception");
             return;
@@ -499,7 +500,7 @@ public class TransactionDataItemWriter implements ItemWriter<TransactionRecord> 
             if (chunk != null && !chunk.isEmpty()) {
                 LOGGER.severe("Analyzing chunk for data integrity issues:");
                 for (int i = 0; i < Math.min(chunk.size(), 5); i++) {  // Log first 5 records for analysis
-                    TransactionRecord record = (TransactionRecord) chunk.get(i);
+                    TransactionRecord record = (TransactionRecord) chunk.getItems().get(i);
                     LOGGER.severe(String.format("  Record %d: ID=%s, Type=%s, Category=%s, Amount=%s",
                         i + 1, record.getTransactionId(), record.getTransactionType(),
                         record.getTransactionCategory(), 
@@ -526,7 +527,7 @@ public class TransactionDataItemWriter implements ItemWriter<TransactionRecord> 
             
             if (chunk != null && !chunk.isEmpty()) {
                 LOGGER.severe("Analyzing chunk for validation failures:");
-                for (TransactionRecord record : (List<TransactionRecord>) chunk) {
+                for (TransactionRecord record : chunk.getItems()) {
                     try {
                         validateTransactionData(record);
                     } catch (Exception validationError) {
