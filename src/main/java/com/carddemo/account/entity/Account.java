@@ -1,6 +1,7 @@
 package com.carddemo.account.entity;
 
 import com.carddemo.common.enums.AccountStatus;
+import com.carddemo.common.converter.AccountStatusConverter;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
@@ -95,7 +96,7 @@ public class Account {
      * Mapped from COBOL: ACCT-ACTIVE-STATUS PIC X(01)
      * Uses AccountStatus enumeration for 'Y'/'N' validation
      */
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = AccountStatusConverter.class)
     @Column(name = "active_status", length = 1, nullable = false)
     @NotNull(message = "Account status is required")
     private AccountStatus activeStatus;
