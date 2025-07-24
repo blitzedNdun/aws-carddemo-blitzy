@@ -17,7 +17,7 @@
     <groupId>com.carddemo</groupId>
     <artifactId>carddemo-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <packaging>pom</packaging>
+    <packaging>jar</packaging>
 
     <name>CardDemo Parent</name>
     <description>Multi-module Spring Boot parent POM for CardDemo COBOL-to-Java transformation supporting 36 microservices with cloud-native architecture</description>
@@ -295,6 +295,34 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
+        <!-- Utilities -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+
+        <!-- JWT Dependencies -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+        </dependency>
+        
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+        </dependency>
+        
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+        </dependency>
+
+        <!-- Spring Cloud Discovery -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+
         <!-- Testing Dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -365,7 +393,7 @@
                         <includes>
                             <include>**/*Test.java</include>
                         </includes>
-                        <argLine>-Xmx1024m -XX:MaxPermSize=256m ${argLine}</argLine>
+                        <argLine>-Xmx1024m ${argLine}</argLine>
                         <parallel>methods</parallel>
                         <threadCount>4</threadCount>
                     </configuration>
