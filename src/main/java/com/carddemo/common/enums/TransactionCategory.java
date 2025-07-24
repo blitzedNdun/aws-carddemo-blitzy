@@ -186,14 +186,14 @@ public enum TransactionCategory {
         String trimmedCode = code.trim();
         
         // Validate numeric field format - must be exactly 4 digits
-        ValidationResult numericCheck = ValidationUtils.validateNumericField(
-            trimmedCode, 
-            4, 
-            4, 
-            "Transaction Category Code"
-        );
+        ValidationResult numericCheck = ValidationUtils.validateNumericField(trimmedCode, 4);
         if (!numericCheck.isValid()) {
             return numericCheck;
+        }
+        
+        // Ensure exactly 4 digits (not just maximum 4)
+        if (trimmedCode.length() != 4) {
+            return ValidationResult.INVALID_LENGTH;
         }
         
         // Additional range validation - codes should be within reasonable bounds
