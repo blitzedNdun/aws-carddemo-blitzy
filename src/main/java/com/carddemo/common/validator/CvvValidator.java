@@ -10,58 +10,83 @@ import jakarta.validation.ConstraintValidatorContext;
 import java.util.regex.Pattern;
 
 /**
- * Jakarta Bean Validation implementation for CVV (Card Verification Value) code validation.
+ * Jakarta Bean Validation constraint validator for CVV (Card Verification Value) codes.
  * 
- * <p>This validator implements the business logic for validating CVV codes according to
- * credit card security standards while maintaining compatibility with legacy COBOL
- * CVV processing patterns from COCRDUPC.cbl.</p>
+ * <p>This validator implements CVV format validation with 3-digit numeric pattern matching,
+ * maintaining exact compatibility with legacy COBOL CVV processing routines found in
+ * COCRDUPC.cbl where CVV codes are defined as PIC 9(03) format.</p>
  * 
  * <p>Validation Logic:</p>
  * <ul>
- *   <li>Validates CVV codes are exactly 3 digits</li>
- *   <li>Ensures CVV contains only numeric characters (0-9)</li>
- *   <li>Handles null values based on annotation configuration</li>
- *   <li>Provides context-specific error messages</li>
+ *   <li>CVV must be exactly 3 digits (000-999)</li>
+ *   <li>CVV must contain only numeric characters (0-9)</li>
+ *   <li>Leading zeros are allowed and preserved (e.g., "001", "020")</li>
+ *   <li>Null value handling is configurable via @ValidCvv annotation allowNull property</li>
+ *   <li>Custom error messages are supported for different validation failure scenarios</li>
  * </ul>
  * 
- * <p>COBOL Compatibility:</p>
- * <p>This validator replicates the validation logic found in the legacy COBOL program
- * COCRDUPC.cbl where CVV codes are processed as 3-digit numeric fields using PIC 9(03)
- * format. The validation ensures exact format compatibility while providing modern
- * Jakarta Bean Validation capabilities.</p>
+ * <p>Legacy COBOL Compatibility:</p>
+ * <p>This implementation preserves the exact validation behavior from the original COBOL
+ * card update program (COCRDUPC.cbl) where CVV codes are processed as 3-digit numeric
+ * fields using COBOL PIC 9(03) format. The validation maintains identical acceptance
+ * criteria and error handling patterns to ensure functional equivalence during the
+ * mainframe-to-Java migration.</p>
  * 
- * @since CardDemo v2.0
+ * <p>Error Message Customization:</p>
+ * <p>The validator supports custom error messages through the ValidCvv annotation
+ * properties including formatMessage for format violations and nullMessage for
+ * null value violations when null values are not allowed.</p>
+ * 
+ * <p>Thread Safety:</p>
+ * <p>This validator is stateless and thread-safe, suitable for use in concurrent
+ * Spring Boot applications where multiple validation requests may be processed
+ * simultaneously.</p>
+ * 
  * @see ValidCvv
+ * @since CardDemo v2.0
  */
 public class CvvValidator implements ConstraintValidator<ValidCvv, String> {
 
     /**
-     * Regular expression pattern for validating 3-digit numeric CVV codes.
-     * Matches exactly 3 consecutive digits (0-9).
+     * Pre-compiled regex pattern for 3-digit CVV validation.
+     * Pattern matches exactly 3 digits (000-999) with no additional characters.
+     * Using pre-compilation for optimal performance in high-volume validation scenarios.
      */
     private static final Pattern CVV_PATTERN = Pattern.compile("^\\d{3}$");
 
     /**
-     * Minimum valid CVV value (000).
-     */
-    private static final String MIN_CVV = "000";
-
-    /**
-     * Maximum valid CVV value (999).
-     */
-    private static final String MAX_CVV = "999";
-
-    /**
-     * Configuration from the @ValidCvv annotation.
+     * Configuration flag indicating whether null values should be treated as valid.
+     * Extracted from the ValidCvv annotation during initialization.
      */
     private boolean allowNull;
+
+    /**
+     * Custom error message for null value violations.
+     * Used when allowNull is false and a null value is encountered.
+     */
     private String nullMessage;
+
+    /**
+     * Custom error message for format violations.
+     * Used when the CVV value doesn't match the required 3-digit numeric pattern.
+     */
     private String formatMessage;
 
     /**
-     * Initializes the validator with configuration from the @ValidCvv annotation.
+     * Initializes the validator with configuration from the ValidCvv annotation.
      * 
-     * @param constraintAnnotation the annotation instance containing validation configuration
+     * <p>This method is called once during validator setup and extracts the
+     * configuration parameters from the annotation to control validation behavior:</p>
+     * <ul>
+     *   <li>allowNull - determines if null values are acceptable</li>
+     *   <li>nullMessage - custom message for null value violations</li>
+     *   <li>formatMessage - custom message for format violations</li>
+     * </ul>
+     * 
+     * <p>The configuration follows the COBOL card update processing patterns where
+     * CVV updates are optional in certain scenarios but must be valid when provided.</p>
+     * 
+     * @param constraintAnnotation the ValidCvv annotation instance containing configuration
      */
     @Override
     public void initialize(ValidCvv constraintAnnotation) {
@@ -71,127 +96,88 @@ public class CvvValidator implements ConstraintValidator<ValidCvv, String> {
     }
 
     /**
-     * Validates the CVV code according to the configured rules.
+     * Validates the CVV code according to 3-digit numeric format requirements.
      * 
-     * <p>Validation Steps:</p>
+     * <p>Validation Process:</p>
      * <ol>
-     *   <li>Check if value is null and handle according to allowNull configuration</li>
-     *   <li>Validate the CVV format (exactly 3 digits)</li>
-     *   <li>Ensure all characters are numeric</li>
-     *   <li>Verify CVV is within valid range (000-999)</li>
+     *   <li>Check for null values and apply allowNull configuration</li>
+     *   <li>Check for empty/blank strings and treat as format violations</li>
+     *   <li>Validate against 3-digit numeric pattern using compiled regex</li>
+     *   <li>Generate appropriate error messages for different failure scenarios</li>
      * </ol>
      * 
-     * @param cvvCode the CVV code to validate
-     * @param context the constraint validator context for custom error messages
-     * @return true if the CVV code is valid, false otherwise
+     * <p>COBOL Equivalence:</p>
+     * <p>This validation logic maintains exact compatibility with the COBOL CVV
+     * processing in COCRDUPC.cbl where CVV codes are validated as PIC 9(03) fields.
+     * The validation accepts values from "000" to "999" inclusive, preserving
+     * leading zeros as required by card industry standards.</p>
+     * 
+     * <p>Error Message Handling:</p>
+     * <p>Custom validation messages are built using the ConstraintValidatorContext
+     * to provide clear, actionable feedback to users. Messages are customizable
+     * through the ValidCvv annotation properties to support internationalization
+     * and business-specific messaging requirements.</p>
+     * 
+     * @param cvvValue the CVV code value to validate (may be null)
+     * @param context the validation context for building custom error messages
+     * @return true if the CVV is valid according to all configured rules, false otherwise
      */
     @Override
-    public boolean isValid(String cvvCode, ConstraintValidatorContext context) {
-        // Handle null values based on configuration
-        if (cvvCode == null) {
+    public boolean isValid(String cvvValue, ConstraintValidatorContext context) {
+        // Handle null values based on allowNull configuration
+        // This supports optional CVV updates in card modification scenarios
+        // as indicated in the COBOL source code patterns
+        if (cvvValue == null) {
             if (allowNull) {
-                return true;
+                return true;  // Null is explicitly allowed for optional updates
             } else {
-                // Build custom error message for null values
-                context.disableDefaultConstraintViolation();
-                context.buildConstraintViolationWithTemplate(nullMessage)
-                       .addConstraintViolation();
+                // Build custom constraint violation for null values
+                buildCustomViolation(context, nullMessage);
                 return false;
             }
         }
 
-        // Handle empty or whitespace-only strings
-        if (cvvCode.trim().isEmpty()) {
-            context.disableDefaultConstraintViolation();
-            context.buildConstraintViolationWithTemplate(formatMessage)
-                   .addConstraintViolation();
+        // Handle empty and blank strings as format violations
+        // Empty strings are not valid CVV codes even if null values are allowed
+        if (cvvValue.trim().isEmpty()) {
+            buildCustomViolation(context, formatMessage);
             return false;
         }
 
-        // Validate CVV format using regex pattern
-        if (!CVV_PATTERN.matcher(cvvCode.trim()).matches()) {
-            context.disableDefaultConstraintViolation();
-            context.buildConstraintViolationWithTemplate(formatMessage)
-                   .addConstraintViolation();
+        // Validate against 3-digit numeric pattern
+        // This maintains exact compatibility with COBOL PIC 9(03) format
+        // where CVV must be exactly 3 digits with leading zeros preserved
+        if (!CVV_PATTERN.matcher(cvvValue).matches()) {
+            buildCustomViolation(context, formatMessage);
             return false;
         }
 
-        // Additional validation: ensure CVV is within valid numeric range
-        // This replicates COBOL PIC 9(03) behavior where values must be 000-999
-        try {
-            int cvvNumeric = Integer.parseInt(cvvCode.trim());
-            if (cvvNumeric < 0 || cvvNumeric > 999) {
-                context.disableDefaultConstraintViolation();
-                context.buildConstraintViolationWithTemplate(
-                    "CVV must be between 000 and 999")
-                       .addConstraintViolation();
-                return false;
-            }
-        } catch (NumberFormatException e) {
-            // This should not occur given the regex validation above,
-            // but included for defensive programming
-            context.disableDefaultConstraintViolation();
-            context.buildConstraintViolationWithTemplate(formatMessage)
-                   .addConstraintViolation();
-            return false;
-        }
-
-        // CVV code passes all validation checks
+        // CVV passes all validation rules
         return true;
     }
 
     /**
-     * Utility method to check if a CVV code has valid format without full validation context.
+     * Builds a custom constraint violation with the specified error message.
      * 
-     * <p>This method provides a simple boolean check for CVV format validation
-     * without the overhead of constraint validation context setup. Useful for
-     * programmatic validation checks in business logic.</p>
+     * <p>This method replaces the default validation message with a custom message
+     * appropriate for the specific validation failure scenario. It disables the
+     * default constraint violation and creates a new one with the custom message.</p>
      * 
-     * @param cvvCode the CVV code to check
-     * @return true if the CVV has valid format, false otherwise
+     * <p>Message Customization:</p>
+     * <p>Custom messages support business-specific error reporting and can be
+     * internationalized through standard Jakarta Bean Validation message
+     * interpolation mechanisms. Messages provide clear guidance to users
+     * about the specific validation requirements.</p>
+     * 
+     * @param context the validation context for building the violation
+     * @param message the custom error message to display
      */
-    public static boolean hasValidFormat(String cvvCode) {
-        if (cvvCode == null || cvvCode.trim().isEmpty()) {
-            return false;
-        }
-
-        return CVV_PATTERN.matcher(cvvCode.trim()).matches();
-    }
-
-    /**
-     * Utility method to normalize CVV codes to 3-digit format with leading zeros.
-     * 
-     * <p>This method ensures CVV codes are properly formatted with leading zeros
-     * when necessary, matching the COBOL PIC 9(03) format behavior where numeric
-     * values are zero-padded to exactly 3 digits.</p>
-     * 
-     * @param cvvCode the CVV code to normalize
-     * @return normalized 3-digit CVV code, or null if input is invalid
-     */
-    public static String normalizeCvv(String cvvCode) {
-        if (!hasValidFormat(cvvCode)) {
-            return null;
-        }
-
-        try {
-            int cvvNumeric = Integer.parseInt(cvvCode.trim());
-            return String.format("%03d", cvvNumeric);
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    /**
-     * Utility method to validate CVV code format for COBOL compatibility.
-     * 
-     * <p>This method performs validation that ensures compatibility with the
-     * legacy COBOL CVV processing logic found in COCRDUPC.cbl, where CVV codes
-     * are handled as PIC 9(03) fields.</p>
-     * 
-     * @param cvvCode the CVV code to validate
-     * @return true if CVV is compatible with COBOL PIC 9(03) format
-     */
-    public static boolean isCobolCompatible(String cvvCode) {
-        return hasValidFormat(cvvCode) && cvvCode.trim().length() == 3;
+    private void buildCustomViolation(ConstraintValidatorContext context, String message) {
+        // Disable the default constraint violation to use custom message
+        context.disableDefaultConstraintViolation();
+        
+        // Build and add the custom constraint violation with specified message
+        context.buildConstraintViolationWithTemplate(message)
+               .addConstraintViolation();
     }
 }
