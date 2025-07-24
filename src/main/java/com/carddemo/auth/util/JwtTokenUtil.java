@@ -247,8 +247,8 @@ public class JwtTokenUtil {
     public Boolean validateToken(String token) {
         try {
             // Parse and validate token using configured secret key
-            Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+            Jwts.parser()
+                .verifyWith(getSigningKey())
                 .build()
                 .parseClaimsJws(token);
             
@@ -278,8 +278,8 @@ public class JwtTokenUtil {
      */
     public Claims extractClaims(String token) {
         try {
-            return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+            return Jwts.parser()
+                .verifyWith(getSigningKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
