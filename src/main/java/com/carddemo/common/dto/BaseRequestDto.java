@@ -1,5 +1,6 @@
 package com.carddemo.common.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Instant;
 import java.util.UUID;
@@ -212,6 +213,7 @@ public class BaseRequestDto {
      * 
      * @return true if the request has minimum required fields, false otherwise
      */
+    @JsonIgnore
     public boolean isValid() {
         return correlationId != null && !correlationId.trim().isEmpty() &&
                requestTimestamp != null;
