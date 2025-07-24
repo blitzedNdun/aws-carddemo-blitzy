@@ -108,10 +108,10 @@ import java.lang.annotation.Target;
  * </ul>
  * 
  * @since 1.0
- * @see ValidStateZipValidator The validator implementation class
+ * @see StateZipValidator The validator implementation class
  */
 @Documented
-@Constraint(validatedBy = ValidStateZipValidator.class)
+@Constraint(validatedBy = StateZipValidator.class)
 @Target({ElementType.TYPE, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ValidStateZip {
