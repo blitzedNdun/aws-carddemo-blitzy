@@ -29,7 +29,7 @@ import java.util.Objects;
  * - Composite foreign key relationships enable card-to-account cross-referencing
  * - Optimistic locking with @Version annotation for concurrent access control
  */
-@Entity
+@Entity(name = "CommonCard")
 @Table(name = "cards", schema = "public")
 public class Card implements Serializable {
 
