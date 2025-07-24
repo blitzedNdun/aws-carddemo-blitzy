@@ -128,9 +128,9 @@ public class CsrfSecurityConfig {
      * CSRF token extraction mechanisms while maintaining security against XSS and CSRF attacks.
      * 
      * Security Features:
-     * - HTTP-only cookies prevent JavaScript access to CSRF tokens (XSS protection)
+     * - HTTP-only cookies disabled for JavaScript access from React frontend
      * - Secure flag ensures cookies are only transmitted over HTTPS in production
-     * - SameSite=Strict provides additional CSRF protection through browser enforcement
+     * - SameSite attribute configured through application.yml server settings for browser enforcement
      * - Configurable domain and path restrictions for security isolation
      * - XOR token encoding adds an additional layer of protection against token extraction
      * 
@@ -149,7 +149,7 @@ public class CsrfSecurityConfig {
         repository.setCookieName(csrfCookieName);
         repository.setCookieHttpOnly(false); // Allow JavaScript access for React frontend
         repository.setSecure(true); // Force HTTPS-only cookie transmission
-        repository.setSameSite("Strict"); // Enhanced CSRF protection through browser enforcement
+        // Note: SameSite attribute is configured through application.yml server.servlet.session.cookie.same-site
         
         // Configure cookie scope restrictions for security isolation
         if (!csrfCookieDomain.isEmpty()) {
@@ -406,7 +406,7 @@ public class CsrfSecurityConfig {
          * @param cookieToken CSRF token from request cookie
          */
         private void logTokenMismatch(HttpServletRequest request, String headerToken, String cookieToken) {
-            String clientIp = getClientIpAddress(request);
+            String clientIp = extractClientIpAddress(request);
             String requestUri = request.getRequestURI();
             
             // Log structured security event for CSRF token mismatch
@@ -416,6 +416,46 @@ public class CsrfSecurityConfig {
                 headerToken != null ? headerToken.length() : 0,
                 cookieToken != null ? cookieToken.length() : 0
             ));
+        }
+        
+        /**
+         * Extracts client IP address from HTTP request with proxy header support.
+         * 
+         * This method handles various proxy configurations including X-Forwarded-For,
+         * X-Real-IP, and Proxy-Client-IP headers for accurate client identification
+         * in load balancer and reverse proxy environments.
+         * 
+         * @param request HttpServletRequest containing client connection information
+         * @return String representation of client IP address
+         */
+        private static String extractClientIpAddress(HttpServletRequest request) {
+            String[] headerNames = {
+                "X-Forwarded-For",
+                "Proxy-Client-IP", 
+                "WL-Proxy-Client-IP",
+                "HTTP_X_FORWARDED_FOR",
+                "HTTP_X_FORWARDED",
+                "HTTP_X_CLUSTER_CLIENT_IP",
+                "HTTP_CLIENT_IP",
+                "HTTP_FORWARDED_FOR",
+                "HTTP_FORWARDED",
+                "HTTP_VIA",
+                "REMOTE_ADDR",
+                "X-Real-IP"
+            };
+            
+            for (String headerName : headerNames) {
+                String ip = request.getHeader(headerName);
+                if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
+                    // Handle comma-separated IP addresses from proxy chains
+                    if (ip.contains(",")) {
+                        ip = ip.split(",")[0].trim();
+                    }
+                    return ip;
+                }
+            }
+            
+            return request.getRemoteAddr();
         }
     }
 
