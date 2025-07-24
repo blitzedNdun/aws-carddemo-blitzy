@@ -24,7 +24,7 @@ This configuration implements:
         <property name="LOG_LEVEL_APPLICATION" value="DEBUG"/>
         <property name="LOG_LEVEL_SECURITY" value="DEBUG"/>
         <property name="LOG_LEVEL_AUDIT" value="INFO"/>
-        <property name="CONSOLE_LOG_PATTERN" value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %X{correlationId:-} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
+        <property name="CONSOLE_LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %5p ${PID:- } --- [%15.15t] %-40.40logger{39} : %X{correlationId:-} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
     </springProfile>
     
     <!-- Production Spring profile configuration for enterprise deployment -->
@@ -34,6 +34,15 @@ This configuration implements:
         <property name="LOG_LEVEL_SECURITY" value="INFO"/>
         <property name="LOG_LEVEL_AUDIT" value="INFO"/>
         <property name="CONSOLE_LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} ${LOG_LEVEL_PATTERN:-%5p} ${PID:- } --- [%15.15t] %-40.40logger{39} : %X{correlationId:-} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
+    </springProfile>
+
+    <!-- Test Spring profile configuration for unit testing environment -->
+    <springProfile name="test">
+        <property name="LOG_LEVEL_ROOT" value="WARN"/>
+        <property name="LOG_LEVEL_APPLICATION" value="INFO"/>
+        <property name="LOG_LEVEL_SECURITY" value="WARN"/>
+        <property name="LOG_LEVEL_AUDIT" value="WARN"/>
+        <property name="CONSOLE_LOG_PATTERN" value="%d{HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"/>
     </springProfile>
 
     <!-- Kubernetes and container environment properties -->
@@ -66,12 +75,7 @@ This configuration implements:
                 <thread>thread</thread>
                 <logger>logger</logger>
             </fieldNames>
-            <mdcKeyFieldName>mdc</mdcKeyFieldName>
-            <logLevelFieldName>level</logLevelFieldName>
-            <loggerNameFieldName>logger</loggerNameFieldName>
-            <threadNameFieldName>thread</threadNameFieldName>
-            <messageFieldName>message</messageFieldName>
-            <timestampFieldName>@timestamp</timestampFieldName>
+            <!-- Removed deprecated mdcKeyFieldName - MDC is included via includeMdc=true -->
             <shortenedLoggerNameLength>40</shortenedLoggerNameLength>
         </encoder>
     </appender>
@@ -80,6 +84,14 @@ This configuration implements:
     <appender name="CONSOLE_READABLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- Simple Console Appender for test environment without JSON formatting -->
+    <appender name="CONSOLE_TEST" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n</pattern>
             <charset>UTF-8</charset>
         </encoder>
     </appender>
@@ -134,8 +146,7 @@ This configuration implements:
             <totalSizeCap>10GB</totalSizeCap>
             <cleanHistoryOnStart>false</cleanHistoryOnStart>
         </rollingPolicy>
-        <!-- Audit logs should never be deleted by accident -->
-        <prudent>true</prudent>
+        <!-- Prudent mode disabled to allow compression - using cleanHistoryOnStart=false instead -->
     </appender>
 
     <!-- Security Log File Appender for authentication and authorization events -->
@@ -195,7 +206,10 @@ This configuration implements:
         <springProfile name="production">
             <appender-ref ref="CONSOLE_JSON"/>
         </springProfile>
-        <springProfile name="!production">
+        <springProfile name="test">
+            <appender-ref ref="CONSOLE_TEST"/>
+        </springProfile>
+        <springProfile name="!production,!test">
             <appender-ref ref="CONSOLE_READABLE"/>
         </springProfile>
         <queueSize>1000</queueSize>
