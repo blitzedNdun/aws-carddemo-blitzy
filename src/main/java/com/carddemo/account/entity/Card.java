@@ -18,6 +18,10 @@ public class Card {
     @JoinColumn(name = "customer_id")
     private Customer customer;
     
+    @ManyToOne
+    @JoinColumn(name = "account_id")
+    private Account account;
+    
     // Default constructor
     public Card() {}
     
@@ -27,4 +31,7 @@ public class Card {
     
     public Customer getCustomer() { return customer; }
     public void setCustomer(Customer customer) { this.customer = customer; }
+    
+    public Account getAccount() { return account; }
+    public void setAccount(Account account) { this.account = account; }
 }
