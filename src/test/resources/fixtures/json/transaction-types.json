@@ -1,0 +1,472 @@
+{
+  "TransactionTypeTestData": {
+    "metadata": {
+      "description": "Test fixture containing transaction type reference data for lookup validation and Redis cache testing scenarios",
+      "source": "Converted from app/data/ASCII/trantype.txt for modern Spring Boot testing architecture",
+      "version": "1.0.0",
+      "testPurpose": "Support transaction type validation, business logic testing, and Redis cache integration per Section 6.2.4.2 caching strategy"
+    },
+    "transactionTypes": [
+      {
+        "transactionType": "01",
+        "typeDescription": "Purchase",
+        "debitCreditIndicator": false,
+        "businessLogic": {
+          "impactType": "DEBIT",
+          "balanceEffect": "DECREASE",
+          "description": "Customer purchase transaction that decreases account balance and increases outstanding debt"
+        },
+        "testScenarios": {
+          "validationRules": [
+            "Must be exactly 2 characters",
+            "Must have valid debit/credit indicator",
+            "Description cannot be blank"
+          ],
+          "cacheTestCases": [
+            "Frequent lookup performance testing",
+            "TTL expiration validation",
+            "Cache warming scenario"
+          ]
+        }
+      },
+      {
+        "transactionType": "02",
+        "typeDescription": "Payment",
+        "debitCreditIndicator": true,
+        "businessLogic": {
+          "impactType": "CREDIT",
+          "balanceEffect": "INCREASE",
+          "description": "Customer payment transaction that increases account balance and reduces outstanding debt"
+        },
+        "testScenarios": {
+          "validationRules": [
+            "Payment must be credit transaction",
+            "Amount must be positive",
+            "Must update account balance correctly"
+          ],
+          "cacheTestCases": [
+            "High-frequency payment processing",
+            "Cache consistency during concurrent updates",
+            "Session correlation testing"
+          ]
+        }
+      },
+      {
+        "transactionType": "03",
+        "typeDescription": "Credit",
+        "debitCreditIndicator": true,
+        "businessLogic": {
+          "impactType": "CREDIT",
+          "balanceEffect": "INCREASE",
+          "description": "Credit adjustment transaction that increases account balance, such as credit memo or reward"
+        },
+        "testScenarios": {
+          "validationRules": [
+            "Credit must be positive impact",
+            "Requires proper authorization",
+            "Must maintain audit trail"
+          ],
+          "cacheTestCases": [
+            "Credit processing validation",
+            "Reference data lookup optimization",
+            "Distributed cache synchronization"
+          ]
+        }
+      },
+      {
+        "transactionType": "04",
+        "typeDescription": "Authorization",
+        "debitCreditIndicator": false,
+        "businessLogic": {
+          "impactType": "DEBIT",
+          "balanceEffect": "HOLD",
+          "description": "Authorization hold transaction that reserves funds without immediate balance impact"
+        },
+        "testScenarios": {
+          "validationRules": [
+            "Authorization requires available credit",
+            "Must validate card status",
+            "Temporary hold on funds"
+          ],
+          "cacheTestCases": [
+            "Real-time authorization processing",
+            "Cache hit ratio optimization",
+            "Sub-millisecond lookup performance"
+          ]
+        }
+      },
+      {
+        "transactionType": "05",
+        "typeDescription": "Refund",
+        "debitCreditIndicator": true,
+        "businessLogic": {
+          "impactType": "CREDIT",
+          "balanceEffect": "INCREASE",
+          "description": "Refund transaction that returns funds to customer account and increases available balance"
+        },
+        "testScenarios": {
+          "validationRules": [
+            "Refund must be credit transaction",
+            "Cannot exceed original purchase",
+            "Requires refund authorization"
+          ],
+          "cacheTestCases": [
+            "Refund processing validation",
+            "Cache invalidation on updates",
+            "Cross-service cache consistency"
+          ]
+        }
+      },
+      {
+        "transactionType": "06",
+        "typeDescription": "Reversal",
+        "debitCreditIndicator": true,
+        "businessLogic": {
+          "impactType": "REVERSAL",
+          "balanceEffect": "OPPOSITE",
+          "description": "Transaction reversal that undoes a previous transaction with opposite balance impact"
+        },
+        "testScenarios": {
+          "validationRules": [
+            "Must reference original transaction",
+            "Impact opposite of original",
+            "Requires reversal authorization"
+          ],
+          "cacheTestCases": [
+            "Complex reversal processing",
+            "Cache warming for transaction history",
+            "Performance under high reversal volume"
+          ]
+        }
+      },
+      {
+        "transactionType": "07",
+        "typeDescription": "Adjustment",
+        "debitCreditIndicator": true,
+        "businessLogic": {
+          "impactType": "ADJUSTMENT",
+          "balanceEffect": "VARIABLE",
+          "description": "Manual adjustment transaction for account balance corrections and administrative changes"
+        },
+        "testScenarios": {
+          "validationRules": [
+            "Requires administrative authorization",
+            "Must include adjustment reason",
+            "Impact can be positive or negative"
+          ],
+          "cacheTestCases": [
+            "Administrative adjustment processing",
+            "Cache refresh on reference updates",
+            "Batch adjustment scenarios"
+          ]
+        }
+      }
+    ],
+    "referenceDataConfiguration": {
+      "cacheSettings": {
+        "cacheName": "transactionTypes",
+        "ttl": "24 hours",
+        "refreshStrategy": "Daily automated refresh",
+        "evictionPolicy": "LRU with configurable maximum entries"
+      },
+      "springCacheIntegration": {
+        "cacheableAnnotation": "@Cacheable(\"transactionTypes\")",
+        "keyGenerationStrategy": "findByTransactionType:{transactionType}",
+        "cacheProvider": "Redis with Spring Cache abstraction"
+      },
+      "performanceTargets": {
+        "firstCall": "< 5ms database query",
+        "cachedRetrieval": "< 1ms cached retrieval",
+        "bulkOperations": "< 15ms for findAll()"
+      }
+    }
+  },
+  "TransactionTypeValidationScenarios": {
+    "purchaseTransactionTesting": {
+      "transactionType": "01",
+      "expectedDebitCreditIndicator": false,
+      "testCases": [
+        {
+          "scenario": "Valid purchase transaction lookup",
+          "input": "01",
+          "expectedResult": {
+            "transactionType": "01",
+            "typeDescription": "Purchase",
+            "debitCreditIndicator": false
+          }
+        },
+        {
+          "scenario": "Purchase transaction debit validation",
+          "input": {"transactionType": "01", "expectedDirection": "DEBIT"},
+          "expectedResult": true
+        }
+      ]
+    },
+    "paymentTransactionTesting": {
+      "transactionType": "02",
+      "expectedDebitCreditIndicator": true,
+      "testCases": [
+        {
+          "scenario": "Valid payment transaction lookup",
+          "input": "02",
+          "expectedResult": {
+            "transactionType": "02",
+            "typeDescription": "Payment",
+            "debitCreditIndicator": true
+          }
+        },
+        {
+          "scenario": "Payment transaction credit validation",
+          "input": {"transactionType": "02", "expectedDirection": "CREDIT"},
+          "expectedResult": true
+        }
+      ]
+    },
+    "creditTransactionTesting": {
+      "transactionType": "03",
+      "expectedDebitCreditIndicator": true,
+      "testCases": [
+        {
+          "scenario": "Valid credit transaction lookup",
+          "input": "03",
+          "expectedResult": {
+            "transactionType": "03",
+            "typeDescription": "Credit",
+            "debitCreditIndicator": true
+          }
+        },
+        {
+          "scenario": "Credit transaction positive impact validation",
+          "input": {"transactionType": "03", "expectedDirection": "CREDIT"},
+          "expectedResult": true
+        }
+      ]
+    },
+    "authorizationTransactionTesting": {
+      "transactionType": "04",
+      "expectedDebitCreditIndicator": false,
+      "testCases": [
+        {
+          "scenario": "Valid authorization transaction lookup",
+          "input": "04",
+          "expectedResult": {
+            "transactionType": "04",
+            "typeDescription": "Authorization",
+            "debitCreditIndicator": false
+          }
+        },
+        {
+          "scenario": "Authorization transaction hold validation",
+          "input": {"transactionType": "04", "expectedDirection": "DEBIT"},
+          "expectedResult": true
+        }
+      ]
+    },
+    "refundTransactionTesting": {
+      "transactionType": "05",
+      "expectedDebitCreditIndicator": true,
+      "testCases": [
+        {
+          "scenario": "Valid refund transaction lookup",
+          "input": "05",
+          "expectedResult": {
+            "transactionType": "05",
+            "typeDescription": "Refund",
+            "debitCreditIndicator": true
+          }
+        },
+        {
+          "scenario": "Refund transaction credit validation",
+          "input": {"transactionType": "05", "expectedDirection": "CREDIT"},
+          "expectedResult": true
+        }
+      ]
+    },
+    "reversalTransactionTesting": {
+      "transactionType": "06",
+      "expectedDebitCreditIndicator": true,
+      "testCases": [
+        {
+          "scenario": "Valid reversal transaction lookup",
+          "input": "06",
+          "expectedResult": {
+            "transactionType": "06",
+            "typeDescription": "Reversal",
+            "debitCreditIndicator": true
+          }
+        },
+        {
+          "scenario": "Reversal transaction processing validation",
+          "input": {"transactionType": "06", "expectedDirection": "REVERSAL"},
+          "expectedResult": true
+        }
+      ]
+    },
+    "adjustmentTransactionTesting": {
+      "transactionType": "07",
+      "expectedDebitCreditIndicator": true,
+      "testCases": [
+        {
+          "scenario": "Valid adjustment transaction lookup",
+          "input": "07",
+          "expectedResult": {
+            "transactionType": "07",
+            "typeDescription": "Adjustment",
+            "debitCreditIndicator": true
+          }
+        },
+        {
+          "scenario": "Adjustment transaction flexibility validation",
+          "input": {"transactionType": "07", "expectedDirection": "ADJUSTMENT"},
+          "expectedResult": true
+        }
+      ]
+    },
+    "typeCodeFormatValidation": {
+      "validFormats": [
+        {"input": "01", "valid": true, "description": "Two-digit numeric format"},
+        {"input": "02", "valid": true, "description": "Leading zero preserved"},
+        {"input": "07", "valid": true, "description": "Maximum valid type code"}
+      ],
+      "invalidFormats": [
+        {"input": "1", "valid": false, "description": "Single digit not allowed"},
+        {"input": "001", "valid": false, "description": "Three digits not allowed"},
+        {"input": "AB", "valid": false, "description": "Alphabetic characters not allowed"},
+        {"input": "", "valid": false, "description": "Empty string not allowed"},
+        {"input": null, "valid": false, "description": "Null value not allowed"}
+      ]
+    },
+    "descriptionLengthValidation": {
+      "validDescriptions": [
+        {"input": "Purchase", "length": 8, "valid": true},
+        {"input": "Payment", "length": 7, "valid": true},
+        {"input": "Authorization", "length": 13, "valid": true}
+      ],
+      "invalidDescriptions": [
+        {"input": "", "length": 0, "valid": false, "reason": "Description cannot be blank"},
+        {"input": "A".repeat(61), "length": 61, "valid": false, "reason": "Description exceeds 60 character limit"}
+      ]
+    },
+    "debitCreditIndicatorValidation": {
+      "validIndicators": [
+        {"input": true, "valid": true, "description": "Credit transaction indicator"},
+        {"input": false, "valid": true, "description": "Debit transaction indicator"}
+      ],
+      "invalidIndicators": [
+        {"input": null, "valid": false, "description": "Null indicator not allowed"},
+        {"input": "true", "valid": false, "description": "String representation not allowed"},
+        {"input": 1, "valid": false, "description": "Numeric representation not allowed"}
+      ]
+    },
+    "redisTestScenarios": {
+      "cacheHitTesting": {
+        "description": "Validate Redis cache hit performance for frequently accessed transaction types",
+        "testCases": [
+          {
+            "scenario": "First access - cache miss",
+            "transactionType": "01",
+            "expectedCacheHit": false,
+            "expectedResponseTime": "< 5ms",
+            "cacheAction": "populate"
+          },
+          {
+            "scenario": "Second access - cache hit",
+            "transactionType": "01",
+            "expectedCacheHit": true,
+            "expectedResponseTime": "< 1ms",
+            "cacheAction": "retrieve"
+          }
+        ]
+      },
+      "cacheTtlTesting": {
+        "description": "Validate Redis TTL expiration and refresh behavior",
+        "ttlSettings": "24 hours",
+        "testCases": [
+          {
+            "scenario": "Cache within TTL",
+            "timeFromCache": "12 hours",
+            "expectedCacheValid": true
+          },
+          {
+            "scenario": "Cache beyond TTL",
+            "timeFromCache": "25 hours",
+            "expectedCacheValid": false,
+            "expectedAction": "refresh from database"
+          }
+        ]
+      },
+      "bulkCacheTesting": {
+        "description": "Validate findAll() bulk operations with Redis caching",
+        "testCases": [
+          {
+            "scenario": "Bulk cache population",
+            "operation": "findAll()",
+            "expectedCacheEntries": 7,
+            "expectedResponseTime": "< 15ms"
+          },
+          {
+            "scenario": "Bulk cache retrieval",
+            "operation": "findAll() - cached",
+            "expectedCacheHit": true,
+            "expectedResponseTime": "< 3ms"
+          }
+        ]
+      },
+      "cacheEvictionTesting": {
+        "description": "Validate cache eviction and refresh scenarios",
+        "testCases": [
+          {
+            "scenario": "Manual cache eviction",
+            "operation": "@CacheEvict",
+            "expectedResult": "Cache cleared for specific key"
+          },
+          {
+            "scenario": "LRU eviction policy",
+            "operation": "Exceed maximum cache entries",
+            "expectedResult": "Least recently used entries evicted"
+          }
+        ]
+      }
+    },
+    "businessLogicValidationData": {
+      "transactionDirectionClassification": {
+        "debitTransactions": [
+          {"transactionType": "01", "typeDescription": "Purchase", "balanceImpact": "DECREASE"},
+          {"transactionType": "04", "typeDescription": "Authorization", "balanceImpact": "HOLD"}
+        ],
+        "creditTransactions": [
+          {"transactionType": "02", "typeDescription": "Payment", "balanceImpact": "INCREASE"},
+          {"transactionType": "03", "typeDescription": "Credit", "balanceImpact": "INCREASE"},
+          {"transactionType": "05", "typeDescription": "Refund", "balanceImpact": "INCREASE"},
+          {"transactionType": "06", "typeDescription": "Reversal", "balanceImpact": "OPPOSITE"},
+          {"transactionType": "07", "typeDescription": "Adjustment", "balanceImpact": "VARIABLE"}
+        ]
+      },
+      "financialProcessingRules": {
+        "description": "Business logic validation scenarios for transaction type classification",
+        "rules": [
+          {
+            "rule": "Debit transactions must decrease available balance",
+            "applicableTypes": ["01", "04"],
+            "validation": "debitCreditIndicator === false"
+          },
+          {
+            "rule": "Credit transactions must increase available balance",
+            "applicableTypes": ["02", "03", "05"],
+            "validation": "debitCreditIndicator === true"
+          },
+          {
+            "rule": "Reversal transactions must reference original transaction",
+            "applicableTypes": ["06"],
+            "validation": "requires original transaction ID"
+          },
+          {
+            "rule": "Adjustment transactions require administrative authorization",
+            "applicableTypes": ["07"],
+            "validation": "requires admin role"
+          }
+        ]
+      }
+    }
+  }
+}
