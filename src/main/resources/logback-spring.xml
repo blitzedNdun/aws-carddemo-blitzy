@@ -67,7 +67,7 @@ This configuration implements:
                 <logger>logger</logger>
             </fieldNames>
             <mdcKeyFieldName>mdc</mdcKeyFieldName>
-            <logLevelFieldName>level</logLevelName>
+            <logLevelFieldName>level</logLevelFieldName>
             <loggerNameFieldName>logger</loggerNameFieldName>
             <threadNameFieldName>thread</threadNameFieldName>
             <messageFieldName>message</messageFieldName>
@@ -338,7 +338,7 @@ This configuration implements:
         <appender-ref ref="ASYNC_AUDIT_FILE"/>
     </logger>
 
-    <!-- User Management Loggers */
+    <!-- User Management Loggers -->
     <logger name="com.carddemo.user" level="${LOG_LEVEL_APPLICATION}" additivity="false">
         <appender-ref ref="ASYNC_CONSOLE"/>
         <appender-ref ref="ASYNC_APPLICATION_FILE"/>
