@@ -771,7 +771,7 @@ public class AccountDto {
     public boolean validate() {
         try {
             // Validate account ID (required field with COBOL format)
-            if (ValidationUtils.validateAccountNumber(accountId).isValid()) {
+            if (!ValidationUtils.validateAccountNumber(accountId).isValid()) {
                 return false;
             }
 
