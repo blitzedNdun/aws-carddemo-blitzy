@@ -79,11 +79,10 @@ public class DisclosureGroup implements Serializable {
      * Represents accounts that use this disclosure group for interest rate application.
      * Mapped by the group_id foreign key in the accounts table per Section 6.2.1.1.
      * 
-     * Using generic List<Object> to maintain JPA relationship structure without requiring
-     * direct Account class import. JPA will resolve the actual entity type at runtime.
+     * References Account entity in the same package (renamed to CommonAccount to avoid conflicts).
      */
     @OneToMany(mappedBy = "disclosureGroup", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private List<Object> accounts = new ArrayList<>();
+    private List<Account> accounts = new ArrayList<>();
 
     /**
      * Default constructor required by JPA specification.
@@ -206,7 +205,7 @@ public class DisclosureGroup implements Serializable {
      * 
      * @return List of account entities using this interest rate configuration
      */
-    public List<Object> getAccounts() {
+    public List<Account> getAccounts() {
         return accounts;
     }
 
@@ -215,7 +214,7 @@ public class DisclosureGroup implements Serializable {
      * 
      * @param accounts List of account entities to associate
      */
-    public void setAccounts(List<Object> accounts) {
+    public void setAccounts(List<Account> accounts) {
         this.accounts = accounts != null ? accounts : new ArrayList<>();
     }
 
@@ -225,7 +224,7 @@ public class DisclosureGroup implements Serializable {
      * 
      * @param account The account entity to associate
      */
-    public void addAccount(Object account) {
+    public void addAccount(Account account) {
         if (account != null) {
             this.accounts.add(account);
             // Note: Bidirectional relationship management would be handled in Account entity
@@ -238,7 +237,7 @@ public class DisclosureGroup implements Serializable {
      * 
      * @param account The account entity to disassociate
      */
-    public void removeAccount(Object account) {
+    public void removeAccount(Account account) {
         if (account != null) {
             this.accounts.remove(account);
             // Note: Bidirectional relationship management would be handled in Account entity
