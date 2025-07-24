@@ -1,0 +1,444 @@
+# ==============================================================================
+# Spring Batch Account Data Reader Configuration
+# File: account-data-reader.yml
+# Description: ItemReader configuration for loading account data from acctdata.txt
+# Author: Blitzy agent
+# Version: 1.0
+# Purpose: Process fixed-width ASCII account records into PostgreSQL accounts table
+# ==============================================================================
+
+# Spring Batch configuration for account data loading from acctdata.txt
+# Maintains exact COBOL COMP-3 decimal precision using BigDecimal operations
+# Handles 300-byte fixed-width record structure with delimiter '{' parsing
+spring:
+  batch:
+    job:
+      # Account data loading job configuration
+      account-data-loader:
+        enabled: true
+        # Chunk-based processing for optimal performance with 50 account records
+        chunk-size: 10
+        # Skip limit for data quality issues during initial load
+        skip-limit: 5
+        # Restart capability for failed batch runs
+        restartable: true
+        
+        # Step configuration for account data processing
+        steps:
+          load-account-data:
+            # ItemReader configuration for acctdata.txt processing
+            reader:
+              type: "FlatFileItemReader"
+              resource: "classpath:db/data/acctdata.txt"
+              # Encoding for ASCII file processing
+              encoding: "UTF-8"
+              # Line mapper configuration for fixed-width record parsing
+              lineMapper:
+                type: "DefaultLineMapper"
+                # Fixed-length tokenizer for 300-byte account records
+                lineTokenizer:
+                  type: "FixedLengthTokenizer"
+                  # Strict parsing to ensure exact field positioning
+                  strict: true
+                  # Field names matching Account entity properties
+                  names: 
+                    - "accountId"
+                    - "activeStatus" 
+                    - "customerId"
+                    - "currentBalance"
+                    - "creditLimit"
+                    - "cashCreditLimit"
+                    - "openDate"
+                    - "expirationDate"
+                    - "reissueDate"
+                    - "currentCycleCredit"
+                    - "currentCycleDebit"
+                    - "addressZip"
+                    - "groupId"
+                  # Fixed-width field ranges matching acctdata.txt structure
+                  ranges:
+                    # Account ID: 11 digits (positions 1-11)
+                    - "1-11"
+                    # Active Status: 1 character (position 12)
+                    - "12-12"
+                    # Customer ID: 11 digits (positions 13-23)
+                    - "13-23"
+                    # Current Balance: 11 digits + delimiter (positions 24-35)
+                    - "24-34"
+                    # Credit Limit: 11 digits + delimiter (positions 36-46)
+                    - "36-45"
+                    # Cash Credit Limit: 11 digits + delimiter (positions 47-57)
+                    - "47-56"
+                    # Open Date: 10 characters (positions 58-67)
+                    - "58-67"
+                    # Expiration Date: 10 characters (positions 68-77)
+                    - "68-77"
+                    # Reissue Date: 10 characters (positions 78-87)
+                    - "78-87"
+                    # Current Cycle Credit: 11 digits + delimiter (positions 88-98) 
+                    - "88-98"
+                    # Current Cycle Debit: 11 digits + delimiter (positions 99-109)
+                    - "99-109"
+                    # Address ZIP: 10 characters (positions 110-119)
+                    - "110-119"
+                    # Group ID: remaining characters for disclosure group ID
+                    - "120-129"
+
+                # Field set mapper for converting parsed fields to Account entity
+                fieldSetMapper:
+                  type: "BeanWrapperFieldSetMapper"
+                  targetType: "com.carddemo.common.entity.Account"
+                  # Custom property editor for BigDecimal conversion
+                  customEditors:
+                    # BigDecimal editors for financial fields with exact precision
+                    "java.math.BigDecimal":
+                      - propertyNames: ["currentBalance", "creditLimit", "cashCreditLimit", "currentCycleCredit", "currentCycleDebit"]
+                        # Custom converter preserving COBOL COMP-3 precision
+                        converter: "decimalConverter"
+                    # LocalDate editors for date fields 
+                    "java.time.LocalDate":
+                      - propertyNames: ["openDate", "expirationDate", "reissueDate"]
+                        # Date pattern matching acctdata.txt format (YYYY-MM-DD)
+                        pattern: "yyyy-MM-dd"
+                  
+                  # Field validation rules matching business constraints
+                  validation:
+                    # Account ID validation: exactly 11 digits
+                    accountId:
+                      required: true
+                      pattern: "^\\d{11}$"
+                      message: "Account ID must be exactly 11 digits"
+                    
+                    # Customer ID validation: exactly 9 digits  
+                    customerId:
+                      required: true
+                      pattern: "^\\d{9}$"
+                      message: "Customer ID must be exactly 9 digits"
+                    
+                    # Active Status validation: Y or N only
+                    activeStatus:
+                      required: true
+                      pattern: "^[YN]$"
+                      message: "Active status must be Y or N"
+                    
+                    # Financial field validation: non-negative values
+                    currentBalance:
+                      required: true
+                      type: "BigDecimal"
+                      min: "-9999999999.99"
+                      max: "9999999999.99"
+                      message: "Current balance must be within valid range"
+                    
+                    creditLimit:
+                      required: true  
+                      type: "BigDecimal"
+                      min: "0.00"
+                      max: "9999999999.99"
+                      message: "Credit limit must be non-negative"
+                    
+                    cashCreditLimit:
+                      required: true
+                      type: "BigDecimal" 
+                      min: "0.00"
+                      max: "9999999999.99"
+                      message: "Cash credit limit must be non-negative"
+                    
+                    # Date field validation: reasonable date ranges
+                    openDate:
+                      required: true
+                      type: "LocalDate"
+                      min: "1970-01-01"
+                      message: "Open date must be after 1970-01-01"
+                    
+                    expirationDate:
+                      required: true
+                      type: "LocalDate"
+                      message: "Expiration date is required"
+                    
+                    reissueDate:
+                      required: true
+                      type: "LocalDate"
+                      message: "Reissue date is required"
+
+            # ItemProcessor configuration for data transformation
+            processor:
+              type: "AccountDataProcessor"
+              # Processing rules for COBOL-to-Java conversion
+              transformations:
+                # Convert delimiter-separated numeric fields to BigDecimal
+                decimalConversion:
+                  enabled: true
+                  # Remove '{' delimiter from numeric fields
+                  stripDelimiter: "{"
+                  # Apply COBOL COMP-3 precision (scale 2 for currency)
+                  scale: 2
+                  # Use banker's rounding per COBOL standards
+                  roundingMode: "HALF_EVEN"
+                  # Financial precision context matching COBOL arithmetic
+                  mathContext: "DECIMAL128"
+                
+                # Date field processing for proper LocalDate conversion
+                dateConversion:
+                  enabled: true
+                  # Input date format from acctdata.txt
+                  inputFormat: "yyyy-MM-dd"
+                  # Validation for date logic consistency
+                  validateDateRanges: true
+                
+                # Address and group ID field processing
+                stringFieldProcessing:
+                  enabled: true
+                  # Trim whitespace from string fields
+                  trimWhitespace: true
+                  # Convert empty strings to null
+                  emptyStringToNull: true
+
+            # ItemWriter configuration for PostgreSQL persistence
+            writer:
+              type: "JpaItemWriter"
+              # JPA entity manager for Account persistence
+              entityManagerFactory: "accountEntityManagerFactory"
+              # Use Account entity for data persistence
+              targetType: "com.carddemo.common.entity.Account"
+              # Batch insert for performance optimization
+              batchSize: 10
+              # Clear persistence context after each chunk
+              clearPersistenceContext: true
+
+        # Error handling configuration
+        error-handling:
+          # Skip policy for data quality issues
+          skipPolicy:
+            # Skip records with validation failures
+            skipOnValidationFailure: true
+            # Skip records with parsing errors
+            skipOnParsingFailure: true
+            # Maximum skippable records
+            skipLimit: 5
+          
+          # Retry policy for transient failures  
+          retryPolicy:
+            # Retry database connection issues
+            retryOnConnectionFailure: true
+            # Maximum retry attempts
+            maxRetryAttempts: 3
+            # Retry delay in milliseconds
+            retryDelay: 1000
+
+        # Performance and monitoring configuration
+        monitoring:
+          # Enable job execution metrics
+          metricsEnabled: true
+          # Step execution logging
+          stepExecutionLogging: true
+          # Performance counters for processing statistics
+          performanceCounters:
+            - "recordsRead"
+            - "recordsProcessed" 
+            - "recordsWritten"
+            - "recordsSkipped"
+            - "processingTime"
+
+# Custom converter configurations for specialized data type handling
+converters:
+  # BigDecimal converter for COBOL COMP-3 precision preservation
+  decimalConverter:
+    class: "com.carddemo.batch.converter.CobolDecimalConverter"
+    # Configuration for exact decimal precision
+    properties:
+      # Remove COBOL delimiter characters
+      stripDelimiters: ["{", "}"]
+      # Decimal scale for financial precision (2 decimal places)
+      scale: 2
+      # Rounding mode for consistent COBOL behavior  
+      roundingMode: "HALF_EVEN"
+      # Math context for high-precision arithmetic
+      mathContext: "DECIMAL128"
+      # Zero-padding handling for numeric fields
+      handleZeroPadding: true
+      # Conversion validation for range checking
+      validateRange: true
+      # Minimum and maximum values for financial fields
+      minValue: "-9999999999.99" 
+      maxValue: "9999999999.99"
+
+  # Date converter for COBOL date format handling
+  dateConverter:
+    class: "com.carddemo.batch.converter.CobolDateConverter"
+    # Date processing configuration
+    properties:
+      # Input date pattern from acctdata.txt
+      inputPattern: "yyyy-MM-dd"
+      # Lenient parsing for date variations
+      lenientParsing: false
+      # Time zone for date processing
+      timeZone: "UTC"
+      # Date range validation
+      validateDateRanges: true
+      # Minimum acceptable date
+      minDate: "1970-01-01"
+      # Maximum acceptable date (current date + 20 years)
+      maxFutureYears: 20
+
+# Logging configuration for account data processing
+logging:
+  level:
+    # Spring Batch framework logging
+    org.springframework.batch: INFO
+    # Account data reader logging  
+    com.carddemo.batch.reader: DEBUG
+    # SQL logging for database operations
+    org.hibernate.SQL: DEBUG
+    # Parameter logging for debugging
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  
+  # Custom appender for batch processing logs
+  appenders:
+    batchProcessing:
+      type: "FileAppender"
+      file: "logs/account-data-processing.log"
+      pattern: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+      # Log rotation for production use
+      rollingPolicy:
+        maxFileSize: "10MB"
+        maxHistory: 30
+        totalSizeCap: "1GB"
+
+# Database connection configuration for account data loading
+datasource:
+  account:
+    # JDBC URL for PostgreSQL connection
+    url: "jdbc:postgresql://localhost:5432/carddemo"
+    # Database credentials (externalized in production)
+    username: "${DB_USERNAME:carddemo_user}"
+    password: "${DB_PASSWORD:carddemo_pass}"
+    # HikariCP connection pool settings
+    hikari:
+      # Connection pool sizing for batch processing
+      maximumPoolSize: 20
+      minimumIdle: 5
+      # Connection timeout for database operations
+      connectionTimeout: 30000
+      # Idle timeout for connection management
+      idleTimeout: 600000
+      # Maximum connection lifetime
+      maxLifetime: 1800000
+      # Connection leak detection
+      leakDetectionThreshold: 60000
+      # Pool name for monitoring
+      poolName: "AccountDataLoaderPool"
+
+# Transaction management for account data loading
+transaction:
+  # Transaction manager configuration
+  manager:
+    # JPA transaction manager for Account entity operations
+    type: "JpaTransactionManager"
+    # Transaction timeout for batch operations (5 minutes)
+    timeout: 300
+    # Isolation level matching database configuration
+    isolation: "READ_COMMITTED"
+    # Propagation for nested transactions
+    propagation: "REQUIRED"
+  
+  # Batch transaction configuration
+  batch:
+    # Chunk transaction boundaries
+    chunkTransactionBoundary: true
+    # Rollback on any exception
+    rollbackOnException: true
+    # Commit interval (matches chunk size)
+    commitInterval: 10
+
+# JMX configuration for monitoring and management
+management:
+  endpoints:
+    web:
+      exposure:
+        # Expose batch endpoints for monitoring
+        include: ["batch", "health", "metrics", "info"]
+    jmx:
+      exposure:
+        # Expose JMX endpoints for operational monitoring
+        include: ["batch", "health", "metrics"]
+  
+  # Metrics configuration for performance monitoring
+  metrics:
+    enabled: true
+    # Export metrics to monitoring systems
+    export:
+      prometheus:
+        enabled: true
+      jmx:
+        enabled: true
+    
+    # Custom metrics for account data processing
+    tags:
+      application: "carddemo"
+      module: "account-data-loader"
+      environment: "${SPRING_PROFILES_ACTIVE:development}"
+
+# Validation configuration for data quality assurance
+validation:
+  # Bean validation for Account entity
+  beanValidation:
+    enabled: true
+    # Fail fast on validation errors
+    failFast: false
+    # Validation groups for different processing phases
+    groups: ["Default", "AccountDataLoad"]
+  
+  # Custom validation rules for account data
+  customValidation:
+    # Cross-field validation rules
+    crossFieldValidation:
+      enabled: true
+      # Validate expiration date after open date
+      expirationAfterOpen: true
+      # Validate reissue date within acceptable range
+      reissueDateValid: true
+      # Validate credit limits are reasonable
+      creditLimitValid: true
+    
+    # Business rule validation
+    businessRules:
+      enabled: true
+      # Maximum credit limit validation
+      maxCreditLimit: "999999999.99"
+      # Account ID uniqueness check
+      validateAccountIdUniqueness: true
+      # Customer ID reference validation
+      validateCustomerIdReference: false
+
+# Production readiness configuration
+production:
+  # Health check configuration
+  healthCheck:
+    enabled: true
+    # Database connection health check
+    database: true
+    # File system health check  
+    fileSystem: true
+    # Memory usage health check
+    memory: true
+  
+  # Security configuration for production deployment
+  security:
+    # Enable security for batch endpoints
+    enabled: true
+    # Authentication required for batch management
+    requireAuthentication: true
+    # Role-based access control
+    roleBasedAccess: true
+    # Allowed roles for batch operations
+    allowedRoles: ["BATCH_ADMIN", "SYSTEM_ADMIN"]
+  
+  # Audit configuration for compliance
+  audit:
+    enabled: true
+    # Log all batch operations
+    logBatchOperations: true
+    # Audit data access operations
+    auditDataAccess: true
+    # Retention period for audit logs
+    auditLogRetentionDays: 90
