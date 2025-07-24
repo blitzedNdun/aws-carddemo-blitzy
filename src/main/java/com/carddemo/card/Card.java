@@ -50,7 +50,7 @@ import java.time.LocalDate;
  * @version 1.0
  * @since 2024-01-01
  */
-@Entity
+@Entity(name = "CardEntity")
 @Table(name = "cards", 
        indexes = {
            @Index(name = "idx_card_number", columnList = "card_number", unique = true),
@@ -477,7 +477,7 @@ public class Card {
      * @return true if card has expired, false otherwise
      */
     public boolean isExpired() {
-        return expirationDate != null && expirationDate.isBefore(LocalDate.now());
+        return expirationDate != null && !expirationDate.isAfter(LocalDate.now());
     }
 
     /**
@@ -488,7 +488,7 @@ public class Card {
      * @return true if card can process transactions, false otherwise
      */
     public boolean isValidForTransactions() {
-        return isActive() && !isExpired();
+        return isActive() && expirationDate != null && !isExpired();
     }
 
     /**
@@ -499,7 +499,7 @@ public class Card {
      * @return Masked card number suitable for display
      */
     public String getMaskedCardNumber() {
-        if (cardNumber == null || cardNumber.length() != 16) {
+        if (cardNumber == null || cardNumber.length() != 16 || !isValidCardNumber()) {
             return "XXXX-XXXX-XXXX-XXXX";
         }
         return "XXXX-XXXX-XXXX-" + cardNumber.substring(12);
@@ -541,7 +541,7 @@ public class Card {
             if (alternate) {
                 digit *= 2;
                 if (digit > 9) {
-                    digit = (digit % 10) + 1;
+                    digit = digit - 9;
                 }
             }
             
