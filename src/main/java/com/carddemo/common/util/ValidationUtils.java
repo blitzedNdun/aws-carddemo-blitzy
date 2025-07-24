@@ -332,8 +332,10 @@ public final class ValidationUtils {
             return ValidationResult.NON_NUMERIC_DATA;
         }
 
-        // Verify numeric conversion capability
-        if (!NumberUtils.isCreatable(trimmedValue)) {
+        // Verify numeric conversion capability (avoid octal interpretation issues)
+        try {
+            Integer.parseInt(trimmedValue);
+        } catch (NumberFormatException e) {
             logger.warn("Numeric field validation failed: not convertible to number");
             return ValidationResult.NON_NUMERIC_DATA;
         }
