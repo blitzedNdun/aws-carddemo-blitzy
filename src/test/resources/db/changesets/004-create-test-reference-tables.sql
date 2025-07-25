@@ -31,7 +31,7 @@ CREATE INDEX idx_trantype_description ON trantype (type_description);
 
 -- Add check constraint for transaction type code validation
 ALTER TABLE trantype ADD CONSTRAINT chk_trantype_code_format 
-    CHECK (transaction_type ~ '^[A-Z0-9]{2}$');
+    CHECK (LENGTH(transaction_type) = 2);
 
 -- Add check constraint for description validation
 ALTER TABLE trantype ADD CONSTRAINT chk_trantype_desc_not_empty 
@@ -55,8 +55,8 @@ CREATE TABLE trancatg (
     category_type_description VARCHAR(50) NOT NULL,
     
     -- Audit fields for test data management and validation
-    created_timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    created_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     
     -- Version field for optimistic locking in integration tests
     version INTEGER DEFAULT 0 NOT NULL,
@@ -80,7 +80,7 @@ CREATE INDEX idx_trancatg_composite ON trancatg (transaction_type_code, transact
 
 -- Add check constraints for data validation in test environment
 ALTER TABLE trancatg ADD CONSTRAINT chk_trancatg_type_code_format 
-    CHECK (transaction_type_code ~ '^[A-Z0-9]{2}$');
+    CHECK (LENGTH(transaction_type_code) = 2);
 
 ALTER TABLE trancatg ADD CONSTRAINT chk_trancatg_category_code_range 
     CHECK (transaction_category_code >= 0 AND transaction_category_code <= 9999);
@@ -166,8 +166,8 @@ INSERT INTO trancatg (transaction_type_code, transaction_category_code, category
 -- =========================================================================
 
 -- Update table statistics for query planner optimization
-ANALYZE trantype;
-ANALYZE trancatg;
+-- ANALYZE trantype; -- Commented out for H2 compatibility
+-- ANALYZE trancatg; -- Commented out for H2 compatibility
 
 -- Add comments for documentation and test scenario identification
 COMMENT ON TABLE trantype IS 'Transaction type reference table for test environment - maps COBOL TRAN-TYPE-RECORD structure to PostgreSQL';
