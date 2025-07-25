@@ -24,7 +24,7 @@ This configuration implements:
         <property name="LOG_LEVEL_APPLICATION" value="DEBUG"/>
         <property name="LOG_LEVEL_SECURITY" value="DEBUG"/>
         <property name="LOG_LEVEL_AUDIT" value="INFO"/>
-        <property name="CONSOLE_LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %5p ${PID:- } --- [%15.15t] %-40.40logger{39} : %X{correlationId:-} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
+        <property name="CONSOLE_LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %5p ${PID:- } --- [%15.15t] %-40.40logger{39} : %X{correlationId:-} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%ex}"/>
     </springProfile>
     
     <!-- Production Spring profile configuration for enterprise deployment -->
@@ -33,7 +33,7 @@ This configuration implements:
         <property name="LOG_LEVEL_APPLICATION" value="INFO"/>
         <property name="LOG_LEVEL_SECURITY" value="INFO"/>
         <property name="LOG_LEVEL_AUDIT" value="INFO"/>
-        <property name="CONSOLE_LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} ${LOG_LEVEL_PATTERN:-%5p} ${PID:- } --- [%15.15t] %-40.40logger{39} : %X{correlationId:-} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
+        <property name="CONSOLE_LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} ${LOG_LEVEL_PATTERN:-%5p} ${PID:- } --- [%15.15t] %-40.40logger{39} : %X{correlationId:-} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%ex}"/>
     </springProfile>
 
     <!-- Test Spring profile configuration for unit testing environment -->
