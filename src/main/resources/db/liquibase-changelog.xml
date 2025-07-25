@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.25.xsd">
+
+    <!-- 
+        CardDemo Database Migration Master Changelog
+        
+        This master changelog coordinates all database migrations for the 
+        VSAM-to-PostgreSQL transformation, providing versioned schema 
+        evolution with rollback capabilities.
+        
+        Dependencies:
+        - PostgreSQL 15+ (or H2 in test mode with PostgreSQL compatibility)
+        - Liquibase 4.25.x
+        
+        Migration Strategy:
+        - V1-V10: Core schema creation
+        - V20-V28: Initial data loading
+    -->
+    
+    <!-- Core Schema Migrations -->
+    <include file="db/migration/V1__create_users_table.sql" relativeToChangelogFile="false"/>
+    <include file="db/migration/V1_5__create_audit_tables.sql" relativeToChangelogFile="false"/>
+    <include file="db/migration/V2__create_customers_table.sql" relativeToChangelogFile="false"/>
+    <include file="db/migration/V6__create_reference_tables.sql" relativeToChangelogFile="false"/>
+    <include file="db/migration/V3__create_accounts_table.sql" relativeToChangelogFile="false"/>
+    <include file="db/migration/V4__create_cards_table.sql" relativeToChangelogFile="false"/>
+    <include file="db/migration/V5__create_transactions_table.sql" relativeToChangelogFile="false"/>
+    <include file="db/migration/V10__configure_database_settings.sql" relativeToChangelogFile="false"/>
+    
+    <!-- Initial Data Loading -->
+    <include file="db/migration/data/V20__load_users_initial_data.sql" relativeToChangelogFile="false"/>
+    <include file="db/migration/data/V21__load_customers_data.sql" relativeToChangelogFile="false"/>
+    <include file="db/migration/data/V22__load_accounts_data.sql" relativeToChangelogFile="false"/>
+    <include file="db/migration/data/V24__load_transaction_types_data.sql" relativeToChangelogFile="false"/>
+    <include file="db/migration/data/V25__load_transaction_categories_data.sql" relativeToChangelogFile="false"/>
+    <include file="db/migration/data/V26__load_disclosure_groups_data.sql" relativeToChangelogFile="false"/>
+    
+</databaseChangeLog>
