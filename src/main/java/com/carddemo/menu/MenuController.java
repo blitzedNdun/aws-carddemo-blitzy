@@ -20,6 +20,8 @@ package com.carddemo.menu;
 import com.carddemo.common.dto.MenuOptionDTO;
 import com.carddemo.common.dto.MenuResponseDTO;
 
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -260,15 +262,31 @@ public class MenuController {
                 logger.warn("Invalid user role parameter provided: {}", userRole);
                 
                 MenuResponseDTO errorResponse = MenuResponseDTO.error(
-                    String.format("Invalid user role '%s'. Valid values: U, USER, A, ADMIN", userRole));
+                    String.format("Invalid user role '%s'. Valid values: U, USER, R, A, ADMIN", userRole));
                 
                 return ResponseEntity.badRequest().body(errorResponse);
             }
             
             // Delegate role-specific menu generation to service layer
             // This replicates COBOL BUILD-MENU-OPTIONS filtering logic for specified role
-            MenuResponseDTO menuResponse = menuNavigationService.getMenuOptionsForRole(
-                com.carddemo.common.enums.UserType.fromCode(normalizedUserRole).orElse(null));
+            Optional<com.carddemo.common.enums.UserType> userTypeOpt = 
+                com.carddemo.common.enums.UserType.fromCode(normalizedUserRole);
+            
+            if (userTypeOpt.isEmpty()) {
+                logger.warn("Unable to map normalized role '{}' to UserType enum", normalizedUserRole);
+                MenuResponseDTO errorResponse = MenuResponseDTO.error(
+                    String.format("Invalid user role mapping for '%s'", normalizedUserRole));
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
+            
+            MenuResponseDTO menuResponse = menuNavigationService.getMenuOptionsForRole(userTypeOpt.get());
+            
+            if (menuResponse == null) {
+                logger.error("MenuNavigationService returned null response for role {}", normalizedUserRole);
+                MenuResponseDTO errorResponse = MenuResponseDTO.error(
+                    "Unable to retrieve role-specific menu options. Please try again or contact system administrator.");
+                return ResponseEntity.status(500).body(errorResponse);
+            }
             
             if (menuResponse.isError()) {
                 logger.warn("Role-specific menu options retrieval failed for role {}: {}", 
@@ -310,9 +328,10 @@ public class MenuController {
      * 
      * Validation Rules:
      * - Accepts case-insensitive input for user convenience
-     * - Maps full role names (USER, ADMIN) to single-character codes (U, A)
+     * - Maps full role names (USER, ADMIN) to UserType enum codes (R, A)
+     * - Accepts alternative single-character codes (U mapped to R for compatibility)
      * - Rejects null, empty, or invalid role values
-     * - Returns normalized single-character role codes for consistent service processing
+     * - Returns normalized single-character role codes matching UserType enum expectations
      * 
      * Original COBOL Equivalent:
      * The COBOL program validated user input in PROCESS-ENTER-KEY paragraph with
@@ -320,7 +339,7 @@ public class MenuController {
      * equivalent string-based role validation for modern REST API parameter handling.
      * 
      * @param userRole the raw user role parameter from the REST endpoint path
-     * @return normalized single-character role code ("U" or "A"), or null if invalid
+     * @return normalized single-character role code ("R" or "A"), or null if invalid
      */
     private String validateAndNormalizeUserRole(String userRole) {
         if (userRole == null || userRole.trim().isEmpty()) {
@@ -329,17 +348,20 @@ public class MenuController {
         
         String normalizedRole = userRole.trim().toUpperCase();
         
-        // Handle single-character role codes (direct mapping)
-        if ("U".equals(normalizedRole) || "A".equals(normalizedRole)) {
-            return normalizedRole;
+        // Handle single-character role codes with proper UserType mapping
+        if ("U".equals(normalizedRole) || "R".equals(normalizedRole)) {
+            return "R"; // Both U and R map to regular user (UserType.USER expects "R")
+        }
+        if ("A".equals(normalizedRole)) {
+            return "A"; // Admin role maps directly
         }
         
-        // Handle full role name mapping to single-character codes
+        // Handle full role name mapping to UserType enum codes
         switch (normalizedRole) {
             case "USER":
-                return "U";
+                return "R"; // UserType.USER expects code "R"
             case "ADMIN":
-                return "A";
+                return "A"; // UserType.ADMIN expects code "A"
             default:
                 return null; // Invalid role parameter
         }
