@@ -46,7 +46,7 @@ import java.util.Set;
  * @since 2024-01-01
  */
 @Entity
-@Table(name = "accounts", 
+@Table(name = "account_data", 
        indexes = {
            @Index(name = "idx_customer_account_xref", columnList = "customer_id, account_id"),
            @Index(name = "idx_account_balance", columnList = "account_id, current_balance"),
