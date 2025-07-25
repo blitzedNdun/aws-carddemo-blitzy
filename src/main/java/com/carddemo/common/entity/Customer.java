@@ -36,7 +36,7 @@ import java.util.Objects;
  * - One-to-many relationships with Account and Card entities via customer_id foreign key
  */
 @Entity(name = "CommonCustomer")
-@Table(name = "customers", schema = "public")
+@Table(name = "common_customers", schema = "public")
 public class Customer implements Serializable {
 
     private static final long serialVersionUID = 1L;
