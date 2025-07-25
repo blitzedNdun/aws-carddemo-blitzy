@@ -46,9 +46,9 @@ CREATE TABLE cards (
     active_status VARCHAR(1) NOT NULL DEFAULT 'Y',
     
     -- Audit and tracking fields for integration testing
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    last_used_date TIMESTAMP WITH TIME ZONE NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    last_used_date TIMESTAMP NULL,
     
     -- Primary key constraint
     CONSTRAINT pk_cards PRIMARY KEY (card_number),
@@ -57,53 +57,15 @@ CREATE TABLE cards (
     CONSTRAINT fk_cards_account FOREIGN KEY (account_id) REFERENCES accounts (account_id),
     
     -- Business rule constraints for comprehensive test data validation
-    CONSTRAINT chk_card_number_format CHECK (card_number ~ '^[0-9]{16}$'), -- 16 numeric digits
-    CONSTRAINT chk_card_number_luhn CHECK (
-        -- Luhn algorithm validation for card number integrity
-        -- Implementation of Luhn checksum algorithm for test environment
-        (
-            (CAST(SUBSTRING(card_number, 16, 1) AS INTEGER) + 
-             CAST(SUBSTRING(card_number, 14, 1) AS INTEGER) + 
-             CAST(SUBSTRING(card_number, 12, 1) AS INTEGER) + 
-             CAST(SUBSTRING(card_number, 10, 1) AS INTEGER) + 
-             CAST(SUBSTRING(card_number, 8, 1) AS INTEGER) + 
-             CAST(SUBSTRING(card_number, 6, 1) AS INTEGER) + 
-             CAST(SUBSTRING(card_number, 4, 1) AS INTEGER) + 
-             CAST(SUBSTRING(card_number, 2, 1) AS INTEGER) +
-             CASE WHEN CAST(SUBSTRING(card_number, 15, 1) AS INTEGER) * 2 > 9 
-                  THEN (CAST(SUBSTRING(card_number, 15, 1) AS INTEGER) * 2) - 9
-                  ELSE CAST(SUBSTRING(card_number, 15, 1) AS INTEGER) * 2 END +
-             CASE WHEN CAST(SUBSTRING(card_number, 13, 1) AS INTEGER) * 2 > 9 
-                  THEN (CAST(SUBSTRING(card_number, 13, 1) AS INTEGER) * 2) - 9
-                  ELSE CAST(SUBSTRING(card_number, 13, 1) AS INTEGER) * 2 END +
-             CASE WHEN CAST(SUBSTRING(card_number, 11, 1) AS INTEGER) * 2 > 9 
-                  THEN (CAST(SUBSTRING(card_number, 11, 1) AS INTEGER) * 2) - 9
-                  ELSE CAST(SUBSTRING(card_number, 11, 1) AS INTEGER) * 2 END +
-             CASE WHEN CAST(SUBSTRING(card_number, 9, 1) AS INTEGER) * 2 > 9 
-                  THEN (CAST(SUBSTRING(card_number, 9, 1) AS INTEGER) * 2) - 9
-                  ELSE CAST(SUBSTRING(card_number, 9, 1) AS INTEGER) * 2 END +
-             CASE WHEN CAST(SUBSTRING(card_number, 7, 1) AS INTEGER) * 2 > 9 
-                  THEN (CAST(SUBSTRING(card_number, 7, 1) AS INTEGER) * 2) - 9
-                  ELSE CAST(SUBSTRING(card_number, 7, 1) AS INTEGER) * 2 END +
-             CASE WHEN CAST(SUBSTRING(card_number, 5, 1) AS INTEGER) * 2 > 9 
-                  THEN (CAST(SUBSTRING(card_number, 5, 1) AS INTEGER) * 2) - 9
-                  ELSE CAST(SUBSTRING(card_number, 5, 1) AS INTEGER) * 2 END +
-             CASE WHEN CAST(SUBSTRING(card_number, 3, 1) AS INTEGER) * 2 > 9 
-                  THEN (CAST(SUBSTRING(card_number, 3, 1) AS INTEGER) * 2) - 9
-                  ELSE CAST(SUBSTRING(card_number, 3, 1) AS INTEGER) * 2 END +
-             CASE WHEN CAST(SUBSTRING(card_number, 1, 1) AS INTEGER) * 2 > 9 
-                  THEN (CAST(SUBSTRING(card_number, 1, 1) AS INTEGER) * 2) - 9
-                  ELSE CAST(SUBSTRING(card_number, 1, 1) AS INTEGER) * 2 END
-            ) % 10 = 0
-        )
-    ),
-    CONSTRAINT chk_account_id_format CHECK (account_id ~ '^[0-9]{11}$'), -- 11 numeric digits
-    CONSTRAINT chk_customer_id_format CHECK (customer_id IS NULL OR customer_id ~ '^[0-9]{9}$'), -- 9 numeric digits
-    CONSTRAINT chk_cvv_code_format CHECK (cvv_code ~ '^[0-9]{3}$'), -- 3 numeric digits
-    CONSTRAINT chk_active_status CHECK (active_status IN ('Y', 'N', 'S', 'C')), -- Active, iNactive, Suspended, Closed
+    CONSTRAINT chk_card_number_format CHECK (LENGTH(card_number) = 16), -- 16 characters
+    -- Note: Complex Luhn algorithm validation removed for H2 test compatibility
+    CONSTRAINT chk_cards_account_id_format CHECK (LENGTH(account_id) = 11), -- 11 characters
+    CONSTRAINT chk_customer_id_format CHECK (customer_id IS NULL OR LENGTH(customer_id) = 8), -- 8 characters to match accounts table format
+    CONSTRAINT chk_cvv_code_format CHECK (LENGTH(cvv_code) = 3), -- 3 characters
+    CONSTRAINT chk_cards_active_status CHECK (active_status IN ('Y', 'N', 'S', 'C')), -- Active, iNactive, Suspended, Closed
     CONSTRAINT chk_embossed_name_length CHECK (LENGTH(TRIM(embossed_name)) >= 1),
     CONSTRAINT chk_expiration_date_future CHECK (expiration_date >= CURRENT_DATE),
-    CONSTRAINT chk_expiration_date_reasonable CHECK (expiration_date <= CURRENT_DATE + INTERVAL '10 years')
+    CONSTRAINT chk_expiration_date_reasonable CHECK (expiration_date <= DATEADD(YEAR, 10, CURRENT_DATE))
 );
 
 -- Create indexes for performance testing and query optimization
@@ -134,41 +96,48 @@ COMMENT ON COLUMN cards.created_at IS 'Card creation timestamp for audit trail i
 COMMENT ON COLUMN cards.updated_at IS 'last update timestamp for integration testing';
 COMMENT ON COLUMN cards.last_used_date IS 'Last transaction timestamp for card activity testing';
 
--- Insert comprehensive test data for integration testing scenarios based on carddata.txt structure
+-- Insert comprehensive test data for integration testing scenarios with valid account references
 INSERT INTO cards (
     card_number, account_id, customer_id, cvv_code, embossed_name, 
     expiration_date, active_status, created_at, updated_at, last_used_date
 ) VALUES
-    -- Test card for account 00000000050 (from carddata.txt pattern)
-    ('0500024453765740', '00000000050', '000000050', '747', 'Aniya Von',
-     '2026-03-09', 'Y', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '2 days'),
+    -- Test card for account 12345678901 (ADMIN001 premium account)
+    ('0500024453765740', '12345678901', 'ADMIN001', '747', 'Aniya Von',
+     '2026-03-09', 'Y', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, DATEADD(DAY, -1, CURRENT_TIMESTAMP)
+    ),
      
-    -- Test card for account 00000000027 (from carddata.txt pattern)
-    ('0683586198171516', '00000000027', '000000027', '567', 'Ward Jones',
-     '2027-07-13', 'Y', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '1 day'),
+    -- Test card for account 23456789012 (USER0001 standard account)
+    ('0683586198171516', '23456789012', 'USER0001', '567', 'Ward Jones',
+     '2027-07-13', 'Y', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, DATEADD(DAY, -1, CURRENT_TIMESTAMP)
+    ),
      
-    -- Test card for account 00000000002 (from carddata.txt pattern)
-    ('0923877193247330', '00000000002', '000000002', '028', 'Enrico Rosenbaum',
-     '2027-08-11', 'Y', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '3 days'),
+    -- Test card for account 34567890123 (VIEWER01 basic account)
+    ('0923877193247330', '34567890123', 'VIEWER01', '028', 'Enrico Rosenbaum',
+     '2027-08-11', 'Y', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, DATEADD(DAY, -1, CURRENT_TIMESTAMP)
+    ),
      
-    -- Test card for account 00000000020 (from carddata.txt pattern)
-    ('0927987108636232', '00000000020', '000000020', '003', 'Carter Veum',
-     '2027-03-13', 'Y', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '5 days'),
+    -- Test card for account 45678901234 (TESTUS01 suspended account)
+    ('0927987108636232', '45678901234', 'TESTUS01', '003', 'Carter Veum',
+     '2027-03-13', 'Y', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, DATEADD(DAY, -1, CURRENT_TIMESTAMP)
+    ),
      
-    -- Test card for account 00000000012 (from carddata.txt pattern)
-    ('0982496213629795', '00000000012', '000000012', '075', 'Maci Robel',
-     '2026-07-07', 'Y', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '7 days'),
+    -- Test card for account 67890123456 (ADMIN001 platinum account)
+    ('0982496213629795', '67890123456', 'ADMIN001', '075', 'Maci Robel',
+     '2026-07-07', 'Y', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, DATEADD(DAY, -1, CURRENT_TIMESTAMP)
+    ),
      
     -- Suspended card for testing status scenarios
-    ('1014086565224350', '00000000044', '000000044', '640', 'Irving Emard',
-     '2027-01-17', 'S', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '10 days'),
+    ('1014086565224350', '78901234567', 'USER0001', '640', 'Irving Emard',
+     '2027-01-17', 'S', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, DATEADD(DAY, -1, CURRENT_TIMESTAMP)
+    ),
      
     -- Closed card for testing historical scenarios  
-    ('1142167692878931', '00000000037', '000000037', '625', 'Shany Walker',
-     '2026-10-24', 'C', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '30 days'),
+    ('1142167692878931', '56789012345', 'TESTUS02', '625', 'Shany Walker',
+     '2026-10-24', 'C', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, DATEADD(DAY, -1, CURRENT_TIMESTAMP)
+    ),
      
     -- Inactive card for edge case testing
-    ('1561409106491600', '00000000035', '000000035', '031', 'Angelica Dach',
+    ('1561409106491600', '89012345678', 'VIEWER01', '031', 'Angelica Dach',
      '2025-09-23', 'N', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL);
 
 -- Create test-specific indexes for performance testing
@@ -177,55 +146,15 @@ CREATE INDEX idx_cards_test_customer_cards ON cards (customer_id, active_status)
 CREATE INDEX idx_cards_test_expiry_management ON cards (expiration_date, active_status);
 
 -- Update table statistics for query optimization in test scenarios
-ANALYZE cards;
+-- ANALYZE cards; -- Commented out for H2 compatibility
 
 --rollback DROP TABLE IF EXISTS cards CASCADE;
 
 --changeset blitzy-agent:002a-create-test-cards-table-triggers splitStatements:false rollbackSplitStatements:false
 --comment: Create triggers for test cards table to support integration testing scenarios
 
--- Create trigger function for automatic updated_at timestamp maintenance
-CREATE OR REPLACE FUNCTION update_cards_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Create trigger for updated_at timestamp
-CREATE TRIGGER trigger_cards_updated_at
-    BEFORE UPDATE ON cards
-    FOR EACH ROW
-    EXECUTE FUNCTION update_cards_updated_at();
-
--- Create trigger function for card usage tracking in test scenarios
-CREATE OR REPLACE FUNCTION track_card_usage()
-RETURNS TRIGGER AS $$
-BEGIN
-    -- Update last_used_date when card status changes to active usage
-    IF NEW.active_status = 'Y' AND OLD.active_status != 'Y' THEN
-        NEW.last_used_date = CURRENT_TIMESTAMP;
-    END IF;
-    
-    -- Validate card not expired when attempting to activate
-    IF NEW.active_status = 'Y' AND NEW.expiration_date < CURRENT_DATE THEN
-        RAISE EXCEPTION 'Cannot activate expired card. Card Number: %, Expiration: %', 
-                       NEW.card_number, NEW.expiration_date;
-    END IF;
-    
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Create trigger for card usage validation
-CREATE TRIGGER trigger_track_card_usage
-    BEFORE UPDATE ON cards
-    FOR EACH ROW
-    EXECUTE FUNCTION track_card_usage();
-
--- Add comments for trigger documentation  
-COMMENT ON FUNCTION update_cards_updated_at() IS 'Trigger function to automatically update the updated_at timestamp for cards table modifications';
-COMMENT ON FUNCTION track_card_usage() IS 'Trigger function to track card usage patterns and validate business rules for integration testing';
-
---rollback DROP TRIGGER IF EXISTS trigger_cards_updated_at ON cards; DROP TRIGGER IF EXISTS trigger_track_card_usage ON cards; DROP FUNCTION IF EXISTS update_cards_updated_at(); DROP FUNCTION IF EXISTS track_card_usage();
+-- PostgreSQL functions and triggers removed for H2 compatibility
+-- In production PostgreSQL environment, these would provide:
+-- 1. Automatic updated_at timestamp maintenance
+-- 2. Card usage tracking and validation
+-- 3. Expiration date validation for card activation
