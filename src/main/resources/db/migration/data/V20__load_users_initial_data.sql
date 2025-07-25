@@ -23,9 +23,10 @@
 -- Created: Initial data loading script for CardDemo user authentication
 -- =============================================================================
 
--- Liquibase changeset for initial user data loading
--- changeset CardDemo:load-initial-users-v20 splitStatements:true endDelimiter:;
--- comment: Load initial user accounts with BCrypt password hashing for Spring Security authentication
+--liquibase formatted sql
+
+--changeset CardDemo:load-initial-users-v20 splitStatements:true endDelimiter:;
+--comment: Load initial user accounts with BCrypt password hashing for Spring Security authentication
 
 -- =============================================================================
 -- ADMINISTRATIVE USERS
