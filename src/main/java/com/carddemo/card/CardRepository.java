@@ -313,4 +313,53 @@ public interface CardRepository extends JpaRepository<Card, String> {
         @Param("accountId") String accountId,
         @Param("minCount") int minimumTransactionCount
     );
+
+    // =====================================
+    // ADDITIONAL PAGEABLE METHODS FOR CARDLISTSERVICE
+    // =====================================
+
+    /**
+     * Find cards by account ID and card number combination with pagination support.
+     * Supports combined filtering for precise card identification.
+     * 
+     * @param accountId 11-digit account identifier
+     * @param cardNumber 16-digit card number
+     * @param pageable Pagination parameters
+     * @return Page containing matching Card entities
+     */
+    Page<Card> findByAccountIdAndCardNumber(String accountId, String cardNumber, Pageable pageable);
+
+    /**
+     * Find cards by account ID, card number, and active status with pagination support.
+     * Comprehensive filtering combining account, card, and status criteria.
+     * 
+     * @param accountId 11-digit account identifier
+     * @param cardNumber 16-digit card number
+     * @param activeStatus CardStatus enumeration value
+     * @param pageable Pagination parameters
+     * @return Page containing matching Card entities
+     */
+    Page<Card> findByAccountIdAndCardNumberAndActiveStatus(String accountId, String cardNumber, 
+                                                          CardStatus activeStatus, Pageable pageable);
+
+    /**
+     * Find card by card number with pagination support.
+     * Provides pageable version of primary key lookup.
+     * 
+     * @param cardNumber 16-digit card number
+     * @param pageable Pagination parameters
+     * @return Page containing matching Card entities
+     */
+    Page<Card> findByCardNumber(String cardNumber, Pageable pageable);
+
+    /**
+     * Find card by card number and active status with pagination support.
+     * Provides pageable version of card number and status lookup.
+     * 
+     * @param cardNumber 16-digit card number
+     * @param activeStatus CardStatus enumeration value
+     * @param pageable Pagination parameters
+     * @return Page containing matching Card entities
+     */
+    Page<Card> findByCardNumberAndActiveStatus(String cardNumber, CardStatus activeStatus, Pageable pageable);
 }
