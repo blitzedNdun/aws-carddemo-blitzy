@@ -66,7 +66,7 @@ CREATE TABLE transaction_categories (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     
     -- Primary key constraint
-    CONSTRAINT pk_transaction_categories PRIMARY KEY (transaction_category),
+    CONSTRAINT pk_transaction_categories PRIMARY KEY (transaction_category, parent_transaction_type),
     
     -- Foreign key to transaction_types for hierarchical integrity
     CONSTRAINT fk_transaction_categories_parent_type FOREIGN KEY (parent_transaction_type) 
