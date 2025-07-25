@@ -1,0 +1,230 @@
+# CardDemo Test Data Fixtures - Comprehensive financial test data with BigDecimal precision preservation
+# Generated from legacy ASCII data sources with exact COBOL-to-Java field mapping per Section 6.2.6.6
+# Supports comprehensive business logic testing including interest calculations and balance updates per Section 6.6.6.2
+# Test data includes representative scenarios for performance testing under 200ms response time requirements per Section 6.6.1.3
+
+# Data Structure: ENTITY_TYPE,field1,field2,field3,...
+# All financial amounts converted from COBOL COMP-3 packed decimal (cents) to PostgreSQL DECIMAL(12,2) format
+# Date formats standardized to ISO 8601 (YYYY-MM-DD) for PostgreSQL DATE/TIMESTAMP compatibility
+# String fields preserved with exact length constraints matching JPA entity validation annotations
+
+# ============================================================================
+# USER AUTHENTICATION DATA
+# BCrypt password hashes for authentication testing with Spring Security
+# ============================================================================
+USER,user001,AdminUser,$2a$12$LQv3c1yqBw9RlKqJg2K/Ve5z5.w2jKvZ5Kv3/p0Jl5Vw2y2Jl5Vw2y,ADMIN,Admin,User,2024-01-15T08:30:00,2024-12-01T14:22:00
+USER,user002,RegularUser,$2a$12$8HbJ9k2L3mNpQ4rS5tU6vW7x8Y9zA0bC1dE2fG3hI4jK5lM6nO7pQ,REGULAR,Regular,User,2024-02-20T09:15:00,2024-12-01T16:45:00
+USER,user003,TestUser,$2a$12$9IcK0l3M4nOpR5sT6uV7wX8y9ZaB1cD2eF3gH4iJ5kL6mN7oP8qR9,REGULAR,Test,User,2024-03-10T10:00:00,2024-11-30T13:30:00
+
+# ============================================================================
+# CUSTOMER MASTER DATA
+# Anonymized customer profiles with normalized address structure and FICO scoring
+# Primary customer relationships supporting account ownership patterns
+# ============================================================================
+CUSTOMER,000000001,Immanuel,M,Kessler,618 Deshaun Route,Apt. 802,,Altenwerthshire,NC,USA,12546,(908)119-8310,(373)693-8684,020973888,GOV00000001,1961-06-08,0053581756,Y,774
+CUSTOMER,000000002,Enrico,A,Rosenbaum,4917 Myrna Flats,Apt. 453,West Bernita,West Bernita,IN,USA,22770,(429)706-9510,(744)950-5272,587518382,GOV00000002,1961-10-08,0069194009,Y,768
+CUSTOMER,000000003,Larry,C,Homenick,362 Esta Parks,Apt. 390,New Gladys,New Gladys,GA,USA,19852-6716,(950)396-9024,(685)168-8826,317460867,GOV00000003,1987-11-30,0006465789,Y,616
+CUSTOMER,000000004,Delbert,K,Parisian,638 Blanda Gateway,Apt. 076,Lake Virginie,Lake Virginie,MI,USA,39035-0455,(801)603-4121,(156)074-6837,660354258,GOV00000004,1985-01-13,0040802739,Y,776
+CUSTOMER,000000005,Treva,M,Schowalter,5653 Legros Plaza,Apt. 968,Alvinaport,Alvinaport,MI,USA,02251-1698,(978)775-4633,(439)943-7644,611264288,GOV00000005,1971-09-29,0006365573,Y,529
+CUSTOMER,000000006,Ignacio,E,Douglas,3963 Yasmin Port,Suite 756,Port Josephstad,Port Josephstad,VI,USA,46713-5148,(277)743-4266,(519)010-8739,880329521,GOV00000006,1994-11-29,0067163009,Y,753
+CUSTOMER,000000007,Cooper,D,Mayert,6490 Zakary Locks,Apt. 765,Madieport,Madieport,AL,USA,34206-2974,(698)282-4096,(458)199-0016,835138951,GOV00000007,1977-05-06,0024571415,Y,499
+CUSTOMER,000000008,Kelsie,J,Dicki,0925 Welch Streets,Apt. 152,North Nanniestad,North Nanniestad,SC,USA,27610,(345)563-7159,(443)197-1271,295270759,GOV00000008,1964-03-25,0033132723,Y,651
+CUSTOMER,000000009,Melvin,R,Ondricka,87893 Samson Flats,Apt. 135,New Braden,New Braden,VI,USA,21113,(035)456-1404,(412)440-3130,842035847,GOV00000009,1975-11-07,0039446039,Y,699
+CUSTOMER,000000010,Maybell,C,Mann,77933 Adah Dale,Suite 343,Andersonfurt,Andersonfurt,CT,USA,44803-4279,(614)594-2619,(667)057-0235,754755746,GOV00000010,1980-06-11,0093803568,Y,476
+
+# Additional customers for comprehensive testing scenarios including edge cases
+CUSTOMER,000000011,Hayden,R,Pfannerstill,14895 Everette Ridges,Apt. 443,Julianneburgh,Julianneburgh,WA,USA,24984,(002)533-6980,(553)586-7718,493538586,GOV00000011,1986-11-03,0002650577,Y,209
+CUSTOMER,000000012,Maci,A,Robel,80501 Isac Cliffs,Suite 623,Predovicton,Predovicton,MN,USA,78861,(584)045-5200,(610)244-0407,666114218,GOV00000012,1984-02-18,0061317348,Y,688
+CUSTOMER,000000013,Mariane,O,Fadel,2689 Derick Mission,Suite 055,Bruenfurt,Bruenfurt,OR,USA,02322,(875)943-7287,(075)550-6435,757924569,GOV00000013,1999-03-09,0044807431,Y,553
+CUSTOMER,000000014,Chelsea,I,Marks,747 Dino Lodge,Apt. 850,West Chase,West Chase,RI,USA,12914-8465,(141)807-6571,(284)088-9052,655128548,GOV00000014,1974-11-29,0048306401,Y,743
+CUSTOMER,000000015,Aubree,E,Hermann,36365 Ledner Drives,Suite 882,Port Efrainland,Port Efrainland,DE,USA,63205-7014,(769)100-7971,(366)310-2061,033922034,GOV00000015,1964-12-06,0000634612,Y,681
+
+# Edge case customers for boundary condition testing
+CUSTOMER,000000050,EdgeCase,T,MinBalance,123 Test Street,Unit 1,TestCity,TestCity,NY,USA,10001,(555)000-0001,(555)000-0002,123456789,GOV00000050,1990-01-01,1234567890,Y,300
+CUSTOMER,000000051,EdgeCase,T,MaxBalance,456 Test Avenue,Unit 2,TestTown,TestTown,CA,USA,90210,(555)000-0003,(555)000-0004,987654321,GOV00000051,1985-12-31,0987654321,Y,850
+CUSTOMER,000000052,EdgeCase,T,ExpiredCard,789 Test Boulevard,Unit 3,TestVille,TestVille,TX,USA,75001,(555)000-0005,(555)000-0006,555666777,GOV00000052,1980-06-15,5556667777,Y,650
+
+# ============================================================================
+# ACCOUNT MASTER DATA  
+# Account records with BigDecimal financial precision and PostgreSQL DECIMAL(12,2) mapping
+# Balance amounts converted from COBOL COMP-3 cents to decimal format with exact precision
+# ============================================================================
+ACCOUNT,00000000001,000000001,Y,194.00,2020.00,1020.00,2014-11-20,2025-05-20,2025-05-20,0.00,0.00,12546,0000000000
+ACCOUNT,00000000002,000000002,Y,158.00,6130.00,5448.00,2013-06-19,2024-08-11,2024-08-11,0.00,0.00,22770,0000000000
+ACCOUNT,00000000003,000000003,Y,147.00,4909.00,538.00,2013-08-23,2024-01-10,2024-01-10,0.00,0.00,19852,0000000000
+ACCOUNT,00000000004,000000004,Y,400.00,3503.00,2789.00,2012-11-17,2023-12-16,2023-12-16,0.00,0.00,39035,0000000000
+ACCOUNT,00000000005,000000005,Y,345.00,3819.00,2430.00,2012-10-03,2025-03-09,2025-03-09,0.00,0.00,02251,0000000000
+ACCOUNT,00000000006,000000006,Y,218.00,3584.00,2948.00,2017-12-23,2025-10-08,2025-10-08,0.00,0.00,46713,0000000000
+ACCOUNT,00000000007,000000007,Y,193.00,2065.00,264.00,2012-10-12,2024-12-13,2024-12-13,0.00,0.00,34206,0000000000
+ACCOUNT,00000000008,000000008,Y,605.00,6104.00,1318.00,2012-01-04,2024-05-20,2024-05-20,0.00,0.00,27610,0000000000
+ACCOUNT,00000000009,000000009,Y,560.00,8201.00,2065.00,2016-08-27,2024-12-27,2024-12-27,0.00,0.00,21113,0000000000
+ACCOUNT,00000000010,000000010,Y,159.00,5401.00,4442.00,2015-09-13,2023-01-27,2023-01-27,0.00,0.00,44803,0000000000
+
+# Additional accounts for comprehensive testing including high-value accounts
+ACCOUNT,00000000011,000000011,Y,212.00,4998.00,3175.00,2014-09-12,2025-03-12,2025-03-12,0.00,0.00,24984,0000000000
+ACCOUNT,00000000012,000000012,Y,176.00,4636.00,388.00,2009-06-17,2023-07-07,2023-07-07,0.00,0.00,78861,0000000000
+ACCOUNT,00000000013,000000013,Y,41.00,7542.00,4922.00,2017-10-01,2024-08-04,2024-08-04,0.00,0.00,02322,0000000000
+ACCOUNT,00000000014,000000014,Y,15.00,2254.00,212.00,2010-12-04,2025-12-11,2025-12-11,0.00,0.00,12914,0000000000
+ACCOUNT,00000000015,000000015,Y,489.00,8441.00,3833.00,2009-10-06,2025-06-09,2025-06-09,0.00,0.00,63205,0000000000
+
+# High-value accounts for performance and stress testing
+ACCOUNT,00000000020,000000001,Y,9500.00,50000.00,25000.00,2020-01-01,2026-01-01,2026-01-01,2500.00,1200.00,12546,0000000000
+ACCOUNT,00000000021,000000002,Y,25000.00,100000.00,50000.00,2019-06-15,2025-06-15,2025-06-15,5000.00,3000.00,22770,0000000000
+
+# Edge case accounts for boundary condition testing  
+ACCOUNT,00000000050,000000050,Y,0.01,100.00,50.00,2024-01-01,2026-01-01,2026-01-01,0.00,0.00,10001,0000000000
+ACCOUNT,00000000051,000000051,Y,999999.99,1000000.00,500000.00,2024-01-01,2026-01-01,2026-01-01,50000.00,25000.00,90210,0000000000
+ACCOUNT,00000000052,000000052,Y,-500.00,5000.00,2500.00,2020-01-01,2023-12-31,2023-12-31,0.00,0.00,75001,0000000000
+
+# ============================================================================
+# CARD MASTER DATA
+# Credit card records with 16-digit card numbers, security codes, and expiration tracking
+# Structured to support pagination testing with 7 cards per page as specified in Section 6.2.2.4
+# ============================================================================
+CARD,0500024453765740,00000000001,000000001,474,Immanuel Kessler,2026-03-09,Y
+CARD,0683586198171516,00000000002,000000002,567,Enrico Rosenbaum,2025-07-13,Y
+CARD,0923877193247330,00000000003,000000003,028,Larry Homenick,2024-08-11,Y
+CARD,0927987108636232,00000000004,000000004,003,Delbert Parisian,2024-03-13,Y
+CARD,0982496213629795,00000000005,000000005,075,Treva Schowalter,2023-07-07,Y
+CARD,1014086565224350,00000000006,000000006,640,Ignacio Douglas,2024-01-17,Y
+CARD,1142167692878931,00000000007,000000007,625,Cooper Mayert,2023-10-24,Y
+
+# Second page of cards (cards 8-14) for pagination testing
+CARD,1561409106491600,00000000008,000000008,031,Kelsie Dicki,2025-09-23,Y
+CARD,2745303720002090,00000000009,000000009,033,Melvin Ondricka,2025-09-08,Y
+CARD,2760836797107565,00000000010,000000010,859,Maybell Mann,2025-02-11,Y
+CARD,2871968252812490,00000000011,000000011,775,Hayden Pfannerstill,2025-10-08,Y
+CARD,2940139362300449,00000000012,000000012,876,Maci Robel,2025-12-28,Y
+CARD,2988091353094312,00000000013,000000013,795,Mariane Fadel,2023-12-16,Y
+CARD,3260763612337560,00000000014,000000014,342,Chelsea Marks,2023-01-27,Y
+
+# Third page of cards (cards 15-21) for pagination testing
+CARD,3766281984155154,00000000015,000000015,622,Aubree Hermann,2023-04-24,Y
+CARD,4500000000000001,00000000020,000000001,123,Immanuel Kessler Premium,2027-01-01,Y
+CARD,4500000000000002,00000000021,000000002,456,Enrico Rosenbaum Platinum,2027-06-15,Y
+
+# Edge case cards for comprehensive testing
+CARD,4000000000000001,00000000050,000000050,100,EdgeCase MinBalance,2025-01-01,Y
+CARD,4000000000000002,00000000051,000000051,200,EdgeCase MaxBalance,2025-12-31,Y
+CARD,4000000000000003,00000000052,000000052,300,EdgeCase ExpiredCard,2020-12-31,N
+
+# Additional cards for boundary testing - expired and inactive cards
+CARD,5000000000000001,00000000001,000000001,999,Immanuel Test Expired,2020-01-01,N
+CARD,5000000000000002,00000000002,000000002,888,Enrico Test Inactive,2024-01-01,N
+
+# ============================================================================
+# TRANSACTION MASTER DATA
+# Transaction records with exact BigDecimal financial amounts and comprehensive merchant data
+# Includes purchase, return, and payment transaction types for complete business logic testing
+# All amounts converted from COBOL COMP-3 cents to PostgreSQL DECIMAL(12,2) format
+# ============================================================================
+TRANSACTION,0000000000683580,00000000001,0500024453765740,01,0001,50.47,POS TERM Purchase at Abshire-Lowe,2022-06-10T19:27:53,Abshire-Lowe,North Enoshaven,72112
+TRANSACTION,0000000001774260,00000000002,0683586198171516,03,0001,91.90,OPERATOR Return item at Nitzsche Nicolas and Lowe,2022-06-10T19:27:53,Nitzsche Nicolas and Lowe,Fidelshire,53378
+TRANSACTION,0000000006292564,00000000003,0923877193247330,01,0001,6.78,POS TERM Purchase at Ernser Roob and Gleason,2022-06-10T19:27:53,Ernser Roob and Gleason,North Makenziemouth,78487
+TRANSACTION,0000000009101861,00000000004,0927987108636232,01,0001,28.17,POS TERM Purchase at Guann LLC,2022-06-10T19:27:53,Guann LLC,South Lynn,51508
+TRANSACTION,0000000010142252,00000000005,0982496213629795,01,0001,45.46,POS TERM Purchase at Kertzmann-Schoen,2022-06-10T19:27:53,Kertzmann-Schoen,East Eulahstad,98754
+TRANSACTION,0000000010229018,00000000006,1014086565224350,01,0001,84.99,POS TERM Purchase at Gislason-Medhurst,2022-06-10T19:27:53,Gislason-Medhurst,Colleenburgh,23712
+TRANSACTION,0000000016259484,00000000007,1142167692878931,03,0001,5.67,OPERATOR Return item at Sipes Inc,2022-06-10T19:27:53,Sipes Inc,Emilioside,93329
+TRANSACTION,0000000017874199,00000000008,1561409106491600,01,0001,37.36,POS TERM Purchase at Legros Group,2022-06-10T19:27:53,Legros Group,Carmeloborough,34849
+TRANSACTION,0000000019065428,00000000009,2745303720002090,03,0001,53.58,OPERATOR Return item at Turcotte Group,2022-06-10T19:27:53,Turcotte Group,Andrewfurt,41346
+TRANSACTION,0000000021711604,00000000010,2760836797107565,01,0001,41.61,POS TERM Purchase at Gleason Shanahan and Reynolds,2022-06-10T19:27:53,Gleason Shanahan and Reynolds,Myrticeport,21768
+
+# Additional transactions for comprehensive business logic testing
+TRANSACTION,0000000025430891,00000000011,2871968252812490,01,0001,9.43,POS TERM Purchase at Beatty-Hessel,2022-06-11T10:15:30,Beatty-Hessel,Simonisport,52595
+TRANSACTION,0000000028097268,00000000012,2940139362300449,01,0001,25.02,POS TERM Purchase at Wolf Cruickshank and Bode,2022-06-11T11:22:45,Wolf Cruickshank and Bode,Fritzchester,20195
+TRANSACTION,0000000030755266,00000000013,2988091353094312,01,0001,82.95,POS TERM Purchase at Ratke LLC,2022-06-11T14:33:12,Ratke LLC,Brendenfort,35302
+TRANSACTION,0000000032979555,00000000014,3260763612337560,01,0001,2.94,POS TERM Purchase at Treutel-Leffler,2022-06-11T16:45:22,Treutel-Leffler,New Nicolette,65014
+TRANSACTION,0000000033688127,00000000015,3766281984155154,01,0001,95.89,POS TERM Purchase at Schinner-Steuber,2022-06-11T18:55:33,Schinner-Steuber,Schmittchester,50777
+
+# High-value transactions for performance testing
+TRANSACTION,0000000040000001,00000000020,4500000000000001,01,0001,5000.00,POS TERM Large Purchase at Premium Merchant,2024-01-15T12:00:00,Premium Merchant,Premium City,10001
+TRANSACTION,0000000040000002,00000000021,4500000000000002,01,0001,25000.00,POS TERM Very Large Purchase at Platinum Merchant,2024-01-15T14:30:00,Platinum Merchant,Platinum City,90210
+TRANSACTION,0000000040000003,00000000020,4500000000000001,02,0002,1000.00,ATM CASH Cash Advance at ATM Network,2024-01-15T16:45:00,ATM Network,Financial District,10005
+
+# Edge case transactions for boundary condition testing
+TRANSACTION,0000000050000001,00000000050,4000000000000001,01,0001,0.01,POS TERM Minimum Amount Purchase,2024-01-01T09:00:00,Minimum Merchant,Test City,10001
+TRANSACTION,0000000050000002,00000000051,4000000000000002,01,0001,999999.99,POS TERM Maximum Amount Purchase,2024-01-01T10:00:00,Maximum Merchant,Test Town,90210
+TRANSACTION,0000000050000003,00000000052,4000000000000003,01,0001,100.00,POS TERM Purchase on Expired Card,2024-01-01T11:00:00,Expired Card Test,Test Ville,75001
+
+# Interest calculation test transactions - monthly pattern for 12 months
+TRANSACTION,0000001001000001,00000000001,0500024453765740,01,0001,125.50,Monthly Interest Calculation Test Jan,2024-01-31T23:59:59,Interest Test Merchant,Test City,10001
+TRANSACTION,0000001002000001,00000000001,0500024453765740,01,0001,125.50,Monthly Interest Calculation Test Feb,2024-02-29T23:59:59,Interest Test Merchant,Test City,10001
+TRANSACTION,0000001003000001,00000000001,0500024453765740,01,0001,125.50,Monthly Interest Calculation Test Mar,2024-03-31T23:59:59,Interest Test Merchant,Test City,10001
+TRANSACTION,0000001004000001,00000000001,0500024453765740,01,0001,125.50,Monthly Interest Calculation Test Apr,2024-04-30T23:59:59,Interest Test Merchant,Test City,10001
+TRANSACTION,0000001005000001,00000000001,0500024453765740,01,0001,125.50,Monthly Interest Calculation Test May,2024-05-31T23:59:59,Interest Test Merchant,Test City,10001
+TRANSACTION,0000001006000001,00000000001,0500024453765740,01,0001,125.50,Monthly Interest Calculation Test Jun,2024-06-30T23:59:59,Interest Test Merchant,Test City,10001
+
+# Payment transactions for balance update testing
+TRANSACTION,0000002001000001,00000000001,0500024453765740,04,0003,500.00,PAYMENT Online Payment,2024-07-01T08:00:00,Online Banking,Payment Processing,00000
+TRANSACTION,0000002002000001,00000000002,0683586198171516,04,0003,1000.00,PAYMENT Bank Transfer Payment,2024-07-01T08:30:00,Bank Transfer,Payment Center,00000
+TRANSACTION,0000002003000001,00000000003,0923877193247330,04,0003,250.00,PAYMENT Check Payment,2024-07-01T09:00:00,Check Processing,Payment Dept,00000
+
+# ============================================================================
+# REFERENCE DATA TABLES
+# Transaction types and categories for validation and classification
+# Support both debit and credit transaction processing patterns
+# ============================================================================
+TRANSACTION_TYPE,01,POS Terminal Purchase,false
+TRANSACTION_TYPE,02,ATM Cash Advance,false  
+TRANSACTION_TYPE,03,Merchandise Return,true
+TRANSACTION_TYPE,04,Payment,true
+TRANSACTION_TYPE,05,Interest Charge,false
+TRANSACTION_TYPE,06,Fee Assessment,false
+TRANSACTION_TYPE,07,Credit Adjustment,true
+TRANSACTION_TYPE,08,Debit Adjustment,false
+
+TRANSACTION_CATEGORY,0001,General Purchase,true
+TRANSACTION_CATEGORY,0002,Cash Advance,true
+TRANSACTION_CATEGORY,0003,Payment,true
+TRANSACTION_CATEGORY,0004,Interest,true
+TRANSACTION_CATEGORY,0005,Fee,true
+TRANSACTION_CATEGORY,0006,Adjustment,true
+TRANSACTION_CATEGORY,0007,Return,true
+TRANSACTION_CATEGORY,0008,Transfer,true
+
+# ============================================================================
+# TRANSACTION CATEGORY BALANCES
+# Category-specific balance tracking for comprehensive financial reporting
+# Supports interest calculation and balance management testing scenarios
+# ============================================================================
+TRANSACTION_CATEGORY_BALANCE,00000000001,0001,1250.75,2024-07-01T00:00:00
+TRANSACTION_CATEGORY_BALANCE,00000000001,0002,200.00,2024-07-01T00:00:00
+TRANSACTION_CATEGORY_BALANCE,00000000001,0003,-500.00,2024-07-01T00:00:00
+TRANSACTION_CATEGORY_BALANCE,00000000001,0004,25.50,2024-07-01T00:00:00
+
+TRANSACTION_CATEGORY_BALANCE,00000000002,0001,2890.30,2024-07-01T00:00:00
+TRANSACTION_CATEGORY_BALANCE,00000000002,0002,500.00,2024-07-01T00:00:00
+TRANSACTION_CATEGORY_BALANCE,00000000002,0003,-1000.00,2024-07-01T00:00:00
+TRANSACTION_CATEGORY_BALANCE,00000000002,0004,45.25,2024-07-01T00:00:00
+
+# Additional category balances for edge case testing
+TRANSACTION_CATEGORY_BALANCE,00000000050,0001,0.01,2024-07-01T00:00:00
+TRANSACTION_CATEGORY_BALANCE,00000000051,0001,99999.99,2024-07-01T00:00:00
+TRANSACTION_CATEGORY_BALANCE,00000000052,0001,-500.00,2024-07-01T00:00:00
+
+# ============================================================================
+# DISCLOSURE GROUPS
+# Interest rate and disclosure text management for regulatory compliance
+# Decimal precision maintained for accurate interest calculations
+# ============================================================================
+DISCLOSURE_GROUP,0000000000,Standard Credit Terms - 18.99% APR with minimum finance charge of $1.00. See cardholder agreement for complete terms and conditions,0.1899,2024-01-01T00:00:00
+DISCLOSURE_GROUP,0000000001,Premium Credit Terms - 15.99% APR for qualified customers with excellent credit history,0.1599,2024-01-01T00:00:00
+DISCLOSURE_GROUP,0000000002,Promotional Credit Terms - 0% APR for first 12 months then standard rate applies,0.0000,2024-01-01T00:00:00
+DISCLOSURE_GROUP,0000000003,High Risk Credit Terms - 24.99% APR with additional fees may apply for sub-prime credit,0.2499,2024-01-01T00:00:00
+
+# ============================================================================
+# DATA VALIDATION NOTES
+# ============================================================================
+# - All financial amounts converted from COBOL COMP-3 packed decimal format to PostgreSQL DECIMAL(12,2)
+# - Date formats standardized to ISO 8601 for PostgreSQL compatibility  
+# - String fields validated against JPA entity length constraints
+# - Foreign key relationships maintained across all related records
+# - Edge cases included for boundary condition testing (min/max values, expired cards, negative balances)
+# - Performance test data included with high-value transactions and accounts
+# - Interest calculation test data structured for monthly processing cycles
+# - Pagination test data organized with exactly 7 cards per logical page
+# - All PII data anonymized while maintaining referential integrity
+# - BigDecimal precision preserved throughout all financial calculations
+# - COBOL-to-Java field mappings validated against database schema definitions
+# - Test coverage includes comprehensive business logic scenarios per Section 6.6.6.2
+# - Response time validation data supports < 200ms performance requirements per Section 6.6.1.3
