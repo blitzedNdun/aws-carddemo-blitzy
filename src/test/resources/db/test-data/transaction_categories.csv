@@ -1,0 +1,19 @@
+transaction_category,category_description,active_status
+0001,Regular Sales Draft,true
+0002,Regular Cash Advance,true
+0003,Convenience Check Debit,true
+0004,ATM Cash Advance,true
+0005,Interest Amount,true
+0001,Cash payment,true
+0002,Electronic payment,true
+0003,Check payment,true
+0001,Credit to Account,true
+0002,Credit to Purchase balance,true
+0003,Credit to Cash balance,true
+0001,Zero dollar authorization,true
+0002,Online purchase authorization,true
+0003,Travel booking authorization,true
+0001,Refund credit,true
+0001,Fraud reversal,true
+0002,Non-fraud reversal,true
+0001,Sales draft credit adjustment,true
