@@ -26,13 +26,13 @@ CREATE TABLE customers (
     address_line_1 VARCHAR(50) NOT NULL,
     address_line_2 VARCHAR(50),
     address_line_3 VARCHAR(50),
-    address_state VARCHAR(2) NOT NULL,
-    address_country VARCHAR(3) NOT NULL DEFAULT 'USA',
-    address_zip VARCHAR(10) NOT NULL,
+    state_code VARCHAR(2) NOT NULL,
+    country_code VARCHAR(3) NOT NULL DEFAULT 'USA',
+    zip_code VARCHAR(10) NOT NULL,
     
     -- Dual phone number support with formatted validation constraints
-    phone_home VARCHAR(15),
-    phone_work VARCHAR(15),
+    phone_number_1 VARCHAR(15),
+    phone_number_2 VARCHAR(15),
     
     -- Personal identifiable information (PII) fields requiring encryption and access controls
     -- SSN field maintains COBOL 9-digit format with additional protection annotations
@@ -46,8 +46,8 @@ CREATE TABLE customers (
     -- Electronic Funds Transfer account identifier from CUSTDAT position 287-296
     eft_account_id VARCHAR(10),
     
-    -- Primary cardholder indicator from CUSTDAT position 297 (Y/N -> BOOLEAN)
-    primary_cardholder_indicator BOOLEAN NOT NULL DEFAULT false,
+    -- Primary cardholder indicator from CUSTDAT position 297 (Y/N flag)
+    primary_cardholder_indicator VARCHAR(1) NOT NULL DEFAULT 'Y',
     
     -- FICO credit score with strict range validation (300-850 per industry standard)
     fico_credit_score NUMERIC(3) NOT NULL,
@@ -64,18 +64,18 @@ CREATE TABLE customers (
     CONSTRAINT chk_first_name_not_empty CHECK (LENGTH(TRIM(first_name)) > 0),
     CONSTRAINT chk_last_name_not_empty CHECK (LENGTH(TRIM(last_name)) > 0),
     CONSTRAINT chk_address_line_1_not_empty CHECK (LENGTH(TRIM(address_line_1)) > 0),
-    CONSTRAINT chk_state_code_format CHECK (address_state ~ '^[A-Z]{2}$'),
-    CONSTRAINT chk_country_code_format CHECK (address_country ~ '^[A-Z]{3}$'),
-    CONSTRAINT chk_zip_code_not_empty CHECK (LENGTH(TRIM(address_zip)) > 0),
+    CONSTRAINT chk_state_code_format CHECK (state_code ~ '^[A-Z]{2}$'),
+    CONSTRAINT chk_country_code_format CHECK (country_code ~ '^[A-Z]{3}$'),
+    CONSTRAINT chk_zip_code_not_empty CHECK (LENGTH(TRIM(zip_code)) > 0),
     
     -- Phone number format validation (allows various standard formats)
-    CONSTRAINT chk_phone_home_format CHECK (
-        phone_home IS NULL OR 
-        phone_home ~ '^\([0-9]{3}\)[0-9]{3}-[0-9]{4}$|^[0-9]{3}-[0-9]{3}-[0-9]{4}$|^[0-9]{10}$'
+    CONSTRAINT chk_phone_number_1_format CHECK (
+        phone_number_1 IS NULL OR 
+        phone_number_1 ~ '^\([0-9]{3}\)[0-9]{3}-[0-9]{4}$|^[0-9]{3}-[0-9]{3}-[0-9]{4}$|^[0-9]{10}$'
     ),
-    CONSTRAINT chk_phone_work_format CHECK (
-        phone_work IS NULL OR 
-        phone_work ~ '^\([0-9]{3}\)[0-9]{3}-[0-9]{4}$|^[0-9]{3}-[0-9]{3}-[0-9]{4}$|^[0-9]{10}$'
+    CONSTRAINT chk_phone_number_2_format CHECK (
+        phone_number_2 IS NULL OR 
+        phone_number_2 ~ '^\([0-9]{3}\)[0-9]{3}-[0-9]{4}$|^[0-9]{3}-[0-9]{3}-[0-9]{4}$|^[0-9]{10}$'
     ),
     
     -- PII field validation constraints
@@ -87,6 +87,9 @@ CREATE TABLE customers (
         date_of_birth >= DATE '1900-01-01' AND 
         date_of_birth <= CURRENT_DATE - INTERVAL '13 years'
     ),
+    
+    -- Primary cardholder indicator validation (Y/N values only)
+    CONSTRAINT chk_primary_cardholder_format CHECK (primary_cardholder_indicator ~ '^[YN]$'),
     
     -- FICO credit score validation with industry standard range (300-850)
     CONSTRAINT chk_fico_score_range CHECK (
@@ -113,10 +116,10 @@ CREATE TABLE customers (
 CREATE INDEX idx_customers_name_search ON customers (last_name, first_name, middle_name);
 
 -- Index for address-based queries (supporting geographic analysis)
-CREATE INDEX idx_customers_address_location ON customers (address_state, address_country, address_zip);
+CREATE INDEX idx_customers_address_location ON customers (state_code, country_code, zip_code);
 
 -- Index for phone number lookups (supporting customer service operations)
-CREATE INDEX idx_customers_phone_lookup ON customers (phone_home, phone_work) WHERE phone_home IS NOT NULL OR phone_work IS NOT NULL;
+CREATE INDEX idx_customers_phone_lookup ON customers (phone_number_1, phone_number_2) WHERE phone_number_1 IS NOT NULL OR phone_number_2 IS NOT NULL;
 
 -- Index for date of birth queries (supporting age-based analysis)
 CREATE INDEX idx_customers_birth_date ON customers (date_of_birth);
@@ -173,16 +176,16 @@ COMMENT ON COLUMN customers.last_name IS 'Customer last name. Maps to CUSTDAT po
 COMMENT ON COLUMN customers.address_line_1 IS 'Primary address line. Maps to CUSTDAT positions 73-115. Required field supporting up to 50 characters for international addresses.';
 COMMENT ON COLUMN customers.address_line_2 IS 'Secondary address line. Maps to CUSTDAT positions 116-158. Optional field for apartment, suite, or unit information.';
 COMMENT ON COLUMN customers.address_line_3 IS 'Additional address line. Maps to CUSTDAT positions 159-201. Optional field for additional address details or city information.';
-COMMENT ON COLUMN customers.address_state IS 'State or province code. Maps to CUSTDAT positions 202-203. Required 2-character state abbreviation.';
-COMMENT ON COLUMN customers.address_country IS 'Country code. Maps to CUSTDAT positions 204-206. Required 3-character ISO country code, defaults to USA.';
-COMMENT ON COLUMN customers.address_zip IS 'Postal or ZIP code. Maps to CUSTDAT positions 207-217. Required field supporting various postal code formats.';
-COMMENT ON COLUMN customers.phone_home IS 'Primary phone number. Maps to CUSTDAT positions 218-232. Optional field with format validation for US phone numbers.';
-COMMENT ON COLUMN customers.phone_work IS 'Secondary phone number. Maps to CUSTDAT positions 233-247. Optional field with format validation for US phone numbers.';
+COMMENT ON COLUMN customers.state_code IS 'State or province code. Maps to CUSTDAT positions 202-203. Required 2-character state abbreviation.';
+COMMENT ON COLUMN customers.country_code IS 'Country code. Maps to CUSTDAT positions 204-206. Required 3-character ISO country code, defaults to USA.';
+COMMENT ON COLUMN customers.zip_code IS 'Postal or ZIP code. Maps to CUSTDAT positions 207-217. Required field supporting various postal code formats.';
+COMMENT ON COLUMN customers.phone_number_1 IS 'Primary phone number. Maps to CUSTDAT positions 218-232. Optional field with format validation for US phone numbers.';
+COMMENT ON COLUMN customers.phone_number_2 IS 'Secondary phone number. Maps to CUSTDAT positions 233-247. Optional field with format validation for US phone numbers.';
 COMMENT ON COLUMN customers.ssn IS 'Social Security Number. Maps to CUSTDAT positions 248-256. Required PII field requiring encryption and access controls per PCI DSS compliance.';
 COMMENT ON COLUMN customers.government_id IS 'Government-issued identification number. Maps to CUSTDAT positions 257-276. Required field supporting various ID types for regulatory compliance.';
 COMMENT ON COLUMN customers.date_of_birth IS 'Customer date of birth. Maps to CUSTDAT positions 277-286. Required field with age validation constraints.';
 COMMENT ON COLUMN customers.eft_account_id IS 'Electronic Funds Transfer account reference. Maps to CUSTDAT positions 287-296. Optional field linking to external payment systems.';
-COMMENT ON COLUMN customers.primary_cardholder_indicator IS 'Primary cardholder flag. Maps to CUSTDAT position 297. Boolean indicator converted from Y/N flag in legacy system.';
+COMMENT ON COLUMN customers.primary_cardholder_indicator IS 'Primary cardholder flag. Maps to CUSTDAT position 297. Y/N indicator matching legacy system format.';
 COMMENT ON COLUMN customers.fico_credit_score IS 'FICO credit score. Maps to CUSTDAT positions 298-300. Required field with industry-standard range validation (300-850).';
 COMMENT ON COLUMN customers.created_at IS 'Record creation timestamp. Audit field for data lifecycle management and compliance reporting.';
 COMMENT ON COLUMN customers.updated_at IS 'Record last modification timestamp. Automatically updated via trigger for audit trail maintenance.';
@@ -195,11 +198,11 @@ COMMENT ON COLUMN customers.updated_at IS 'Record last modification timestamp. A
 --rollback COMMENT ON COLUMN customers.address_line_1 IS NULL;
 --rollback COMMENT ON COLUMN customers.address_line_2 IS NULL;
 --rollback COMMENT ON COLUMN customers.address_line_3 IS NULL;
---rollback COMMENT ON COLUMN customers.address_state IS NULL;
---rollback COMMENT ON COLUMN customers.address_country IS NULL;
---rollback COMMENT ON COLUMN customers.address_zip IS NULL;
---rollback COMMENT ON COLUMN customers.phone_home IS NULL;
---rollback COMMENT ON COLUMN customers.phone_work IS NULL;
+--rollback COMMENT ON COLUMN customers.state_code IS NULL;
+--rollback COMMENT ON COLUMN customers.country_code IS NULL;
+--rollback COMMENT ON COLUMN customers.zip_code IS NULL;
+--rollback COMMENT ON COLUMN customers.phone_number_1 IS NULL;
+--rollback COMMENT ON COLUMN customers.phone_number_2 IS NULL;
 --rollback COMMENT ON COLUMN customers.ssn IS NULL;
 --rollback COMMENT ON COLUMN customers.government_id IS NULL;
 --rollback COMMENT ON COLUMN customers.date_of_birth IS NULL;
