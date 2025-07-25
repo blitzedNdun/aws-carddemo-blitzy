@@ -479,7 +479,7 @@ public class SecurityGatewayFilter implements GatewayFilter {
             
             return withinLimit;
             
-        }).onErrorReturn(throwable -> {
+        }).onErrorResume(throwable -> {
             logger.error("Redis rate limiting error for user: {} with correlation ID: {}", 
                         username, correlationId, throwable);
             
@@ -487,7 +487,7 @@ public class SecurityGatewayFilter implements GatewayFilter {
             logSecurityEvent("RATE_LIMIT_REDIS_ERROR", username, correlationId, 
                            request.getPath().value(), Map.of("error", throwable.getMessage()));
             
-            return circuitBreakerEnabled; // Allow if circuit breaker is enabled, deny otherwise
+            return Mono.just(circuitBreakerEnabled); // Allow if circuit breaker is enabled, deny otherwise
         });
     }
 
