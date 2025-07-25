@@ -98,7 +98,7 @@ public class AccountUpdateRequestDto {
      * Maps to ACUP-NEW-REISSUE-DATE with optional date validation
      * Can be null/empty if no reissue has occurred for the account
      */
-    @ValidCCYYMMDD(allowEmpty = true, message = "Reissue date must be in valid CCYYMMDD format when provided")
+    @ValidCCYYMMDD(message = "Reissue date must be in valid CCYYMMDD format when provided")
     @JsonProperty("reissueDate")
     private String reissueDate;
 
@@ -300,8 +300,8 @@ public class AccountUpdateRequestDto {
             return creditValidation;
         }
 
-        // Current balance validation - cannot exceed credit limit
-        ValidationResult balanceValidation = ValidationUtils.validateBalance(this.currentBalance, this.creditLimit);
+        // Current balance validation - validate format and precision
+        ValidationResult balanceValidation = ValidationUtils.validateBalance(this.currentBalance);
         if (!balanceValidation.isValid()) {
             return balanceValidation;
         }
@@ -376,8 +376,8 @@ public class AccountUpdateRequestDto {
         }
 
         // Use ValidationUtils for state/ZIP consistency check
-        return ValidationUtils.validateRequiredField(state).isValid() && 
-               ValidationUtils.validateRequiredField(zipCode).isValid();
+        return ValidationUtils.validateRequiredField(state, "state code").isValid() && 
+               ValidationUtils.validateRequiredField(zipCode, "zip code").isValid();
     }
 
     /**
@@ -400,7 +400,7 @@ public class AccountUpdateRequestDto {
 
         // Validate customer ID if present
         if (this.customerData.getCustomerId() != null) {
-            ValidationResult customerResult = ValidationUtils.validateRequiredField(this.customerData.getCustomerId());
+            ValidationResult customerResult = ValidationUtils.validateCustomerId(this.customerData.getCustomerId().toString());
             return customerResult.isValid();
         }
 
