@@ -7,13 +7,17 @@
 -- 
 -- Migration from: VSAM USRSEC dataset with 8-character key, 80-byte records
 -- Target: PostgreSQL users table with Spring Security integration
+
+--liquibase formatted sql
 -- 
 -- Author: Blitzy agent
 -- Created: Migration script for CardDemo modernization
 -- =============================================================================
 
--- Liquibase changeset for users table creation
--- --changeset CardDemo:create-users-table-v1 splitStatements:true endDelimiter:;
+--liquibase formatted sql
+
+--changeset CardDemo:create-users-table-v1 splitStatements:true endDelimiter:;
+--comment: Create users table migrated from VSAM USRSEC dataset with Spring Security integration
 
 -- Drop table if exists (for development/testing purposes)
 DROP TABLE IF EXISTS users CASCADE;
@@ -56,13 +60,15 @@ ALTER TABLE users ADD CONSTRAINT chk_users_user_type
 
 -- Password hash constraint: Ensure BCrypt format (starts with $2a$, $2b$, $2x$, or $2y$)
 -- BCrypt hash format validation for Spring Security compatibility
+-- Note: Using H2-compatible REGEXP function instead of PostgreSQL ~ operator
 ALTER TABLE users ADD CONSTRAINT chk_users_password_hash_format
-    CHECK (password_hash ~ '^\$2[abxy]\$[0-9]{2}\$.{53}$');
+    CHECK (REGEXP_LIKE(password_hash, '^\$2[abxy]\$[0-9]{2}\$.{53}$'));
 
 -- User ID format constraint: Ensure uppercase alphanumeric characters only
 -- Maintains VSAM USRSEC dataset key format requirements
+-- Note: Using H2-compatible REGEXP function instead of PostgreSQL ~ operator
 ALTER TABLE users ADD CONSTRAINT chk_users_userid_format
-    CHECK (user_id ~ '^[A-Z0-9]{1,8}$');
+    CHECK (REGEXP_LIKE(user_id, '^[A-Z0-9]{1,8}$'));
 
 -- Name constraints: Ensure proper capitalization and non-empty values
 ALTER TABLE users ADD CONSTRAINT chk_users_first_name_not_empty
@@ -80,10 +86,13 @@ CREATE INDEX idx_users_authentication ON users (user_id, user_type, password_has
 CREATE INDEX idx_users_user_type ON users (user_type);
 
 -- Index for audit and session management queries
-CREATE INDEX idx_users_last_login ON users (last_login DESC) WHERE last_login IS NOT NULL;
+-- Note: H2 doesn't support partial indexes, so removing WHERE clause for compatibility
+CREATE INDEX idx_users_last_login ON users (last_login DESC);
 
 -- Index for user profile searches (case-insensitive)
-CREATE INDEX idx_users_name_search ON users (UPPER(first_name), UPPER(last_name));
+-- Note: H2 doesn't support function-based indexes, so creating simple indexes instead
+CREATE INDEX idx_users_first_name ON users (first_name);
+CREATE INDEX idx_users_last_name ON users (last_name);
 
 -- Add table comments for documentation
 COMMENT ON TABLE users IS 'User authentication and authorization table migrated from VSAM USRSEC dataset. Implements BCrypt password hashing for Spring Security integration in the modernized CardDemo system.';
@@ -115,6 +124,9 @@ INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, cre
 
 -- Create audit trigger for tracking user modifications (optional)
 -- This implements comprehensive audit trail for security compliance
+-- Note: Commented out for H2 compatibility - H2 doesn't support PL/pgSQL syntax
+-- PostgreSQL-specific function - enable in production PostgreSQL environment
+/*
 CREATE OR REPLACE FUNCTION audit_users_changes()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -145,6 +157,7 @@ BEGIN
     RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
+*/
 
 -- Note: Audit log table creation should be in a separate migration
 -- CREATE TRIGGER users_audit_trigger
@@ -161,7 +174,8 @@ $$ LANGUAGE plpgsql;
 --     CACHE 1;
 
 -- Performance optimization: Analyze table statistics after creation
-ANALYZE users;
+-- Note: Commented out for H2 compatibility - H2 doesn't support ANALYZE
+-- ANALYZE users;
 
 -- =============================================================================
 -- Migration Verification Queries
