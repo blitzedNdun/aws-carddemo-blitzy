@@ -295,15 +295,8 @@ CREATE TRIGGER trg_tcatbal_version_update
 --changeset blitzy-agent:populate-reference-tables-initial-data-v6
 --comment: Populate reference tables with initial data from ASCII source files
 
--- Populate transaction_types table from trantype.txt data
-INSERT INTO transaction_types (transaction_type, type_description, debit_credit_indicator, active_status) VALUES
-('01', 'Purchase', true, true),
-('02', 'Payment', false, true),
-('03', 'Credit', false, true),
-('04', 'Authorization', true, true),
-('05', 'Refund', false, true),
-('06', 'Reversal', false, true),
-('07', 'Adjustment', true, true);
+-- NOTE: Transaction types data loading moved to separate migration V24__load_transaction_types_data.sql
+-- This follows Liquibase best practices separating table creation from data loading
 
 -- Populate transaction_categories table from trancatg.txt data
 -- Extracting 4-character category codes and mapping to parent transaction types
