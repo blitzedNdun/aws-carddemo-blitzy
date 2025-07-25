@@ -3,6 +3,10 @@
 
 spring:
   
+  # Enable bean overriding for test environment to handle ObjectMapper conflicts
+  main:
+    allow-bean-definition-overriding: true
+  
   # H2 Database Configuration for Testing
   datasource:
     url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;CASE_INSENSITIVE_IDENTIFIERS=TRUE;INIT=CREATE SCHEMA IF NOT EXISTS PUBLIC
@@ -14,7 +18,7 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
         implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
@@ -25,7 +29,7 @@ spring:
         use_sql_comments: true
         globally_quoted_identifiers: true
         hbm2ddl:
-          auto: create-drop
+          auto: validate
         
   # H2 Console Configuration (for debugging)
   h2:
@@ -33,6 +37,13 @@ spring:
       enabled: true
       path: /h2-console
       
+  # Liquibase Configuration for Test Environment
+  liquibase:
+    enabled: true
+    change-log: classpath:db/liquibase-changelog.xml
+    default-schema: public
+    drop-first: true
+    
 # Logging Configuration
 logging:
   level:
