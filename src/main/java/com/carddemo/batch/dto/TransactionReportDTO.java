@@ -326,9 +326,17 @@ public class TransactionReportDTO {
             total.append(".");
         }
         
+        // Add spacing before amount
+        total.append("  ");
+        
         // Formatted total amount
         String formattedTotal = formatCurrencyAmount(totalAmount);
         total.append(String.format("%15s", formattedTotal));
+        
+        // Pad to exact width if needed
+        while (total.length() < REPORT_LINE_WIDTH) {
+            total.append(" ");
+        }
         
         // Ensure exact width
         return total.substring(0, REPORT_LINE_WIDTH);
