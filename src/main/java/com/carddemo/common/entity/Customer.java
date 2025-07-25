@@ -227,16 +227,24 @@ public class Customer implements Serializable {
      * One-to-many relationship with Account entities.
      * Customer can own multiple accounts for portfolio management.
      * Uses LAZY loading for optimal performance and memory usage per Section 6.2.4.
+     * 
+     * Fixed JPA mapping: Using @JoinColumn since Account entity uses customerId field
+     * rather than customer object reference for relationship mapping.
      */
-    @OneToMany(mappedBy = "customer", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "customer_id")
     private List<Account> accounts = new ArrayList<>();
 
     /**
      * One-to-many relationship with Card entities.
      * Customer can own multiple cards across different accounts.
      * Uses LAZY loading for optimal performance and memory usage per Section 6.2.4.
+     * 
+     * Fixed JPA mapping: Using @JoinColumn since Card entity uses customerId field
+     * rather than customer object reference for relationship mapping.
      */
-    @OneToMany(mappedBy = "customer", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "customer_id")
     private List<Card> cards = new ArrayList<>();
 
     /**
