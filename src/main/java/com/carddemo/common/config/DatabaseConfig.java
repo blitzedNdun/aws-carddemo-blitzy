@@ -234,7 +234,7 @@ public class DatabaseConfig {
         jpaProperties.put(AvailableSettings.USE_SECOND_LEVEL_CACHE, false);
         jpaProperties.put(AvailableSettings.USE_QUERY_CACHE, false);
         jpaProperties.put(AvailableSettings.GENERATE_STATISTICS, true);
-        jpaProperties.put(AvailableSettings.LOG_SLOW_QUERY, 1000);
+        jpaProperties.put(AvailableSettings.LOG_SLOW_QUERY, 1000L);
         
         // PostgreSQL-specific optimizations
         jpaProperties.put(AvailableSettings.DIALECT, "org.hibernate.dialect.PostgreSQLDialect");
