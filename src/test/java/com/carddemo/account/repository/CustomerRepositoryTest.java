@@ -7,8 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -16,6 +15,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -45,18 +47,26 @@ import static org.junit.jupiter.api.Assertions.*;
  * @author Blitzy Development Team - Ad-hoc Test Suite
  * @version 1.0
  */
-@DataJpaTest
+@SpringBootTest(properties = {
+    "spring.cloud.gateway.enabled=false"
+})
+@EnableAutoConfiguration(exclude = {
+    org.springframework.cloud.gateway.config.GatewayAutoConfiguration.class,
+    org.springframework.cloud.gateway.config.GatewayClassPathWarningAutoConfiguration.class
+})
 @TestPropertySource(properties = {
-    "spring.jpa.hibernate.ddl-auto=create-drop",
-    "spring.datasource.url=jdbc:h2:mem:testdb",
-    "spring.datasource.driver-class-name=org.h2.Driver",
-    "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect"
+    "spring.datasource.url=jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH",
+    "spring.jpa.hibernate.ddl-auto=none",
+    "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
+    "spring.liquibase.change-log=classpath:db/changelog/db.changelog-master.xml",
+    "logging.level.liquibase=INFO"
 })
 @ActiveProfiles("test")
+@Transactional
 public class CustomerRepositoryTest {
 
-    @Autowired
-    private TestEntityManager entityManager;
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Autowired
     private CustomerRepository customerRepository;
@@ -119,9 +129,10 @@ public class CustomerRepositoryTest {
         testCustomer3.setPrimaryCardHolderIndicator("Y");
         
         // Persist customers
-        entityManager.persistAndFlush(testCustomer1);
-        entityManager.persistAndFlush(testCustomer2);
-        entityManager.persistAndFlush(testCustomer3);
+        entityManager.persist(testCustomer1);
+        entityManager.persist(testCustomer2);
+        entityManager.persist(testCustomer3);
+        entityManager.flush();
         
         // Create test accounts associated with customers
         testAccount1 = new Account();
@@ -149,8 +160,9 @@ public class CustomerRepositoryTest {
         testCustomer1.addAccount(testAccount2);
         
         // Persist accounts
-        entityManager.persistAndFlush(testAccount1);
-        entityManager.persistAndFlush(testAccount2);
+        entityManager.persist(testAccount1);
+        entityManager.persist(testAccount2);
+        entityManager.flush();
         
         entityManager.clear(); // Clear persistence context for clean testing
     }
@@ -163,7 +175,7 @@ public class CustomerRepositoryTest {
     @DisplayName("Test 1.1: Repository Autowiring and Basic Setup - Spring Context Integration")
     void testRepositoryAutowiring() {
         assertNotNull(customerRepository, "CustomerRepository should be autowired successfully");
-        assertNotNull(entityManager, "TestEntityManager should be autowired successfully");
+        assertNotNull(entityManager, "EntityManager should be injected successfully");
         
         // Verify repository extends JpaRepository<Customer, String>
         assertTrue(customerRepository instanceof org.springframework.data.jpa.repository.JpaRepository,
