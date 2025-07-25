@@ -1,0 +1,528 @@
+# Spring Security Test Profiles for CardDemo Authentication Testing
+# Provides comprehensive JWT authentication, role-based access control, and session management
+# testing configuration supporting Spring Security 6.x OAuth2 resource server validation
+# 
+# This configuration supports the migration from legacy COBOL COSGN00C.cbl authentication
+# to modern Spring Boot JWT-based security patterns while maintaining functional equivalence
+# and comprehensive security testing coverage across all microservice boundaries.
+
+# ============================================================================
+# SecurityTestConfiguration - Main Test Profile Configuration
+# ============================================================================
+security:
+  test:
+    profiles:
+      # JWT Authentication Test Configuration
+      jwt:
+        # Test signing secret for JWT token generation and validation
+        # Uses configurable secret with HS256 algorithm matching production setup
+        secret: "test-jwt-secret-key-for-carddemo-security-testing-minimum-256-bits-required-for-hs256-algorithm-compliance"
+        
+        # JWT token expiration settings for testing scenarios
+        expiration:
+          access-token: 1800    # 30 minutes - matches production configuration
+          refresh-token: 86400  # 24 hours - extended for test stability
+          test-token: 300       # 5 minutes - short-lived tokens for test scenarios
+        
+        # JWT issuer and audience configuration for test validation
+        issuer: "test.carddemo.auth.service"
+        audience: "test.carddemo.microservices"
+        
+        # Test token claims structure matching production JWT format
+        claims:
+          user-id-claim: "sub"
+          user-type-claim: "user_type"
+          roles-claim: "authorities"
+          session-id-claim: "session_id"
+          issued-at-claim: "iat"
+          expires-at-claim: "exp"
+
+      # OAuth2 Resource Server Test Configuration
+      oauth2:
+        resourceserver:
+          # JWT decoder configuration for test resource server setup
+          jwt:
+            # Use test JWT secret for token validation in test scenarios
+            jwk-set-uri: "classpath:test-jwks.json"
+            issuer-uri: "http://localhost:8080/auth"
+            
+            # JWT authentication converter for test role mapping
+            authorities-claim-name: "authorities"
+            authority-prefix: "ROLE_"
+            
+            # Clock skew allowance for test token validation
+            clock-skew: 60s
+            
+            # Cache duration for JWT validation in test scenarios
+            cache-duration: 300s
+
+      # Spring Security Mock User Test Configurations
+      mock-users:
+        # Admin User Test Profile - Equivalent to SEC-USR-TYPE 'A' from COBOL system
+        admin:
+          username: "TESTADM1"
+          password: "TESTPWD1"
+          authorities:
+            - "ROLE_ADMIN"
+            - "ROLE_USER"  # Admin inherits user privileges
+          attributes:
+            user_id: "TESTADM1"
+            user_type: "A"
+            first_name: "Test"
+            last_name: "Administrator"
+            session_id: "test-admin-session"
+          
+        # Regular User Test Profile - Equivalent to SEC-USR-TYPE 'U' from COBOL system  
+        user:
+          username: "TESTUSER1"
+          password: "TESTPWD2"
+          authorities:
+            - "ROLE_USER"
+          attributes:
+            user_id: "TESTUSER1"
+            user_type: "U"
+            first_name: "Test"
+            last_name: "User"
+            session_id: "test-user-session"
+            
+        # Additional test users for comprehensive authorization testing
+        user-limited:
+          username: "TESTLIM1"
+          password: "TESTPWD3"
+          authorities:
+            - "ROLE_USER"
+          attributes:
+            user_id: "TESTLIM1"
+            user_type: "U"
+            first_name: "Limited"
+            last_name: "TestUser"
+            session_id: "test-limited-session"
+            account_access: "restricted"
+
+      # Role-Based Access Control Test Scenarios
+      rbac:
+        # Administrative Operations Test Matrix
+        admin-operations:
+          user-management:
+            - endpoint: "/api/users/**"
+              methods: ["GET", "POST", "PUT", "DELETE"]
+              required-roles: ["ROLE_ADMIN"]
+              test-scenarios:
+                - name: "admin-full-access"
+                  user: "admin"
+                  expected-result: "ALLOW"
+                - name: "user-access-denied"
+                  user: "user"
+                  expected-result: "DENY"
+                  
+          system-configuration:
+            - endpoint: "/api/admin/config/**"
+              methods: ["GET", "POST", "PUT"]
+              required-roles: ["ROLE_ADMIN"]
+              test-scenarios:
+                - name: "admin-config-access"
+                  user: "admin"
+                  expected-result: "ALLOW"
+                - name: "user-config-denied"
+                  user: "user"
+                  expected-result: "DENY"
+
+        # Standard User Operations Test Matrix
+        user-operations:
+          account-management:
+            - endpoint: "/api/accounts/view/**"
+              methods: ["GET"]
+              required-roles: ["ROLE_USER", "ROLE_ADMIN"]
+              test-scenarios:
+                - name: "user-account-view"
+                  user: "user"
+                  expected-result: "ALLOW"
+                - name: "admin-account-view"
+                  user: "admin"
+                  expected-result: "ALLOW"
+                  
+          transaction-processing:
+            - endpoint: "/api/transactions/**"
+              methods: ["GET", "POST"]
+              required-roles: ["ROLE_USER", "ROLE_ADMIN"]
+              test-scenarios:
+                - name: "user-transaction-access"
+                  user: "user"
+                  expected-result: "ALLOW"
+                - name: "admin-transaction-access"
+                  user: "admin"
+                  expected-result: "ALLOW"
+
+      # Authentication Failure Test Scenarios
+      auth-failures:
+        invalid-credentials:
+          - username: "INVALIDUSER"
+            password: "WRONGPWD"
+            expected-error: "Authentication failed"
+            error-code: 401
+            
+        expired-tokens:
+          - token-type: "access"
+            expiry-offset: -3600  # 1 hour expired
+            expected-error: "Token expired"
+            error-code: 401
+            
+        malformed-tokens:
+          - token: "invalid.jwt.token"
+            expected-error: "Invalid token format"
+            error-code: 401
+
+      # Session Management Test Configuration
+      session:
+        # Redis-backed session testing configuration
+        redis:
+          # Test Redis configuration for session storage validation
+          host: "localhost"
+          port: 6379
+          database: 1  # Use separate database for testing
+          timeout: 5000ms
+          
+          # Session configuration matching production setup
+          session:
+            timeout: 1800s  # 30 minutes - equivalent to CICS terminal timeout
+            key-prefix: "test:carddemo:session:"
+            flush-mode: "on_save"
+            
+          # Test data TTL configuration
+          test-data-ttl: 600s  # 10 minutes for test cleanup
+          
+        # Session validation test scenarios
+        validation-scenarios:
+          session-creation:
+            - user: "admin"
+              expected-session-attributes:
+                - "user_id"
+                - "user_type" 
+                - "authorities"
+                - "session_id"
+                
+          session-expiration:
+            - timeout: 1800s
+              expected-behavior: "automatic-cleanup"
+              validation-method: "redis-key-expiry"
+              
+          distributed-sessions:
+            - scenario: "cross-service-session-sharing"
+              services: ["auth", "account", "transaction"]
+              expected-behavior: "consistent-session-state"
+
+      # Security Context Propagation Test Configuration
+      security-context:
+        # Microservice boundary testing for security context propagation
+        propagation-tests:
+          service-to-service:
+            - source-service: "authentication"
+              target-service: "account-view"
+              authentication-method: "jwt-bearer-token"
+              expected-authorities: ["ROLE_USER", "ROLE_ADMIN"]
+              
+            - source-service: "authentication"
+              target-service: "user-management"
+              authentication-method: "jwt-bearer-token"
+              required-authorities: ["ROLE_ADMIN"]
+              
+        # Spring Cloud Gateway integration testing
+        gateway-integration:
+          filter-chain-validation:
+            - filter: "jwt-authentication"
+              order: 1
+              validation: "token-signature-verification"
+              
+            - filter: "role-based-authorization"
+              order: 2
+              validation: "authority-claim-extraction"
+
+      # Audit Trail Validation Test Configuration
+      audit:
+        # Spring Boot Actuator audit event testing
+        event-validation:
+          authentication-events:
+            - event-type: "AUTHENTICATION_SUCCESS"
+              required-fields: ["principal", "timestamp", "session_id"]
+              retention-period: "7-years"  # SOX compliance requirement
+              
+            - event-type: "AUTHENTICATION_FAILURE"
+              required-fields: ["principal", "timestamp", "failure_reason"]
+              alert-threshold: 5  # Alert after 5 consecutive failures
+              
+          authorization-events:
+            - event-type: "ACCESS_GRANTED" 
+              required-fields: ["principal", "resource", "authorities"]
+              
+            - event-type: "ACCESS_DENIED"
+              required-fields: ["principal", "resource", "required_authorities"]
+              
+        # ELK stack integration for audit log testing
+        elk-integration:
+          elasticsearch:
+            index-pattern: "test-carddemo-audit-*"
+            retention-policy: "30-days-test-data"
+            
+          kibana:
+            dashboard: "test-security-audit-dashboard"
+            alert-rules:
+              - rule: "multiple-auth-failures"
+                threshold: 3
+                window: "5m"
+
+# ============================================================================
+# SpringSecurityTestProfiles - Specific Profile Configurations
+# ============================================================================
+
+# Admin User Test Profile Configuration
+admin-user-profile:
+  security:
+    user:
+      name: "TESTADM1"
+      password: "{bcrypt}$2a$12$test.admin.password.hash.for.testing.purposes"
+      roles: ["ADMIN", "USER"]
+    oauth2:
+      resourceserver:
+        jwt:
+          authorities-claim-name: "authorities"
+          authority-prefix: "ROLE_"
+
+# Regular User Test Profile Configuration  
+regular-user-profile:
+  security:
+    user:
+      name: "TESTUSER1"
+      password: "{bcrypt}$2a$12$test.user.password.hash.for.testing.purposes"
+      roles: ["USER"]
+    oauth2:
+      resourceserver:
+        jwt:
+          authorities-claim-name: "authorities"
+          authority-prefix: "ROLE_"
+
+# JWT Token Validation Test Profile
+jwt-validation-profile:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: "http://localhost:8080/auth"
+          jwk-set-uri: "http://localhost:8080/auth/.well-known/jwks.json"
+          
+  # Custom JWT validation configuration for testing
+  jwt:
+    validation:
+      # Enable strict validation for test scenarios
+      strict-validation: true
+      # Allow clock skew for test timing flexibility
+      clock-skew: 60s
+      # Validate all standard JWT claims
+      validate-claims: ["iss", "exp", "iat", "sub", "aud"]
+
+# Session Timeout Test Scenarios
+session-timeout-profile:
+  server:
+    servlet:
+      session:
+        timeout: 30m  # 30 minutes matching CICS terminal timeout
+        
+  spring:
+    session:
+      store-type: redis
+      redis:
+        namespace: "test:carddemo"
+        flush-mode: on_save
+        
+  # Test-specific session configuration
+  test:
+    session:
+      # Short timeout for rapid testing
+      short-timeout: 5m
+      # Extended timeout for long-running tests
+      extended-timeout: 2h
+      # Configurable cleanup intervals
+      cleanup-interval: 1m
+
+# Authentication Failure Test Profile
+auth-failure-profile:
+  security:
+    # Configure authentication failure handling
+    authentication:
+      failure:
+        # Maximum authentication attempts before lockout
+        max-attempts: 5
+        # Lockout duration after max attempts exceeded
+        lockout-duration: 15m
+        # Enable account lockout for testing
+        enable-lockout: true
+        
+    # Rate limiting configuration for brute force protection
+    rate-limiting:
+      # Requests per minute per IP address
+      requests-per-minute: 60
+      # Enable rate limiting for authentication endpoints
+      enable-auth-rate-limiting: true
+
+# Authorization Test Matrix Profile
+authorization-matrix-profile:
+  security:
+    # Method-level security testing configuration
+    method-security:
+      # Enable @PreAuthorize testing
+      pre-authorize-enabled: true
+      # Enable @PostAuthorize testing for data filtering
+      post-authorize-enabled: true
+      # Enable expression-based security
+      expression-handler-enabled: true
+      
+  # Authorization test scenarios configuration
+  test:
+    authorization:
+      # Define test scenarios for each endpoint
+      scenarios:
+        user-management:
+          - endpoint: "/api/users/list"
+            method: "GET"
+            required-authority: "ROLE_ADMIN"
+            test-users: ["admin", "user"]
+            expected-results: ["ALLOW", "DENY"]
+            
+        account-operations:
+          - endpoint: "/api/accounts/{accountId}"
+            method: "GET" 
+            required-authority: "ROLE_USER"
+            test-users: ["admin", "user"]
+            expected-results: ["ALLOW", "ALLOW"]
+
+# Cross-Service Security Test Profile
+cross-service-security-profile:
+  security:
+    # JWT token propagation configuration
+    jwt:
+      propagation:
+        # Enable JWT token forwarding between services
+        forward-tokens: true
+        # Preserve original authentication context
+        preserve-context: true
+        # Validate tokens at each service boundary
+        validate-at-boundary: true
+        
+  # Service-to-service communication testing
+  test:
+    microservices:
+      # Define services participating in security tests
+      services:
+        - name: "authentication-service"
+          port: 8081
+          security-enabled: true
+          
+        - name: "account-service"
+          port: 8082
+          security-enabled: true
+          requires-auth: true
+          
+        - name: "transaction-service"
+          port: 8083
+          security-enabled: true
+          requires-auth: true
+
+# Circuit Breaker Security Test Profile
+circuit-breaker-security-profile:
+  resilience4j:
+    circuitbreaker:
+      instances:
+        authentication:
+          # Configure circuit breaker for authentication service
+          failure-rate-threshold: 50
+          wait-duration-in-open-state: 30s
+          sliding-window-size: 10
+          minimum-number-of-calls: 5
+          
+  # Security-specific circuit breaker testing
+  test:
+    circuit-breaker:
+      # Authentication service failure scenarios
+      auth-service-failures:
+        - scenario: "database-connection-timeout"
+          expected-behavior: "circuit-open"
+          fallback-behavior: "cached-validation"
+          
+        - scenario: "jwt-validation-service-down"
+          expected-behavior: "circuit-open" 
+          fallback-behavior: "local-validation"
+
+# Rate Limiting Test Profile
+rate-limiting-profile:  
+  spring:
+    cloud:
+      gateway:
+        routes:
+          - id: auth-rate-limited
+            uri: http://localhost:8081
+            predicates:
+              - Path=/api/auth/**
+            filters:
+              - name: RequestRateLimiter
+                args:
+                  # Redis-backed rate limiting for authentication
+                  redis-rate-limiter.replenish-rate: 10
+                  redis-rate-limiter.burst-capacity: 20
+                  
+  # Rate limiting test scenarios
+  test:
+    rate-limiting:
+      # Authentication endpoint rate limiting tests
+      auth-endpoints:
+        - endpoint: "/api/auth/login"
+          rate-limit: "10/minute"
+          burst-capacity: 20
+          test-scenarios:
+            - name: "within-limits"
+              requests: 8
+              expected-result: "ALLOW"
+            - name: "exceeds-limits"
+              requests: 25
+              expected-result: "RATE_LIMITED"
+
+# Redis Session Storage Integration Test Profile
+redis-integration-profile:
+  spring:
+    # Redis configuration for session storage testing
+    redis:
+      host: localhost
+      port: 6379
+      password: ""  # No password for test Redis instance
+      database: 1   # Separate database for testing
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          
+    session:
+      store-type: redis
+      redis:
+        namespace: "test:carddemo:session"
+        flush-mode: on_save
+        
+  # Session integration testing configuration
+  test:
+    redis:
+      # Session lifecycle testing scenarios
+      session-lifecycle:
+        - scenario: "session-creation"
+          expected-keys: ["session:*", "session:expires:*"]
+          
+        - scenario: "session-update"
+          update-attributes: ["last_access_time", "security_context"]
+          
+        - scenario: "session-expiration"
+          ttl-validation: true
+          cleanup-validation: true
+          
+      # Distributed session testing across multiple service instances
+      distributed-sessions:
+        service-instances: 3
+        session-sharing-validation: true
+        failover-testing: true
