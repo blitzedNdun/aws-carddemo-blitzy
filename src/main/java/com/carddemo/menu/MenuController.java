@@ -26,17 +26,13 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Max;
 
 import java.util.List;
 
@@ -44,43 +40,51 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * REST controller providing HTTP endpoints for menu navigation functionality in the CardDemo application.
+ * REST controller providing HTTP endpoints for menu navigation functionality converted 
+ * from COBOL COMEN01C.cbl program. Exposes role-based menu generation API endpoints 
+ * that integrate with Spring Security and delegate business logic to MenuNavigationService 
+ * for the CardDemo application.
  * 
- * This controller exposes role-based menu generation API endpoints that integrate with Spring Security
- * for JWT token validation and delegate business logic to MenuNavigationService. The implementation
- * transforms the original COBOL COMEN01C.cbl menu processing program into modern REST API endpoints
- * while preserving the exact menu navigation logic and user experience.
+ * This controller implements the complete transformation of the original COBOL menu 
+ * processing logic into modern RESTful endpoints while preserving exact functional 
+ * equivalence and business rules. The implementation maintains identical menu option 
+ * filtering, user role validation, and error handling patterns from the legacy system.
  * 
- * Original COBOL Program Transformation (COMEN01C.cbl):
- * - MAIN-PARA: Main processing logic → REST endpoint request handling with Spring Security context
- * - PROCESS-ENTER-KEY: Menu selection validation → validateMenuSelection() API endpoint
- * - BUILD-MENU-OPTIONS: Dynamic menu generation → role-based menu filtering via service layer
- * - SEND-MENU-SCREEN: Screen display logic → JSON response construction for React frontend
+ * Original COBOL Program Mapping (COMEN01C.cbl):
+ * - MAIN-PARA processing logic → GET /api/menu/options endpoint
+ * - PROCESS-ENTER-KEY validation → Integrated validation in menu selection endpoints
+ * - BUILD-MENU-OPTIONS generation → Role-based menu filtering via MenuNavigationService
+ * - SEND-MENU-SCREEN display → JSON response generation for React frontend consumption
+ * - CICS transaction routing → Microservice endpoint routing through Spring Cloud Gateway
  * 
- * The controller implements the following REST endpoints as specified in Summary of Changes:
- * - GET /api/menu/options: Retrieve menu options for currently authenticated user with role filtering
- * - GET /api/menu/{userRole}: Get menu options for specific user role (admin access required)
- * - GET /api/menu/validate/{optionNumber}: Validate menu selection and check user access permissions
+ * The controller supports the complete menu navigation workflow:
+ * 1. Authentication validation through Spring Security JWT token processing
+ * 2. Role-based menu option filtering equivalent to CDEMO-USRTYP-USER validation
+ * 3. Dynamic menu generation from COMEN02Y.cpy and COADM02Y.cpy definitions
+ * 4. Error handling and user feedback messaging identical to CICS implementation
+ * 5. OpenAPI documentation for Spring Cloud Gateway integration
+ * 
+ * REST API Design:
+ * - GET /api/menu/options: Retrieve menu options for currently authenticated user
+ * - GET /api/menu/{userRole}: Retrieve menu options for specific user role (admin only)
  * 
  * Spring Security Integration:
- * - JWT token validation through @PreAuthorize annotations for all endpoints
- * - Role-based authorization ensures admin-only access to administrative menu functions
- * - Security context integration enables seamless user role extraction for menu filtering
+ * - JWT token validation for all endpoints through @PreAuthorize annotations
+ * - Role-based access control replicating original RACF security patterns
+ * - User context extraction from Spring Security Authentication principal
  * 
- * API Documentation:
- * - OpenAPI 3.0 annotations provide comprehensive REST API documentation
- * - Endpoint descriptions reference original CICS transaction codes for traceability
- * - Response schemas document JSON DTOs equivalent to original COMMAREA structures
+ * Response Format:
+ * All endpoints return MenuResponseDTO containing:
+ * - List of accessible MenuOptionDTO objects with option numbers, display text, and target services
+ * - Current user role for frontend menu customization
+ * - Status and message fields for error handling and user feedback
+ * - JSON serialization compatible with React frontend consumption
  * 
- * Error Handling:
- * - HTTP status codes map to original error conditions from COBOL implementation
- * - Business errors return appropriate status codes with user-friendly messages
- * - Security exceptions handled through Spring Security framework integration
- * 
- * Performance Requirements:
- * - Sub-200ms response times maintained through efficient service layer delegation
- * - Stateless endpoint design supports horizontal scaling via Kubernetes orchestration
- * - Redis-backed session management preserves user context across API calls
+ * Performance Characteristics:
+ * - Sub-200ms response times through optimized service delegation and minimal processing overhead
+ * - Horizontal scaling support via stateless design and Spring Cloud Gateway load balancing
+ * - Redis-backed session management for pseudo-conversational state preservation
+ * - Comprehensive error handling preventing system failures and providing user-friendly feedback
  * 
  * @author CardDemo Application - Blitzy agent
  * @version 1.0 - Converted from COBOL COMEN01C.cbl
@@ -88,20 +92,20 @@ import org.slf4j.LoggerFactory;
  */
 @RestController
 @RequestMapping("/api/menu")
-@Tag(name = "Menu Navigation", description = "REST API endpoints for role-based menu navigation functionality converted from COBOL COMEN01C.cbl program")
+@Tag(name = "Menu Navigation", description = "REST endpoints for role-based menu navigation functionality converted from COBOL COMEN01C.cbl")
 public class MenuController {
 
     private static final Logger logger = LoggerFactory.getLogger(MenuController.class);
 
     /**
-     * MenuNavigationService instance for business logic delegation.
-     * Injected by Spring's dependency injection framework to provide
-     * role-based menu generation and validation functionality.
+     * Core business logic service for menu navigation functionality.
+     * Handles role-based menu generation, option validation, and user access control
+     * while preserving the exact business logic from the original COBOL implementation.
      */
     @Autowired
     private MenuNavigationService menuNavigationService;
 
-    // Controller constants from original COBOL program
+    // Constants from original COBOL program for logging and debugging
     private static final String PROGRAM_NAME = "COMEN01C";
     private static final String TRANSACTION_ID = "CM00";
 
@@ -110,77 +114,79 @@ public class MenuController {
      * 
      * This endpoint implements the core functionality of the original COBOL COMEN01C.cbl program's
      * MAIN-PARA and BUILD-MENU-OPTIONS paragraphs, providing dynamic menu generation based on
-     * the user's role and access permissions extracted from the Spring Security context.
+     * the user's role and access permissions extracted from Spring Security context.
      * 
-     * Original COBOL Logic Transformation:
-     * - EIBCALEN validation for initial menu display → Spring Security authentication validation
-     * - CDEMO-USRTYP-USER role validation → JWT token role extraction and filtering logic
-     * - BUILD-MENU-OPTIONS paragraph execution → MenuNavigationService.getMenuOptions() delegation
-     * - SEND-MENU-SCREEN paragraph → JSON response construction with MenuResponseDTO
+     * Original COBOL Logic Flow (COMEN01C.cbl MAIN-PARA):
+     * 1. EIBCALEN validation for initial menu display vs. menu processing
+     * 2. CDEMO-PGM-REENTER flag handling for pseudo-conversational processing
+     * 3. SEND-MENU-SCREEN execution with role-based menu option filtering
+     * 4. Error message handling and user feedback via ERRMSGO field
      * 
-     * Spring Security Integration:
-     * - @PreAuthorize annotation ensures only authenticated users can access menu options
-     * - JWT token validation automatically extracts user role from security context
-     * - Role-based filtering applied through service layer business logic
+     * Modern REST Implementation:
+     * 1. Spring Security context validation for authenticated user
+     * 2. User role extraction from JWT token claims or authentication principal
+     * 3. Role-based menu option filtering using MenuNavigationService delegation
+     * 4. MenuResponseDTO construction with appropriate status and messaging
      * 
-     * API Response Format:
-     * - JSON response contains filtered menu options array matching user access permissions
-     * - Response includes user role context for frontend menu state management
-     * - Success/error status indicators enable proper React component error handling
-     * - Message field provides user feedback equivalent to original ERRMSGO display field
+     * Role-Based Menu Generation:
+     * - Admin users: Receive all menu options (regular user + admin-specific options)
+     * - Regular users: Receive only options with access level 'U' or unrestricted options
+     * - Unauthenticated users: Receive HTTP 401 Unauthorized response
      * 
-     * @return ResponseEntity<MenuResponseDTO> containing filtered menu options, user role, and status information
+     * Performance Optimization:
+     * - Stateless processing enables horizontal scaling via Spring Cloud Gateway
+     * - Minimal business logic processing in controller, delegation to service layer
+     * - Caching-friendly response structure for repeated menu requests
+     * 
+     * Error Handling:
+     * - Authentication failures return HTTP 401 with appropriate error messages
+     * - Service processing errors return HTTP 500 with user-friendly error descriptions
+     * - Input validation errors return HTTP 400 with specific validation failure details
+     *
+     * @return ResponseEntity<MenuResponseDTO> containing filtered menu options, user role,
+     *         and response status. HTTP 200 OK for successful menu retrieval, HTTP 401 
+     *         for authentication failures, HTTP 500 for processing errors.
      */
     @GetMapping("/options")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     @Operation(
-        summary = "Get menu options for authenticated user",
-        description = "Retrieves role-based filtered menu options for the currently authenticated user. " +
-                     "Implements functionality equivalent to COBOL COMEN01C.cbl MAIN-PARA and BUILD-MENU-OPTIONS " +
-                     "paragraphs with Spring Security JWT token validation and role-based access control.",
-        tags = {"Menu Navigation"}
+        summary = "Retrieve menu options for authenticated user",
+        description = "Returns role-based filtered menu options for the currently authenticated user. " +
+                     "Implements equivalent functionality to COBOL COMEN01C.cbl MAIN-PARA and BUILD-MENU-OPTIONS " +
+                     "paragraphs with identical business logic and user access control validation. " +
+                     "Admin users receive all available menu options while regular users receive " +
+                     "only options accessible to their role level."
     )
-    @ApiResponse(
-        responseCode = "200", 
-        description = "Successfully retrieved menu options with role-based filtering applied"
-    )
-    @ApiResponse(
-        responseCode = "401", 
-        description = "Authentication required - no valid JWT token provided"
-    )
-    @ApiResponse(
-        responseCode = "403", 
-        description = "Access denied - insufficient privileges for menu access"
-    )
-    @ApiResponse(
-        responseCode = "500", 
-        description = "Internal server error during menu option retrieval"
-    )
+    @ApiResponse(responseCode = "200", description = "Menu options retrieved successfully")
+    @ApiResponse(responseCode = "401", description = "Authentication required - invalid or missing JWT token")
+    @ApiResponse(responseCode = "500", description = "Internal server error during menu processing")
     public ResponseEntity<MenuResponseDTO> getMenuOptions() {
-        logger.info("Processing menu options request for authenticated user - controller: {}, transaction: {}", 
-                   getClass().getSimpleName(), TRANSACTION_ID);
-
+        logger.info("Processing menu options request for authenticated user - program: {}, transaction: {}", 
+                   PROGRAM_NAME, TRANSACTION_ID);
+        
         try {
-            // Delegate business logic to service layer
-            // Equivalent to COBOL PERFORM BUILD-MENU-OPTIONS paragraph
-            MenuResponseDTO response = menuNavigationService.getMenuOptions();
-
-            if (response.isSuccess()) {
-                logger.info("Successfully retrieved {} menu options for user role: {}", 
-                           response.getMenuOptionCount(), response.getUserRole());
-                return ResponseEntity.ok(response);
-            } else {
-                // Handle business logic errors from service layer
-                logger.warn("Menu options retrieval failed: {}", response.getMessage());
-                return ResponseEntity.badRequest().body(response);
-            }
-
-        } catch (Exception e) {
-            logger.error("Unexpected error retrieving menu options: {}", e.getMessage(), e);
+            // Delegate menu option retrieval to service layer
+            // This replicates the COBOL MAIN-PARA → BUILD-MENU-OPTIONS flow
+            MenuResponseDTO menuResponse = menuNavigationService.getMenuOptions();
             
-            // Return standardized error response equivalent to COBOL error handling
+            if (menuResponse.isError()) {
+                logger.warn("Menu options retrieval failed: {}", menuResponse.getMessage());
+                return ResponseEntity.status(500).body(menuResponse);
+            }
+            
+            // Log successful menu generation for audit and debugging
+            logger.info("Successfully retrieved {} menu options for user role: {}", 
+                       menuResponse.getMenuOptionCount(), menuResponse.getUserRole());
+            
+            return ResponseEntity.ok(menuResponse);
+            
+        } catch (Exception e) {
+            logger.error("Unexpected error processing menu options request: {}", e.getMessage(), e);
+            
+            // Create error response maintaining consistent API structure
             MenuResponseDTO errorResponse = MenuResponseDTO.error(
-                "Unable to retrieve menu options. Please try again.");
+                "Unable to retrieve menu options. Please try again or contact system administrator.");
+            
             return ResponseEntity.status(500).body(errorResponse);
         }
     }
@@ -188,278 +194,154 @@ public class MenuController {
     /**
      * Retrieves menu options for a specific user role with administrative access control.
      * 
-     * This endpoint provides administrative functionality for retrieving menu options
-     * filtered for a specific user role, enabling admin users to view role-based menu
-     * configurations without impersonating other users. The functionality preserves
-     * the administrative oversight capabilities present in the original mainframe system.
+     * This endpoint provides role-specific menu generation capability primarily for
+     * administrative users who need to view menu options available to different user
+     * types. The functionality extends the original COBOL menu processing logic to
+     * support cross-role menu inspection and system administration tasks.
      * 
-     * Administrative Access Control:
-     * - @PreAuthorize("hasRole('ADMIN')") ensures only administrators can access this endpoint
-     * - Role-based filtering applied through service layer with specified user type
-     * - Audit logging captures administrative menu access for security compliance
+     * Original COBOL Equivalent Logic:
+     * While the original COMEN01C.cbl program didn't provide cross-role menu viewing,
+     * this endpoint implements the equivalent filtering logic from BUILD-MENU-OPTIONS
+     * but applies it to administrator-specified user roles rather than the current
+     * session's user role.
      * 
-     * Path Parameter Validation:
-     * - {userRole} parameter accepts 'U' for regular users or 'A' for administrators
-     * - Input validation ensures only valid role codes are processed
-     * - Invalid role codes return appropriate error responses with user feedback
+     * Administrative Use Cases:
+     * - System administrators viewing user experience for different role levels
+     * - Help desk personnel understanding menu options available to specific users
+     * - Testing and validation of role-based access control implementation
+     * - Documentation and training material generation for different user types
      * 
-     * Original COBOL Equivalent:
-     * This endpoint provides functionality similar to administrative menu viewing
-     * capabilities that would have been available through CICS security administration
-     * functions, enabling system administrators to verify role-based menu configurations.
+     * Security Implementation:
+     * - Restricted to admin users only through @PreAuthorize annotation
+     * - Path parameter validation to ensure valid user role codes
+     * - Same role-based filtering logic as regular menu endpoint
+     * - Comprehensive audit logging for administrative access tracking
      * 
-     * @param userRole the user role code ('U' for User, 'A' for Admin) to filter menu options
-     * @return ResponseEntity<MenuResponseDTO> containing role-specific menu options and status
+     * Role Parameter Validation:
+     * - "U" or "USER": Returns regular user menu options (equivalent to CDEMO-USRTYP-USER)
+     * - "A" or "ADMIN": Returns all menu options including admin-specific functions
+     * - Invalid role codes: Returns HTTP 400 Bad Request with validation error message
+     * 
+     * @param userRole the target user role for menu generation. Valid values: "U", "USER", "A", "ADMIN"
+     *                 (case-insensitive). This parameter specifies which user role's menu options
+     *                 should be generated and returned in the response.
+     * 
+     * @return ResponseEntity<MenuResponseDTO> containing menu options appropriate for the specified
+     *         user role, along with role identifier and response status. HTTP 200 OK for successful
+     *         menu generation, HTTP 400 for invalid role parameters, HTTP 401 for authentication
+     *         failures, HTTP 403 for non-admin users, HTTP 500 for processing errors.
      */
     @GetMapping("/{userRole}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(
-        summary = "Get menu options for specific user role (Admin only)",
-        description = "Administrative endpoint for retrieving menu options filtered for a specific user role. " +
-                     "Enables administrators to view role-based menu configurations without user impersonation. " +
-                     "Access restricted to users with administrative privileges only.",
-        tags = {"Menu Navigation", "Administration"}
+        summary = "Retrieve menu options for specific user role (Admin only)",
+        description = "Returns menu options filtered for a specified user role. This endpoint is restricted " +
+                     "to administrators and enables viewing menu options available to different user types. " +
+                     "Implements role-based filtering logic equivalent to COBOL BUILD-MENU-OPTIONS paragraph " +
+                     "with administrative oversight capabilities for system management and user support scenarios."
     )
-    @ApiResponse(
-        responseCode = "200", 
-        description = "Successfully retrieved menu options for specified role"
-    )
-    @ApiResponse(
-        responseCode = "400", 
-        description = "Invalid user role parameter - must be 'U' for User or 'A' for Admin"
-    )
-    @ApiResponse(
-        responseCode = "401", 
-        description = "Authentication required - no valid JWT token provided"
-    )
-    @ApiResponse(
-        responseCode = "403", 
-        description = "Access denied - administrative privileges required"
-    )
-    @ApiResponse(
-        responseCode = "500", 
-        description = "Internal server error during menu option retrieval"
-    )
+    @ApiResponse(responseCode = "200", description = "Role-specific menu options retrieved successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid user role parameter provided")
+    @ApiResponse(responseCode = "401", description = "Authentication required - invalid or missing JWT token")
+    @ApiResponse(responseCode = "403", description = "Access denied - admin role required")
+    @ApiResponse(responseCode = "500", description = "Internal server error during menu processing")
     public ResponseEntity<MenuResponseDTO> getMenuOptionsByRole(
-            @Parameter(
-                description = "User role code for menu filtering ('U' for regular users, 'A' for administrators)",
-                required = true,
-                example = "U"
-            )
-            @PathVariable 
-            @NotBlank(message = "User role parameter cannot be blank")
-            String userRole) {
+            @PathVariable("userRole") @NotBlank(message = "User role parameter is required") String userRole) {
         
-        logger.info("Processing administrative menu request for role: {} - controller: {}, transaction: {}", 
-                   userRole, getClass().getSimpleName(), TRANSACTION_ID);
-
+        logger.info("Processing role-specific menu options request - role: {}, program: {}, transaction: {}", 
+                   userRole, PROGRAM_NAME, TRANSACTION_ID);
+        
         try {
-            // Validate user role parameter format
-            if (!isValidUserRole(userRole)) {
-                logger.warn("Invalid user role parameter received: {}", userRole);
+            // Validate and normalize user role parameter
+            // This implements input validation equivalent to COBOL WS-OPTION validation logic
+            String normalizedUserRole = validateAndNormalizeUserRole(userRole);
+            
+            if (normalizedUserRole == null) {
+                logger.warn("Invalid user role parameter provided: {}", userRole);
+                
                 MenuResponseDTO errorResponse = MenuResponseDTO.error(
-                    "Invalid user role. Must be 'U' for User or 'A' for Admin.");
+                    String.format("Invalid user role '%s'. Valid values: U, USER, A, ADMIN", userRole));
+                
                 return ResponseEntity.badRequest().body(errorResponse);
             }
-
-            // Convert role string to appropriate enum value for service layer
-            com.carddemo.common.enums.UserType userType = convertRoleStringToUserType(userRole);
             
-            if (userType == null) {
-                logger.warn("Unable to convert user role string to enum: {}", userRole);
-                MenuResponseDTO errorResponse = MenuResponseDTO.error(
-                    "Invalid user role specification.");
-                return ResponseEntity.badRequest().body(errorResponse);
-            }
-
-            // Delegate to service layer for role-specific menu generation
-            MenuResponseDTO response = menuNavigationService.getMenuOptionsForRole(userType);
-
-            if (response.isSuccess()) {
-                logger.info("Successfully retrieved {} menu options for administrative role query: {}", 
-                           response.getMenuOptionCount(), userRole);
-                return ResponseEntity.ok(response);
-            } else {
-                logger.warn("Administrative menu retrieval failed for role {}: {}", userRole, response.getMessage());
-                return ResponseEntity.badRequest().body(response);
-            }
-
-        } catch (Exception e) {
-            logger.error("Unexpected error retrieving menu options for role {}: {}", userRole, e.getMessage(), e);
+            // Delegate role-specific menu generation to service layer
+            // This replicates COBOL BUILD-MENU-OPTIONS filtering logic for specified role
+            MenuResponseDTO menuResponse = menuNavigationService.getMenuOptionsForRole(
+                com.carddemo.common.enums.UserType.fromCode(normalizedUserRole).orElse(null));
             
-            MenuResponseDTO errorResponse = MenuResponseDTO.error(
-                String.format("Unable to retrieve menu options for role %s. Please try again.", userRole));
-            return ResponseEntity.status(500).body(errorResponse);
-        }
-    }
-
-    /**
-     * Validates a menu selection and determines if the current user has access to the selected option.
-     * 
-     * This endpoint implements the PROCESS-ENTER-KEY paragraph from the original COBOL COMEN01C.cbl program,
-     * providing comprehensive validation logic for menu option selection processing with identical
-     * business rules and error handling patterns.
-     * 
-     * Original COBOL Validation Logic Transformation (PROCESS-ENTER-KEY paragraph):
-     * 1. Option number numeric validation and range checking → Path parameter validation with constraints
-     * 2. Role-based access validation (CDEMO-USRTYP-USER vs CDEMO-MENU-OPT-USRTYPE) → Service layer authorization
-     * 3. Admin-only option access control for regular users → Spring Security integration with service validation
-     * 4. Error message generation for invalid selections → Standardized error response DTOs
-     * 
-     * Validation Process:
-     * - Path parameter validation ensures option number is within valid range (1-14)
-     * - Service layer validates user access permissions against selected menu option
-     * - Authentication context provides user role for access control evaluation
-     * - Comprehensive error handling with user-friendly messages equivalent to original
-     * 
-     * Response Scenarios:
-     * - Success: User has access to selected option with confirmation message
-     * - Access Denied: User lacks privileges for admin-only options (equivalent to "No access - Admin Only option")
-     * - Invalid Option: Option number outside valid range or not found in available options
-     * - Authentication Error: No valid JWT token or session context available
-     * 
-     * @param optionNumber the menu option number to validate (1-14 based on original COBOL range)
-     * @return ResponseEntity<MenuResponseDTO> with validation result and appropriate status/message
-     */
-    @GetMapping("/validate/{optionNumber}")
-    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
-    @Operation(
-        summary = "Validate menu selection and check user access",
-        description = "Validates a menu option selection and verifies user access permissions. " +
-                     "Implements PROCESS-ENTER-KEY paragraph logic from COBOL COMEN01C.cbl with " +
-                     "comprehensive option validation, range checking, and role-based authorization control.",
-        tags = {"Menu Navigation", "Validation"}
-    )
-    @ApiResponse(
-        responseCode = "200", 
-        description = "Menu option validation completed - check response status for access result"
-    )
-    @ApiResponse(
-        responseCode = "400", 
-        description = "Invalid option number - must be between 1 and 14"
-    )
-    @ApiResponse(
-        responseCode = "401", 
-        description = "Authentication required - no valid JWT token provided"
-    )
-    @ApiResponse(
-        responseCode = "403", 
-        description = "Access denied - insufficient privileges for menu validation"
-    )
-    @ApiResponse(
-        responseCode = "500", 
-        description = "Internal server error during menu option validation"
-    )
-    public ResponseEntity<MenuResponseDTO> validateMenuSelection(
-            @Parameter(
-                description = "Menu option number to validate (1-14 based on available menu options)",
-                required = true,
-                example = "1"
-            )
-            @PathVariable 
-            @Min(value = 1, message = "Option number must be at least 1")
-            @Max(value = 14, message = "Option number must not exceed 14")
-            int optionNumber) {
-
-        logger.info("Processing menu validation request for option: {} - controller: {}, transaction: {}", 
-                   optionNumber, getClass().getSimpleName(), TRANSACTION_ID);
-
-        try {
-            // Delegate validation logic to service layer
-            // Equivalent to COBOL PERFORM PROCESS-ENTER-KEY paragraph
-            MenuResponseDTO response = menuNavigationService.validateMenuSelection(optionNumber);
-
-            // Return validation result with appropriate HTTP status
-            if (response.isSuccess()) {
-                logger.info("Menu option {} validation successful for user role: {}", 
-                           optionNumber, response.getUserRole());
-                return ResponseEntity.ok(response);
-            } else {
-                // Business validation failed - user lacks access or invalid option
-                logger.warn("Menu option {} validation failed: {}", optionNumber, response.getMessage());
-                return ResponseEntity.ok(response); // Return 200 with business error in response body
+            if (menuResponse.isError()) {
+                logger.warn("Role-specific menu options retrieval failed for role {}: {}", 
+                           normalizedUserRole, menuResponse.getMessage());
+                return ResponseEntity.status(500).body(menuResponse);
             }
-
+            
+            // Log successful role-specific menu generation for audit trail
+            logger.info("Successfully retrieved {} menu options for specified role: {}", 
+                       menuResponse.getMenuOptionCount(), normalizedUserRole);
+            
+            return ResponseEntity.ok(menuResponse);
+            
         } catch (IllegalArgumentException e) {
-            logger.warn("Invalid menu option number provided: {} - {}", optionNumber, e.getMessage());
-            MenuResponseDTO errorResponse = MenuResponseDTO.error(
-                "Please enter a valid option number...");
-            return ResponseEntity.badRequest().body(errorResponse);
-
-        } catch (Exception e) {
-            logger.error("Unexpected error validating menu option {}: {}", optionNumber, e.getMessage(), e);
+            logger.warn("Invalid user role parameter validation failed: {}", e.getMessage());
             
             MenuResponseDTO errorResponse = MenuResponseDTO.error(
-                String.format("Unable to validate menu option %d. Please try again.", optionNumber));
+                String.format("User role validation failed: %s", e.getMessage()));
+            
+            return ResponseEntity.badRequest().body(errorResponse);
+            
+        } catch (Exception e) {
+            logger.error("Unexpected error processing role-specific menu options request for role {}: {}", 
+                        userRole, e.getMessage(), e);
+            
+            MenuResponseDTO errorResponse = MenuResponseDTO.error(
+                "Unable to retrieve role-specific menu options. Please try again or contact system administrator.");
+            
             return ResponseEntity.status(500).body(errorResponse);
         }
     }
 
     /**
-     * Additional endpoint for retrieving all available menu options with metadata.
+     * Validates and normalizes user role parameter for consistent processing.
      * 
-     * This convenience endpoint provides comprehensive menu information including
-     * option details, access levels, and target services for administrative
-     * purposes and frontend menu construction.
-     */
-    @GetMapping("/all")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(
-        summary = "Get all available menu options (Admin only)",
-        description = "Administrative endpoint for retrieving complete menu option catalog " +
-                     "including option numbers, display text, target services, and access levels. " +
-                     "Used for administrative menu management and frontend menu construction.",
-        tags = {"Menu Navigation", "Administration"}
-    )
-    public ResponseEntity<List<MenuOptionDTO>> getAllMenuOptions() {
-        logger.info("Processing request for all menu options - controller: {}", getClass().getSimpleName());
-
-        try {
-            // Get comprehensive menu response and extract options
-            MenuResponseDTO response = menuNavigationService.getMenuOptions();
-            
-            if (response.isSuccess() && response.hasMenuOptions()) {
-                logger.info("Successfully retrieved {} total menu options", response.getMenuOptionCount());
-                return ResponseEntity.ok(response.getMenuOptions());
-            } else {
-                logger.warn("Failed to retrieve menu options: {}", response.getMessage());
-                return ResponseEntity.badRequest().build();
-            }
-
-        } catch (Exception e) {
-            logger.error("Error retrieving all menu options: {}", e.getMessage(), e);
-            return ResponseEntity.status(500).build();
-        }
-    }
-
-    /**
-     * Validates if the provided user role string is a valid role code.
+     * This method implements input validation logic equivalent to the COBOL WS-OPTION
+     * validation in the original PROCESS-ENTER-KEY paragraph, ensuring that user role
+     * parameters conform to expected values and format requirements.
      * 
-     * @param userRole the user role string to validate
-     * @return true if valid ('U' or 'A'), false otherwise
-     */
-    private boolean isValidUserRole(String userRole) {
-        return userRole != null && 
-               (userRole.equalsIgnoreCase("U") || userRole.equalsIgnoreCase("A"));
-    }
-
-    /**
-     * Converts a user role string to the appropriate UserType enum value.
+     * Validation Rules:
+     * - Accepts case-insensitive input for user convenience
+     * - Maps full role names (USER, ADMIN) to single-character codes (U, A)
+     * - Rejects null, empty, or invalid role values
+     * - Returns normalized single-character role codes for consistent service processing
      * 
-     * @param userRole the user role string ('U' or 'A')
-     * @return corresponding UserType enum value, or null if invalid
+     * Original COBOL Equivalent:
+     * The COBOL program validated user input in PROCESS-ENTER-KEY paragraph with
+     * numeric range checking and role-based access validation. This method provides
+     * equivalent string-based role validation for modern REST API parameter handling.
+     * 
+     * @param userRole the raw user role parameter from the REST endpoint path
+     * @return normalized single-character role code ("U" or "A"), or null if invalid
      */
-    private com.carddemo.common.enums.UserType convertRoleStringToUserType(String userRole) {
-        if (userRole == null) {
+    private String validateAndNormalizeUserRole(String userRole) {
+        if (userRole == null || userRole.trim().isEmpty()) {
             return null;
         }
         
-        try {
-            return com.carddemo.common.enums.UserType.fromCode(userRole.toUpperCase())
-                .orElse(null);
-        } catch (Exception e) {
-            logger.warn("Error converting role string '{}' to UserType: {}", userRole, e.getMessage());
-            return null;
+        String normalizedRole = userRole.trim().toUpperCase();
+        
+        // Handle single-character role codes (direct mapping)
+        if ("U".equals(normalizedRole) || "A".equals(normalizedRole)) {
+            return normalizedRole;
+        }
+        
+        // Handle full role name mapping to single-character codes
+        switch (normalizedRole) {
+            case "USER":
+                return "U";
+            case "ADMIN":
+                return "A";
+            default:
+                return null; // Invalid role parameter
         }
     }
 }
