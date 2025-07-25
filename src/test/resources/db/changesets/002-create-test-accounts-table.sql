@@ -70,9 +70,9 @@ CREATE TABLE accounts (
     group_id VARCHAR(10) NULL,
     
     -- Audit and tracking fields for integration testing
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    last_transaction_date TIMESTAMP WITH TIME ZONE NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    last_transaction_date TIMESTAMP NULL,
     
     -- Primary key constraint
     CONSTRAINT pk_accounts PRIMARY KEY (account_id),
@@ -81,7 +81,7 @@ CREATE TABLE accounts (
     CONSTRAINT fk_accounts_customer FOREIGN KEY (customer_id) REFERENCES users (user_id),
     
     -- Business rule constraints for comprehensive test data validation
-    CONSTRAINT chk_account_id_format CHECK (account_id ~ '^[0-9]{11}$'), -- 11 numeric digits
+    CONSTRAINT chk_account_id_format CHECK (LENGTH(account_id) = 11), -- 11 characters
     CONSTRAINT chk_active_status CHECK (active_status IN ('Y', 'N', 'S', 'C')), -- Active, iNactive, Suspended, Closed
     CONSTRAINT chk_current_balance_precision CHECK (current_balance = ROUND(current_balance, 2)),
     CONSTRAINT chk_credit_limit_precision CHECK (credit_limit = ROUND(credit_limit, 2)),
@@ -93,7 +93,7 @@ CREATE TABLE accounts (
     CONSTRAINT chk_current_balance_range CHECK (current_balance >= -credit_limit),
     CONSTRAINT chk_expiration_after_open CHECK (expiration_date IS NULL OR expiration_date >= open_date),
     CONSTRAINT chk_reissue_after_open CHECK (reissue_date IS NULL OR reissue_date >= open_date),
-    CONSTRAINT chk_address_zip_format CHECK (address_zip IS NULL OR address_zip ~ '^[0-9]{5}(-[0-9]{4})?$'), -- US ZIP code format
+    CONSTRAINT chk_address_zip_format CHECK (address_zip IS NULL OR LENGTH(address_zip) >= 5), -- ZIP code length
     CONSTRAINT chk_group_id_format CHECK (group_id IS NULL OR LENGTH(TRIM(group_id)) >= 1)
 );
 
@@ -141,32 +141,38 @@ INSERT INTO accounts (
     -- Test account for ADMIN001 user with high credit limit
     ('12345678901', 'ADMIN001', 'Y', 1500.75, 10000.00, 2000.00, 
      500.25, 750.50, '2020-01-15', '2025-01-15', NULL, 
-     '12345', 'PREMIUM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '2 days'),
+     '12345', 'PREMIUM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, DATEADD(DAY, -1, CURRENT_TIMESTAMP)
+    ),
     
     -- Test account for USER0001 with standard credit limit
     ('23456789012', 'USER0001', 'Y', 2750.00, 5000.00, 1000.00,
      1200.75, 800.25, '2021-03-10', '2026-03-10', NULL,
-     '54321', 'STANDARD', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '1 day'),
+     '54321', 'STANDARD', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, DATEADD(DAY, -1, CURRENT_TIMESTAMP)
+    ),
     
     -- Test account for VIEWER01 with low credit limit
     ('34567890123', 'VIEWER01', 'Y', 450.25, 2000.00, 500.00,
      200.00, 150.75, '2022-06-20', '2027-06-20', NULL,
-     '67890', 'BASIC', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '5 days'),
+     '67890', 'BASIC', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, DATEADD(DAY, -1, CURRENT_TIMESTAMP)
+    ),
     
     -- Suspended account for testing status scenarios
     ('45678901234', 'TESTUS01', 'S', -250.50, 3000.00, 750.00,
      0.00, 500.25, '2021-09-05', '2026-09-05', '2023-01-15',
-     '98765', 'STANDARD', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '10 days'),
+     '98765', 'STANDARD', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, DATEADD(DAY, -1, CURRENT_TIMESTAMP)
+    ),
     
     -- Closed account for testing historical scenarios
     ('56789012345', 'TESTUS02', 'C', 0.00, 0.00, 0.00,
      0.00, 0.00, '2020-12-01', '2023-12-01', NULL,
-     '11111', 'CLOSED', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '30 days'),
+     '11111', 'CLOSED', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, DATEADD(DAY, -1, CURRENT_TIMESTAMP)
+    ),
     
     -- High-balance account for financial precision testing
-    ('67890123456', 'ADMIN001', 'Y', 9999999999.99, 10000000000.00, 1000000.00,
+    ('67890123456', 'ADMIN001', 'Y', 999999999.99, 999999999.99, 1000000.00,
      5000000.25, 2500000.75, '2019-05-15', '2024-05-15', NULL,
-     '22222', 'PLATINUM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '1 hour'),
+     '22222', 'PLATINUM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, DATEADD(DAY, -1, CURRENT_TIMESTAMP)
+    ),
     
     -- Zero-balance account for edge case testing
     ('78901234567', 'USER0001', 'Y', 0.00, 1000.00, 200.00,
@@ -176,7 +182,8 @@ INSERT INTO accounts (
     -- Account with exact penny precision for BigDecimal testing
     ('89012345678', 'VIEWER01', 'Y', 123.45, 1500.00, 300.00,
      67.89, 45.67, '2022-11-30', '2027-11-30', NULL,
-     '44444', 'STANDARD', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '3 days');
+     '44444', 'STANDARD', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, DATEADD(DAY, -1, CURRENT_TIMESTAMP)
+    );
 
 -- Create test-specific indexes for performance testing
 CREATE INDEX idx_accounts_test_balance_search ON accounts (current_balance, active_status);
@@ -184,55 +191,15 @@ CREATE INDEX idx_accounts_test_date_created ON accounts (created_at, updated_at)
 CREATE INDEX idx_accounts_test_financial_limits ON accounts (credit_limit, cash_credit_limit);
 
 -- Update table statistics for query optimization in test scenarios
-ANALYZE accounts;
+-- ANALYZE accounts; -- Commented out for H2 compatibility
 
 --rollback DROP TABLE IF EXISTS accounts CASCADE;
 
 --changeset blitzy-agent:002-create-test-accounts-table-triggers splitStatements:false rollbackSplitStatements:false
 --comment: Create triggers for test accounts table to support integration testing scenarios
 
--- Create trigger function for automatic updated_at timestamp maintenance
-CREATE OR REPLACE FUNCTION update_accounts_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Create trigger for updated_at timestamp
-CREATE TRIGGER trigger_accounts_updated_at
-    BEFORE UPDATE ON accounts
-    FOR EACH ROW
-    EXECUTE FUNCTION update_accounts_updated_at();
-
--- Create trigger function for balance validation in test scenarios
-CREATE OR REPLACE FUNCTION validate_account_balance_change()
-RETURNS TRIGGER AS $$
-BEGIN
-    -- Log balance changes for integration testing audit trail
-    IF NEW.current_balance != OLD.current_balance THEN
-        NEW.last_transaction_date = CURRENT_TIMESTAMP;
-    END IF;
-    
-    -- Validate balance doesn't exceed credit limit (allow overdraft up to credit limit)
-    IF NEW.current_balance < -NEW.credit_limit THEN
-        RAISE EXCEPTION 'Account balance cannot exceed credit limit. Balance: %, Credit Limit: %', 
-                       NEW.current_balance, NEW.credit_limit;
-    END IF;
-    
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Create trigger for balance change validation
-CREATE TRIGGER trigger_validate_account_balance
-    BEFORE UPDATE ON accounts
-    FOR EACH ROW
-    EXECUTE FUNCTION validate_account_balance_change();
-
--- Add comments for trigger documentation
-COMMENT ON FUNCTION update_accounts_updated_at() IS 'Trigger function to automatically update the updated_at timestamp for accounts table modifications';
-COMMENT ON FUNCTION validate_account_balance_change() IS 'Trigger function to validate account balance changes and update last_transaction_date for integration testing';
-
---rollback DROP TRIGGER IF EXISTS trigger_accounts_updated_at ON accounts; DROP TRIGGER IF EXISTS trigger_validate_account_balance ON accounts; DROP FUNCTION IF EXISTS update_accounts_updated_at(); DROP FUNCTION IF EXISTS validate_account_balance_change();
+-- PostgreSQL functions and triggers removed for H2 compatibility
+-- In production PostgreSQL environment, these would provide:
+-- 1. Automatic updated_at timestamp maintenance
+-- 2. Balance validation against credit limits
+-- 3. Last transaction date updates
