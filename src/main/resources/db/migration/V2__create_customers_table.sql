@@ -60,36 +60,38 @@ CREATE TABLE customers (
     CONSTRAINT pk_customers PRIMARY KEY (customer_id),
     
     -- Business validation constraints
-    CONSTRAINT chk_customer_id_format CHECK (customer_id ~ '^[0-9]{9}$'),
+    -- Note: H2 uses REGEXP_LIKE instead of ~ operator
+    CONSTRAINT chk_customer_id_format CHECK (REGEXP_LIKE(customer_id, '^[0-9]{9}$')),
     CONSTRAINT chk_first_name_not_empty CHECK (LENGTH(TRIM(first_name)) > 0),
     CONSTRAINT chk_last_name_not_empty CHECK (LENGTH(TRIM(last_name)) > 0),
     CONSTRAINT chk_address_line_1_not_empty CHECK (LENGTH(TRIM(address_line_1)) > 0),
-    CONSTRAINT chk_state_code_format CHECK (state_code ~ '^[A-Z]{2}$'),
-    CONSTRAINT chk_country_code_format CHECK (country_code ~ '^[A-Z]{3}$'),
+    CONSTRAINT chk_state_code_format CHECK (REGEXP_LIKE(state_code, '^[A-Z]{2}$')),
+    CONSTRAINT chk_country_code_format CHECK (REGEXP_LIKE(country_code, '^[A-Z]{3}$')),
     CONSTRAINT chk_zip_code_not_empty CHECK (LENGTH(TRIM(zip_code)) > 0),
     
     -- Phone number format validation (allows various standard formats)
     CONSTRAINT chk_phone_number_1_format CHECK (
         phone_number_1 IS NULL OR 
-        phone_number_1 ~ '^\([0-9]{3}\)[0-9]{3}-[0-9]{4}$|^[0-9]{3}-[0-9]{3}-[0-9]{4}$|^[0-9]{10}$'
+        REGEXP_LIKE(phone_number_1, '^\([0-9]{3}\)[0-9]{3}-[0-9]{4}$|^[0-9]{3}-[0-9]{3}-[0-9]{4}$|^[0-9]{10}$')
     ),
     CONSTRAINT chk_phone_number_2_format CHECK (
         phone_number_2 IS NULL OR 
-        phone_number_2 ~ '^\([0-9]{3}\)[0-9]{3}-[0-9]{4}$|^[0-9]{3}-[0-9]{3}-[0-9]{4}$|^[0-9]{10}$'
+        REGEXP_LIKE(phone_number_2, '^\([0-9]{3}\)[0-9]{3}-[0-9]{4}$|^[0-9]{3}-[0-9]{3}-[0-9]{4}$|^[0-9]{10}$')
     ),
     
     -- PII field validation constraints
-    CONSTRAINT chk_ssn_format CHECK (ssn ~ '^[0-9]{9}$'),
+    CONSTRAINT chk_ssn_format CHECK (REGEXP_LIKE(ssn, '^[0-9]{9}$')),
     CONSTRAINT chk_government_id_not_empty CHECK (LENGTH(TRIM(government_id)) > 0),
     
     -- Date of birth business rules (reasonable age range for customers)
+    -- Note: H2 uses DATEADD function instead of INTERVAL syntax
     CONSTRAINT chk_date_of_birth_range CHECK (
         date_of_birth >= DATE '1900-01-01' AND 
-        date_of_birth <= CURRENT_DATE - INTERVAL '13 years'
+        date_of_birth <= DATEADD(YEAR, -13, CURRENT_DATE)
     ),
     
     -- Primary cardholder indicator validation (Y/N values only)
-    CONSTRAINT chk_primary_cardholder_format CHECK (primary_cardholder_indicator ~ '^[YN]$'),
+    CONSTRAINT chk_primary_cardholder_format CHECK (REGEXP_LIKE(primary_cardholder_indicator, '^[YN]$')),
     
     -- FICO credit score validation with industry standard range (300-850)
     CONSTRAINT chk_fico_score_range CHECK (
