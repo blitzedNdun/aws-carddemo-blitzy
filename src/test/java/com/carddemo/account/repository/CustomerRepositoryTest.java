@@ -3,19 +3,21 @@ package com.carddemo.account.repository;
 import com.carddemo.account.entity.Customer;
 import com.carddemo.account.entity.Account;
 import com.carddemo.common.enums.AccountStatus;
+import com.carddemo.config.CardDemoTestConfiguration;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,21 +49,22 @@ import static org.junit.jupiter.api.Assertions.*;
  * @author Blitzy Development Team - Ad-hoc Test Suite
  * @version 1.0
  */
-@SpringBootTest(properties = {
-    "spring.cloud.gateway.enabled=false"
-})
-@EnableAutoConfiguration(exclude = {
-    org.springframework.cloud.gateway.config.GatewayAutoConfiguration.class,
-    org.springframework.cloud.gateway.config.GatewayClassPathWarningAutoConfiguration.class
-})
+@SpringBootTest(
+    properties = {
+        "spring.cloud.gateway.enabled=false"
+    },
+    webEnvironment = SpringBootTest.WebEnvironment.NONE
+)
+@Import(CardDemoTestConfiguration.class)
 @TestPropertySource(properties = {
     "spring.datasource.url=jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH",
-    "spring.jpa.hibernate.ddl-auto=none",
+    "spring.jpa.hibernate.ddl-auto=create-drop",
     "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
-    "spring.liquibase.change-log=classpath:db/changelog/db.changelog-master.xml",
-    "logging.level.liquibase=INFO"
+    "spring.liquibase.enabled=false",
+    "logging.level.org.hibernate.SQL=DEBUG"
 })
 @ActiveProfiles("test")
+@EntityScan(basePackages = "com.carddemo.account.entity")
 @Transactional
 public class CustomerRepositoryTest {
 
@@ -165,6 +168,19 @@ public class CustomerRepositoryTest {
         entityManager.flush();
         
         entityManager.clear(); // Clear persistence context for clean testing
+    }
+
+    @AfterEach
+    void tearDown() {
+        // Clean up test data to prevent primary key violations between tests
+        if (entityManager != null) {
+            // Delete accounts first (due to foreign key constraint)
+            entityManager.createNativeQuery("DELETE FROM account_data").executeUpdate();
+            // Delete customers
+            entityManager.createNativeQuery("DELETE FROM customers").executeUpdate();
+            entityManager.flush();
+            entityManager.clear();
+        }
     }
 
     // ================================================================================
