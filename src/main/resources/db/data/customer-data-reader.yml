@@ -7,14 +7,14 @@
 # ==============================================================================
 
 # Customer Data Reader Configuration for Spring Batch ItemReader
-# Processes 312-character fixed-width records from custdata.txt with PII protection and validation
+# Processes 326-character fixed-width records from custdata.txt with PII protection and validation
 spring:
   batch:
     job:
       customer-data-import:
         # Job-level configuration for customer data import
         enabled: true
-        description: "Import customer data from ASCII custdata.txt file with 312-character fixed-width records"
+        description: "Import customer data from ASCII custdata.txt file with 326-character fixed-width records"
         
         step:
           customer-data-processing:
@@ -25,13 +25,13 @@ spring:
               # FlatFileItemReader configuration for custdata.txt processing
               type: "FlatFileItemReader"
               name: "customerDataReader"
-              description: "Reads 312-character fixed-width customer records from custdata.txt"
+              description: "Reads 326-character fixed-width customer records from custdata.txt"
               
               # Resource configuration
               resource:
                 file-path: "classpath:data/custdata.txt"
                 encoding: "UTF-8"
-                description: "Customer data file with 50 fixed-width records"
+                description: "Customer data file with 50 fixed-width records (326 characters each)"
               
               # Line tokenizer configuration for fixed-width parsing
               line-tokenizer:
