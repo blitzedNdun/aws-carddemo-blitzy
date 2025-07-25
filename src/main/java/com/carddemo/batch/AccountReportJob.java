@@ -25,6 +25,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.domain.Sort;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -116,6 +117,9 @@ public class AccountReportJob {
     @Autowired
     private AccountRepository accountRepository;
 
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+
     // =======================================================================
     // SPRING BATCH JOB CONFIGURATION
     // =======================================================================
@@ -140,11 +144,11 @@ public class AccountReportJob {
      * 
      * @return Configured Spring Batch Job for account report generation
      */
-    @Bean
-    public Job accountReportJob() {
+    @Bean("accountReportBatchJob")
+    public Job accountReportBatchJob() {
         logger.info("Configuring AccountReportJob equivalent to COBOL CBACT01C.cbl");
 
-        return new JobBuilder(JOB_NAME, batchConfiguration.jobRepository())
+        return new JobBuilder("accountReportBatchJob", batchConfiguration.jobRepository())
                 .start(accountReportStep())
                 .listener(batchConfiguration.jobExecutionListener())
                 .validator(batchConfiguration.jobParametersValidator())
@@ -172,7 +176,7 @@ public class AccountReportJob {
         logger.info("Configuring AccountReportStep with chunk size: {}", batchConfiguration.chunkSize());
 
         return new StepBuilder(STEP_NAME, batchConfiguration.jobRepository())
-                .<Account, AccountReportDTO>chunk(batchConfiguration.chunkSize(), batchConfiguration.jobRepository().getTransactionManager())
+                .<Account, AccountReportDTO>chunk(batchConfiguration.chunkSize(), transactionManager)
                 .reader(accountItemReader())
                 .processor(accountItemProcessor())
                 .writer(accountItemWriter())
@@ -387,8 +391,8 @@ public class AccountReportJob {
 
         try {
             // Get total account counts by status
-            long activeAccountCount = accountRepository.countByActiveStatus(AccountStatus.ACTIVE);
-            long inactiveAccountCount = accountRepository.countByActiveStatus(AccountStatus.INACTIVE);
+            long activeAccountCount = accountRepository.countAccountsByStatus(AccountStatus.ACTIVE);
+            long inactiveAccountCount = accountRepository.countAccountsByStatus(AccountStatus.INACTIVE);
             long totalAccountCount = activeAccountCount + inactiveAccountCount;
 
             logger.info("Account summary - Total: {}, Active: {}, Inactive: {}", 
