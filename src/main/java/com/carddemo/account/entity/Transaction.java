@@ -5,8 +5,9 @@ import jakarta.persistence.*;
 /**
  * Minimal Transaction entity stub for Account.java validation testing
  * This is a temporary stub to allow Account.java compilation and testing
+ * Uses unique entity name to avoid conflict with main Transaction entity
  */
-@Entity
+@Entity(name = "AccountTransaction")
 @Table(name = "transactions")
 public class Transaction {
     
