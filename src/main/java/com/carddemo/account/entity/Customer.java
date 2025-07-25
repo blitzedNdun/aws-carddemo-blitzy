@@ -71,7 +71,7 @@ public class Customer {
      * Customer Address Line 1
      * Mapped from COBOL: CUST-ADDR-LINE-1 PIC X(50)
      */
-    @Column(name = "address_line1", length = 50, nullable = false)
+    @Column(name = "address_line_1", length = 50, nullable = false)
     @NotBlank(message = "Address line 1 is required")
     @Size(max = 50, message = "Address line 1 cannot exceed 50 characters")
     private String addressLine1;
@@ -80,7 +80,7 @@ public class Customer {
      * Customer Address Line 2
      * Mapped from COBOL: CUST-ADDR-LINE-2 PIC X(50)
      */
-    @Column(name = "address_line2", length = 50)
+    @Column(name = "address_line_2", length = 50)
     @Size(max = 50, message = "Address line 2 cannot exceed 50 characters")
     private String addressLine2;
 
@@ -88,7 +88,7 @@ public class Customer {
      * Customer Address Line 3
      * Mapped from COBOL: CUST-ADDR-LINE-3 PIC X(50)
      */
-    @Column(name = "address_line3", length = 50)
+    @Column(name = "address_line_3", length = 50)
     @Size(max = 50, message = "Address line 3 cannot exceed 50 characters")
     private String addressLine3;
 
@@ -96,7 +96,7 @@ public class Customer {
      * State Code
      * Mapped from COBOL: CUST-ADDR-STATE-CD PIC X(02)
      */
-    @Column(name = "state_code", length = 2, nullable = false)
+    @Column(name = "address_state", length = 2, nullable = false)
     @NotBlank(message = "State code is required")
     @Size(min = 2, max = 2, message = "State code must be exactly 2 characters")
     @Pattern(regexp = "^[A-Z]{2}$", message = "State code must be 2 uppercase letters")
@@ -106,7 +106,7 @@ public class Customer {
      * Country Code
      * Mapped from COBOL: CUST-ADDR-COUNTRY-CD PIC X(03)
      */
-    @Column(name = "country_code", length = 3, nullable = false)
+    @Column(name = "address_country", length = 3, nullable = false)
     @NotBlank(message = "Country code is required")
     @Size(min = 3, max = 3, message = "Country code must be exactly 3 characters")
     @Pattern(regexp = "^[A-Z]{3}$", message = "Country code must be 3 uppercase letters")
@@ -116,7 +116,7 @@ public class Customer {
      * ZIP Code
      * Mapped from COBOL: CUST-ADDR-ZIP PIC X(10)
      */
-    @Column(name = "zip_code", length = 10, nullable = false)
+    @Column(name = "address_zip", length = 10, nullable = false)
     @NotBlank(message = "ZIP code is required")
     @Size(max = 10, message = "ZIP code cannot exceed 10 characters")
     @Pattern(regexp = "^[0-9]{5}(-[0-9]{4})?$", message = "ZIP code must be in format 12345 or 12345-6789")
@@ -126,7 +126,7 @@ public class Customer {
      * Primary Phone Number
      * Mapped from COBOL: CUST-PHONE-NUM-1 PIC X(15)
      */
-    @Column(name = "phone_number1", length = 15)
+    @Column(name = "phone_home", length = 15)
     @Size(max = 15, message = "Phone number 1 cannot exceed 15 characters")
     private String phoneNumber1;
 
@@ -134,7 +134,7 @@ public class Customer {
      * Secondary Phone Number
      * Mapped from COBOL: CUST-PHONE-NUM-2 PIC X(15)
      */
-    @Column(name = "phone_number2", length = 15)
+    @Column(name = "phone_work", length = 15)
     @Size(max = 15, message = "Phone number 2 cannot exceed 15 characters")
     private String phoneNumber2;
 
