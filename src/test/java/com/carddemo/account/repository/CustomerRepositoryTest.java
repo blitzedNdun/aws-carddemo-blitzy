@@ -14,6 +14,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -43,9 +45,22 @@ import static org.junit.jupiter.api.Assertions.*;
  * @author Blitzy Development Team - Ad-hoc Test Suite
  * @version 1.0
  */
-@DataJpaTest
-@ActiveProfiles("test")
+@SpringBootTest(classes = {
+    // Only include minimal necessary configuration for repository testing
+    org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration.class,
+    org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration.class,
+    org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManagerAutoConfiguration.class,
+    org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
+    CustomerRepository.class
+})
+@TestPropertySource(properties = {
+    "spring.jpa.hibernate.ddl-auto=create-drop",
+    "spring.datasource.url=jdbc:h2:mem:testdb",
+    "spring.datasource.driver-class-name=org.h2.Driver",
+    "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect"
+})
 @Transactional
+@ActiveProfiles("test")
 public class CustomerRepositoryTest {
 
     @Autowired
