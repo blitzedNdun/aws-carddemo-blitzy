@@ -64,7 +64,7 @@ import com.carddemo.common.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.*;
 
@@ -135,11 +135,11 @@ public class AuthenticationService {
     private JwtTokenUtil jwtTokenUtil;
 
     /**
-     * Spring Security BCrypt password encoder for secure password validation
+     * Spring Security password encoder for secure password validation
      * Replaces plain text password comparison from legacy COBOL system
      */
     @Autowired
-    private BCryptPasswordEncoder passwordEncoder;
+    private PasswordEncoder passwordEncoder;
 
     // Authentication error messages matching COBOL equivalents
     private static final String MSG_USER_NOT_FOUND = "User not found. Try again ...";
