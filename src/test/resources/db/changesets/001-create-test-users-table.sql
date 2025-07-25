@@ -43,16 +43,16 @@ CREATE TABLE users (
     user_type VARCHAR(1) NOT NULL,
     
     -- Audit and tracking fields for authentication testing
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    last_login TIMESTAMP WITH TIME ZONE NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    last_login TIMESTAMP NULL,
     
     -- Primary key constraint
     CONSTRAINT pk_users PRIMARY KEY (user_id),
     
-    -- Business rule constraints for test data integrity
+    -- Business rule constraints for test data integrity (H2 compatible)
     CONSTRAINT chk_user_type CHECK (user_type IN ('A', 'U', 'V')), -- Admin, User, Viewer
-    CONSTRAINT chk_user_id_format CHECK (user_id ~ '^[A-Z0-9]{8}$'), -- 8 alphanumeric characters
-    CONSTRAINT chk_password_hash_format CHECK (password_hash ~ '^\$2[ayb]\$.{56}$'), -- BCrypt format validation
+    CONSTRAINT chk_user_id_format CHECK (LENGTH(user_id) = 8), -- 8 characters
+    CONSTRAINT chk_password_hash_format CHECK (LENGTH(password_hash) = 60 AND password_hash LIKE '$2%'), -- BCrypt format
     CONSTRAINT chk_first_name_length CHECK (LENGTH(TRIM(first_name)) >= 1),
     CONSTRAINT chk_last_name_length CHECK (LENGTH(TRIM(last_name)) >= 1)
 );
@@ -103,6 +103,6 @@ CREATE INDEX idx_users_type_created ON users (user_type, created_at);
 -- GRANT USAGE, SELECT ON SEQUENCE users_audit_seq TO carddemo_test_user; -- If using audit sequences
 
 -- Table statistics update for query optimization in test scenarios
-ANALYZE users;
+-- ANALYZE users; -- Commented out for H2 compatibility
 
 --rollback -- No rollback needed for grants in test environment
