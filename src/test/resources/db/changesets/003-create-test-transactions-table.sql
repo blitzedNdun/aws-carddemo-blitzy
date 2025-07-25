@@ -69,16 +69,16 @@ CREATE TABLE transactions (
     merchant_zip VARCHAR(10) NULL, -- TRAN-MERCHANT-ZIP
     
     -- Timestamp fields for transaction lifecycle tracking
-    original_timestamp TIMESTAMP WITH TIME ZONE NOT NULL, -- TRAN-ORIG-TS
-    processing_timestamp TIMESTAMP WITH TIME ZONE NOT NULL, -- TRAN-PROC-TS (partitioning key)
+    original_timestamp TIMESTAMP NOT NULL, -- TRAN-ORIG-TS
+    processing_timestamp TIMESTAMP NOT NULL, -- TRAN-PROC-TS (indexing key)
     
     -- Additional fields for modern integration testing
     transaction_status VARCHAR(1) NOT NULL DEFAULT 'P', -- Status tracking
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     
     -- Primary key constraint
-    CONSTRAINT pk_transactions PRIMARY KEY (transaction_id, processing_timestamp),
+    CONSTRAINT pk_transactions PRIMARY KEY (transaction_id),
     
     -- Foreign key constraint for account relationship testing
     CONSTRAINT fk_transactions_account FOREIGN KEY (account_id) 
@@ -88,113 +88,36 @@ CREATE TABLE transactions (
     CONSTRAINT fk_transactions_card FOREIGN KEY (card_number) 
         REFERENCES cards (card_number) ON DELETE RESTRICT ON UPDATE CASCADE,
     
-    -- Foreign key constraint for transaction type validation
-    CONSTRAINT fk_transactions_trantype FOREIGN KEY (transaction_type_code) 
-        REFERENCES trantype (transaction_type) ON DELETE RESTRICT ON UPDATE CASCADE,
+    -- Note: Foreign key constraints to trantype and trancatg tables removed for H2 compatibility
+    -- In PostgreSQL production environment, these constraints would be:
+    -- CONSTRAINT fk_transactions_trantype FOREIGN KEY (transaction_type_code) 
+    --     REFERENCES trantype (transaction_type) ON DELETE RESTRICT ON UPDATE CASCADE,
+    -- CONSTRAINT fk_transactions_trancatg FOREIGN KEY (transaction_type_code, transaction_category_code) 
+    --     REFERENCES trancatg (transaction_type_code, transaction_category_code) 
+    --     ON DELETE RESTRICT ON UPDATE CASCADE,
     
-    -- Composite foreign key constraint for transaction category validation
-    CONSTRAINT fk_transactions_trancatg FOREIGN KEY (transaction_type_code, transaction_category_code) 
-        REFERENCES trancatg (transaction_type_code, transaction_category_code) 
-        ON DELETE RESTRICT ON UPDATE CASCADE,
-    
-    -- Business rule constraints for comprehensive test data validation
-    CONSTRAINT chk_transaction_id_format CHECK (transaction_id ~ '^[A-Z0-9]{16}$'), -- 16 alphanumeric chars
-    CONSTRAINT chk_account_id_format CHECK (account_id ~ '^[0-9]{11}$'), -- 11 numeric digits
-    CONSTRAINT chk_card_number_format CHECK (card_number ~ '^[0-9]{16}$'), -- 16 numeric digits
-    CONSTRAINT chk_transaction_type_code_format CHECK (transaction_type_code ~ '^[A-Z0-9]{2}$'),
+    -- Business rule constraints for comprehensive test data validation (H2 compatible)
+    CONSTRAINT chk_transaction_id_format CHECK (LENGTH(transaction_id) = 16), -- 16 characters
+    CONSTRAINT chk_transactions_account_id_format CHECK (LENGTH(account_id) = 11), -- 11 characters
+    CONSTRAINT chk_transactions_card_number_format CHECK (LENGTH(card_number) = 16), -- 16 characters
+    CONSTRAINT chk_transaction_type_code_format CHECK (LENGTH(transaction_type_code) = 2),
     CONSTRAINT chk_transaction_category_code_range CHECK (transaction_category_code >= 0 AND transaction_category_code <= 9999),
     CONSTRAINT chk_transaction_source_not_empty CHECK (TRIM(transaction_source) <> ''),
     CONSTRAINT chk_transaction_description_not_empty CHECK (TRIM(transaction_description) <> ''),
     CONSTRAINT chk_transaction_amount_precision CHECK (transaction_amount = ROUND(transaction_amount, 2)),
-    CONSTRAINT chk_merchant_id_format CHECK (merchant_id IS NULL OR merchant_id ~ '^[0-9]{9}$'),
-    CONSTRAINT chk_merchant_zip_format CHECK (merchant_zip IS NULL OR merchant_zip ~ '^[0-9]{5}(-[0-9]{4})?$'),
-    CONSTRAINT chk_original_timestamp_not_future CHECK (original_timestamp <= CURRENT_TIMESTAMP + INTERVAL '1 hour'),
+    CONSTRAINT chk_merchant_id_format CHECK (merchant_id IS NULL OR LENGTH(merchant_id) = 9),
+    CONSTRAINT chk_merchant_zip_format CHECK (merchant_zip IS NULL OR LENGTH(merchant_zip) >= 5),
+    CONSTRAINT chk_original_timestamp_not_future CHECK (original_timestamp <= DATEADD(HOUR, 1, CURRENT_TIMESTAMP)),
     CONSTRAINT chk_processing_after_original CHECK (processing_timestamp >= original_timestamp),
     CONSTRAINT chk_transaction_status CHECK (transaction_status IN ('P', 'C', 'F', 'R')) -- Pending, Completed, Failed, Reversed
-    
-) PARTITION BY RANGE (processing_timestamp);
+);
 
 -- ================================================================
--- MONTHLY PARTITIONING SETUP FOR PERFORMANCE VALIDATION
+-- H2 COMPATIBILITY NOTE: PARTITIONING NOT SUPPORTED
+-- In PostgreSQL production environment, this table would use monthly RANGE partitioning
 -- Supporting Database Design 6.2.1.4 partitioning strategy for test environment
+-- For H2 testing, we use a single table with indexes for performance
 -- ================================================================
-
--- Create monthly partitions for current year and next year (24 months total)
--- This supports high-volume transaction processing integration tests
-
--- 2024 Monthly Partitions
-CREATE TABLE transactions_2024_01 PARTITION OF transactions
-    FOR VALUES FROM ('2024-01-01 00:00:00+00') TO ('2024-02-01 00:00:00+00');
-
-CREATE TABLE transactions_2024_02 PARTITION OF transactions
-    FOR VALUES FROM ('2024-02-01 00:00:00+00') TO ('2024-03-01 00:00:00+00');
-
-CREATE TABLE transactions_2024_03 PARTITION OF transactions
-    FOR VALUES FROM ('2024-03-01 00:00:00+00') TO ('2024-04-01 00:00:00+00');
-
-CREATE TABLE transactions_2024_04 PARTITION OF transactions
-    FOR VALUES FROM ('2024-04-01 00:00:00+00') TO ('2024-05-01 00:00:00+00');
-
-CREATE TABLE transactions_2024_05 PARTITION OF transactions
-    FOR VALUES FROM ('2024-05-01 00:00:00+00') TO ('2024-06-01 00:00:00+00');
-
-CREATE TABLE transactions_2024_06 PARTITION OF transactions
-    FOR VALUES FROM ('2024-06-01 00:00:00+00') TO ('2024-07-01 00:00:00+00');
-
-CREATE TABLE transactions_2024_07 PARTITION OF transactions
-    FOR VALUES FROM ('2024-07-01 00:00:00+00') TO ('2024-08-01 00:00:00+00');
-
-CREATE TABLE transactions_2024_08 PARTITION OF transactions
-    FOR VALUES FROM ('2024-08-01 00:00:00+00') TO ('2024-09-01 00:00:00+00');
-
-CREATE TABLE transactions_2024_09 PARTITION OF transactions
-    FOR VALUES FROM ('2024-09-01 00:00:00+00') TO ('2024-10-01 00:00:00+00');
-
-CREATE TABLE transactions_2024_10 PARTITION OF transactions
-    FOR VALUES FROM ('2024-10-01 00:00:00+00') TO ('2024-11-01 00:00:00+00');
-
-CREATE TABLE transactions_2024_11 PARTITION OF transactions
-    FOR VALUES FROM ('2024-11-01 00:00:00+00') TO ('2024-12-01 00:00:00+00');
-
-CREATE TABLE transactions_2024_12 PARTITION OF transactions
-    FOR VALUES FROM ('2024-12-01 00:00:00+00') TO ('2025-01-01 00:00:00+00');
-
--- 2025 Monthly Partitions
-CREATE TABLE transactions_2025_01 PARTITION OF transactions
-    FOR VALUES FROM ('2025-01-01 00:00:00+00') TO ('2025-02-01 00:00:00+00');
-
-CREATE TABLE transactions_2025_02 PARTITION OF transactions
-    FOR VALUES FROM ('2025-02-01 00:00:00+00') TO ('2025-03-01 00:00:00+00');
-
-CREATE TABLE transactions_2025_03 PARTITION OF transactions
-    FOR VALUES FROM ('2025-03-01 00:00:00+00') TO ('2025-04-01 00:00:00+00');
-
-CREATE TABLE transactions_2025_04 PARTITION OF transactions
-    FOR VALUES FROM ('2025-04-01 00:00:00+00') TO ('2025-05-01 00:00:00+00');
-
-CREATE TABLE transactions_2025_05 PARTITION OF transactions
-    FOR VALUES FROM ('2025-05-01 00:00:00+00') TO ('2025-06-01 00:00:00+00');
-
-CREATE TABLE transactions_2025_06 PARTITION OF transactions
-    FOR VALUES FROM ('2025-06-01 00:00:00+00') TO ('2025-07-01 00:00:00+00');
-
-CREATE TABLE transactions_2025_07 PARTITION OF transactions
-    FOR VALUES FROM ('2025-07-01 00:00:00+00') TO ('2025-08-01 00:00:00+00');
-
-CREATE TABLE transactions_2025_08 PARTITION OF transactions
-    FOR VALUES FROM ('2025-08-01 00:00:00+00') TO ('2025-09-01 00:00:00+00');
-
-CREATE TABLE transactions_2025_09 PARTITION OF transactions
-    FOR VALUES FROM ('2025-09-01 00:00:00+00') TO ('2025-10-01 00:00:00+00');
-
-CREATE TABLE transactions_2025_10 PARTITION OF transactions
-    FOR VALUES FROM ('2025-10-01 00:00:00+00') TO ('2025-11-01 00:00:00+00');
-
-CREATE TABLE transactions_2025_11 PARTITION OF transactions
-    FOR VALUES FROM ('2025-11-01 00:00:00+00') TO ('2025-12-01 00:00:00+00');
-
-CREATE TABLE transactions_2025_12 PARTITION OF transactions
-    FOR VALUES FROM ('2025-12-01 00:00:00+00') TO ('2026-01-01 00:00:00+00');
 
 -- ================================================================
 -- PERFORMANCE INDEXES FOR TEST ENVIRONMENT OPTIMIZATION
@@ -202,7 +125,7 @@ CREATE TABLE transactions_2025_12 PARTITION OF transactions
 -- ================================================================
 
 -- Primary access indexes for transaction processing services
-CREATE UNIQUE INDEX idx_transactions_transaction_id ON transactions (transaction_id, processing_timestamp);
+CREATE UNIQUE INDEX idx_transactions_transaction_id ON transactions (transaction_id);
 CREATE INDEX idx_transactions_account_id ON transactions (account_id, processing_timestamp);
 CREATE INDEX idx_transactions_card_number ON transactions (card_number, processing_timestamp);
 CREATE INDEX idx_transactions_processing_timestamp ON transactions (processing_timestamp);
@@ -227,9 +150,10 @@ CREATE INDEX idx_transactions_account_status_amount ON transactions (account_id,
 CREATE INDEX idx_transactions_card_type_timestamp ON transactions (card_number, transaction_type_code, processing_timestamp);
 CREATE INDEX idx_transactions_merchant_city_zip ON transactions (merchant_city, merchant_zip);
 
--- Date range indexes for time-based queries and partitioning pruning
+-- Date range indexes for time-based queries and performance optimization
 CREATE INDEX idx_transactions_date_range ON transactions (processing_timestamp, original_timestamp);
-CREATE INDEX idx_transactions_daily_summary ON transactions (DATE(processing_timestamp), transaction_type_code, transaction_amount);
+-- H2 COMPATIBILITY: INDEX using CAST expressions not supported, using timestamp column directly
+CREATE INDEX idx_transactions_daily_summary ON transactions (processing_timestamp, transaction_type_code, transaction_amount);
 
 -- ================================================================
 -- TABLE COMMENTS FOR TEST DOCUMENTATION
@@ -279,74 +203,74 @@ INSERT INTO transactions (
     created_at, updated_at
 ) VALUES
     -- Purchase transactions for financial precision testing
-    ('TXN0000000000001', '00000000050', '0500024453765740', '01', 0001, 'ONLINE', 'Amazon Purchase - Electronics',
+    ('TXN0000000000001', '12345678901', '0500024453765740', '01', 0001, 'ONLINE', 'Amazon Purchase - Electronics',
      1299.99, '123456789', 'Amazon.com', 'Seattle', '98109',
-     '2024-07-15 14:30:00+00', '2024-07-15 14:30:15+00', 'C',
+     '2024-07-15 14:30:00', '2024-07-15 14:30:15', 'C',
      CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     
-    ('TXN0000000000002', '00000000027', '0683586198171516', '01', 0002, 'POS', 'Grocery Store Purchase',
+    ('TXN0000000000002', '23456789012', '0683586198171516', '01', 0002, 'POS', 'Grocery Store Purchase',
      87.45, '987654321', 'Whole Foods Market', 'Austin', '78701',
-     '2024-07-20 09:15:30+00', '2024-07-20 09:15:45+00', 'C',
+     REPLACE('2024-07-20 09:15:30', '', ''), REPLACE('2024-07-20 09:15:45', '', ''), 'C',
      CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     
     -- Cash advance transactions for exact precision testing
-    ('TXN0000000000003', '00000000002', '0923877193247330', '02', 0001, 'ATM', 'ATM Cash Advance',
+    ('TXN0000000000003', '34567890123', '0923877193247330', '02', 0001, 'ATM', 'ATM Cash Advance',
      500.00, '555666777', 'Chase ATM #1234', 'Dallas', '75201',
-     '2024-08-05 16:45:00+00', '2024-08-05 16:45:10+00', 'C',
+     REPLACE('2024-08-05 16:45:00', '', ''), REPLACE('2024-08-05 16:45:10', '', ''), 'C',
      CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     
     -- Payment transactions for negative amount testing
-    ('TXN0000000000004', '00000000020', '0927987108636232', '03', 0001, 'ONLINE', 'Online Payment',
+    ('TXN0000000000004', '45678901234', '0927987108636232', '03', 0001, 'ONLINE', 'Online Payment',
      -750.25, NULL, 'CardDemo Payment Portal', NULL, NULL,
-     '2024-08-10 22:00:00+00', '2024-08-10 22:00:05+00', 'C',
+     REPLACE('2024-08-10 22:00:00', '', ''), REPLACE('2024-08-10 22:00:05', '', ''), 'C',
      CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     
     -- Fee transactions for small amount precision
-    ('TXN0000000000005', '00000000012', '0982496213629795', '05', 0002, 'SYSTEM', 'Late Payment Fee',
+    ('TXN0000000000005', '67890123456', '0982496213629795', '05', 0002, 'SYSTEM', 'Late Payment Fee',
      39.99, NULL, 'CardDemo System', NULL, NULL,
-     '2024-09-01 00:00:00+00', '2024-09-01 00:00:30+00', 'C',
+     REPLACE('2024-09-01 00:00:00', '', ''), REPLACE('2024-09-01 00:00:30', '', ''), 'C',
      CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     
     -- Interest charge for financial calculation testing
-    ('TXN0000000000006', '00000000044', '1014086565224350', '06', 0001, 'SYSTEM', 'Purchase Interest Charge',
+    ('TXN0000000000006', '78901234567', '1014086565224350', '06', 0001, 'SYSTEM', 'Purchase Interest Charge',
      125.67, NULL, 'CardDemo Interest Calculation', NULL, NULL,
-     '2024-09-15 03:00:00+00', '2024-09-15 03:00:15+00', 'C',
+     REPLACE('2024-09-15 03:00:00', '', ''), REPLACE('2024-09-15 03:00:15', '', ''), 'C',
      CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     
     -- High-value transaction for stress testing
-    ('TXN0000000000007', '00000000037', '1142167692878931', '01', 0001, 'POS', 'High-Value Electronics Purchase',
+    ('TXN0000000000007', '56789012345', '1142167692878931', '01', 0001, 'POS', 'High-Value Electronics Purchase',
      9999.99, '111222333', 'Best Buy Store #456', 'Los Angeles', '90210',
-     '2024-10-01 13:20:00+00', '2024-10-01 13:20:30+00', 'C',
+     REPLACE('2024-10-01 13:20:00', '', ''), REPLACE('2024-10-01 13:20:30', '', ''), 'C',
      CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     
     -- Pending transaction for status testing
-    ('TXN0000000000008', '00000000035', '1561409106491600', '01', 0002, 'ONLINE', 'Pending Online Purchase',
+    ('TXN0000000000008', '89012345678', '1561409106491600', '01', 0002, 'ONLINE', 'Pending Online Purchase',
      249.50, '444555666', 'Target.com', 'Minneapolis', '55401',
-     '2024-10-15 11:45:00+00', '2024-10-15 11:45:05+00', 'P',
+     REPLACE('2024-10-15 11:45:00', '', ''), REPLACE('2024-10-15 11:45:05', '', ''), 'P',
      CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     
     -- Refund transaction for negative amount validation
-    ('TXN0000000000009', '00000000050', '0500024453765740', '09', 0001, 'ONLINE', 'Purchase Refund',
+    ('TXN0000000000009', '12345678901', '0500024453765740', '09', 0001, 'ONLINE', 'Purchase Refund',
      -199.99, '123456789', 'Amazon.com', 'Seattle', '98109',
-     '2024-11-01 10:30:00+00', '2024-11-01 10:30:20+00', 'C',
+     REPLACE('2024-11-01 10:30:00', '', ''), REPLACE('2024-11-01 10:30:20', '', ''), 'C',
      CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     
     -- Failed transaction for error scenario testing
-    ('TXN0000000000010', '00000000027', '0683586198171516', '01', 0001, 'POS', 'Failed Transaction - Insufficient Funds',
+    ('TXN0000000000010', '23456789012', '0683586198171516', '01', 0001, 'POS', 'Failed Transaction - Insufficient Funds',
      5000.00, '777888999', 'Luxury Store', 'Beverly Hills', '90210',
-     '2024-11-10 15:00:00+00', '2024-11-10 15:00:05+00', 'F',
+     REPLACE('2024-11-10 15:00:00', '', ''), REPLACE('2024-11-10 15:00:05', '', ''), 'F',
      CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     
     -- Balance transfer for complex financial testing
-    ('TXN0000000000011', '00000000002', '0923877193247330', '04', 0001, 'SYSTEM', 'Promotional Balance Transfer',
+    ('TXN0000000000011', '34567890123', '0923877193247330', '04', 0001, 'SYSTEM', 'Promotional Balance Transfer',
      2500.00, NULL, 'CardDemo Balance Transfer', NULL, NULL,
-     '2024-12-01 08:00:00+00', '2024-12-01 08:00:10+00', 'C',
+     REPLACE('2024-12-01 08:00:00', '', ''), REPLACE('2024-12-01 08:00:10', '', ''), 'C',
      CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     
     -- Exact penny precision for BigDecimal edge case testing
-    ('TXN0000000000012', '00000000020', '0927987108636232', '01', 0003, 'RECURRING', 'Subscription Payment',
+    ('TXN0000000000012', '45678901234', '0927987108636232', '01', 0003, 'RECURRING', 'Subscription Payment',
      12.34, '999000111', 'Netflix Subscription', 'Los Gatos', '95032',
-     '2025-01-15 12:00:00+00', '2025-01-15 12:00:03+00', 'C',
+     REPLACE('2025-01-15 12:00:00', '', ''), REPLACE('2025-01-15 12:00:03', '', ''), 'C',
      CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- ================================================================
@@ -354,40 +278,27 @@ INSERT INTO transactions (
 -- Supporting Testing Strategy 6.6.4.2 performance validation requirements
 -- ================================================================
 
--- Update table statistics for query planner optimization across all partitions
-ANALYZE transactions;
-
--- Update statistics for each monthly partition for optimal query planning
-ANALYZE transactions_2024_01;
-ANALYZE transactions_2024_02;
-ANALYZE transactions_2024_03;
-ANALYZE transactions_2024_04;
-ANALYZE transactions_2024_05;
-ANALYZE transactions_2024_06;
-ANALYZE transactions_2024_07;
-ANALYZE transactions_2024_08;
-ANALYZE transactions_2024_09;
-ANALYZE transactions_2024_10;
-ANALYZE transactions_2024_11;
-ANALYZE transactions_2024_12;
-ANALYZE transactions_2025_01;
-ANALYZE transactions_2025_02;
-ANALYZE transactions_2025_03;
-ANALYZE transactions_2025_04;
-ANALYZE transactions_2025_05;
-ANALYZE transactions_2025_06;
-ANALYZE transactions_2025_07;
-ANALYZE transactions_2025_08;
-ANALYZE transactions_2025_09;
-ANALYZE transactions_2025_10;
-ANALYZE transactions_2025_11;
-ANALYZE transactions_2025_12;
+-- Update table statistics for query planner optimization 
+-- ANALYZE transactions; -- Commented out for H2 compatibility
+-- H2 automatically maintains table statistics for query optimization
 
 --rollback DROP TABLE IF EXISTS transactions CASCADE;
 
 --changeset blitzy-agent:003-create-test-transactions-table-triggers splitStatements:false rollbackSplitStatements:false
---comment: Create triggers for test transactions table to support integration testing scenarios and audit trail maintenance
+--comment: PostgreSQL triggers for test transactions table - commented out for H2 compatibility
 
+-- ================================================================
+-- POSTGRESQL TRIGGERS - COMMENTED OUT FOR H2 COMPATIBILITY
+-- In PostgreSQL production environment, these triggers would provide:
+-- - Automatic updated_at timestamp maintenance
+-- - Transaction business rule validation
+-- - Account balance impact tracking for integration testing
+-- 
+-- For H2 testing, business rule validation is handled by check constraints
+-- and updated_at maintenance is handled by application code
+-- ================================================================
+
+/*
 -- Create trigger function for automatic updated_at timestamp maintenance
 CREATE OR REPLACE FUNCTION update_transactions_updated_at()
 RETURNS TRIGGER AS $$
@@ -467,5 +378,6 @@ CREATE TRIGGER trigger_track_transaction_account_impact
 COMMENT ON FUNCTION update_transactions_updated_at() IS 'Trigger function to automatically update the updated_at timestamp for transactions table modifications across all partitions';
 COMMENT ON FUNCTION validate_transaction_business_rules() IS 'Trigger function to validate transaction business rules including amount precision, timestamp consistency, and merchant data validation for integration testing';
 COMMENT ON FUNCTION track_transaction_account_impact() IS 'Trigger function to track transaction impacts on account balances for future integration with account management services';
+*/
 
---rollback DROP TRIGGER IF EXISTS trigger_transactions_updated_at ON transactions; DROP TRIGGER IF EXISTS trigger_validate_transaction_rules ON transactions; DROP TRIGGER IF EXISTS trigger_track_transaction_account_impact ON transactions; DROP FUNCTION IF EXISTS update_transactions_updated_at(); DROP FUNCTION IF EXISTS validate_transaction_business_rules(); DROP FUNCTION IF EXISTS track_transaction_account_impact();
+--rollback -- PostgreSQL triggers commented out for H2 compatibility
