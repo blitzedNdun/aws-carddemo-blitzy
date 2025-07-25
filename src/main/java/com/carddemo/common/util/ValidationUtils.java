@@ -946,6 +946,144 @@ public final class ValidationUtils {
     }
 
     /**
+     * Validates customer ID format and range using COBOL-equivalent validation patterns.
+     * This method provides customer ID validation equivalent to COBOL PIC 9(09) constraints
+     * ensuring exactly 9 digits within valid customer ID range.
+     * 
+     * Validation Rules (from COBOL customer ID validation):
+     * - Must be exactly 9 digits (PIC 9(09) equivalent)
+     * - Must be within valid customer ID range (100000000-999999999)
+     * - Must be numeric-only content without alphabetic characters
+     * - Cannot be null, empty, or contain non-numeric characters
+     * 
+     * COBOL Equivalent: Customer ID validation from COBOL customer management programs
+     * with INSPECT and NUMERIC testing for 9-digit customer identifiers.
+     * 
+     * @param customerId the customer ID string to validate
+     * @return ValidationResult indicating customer ID validity or specific validation failure
+     */
+    public static ValidationResult validateCustomerId(String customerId) {
+        logger.debug("Validating customer ID: {}", maskSensitiveData(customerId));
+        
+        // Check for null or empty
+        if (StringUtils.isBlank(customerId)) {
+            logger.warn("Customer ID validation failed: null or empty");
+            return ValidationResult.BLANK_FIELD;
+        }
+        
+        String trimmedCustomerId = customerId.trim();
+        
+        // Check length - must be exactly 9 digits
+        if (trimmedCustomerId.length() != 9) {
+            logger.warn("Customer ID validation failed: incorrect length (expected 9, got {})", 
+                       trimmedCustomerId.length());
+            return ValidationResult.INVALID_LENGTH;
+        }
+        
+        // Check that all characters are numeric
+        if (!NumberUtils.isDigits(trimmedCustomerId)) {
+            logger.warn("Customer ID validation failed: contains non-numeric characters");
+            return ValidationResult.INVALID_FORMAT;
+        }
+        
+        // Convert to long for range validation
+        try {
+            long customerIdValue = Long.parseLong(trimmedCustomerId);
+            
+            // Validate range (100000000 to 999999999)
+            if (customerIdValue < 100000000L || customerIdValue > 999999999L) {
+                logger.warn("Customer ID validation failed: outside valid range");
+                return ValidationResult.INVALID_RANGE;
+            }
+            
+            logger.debug("Customer ID validation successful");
+            return ValidationResult.VALID;
+            
+        } catch (NumberFormatException e) {
+            logger.warn("Customer ID validation failed: number format error", e);
+            return ValidationResult.INVALID_FORMAT;
+        }
+    }
+    
+    /**
+     * Validates date of birth to ensure it represents a valid past date.
+     * This method provides date of birth validation equivalent to COBOL date validation
+     * logic ensuring the date is in the past and properly formatted.
+     * 
+     * Validation Rules:
+     * - Date must be properly formatted and parseable
+     * - Date must be in the past (no future dates allowed)
+     * - Date must represent a valid calendar date
+     * - Supports multiple date formats (ISO, US, COBOL CCYYMMDD)
+     * 
+     * COBOL Equivalent: Date validation from COBOL customer data validation programs
+     * with date range checking and future date prevention logic.
+     * 
+     * @param dateOfBirth the date of birth string to validate
+     * @return ValidationResult indicating date of birth validity or specific validation failure
+     */
+    public static ValidationResult validateDateOfBirth(String dateOfBirth) {
+        logger.debug("Validating date of birth: {}", dateOfBirth);
+        
+        // Check for null or empty
+        if (StringUtils.isBlank(dateOfBirth)) {
+            logger.warn("Date of birth validation failed: null or empty");
+            return ValidationResult.BLANK_FIELD;
+        }
+        
+        String trimmedDate = dateOfBirth.trim();
+        
+        try {
+            LocalDate birthDate;
+            
+            // Try different date formats
+            if (isValidDateFormat(trimmedDate, "YYYY-MM-DD")) {
+                birthDate = LocalDate.parse(trimmedDate, ISO_DATE_FORMATTER);
+            } else if (isValidDateFormat(trimmedDate, "YYYYMMDD")) {
+                birthDate = LocalDate.parse(trimmedDate, CCYYMMDD_FORMATTER);
+            } else if (isValidDateFormat(trimmedDate, "MM/DD/YYYY")) {
+                birthDate = LocalDate.parse(trimmedDate, US_DATE_FORMATTER);
+            } else {
+                logger.warn("Date of birth validation failed: unsupported format");
+                return ValidationResult.INVALID_FORMAT;
+            }
+            
+            // Check that date is in the past
+            LocalDate today = LocalDate.now();
+            if (birthDate.isAfter(today)) {
+                logger.warn("Date of birth validation failed: future date not allowed");
+                return ValidationResult.INVALID_RANGE;
+            }
+            
+            // Check reasonable age limits (not more than 150 years ago)
+            LocalDate maxPastDate = today.minusYears(150);
+            if (birthDate.isBefore(maxPastDate)) {
+                logger.warn("Date of birth validation failed: date too far in past");
+                return ValidationResult.INVALID_RANGE;
+            }
+            
+            logger.debug("Date of birth validation successful");
+            return ValidationResult.VALID;
+            
+        } catch (DateTimeParseException e) {
+            logger.warn("Date of birth validation failed: parse error", e);
+            return ValidationResult.INVALID_FORMAT;
+        }
+    }
+    
+    /**
+     * Validates FICO credit score according to industry standards and business rules.
+     * This is an alias method for validateFicoScore to maintain compatibility with 
+     * customer service layer method naming conventions.
+     * 
+     * @param ficoScore the FICO credit score to validate
+     * @return ValidationResult indicating FICO score validity or specific validation failure
+     */
+    public static ValidationResult validateFicoCreditScore(Integer ficoScore) {
+        return validateFicoScore(ficoScore);
+    }
+
+    /**
      * Masks sensitive data for logging purposes.
      * Prevents sensitive information from appearing in log files.
      * 
