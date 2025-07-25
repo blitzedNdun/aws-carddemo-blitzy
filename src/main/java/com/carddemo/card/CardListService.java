@@ -3,6 +3,7 @@ package com.carddemo.card;
 import com.carddemo.common.dto.PaginationMetadata;
 import com.carddemo.common.enums.CardStatus;
 import com.carddemo.common.enums.UserType;
+import com.carddemo.common.enums.ValidationResult;
 import com.carddemo.common.util.ValidationUtils;
 
 import org.slf4j.Logger;
@@ -83,7 +84,7 @@ public class CardListService {
         validateListRequest(request);
         
         // Step 2: Apply role-based filtering to determine data access scope
-        boolean isAdminUser = UserType.ADMIN.equals(request.getUserRole());
+        boolean isAdminUser = "ADMIN".equals(request.getUserRole());
         
         // Step 3: Build pagination parameters with proper sorting
         Pageable pageable = createPageableWithSorting(request);
@@ -138,10 +139,25 @@ public class CardListService {
         response.setUserAuthorizationLevel(isAdminUser ? "ADMIN" : "USER");
         
         // Indicate if any filters were applied to the dataset
-        boolean filterApplied = StringUtils.hasText(request.getAccountId()) || 
-                               StringUtils.hasText(request.getCardNumber()) ||
-                               !request.getIncludeInactive();
-        response.setFilterApplied(filterApplied);
+        StringBuilder filterDescription = new StringBuilder();
+        boolean hasFilter = false;
+        
+        if (StringUtils.hasText(request.getAccountId())) {
+            filterDescription.append("Account ID: ").append(request.getAccountId());
+            hasFilter = true;
+        }
+        if (StringUtils.hasText(request.getCardNumber())) {
+            if (hasFilter) filterDescription.append(", ");
+            filterDescription.append("Card Number: ").append(request.getCardNumber());
+            hasFilter = true;
+        }
+        if (!request.getIncludeInactive()) {
+            if (hasFilter) filterDescription.append(", ");
+            filterDescription.append("Active Cards Only");
+            hasFilter = true;
+        }
+        
+        response.setFilterApplied(hasFilter ? filterDescription.toString() : "No filters applied");
         
         return response;
     }
@@ -233,8 +249,9 @@ public class CardListService {
         // Validate card number format if provided (matching COBOL CC-CARD-NUM validation)
         if (StringUtils.hasText(request.getCardNumber())) {
             ValidationUtils.validateRequiredField(request.getCardNumber(), "Card Number");
-            if (!ValidationUtils.validateNumericField(request.getCardNumber())) {
-                throw new IllegalArgumentException("Card number must be numeric");
+            ValidationResult result = ValidationUtils.validateNumericField(request.getCardNumber(), 16);
+            if (result != ValidationResult.VALID) {
+                throw new IllegalArgumentException("Card number must be numeric and up to 16 digits");
             }
         }
         
