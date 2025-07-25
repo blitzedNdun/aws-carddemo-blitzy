@@ -345,7 +345,7 @@ public class AddTransactionResponse {
      * @param validationErrors List of field validation errors
      */
     public void setValidationErrors(List<String> validationErrors) {
-        this.validationErrors = validationErrors != null ? validationErrors : new ArrayList<>();
+        this.validationErrors = validationErrors != null ? new ArrayList<>(validationErrors) : new ArrayList<>();
     }
 
     /**
