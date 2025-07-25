@@ -18,6 +18,7 @@ import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.support.CompositeItemWriter;
 import org.springframework.batch.item.support.ListItemReader;
 import org.springframework.batch.item.data.RepositoryItemReader;
@@ -137,12 +138,12 @@ public class CardReportJob {
     /**
      * Job name constant for consistent identification across monitoring systems.
      */
-    public static final String JOB_NAME = "cardReportJob";
+    public static final String JOB_NAME = "card-report-batch-job";
 
     /**
      * Step name constant for execution tracking and metrics collection.
      */
-    public static final String STEP_NAME = "cardReportStep";
+    public static final String STEP_NAME = "card-report-processing-step";
 
     // =======================================================================
     // DEPENDENCY INJECTION
@@ -201,12 +202,12 @@ public class CardReportJob {
      * 
      * @return Configured Job instance for card report processing
      */
-    @Bean
-    public Job cardReportJob() {
+    @Bean("cardReportBatchJob")
+    public Job cardReportBatchJob() {
         logger.info("Configuring CardReportJob with chunk size: {} and retry attempts: {}", 
                    chunkSize > 0 ? chunkSize : DEFAULT_CHUNK_SIZE, MAX_RETRY_ATTEMPTS);
 
-        return new JobBuilder(JOB_NAME, batchConfiguration.jobRepository())
+        return new JobBuilder("cardReportBatchJob", batchConfiguration.jobRepository())
                 .incrementer(new RunIdIncrementer())
                 .validator(batchConfiguration.jobParametersValidator())
                 .listener(batchConfiguration.jobExecutionListener())
@@ -231,8 +232,7 @@ public class CardReportJob {
      * 
      * @return Configured Step instance for card processing
      */
-    @Bean
-    public Step cardReportStep() {
+    private Step cardReportStep() {
         int effectiveChunkSize = chunkSize > 0 ? chunkSize : DEFAULT_CHUNK_SIZE;
         
         logger.info("Configuring CardReportStep with chunk size: {} and include inactive: {}", 
@@ -271,9 +271,7 @@ public class CardReportJob {
      * 
      * @return Configured RepositoryItemReader for card data access
      */
-    @Bean
-    @StepScope
-    public RepositoryItemReader<Card> cardItemReader() {
+    private RepositoryItemReader<Card> cardItemReader() {
         logger.info("Configuring RepositoryItemReader with page size: {} and status filter: {}", 
                    READER_PAGE_SIZE, includeInactiveCards ? "ALL" : "ACTIVE_ONLY");
 
@@ -323,9 +321,7 @@ public class CardReportJob {
      * 
      * @return Configured ItemProcessor for card data transformation
      */
-    @Bean
-    @StepScope  
-    public ItemProcessor<Card, CardReportDTO> cardItemProcessor() {
+    private ItemProcessor<Card, CardReportDTO> cardItemProcessor() {
         logger.info("Configuring CardItemProcessor with COBOL-equivalent display logic");
 
         return new ItemProcessor<Card, CardReportDTO>() {
@@ -386,9 +382,7 @@ public class CardReportJob {
      * 
      * @return Configured CompositeItemWriter for report output
      */
-    @Bean
-    @StepScope
-    public ItemWriter<CardReportDTO> cardItemWriter() {
+    private ItemWriter<CardReportDTO> cardItemWriter() {
         logger.info("Configuring CompositeItemWriter for report output to: {}", outputDirectory);
 
         // Create file writer for report output
@@ -449,10 +443,10 @@ public class CardReportJob {
     private ItemWriter<CardReportDTO> createStatisticsWriter() {
         return new ItemWriter<CardReportDTO>() {
             @Override
-            public void write(List<? extends CardReportDTO> items) throws Exception {
+            public void write(Chunk<? extends CardReportDTO> chunk) throws Exception {
                 // Log chunk processing statistics
-                if (!items.isEmpty()) {
-                    logger.debug("Wrote {} card records to report file", items.size());
+                if (!chunk.isEmpty()) {
+                    logger.debug("Wrote {} card records to report file", chunk.size());
                     
                     // Log every 5000 records for progress monitoring
                     long currentTotal = totalRecordsProcessed.get();
