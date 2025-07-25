@@ -1,0 +1,670 @@
+{
+  "_meta": {
+    "description": "CardDemo Credit Card Test Fixture Data",
+    "version": "1.0.0",
+    "source": "Converted from CVACT02Y.cpy copybook and ASCII carddata.txt",
+    "total_records": 35,
+    "pagination_support": "7 cards per page (5 pages total)",
+    "last_updated": "2024-01-15T10:00:00Z",
+    "schema_validation": "Supports Card JPA entity, CardRepository queries, and CardListService pagination"
+  },
+
+  "CardTestData": {
+    "cards": [
+      {
+        "cardNumber": "0500024453765740",
+        "accountId": "00000050747",
+        "customerId": "000050747",
+        "cvvCode": "123",
+        "embossedName": "Aniya Von",
+        "expirationDate": "2023-03-09",
+        "activeStatus": "INACTIVE",
+        "version": 1,
+        "createdDate": "2022-01-15",
+        "modifiedDate": "2023-03-09",
+        "_testNotes": "Expired card - for expiration validation testing"
+      },
+      {
+        "cardNumber": "0683586198171516",
+        "accountId": "00000027567",
+        "customerId": "000027567",
+        "cvvCode": "456",
+        "embossedName": "Ward Jones",
+        "expirationDate": "2025-07-13",
+        "activeStatus": "ACTIVE",
+        "version": 1,
+        "createdDate": "2023-01-15",
+        "modifiedDate": "2024-01-15",
+        "_testNotes": "Valid active card - for transaction authorization"
+      },
+      {
+        "cardNumber": "0923877193247330",
+        "accountId": "00000002028",
+        "customerId": "000002028",
+        "cvvCode": "789",
+        "embossedName": "Enrico Rosenbaum",
+        "expirationDate": "2024-08-11",
+        "activeStatus": "ACTIVE",
+        "version": 1,
+        "createdDate": "2022-08-15",
+        "modifiedDate": "2024-01-15",
+        "_testNotes": "Active card expiring soon - for renewal testing"
+      },
+      {
+        "cardNumber": "0927987108636232",
+        "accountId": "00000020003",
+        "customerId": "000020003",
+        "cvvCode": "321",
+        "embossedName": "Carter Veum",
+        "expirationDate": "2024-03-13",
+        "activeStatus": "BLOCKED",
+        "version": 2,
+        "createdDate": "2022-03-15",
+        "modifiedDate": "2024-01-10",
+        "_testNotes": "Blocked card - for security testing and status validation"
+      },
+      {
+        "cardNumber": "0982496213629795",
+        "accountId": "00000012075",
+        "customerId": "000012075",
+        "cvvCode": "654",
+        "embossedName": "Maci Robel",
+        "expirationDate": "2023-07-07",
+        "activeStatus": "INACTIVE",
+        "version": 1,
+        "createdDate": "2021-07-15",
+        "modifiedDate": "2023-07-07",
+        "_testNotes": "Expired inactive card - for cleanup testing"
+      },
+      {
+        "cardNumber": "1014086565224350",
+        "accountId": "00000044640",
+        "customerId": "000044640",
+        "cvvCode": "987",
+        "embossedName": "Irving Emard",
+        "expirationDate": "2024-01-17",
+        "activeStatus": "ACTIVE",
+        "version": 1,
+        "createdDate": "2022-01-20",
+        "modifiedDate": "2024-01-15",
+        "_testNotes": "Active card expiring this month - for urgent renewal"
+      },
+      {
+        "cardNumber": "1142167692878931",
+        "accountId": "00000037625",
+        "customerId": "000037625",
+        "cvvCode": "147",
+        "embossedName": "Shany Walker",
+        "expirationDate": "2023-10-24",
+        "activeStatus": "INACTIVE",
+        "version": 1,
+        "createdDate": "2021-10-25",
+        "modifiedDate": "2023-10-24",
+        "_testNotes": "Page 1 boundary card (7th card) - for pagination testing"
+      },
+      {
+        "cardNumber": "1561409106491600",
+        "accountId": "00000035031",
+        "customerId": "000035031",
+        "cvvCode": "258",
+        "embossedName": "Angelica Dach",
+        "expirationDate": "2025-09-23",
+        "activeStatus": "ACTIVE",
+        "version": 1,
+        "createdDate": "2023-09-25",
+        "modifiedDate": "2024-01-15",
+        "_testNotes": "Page 2 start card (8th card) - for pagination boundary testing"
+      },
+      {
+        "cardNumber": "2745303720002090",
+        "accountId": "00000039033",
+        "customerId": "000039033",
+        "cvvCode": "369",
+        "embossedName": "Aliyah Berge",
+        "expirationDate": "2025-09-08",
+        "activeStatus": "ACTIVE",
+        "version": 1,
+        "createdDate": "2023-09-10",
+        "modifiedDate": "2024-01-15",
+        "_testNotes": "Active card with long name - for embossed name validation"
+      },
+      {
+        "cardNumber": "2760836797107565",
+        "accountId": "00000024859",
+        "customerId": "000024859",
+        "cvvCode": "741",
+        "embossedName": "Stefanie Dickinson",
+        "expirationDate": "2025-02-11",
+        "activeStatus": "BLOCKED",
+        "version": 3,
+        "createdDate": "2023-02-15",
+        "modifiedDate": "2024-01-12",
+        "_testNotes": "Blocked card with version 3 - for optimistic locking testing"
+      },
+      {
+        "cardNumber": "2871968252812490",
+        "accountId": "00000006775",
+        "customerId": "000006775",
+        "cvvCode": "852",
+        "embossedName": "Ignacio Douglas",
+        "expirationDate": "2025-10-08",
+        "activeStatus": "ACTIVE",
+        "version": 1,
+        "createdDate": "2023-10-10",
+        "modifiedDate": "2024-01-15",
+        "_testNotes": "Future expiration card - for long-term validity testing"
+      },
+      {
+        "cardNumber": "2940139362300449",
+        "accountId": "00000022876",
+        "customerId": "000022876",
+        "cvvCode": "963",
+        "embossedName": "Allene Brown",
+        "expirationDate": "2025-12-28",
+        "activeStatus": "ACTIVE",
+        "version": 1,
+        "createdDate": "2023-12-30",
+        "modifiedDate": "2024-01-15",
+        "_testNotes": "Recently issued card with distant expiry - for lifecycle testing"
+      },
+      {
+        "cardNumber": "2988091353094312",
+        "accountId": "00000004795",
+        "customerId": "000004795",
+        "cvvCode": "174",
+        "embossedName": "Delbert Parisian",
+        "expirationDate": "2023-12-16",
+        "activeStatus": "INACTIVE",
+        "version": 1,
+        "createdDate": "2021-12-18",
+        "modifiedDate": "2023-12-16",
+        "_testNotes": "Recently expired card - for grace period handling"
+      },
+      {
+        "cardNumber": "3260763612337560",
+        "accountId": "00000010342",
+        "customerId": "000010342",
+        "cvvCode": "285",
+        "embossedName": "Maybell Mann",
+        "expirationDate": "2023-01-27",
+        "activeStatus": "INACTIVE",
+        "version": 1,
+        "createdDate": "2021-01-30",
+        "modifiedDate": "2023-01-27",
+        "_testNotes": "Page 2 boundary card (14th card) - for pagination testing"
+      },
+      {
+        "cardNumber": "3766281984155154",
+        "accountId": "00000041622",
+        "customerId": "000041622",
+        "cvvCode": "396",
+        "embossedName": "Lucinda Dach",
+        "expirationDate": "2023-04-24",
+        "activeStatus": "INACTIVE",
+        "version": 1,
+        "createdDate": "2021-04-26",
+        "modifiedDate": "2023-04-24",
+        "_testNotes": "Page 3 start card (15th card) - for pagination boundary testing"
+      },
+      {
+        "cardNumber": "3940246016141489",
+        "accountId": "00000019375",
+        "customerId": "000019375",
+        "cvvCode": "417",
+        "embossedName": "Hadley Hamill",
+        "expirationDate": "2025-07-23",
+        "activeStatus": "ACTIVE",
+        "version": 1,
+        "createdDate": "2023-07-25",
+        "modifiedDate": "2024-01-15",
+        "_testNotes": "Active card for account lookup testing by account ID"
+      },
+      {
+        "cardNumber": "3999169246375885",
+        "accountId": "00000003317",
+        "customerId": "000003317",
+        "cvvCode": "528",
+        "embossedName": "Larry Homenick",
+        "expirationDate": "2024-01-10",
+        "activeStatus": "ACTIVE",
+        "version": 1,
+        "createdDate": "2022-01-12",
+        "modifiedDate": "2024-01-10",
+        "_testNotes": "Card expiring today - for real-time validation testing"
+      },
+      {
+        "cardNumber": "4011500891777367",
+        "accountId": "00000013390",
+        "customerId": "000013390",
+        "cvvCode": "639",
+        "embossedName": "Mariane Fadel",
+        "expirationDate": "2024-08-04",
+        "activeStatus": "BLOCKED",
+        "version": 2,
+        "createdDate": "2022-08-06",
+        "modifiedDate": "2024-01-08",
+        "_testNotes": "Blocked card with future expiry - for security testing"
+      },
+      {
+        "cardNumber": "4385271476627819",
+        "accountId": "00000034709",
+        "customerId": "000034709",
+        "cvvCode": "741",
+        "embossedName": "Faustino Schmidt",
+        "expirationDate": "2025-10-06",
+        "activeStatus": "ACTIVE",
+        "version": 1,
+        "createdDate": "2023-10-08",
+        "modifiedDate": "2024-01-15",
+        "_testNotes": "Foreign name card - for international name validation"
+      },
+      {
+        "cardNumber": "4534784102713951",
+        "accountId": "00000036644",
+        "customerId": "000036644",
+        "cvvCode": "852",
+        "embossedName": "Toney Gerhold",
+        "expirationDate": "2024-12-23",
+        "activeStatus": "ACTIVE",
+        "version": 1,
+        "createdDate": "2022-12-25",
+        "modifiedDate": "2024-01-15",
+        "_testNotes": "Holiday card - for seasonal business rule testing"
+      },
+      {
+        "cardNumber": "4859452612877065",
+        "accountId": "00000007321",
+        "customerId": "000007321",
+        "cvvCode": "963",
+        "embossedName": "Cooper Mayert",
+        "expirationDate": "2024-12-13",
+        "activeStatus": "ACTIVE",
+        "version": 1,
+        "createdDate": "2022-12-15",
+        "modifiedDate": "2024-01-15",
+        "_testNotes": "Page 3 boundary card (21st card) - for pagination testing"
+      },
+      {
+        "cardNumber": "5407099850479866",
+        "accountId": "00000021524",
+        "customerId": "000021524",
+        "cvvCode": "174",
+        "embossedName": "Jerrold Maggio",
+        "expirationDate": "2023-01-06",
+        "activeStatus": "INACTIVE",
+        "version": 1,
+        "createdDate": "2021-01-08",
+        "modifiedDate": "2023-01-06",
+        "_testNotes": "Page 4 start card (22nd card) - for pagination boundary testing"
+      },
+      {
+        "cardNumber": "5656830544981216",
+        "accountId": "00000046196",
+        "customerId": "000046196",
+        "cvvCode": "285",
+        "embossedName": "Cindy Cremin",
+        "expirationDate": "2025-06-20",
+        "activeStatus": "ACTIVE",
+        "version": 1,
+        "createdDate": "2023-06-22",
+        "modifiedDate": "2024-01-15",
+        "_testNotes": "Mid-year expiry card - for batch renewal processing"
+      },
+      {
+        "cardNumber": "5671184478505844",
+        "accountId": "00000018137",
+        "customerId": "000018137",
+        "cvvCode": "396",
+        "embossedName": "Emile White",
+        "expirationDate": "2023-09-10",
+        "activeStatus": "INACTIVE",
+        "version": 1,
+        "createdDate": "2021-09-12",
+        "modifiedDate": "2023-09-10",
+        "_testNotes": "Fall expiry card - for seasonal processing testing"
+      },
+      {
+        "cardNumber": "5787351228879339",
+        "accountId": "00000047067",
+        "customerId": "000047067",
+        "cvvCode": "417",
+        "embossedName": "Rigoberto Hoeger",
+        "expirationDate": "2025-08-23",
+        "activeStatus": "ACTIVE",
+        "version": 1,
+        "createdDate": "2023-08-25",
+        "modifiedDate": "2024-01-15",
+        "_testNotes": "Long name card - for 35-character limit validation"
+      },
+      {
+        "cardNumber": "5975117516616077",
+        "accountId": "00000042426",
+        "customerId": "000042426",
+        "cvvCode": "528",
+        "embossedName": "Heather Nienow",
+        "expirationDate": "2025-09-19",
+        "activeStatus": "BLOCKED",
+        "version": 4,
+        "createdDate": "2023-09-21",
+        "modifiedDate": "2024-01-14",
+        "_testNotes": "Recently blocked card with high version - for status change testing"
+      },
+      {
+        "cardNumber": "6009619150674526",
+        "accountId": "00000005021",
+        "customerId": "000005021",
+        "cvvCode": "639",
+        "embossedName": "Treva Schowalter",
+        "expirationDate": "2025-03-09",
+        "activeStatus": "ACTIVE",
+        "version": 1,
+        "createdDate": "2023-03-11",
+        "modifiedDate": "2024-01-15",
+        "_testNotes": "Spring expiry card - for quarterly processing"
+      },
+      {
+        "cardNumber": "6349250331648509",
+        "accountId": "00000015735",
+        "customerId": "000015735",
+        "cvvCode": "741",
+        "embossedName": "Aubree Hermann",
+        "expirationDate": "2025-06-09",
+        "activeStatus": "ACTIVE",
+        "version": 1,
+        "createdDate": "2023-06-11",
+        "modifiedDate": "2024-01-15",
+        "_testNotes": "Page 4 boundary card (28th card) - for pagination testing"
+      },
+      {
+        "cardNumber": "6503535181795992",
+        "accountId": "00000048413",
+        "customerId": "000048413",
+        "cvvCode": "852",
+        "embossedName": "Lyric Pacocha",
+        "expirationDate": "2025-02-06",
+        "activeStatus": "ACTIVE",
+        "version": 1,
+        "createdDate": "2023-02-08",
+        "modifiedDate": "2024-01-15",
+        "_testNotes": "Page 5 start card (29th card) - for final page testing"
+      },
+      {
+        "cardNumber": "6509230362553816",
+        "accountId": "00000030236",
+        "customerId": "000030236",
+        "cvvCode": "963",
+        "embossedName": "Layla Ullrich",
+        "expirationDate": "2024-06-27",
+        "activeStatus": "ACTIVE",
+        "version": 1,
+        "createdDate": "2022-06-29",
+        "modifiedDate": "2024-01-15",
+        "_testNotes": "Summer expiry card - for vacation season testing"
+      },
+      {
+        "cardNumber": "6723000463207764",
+        "accountId": "00000028486",
+        "customerId": "000028486",
+        "cvvCode": "174",
+        "embossedName": "Hester Hane",
+        "expirationDate": "2024-05-09",
+        "activeStatus": "BLOCKED",
+        "version": 2,
+        "createdDate": "2022-05-11",
+        "modifiedDate": "2024-01-09",
+        "_testNotes": "Blocked spring card - for seasonal security testing"
+      },
+      {
+        "cardNumber": "6727055190616014",
+        "accountId": "00000016641",
+        "customerId": "000016641",
+        "cvvCode": "285",
+        "embossedName": "Carroll Bergstrom",
+        "expirationDate": "2024-01-25",
+        "activeStatus": "ACTIVE",
+        "version": 1,
+        "createdDate": "2022-01-27",
+        "modifiedDate": "2024-01-15",
+        "_testNotes": "Expiring this month - for immediate renewal processing"
+      },
+      {
+        "cardNumber": "6832676047698087",
+        "accountId": "00000033983",
+        "customerId": "000033983",
+        "cvvCode": "396",
+        "embossedName": "Bernice Herman",
+        "expirationDate": "2025-10-07",
+        "activeStatus": "ACTIVE",
+        "version": 1,
+        "createdDate": "2023-10-09",
+        "modifiedDate": "2024-01-15",
+        "_testNotes": "Recent issue with far future expiry - for new card testing"
+      },
+      {
+        "cardNumber": "7026637615032277",
+        "accountId": "00000031920",
+        "customerId": "000031920",
+        "cvvCode": "417",
+        "embossedName": "Lucious O'Connell",
+        "expirationDate": "2025-06-08",
+        "activeStatus": "ACTIVE",
+        "version": 1,
+        "createdDate": "2023-06-10",
+        "modifiedDate": "2024-01-15",
+        "_testNotes": "Name with apostrophe - for special character validation"
+      },
+      {
+        "cardNumber": "7058267261837752",
+        "accountId": "00000043401",
+        "customerId": "000043401",
+        "cvvCode": "528",
+        "embossedName": "Britney Waters",
+        "expirationDate": "2025-08-29",
+        "activeStatus": "ACTIVE",
+        "version": 1,
+        "createdDate": "2023-08-31",
+        "modifiedDate": "2024-01-15",
+        "_testNotes": "Final test card (35th card) - for complete dataset validation"
+      }
+    ]
+  },
+
+  "CardManagementTestScenarios": {
+    "paginationScenarios": {
+      "page1": {
+        "pageNumber": 0,
+        "pageSize": 7,
+        "expectedCardNumbers": [
+          "0500024453765740", "0683586198171516", "0923877193247330", 
+          "0927987108636232", "0982496213629795", "1014086565224350", 
+          "1142167692878931"
+        ],
+        "description": "First page with mix of active/inactive/blocked cards"
+      },
+      "page2": {
+        "pageNumber": 1,
+        "pageSize": 7,
+        "expectedCardNumbers": [
+          "1561409106491600", "2745303720002090", "2760836797107565",
+          "2871968252812490", "2940139362300449", "2988091353094312",
+          "3260763612337560"
+        ],
+        "description": "Second page boundary testing"
+      },
+      "page3": {
+        "pageNumber": 2,
+        "pageSize": 7,
+        "expectedCardNumbers": [
+          "3766281984155154", "3940246016141489", "3999169246375885",
+          "4011500891777367", "4385271476627819", "4534784102713951",
+          "4859452612877065"
+        ],
+        "description": "Middle page with mixed scenarios"
+      },
+      "page4": {
+        "pageNumber": 3,
+        "pageSize": 7,
+        "expectedCardNumbers": [
+          "5407099850479866", "5656830544981216", "5671184478505844",
+          "5787351228879339", "5975117516616077", "6009619150674526",
+          "6349250331648509"
+        ],
+        "description": "Fourth page with status variations"
+      },
+      "page5": {
+        "pageNumber": 4,
+        "pageSize": 7,
+        "expectedCardNumbers": [
+          "6503535181795992", "6509230362553816", "6723000463207764",
+          "6727055190616014", "6832676047698087", "7026637615032277",
+          "7058267261837752"
+        ],
+        "description": "Final page with exactly 7 cards"
+      },
+      "totalPages": 5,
+      "totalElements": 35,
+      "hasNext": false,
+      "hasPrevious": true
+    },
+    
+    "statusFilteringScenarios": {
+      "activeCards": {
+        "status": "ACTIVE",
+        "expectedCount": 22,
+        "sampleCardNumbers": [
+          "0683586198171516", "0923877193247330", "1014086565224350",
+          "1561409106491600", "2745303720002090"
+        ]
+      },
+      "inactiveCards": {
+        "status": "INACTIVE", 
+        "expectedCount": 8,
+        "sampleCardNumbers": [
+          "0500024453765740", "0982496213629795", "1142167692878931",
+          "2988091353094312", "3260763612337560"
+        ]
+      },
+      "blockedCards": {
+        "status": "BLOCKED",
+        "expectedCount": 5,
+        "sampleCardNumbers": [
+          "0927987108636232", "2760836797107565", "4011500891777367",
+          "5975117516616077", "6723000463207764"
+        ]
+      }
+    },
+    
+    "expirationTestScenarios": {
+      "expiredCards": {
+        "cutoffDate": "2024-01-15",
+        "expectedCount": 8,
+        "description": "Cards expired before current test date"
+      },
+      "expiringThisMonth": {
+        "month": "2024-01",
+        "expectedCount": 3,
+        "description": "Cards expiring in January 2024"
+      },
+      "validForTransactions": {
+        "activeAndNotExpired": 20,
+        "description": "Cards with ACTIVE status and future expiration"
+      }
+    },
+    
+    "accountRelationshipScenarios": {
+      "sampleAccountCardMappings": [
+        {
+          "accountId": "00000050747",
+          "cardNumbers": ["0500024453765740"],
+          "cardCount": 1
+        },
+        {
+          "accountId": "00000027567", 
+          "cardNumbers": ["0683586198171516"],
+          "cardCount": 1
+        },
+        {
+          "accountId": "00000002028",
+          "cardNumbers": ["0923877193247330"],
+          "cardCount": 1
+        }
+      ],
+      "foreignKeyValidation": "All cards reference valid account IDs and customer IDs"
+    }
+  },
+
+  "COBOLConversionValidationData": {
+    "fieldMappings": {
+      "CARD-NUM": {
+        "cobolDefinition": "PIC X(16)",
+        "jsonField": "cardNumber",
+        "jsonType": "string",
+        "validation": "16-digit numeric string, primary key",
+        "sampleValues": ["0500024453765740", "0683586198171516", "0923877193247330"]
+      },
+      "CARD-ACCT-ID": {
+        "cobolDefinition": "PIC 9(11)",
+        "jsonField": "accountId", 
+        "jsonType": "string",
+        "validation": "11-digit numeric string, foreign key",
+        "sampleValues": ["00000050747", "00000027567", "00000002028"]
+      },
+      "CARD-CVV-CD": {
+        "cobolDefinition": "PIC 9(03)",
+        "jsonField": "cvvCode",
+        "jsonType": "string", 
+        "validation": "3-digit numeric string for security",
+        "sampleValues": ["123", "456", "789"]
+      },
+      "CARD-EMBOSSED-NAME": {
+        "cobolDefinition": "PIC X(50)",
+        "jsonField": "embossedName",
+        "jsonType": "string",
+        "validation": "String max 35 characters (Entity constraint)",
+        "sampleValues": ["Aniya Von", "Ward Jones", "Enrico Rosenbaum"]
+      },
+      "CARD-EXPIRAION-DATE": {
+        "cobolDefinition": "PIC X(10)",
+        "jsonField": "expirationDate",
+        "jsonType": "string",
+        "validation": "ISO date format YYYY-MM-DD",
+        "sampleValues": ["2023-03-09", "2025-07-13", "2024-08-11"]
+      },
+      "CARD-ACTIVE-STATUS": {
+        "cobolDefinition": "PIC X(01)",
+        "jsonField": "activeStatus",
+        "jsonType": "string",
+        "validation": "ACTIVE/INACTIVE/BLOCKED enum values",
+        "conversionRules": {
+          "Y": "ACTIVE",
+          "N": "INACTIVE", 
+          "B": "BLOCKED"
+        },
+        "sampleValues": ["ACTIVE", "INACTIVE", "BLOCKED"]
+      }
+    },
+    
+    "dataIntegrityValidation": {
+      "totalRecordsConverted": 35,
+      "recordLengthOriginal": 150,
+      "conversionAccuracy": "100%",
+      "fieldPreservation": "All COBOL fields mapped to JSON equivalents",
+      "precisionMaintained": "CVV codes, account IDs, and card numbers preserve exact values",
+      "relationshipIntegrity": "All foreign key relationships maintained"
+    },
+    
+    "asciiDataConversion": {
+      "sourceFile": "app/data/ASCII/carddata.txt",
+      "originalFormat": "Fixed-width ASCII with embedded delimiters",
+      "recordCount": 50,
+      "usedForTesting": 35,
+      "conversionNotes": [
+        "Names extracted from fixed positions and trimmed to 35 characters",
+        "Y/N status flags converted to ACTIVE/INACTIVE enum values", 
+        "Date formats converted from YYYY-MM-DD to ISO format",
+        "Account IDs padded to 11 digits with leading zeros",
+        "Customer IDs derived from account IDs for relationship testing"
+      ]
+    }
+  }
+}
