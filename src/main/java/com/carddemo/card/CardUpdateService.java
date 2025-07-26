@@ -24,7 +24,7 @@ import com.carddemo.card.CardUpdateRequestDto;
 import com.carddemo.card.CardUpdateResponseDto;
 import com.carddemo.common.dto.AuditInfo;
 import com.carddemo.common.enums.CardStatus;
-import com.carddemo.common.enums.ValidationResult;
+import com.carddemo.common.dto.ValidationResult;
 import com.carddemo.common.util.BigDecimalUtils;
 import com.carddemo.common.util.DateUtils;
 import com.carddemo.common.util.ValidationUtils;
@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import java.util.Optional;
@@ -166,7 +167,7 @@ public class CardUpdateService {
 
         try {
             // Step 1: Validate the request input (COBOL 1200-EDIT-MAP-INPUTS equivalent)
-            ValidationResult inputValidation = validateUpdateRequest(request);
+            com.carddemo.common.enums.ValidationResult inputValidation = validateUpdateRequest(request);
             if (!inputValidation.isValid()) {
                 logger.warn("Card update input validation failed: {}", inputValidation.getErrorMessage());
                 return buildValidationErrorResponse(inputValidation, correlationId);
@@ -216,18 +217,18 @@ public class CardUpdateService {
      * @param request The card update request to validate
      * @return ValidationResult indicating success or specific validation failure
      */
-    public ValidationResult validateUpdateRequest(@Valid CardUpdateRequestDto request) {
+    public com.carddemo.common.enums.ValidationResult validateUpdateRequest(@Valid CardUpdateRequestDto request) {
         logger.debug("Validating card update request for card: {}", 
                     request != null ? maskCardNumber(request.getCardNumber()) : "null");
 
         // Null request validation
         if (request == null) {
             logger.warn("Card update validation failed: null request");
-            return ValidationResult.BLANK_FIELD;
+            return com.carddemo.common.enums.ValidationResult.BLANK_FIELD;
         }
 
         // Card number validation (COBOL 1220-EDIT-CARD equivalent)
-        ValidationResult cardNumberValidation = ValidationUtils.validateRequiredField(
+        com.carddemo.common.enums.ValidationResult cardNumberValidation = ValidationUtils.validateRequiredField(
             request.getCardNumber(), "card number");
         if (!cardNumberValidation.isValid()) {
             logger.warn("Card number validation failed: {}", cardNumberValidation.getErrorMessage());
@@ -235,7 +236,7 @@ public class CardUpdateService {
         }
 
         // Account ID validation (COBOL 1210-EDIT-ACCOUNT equivalent)
-        ValidationResult accountValidation = ValidationUtils.validateAccountNumber(request.getAccountId());
+        com.carddemo.common.enums.ValidationResult accountValidation = ValidationUtils.validateAccountNumber(request.getAccountId());
         if (!accountValidation.isValid()) {
             logger.warn("Account ID validation failed: {}", accountValidation.getErrorMessage());
             return accountValidation;
@@ -243,7 +244,7 @@ public class CardUpdateService {
 
         // Embossed name validation (COBOL 1230-EDIT-NAME equivalent)
         if (request.getEmbossedName() != null) {
-            ValidationResult nameValidation = ValidationUtils.validateAlphaField(
+            com.carddemo.common.enums.ValidationResult nameValidation = ValidationUtils.validateAlphaField(
                 request.getEmbossedName(), MAX_EMBOSSED_NAME_LENGTH);
             if (!nameValidation.isValid()) {
                 logger.warn("Embossed name validation failed: {}", nameValidation.getErrorMessage());
@@ -255,13 +256,13 @@ public class CardUpdateService {
         if (request.getActiveStatus() != null) {
             if (!CardStatus.isValid(request.getActiveStatus())) {
                 logger.warn("Card status validation failed: invalid status '{}'", request.getActiveStatus());
-                return ValidationResult.INVALID_FORMAT;
+                return com.carddemo.common.enums.ValidationResult.INVALID_FORMAT;
             }
         }
 
         // Expiration date validation (COBOL 1250/1260-EDIT-EXPIRY equivalent)
         if (request.getExpirationDate() != null) {
-            ValidationResult dateValidation = validateCardExpirationDate(request.getExpirationDate());
+            com.carddemo.common.enums.ValidationResult dateValidation = validateCardExpirationDate(request.getExpirationDate().toString());
             if (!dateValidation.isValid()) {
                 logger.warn("Expiration date validation failed: {}", dateValidation.getErrorMessage());
                 return dateValidation;
@@ -270,7 +271,7 @@ public class CardUpdateService {
 
         // CVV code validation
         if (request.getCvvCode() != null) {
-            ValidationResult cvvValidation = ValidationUtils.validateNumericField(
+            com.carddemo.common.enums.ValidationResult cvvValidation = ValidationUtils.validateNumericField(
                 request.getCvvCode(), CVV_CODE_LENGTH);
             if (!cvvValidation.isValid()) {
                 logger.warn("CVV code validation failed: {}", cvvValidation.getErrorMessage());
@@ -281,11 +282,11 @@ public class CardUpdateService {
         // Version number validation for optimistic locking
         if (request.getVersionNumber() == null || request.getVersionNumber() < 0) {
             logger.warn("Version number validation failed: invalid version {}", request.getVersionNumber());
-            return ValidationResult.INVALID_FORMAT;
+            return com.carddemo.common.enums.ValidationResult.INVALID_FORMAT;
         }
 
         logger.debug("Card update request validation successful");
-        return ValidationResult.VALID;
+        return com.carddemo.common.enums.ValidationResult.VALID;
     }
 
     /**
@@ -323,7 +324,7 @@ public class CardUpdateService {
         Card currentCard = cardOptional.get();
 
         // Check optimistic locking version compatibility (COBOL 9300-CHECK-CHANGE-IN-REC equivalent)
-        ValidationResult lockingCheck = checkOptimisticLocking(currentCard, request.getVersionNumber());
+        com.carddemo.common.enums.ValidationResult lockingCheck = checkOptimisticLocking(currentCard, request.getVersionNumber());
         if (!lockingCheck.isValid()) {
             logger.warn("Optimistic locking check failed for card: {}", 
                        maskCardNumber(request.getCardNumber()));
@@ -331,7 +332,7 @@ public class CardUpdateService {
         }
 
         // Validate account association (COBOL account cross-reference validation)
-        ValidationResult accountValidation = validateAccountAssociation(request.getAccountId());
+        com.carddemo.common.enums.ValidationResult accountValidation = validateAccountAssociation(request.getAccountId());
         if (!accountValidation.isValid()) {
             logger.warn("Account association validation failed: {}", accountValidation.getErrorMessage());
             return buildValidationErrorResponse(accountValidation, correlationId);
@@ -341,7 +342,7 @@ public class CardUpdateService {
         Card updatedCard = applyCardUpdates(currentCard, request);
 
         // Validate card status transition rules
-        ValidationResult statusValidation = validateCardStatus(currentCard.getActiveStatus(), 
+        com.carddemo.common.enums.ValidationResult statusValidation = validateCardStatus(currentCard.getActiveStatus(), 
                                                              updatedCard.getActiveStatus());
         if (!statusValidation.isValid()) {
             logger.warn("Card status transition validation failed: {}", statusValidation.getErrorMessage());
@@ -406,16 +407,15 @@ public class CardUpdateService {
 
         // Apply card status update if provided
         if (request.getActiveStatus() != null && !request.getActiveStatus().trim().isEmpty()) {
-            updatedCard.setActiveStatus(request.getActiveStatus().trim().toUpperCase());
+            CardStatus newStatus = CardStatus.fromCode(request.getActiveStatus().trim().toUpperCase());
+            updatedCard.setActiveStatus(newStatus);
         } else {
             updatedCard.setActiveStatus(currentCard.getActiveStatus());
         }
 
         // Preserve other fields
-        updatedCard.setCreditLimit(currentCard.getCreditLimit());
-        updatedCard.setCashLimit(currentCard.getCashLimit());
-        updatedCard.setCreatedAt(currentCard.getCreatedAt());
-        updatedCard.setUpdatedAt(LocalDateTime.now());
+        updatedCard.setCreatedDate(currentCard.getCreatedDate());
+        updatedCard.setModifiedDate(LocalDate.now());
 
         return updatedCard;
     }
@@ -436,7 +436,7 @@ public class CardUpdateService {
         
         // Set updated card information
         response.setUpdatedCard(updatedCard);
-        response.setValidationResult(ValidationResult.VALID);
+        response.setValidationResult(new ValidationResult(true)); // Create DTO with valid status
         response.setVersionNumber(updatedCard.getVersion());
         response.setOptimisticLockSuccess(true);
         response.setUpdateTimestamp(LocalDateTime.now());
@@ -462,23 +462,23 @@ public class CardUpdateService {
      * @param requestVersion The version number from the update request
      * @return ValidationResult indicating version compatibility
      */
-    public ValidationResult checkOptimisticLocking(Card currentCard, Long requestVersion) {
+    public com.carddemo.common.enums.ValidationResult checkOptimisticLocking(Card currentCard, Long requestVersion) {
         logger.debug("Checking optimistic locking for card: {} (current version: {}, request version: {})",
                     maskCardNumber(currentCard.getCardNumber()), currentCard.getVersion(), requestVersion);
 
         if (requestVersion == null) {
             logger.warn("Optimistic locking check failed: null version in request");
-            return ValidationResult.INVALID_FORMAT;
+            return com.carddemo.common.enums.ValidationResult.INVALID_FORMAT;
         }
 
         if (!currentCard.getVersion().equals(requestVersion)) {
             logger.warn("Optimistic locking conflict detected: current version {} != request version {}",
                        currentCard.getVersion(), requestVersion);
-            return ValidationResult.BUSINESS_RULE_VIOLATION;
+            return com.carddemo.common.enums.ValidationResult.BUSINESS_RULE_VIOLATION;
         }
 
         logger.debug("Optimistic locking check successful");
-        return ValidationResult.VALID;
+        return com.carddemo.common.enums.ValidationResult.VALID;
     }
 
     /**
@@ -489,24 +489,24 @@ public class CardUpdateService {
      * @param expirationDate The expiration date string to validate
      * @return ValidationResult indicating date validity
      */
-    public ValidationResult validateCardExpirationDate(String expirationDate) {
+    public com.carddemo.common.enums.ValidationResult validateCardExpirationDate(String expirationDate) {
         logger.debug("Validating card expiration date: {}", expirationDate);
 
         // Use DateUtils for comprehensive date validation
-        ValidationResult dateValidation = DateUtils.validateDate(expirationDate);
+        com.carddemo.common.enums.ValidationResult dateValidation = DateUtils.validateDate(expirationDate);
         if (!dateValidation.isValid()) {
             return dateValidation;
         }
 
         // Additional business rule: expiration date must be in the future
-        ValidationResult rangeValidation = DateUtils.isValidDateRange(expirationDate, true);
+        com.carddemo.common.enums.ValidationResult rangeValidation = DateUtils.validateFutureDate(expirationDate);
         if (!rangeValidation.isValid()) {
             logger.warn("Expiration date validation failed: date is not in the future");
-            return ValidationResult.INVALID_RANGE;
+            return com.carddemo.common.enums.ValidationResult.INVALID_RANGE;
         }
 
         logger.debug("Card expiration date validation successful");
-        return ValidationResult.VALID;
+        return com.carddemo.common.enums.ValidationResult.VALID;
     }
 
     /**
@@ -518,29 +518,26 @@ public class CardUpdateService {
      * @param newStatus The proposed new card status
      * @return ValidationResult indicating transition validity
      */
-    public ValidationResult validateCardStatus(String currentStatus, String newStatus) {
+    public com.carddemo.common.enums.ValidationResult validateCardStatus(CardStatus currentStatus, CardStatus newStatus) {
         logger.debug("Validating card status transition: {} -> {}", currentStatus, newStatus);
 
         // No change validation
         if (currentStatus != null && currentStatus.equals(newStatus)) {
-            return ValidationResult.VALID;
+            return com.carddemo.common.enums.ValidationResult.VALID;
         }
 
-        CardStatus current = CardStatus.fromCode(currentStatus);
-        CardStatus proposed = CardStatus.fromCode(newStatus);
-
-        if (current == null || proposed == null) {
-            logger.warn("Card status validation failed: invalid status codes");
-            return ValidationResult.INVALID_FORMAT;
+        if (currentStatus == null || newStatus == null) {
+            logger.warn("Card status validation failed: null status values");
+            return com.carddemo.common.enums.ValidationResult.INVALID_FORMAT;
         }
 
-        if (!current.canTransitionTo(proposed)) {
-            logger.warn("Card status transition not allowed: {} -> {}", current, proposed);
-            return ValidationResult.BUSINESS_RULE_VIOLATION;
+        if (!currentStatus.canTransitionTo(newStatus)) {
+            logger.warn("Card status transition not allowed: {} -> {}", currentStatus, newStatus);
+            return com.carddemo.common.enums.ValidationResult.BUSINESS_RULE_VIOLATION;
         }
 
         logger.debug("Card status transition validation successful");
-        return ValidationResult.VALID;
+        return com.carddemo.common.enums.ValidationResult.VALID;
     }
 
     /**
@@ -551,7 +548,7 @@ public class CardUpdateService {
      * @param accountId The account ID to validate
      * @return ValidationResult indicating account association validity
      */
-    public ValidationResult validateAccountAssociation(String accountId) {
+    public com.carddemo.common.enums.ValidationResult validateAccountAssociation(String accountId) {
         logger.debug("Validating account association for account: {}", accountId);
 
         try {
@@ -559,22 +556,22 @@ public class CardUpdateService {
             boolean accountExists = accountViewService.checkAccountExists(accountId);
             if (!accountExists) {
                 logger.warn("Account association validation failed: account not found");
-                return ValidationResult.INVALID_CROSS_REFERENCE;
+                return com.carddemo.common.enums.ValidationResult.INVALID_CROSS_REFERENCE;
             }
 
             // Validate account ID format
-            ValidationResult accountValidation = accountViewService.validateAccountId(accountId);
+            com.carddemo.common.enums.ValidationResult accountValidation = accountViewService.validateAccountId(accountId);
             if (!accountValidation.isValid()) {
                 logger.warn("Account ID format validation failed: {}", accountValidation.getErrorMessage());
                 return accountValidation;
             }
 
             logger.debug("Account association validation successful");
-            return ValidationResult.VALID;
+            return com.carddemo.common.enums.ValidationResult.VALID;
 
         } catch (Exception e) {
             logger.error("Account association validation error: {}", e.getMessage(), e);
-            return ValidationResult.INVALID_CROSS_REFERENCE;
+            return com.carddemo.common.enums.ValidationResult.INVALID_CROSS_REFERENCE;
         }
     }
 
@@ -610,7 +607,7 @@ public class CardUpdateService {
                        request != null ? maskCardNumber(request.getCardNumber()) : "null",
                        request != null ? request.getAccountId() : "null",
                        response != null && response.getValidationResult() != null ? 
-                           response.getValidationResult().name() : "unknown",
+                           response.getValidationResult().getValidationCode() : "unknown",
                        response != null ? response.isOptimisticLockSuccess() : false,
                        durationMs);
 
@@ -628,10 +625,16 @@ public class CardUpdateService {
      * @param correlationId Unique identifier for audit correlation
      * @return CardUpdateResponseDto with validation error details
      */
-    private CardUpdateResponseDto buildValidationErrorResponse(ValidationResult validationResult, 
+    private CardUpdateResponseDto buildValidationErrorResponse(com.carddemo.common.enums.ValidationResult validationResult, 
                                                              String correlationId) {
         CardUpdateResponseDto response = new CardUpdateResponseDto();
-        response.setValidationResult(validationResult);
+        
+        // Convert enum to DTO
+        ValidationResult validationDto = new ValidationResult(false);
+        validationDto.addErrorMessage("validation_error", validationResult.getErrorCode(), 
+                                     validationResult.getErrorMessage(), ValidationResult.Severity.ERROR);
+        response.setValidationResult(validationDto);
+        
         response.setOptimisticLockSuccess(false);
         response.setUpdateTimestamp(LocalDateTime.now());
         response.setTransactionConfirmation("Card update failed due to validation errors");
@@ -657,7 +660,13 @@ public class CardUpdateService {
     private CardUpdateResponseDto buildOptimisticLockConflictResponse(Card currentCard, String correlationId) {
         CardUpdateResponseDto response = new CardUpdateResponseDto();
         response.setUpdatedCard(currentCard); // Return current data for client refresh
-        response.setValidationResult(ValidationResult.BUSINESS_RULE_VIOLATION);
+        
+        // Convert enum to DTO for optimistic lock conflict
+        ValidationResult validationDto = new ValidationResult(false);
+        validationDto.addErrorMessage("optimistic_lock", "business_error", 
+                                     "Optimistic locking conflict detected", ValidationResult.Severity.ERROR);
+        response.setValidationResult(validationDto);
+        
         response.setVersionNumber(currentCard.getVersion());
         response.setOptimisticLockSuccess(false);
         response.setUpdateTimestamp(LocalDateTime.now());
@@ -684,7 +693,13 @@ public class CardUpdateService {
      */
     private CardUpdateResponseDto buildErrorResponse(Exception error, String correlationId) {
         CardUpdateResponseDto response = new CardUpdateResponseDto();
-        response.setValidationResult(ValidationResult.BUSINESS_RULE_VIOLATION);
+        
+        // Convert enum to DTO for system error
+        ValidationResult validationDto = new ValidationResult(false);
+        validationDto.addErrorMessage("system_error", "business_error", 
+                                     "System error occurred during card update", ValidationResult.Severity.ERROR);
+        response.setValidationResult(validationDto);
+        
         response.setOptimisticLockSuccess(false);
         response.setUpdateTimestamp(LocalDateTime.now());
         response.setTransactionConfirmation("Card update failed due to system error");
@@ -707,7 +722,13 @@ public class CardUpdateService {
      */
     private CardUpdateResponseDto buildErrorResponse(String errorMessage, String correlationId) {
         CardUpdateResponseDto response = new CardUpdateResponseDto();
-        response.setValidationResult(ValidationResult.INVALID_CROSS_REFERENCE);
+        
+        // Convert enum to DTO for cross-reference error
+        ValidationResult validationDto = new ValidationResult(false);
+        validationDto.addErrorMessage("cross_reference", "reference_error", 
+                                     errorMessage, ValidationResult.Severity.ERROR);
+        response.setValidationResult(validationDto);
+        
         response.setOptimisticLockSuccess(false);
         response.setUpdateTimestamp(LocalDateTime.now());
         response.setTransactionConfirmation(errorMessage);
