@@ -19,7 +19,7 @@
  */
 
 import { BaseScreenData } from './CommonTypes';
-import { Location } from 'react-router-dom';
+import type { Location } from 'history';
 import { KeyboardEvent } from 'react';
 
 /**
