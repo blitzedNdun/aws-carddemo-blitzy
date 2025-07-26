@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Propagation;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -251,9 +252,22 @@ public class AccountUpdateService {
             }
             
             // Business rule: expiry date must be after open date
-            if (!DateUtils.isValidDateRange(requestDto.getOpenDate(), requestDto.getExpiryDate())) {
-                logger.warn("Date range validation failed: expiry date must be after open date");
-                return ValidationResult.INVALID_RANGE;
+            try {
+                Optional<LocalDate> openDateOpt = DateUtils.parseDate(requestDto.getOpenDate());
+                Optional<LocalDate> expiryDateOpt = DateUtils.parseDate(requestDto.getExpiryDate());
+                
+                if (openDateOpt.isPresent() && expiryDateOpt.isPresent()) {
+                    LocalDate openDate = openDateOpt.get();
+                    LocalDate expiryDate = expiryDateOpt.get();
+                    
+                    if (!expiryDate.isAfter(openDate)) {
+                        logger.warn("Date range validation failed: expiry date must be after open date");
+                        return ValidationResult.INVALID_RANGE;
+                    }
+                }
+            } catch (Exception e) {
+                logger.warn("Date comparison validation failed: {}", e.getMessage());
+                return ValidationResult.INVALID_FORMAT;
             }
         }
         
@@ -330,15 +344,18 @@ public class AccountUpdateService {
         
         // Update account dates if provided (COBOL date field updates)
         if (requestDto.getOpenDate() != null) {
-            updatedAccount.setOpenDate(DateUtils.parseDate(requestDto.getOpenDate()));
+            Optional<LocalDate> openDate = DateUtils.parseDate(requestDto.getOpenDate());
+            openDate.ifPresent(updatedAccount::setOpenDate);
         }
         
         if (requestDto.getExpiryDate() != null) {
-            updatedAccount.setExpirationDate(DateUtils.parseDate(requestDto.getExpiryDate()));
+            Optional<LocalDate> expiryDate = DateUtils.parseDate(requestDto.getExpiryDate());
+            expiryDate.ifPresent(updatedAccount::setExpirationDate);
         }
         
         if (requestDto.getReissueDate() != null) {
-            updatedAccount.setReissueDate(DateUtils.parseDate(requestDto.getReissueDate()));
+            Optional<LocalDate> reissueDate = DateUtils.parseDate(requestDto.getReissueDate());
+            reissueDate.ifPresent(updatedAccount::setReissueDate);
         }
         
         logger.debug("Successfully updated account balances for account: {}", updatedAccount.getAccountId());
