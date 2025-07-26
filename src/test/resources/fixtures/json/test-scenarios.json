@@ -1,0 +1,626 @@
+{
+  "_meta": {
+    "description": "CardDemo Comprehensive E2E Test Scenarios - Complete Business Journey Validation",
+    "version": "2.0.0",
+    "purpose": "End-to-end test scenarios combining multiple entities for complete business journey validation, golden file comparison, and cross-component integration testing",
+    "source": "Generated from COBOL copybooks (CUSTREC.cpy, CVACT01Y.cpy, CVACT02Y.cpy, CVTRA05Y.cpy, CSUSR01Y.cpy) and ASCII data files",
+    "testing_framework": "JUnit 5 + Testcontainers + Cypress + Spring Boot Test",
+    "created": "2024-12-19T12:00:00Z",
+    "compliance": "Section 6.6.4.2 React component E2E scenarios, Section 6.6.4.5 BigDecimal precision validation",
+    "entity_relationships": "Users -> Customers -> Accounts -> Cards -> Transactions (complete workflow chain)",
+    "test_coverage": "Authentication, Authorization, CRUD Operations, Financial Calculations, Session Management, Cross-Entity Validation"
+  },
+
+  "ComprehensiveTestScenarios": {
+    "BusinessJourneyWorkflows": {
+      "complete_user_lifecycle": {
+        "scenario_id": "BJ-001",
+        "description": "Complete business journey from user authentication through transaction completion",
+        "journey_stages": [
+          "authentication_login",
+          "role_authorization_check", 
+          "menu_navigation",
+          "account_management",
+          "card_operations",
+          "transaction_processing",
+          "session_cleanup"
+        ],
+        "test_data": {
+          "primary_user": {
+            "userId": "TESTUSER001",
+            "firstName": "Jane",
+            "lastName": "TestUser",
+            "type": "REGULAR",
+            "password": "TestPass123!",
+            "passwordHash": "$2a$10$N.zmdr9k7uOIW.q.bgs/Ouzd3LlC.K2lQ4TLrF9ELTq7RrqKX9GJq",
+            "roles": ["USER"],
+            "authorities": ["READ_ACCOUNT", "UPDATE_ACCOUNT", "VIEW_CARDS", "CREATE_TRANSACTION"],
+            "lastLogonDate": "2024-12-19",
+            "lastLogonTime": "14:30:45",
+            "sessionTimeout": "8H",
+            "accountLocked": "N",
+            "passwordExpired": "N"
+          },
+          "associated_customer": {
+            "customerId": "000000100",
+            "firstName": "Jane",
+            "middleName": "E",
+            "lastName": "TestUser",
+            "addressLine1": "123 Test Avenue",
+            "addressLine2": "Suite 100",
+            "addressLine3": "TestCity",
+            "stateCode": "CA",
+            "countryCode": "USA",
+            "zipCode": "90210",
+            "phoneNumber1": "(555)TEST-001",
+            "phoneNumber2": "(555)TEST-002",
+            "ssn": "999999999",
+            "governmentIssuedId": "T12345678",
+            "dateOfBirth": "1990-01-15",
+            "eftAccountId": "9876543210",
+            "primaryCardholderIndicator": "Y",
+            "ficoCreditScore": 750
+          },
+          "primary_account": {
+            "accountId": "00000000100",
+            "customerId": "000000100",
+            "activeStatus": "Y",
+            "currentBalance": "2500.75",
+            "creditLimit": "10000.00",
+            "openDate": "2020-01-15",
+            "expiryDate": "2025-01-15",
+            "reissueDate": "2025-01-15",
+            "cashBalance": "0.00",
+            "cashCreditLimit": "1000.00",
+            "groupId": "000000000"
+          },
+          "active_cards": [
+            {
+              "cardNumber": "4500000000000100",
+              "accountId": "00000000100",
+              "customerId": "000000100",
+              "cvvCode": "123",
+              "embossedName": "JANE E TESTUSER",
+              "expirationDate": "2025-12-31",
+              "activeStatus": "ACTIVE",
+              "version": 1,
+              "createdDate": "2020-01-15",
+              "modifiedDate": "2024-12-19"
+            }
+          ],
+          "sample_transactions": [
+            {
+              "transactionId": "T000000000000100",
+              "accountId": "00000000100", 
+              "cardNumber": "4500000000000100",
+              "transactionType": "01",
+              "categoryCode": "010001",
+              "transactionAmount": "125.50",
+              "description": "Test Purchase Transaction",
+              "merchantName": "TEST MERCHANT CO",
+              "transactionDate": "2024-12-19",
+              "transactionTime": "14:30:45",
+              "originId": "POS12345",
+              "processingCode": "000000"
+            }
+          ]
+        },
+        "test_assertions": {
+          "authentication_flow": {
+            "jwt_token_generated": true,
+            "session_established": true,
+            "role_authorities_loaded": true,
+            "last_logon_updated": true
+          },
+          "account_operations": {
+            "balance_calculated_correctly": true,
+            "credit_limit_enforced": true,
+            "account_status_validated": true,
+            "customer_relationship_verified": true
+          },
+          "transaction_processing": {
+            "balance_updated": "2375.25",
+            "transaction_stored": true,
+            "audit_trail_created": true,
+            "decimal_precision_maintained": true
+          }
+        }
+      },
+
+      "admin_user_management_workflow": {
+        "scenario_id": "BJ-002", 
+        "description": "Administrative user management complete workflow testing",
+        "journey_stages": [
+          "admin_authentication",
+          "admin_menu_access",
+          "user_listing_pagination",
+          "user_creation",
+          "user_modification",
+          "user_deactivation"
+        ],
+        "test_data": {
+          "admin_user": {
+            "userId": "ADMIN001",
+            "firstName": "System",
+            "lastName": "Administrator",
+            "type": "ADMIN",
+            "password": "AdminPass456!",
+            "passwordHash": "$2a$10$M.zmdr9k7uOIW.q.bgs/Ouzd3LlC.K2lQ4TLrF9ELTq7RrqKX9GJq",
+            "roles": ["ADMIN", "USER"],
+            "authorities": ["ALL_PRIVILEGES", "USER_MANAGEMENT", "SYSTEM_ADMIN"],
+            "lastLogonDate": "2024-12-19",
+            "lastLogonTime": "09:00:00",
+            "sessionTimeout": "8H",
+            "accountLocked": "N",
+            "passwordExpired": "N"
+          },
+          "managed_users": [
+            {
+              "userId": "NEWUSER001",
+              "firstName": "New",
+              "lastName": "User",
+              "type": "REGULAR",
+              "password": "NewPass789!",
+              "roles": ["USER"],
+              "authorities": ["READ_ACCOUNT", "VIEW_CARDS"]
+            }
+          ]
+        }
+      }
+    },
+
+    "GoldenFileValidationScenarios": {
+      "decimal_precision_validation": {
+        "scenario_id": "GF-001",
+        "description": "BigDecimal precision validation against COBOL COMP-3 calculations",
+        "purpose": "Zero-tolerance financial precision verification per Section 6.6.4.5",
+        "cobol_reference_calculations": {
+          "balance_calculation": {
+            "initial_balance": "1000.00",
+            "transaction_amount": "125.50", 
+            "expected_result": "874.50",
+            "mathContext": "DECIMAL128",
+            "roundingMode": "HALF_UP",
+            "cobol_comp3_equivalent": "PIC S9(10)V99 COMP-3"
+          },
+          "interest_calculation": {
+            "principal": "5000.00",
+            "annual_rate": "18.75",
+            "daily_rate": "0.051369863014",
+            "expected_daily_interest": "2.57",
+            "mathContext": "DECIMAL128",
+            "cobol_equivalent": "COMPUTE DAILY-INT = BALANCE * DAILY-RATE"
+          },
+          "payment_allocation": {
+            "payment_amount": "200.00",
+            "interest_portion": "45.75",
+            "principal_portion": "154.25",
+            "remaining_balance": "4845.75",
+            "precision_tolerance": "0.00",
+            "validation_method": "exact_match"
+          }
+        },
+        "test_scenarios": [
+          {
+            "scenario": "purchase_transaction_balance_update",
+            "initial_balance": "2500.75",
+            "transaction_amount": "125.50",
+            "expected_balance": "2375.25",
+            "decimal_places": 2,
+            "validation": "exact_bigdecimal_comparison"
+          },
+          {
+            "scenario": "credit_limit_utilization_calculation",
+            "credit_limit": "10000.00",
+            "current_balance": "2375.25",
+            "available_credit": "7624.75",
+            "utilization_percentage": "23.75",
+            "validation": "mathematical_precision_check"
+          }
+        ]
+      },
+
+      "financial_calculation_reference_data": {
+        "scenario_id": "GF-002",
+        "description": "Reference data for validating financial calculations match legacy COBOL behavior",
+        "calculation_test_cases": [
+          {
+            "operation": "balance_update_purchase",
+            "inputs": {
+              "starting_balance": "1500.00",
+              "purchase_amount": "275.50",
+              "processing_fee": "2.50"
+            },
+            "cobol_calculation": "SUBTRACT WS-PURCHASE-AMT FROM ACCT-CURR-BAL",
+            "expected_result": "1222.00",
+            "java_implementation": "currentBalance.subtract(purchaseAmount.add(processingFee), DECIMAL128)"
+          },
+          {
+            "operation": "payment_processing",
+            "inputs": {
+              "account_balance": "2000.00",
+              "payment_amount": "500.00",
+              "payment_fee": "0.00"
+            },
+            "cobol_calculation": "ADD WS-PAYMENT-AMT TO ACCT-CURR-BAL",
+            "expected_result": "2500.00",
+            "java_implementation": "currentBalance.add(paymentAmount, DECIMAL128)"
+          }
+        ]
+      }
+    },
+
+    "CrossComponentIntegrationScenarios": {
+      "react_rest_database_integration": {
+        "scenario_id": "CI-001",
+        "description": "Complete React component to REST API to PostgreSQL database integration testing",
+        "test_flow": "React Form Submission -> REST Controller -> Service Layer -> JPA Repository -> PostgreSQL -> Response Chain",
+        "integration_points": [
+          {
+            "component": "AccountViewComponent.jsx",
+            "api_endpoint": "/api/account/view/{accountId}",
+            "service": "AccountViewService.java",
+            "repository": "AccountRepository.java",
+            "database_table": "accounts",
+            "test_scenario": "account_detail_retrieval"
+          },
+          {
+            "component": "CardListComponent.jsx", 
+            "api_endpoint": "/api/card/list",
+            "service": "CardListService.java",
+            "repository": "CardRepository.java",
+            "database_table": "cards",
+            "test_scenario": "paginated_card_listing"
+          },
+          {
+            "component": "TransactionComponent.jsx",
+            "api_endpoint": "/api/transaction/create",
+            "service": "AddTransactionService.java", 
+            "repository": "TransactionRepository.java",
+            "database_table": "transactions",
+            "test_scenario": "transaction_creation_with_balance_update"
+          }
+        ],
+        "test_data_integration": {
+          "account_view_scenario": {
+            "request_data": {
+              "accountId": "00000000100"
+            },
+            "database_query": "SELECT * FROM accounts WHERE account_id = ?",
+            "expected_response": {
+              "accountId": "00000000100",
+              "customerId": "000000100", 
+              "activeStatus": "Y",
+              "currentBalance": "2500.75",
+              "creditLimit": "10000.00"
+            },
+            "react_component_assertions": {
+              "fields_populated": true,
+              "balance_formatted_correctly": "$2,500.75",
+              "navigation_enabled": true,
+              "validation_errors": false
+            }
+          }
+        }
+      },
+
+      "session_management_integration": {
+        "scenario_id": "CI-002",
+        "description": "Spring Session with Redis integration testing across multiple components",
+        "session_lifecycle": [
+          "user_authentication_creates_session",
+          "session_stored_in_redis",
+          "session_shared_across_microservices",
+          "session_timeout_handling",
+          "session_cleanup_on_logout"
+        ],
+        "test_configuration": {
+          "redis_session_timeout": "28800", // 8 hours in seconds
+          "session_cookie_name": "JSESSIONID",
+          "session_attributes": {
+            "user_id": "TESTUSER001",
+            "user_roles": ["USER"],
+            "last_activity": "2024-12-19T14:30:45",
+            "csrf_token": "test-csrf-token-123"
+          }
+        }
+      }
+    },
+
+    "MultiEntityRelationshipScenarios": {
+      "complete_entity_chain_validation": {
+        "scenario_id": "MER-001",
+        "description": "Complete entity relationship validation across Users->Customers->Accounts->Cards->Transactions",
+        "relationship_chain": {
+          "user_to_customer": {
+            "user_id": "TESTUSER001",
+            "customer_id": "000000100",
+            "relationship_type": "PRIMARY_HOLDER",
+            "validation_rules": [
+              "user_name_matches_customer_name",
+              "unique_customer_per_user",
+              "active_relationship_status"
+            ]
+          },
+          "customer_to_accounts": {
+            "customer_id": "000000100",
+            "accounts": [
+              {
+                "account_id": "00000000100",
+                "account_type": "CREDIT",
+                "relationship": "PRIMARY"
+              }
+            ],
+            "validation_rules": [
+              "customer_account_linkage_integrity",
+              "account_balance_consistency",
+              "credit_limit_within_bounds"
+            ]
+          },
+          "account_to_cards": {
+            "account_id": "00000000100", 
+            "cards": [
+              {
+                "card_number": "4500000000000100",
+                "status": "ACTIVE",
+                "expiry_date": "2025-12-31"
+              }
+            ],
+            "validation_rules": [
+              "card_account_cross_reference_integrity",
+              "active_cards_per_account_limit",
+              "expiry_date_future_validation"
+            ]
+          },
+          "card_to_transactions": {
+            "card_number": "4500000000000100",
+            "transactions": [
+              {
+                "transaction_id": "T000000000000100",
+                "amount": "125.50",
+                "type": "PURCHASE",
+                "status": "POSTED"
+              }
+            ],
+            "validation_rules": [
+              "transaction_card_validation",
+              "transaction_amount_precision",
+              "transaction_balance_impact"
+            ]
+          }
+        }
+      },
+
+      "foreign_key_constraint_testing": {
+        "scenario_id": "MER-002",
+        "description": "PostgreSQL foreign key constraint validation across all entity relationships",
+        "constraint_tests": [
+          {
+            "constraint_name": "fk_accounts_customer_id",
+            "parent_table": "customers",
+            "child_table": "accounts", 
+            "test_scenarios": [
+              "valid_customer_id_insertion",
+              "invalid_customer_id_rejection",
+              "cascade_delete_prevention"
+            ]
+          },
+          {
+            "constraint_name": "fk_cards_account_id",
+            "parent_table": "accounts",
+            "child_table": "cards",
+            "test_scenarios": [
+              "valid_account_id_insertion",
+              "invalid_account_id_rejection", 
+              "orphaned_card_prevention"
+            ]
+          },
+          {
+            "constraint_name": "fk_transactions_card_number",
+            "parent_table": "cards",
+            "child_table": "transactions",
+            "test_scenarios": [
+              "valid_card_number_insertion",
+              "invalid_card_number_rejection",
+              "transaction_referential_integrity"
+            ]
+          }
+        ]
+      }
+    },
+
+    "PerformanceTestingScenarios": {
+      "response_time_validation": {
+        "scenario_id": "PT-001",
+        "description": "API response time validation per Section 6.6.4 performance requirements",
+        "performance_requirements": {
+          "card_authorization": {
+            "endpoint": "/api/transaction/authorize",
+            "max_response_time_95th_percentile": "200ms",
+            "target_tps": "10000",
+            "test_duration": "300s"
+          },
+          "account_balance_inquiry": {
+            "endpoint": "/api/account/balance/{accountId}",
+            "max_response_time_95th_percentile": "100ms", 
+            "target_tps": "5000",
+            "test_duration": "300s"
+          }
+        },
+        "load_test_data": {
+          "concurrent_users": 1000,
+          "ramp_up_period": "60s",
+          "test_accounts": 10000,
+          "test_cards": 35000,
+          "transaction_volume": "50000_per_hour"
+        }
+      }
+    }
+  },
+
+  "BusinessJourneyTestData": {
+    "authentication_workflows": {
+      "successful_login_scenarios": [
+        {
+          "user_id": "REGUSER001",
+          "password": "RegPass123!",
+          "expected_authorities": ["READ_ACCOUNT", "UPDATE_ACCOUNT", "VIEW_CARDS", "CREATE_TRANSACTION"],
+          "session_timeout": "8H",
+          "jwt_claims": {
+            "sub": "REGUSER001",
+            "role": "USER",
+            "exp": "8_hours_from_login"
+          }
+        },
+        {
+          "user_id": "ADMIN001", 
+          "password": "AdminPass456!",
+          "expected_authorities": ["ALL_PRIVILEGES", "USER_MANAGEMENT", "SYSTEM_ADMIN"],
+          "session_timeout": "8H",
+          "jwt_claims": {
+            "sub": "ADMIN001",
+            "role": "ADMIN",
+            "exp": "8_hours_from_login"
+          }
+        }
+      ],
+      "failed_login_scenarios": [
+        {
+          "user_id": "INVALIDUSER",
+          "password": "WrongPass123!",
+          "expected_error": "AUTHENTICATION_FAILED",
+          "lockout_after_attempts": 3
+        }
+      ]
+    },
+
+    "account_management_scenarios": {
+      "account_creation_validation": {
+        "valid_account_data": {
+          "customerId": "000000200",
+          "creditLimit": "5000.00",
+          "openDate": "2024-12-19",
+          "accountType": "CREDIT"
+        },
+        "validation_rules": [
+          "customer_exists",
+          "credit_limit_positive",
+          "open_date_not_future",
+          "unique_account_per_customer_type"
+        ]
+      },
+      "balance_calculation_scenarios": [
+        {
+          "initial_balance": "1000.00",
+          "transactions": [
+            {"type": "PURCHASE", "amount": "250.00"},
+            {"type": "PAYMENT", "amount": "100.00"},
+            {"type": "PURCHASE", "amount": "75.50"}
+          ],
+          "expected_final_balance": "1225.50",
+          "precision_validation": "exact_bigdecimal_match"
+        }
+      ]
+    },
+
+    "transaction_processing_scenarios": {
+      "purchase_transaction_flow": {
+        "card_number": "4500000000000100",
+        "merchant_data": {
+          "name": "TEST MERCHANT CO",
+          "category": "RETAIL",
+          "location": "Los Angeles, CA"
+        },
+        "transaction_amount": "125.50",
+        "processing_code": "000000",
+        "authorization_required": true,
+        "balance_impact": "DEBIT"
+      },
+      "payment_transaction_flow": {
+        "account_id": "00000000100",
+        "payment_method": "BANK_TRANSFER",
+        "payment_amount": "300.00",
+        "processing_date": "2024-12-19",
+        "balance_impact": "CREDIT"
+      }
+    },
+
+    "batch_processing_validation": {
+      "daily_interest_calculation": {
+        "accounts_to_process": [
+          {
+            "account_id": "00000000100",
+            "current_balance": "2500.75", 
+            "annual_interest_rate": "18.75",
+            "daily_rate": "0.051369863014",
+            "expected_daily_interest": "12.85"
+          }
+        ],
+        "batch_job_config": {
+          "job_name": "InterestCalculationJob",
+          "chunk_size": 1000,
+          "processing_date": "2024-12-19",
+          "execution_timeout": "4H"
+        }
+      }
+    }
+  },
+
+  "GoldenFileValidationData": {
+    "cobol_precision_reference_values": {
+      "comp3_decimal_calculations": [
+        {
+          "operation": "SUBTRACT",
+          "cobol_source": "SUBTRACT WS-TXN-AMT FROM ACCT-CURR-BAL",
+          "input_balance": "1000.00",
+          "transaction_amount": "125.50",
+          "cobol_result": "874.50",
+          "java_equivalent": "balance.subtract(amount, MathContext.DECIMAL128)",
+          "precision_tolerance": "0.00"
+        },
+        {
+          "operation": "MULTIPLY", 
+          "cobol_source": "MULTIPLY DAILY-RATE BY ACCT-BAL GIVING DAILY-INT",
+          "account_balance": "5000.00",
+          "daily_rate": "0.051369863014",
+          "cobol_result": "256.85",
+          "java_equivalent": "balance.multiply(rate, MathContext.DECIMAL128)",
+          "precision_tolerance": "0.00"
+        }
+      ]
+    },
+
+    "financial_accuracy_validation": {
+      "zero_tolerance_calculations": [
+        {
+          "scenario": "compound_interest_calculation",
+          "principal": "10000.00",
+          "annual_rate": "18.75",
+          "compounding_periods": "12",
+          "time_years": "1",
+          "expected_result": "12062.25",
+          "calculation_method": "BigDecimal_with_DECIMAL128_context"
+        }
+      ]
+    },
+
+    "legacy_cobol_comparison_data": {
+      "mainframe_output_samples": [
+        {
+          "program": "CBACT04C",
+          "function": "interest_calculation",
+          "input_data": {
+            "account_balance": "5000.00",
+            "interest_rate": "18.75",
+            "days": "30"
+          },
+          "expected_output": {
+            "daily_interest": "2.57",
+            "monthly_interest": "77.05",
+            "updated_balance": "5077.05"
+          }
+        }
+      ]
+    }
+  }
+}
