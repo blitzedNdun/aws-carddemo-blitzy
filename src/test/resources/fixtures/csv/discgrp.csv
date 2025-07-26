@@ -32,23 +32,23 @@ group_id,disclosure_text,interest_rate,effective_date
 # ALPHANUMERIC GROUP IDENTIFIERS - Core Test Data
 # =============================================================================
 # Group A series - Standard interest rate configurations converted from ASCII format
-A00000000001,"Interest rate applies to qualifying purchases. Rate may vary based on creditworthiness and market conditions.",0.1500,2024-01-01T00:00:00
-A00000000001,"Promotional interest rate for balance transfers. See terms and conditions for complete details.",0.0250,2024-02-01T00:00:00
-A00000000001,"Cash advance interest rate. Higher rate applies to cash transactions per federal regulations.",0.0250,2024-03-01T00:00:00
-A00000000001,"Penalty interest rate may apply for late payments. Review cardholder agreement for specifics.",0.0250,2024-04-01T00:00:00
-A00000000002,"Zero percent introductory rate for new cardholders. Rate subject to change after promotional period.",0.0000,2024-01-01T00:00:00
-A00000000002,"Standard purchase rate applies after introductory period expires. Minimum finance charge may apply.",0.0000,2024-02-01T00:00:00
-A00000000002,"Balance transfer rate for existing balances. Transfer fees may apply per transaction.",0.0000,2024-03-01T00:00:00
-A00000000003,"Premium card interest rate for high-limit accounts. Rate based on excellent credit qualification.",0.0000,2024-01-01T00:00:00
-A00000000003,"Travel rewards card rate structure. Bonus rate applies to travel and dining purchases.",0.0000,2024-02-01T00:00:00
-A00000000003,"Business card interest rate for commercial accounts. Different terms apply for business use.",0.0000,2024-03-01T00:00:00
-A00000000004,"Student card interest rate with educational benefits. Lower rate for qualifying students.",0.1500,2024-01-01T00:00:00
-A00000000004,"Secured card rate for credit building purposes. Security deposit required for account opening.",0.1500,2024-02-01T00:00:00
-A00000000004,"Joint account interest rate for shared cardholders. Both parties responsible for balance.",0.1500,2024-03-01T00:00:00
-A00000000005,"Corporate card rate for business expense management. Volume discounts may apply.",0.1500,2024-01-01T00:00:00
-A00000000006,"Retail partnership card with store-specific benefits. Higher rate for non-partner purchases.",0.1500,2024-01-01T00:00:00
-A00000000006,"Cashback rewards card with tiered rate structure. Rate varies by spending category.",0.1500,2024-02-01T00:00:00
-A00000000007,"Airline co-branded card with travel benefits. Miles earned on all purchases.",0.1500,2024-01-01T00:00:00
+A000000001,"Interest rate applies to qualifying purchases. Rate may vary based on creditworthiness and market conditions.",0.1500,2024-01-01T00:00:00
+A000000001,"Promotional interest rate for balance transfers. See terms and conditions for complete details.",0.0250,2024-02-01T00:00:00
+A000000001,"Cash advance interest rate. Higher rate applies to cash transactions per federal regulations.",0.0250,2024-03-01T00:00:00
+A000000001,"Penalty interest rate may apply for late payments. Review cardholder agreement for specifics.",0.0250,2024-04-01T00:00:00
+A000000002,"Zero percent introductory rate for new cardholders. Rate subject to change after promotional period.",0.0000,2024-01-01T00:00:00
+A000000002,"Standard purchase rate applies after introductory period expires. Minimum finance charge may apply.",0.0000,2024-02-01T00:00:00
+A000000002,"Balance transfer rate for existing balances. Transfer fees may apply per transaction.",0.0000,2024-03-01T00:00:00
+A000000003,"Premium card interest rate for high-limit accounts. Rate based on excellent credit qualification.",0.0000,2024-01-01T00:00:00
+A000000003,"Travel rewards card rate structure. Bonus rate applies to travel and dining purchases.",0.0000,2024-02-01T00:00:00
+A000000003,"Business card interest rate for commercial accounts. Different terms apply for business use.",0.0000,2024-03-01T00:00:00
+A000000004,"Student card interest rate with educational benefits. Lower rate for qualifying students.",0.1500,2024-01-01T00:00:00
+A000000004,"Secured card rate for credit building purposes. Security deposit required for account opening.",0.1500,2024-02-01T00:00:00
+A000000004,"Joint account interest rate for shared cardholders. Both parties responsible for balance.",0.1500,2024-03-01T00:00:00
+A000000005,"Corporate card rate for business expense management. Volume discounts may apply.",0.1500,2024-01-01T00:00:00
+A000000006,"Retail partnership card with store-specific benefits. Higher rate for non-partner purchases.",0.1500,2024-01-01T00:00:00
+A000000006,"Cashback rewards card with tiered rate structure. Rate varies by spending category.",0.1500,2024-02-01T00:00:00
+A000000007,"Airline co-branded card with travel benefits. Miles earned on all purchases.",0.1500,2024-01-01T00:00:00
 
 # =============================================================================
 # DEFAULT GROUP CONFIGURATIONS - Fallback Test Scenarios
