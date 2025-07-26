@@ -12,6 +12,7 @@ import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
@@ -120,6 +121,9 @@ public class AccountReportJob {
     @Autowired
     private PlatformTransactionManager transactionManager;
 
+    @Autowired
+    private JobRepository jobRepository;
+
     // =======================================================================
     // SPRING BATCH JOB CONFIGURATION
     // =======================================================================
@@ -148,7 +152,7 @@ public class AccountReportJob {
     public Job accountReportBatchJob() {
         logger.info("Configuring AccountReportJob equivalent to COBOL CBACT01C.cbl");
 
-        return new JobBuilder("accountReportBatchJob", batchConfiguration.jobRepository())
+        return new JobBuilder("accountReportBatchJob", jobRepository)
                 .start(accountReportStep())
                 .listener(batchConfiguration.jobExecutionListener())
                 .validator(batchConfiguration.jobParametersValidator())
@@ -175,7 +179,7 @@ public class AccountReportJob {
     public Step accountReportStep() {
         logger.info("Configuring AccountReportStep with chunk size: {}", batchConfiguration.chunkSize());
 
-        return new StepBuilder(STEP_NAME, batchConfiguration.jobRepository())
+        return new StepBuilder(STEP_NAME, jobRepository)
                 .<Account, AccountReportDTO>chunk(batchConfiguration.chunkSize(), transactionManager)
                 .reader(accountItemReader())
                 .processor(accountItemProcessor())
