@@ -203,44 +203,44 @@ public class CardSelectionService {
 
         if (request == null) {
             logger.warn("Card selection request validation failed: null request");
-            return ValidationResult.builder()
-                    .valid(false)
-                    .errorMessage("Card selection request is required")
-                    .build();
+            ValidationResult result = new ValidationResult(false);
+            result.addErrorMessage("request", "CARD_001", "Card selection request is required", 
+                                   ValidationResult.Severity.ERROR);
+            return result;
         }
 
         // Validate card number (equivalent to COBOL 2220-EDIT-CARD)
         if (request.getCardNumber() == null || request.getCardNumber().trim().isEmpty()) {
             logger.warn("Card selection request validation failed: card number not provided");
-            return ValidationResult.builder()
-                    .valid(false)
-                    .errorMessage("Card number not provided")
-                    .build();
+            ValidationResult result = new ValidationResult(false);
+            result.addErrorMessage("cardNumber", "CARD_002", "Card number not provided", 
+                                   ValidationResult.Severity.ERROR);
+            return result;
         }
 
         // Validate account ID (equivalent to COBOL 2210-EDIT-ACCOUNT)
-        ValidationResult accountValidation = ValidationUtils.validateAccountNumber(request.getAccountId());
+        com.carddemo.common.enums.ValidationResult accountValidation = ValidationUtils.validateAccountNumber(request.getAccountId());
         if (!accountValidation.isValid()) {
             logger.warn("Card selection request validation failed: invalid account ID");
-            return ValidationResult.builder()
-                    .valid(false)
-                    .errorMessage("Account number validation failed: " + accountValidation.getErrorMessage())
-                    .build();
+            ValidationResult result = new ValidationResult(false);
+            result.addErrorMessage("accountId", "CARD_003", "Account number validation failed: " + accountValidation.getErrorMessage(), 
+                                   ValidationResult.Severity.ERROR);
+            return result;
         }
 
         // Validate required fields for card selection
-        ValidationResult requiredFieldValidation = ValidationUtils.validateRequiredField(
+        com.carddemo.common.enums.ValidationResult requiredFieldValidation = ValidationUtils.validateRequiredField(
                 request.getUserRole(), "User role");
         if (!requiredFieldValidation.isValid()) {
             logger.warn("Card selection request validation failed: user role not provided");
-            return requiredFieldValidation;
+            ValidationResult result = new ValidationResult(false);
+            result.addErrorMessage("userRole", "CARD_004", requiredFieldValidation.getErrorMessage(), 
+                                   ValidationResult.Severity.ERROR);
+            return result;
         }
 
         logger.debug("Card selection request validation successful");
-        return ValidationResult.builder()
-                .valid(true)
-                .errorMessage(null)
-                .build();
+        return new ValidationResult(true);
     }
 
     /**
@@ -401,7 +401,7 @@ public class CardSelectionService {
 
         // Validate customer relationship consistency
         if (cardEntity.getAccount() != null && cardEntity.getCustomer() != null) {
-            if (!cardEntity.getCustomerId().equals(cardEntity.getAccount().getCustomerId())) {
+            if (!cardEntity.getCustomerId().equals(cardEntity.getAccount().getCustomer().getCustomerId())) {
                 logger.warn("Cross-reference validation failed: customer mismatch between card and account");
                 throw new IllegalArgumentException("Customer relationship inconsistency detected");
             }
@@ -530,8 +530,8 @@ public class CardSelectionService {
         dto.setAccountId(account.getAccountId());
         dto.setCurrentBalance(account.getCurrentBalance());
         dto.setCreditLimit(account.getCreditLimit());
-        dto.setActiveStatus(account.getActiveStatus().getCode());
-        dto.setOpenDate(account.getOpenDate());
+        dto.setActiveStatus(account.getActiveStatus());
+        dto.setOpenDate(account.getOpenDate().toString());
         return dto;
     }
 
@@ -543,10 +543,19 @@ public class CardSelectionService {
      */
     private CustomerDto mapCustomerToDto(Customer customer) {
         CustomerDto dto = new CustomerDto();
-        dto.setCustomerId(customer.getCustomerId());
+        dto.setCustomerId(Integer.parseInt(customer.getCustomerId()));
         dto.setFirstName(customer.getFirstName());
         dto.setLastName(customer.getLastName());
-        dto.setAddress(customer.getAddressLine1() + " " + customer.getAddressLine2());
+        
+        // Create AddressDto from customer address fields
+        com.carddemo.account.dto.AddressDto addressDto = new com.carddemo.account.dto.AddressDto();
+        addressDto.setAddressLine1(customer.getAddressLine1());
+        addressDto.setAddressLine2(customer.getAddressLine2());
+        addressDto.setStateCode(customer.getStateCode());
+        addressDto.setCountryCode(customer.getCountryCode());
+        addressDto.setZipCode(customer.getZipCode());
+        dto.setAddress(addressDto);
+        
         dto.setFicoCreditScore(customer.getFicoCreditScore());
         return dto;
     }
