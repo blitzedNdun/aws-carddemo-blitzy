@@ -4,6 +4,7 @@ import com.carddemo.transaction.TransactionRepository;
 import com.carddemo.transaction.Transaction;
 import com.carddemo.transaction.AddTransactionRequest;
 import com.carddemo.transaction.AddTransactionResponse;
+import com.carddemo.transaction.TransactionDTO;
 import com.carddemo.common.enums.TransactionType;
 import com.carddemo.common.enums.TransactionCategory;
 import com.carddemo.common.util.BigDecimalUtils;
@@ -22,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -312,8 +314,7 @@ public class AddTransactionService {
             transaction.setDescription(request.getDescription());
             
             // Apply exact financial precision (equivalent to COBOL COMP-3 arithmetic)
-            BigDecimal precisionAmount = BigDecimalUtils.createDecimal(
-                request.getAmount(), BigDecimalUtils.DECIMAL128_CONTEXT, BigDecimalUtils.MONETARY_SCALE);
+            BigDecimal precisionAmount = BigDecimalUtils.createDecimal(request.getAmount().toString());
             transaction.setAmount(precisionAmount);
             
             transaction.setCardNumber(request.getCardNumber());
@@ -433,7 +434,7 @@ public class AddTransactionService {
             logger.info("Coordinating balance update with AccountUpdateService for account: {}", request.getAccountId());
             
             logger.info("Account balance updated successfully. Previous: {}, Current: {}", 
-                       currentBalance, newBalance);
+                       simulatedCurrentBalance, newBalance);
             
             return balanceDto;
 
@@ -460,11 +461,11 @@ public class AddTransactionService {
             return ValidationResult.INVALID_FORMAT;  
         }
         
-        if (ValidationUtils.validateRequiredField(request.getSource()).equals(ErrorFlag.ON)) {
+        if (!ValidationUtils.validateRequiredField(request.getSource(), "source").isValid()) {
             return ValidationResult.INVALID_FORMAT;
         }
         
-        if (ValidationUtils.validateRequiredField(request.getDescription()).equals(ErrorFlag.ON)) {
+        if (!ValidationUtils.validateRequiredField(request.getDescription(), "description").isValid()) {
             return ValidationResult.INVALID_FORMAT;
         }
         
@@ -472,19 +473,19 @@ public class AddTransactionService {
             return ValidationResult.INVALID_FORMAT;
         }
         
-        if (ValidationUtils.validateRequiredField(request.getMerchantId()).equals(ErrorFlag.ON)) {
+        if (!ValidationUtils.validateRequiredField(request.getMerchantId(), "merchantId").isValid()) {
             return ValidationResult.INVALID_FORMAT;
         }
         
-        if (ValidationUtils.validateRequiredField(request.getMerchantName()).equals(ErrorFlag.ON)) {
+        if (!ValidationUtils.validateRequiredField(request.getMerchantName(), "merchantName").isValid()) {
             return ValidationResult.INVALID_FORMAT;
         }
         
-        if (ValidationUtils.validateRequiredField(request.getMerchantCity()).equals(ErrorFlag.ON)) {
+        if (!ValidationUtils.validateRequiredField(request.getMerchantCity(), "merchantCity").isValid()) {
             return ValidationResult.INVALID_FORMAT;
         }
         
-        if (ValidationUtils.validateRequiredField(request.getMerchantZip()).equals(ErrorFlag.ON)) {
+        if (!ValidationUtils.validateRequiredField(request.getMerchantZip(), "merchantZip").isValid()) {
             return ValidationResult.INVALID_FORMAT;
         }
         
@@ -499,7 +500,7 @@ public class AddTransactionService {
      */
     private ValidationResult validateNumericFields(AddTransactionRequest request) {
         
-        if (ValidationUtils.validateNumericField(request.getMerchantId()).equals(ErrorFlag.ON)) {
+        if (!ValidationUtils.validateNumericField(request.getMerchantId(), 9).isValid()) {
             return ValidationResult.INVALID_FORMAT;
         }
         
@@ -523,12 +524,14 @@ public class AddTransactionService {
         }
         
         // Validate original date format
-        if (!DateUtils.validateDate(request.getOriginalDate())) {
+        String originalDateString = request.getOriginalDate().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        if (!DateUtils.validateDate(originalDateString).isValid()) {
             return ValidationResult.INVALID_FORMAT;
         }
         
         // Validate processing date format  
-        if (!DateUtils.validateDate(request.getProcessingDate())) {
+        String processingDateString = request.getProcessingDate().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        if (!DateUtils.validateDate(processingDateString).isValid()) {
             return ValidationResult.INVALID_FORMAT;
         }
         
@@ -646,63 +649,5 @@ public class AddTransactionService {
         return updateRequest;
     }
 
-    /**
-     * Simple TransactionDTO for response serialization.
-     * Inner class to avoid additional file creation for this basic DTO.
-     */
-    private static class TransactionDTO {
-        private String transactionId;
-        private TransactionType transactionType;
-        private TransactionCategory categoryCode;
-        private BigDecimal amount;
-        private String description;
-        private String cardNumber;
-        private String merchantId;
-        private String merchantName;
-        private String merchantCity;
-        private String merchantZip;
-        private LocalDateTime originalTimestamp;
-        private LocalDateTime processingTimestamp;
-        private String source;
 
-        // Getters and setters
-        public String getTransactionId() { return transactionId; }
-        public void setTransactionId(String transactionId) { this.transactionId = transactionId; }
-        
-        public TransactionType getTransactionType() { return transactionType; }
-        public void setTransactionType(TransactionType transactionType) { this.transactionType = transactionType; }
-        
-        public TransactionCategory getCategoryCode() { return categoryCode; }
-        public void setCategoryCode(TransactionCategory categoryCode) { this.categoryCode = categoryCode; }
-        
-        public BigDecimal getAmount() { return amount; }
-        public void setAmount(BigDecimal amount) { this.amount = amount; }
-        
-        public String getDescription() { return description; }
-        public void setDescription(String description) { this.description = description; }
-        
-        public String getCardNumber() { return cardNumber; }
-        public void setCardNumber(String cardNumber) { this.cardNumber = cardNumber; }
-        
-        public String getMerchantId() { return merchantId; }
-        public void setMerchantId(String merchantId) { this.merchantId = merchantId; }
-        
-        public String getMerchantName() { return merchantName; }
-        public void setMerchantName(String merchantName) { this.merchantName = merchantName; }
-        
-        public String getMerchantCity() { return merchantCity; }
-        public void setMerchantCity(String merchantCity) { this.merchantCity = merchantCity; }
-        
-        public String getMerchantZip() { return merchantZip; }
-        public void setMerchantZip(String merchantZip) { this.merchantZip = merchantZip; }
-        
-        public LocalDateTime getOriginalTimestamp() { return originalTimestamp; }
-        public void setOriginalTimestamp(LocalDateTime originalTimestamp) { this.originalTimestamp = originalTimestamp; }
-        
-        public LocalDateTime getProcessingTimestamp() { return processingTimestamp; }
-        public void setProcessingTimestamp(LocalDateTime processingTimestamp) { this.processingTimestamp = processingTimestamp; }
-        
-        public String getSource() { return source; }
-        public void setSource(String source) { this.source = source; }
-    }
 }
