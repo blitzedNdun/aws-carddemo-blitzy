@@ -318,24 +318,7 @@ public class SecurityConfig {
         return jwtConverter;
     }
 
-    /**
-     * Configures audit event repository for security monitoring and compliance logging.
-     * 
-     * This repository captures authentication and authorization events for:
-     * - SOX compliance audit trails
-     * - PCI DSS security monitoring requirements
-     * - Real-time security threat detection
-     * - Compliance reporting and analysis
-     * 
-     * Events are stored in memory for immediate access and can be configured
-     * to persist to external systems (ELK stack, database) for long-term retention.
-     * 
-     * @return AuditEventRepository for security event capture
-     */
-    @Bean
-    public AuditEventRepository auditEventRepository() {
-        return new InMemoryAuditEventRepository();
-    }
+
 
     /**
      * Event listener for successful authentication events.
