@@ -1,435 +1,429 @@
 # =============================================================================
 # CARDDEMO DEVELOPMENT ENVIRONMENT CONFIGURATION
 # =============================================================================
-# Development-specific Spring Boot configuration profile optimized for local
-# development, debugging, and COBOL-to-Java business logic verification
+# Development-specific Spring Boot configuration profile with debug settings, 
+# local database connections, and development tools for efficient COBOL-to-Java 
+# transformation testing and verification.
 #
-# This development configuration enables:
-# - Local containerized PostgreSQL and Redis instances for isolated development
-# - Comprehensive debug logging for troubleshooting COBOL logic conversion
-# - H2 console access for database introspection during VSAM data migration
-# - Reduced connection pool sizes optimized for development resource constraints
-# - Spring Boot DevTools for hot reloading during microservices development
-# - Enhanced monitoring and debugging capabilities for transformation verification
+# This configuration provides:
+# - Local containerized PostgreSQL and Redis instances for development
+# - Comprehensive logging for debugging COBOL business logic conversions
+# - Database introspection tools for VSAM data migration verification
+# - Reduced connection pool sizes optimized for single-developer environments
+# - Spring Boot DevTools with hot reloading for rapid development iteration
+# - H2 console access for development database inspection and troubleshooting
+# - Enhanced debugging capabilities for microservices development
+# - COBOL-to-Java validation tools and test data loading utilities
 #
-# Based on: Technical Specification Section 0.2.1 Primary Objectives
-#           Section 3.2 Frameworks & Libraries
-#           Section 6.2 Database Design
-#           Section 8.1 Deployment Environment
+# Based on: Technical Specification Section 0.1.2 Special Instructions
+#           Section 3.2.1 Development Frameworks
+#           Section 6.2 Database Design for VSAM Migration
 #
 # Author: Blitzy agent
-# Created: Development profile configuration replacing CICS SIT parameters
+# Created: Development profile configuration for COBOL-to-Java transformation
 # Version: 1.0
 # =============================================================================
 
 # =============================================================================
-# SPRING DEVELOPMENT PROFILE ACTIVATION
+# SPRING FRAMEWORK DEVELOPMENT CONFIGURATION
 # =============================================================================
 
 spring:
-  # Development profile configuration
-  config:
-    activate:
-      on-profile: dev
-      
-  # Application identification for development
+  # Development profile activation and configuration
+  profiles:
+    active: dev
+    include:
+      - database-dev
+      - security-dev
+      - monitoring-dev
+
+  # Development application configuration
   application:
     name: carddemo-dev
-    version: "1.0.0-SNAPSHOT"
     description: "CardDemo Development Environment - COBOL-to-Java Transformation Testing"
 
+  # Development web configuration with enhanced debugging
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB                   # Larger file size for test data imports
+      max-request-size: 50MB
+      file-size-threshold: 2MB
+
+  # Jackson configuration optimized for COBOL data precision debugging
+  jackson:
+    serialization:
+      WRITE_DATES_AS_TIMESTAMPS: false
+      WRITE_BIGDECIMAL_AS_PLAIN: true
+      INDENT_OUTPUT: true                   # Pretty-print JSON for debugging
+      FAIL_ON_EMPTY_BEANS: false
+    deserialization:
+      FAIL_ON_UNKNOWN_PROPERTIES: false
+      USE_BIG_DECIMAL_FOR_FLOATS: true
+      ACCEPT_SINGLE_VALUE_AS_ARRAY: true    # Flexible parsing for test data
+    default-property-inclusion: ALWAYS      # Include all properties for debugging
+    date-format: "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+    time-zone: "UTC"
+    generator:
+      WRITE_BIGDECIMAL_AS_PLAIN: true
+    parser:
+      ALLOW_NUMERIC_LEADING_ZEROS: true
+      ALLOW_UNQUOTED_FIELD_NAMES: true      # Flexible parsing for COBOL data
+
 # =============================================================================
-# LOCAL POSTGRESQL CONFIGURATION
+# DEVELOPMENT DATABASE CONFIGURATION
 # =============================================================================
-# Development PostgreSQL instance configuration for VSAM data migration testing
-# with optimized settings for local development and debugging
+# Local PostgreSQL instance with enhanced debugging and VSAM migration support
 
   datasource:
-    # Local PostgreSQL connection configuration
-    # Designed for containerized PostgreSQL instance on localhost
-    url: "jdbc:postgresql://localhost:5432/carddemo_dev?useSSL=false&serverTimezone=UTC&stringtype=unspecified&loggerLevel=DEBUG"
+    # Development PostgreSQL configuration for local containerized instance
+    url: jdbc:postgresql://localhost:5432/carddemo_dev?useSSL=false&loggerLevel=DEBUG&stringtype=unspecified&prepareThreshold=0
     username: carddemo_dev
     password: dev_password_123
     driver-class-name: org.postgresql.Driver
     
-    # Development-optimized HikariCP Connection Pool
-    # Reduced pool sizes for resource-constrained development environments
+    # Development-optimized HikariCP configuration
+    # Reduced pool sizes for single-developer environment
     hikari:
       pool-name: CardDemoDevHikariPool
-      connection-timeout: 10000          # 10 seconds - faster feedback in development
-      idle-timeout: 300000               # 5 minutes - shorter idle time for development
-      max-lifetime: 900000               # 15 minutes - shorter lifetime for development
-      minimum-idle: 2                    # Minimal idle connections for development
-      maximum-pool-size: 10              # Reduced pool size for development
-      leak-detection-threshold: 30000    # 30 seconds - faster leak detection
-      connection-test-query: "SELECT 1"  # Health check query
-      validation-timeout: 3000           # Faster validation timeout
-      auto-commit: false                 # Explicit transaction management
+      connection-timeout: 10000             # Shorter timeout for quick feedback
+      idle-timeout: 300000                  # 5 minutes - faster connection recycling
+      max-lifetime: 900000                  # 15 minutes - frequent connection refresh
+      minimum-idle: 2                       # Minimal idle connections for development
+      maximum-pool-size: 10                 # Reduced pool size for dev environment
+      leak-detection-threshold: 30000       # 30 seconds - aggressive leak detection
+      connection-test-query: "SELECT 1"
+      validation-timeout: 2000              # Quick validation for dev responsiveness
+      auto-commit: false
       read-only: false
       catalog: "carddemo_dev"
       schema: "public"
       
-      # Development-specific connection properties
+      # Development connection properties with enhanced logging
       data-source-properties:
-        cachePrepStmts: true
-        prepStmtCacheSize: 100           # Smaller cache for development
-        prepStmtCacheSqlLimit: 1024      # Reduced SQL limit for development
-        useServerPrepStmts: true
+        cachePrepStmts: false               # Disable caching for debugging
+        prepStmtCacheSize: 25               # Small cache for development
+        prepStmtCacheSqlLimit: 1024
+        useServerPrepStmts: false           # Disable for SQL debugging
         useLocalSessionState: true
-        rewriteBatchedStatements: true
-        cacheResultSetMetadata: true
-        cacheServerConfiguration: true
-        elideSetAutoCommits: true
-        maintainTimeStats: true          # Enable timing stats for development
+        rewriteBatchedStatements: false     # Keep original SQL for debugging
+        cacheResultSetMetadata: false       # Disable for debugging
+        cacheServerConfiguration: false     # Disable for debugging
+        elideSetAutoCommits: false          # Show all SQL operations
+        maintainTimeStats: true             # Enable timing statistics
         # PostgreSQL development-specific optimizations
-        ApplicationName: "CardDemo-Development"
+        ApplicationName: "CardDemo-DEV-${HOSTNAME:localhost}"
         loginTimeout: 10
         socketTimeout: 10
         tcpKeepAlive: true
-        prepareThreshold: 3
-        loggerLevel: DEBUG               # Enable debug logging for PostgreSQL
-        loggerFile: ./logs/postgresql-dev.log
+        prepareThreshold: 0                 # Always use simple queries for debugging
+        loggerLevel: DEBUG                  # Enable PostgreSQL driver logging
+        logUnclosedConnections: true        # Debug connection leaks
+        logServerErrorDetail: true          # Detailed error information
 
-  # Development JPA/Hibernate Configuration
-  # Enhanced with debugging capabilities for COBOL logic verification
+  # Development JPA/Hibernate configuration with extensive debugging
   jpa:
     hibernate:
-      ddl-auto: validate                 # Schema validation - Liquibase manages DDL
+      ddl-auto: validate                    # Schema validation for migration testing
       naming:
         physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
         implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
     
     properties:
       hibernate:
-        # Development database dialect and connection settings
+        # Database dialect and connection settings
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true                 # Format SQL for readability in development
-        show_sql: true                   # Show SQL statements in development
-        use_sql_comments: true           # Include comments in generated SQL
+        format_sql: true                    # Format SQL for readability
+        show_sql: true                      # Show all SQL statements
+        use_sql_comments: true              # Add comments to SQL
+        highlight_sql: true                 # Syntax highlighting for SQL
         
-        # Development transaction and session management
+        # Transaction and session management with debugging
         default_schema: "public"
         connection:
-          isolation: 4                   # SERIALIZABLE - equivalent to VSAM record locking
+          isolation: 4                      # SERIALIZABLE for VSAM equivalency testing
           autocommit: false
           
-        # Development-optimized performance settings
+        # Performance settings optimized for development debugging
         jdbc:
-          batch_size: 10                 # Smaller batch size for development debugging
+          batch_size: 10                    # Small batches for debugging
           batch_versioned_data: true
-          fetch_size: 20                 # Smaller fetch size for development
+          fetch_size: 10                    # Small fetch size for debugging
           use_streams_for_binary: true
           time_zone: "UTC"
-          
-        # Development cache configuration
+          lob:
+            non_contextual_creation: true   # Better LOB handling
+            
+        # Enhanced debugging and statistics
         cache:
-          use_second_level_cache: false  # Disable L2 cache for development
-          use_query_cache: false         # Disable query cache for development
+          use_second_level_cache: false     # Disable caching for debugging
+          use_query_cache: false            # Disable query cache for debugging
           region:
             factory_class: org.hibernate.cache.internal.NoCachingRegionFactory
             
-        # Development schema validation and generation
+        # Schema validation and generation
         hbm2ddl:
           auto: validate
           create_namespaces: false
           
         # Development-specific Hibernate settings
         enable_lazy_load_no_trans: false
-        max_fetch_depth: 2               # Reduced depth for development
-        default_batch_fetch_size: 8      # Smaller batch size for development
+        max_fetch_depth: 2                  # Reduced depth for debugging
+        default_batch_fetch_size: 8
         order_inserts: true
         order_updates: true
-        generate_statistics: true        # Enable statistics for development monitoring
+        generate_statistics: true           # Enable statistics for performance analysis
+        session:
+          events:
+            log:
+              LOG_QUERIES_SLOWER_THAN_MS: 100  # Log slow queries for optimization
         
-    # Development JPA-specific settings
-    open-in-view: false                  # Prevent lazy loading issues
-    generate-ddl: false                  # Liquibase handles DDL
-    show-sql: true                       # Show SQL in development
+        # Enhanced logging for COBOL-to-Java conversion debugging
+        type:
+          descriptor:
+            sql:
+              BasicBinder: TRACE            # Log parameter binding
+              BasicExtractor: TRACE         # Log result extraction
+        
+    # JPA-specific development settings
+    open-in-view: false                     # Prevent lazy loading issues
+    generate-ddl: false                     # Liquibase handles DDL
+    show-sql: true                          # Enable SQL logging
     defer-datasource-initialization: false
 
-# =============================================================================
-# LOCAL REDIS CONFIGURATION
-# =============================================================================
-# Development Redis instance configuration for session management testing
-
-  data:
-    redis:
-      # Local Redis connection configuration
-      host: localhost
-      port: 6379
-      password: ""                       # No password for development Redis
-      database: 1                       # Use database 1 for development isolation
-      timeout: 3000ms                   # Shorter timeout for development
-      
-      # Development Lettuce connection pool configuration
-      lettuce:
-        pool:
-          max-active: 5                  # Reduced pool size for development
-          max-idle: 3                    # Reduced idle connections
-          min-idle: 1                    # Minimum idle connections for development
-          max-wait: 1000ms               # Shorter wait time for development
-        shutdown-timeout: 50ms
-        
-      # Disable cluster and sentinel for development
-      cluster:
-        nodes: []
-        
-      sentinel:
-        master: ""
-        nodes: []
-
-  # Development Spring Session configuration
-  session:
-    store-type: redis
-    redis:
-      namespace: "carddemo:dev:session"  # Development namespace isolation
-      flush-mode: immediate              # Immediate session persistence for debugging
-      save-mode: always                  # Always save session changes
-      cleanup-cron: "0 */5 * * * *"      # More frequent cleanup for development (5 minutes)
-    timeout: 900s                        # 15 minutes session timeout for development
-    cookie:
-      name: "CARDDEMO-DEV-SESSIONID"
-      max-age: 900s
-      http-only: true
-      secure: false                      # Disable secure cookies for local HTTP development
-      same-site: "lax"                   # Relaxed same-site for development
-
-# =============================================================================
-# H2 CONSOLE ACCESS CONFIGURATION
-# =============================================================================
-# Enable H2 console for database introspection during development and testing
-
+  # H2 Console for development database inspection
   h2:
     console:
-      enabled: true                      # Enable H2 console for development
-      path: /h2-console                  # Console access path
+      enabled: true                         # Enable H2 console for database inspection
+      path: /h2-console                     # Console access path
       settings:
-        web-allow-others: true           # Allow remote connections for development
-        trace: true                      # Enable tracing for development debugging
-        
-  # Alternative H2 datasource for quick testing (commented out by default)
-  # Uncomment the following section to use H2 instead of PostgreSQL for rapid testing
-  # datasource:
-  #   url: "jdbc:h2:mem:carddemo_dev;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE"
-  #   driver-class-name: org.h2.Driver
-  #   username: sa
-  #   password: ""
-  #   
-  # jpa:
-  #   database-platform: org.hibernate.dialect.H2Dialect
-  #   hibernate:
-  #     ddl-auto: create-drop
+        trace: false                        # Disable trace for security
+        web-allow-others: false             # Restrict to localhost
+        web-admin-password: "dev_admin_h2"  # Console admin password
 
 # =============================================================================
-# DEVELOPMENT SECURITY CONFIGURATION
+# DEVELOPMENT LIQUIBASE CONFIGURATION
 # =============================================================================
-# Relaxed security settings for development environment
-
-  security:
-    # Development OAuth2 configuration with relaxed settings
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: "http://localhost:8080/carddemo/auth"
-          jwk-set-uri: "http://localhost:8080/carddemo/auth/.well-known/jwks.json"
-          audiences: carddemo-dev-api
-          clock-skew: 120s               # Increased clock skew for development
-          
-    # Development default user configuration
-    user:
-      name: devuser
-      password: devpass123
-      roles: ADMIN,USER,DEVELOPER
-
-# =============================================================================
-# LIQUIBASE DEVELOPMENT CONFIGURATION
-# =============================================================================
-# Development database migration settings with enhanced debugging
+# Enhanced database migration support with VSAM conversion utilities
 
   liquibase:
     enabled: true
     change-log: classpath:db/liquibase-changelog.xml
     default-schema: "public"
-    contexts: development,dev-data       # Include development data contexts
-    label-filter: development,sample-data      # Include sample data labels
-    drop-first: false                    # Keep data between restarts
-    rollback-file: "dev-rollback.sql"    # Development-specific rollback file
-    test-rollback-on-update: true        # Test rollbacks in development
+    liquibase-schema: "public"
+    contexts: development,test-data,vsam-migration  # Include test data contexts
+    label-filter: "dev,migration-test"
+    drop-first: false
+    rollback-file: "rollback-dev.sql"
+    test-rollback-on-update: true           # Test rollback in development
     parameters:
-      database.target: "PostgreSQL 15+ Development"
-      application.version: "CardDemo v1.0-SNAPSHOT"
+      database.target: "PostgreSQL 15.0+ (Development)"
+      application.version: "CardDemo v1.0-DEV"
       schema.name: "carddemo_dev"
-      load.sample.data: "true"           # Load sample data for development
-      cobol.data.path: "classpath:data/ASCII/"  # Path to COBOL ASCII data files
+      load.test.data: "true"                # Enable test data loading
+      vsam.migration.mode: "true"           # Enable VSAM migration testing
+      cobol.precision.validation: "true"    # Enable COBOL precision validation
+
+# =============================================================================
+# DEVELOPMENT REDIS CONFIGURATION
+# =============================================================================
+# Local Redis instance for session management and caching
+
+  data:
+    redis:
+      # Local Redis configuration for development
+      host: localhost
+      port: 6379
+      password: ""                          # No password for local development
+      database: 1                           # Use database 1 for development
+      timeout: 2000ms                       # Shorter timeout for development
+      
+      # Lettuce connection pool for development
+      lettuce:
+        pool:
+          max-active: 8                     # Reduced pool size for development
+          max-idle: 4                       # Fewer idle connections
+          min-idle: 1                       # Minimum idle connections
+          max-wait: 1000ms                  # Shorter wait time
+        shutdown-timeout: 50ms
+        
+      # Disable cluster and sentinel for local development
+      cluster:
+        nodes: ""                           # Empty cluster configuration
+        max-redirects: 0
+        
+      sentinel:
+        master: ""                          # Empty sentinel configuration
+        nodes: ""
+
+  # Development session configuration
+  session:
+    store-type: redis
+    redis:
+      namespace: "carddemo:dev:session"     # Separate namespace for dev sessions
+      flush-mode: immediate
+      save-mode: always
+      cleanup-cron: "0 */5 * * * *"         # More frequent cleanup (every 5 minutes)
+    timeout: 3600s                          # Longer timeout for development (1 hour)
+    cookie:
+      name: "CARDDEMO-DEV-SESSIONID"
+      max-age: 3600s
+      http-only: true
+      secure: false                         # Disable secure flag for local development
+      same-site: "lax"                      # Relaxed same-site for development
+
+# =============================================================================
+# DEVELOPMENT SECURITY CONFIGURATION
+# =============================================================================
+# Relaxed security settings for development and testing
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/carddemo/auth
+          jwk-set-uri: http://localhost:8080/carddemo/auth/.well-known/jwks.json
+          audiences: carddemo-dev-api
+          clock-skew: 300s                  # Longer clock skew for development
+          
+    # Development default user configuration
+    user:
+      name: devadmin
+      password: devpass123
+      roles: ADMIN,USER,DEVELOPER,DEBUGGER
+
+# =============================================================================
+# DEVELOPMENT SPRING BATCH CONFIGURATION
+# =============================================================================
+# Enhanced batch processing for COBOL-to-Java migration testing
+
+  batch:
+    job:
+      enabled: true
+      names: "testDataLoadJob,vsamMigrationJob,cobolValidationJob"  # Development-specific jobs
+    initialize-schema: always
+    table-prefix: "DEV_BATCH_"              # Separate batch tables for development
+    
+    # Job repository configuration for development
+    repository:
+      isolation-level-for-create: serializable
+      serialization-type: jackson
+      
+    # Development job execution configuration
+    jdbc:
+      initialize-schema: always
+      schema: "classpath:org/springframework/batch/core/schema-postgresql.sql"
 
 # =============================================================================
 # DEVELOPMENT SERVER CONFIGURATION
 # =============================================================================
-# Development server settings optimized for local development and debugging
+# Optimized for rapid development and debugging
 
 server:
-  port: 8080                             # Standard development port
+  port: 8080
   servlet:
-    context-path: /carddemo              # Application context path
+    context-path: /carddemo
     session:
-      timeout: 900s                      # 15 minutes session timeout
+      timeout: 3600s                        # Extended timeout for development
       cookie:
         name: "CARDDEMO-DEV-JSESSIONID"
         http-only: true
-        secure: false                    # Disable secure cookies for HTTP development
-        max-age: 900s
+        secure: false                       # Disable secure flag for local development
+        max-age: 3600s
         
   # Development Tomcat configuration
   tomcat:
     threads:
-      max: 50                            # Reduced thread count for development
-      min-spare: 5                       # Minimal spare threads
-    max-connections: 100                 # Reduced connections for development
-    accept-count: 10                     # Smaller connection queue
-    connection-timeout: 10000ms          # Shorter timeout for development
-    keep-alive-timeout: 30000ms          # Shorter keep-alive for development
-    max-keep-alive-requests: 50          # Reduced keep-alive requests
+      max: 50                               # Reduced threads for development
+      min-spare: 5                          # Fewer spare threads
+    max-connections: 200                    # Lower connection limit
+    accept-count: 25                        # Smaller queue
+    connection-timeout: 5000ms              # Shorter timeout
+    keep-alive-timeout: 30000ms
+    max-keep-alive-requests: 50
     
     # Development access logging
     accesslog:
-      enabled: true                      # Enable access logging for development
-      directory: "./logs"
-      prefix: "carddemo-dev-access"
+      enabled: true                         # Enable access logging for debugging
+      directory: "./logs/dev"
+      prefix: "dev_access_log"
       suffix: ".log"
-      pattern: '%h %l %u %t "%r" %s %b %D "%{Referer}i" "%{User-Agent}i"'
+      pattern: '%h %l %u %t "%r" %s %b %D "%{Referer}i" "%{User-Agent}i" %{X-Forwarded-For}i %{X-Correlation-ID}i'
       rotate: true
-      max-days: 7                        # Shorter retention for development
+      max-days: 7                           # Shorter retention for development
       
-    # Development compression settings
+    # Enable compression for development testing
     compression: on
     compressible-mime-types: "text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json,application/xml"
-    min-response-size: 512               # Lower threshold for development
-    
-  # Development HTTP/2 and SSL configuration
+    min-response-size: 512                  # Lower threshold
+
+  # Development HTTP configuration
   http2:
-    enabled: false                       # Disable HTTP/2 for simpler development debugging
+    enabled: false                          # Disable HTTP/2 for simpler debugging
   ssl:
-    enabled: false                       # Disable SSL for local development
+    enabled: false                          # Disable SSL for local development
     
-  # Development error handling
+  # Enhanced error handling for development
   error:
     whitelabel:
-      enabled: true                      # Enable whitelabel error page for development
+      enabled: true                         # Enable error pages for debugging
     include-message: always
     include-binding-errors: always
-    include-stacktrace: always           # Always include stack traces in development
-    include-exception: true              # Include exception details in development
+    include-stacktrace: always              # Always show stack traces in development
+    include-exception: true                 # Include exception details
 
 # =============================================================================
-# DEVELOPMENT SPRING BOOT DEVTOOLS CONFIGURATION
+# DEVELOPMENT SPRING CLOUD CONFIGURATION
 # =============================================================================
-# Hot reloading and development productivity features
+# Service discovery and cloud configuration for microservices testing
 
-  devtools:
-    restart:
-      enabled: true                      # Enable automatic restart
-      additional-paths: []               # Additional paths to watch
-      exclude: "static/**,public/**,templates/**,**/*.log"
-      poll-interval: 1000ms              # File polling interval
-      quiet-period: 400ms                # Quiet period before restart
+  cloud:
+    # Service discovery configuration
+    discovery:
+      enabled: false                        # Disable discovery for local development
       
-    livereload:
-      enabled: true                      # Enable LiveReload server
-      port: 35729                        # LiveReload server port
+    # Configuration management
+    config:
+      enabled: false                        # Disable config server for local development
       
-    remote:
-      restart:
-        enabled: false                   # Disable remote restart for security
-      secret-header-name: "X-AUTH-TOKEN"
-      
-  # Development resource handling
-  web:
-    resources:
-      cache:
-        period: 0                        # Disable resource caching in development
-      static-locations: "classpath:/static/,classpath:/public/,classpath:/resources/,classpath:/META-INF/resources/"
+    # Gateway configuration
+    gateway:
+      discovery:
+        locator:
+          enabled: false                    # Disable gateway discovery
+      routes: []
 
 # =============================================================================
-# DEVELOPMENT LOGGING CONFIGURATION
+# DEVELOPMENT EUREKA CONFIGURATION
 # =============================================================================
-# Comprehensive debug logging for COBOL-to-Java conversion verification
+# Disabled for local development
 
-logging:
-  config: classpath:logback-spring.xml
-  level:
-    root: INFO                           # Base logging level
-    
-    # Application-specific debug logging
-    com.carddemo: DEBUG                  # Enable debug logging for all CardDemo components
-    com.carddemo.auth: TRACE             # Detailed authentication logging
-    com.carddemo.account: DEBUG          # Account service debugging
-    com.carddemo.card: DEBUG             # Card service debugging
-    com.carddemo.transaction: DEBUG      # Transaction processing debugging
-    com.carddemo.batch: DEBUG            # Batch processing debugging
-    com.carddemo.common: DEBUG           # Common utilities debugging
-    
-    # Spring framework debug logging
-    org.springframework.security: DEBUG  # Security framework debugging
-    org.springframework.web: DEBUG       # Web layer debugging
-    org.springframework.transaction: DEBUG # Transaction management debugging
-    org.springframework.batch: INFO      # Batch framework logging
-    org.springframework.session: DEBUG   # Session management debugging
-    org.springframework.data: DEBUG      # Data access debugging
-    
-    # Database and SQL logging
-    org.hibernate: DEBUG                 # Hibernate framework debugging
-    org.hibernate.SQL: DEBUG             # SQL statement logging
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE  # SQL parameter binding
-    org.hibernate.type.descriptor.sql.BasicExtractor: TRACE # SQL result extraction
-    org.postgresql: DEBUG                # PostgreSQL driver debugging
-    com.zaxxer.hikari: DEBUG             # Connection pool debugging
-    
-    # Migration and schema logging
-    liquibase: DEBUG                     # Database migration debugging
-    liquibase.changelog: DEBUG           # Changelog execution debugging
-    
-    # Redis and session logging
-    org.springframework.data.redis: DEBUG # Redis operations debugging
-    org.springframework.session.data.redis: DEBUG # Redis session debugging
-    
-    # Metrics and monitoring
-    io.micrometer: INFO                  # Metrics collection
-    
-    # External library logging
-    org.apache.http: DEBUG               # HTTP client debugging
-    com.fasterxml.jackson: INFO          # JSON processing
-    
-  pattern:
-    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %X{correlationId:-} %m%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} %5p ${PID:- } --- [%15.15t] %-40.40logger{39} : %X{correlationId:-} %X{userId:-} %X{transactionId:-} %m%n"
-    
-  file:
-    name: "./logs/carddemo-dev.log"       # Development log file
-    max-size: 50MB                       # Smaller log files for development
-    max-history: 7                       # Keep 7 days of logs
-    total-size-cap: 500MB                # Total log size cap
+eureka:
+  client:
+    enabled: false                          # Disable Eureka for local development
+    register-with-eureka: false
+    fetch-registry: false
 
 # =============================================================================
 # DEVELOPMENT ACTUATOR CONFIGURATION
 # =============================================================================
-# Enhanced monitoring and debugging endpoints for development
+# Enhanced monitoring and debugging endpoints
 
 management:
   endpoints:
     web:
       exposure:
-        include: "*"                     # Expose all endpoints in development
+        include: "*"                        # Expose all endpoints for development
       base-path: "/actuator"
       cors:
-        allowed-origins: "http://localhost:3000,http://localhost:8080"
+        allowed-origins: "*"                # Allow CORS for development tools
         allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
         allowed-headers: "*"
         
   endpoint:
-    # Health endpoint configuration
     health:
       enabled: true
-      show-details: always               # Always show health details in development
+      show-details: always                  # Always show health details
       show-components: always
       probes:
         enabled: true
@@ -439,55 +433,44 @@ management:
         liveness:
           include: "livenessState,ping"
           
-    # Information endpoint
     info:
       enabled: true
       
-    # Metrics endpoint
     metrics:
       enabled: true
       
-    # Prometheus endpoint
     prometheus:
       enabled: true
       
-    # Environment endpoint
     env:
-      enabled: true
-      show-values: always                # Show all environment values in development
+      enabled: true                         # Enable environment endpoint
+      show-values: always                   # Show all environment values
       
-    # Configuration properties endpoint
     configprops:
-      enabled: true
-      show-values: always                # Show all configuration values in development
+      enabled: true                         # Enable configuration properties
+      show-values: always                   # Show all configuration values
       
-    # Loggers endpoint for runtime log level changes
     loggers:
-      enabled: true
+      enabled: true                         # Enable logger management
       
-    # Thread dump endpoint
     threaddump:
-      enabled: true
+      enabled: true                         # Enable thread dump
       
-    # Heap dump endpoint
     heapdump:
-      enabled: true
+      enabled: true                         # Enable heap dump
       
-    # Beans endpoint
-    beans:
-      enabled: true
-      
-    # Conditions endpoint
-    conditions:
-      enabled: true
-      
-    # Mappings endpoint
-    mappings:
-      enabled: true
-      
-    # Shutdown endpoint (enabled for development convenience)
+    # Development-specific endpoints
     shutdown:
-      enabled: true
+      enabled: true                         # Enable graceful shutdown
+      
+    beans:
+      enabled: true                         # Show all Spring beans
+      
+    conditions:
+      enabled: true                         # Show auto-configuration conditions
+      
+    mappings:
+      enabled: true                         # Show request mappings
 
   # Development health indicators
   health:
@@ -499,13 +482,11 @@ management:
       enabled: true
     diskspace:
       enabled: true
-      threshold: 100MB                   # Lower threshold for development
+      threshold: 1MB                        # Lower threshold for development
     ping:
       enabled: true
-    livenessstate:
-      enabled: true
-    readinessstate:
-      enabled: true
+    mail:
+      enabled: false                        # Disable mail health check
       
   # Development metrics configuration
   metrics:
@@ -513,24 +494,27 @@ management:
       prometheus:
         enabled: true
         descriptions: true
-        step: 5s                         # More frequent metrics collection
+        step: 5s                            # More frequent metrics collection
         
-    tags:
-      application: carddemo-dev
-      environment: development
-      version: "1.0.0-SNAPSHOT"
-      
+      # Development-specific metric tags
+      tags:
+        application: carddemo-dev
+        environment: development
+        version: 1.0-DEV
+        developer: ${USER:unknown}
+        
     distribution:
       percentiles-histogram:
-        http.server.requests: true
-        spring.data.repository.invocations: true
-        carddemo.business.transaction: true
+        "[http.server.requests]": true
+        "[spring.data.repository.invocations]": true
+        "[carddemo.cobol.conversion]": true  # Custom metrics for COBOL conversion
       percentiles:
-        http.server.requests: 0.5,0.75,0.95,0.99
-        spring.data.repository.invocations: 0.5,0.75,0.95,0.99
+        "[http.server.requests]": 0.5,0.8,0.9,0.95,0.99
+        "[spring.data.repository.invocations]": 0.5,0.8,0.9,0.95,0.99
       sla:
-        http.server.requests: 50ms,100ms,200ms,500ms
+        "[http.server.requests]": 50ms,100ms,200ms,500ms,1000ms
         
+    # Enhanced JVM metrics for development
     enable:
       jvm: true
       process: true
@@ -549,25 +533,142 @@ management:
       mode: full
       encoding: "UTF-8"
     java:
-      source: "21"
-      target: "21"
+      enabled: true                         # Show Java version information
 
 # =============================================================================
-# DEVELOPMENT FEATURE FLAGS AND CUSTOMIZATION
+# DEVELOPMENT LOGGING CONFIGURATION
 # =============================================================================
-# Development-specific feature flags and custom properties
+# Comprehensive logging for COBOL-to-Java debugging and troubleshooting
+
+logging:
+  config: classpath:logback-spring.xml
+  level:
+    root: INFO
+    
+    # Application-specific logging
+    com.carddemo: DEBUG                     # Enable debug logging for application
+    com.carddemo.auth: TRACE                # Detailed authentication logging
+    com.carddemo.account: DEBUG             # Account service debugging
+    com.carddemo.card: DEBUG                # Card service debugging
+    com.carddemo.transaction: DEBUG         # Transaction service debugging
+    com.carddemo.customer: DEBUG            # Customer service debugging
+    com.carddemo.batch: DEBUG               # Batch processing debugging
+    com.carddemo.common: DEBUG              # Common utilities debugging
+    com.carddemo.migration: TRACE           # VSAM migration detailed logging
+    com.carddemo.cobol: TRACE               # COBOL conversion detailed logging
+    
+    # Spring Framework debugging
+    org.springframework.security: DEBUG    # Security debugging
+    org.springframework.web: DEBUG         # Web layer debugging
+    org.springframework.transaction: DEBUG # Transaction debugging
+    org.springframework.boot: INFO         # Spring Boot information
+    org.springframework.data: DEBUG        # Spring Data debugging
+    org.springframework.batch: DEBUG       # Spring Batch debugging
+    org.springframework.session: DEBUG     # Session management debugging
+    
+    # Database and persistence debugging
+    org.postgresql: DEBUG                  # PostgreSQL driver debugging
+    org.hibernate: DEBUG                   # Hibernate framework debugging
+    org.hibernate.SQL: DEBUG               # SQL statement logging
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE  # Parameter binding
+    org.hibernate.type.descriptor.sql.BasicExtractor: TRACE  # Result extraction
+    org.hibernate.engine.QueryParameters: DEBUG           # Query parameters
+    org.hibernate.engine.query.HQLQueryPlan: DEBUG        # HQL query plans
+    org.hibernate.hql.internal.ast: DEBUG                 # HQL AST debugging
+    org.hibernate.pretty: DEBUG                           # Pretty print entities
+    
+    # Connection pool debugging
+    com.zaxxer.hikari: DEBUG               # HikariCP connection pool
+    com.zaxxer.hikari.HikariConfig: DEBUG  # Pool configuration
+    com.zaxxer.hikari.pool: DEBUG          # Pool operations
+    
+    # Migration and liquibase debugging
+    liquibase: DEBUG                       # Liquibase migration logging
+    liquibase.changelog: DEBUG             # Changelog execution
+    liquibase.database: DEBUG              # Database operations
+    
+    # Redis and session debugging
+    org.springframework.data.redis: DEBUG  # Redis operations
+    org.springframework.session.data.redis: DEBUG  # Redis session operations
+    io.lettuce: DEBUG                      # Lettuce Redis client
+    
+    # Monitoring and metrics
+    io.micrometer: DEBUG                   # Micrometer metrics
+    io.micrometer.core.instrument: DEBUG   # Metrics instrumentation
+    
+    # Development utilities
+    org.springframework.boot.devtools: DEBUG  # DevTools logging
+    org.springframework.boot.autoconfigure: INFO  # Auto-configuration info
+    org.springframework.context: DEBUG     # Application context
+    
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %5p ${PID:- } --- [%15.15t] %-40.40logger{39} : %X{correlationId:-} %X{userId:-} %X{transactionId:-} %m%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} %5p ${PID:- } --- [%15.15t] %-40.40logger{39} : %X{correlationId:-} %X{userId:-} %X{transactionId:-} %m%n"
+    
+  file:
+    name: "./logs/dev/carddemo-dev.log"
+    max-size: 50MB                          # Smaller log files for development
+    max-history: 14                         # Keep 2 weeks of logs
+    total-size-cap: 1GB                     # Limit total log size
+
+# =============================================================================
+# DEVELOPMENT VALIDATION CONFIGURATION
+# =============================================================================
+# Enhanced validation for COBOL data conversion testing
+
+validation:
+  # COBOL-to-Java validation configuration
+  decimal-precision:
+    default-scale: 2
+    max-precision: 31                       # COBOL COMP-3 maximum precision
+    rounding-mode: HALF_UP                  # COBOL-equivalent rounding
+    math-context: DECIMAL128                # Precise decimal arithmetic
+    validation-enabled: true                # Enable precision validation
+    
+  # Enhanced field validation patterns for development testing
+  patterns:
+    account-number: "^[0-9]{11}$"           # PIC 9(11)
+    card-number: "^[0-9]{16}$"              # PIC 9(16)
+    customer-id: "^[0-9]{9}$"               # PIC 9(9)
+    user-id: "^[A-Z0-9]{8}$"                # PIC X(8)
+    transaction-id: "^[A-Z0-9]{16}$"        # PIC X(16)
+    currency-code: "^[A-Z]{3}$"             # PIC X(3)
+    
+    # Additional development validation patterns
+    test-account: "^999[0-9]{8}$"           # Test account pattern
+    dev-user: "^DEV[A-Z0-9]{5}$"            # Development user pattern
+    
+  # Development validation messages
+  messages:
+    account-number-invalid: "Account number must be exactly 11 digits (COBOL PIC 9(11))"
+    card-number-invalid: "Card number must be exactly 16 digits (COBOL PIC 9(16))"
+    customer-id-invalid: "Customer ID must be exactly 9 digits (COBOL PIC 9(9))"
+    decimal-precision-exceeded: "Decimal precision exceeds COBOL COMP-3 maximum scale"
+    cobol-conversion-error: "COBOL data conversion validation failed"
+
+# =============================================================================
+# DEVELOPMENT APPLICATION PROPERTIES
+# =============================================================================
+# Enhanced development-specific configuration
 
 carddemo:
-  # Development business configuration with test-friendly values
+  # Development environment identification
+  environment:
+    name: "Development"
+    description: "Local development environment for COBOL-to-Java transformation"
+    developer: ${USER:unknown}
+    workspace: ${user.dir:unknown}
+    
+  # Development business configuration with relaxed limits
   business:
     transaction:
-      daily-limit: 10000.00              # Lower limit for development testing
-      single-limit: 1000.00              # Lower single transaction limit
-      retry-attempts: 2                  # Fewer retries for faster development feedback
-      timeout-seconds: 10                # Shorter timeout for development
+      daily-limit: 100000.00                # Higher limit for testing
+      single-limit: 10000.00                # Higher single transaction limit
+      retry-attempts: 5                     # More retry attempts for debugging
+      timeout-seconds: 60                   # Longer timeout for debugging
       
     account:
-      interest-rate: 0.1995              # Standard interest rate
+      interest-rate: 0.1995                 # Standard interest rate
       minimum-payment: 25.00
       over-limit-fee: 35.00
       late-fee: 35.00
@@ -575,171 +676,157 @@ carddemo:
   # Development security configuration
   security:
     jwt:
-      secret: "carddemo-dev-jwt-secret-key-for-development-only-not-secure-enough-for-production-use"
-      expiration: 7200                   # 2 hours for development convenience
-      refresh-expiration: 172800         # 48 hours for development convenience
+      secret: "carddemo-dev-jwt-secret-key-minimum-256-bits-for-hs256-algorithm-development-only"
+      expiration: 7200                      # Longer expiration for development (2 hours)
+      refresh-expiration: 172800            # Longer refresh expiration (48 hours)
       issuer: "CardDemo-Dev-Auth-Service"
       audience: "CardDemo-Dev-API"
       
     password:
-      min-length: 6                      # Relaxed for development
-      require-uppercase: false           # Relaxed for development
-      require-lowercase: false           # Relaxed for development
-      require-digits: false              # Relaxed for development
-      require-special-chars: false       # Relaxed for development
+      min-length: 6                         # Relaxed for development
+      require-uppercase: false              # Relaxed for development
+      require-lowercase: false              # Relaxed for development
+      require-digits: false                 # Relaxed for development
+      require-special-chars: false          # Relaxed for development
       
     session:
-      max-concurrent: 5                  # Allow more concurrent sessions for development
-      timeout-warning: 60                # 1 minute warning for development
+      max-concurrent: 5                     # Allow multiple sessions for testing
+      timeout-warning: 600                  # Longer warning time (10 minutes)
       
   # Development performance configuration
   performance:
     connection-pool:
-      core-size: 5                       # Smaller pool for development
-      max-size: 10                       # Reduced max size
-      queue-capacity: 20                 # Smaller queue for development
+      core-size: 5                          # Smaller core size for development
+      max-size: 20                          # Smaller max size for development
+      queue-capacity: 50                    # Smaller queue for development
       
     cache:
-      ttl-seconds: 60                    # Shorter TTL for development
-      max-entries: 100                   # Smaller cache for development
+      ttl-seconds: 60                       # Shorter TTL for development (1 minute)
+      max-entries: 500                      # Fewer cache entries
       
     batch:
-      chunk-size: 100                    # Smaller chunks for development debugging
-      max-threads: 2                     # Fewer threads for development
+      chunk-size: 100                       # Smaller chunks for debugging
+      max-threads: 2                        # Fewer threads for development
       
   # Development integration configuration
   integration:
     external-apis:
-      timeout: 2000                      # Shorter timeout for development
-      retry-attempts: 1                  # Fewer retries for development
+      timeout: 10000                        # Longer timeout for debugging
+      retry-attempts: 5                     # More retries for testing
       
     file-processing:
       temp-directory: "./temp/carddemo-dev"
-      max-file-size: 10MB               # Smaller files for development
-      allowed-extensions: "txt,csv,json,xml"
+      max-file-size: 200MB                  # Larger files for test data
+      allowed-extensions: "txt,csv,json,xml,dat,vsam"  # Additional extensions
       
   # Development feature flags
   features:
-    audit-logging: true                  # Enable audit logging
-    performance-monitoring: true        # Enable performance monitoring
-    security-headers: false              # Disable security headers for easier development
-    cors-enabled: true                   # Enable CORS for development
-    swagger-ui: true                     # Enable Swagger UI for API documentation
-    h2-console: true                     # Enable H2 console access
-    debug-mode: true                     # Enable debug mode features
-    mock-external-services: true         # Mock external services for development
-    sample-data-loading: true            # Enable sample data loading
-    sql-logging: true                    # Enable SQL logging
-    transaction-tracing: true            # Enable transaction tracing
+    audit-logging: true                     # Enable audit logging
+    performance-monitoring: true           # Enable performance monitoring
+    security-headers: false                # Disable for easier testing
+    cors-enabled: true                      # Enable CORS for development
+    swagger-ui: true                        # Enable Swagger UI
+    debug-mode: true                        # Enable debug mode
+    test-data-loading: true                 # Enable test data loading
+    cobol-validation: true                  # Enable COBOL validation
+    vsam-migration-tools: true              # Enable VSAM migration tools
+    sql-debugging: true                     # Enable SQL debugging
     
-  # Development data configuration
-  data:
-    sample:
-      load-on-startup: true              # Load sample data on startup
-      account-count: 50                  # Number of sample accounts to create
-      customer-count: 50                 # Number of sample customers to create
-      card-count: 75                     # Number of sample cards to create
-      transaction-count: 500             # Number of sample transactions to create
+  # Development-specific COBOL conversion configuration
+  cobol:
+    conversion:
+      validation-enabled: true              # Enable conversion validation
+      precision-checking: true              # Enable precision checking
+      data-mapping-debug: true              # Enable data mapping debugging
       
-    cobol:
-      ascii-data-path: "classpath:data/ASCII/"  # Path to COBOL ASCII data files
-      enable-migration-validation: true   # Enable VSAM-to-PostgreSQL validation
-      precision-validation: true          # Enable COMP-3 precision validation
+    migration:
+      vsam-simulation: true                 # Enable VSAM behavior simulation
+      test-data-path: "src/test/resources/data"  # Test data location
+      ascii-data-files:                     # ASCII test data files
+        - "acctdata.txt"                    # Account data from source
+        - "custdata.txt"                    # Customer data from source
+        - "carddata.txt"
+        - "transact.txt"
+        
+  # Development database configuration
+  database:
+    initialization:
+      mode: "always"                       # Always initialize for development
+      schema-locations: 
+        - "classpath:db/schema"
+      data-locations:
+        - "classpath:db/data"
+        - "classpath:test-data"
+        
+    migration:
+      auto-apply: true                      # Auto-apply migrations
+      validate-on-migrate: true             # Validate migrations
+      clean-on-validation-error: true       # Clean on validation errors
       
   # Development monitoring configuration
   monitoring:
-    tracing:
-      enabled: true                      # Enable distributed tracing
-      probability: 1.0                   # Trace all requests in development
-      
-    metrics:
-      custom-tags:
-        developer: "${user.name:unknown}"
-        workstation: "${HOSTNAME:localhost}"
-        
-  # Development testing configuration
-  testing:
-    mock-responses: true                 # Enable mock responses for testing
-    simulate-errors: false               # Disable error simulation by default
-    delay-simulation: false              # Disable artificial delays
+    enabled: true
+    detailed-metrics: true                  # Enable detailed metrics
+    performance-tracking: true             # Track performance metrics
+    cobol-conversion-metrics: true          # Track COBOL conversion metrics
     
 # =============================================================================
-# DEVELOPMENT CORS CONFIGURATION
+# SPRING BOOT DEVTOOLS CONFIGURATION
 # =============================================================================
-# Cross-Origin Resource Sharing for frontend development
+# Hot reloading and development productivity tools
 
-  cors:
-    allowed-origins:
-      - "http://localhost:3000"          # React development server
-      - "http://localhost:3001"          # Alternative React port
-      - "http://localhost:8080"          # Same origin
-      - "http://127.0.0.1:3000"         # Alternative localhost
-    allowed-methods:
-      - GET
-      - POST
-      - PUT
-      - DELETE
-      - OPTIONS
-      - PATCH
-    allowed-headers:
-      - "*"
-    exposed-headers:
-      - "X-Total-Count"
-      - "X-Page-Number"
-      - "X-Page-Size"
-    allow-credentials: true
-    max-age: 3600
+spring:
+  devtools:
+    restart:
+      enabled: true                         # Enable automatic restart
+      additional-paths: 
+        - "src/main/resources"              # Watch resource changes
+        - "src/main/java"                   # Watch Java changes
+      exclude: 
+        - "logs/**"                         # Exclude log files
+        - "temp/**"                         # Exclude temp files
+        - "target/**"                       # Exclude build output
+      poll-interval: 1000ms                 # Check for changes every second
+      quiet-period: 400ms                   # Wait before restart
+      
+    livereload:
+      enabled: true                         # Enable LiveReload
+      port: 35729                          # LiveReload port
+      
+    remote:
+      enabled: false                        # Disable remote devtools for security
+      
+  # Additional development configuration
+  web:
+    resources:
+      cache:
+        period: 0                           # Disable resource caching
+      chain:
+        cache: false                        # Disable resource chain caching
+        
+# =============================================================================
+# DEVELOPMENT TESTING CONFIGURATION
+# =============================================================================
+# Configuration for development testing and COBOL conversion validation
 
+test:
+  # Test data configuration
+  data:
+    auto-load: true                         # Auto-load test data
+    reset-on-startup: false                 # Don't reset data on startup
+    validation: true                        # Validate test data
+    
+  # COBOL conversion testing
+  cobol:
+    precision-tests: true                   # Enable precision testing
+    data-conversion-tests: true             # Enable data conversion testing
+    business-logic-tests: true              # Enable business logic testing
+    
+  # Performance testing
+  performance:
+    enabled: true                           # Enable performance testing
+    baseline-comparison: true               # Compare with COBOL baseline
+    
 # =============================================================================
-# DEVELOPMENT PROFILE DOCUMENTATION
+# END OF DEVELOPMENT CONFIGURATION
 # =============================================================================
-# This development profile provides:
-#
-# 1. Local PostgreSQL Configuration:
-#    - Containerized PostgreSQL instance on localhost:5432
-#    - Development database 'carddemo_dev' with relaxed SSL requirements
-#    - Reduced connection pool sizes optimized for single developer usage
-#    - Enhanced SQL logging and debugging capabilities
-#
-# 2. Local Redis Configuration:
-#    - Local Redis instance on localhost:6379 without authentication
-#    - Isolated database (1) for development session storage
-#    - Reduced connection pool sizes for development efficiency
-#
-# 3. Debug Logging Levels:
-#    - Comprehensive DEBUG level logging for all CardDemo components
-#    - TRACE level logging for SQL parameter binding and authentication
-#    - Enhanced Spring framework logging for troubleshooting
-#    - Structured logging with correlation IDs for request tracing
-#
-# 4. H2 Console Access:
-#    - Enabled H2 web console at /h2-console for database inspection
-#    - Supports switching between PostgreSQL and H2 for rapid testing
-#    - Web interface for schema validation during VSAM migration
-#
-# 5. Reduced Connection Pool Sizes:
-#    - HikariCP pool sized for single developer usage (max 10 connections)
-#    - Shorter timeouts and lifetimes for faster development feedback
-#    - Connection leak detection optimized for development debugging
-#
-# 6. DevTools Hot Reloading:
-#    - Automatic application restart on code changes
-#    - LiveReload server for browser refresh on resource changes
-#    - Optimized file watching and restart triggers
-#    - Development-specific resource handling
-#
-# 7. Enhanced Monitoring and Observability:
-#    - All Actuator endpoints exposed for development inspection
-#    - Detailed health checks and metrics collection
-#    - Custom metrics for COBOL business logic verification
-#    - Prometheus metrics with development-specific tags
-#
-# 8. Database Introspection Tools:
-#    - Liquibase changelog execution with development contexts
-#    - Sample data loading from COBOL ASCII files
-#    - VSAM-to-PostgreSQL precision validation utilities
-#    - Schema migration rollback capabilities
-#
-# This configuration enables efficient development of the COBOL-to-Java
-# transformation while maintaining exact functional equivalence with the
-# original mainframe system.
