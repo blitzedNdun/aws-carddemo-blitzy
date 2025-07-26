@@ -92,7 +92,7 @@ public class BatchConfiguration extends DefaultBatchConfiguration {
         logger.debug("Initializing Test JobLauncher");
         TaskExecutorJobLauncher jobLauncher = new TaskExecutorJobLauncher();
         jobLauncher.setJobRepository(jobRepository());
-        jobLauncher.setTaskExecutor(taskExecutor());
+        jobLauncher.setTaskExecutor(batchTaskExecutor());
         try {
             jobLauncher.afterPropertiesSet();
         } catch (Exception e) {
@@ -106,7 +106,7 @@ public class BatchConfiguration extends DefaultBatchConfiguration {
      * Simplified TaskExecutor for test scenarios
      */
     @Bean
-    public TaskExecutor taskExecutor() {
+    public TaskExecutor batchTaskExecutor() {
         logger.debug("Configuring Test TaskExecutor");
 
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
@@ -255,11 +255,11 @@ public class BatchConfiguration extends DefaultBatchConfiguration {
     }
 
     /**
-     * Test transaction manager - named 'transactionManager' to match batch job expectations
+     * Test transaction manager - renamed to avoid conflicts with main DatabaseConfig transactionManager
      * Note: Not marked as @Primary to avoid conflicts with main DatabaseConfig transactionManager
      */
-    @Bean("transactionManager")
-    public PlatformTransactionManager transactionManager() {
+    @Bean("batchTransactionManager")
+    public PlatformTransactionManager batchTransactionManager() {
         logger.debug("Configuring test transaction manager");
         return getTransactionManager();
     }
