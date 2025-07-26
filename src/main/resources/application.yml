@@ -752,8 +752,8 @@ spring:
   # Production database configuration with SSL
   datasource:
     url: "jdbc:postgresql://${DATABASE_HOST:localhost}:${DATABASE_PORT:5432}/${DATABASE_NAME:carddemo}?useSSL=true&sslmode=require&serverTimezone=UTC"
-    username: ${DATABASE_USERNAME}
-    password: ${DATABASE_PASSWORD}
+    username: ${DATABASE_USERNAME:carddemo_user}
+    password: ${DATABASE_PASSWORD:test_password}
     hikari:
       maximum-pool-size: 100             # Increased pool size for production
       minimum-idle: 20                   # Higher minimum idle connections
