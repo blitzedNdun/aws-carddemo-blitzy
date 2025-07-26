@@ -1,0 +1,518 @@
+# Docker Compose orchestration for CardDemo COBOL-to-Java transformation
+# Local development environment supporting Spring Boot microservices architecture
+# Replaces CICS region definitions with containerized microservices per Section 0.3.3
+
+version: '3.8'
+
+# Shared network for service communication
+networks:
+  carddemo-network:
+    driver: bridge
+    name: carddemo-dev-network
+
+# Persistent volumes for data storage
+volumes:
+  postgres-data:
+    driver: local
+    name: carddemo-postgres-data
+  redis-data:
+    driver: local
+    name: carddemo-redis-data
+
+services:
+  # PostgreSQL Database Service - Replaces VSAM KSDS datasets
+  # Provides relational data storage with ACID transactions and BigDecimal precision
+  postgresql-service:
+    image: postgres:15
+    container_name: carddemo-postgresql
+    restart: unless-stopped
+    
+    # Environment configuration for development
+    environment:
+      # Database configuration matching application-dev.yml
+      POSTGRES_DB: carddemo
+      POSTGRES_USER: carddemo_dev
+      POSTGRES_PASSWORD: dev_password_123
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+      
+      # Performance optimization for development
+      POSTGRES_SHARED_PRELOAD_LIBRARIES: "pg_stat_statements"
+      POSTGRES_MAX_CONNECTIONS: "200"
+      POSTGRES_SHARED_BUFFERS: "256MB"
+      POSTGRES_EFFECTIVE_CACHE_SIZE: "1GB"
+      POSTGRES_WORK_MEM: "4MB"
+      POSTGRES_MAINTENANCE_WORK_MEM: "64MB"
+      
+      # Timezone configuration
+      TZ: "UTC"
+      PGTZ: "UTC"
+    
+    # Port mapping for JDBC connection
+    ports:
+      - "5432:5432"
+    
+    # Persistent volume for database data
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d:ro
+    
+    # Health check for database readiness
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U carddemo_dev -d carddemo -h localhost -p 5432"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    
+    # Network configuration
+    networks:
+      - carddemo-network
+    
+    # Resource limits for development environment
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # Redis Cache Service - Replaces CICS pseudo-conversational processing
+  # Provides distributed session management and application caching
+  redis-service:
+    image: redis:7-alpine
+    container_name: carddemo-redis
+    restart: unless-stopped
+    
+    # Redis configuration command
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --timeout 300
+      --tcp-keepalive 60
+      --databases 16
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    
+    # Environment configuration
+    environment:
+      TZ: "UTC"
+    
+    # Port mapping for Redis connection
+    ports:
+      - "6379:6379"
+    
+    # Persistent volume for Redis data
+    volumes:
+      - redis-data:/data
+    
+    # Health check for Redis readiness
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    
+    # Network configuration
+    networks:
+      - carddemo-network
+    
+    # Resource limits for development environment
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # CardDemo Spring Boot Microservices - Converted from 24 CICS transactions
+  # Main application container providing REST API endpoints and business logic
+  carddemo-microservices:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+      args:
+        # Build arguments for multi-stage build
+        MAVEN_OPTS: "-Xmx1024m -Duser.timezone=UTC"
+        JAVA_OPTS: >-
+          -Xms512m
+          -Xmx1024m
+          -XX:+UseG1GC
+          -XX:+UseContainerSupport
+          -XX:MaxRAMPercentage=75.0
+          -Djava.security.egd=file:/dev/./urandom
+          -Dspring.profiles.active=development
+          -Duser.timezone=UTC
+    
+    image: carddemo/carddemo-microservices:latest
+    container_name: carddemo-app
+    restart: unless-stopped
+    
+    # Comprehensive environment configuration
+    environment:
+      # Spring profile and application configuration
+      SPRING_PROFILES_ACTIVE: "development"
+      SERVER_PORT: "8080"
+      SERVER_SERVLET_CONTEXT_PATH: "/carddemo"
+      
+      # Database connection configuration
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresql-service:5432/carddemo"
+      SPRING_DATASOURCE_USERNAME: "carddemo_dev"
+      SPRING_DATASOURCE_PASSWORD: "dev_password_123"
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: "org.postgresql.Driver"
+      
+      # HikariCP connection pool configuration
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "20"
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: "5"
+      SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT: "30000"
+      SPRING_DATASOURCE_HIKARI_IDLE_TIMEOUT: "600000"
+      SPRING_DATASOURCE_HIKARI_MAX_LIFETIME: "1800000"
+      SPRING_DATASOURCE_HIKARI_LEAK_DETECTION_THRESHOLD: "60000"
+      
+      # JPA and Hibernate configuration
+      SPRING_JPA_HIBERNATE_DDL_AUTO: "validate"
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: "org.hibernate.dialect.PostgreSQLDialect"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: "public"
+      
+      # Redis session management configuration
+      SPRING_DATA_REDIS_HOST: "redis-service"
+      SPRING_DATA_REDIS_PORT: "6379"
+      SPRING_DATA_REDIS_DATABASE: "0"
+      SPRING_DATA_REDIS_TIMEOUT: "2s"
+      SPRING_DATA_REDIS_LETTUCE_POOL_MAX_ACTIVE: "20"
+      SPRING_DATA_REDIS_LETTUCE_POOL_MAX_IDLE: "10"
+      SPRING_DATA_REDIS_LETTUCE_POOL_MIN_IDLE: "2"
+      
+      # Spring Session configuration
+      SPRING_SESSION_STORE_TYPE: "redis"
+      SPRING_SESSION_REDIS_NAMESPACE: "carddemo:session"
+      SPRING_SESSION_TIMEOUT: "30m"
+      
+      # Security configuration
+      CARDDEMO_JWT_SECRET: "dev-secret-key-for-local-development-only-change-in-production"
+      CARDDEMO_JWT_EXPIRATION: "3600"
+      CARDDEMO_SECURITY_CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:8080"
+      
+      # Liquibase configuration
+      SPRING_LIQUIBASE_CHANGE_LOG: "classpath:db/liquibase-changelog.xml"
+      SPRING_LIQUIBASE_CONTEXTS: "development"
+      SPRING_LIQUIBASE_DROP_FIRST: "false"
+      
+      # Actuator endpoints configuration
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics,prometheus,env,configprops"
+      MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: "always"
+      MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED: "true"
+      
+      # Logging configuration
+      LOGGING_LEVEL_COM_CARDDEMO: "DEBUG"
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: "DEBUG"
+      LOGGING_LEVEL_ORG_HIBERNATE_SQL: "DEBUG"
+      LOGGING_LEVEL_ORG_HIBERNATE_TYPE_DESCRIPTOR_SQL_BASICBINDER: "TRACE"
+      LOGGING_PATTERN_CONSOLE: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}] - %msg%n"
+      
+      # Development tools configuration
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
+      SPRING_H2_CONSOLE_ENABLED: "true"
+      
+      # Cloud configuration (disabled for local development)
+      EUREKA_CLIENT_ENABLED: "false"
+      SPRING_CLOUD_CONFIG_ENABLED: "false"
+      SPRING_CLOUD_DISCOVERY_ENABLED: "false"
+      
+      # Batch processing configuration
+      SPRING_BATCH_JOB_ENABLED: "true"
+      SPRING_BATCH_INITIALIZE_SCHEMA: "always"
+      
+      # Timezone configuration
+      TZ: "UTC"
+      JAVA_TOOL_OPTIONS: "-Duser.timezone=UTC"
+    
+    # Port mappings
+    ports:
+      - "8080:8080"   # Main application port
+      - "8081:8081"   # Management/Actuator port
+    
+    # Volume mounts for development
+    volumes:
+      # Hot reload for development (optional)
+      - ./src:/app/src:ro
+      - ./target/classes:/app/target/classes:ro
+      # Log output
+      - ./logs:/app/logs
+    
+    # Service dependencies
+    depends_on:
+      postgresql-service:
+        condition: service_healthy
+      redis-service:
+        condition: service_healthy
+    
+    # Health check for application readiness
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/carddemo/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    
+    # Network configuration
+    networks:
+      - carddemo-network
+    
+    # Resource limits for development environment
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2.0'
+        reservations:
+          memory: 1G
+          cpus: '1.0'
+
+  # Spring Cloud Config Server - Centralized configuration management
+  # Replaces CICS SIT parameters with cloud-native configuration
+  config-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+      args:
+        SPRING_PROFILES_ACTIVE: "config-server,development"
+    
+    image: carddemo/config-server:latest
+    container_name: carddemo-config-server
+    restart: unless-stopped
+    
+    environment:
+      SPRING_PROFILES_ACTIVE: "development,native"
+      SERVER_PORT: "8888"
+      SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS: "classpath:/config"
+      SPRING_CLOUD_CONFIG_SERVER_GIT_URI: "file:///config-repo"
+      EUREKA_CLIENT_ENABLED: "false"
+      
+      # Actuator configuration
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,refresh,env"
+      MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: "always"
+      
+      # Timezone configuration
+      TZ: "UTC"
+    
+    ports:
+      - "8888:8888"
+    
+    volumes:
+      - ./config:/config-repo:ro
+      - ./src/main/resources/config:/app/config:ro
+    
+    # Health check
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8888/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    networks:
+      - carddemo-network
+    
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # Service Discovery (Eureka Server) - For microservices coordination
+  # Enables dynamic service registration replacing static CICS program linking
+  eureka-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+      args:
+        SPRING_PROFILES_ACTIVE: "eureka-server,development"
+    
+    image: carddemo/eureka-server:latest
+    container_name: carddemo-eureka
+    restart: unless-stopped
+    
+    environment:
+      SPRING_PROFILES_ACTIVE: "development"
+      SERVER_PORT: "8761"
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "false"
+      EUREKA_CLIENT_FETCH_REGISTRY: "false"
+      EUREKA_SERVER_ENABLE_SELF_PRESERVATION: "false"
+      EUREKA_SERVER_EVICTION_INTERVAL_TIMER_IN_MS: "10000"
+      
+      # Timezone configuration
+      TZ: "UTC"
+    
+    ports:
+      - "8761:8761"
+    
+    # Health check
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8761/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    networks:
+      - carddemo-network
+    
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # API Gateway - Request routing and load balancing
+  # Provides centralized entry point for all microservices
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+      args:
+        SPRING_PROFILES_ACTIVE: "api-gateway,development"
+    
+    image: carddemo/api-gateway:latest
+    container_name: carddemo-gateway
+    restart: unless-stopped
+    
+    environment:
+      SPRING_PROFILES_ACTIVE: "development"
+      SERVER_PORT: "8090"
+      
+      # Gateway routing configuration
+      SPRING_CLOUD_GATEWAY_ROUTES_0_ID: "carddemo-auth"
+      SPRING_CLOUD_GATEWAY_ROUTES_0_URI: "http://carddemo-microservices:8080"
+      SPRING_CLOUD_GATEWAY_ROUTES_0_PREDICATES_0: "Path=/auth/**"
+      
+      SPRING_CLOUD_GATEWAY_ROUTES_1_ID: "carddemo-api"
+      SPRING_CLOUD_GATEWAY_ROUTES_1_URI: "http://carddemo-microservices:8080"
+      SPRING_CLOUD_GATEWAY_ROUTES_1_PREDICATES_0: "Path=/api/**"
+      
+      # CORS configuration
+      SPRING_CLOUD_GATEWAY_GLOBALCORS_CORS_CONFIGURATIONS___ALLOWED_ORIGINS: "http://localhost:3000"
+      SPRING_CLOUD_GATEWAY_GLOBALCORS_CORS_CONFIGURATIONS___ALLOWED_METHODS: "GET,POST,PUT,DELETE,OPTIONS"
+      SPRING_CLOUD_GATEWAY_GLOBALCORS_CORS_CONFIGURATIONS___ALLOWED_HEADERS: "*"
+      
+      # Service discovery
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: "http://eureka-server:8761/eureka"
+      
+      # Timezone configuration
+      TZ: "UTC"
+    
+    ports:
+      - "8090:8090"
+    
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      carddemo-microservices:
+        condition: service_healthy
+    
+    # Health check
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8090/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    
+    networks:
+      - carddemo-network
+    
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+# Development utility services
+
+  # PostgreSQL Admin Interface (optional for development)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: carddemo-pgadmin
+    restart: unless-stopped
+    
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "admin@carddemo.local"
+      PGADMIN_DEFAULT_PASSWORD: "admin123"
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+      
+    ports:
+      - "5050:80"
+    
+    volumes:
+      - ./pgadmin:/var/lib/pgadmin:rw
+    
+    depends_on:
+      postgresql-service:
+        condition: service_healthy
+    
+    networks:
+      - carddemo-network
+    
+    profiles:
+      - admin
+      - full
+
+  # Redis Admin Interface (optional for development)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: carddemo-redis-commander
+    restart: unless-stopped
+    
+    environment:
+      REDIS_HOSTS: "local:redis-service:6379"
+      HTTP_USER: "admin"
+      HTTP_PASSWORD: "admin123"
+      
+    ports:
+      - "8082:8081"
+    
+    depends_on:
+      redis-service:
+        condition: service_healthy
+    
+    networks:
+      - carddemo-network
+    
+    profiles:
+      - admin
+      - full
+
+# Container orchestration metadata
+x-common-variables: &common-variables
+  TZ: UTC
+  LANG: en_US.UTF-8
+  LC_ALL: en_US.UTF-8
+
+# Development shortcuts and profiles
+# Usage: docker compose --profile admin up -d (includes admin tools)
+# Usage: docker compose --profile full up -d (includes all services)
