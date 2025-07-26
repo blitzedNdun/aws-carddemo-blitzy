@@ -121,7 +121,6 @@ import java.util.stream.Collectors;
  * @since Java 21
  */
 @Configuration
-@EnableBatchProcessing
 public class StatementGenerationJob {
 
     private static final Logger logger = LoggerFactory.getLogger(StatementGenerationJob.class);
