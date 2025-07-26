@@ -29,7 +29,6 @@ spring:
       - org.springframework.cloud.loadbalancer.config.LoadBalancerAutoConfiguration
       - org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
       - org.springframework.boot.autoconfigure.task.TaskSchedulingAutoConfiguration
-      - com.carddemo.common.config.BatchConfiguration
       
   # Disable batch processing components
   batch:
