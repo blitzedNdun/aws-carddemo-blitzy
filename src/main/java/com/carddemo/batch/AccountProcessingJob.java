@@ -89,6 +89,7 @@ import org.slf4j.LoggerFactory;
  * @since 2024-01-01
  */
 @Configuration
+@org.springframework.context.annotation.Profile("!test")
 public class AccountProcessingJob {
 
     /**
