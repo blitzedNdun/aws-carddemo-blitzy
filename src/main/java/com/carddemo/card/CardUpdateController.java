@@ -135,13 +135,18 @@ public class CardUpdateController {
             }
 
             // Perform comprehensive business validation
-            ValidationResult validationResult = cardUpdateService.validateUpdateRequest(request);
-            if (!validationResult.isValid()) {
+            com.carddemo.common.enums.ValidationResult enumValidationResult = cardUpdateService.validateUpdateRequest(request);
+            if (!enumValidationResult.isValid()) {
                 logger.warn("Card update validation failed for card {}: {}", 
-                          cardNumber.substring(0, 4) + "****", validationResult.getErrorSummary());
+                          cardNumber.substring(0, 4) + "****", enumValidationResult.getErrorMessage());
                 
                 CardUpdateResponseDto errorResponse = new CardUpdateResponseDto();
-                errorResponse.setValidationResult(validationResult);
+                
+                // Convert enum ValidationResult to DTO ValidationResult
+                ValidationResult dtoValidationResult = new ValidationResult(false);
+                dtoValidationResult.addErrorMessage("validation", enumValidationResult.getErrorCode(), 
+                    enumValidationResult.getErrorMessage(), ValidationResult.Severity.ERROR);
+                errorResponse.setValidationResult(dtoValidationResult);
                 
                 return ResponseEntity.badRequest().body(errorResponse);
             }
