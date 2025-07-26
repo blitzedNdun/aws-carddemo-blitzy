@@ -27,6 +27,35 @@ spring:
       - org.springframework.cloud.gateway.config.GatewayAutoConfiguration
       - org.springframework.cloud.netflix.eureka.EurekaClientAutoConfiguration
       - org.springframework.cloud.loadbalancer.config.LoadBalancerAutoConfiguration
+      - org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
+      - org.springframework.boot.autoconfigure.task.TaskSchedulingAutoConfiguration
+      - com.carddemo.common.config.BatchConfiguration
+      
+  # Disable batch processing components
+  batch:
+    initialize-schema: never
+    job:
+      enabled: false
+    
+  # Configure single transaction manager for tests
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        show_sql: false
+        format_sql: false
+
+# Explicitly disable Spring Batch job execution and transaction manager multiplicity
+spring.batch.job.enabled: false
+
+# Set test profile to exclude batch configurations
+spring.profiles.exclude: batch
+
+# Override component scanning to exclude batch configuration
+spring:
+  main:
+    allow-bean-definition-overriding: true
   
   # H2 Database Configuration for Testing
   datasource:
