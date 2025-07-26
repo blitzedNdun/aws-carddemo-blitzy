@@ -14,6 +14,7 @@ import org.springframework.batch.core.configuration.annotation.JobScope;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
@@ -158,6 +159,9 @@ public class CardReportJob {
     @Autowired
     private PlatformTransactionManager transactionManager;
 
+    @Autowired
+    private JobRepository jobRepository;
+
     @Value("${carddemo.batch.card-report.output-directory:/tmp/reports}")
     private String outputDirectory;
 
@@ -207,7 +211,7 @@ public class CardReportJob {
         logger.info("Configuring CardReportJob with chunk size: {} and retry attempts: {}", 
                    chunkSize > 0 ? chunkSize : DEFAULT_CHUNK_SIZE, MAX_RETRY_ATTEMPTS);
 
-        return new JobBuilder("cardReportBatchJob", batchConfiguration.jobRepository())
+        return new JobBuilder("cardReportBatchJob", jobRepository)
                 .incrementer(new RunIdIncrementer())
                 .validator(batchConfiguration.jobParametersValidator())
                 .listener(batchConfiguration.jobExecutionListener())
@@ -238,7 +242,7 @@ public class CardReportJob {
         logger.info("Configuring CardReportStep with chunk size: {} and include inactive: {}", 
                    effectiveChunkSize, includeInactiveCards);
 
-        return new StepBuilder(STEP_NAME, batchConfiguration.jobRepository())
+        return new StepBuilder(STEP_NAME, jobRepository)
                 .<Card, CardReportDTO>chunk(effectiveChunkSize, transactionManager)
                 .reader(cardItemReader())
                 .processor(cardItemProcessor())
