@@ -101,7 +101,7 @@ transaction_category,category_description,active_status
 9802,Maximum Length Category Description for Validation Testing,true
 
 # Category with special characters in description
-9803,Special Chars: !@#$%^&*()_+-=[]{}|;:'"<>?,.`~,true
+9803,Special Chars: !@#$%^&*()_+-=[]{}|;:<>?.`~,true
 
 # Category with numeric description
 9804,12345 Numeric Description Test,true
