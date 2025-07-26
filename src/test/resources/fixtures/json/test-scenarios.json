@@ -315,7 +315,7 @@
           "session_cleanup_on_logout"
         ],
         "test_configuration": {
-          "redis_session_timeout": "28800", // 8 hours in seconds
+          "redis_session_timeout": "28800",
           "session_cookie_name": "JSESSIONID",
           "session_attributes": {
             "user_id": "TESTUSER001",
