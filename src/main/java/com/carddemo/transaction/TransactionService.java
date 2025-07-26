@@ -221,9 +221,15 @@ public class TransactionService {
         // Transaction ID filter - highest priority for exact match performance
         if (request.getTransactionId() != null && !request.getTransactionId().trim().isEmpty()) {
             logger.debug("Filtering by transaction ID: {}", request.getTransactionId());
-            return transactionRepository.findAll(pageable)
-                .map(t -> t.getTransactionId().equals(request.getTransactionId()) ? t : null)
-                .filter(java.util.Objects::nonNull);
+            // Since transaction ID is unique, create a single-item page if found
+            Optional<Transaction> transaction = transactionRepository.findById(request.getTransactionId());
+            if (transaction.isPresent()) {
+                List<Transaction> singleTransactionList = List.of(transaction.get());
+                return new org.springframework.data.domain.PageImpl<>(
+                    singleTransactionList, pageable, 1);
+            } else {
+                return org.springframework.data.domain.Page.empty(pageable);
+            }
         }
         
         // Card number filter with cross-reference validation
