@@ -6,12 +6,27 @@ spring:
   # Enable bean overriding for test environment to handle ObjectMapper conflicts
   main:
     allow-bean-definition-overriding: true
+    web-application-type: none
+    
+  # Disable Spring Cloud components for testing
+  cloud:
+    discovery:
+      enabled: false
+    gateway:
+      enabled: false
+    loadbalancer:
+      enabled: false
+    config:
+      enabled: false
     
   # Exclude problematic batch configuration from tests
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration
       - org.springframework.cloud.autoconfigure.RefreshAutoConfiguration
+      - org.springframework.cloud.gateway.config.GatewayAutoConfiguration
+      - org.springframework.cloud.netflix.eureka.EurekaClientAutoConfiguration
+      - org.springframework.cloud.loadbalancer.config.LoadBalancerAutoConfiguration
   
   # H2 Database Configuration for Testing
   datasource:
@@ -80,3 +95,15 @@ test:
 spring.test:
   database:
     replace: none
+
+# Disable Eureka client for testing
+eureka:
+  client:
+    enabled: false
+    registerWithEureka: false
+    fetchRegistry: false
+
+# Disable management endpoints for testing
+management:
+  endpoints:
+    enabled-by-default: false
