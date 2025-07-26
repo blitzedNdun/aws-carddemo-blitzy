@@ -100,6 +100,7 @@ import org.slf4j.LoggerFactory;
  * @since Java 21
  */
 @Configuration
+@org.springframework.context.annotation.Profile("!test")
 public class StatementProcessingJob {
 
     private static final Logger logger = LoggerFactory.getLogger(StatementProcessingJob.class);
@@ -221,9 +222,9 @@ public class StatementProcessingJob {
         
         return new StepBuilder("transactionFileProcessingStep", jobRepository)
                 .<Transaction, TransactionReportDTO>chunk(PROCESSING_CHUNK_SIZE, transactionManager)
-                .reader(transactionItemReader())
-                .processor(transactionItemProcessor())
-                .writer(transactionItemWriter())
+                .reader(statementProcessingTransactionItemReader())
+                .processor(statementProcessingTransactionItemProcessor())
+                .writer(statementProcessingTransactionItemWriter())
                 .build();
     }
 
@@ -292,7 +293,7 @@ public class StatementProcessingJob {
      * @return ItemReader for Transaction entities
      */
     @Bean
-    public ItemReader<Transaction> transactionItemReader() {
+    public ItemReader<Transaction> statementProcessingTransactionItemReader() {
         logger.info("Configuring transaction item reader with sequential access pattern");
         
         // Initialize file operation status equivalent to COBOL OPEN INPUT TRNX-FILE
@@ -323,7 +324,7 @@ public class StatementProcessingJob {
      * @return ItemProcessor for Transaction to TransactionReportDTO conversion
      */
     @Bean
-    public ItemProcessor<Transaction, TransactionReportDTO> transactionItemProcessor() {
+    public ItemProcessor<Transaction, TransactionReportDTO> statementProcessingTransactionItemProcessor() {
         return new ItemProcessor<Transaction, TransactionReportDTO>() {
             @Override
             public TransactionReportDTO process(Transaction transaction) throws Exception {
@@ -371,7 +372,7 @@ public class StatementProcessingJob {
      * @return ItemWriter for TransactionReportDTO entities
      */
     @Bean
-    public ItemWriter<TransactionReportDTO> transactionItemWriter() {
+    public ItemWriter<TransactionReportDTO> statementProcessingTransactionItemWriter() {
         return new ItemWriter<TransactionReportDTO>() {
             @Override
             public void write(Chunk<? extends TransactionReportDTO> chunk) throws Exception {
