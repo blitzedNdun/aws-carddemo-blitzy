@@ -5,8 +5,22 @@
 --              pre-computed aggregations and automatic refresh scheduling
 -- ===================================================================
 
--- Enable pg_cron extension for automated refresh scheduling
-CREATE EXTENSION IF NOT EXISTS pg_cron;
+-- Enable pg_cron extension for automated refresh scheduling (PostgreSQL only)
+-- Skip for H2 test database since extensions are not supported
+DO $$ 
+BEGIN
+    -- Only create extension if running on PostgreSQL (not H2)
+    IF (SELECT current_setting('server_version_num', true)) IS NOT NULL THEN
+        BEGIN
+            CREATE EXTENSION IF NOT EXISTS pg_cron;
+            RAISE NOTICE 'pg_cron extension enabled for automated materialized view refresh scheduling';
+        EXCEPTION WHEN OTHERS THEN
+            RAISE NOTICE 'pg_cron extension not available - materialized views will require manual refresh';
+        END;
+    ELSE
+        RAISE NOTICE 'Skipping pg_cron extension creation - not supported in H2 test environment';
+    END IF;
+END $$;
 
 -- ===================================================================
 -- MATERIALIZED VIEW: mv_card_transaction_summary
@@ -26,21 +40,21 @@ SELECT
     COALESCE(SUM(CASE WHEN t.transaction_timestamp >= date_trunc('month', CURRENT_DATE) 
                  THEN t.transaction_amount ELSE 0 END), 0.00) as monthly_amount,
     -- Transaction type breakdowns
-    COUNT(CASE WHEN tt.transaction_type_cd = '01' THEN 1 END) as purchase_count,
-    COUNT(CASE WHEN tt.transaction_type_cd = '02' THEN 1 END) as cash_advance_count,
-    COUNT(CASE WHEN tt.transaction_type_cd = '03' THEN 1 END) as payment_count,
-    COUNT(CASE WHEN tt.transaction_type_cd = '04' THEN 1 END) as fee_count,
-    COUNT(CASE WHEN tt.transaction_type_cd = '05' THEN 1 END) as interest_count,
+    COUNT(CASE WHEN tt.transaction_type = '01' THEN 1 END) as purchase_count,
+    COUNT(CASE WHEN tt.transaction_type = '02' THEN 1 END) as cash_advance_count,
+    COUNT(CASE WHEN tt.transaction_type = '03' THEN 1 END) as payment_count,
+    COUNT(CASE WHEN tt.transaction_type = '04' THEN 1 END) as fee_count,
+    COUNT(CASE WHEN tt.transaction_type = '05' THEN 1 END) as interest_count,
     -- Amount by transaction type
-    COALESCE(SUM(CASE WHEN tt.transaction_type_cd = '01' 
+    COALESCE(SUM(CASE WHEN tt.transaction_type = '01' 
                  THEN t.transaction_amount ELSE 0 END), 0.00) as purchase_amount,
-    COALESCE(SUM(CASE WHEN tt.transaction_type_cd = '02' 
+    COALESCE(SUM(CASE WHEN tt.transaction_type = '02' 
                  THEN t.transaction_amount ELSE 0 END), 0.00) as cash_advance_amount,
-    COALESCE(SUM(CASE WHEN tt.transaction_type_cd = '03' 
+    COALESCE(SUM(CASE WHEN tt.transaction_type = '03' 
                  THEN t.transaction_amount ELSE 0 END), 0.00) as payment_amount,
-    COALESCE(SUM(CASE WHEN tt.transaction_type_cd = '04' 
+    COALESCE(SUM(CASE WHEN tt.transaction_type = '04' 
                  THEN t.transaction_amount ELSE 0 END), 0.00) as fee_amount,
-    COALESCE(SUM(CASE WHEN tt.transaction_type_cd = '05' 
+    COALESCE(SUM(CASE WHEN tt.transaction_type = '05' 
                  THEN t.transaction_amount ELSE 0 END), 0.00) as interest_amount,
     -- Average transaction calculations
     COALESCE(AVG(t.transaction_amount), 0.00) as average_transaction_amount,
@@ -51,9 +65,9 @@ SELECT
     c.active_status,
     c.expiration_date,
     -- Transaction category analytics
-    COUNT(CASE WHEN tc.transaction_category_cd = 'PURCH' THEN 1 END) as purchase_category_count,
-    COUNT(CASE WHEN tc.transaction_category_cd = 'CASH' THEN 1 END) as cash_advance_category_count,
-    COALESCE(SUM(CASE WHEN tc.transaction_category_cd = 'PURCH' 
+    COUNT(CASE WHEN tc.transaction_category = 'PURCH' THEN 1 END) as purchase_category_count,
+    COUNT(CASE WHEN tc.transaction_category = 'CASH' THEN 1 END) as cash_advance_category_count,
+    COALESCE(SUM(CASE WHEN tc.transaction_category = 'PURCH' 
                  THEN t.transaction_amount ELSE 0 END), 0.00) as purchase_category_amount,
     -- Risk and compliance metrics
     COUNT(CASE WHEN t.transaction_amount > 1000.00 THEN 1 END) as high_value_transaction_count,
@@ -62,8 +76,8 @@ SELECT
     CURRENT_TIMESTAMP as last_refresh_timestamp
 FROM cards c
 LEFT JOIN transactions t ON c.card_number = t.card_number
-LEFT JOIN transaction_types tt ON t.transaction_type_cd = tt.transaction_type_cd
-LEFT JOIN transaction_categories tc ON t.transaction_category_cd = tc.transaction_category_cd
+LEFT JOIN transaction_types tt ON t.transaction_type = tt.transaction_type
+LEFT JOIN transaction_categories tc ON t.transaction_category = tc.transaction_category
 WHERE c.active_status IN ('Y', 'A')  -- Active cards only
 GROUP BY 
     c.card_number, 
@@ -133,7 +147,7 @@ SELECT
     COALESCE(a.current_balance - prev_month.prev_balance, 0.00) as balance_change_amount,
     -- Account lifecycle information
     a.open_date,
-    EXTRACT(DAYS FROM (CURRENT_DATE - a.open_date)) as account_age_days,
+    (CURRENT_DATE - a.open_date) as account_age_days,
     -- Risk and compliance indicators
     CASE 
         WHEN a.current_balance > a.credit_limit THEN 'OVERLIMIT'
@@ -150,9 +164,9 @@ FROM accounts a
 LEFT JOIN (
     SELECT 
         t.account_id,
-        SUM(CASE WHEN tt.transaction_type_cd = '02' THEN t.transaction_amount ELSE 0 END) as cash_advance_balance
+        SUM(CASE WHEN tt.transaction_type = '02' THEN t.transaction_amount ELSE 0 END) as cash_advance_balance
     FROM transactions t
-    JOIN transaction_types tt ON t.transaction_type_cd = tt.transaction_type_cd
+    JOIN transaction_types tt ON t.transaction_type = tt.transaction_type
     WHERE t.transaction_timestamp >= date_trunc('month', CURRENT_DATE)
     GROUP BY t.account_id
 ) cash_advances ON a.account_id = cash_advances.account_id
@@ -163,8 +177,8 @@ LEFT JOIN (
         SUM(ABS(t.transaction_amount)) as payment_amount,
         MAX(t.transaction_timestamp) as last_payment_date
     FROM transactions t
-    JOIN transaction_types tt ON t.transaction_type_cd = tt.transaction_type_cd
-    WHERE tt.transaction_type_cd = '03' -- Payments
+    JOIN transaction_types tt ON t.transaction_type = tt.transaction_type
+    WHERE tt.transaction_type = '03' -- Payments
       AND t.transaction_timestamp >= CURRENT_DATE - INTERVAL '30 days'
     GROUP BY t.account_id
 ) recent_payments ON a.account_id = recent_payments.account_id
@@ -223,11 +237,8 @@ BEGIN
         WHERE matviewname = 'mv_customer_account_summary'
     ) THEN
         -- Create additional performance indexes
-        CREATE INDEX IF NOT EXISTS idx_mv_customer_acct_summary_fico 
-        ON mv_customer_account_summary (fico_credit_score DESC);
-        
         CREATE INDEX IF NOT EXISTS idx_mv_customer_acct_summary_balance 
-        ON mv_customer_account_summary (total_balance DESC, total_credit_limit DESC);
+        ON mv_customer_account_summary (total_current_balance DESC, total_credit_limit DESC);
         
         CREATE INDEX IF NOT EXISTS idx_mv_customer_acct_summary_accounts 
         ON mv_customer_account_summary (total_accounts DESC, customer_id);
@@ -242,26 +253,62 @@ END $$;
 
 -- Schedule refresh of card transaction summary every 4 hours at batch processing intervals
 -- This aligns with the requirement for 4-hour batch processing window
-SELECT cron.schedule(
-    'refresh-card-transaction-summary',
-    '0 */4 * * *',  -- Every 4 hours at the top of the hour
-    'REFRESH MATERIALIZED VIEW CONCURRENTLY mv_card_transaction_summary;'
-);
+-- Only schedule if pg_cron extension is available (PostgreSQL only)
+DO $$ 
+BEGIN
+    -- Check if pg_cron extension is available
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+        PERFORM cron.schedule(
+            'refresh-card-transaction-summary',
+            '0 */4 * * *',  -- Every 4 hours at the top of the hour
+            'REFRESH MATERIALIZED VIEW CONCURRENTLY mv_card_transaction_summary;'
+        );
+        RAISE NOTICE 'Scheduled automated refresh for mv_card_transaction_summary (every 4 hours)';
+    ELSE
+        RAISE NOTICE 'pg_cron not available - mv_card_transaction_summary requires manual refresh';
+    END IF;
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'Could not schedule mv_card_transaction_summary refresh - pg_cron not available';
+END $$;
 
 -- Schedule refresh of account balance history daily at 2 AM (during batch window)
-SELECT cron.schedule(
-    'refresh-account-balance-history',
-    '0 2 * * *',  -- Daily at 2 AM
-    'REFRESH MATERIALIZED VIEW CONCURRENTLY mv_account_balance_history;'
-);
+-- Only schedule if pg_cron extension is available (PostgreSQL only)
+DO $$ 
+BEGIN
+    -- Check if pg_cron extension is available
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+        PERFORM cron.schedule(
+            'refresh-account-balance-history',
+            '0 2 * * *',  -- Daily at 2 AM
+            'REFRESH MATERIALIZED VIEW CONCURRENTLY mv_account_balance_history;'
+        );
+        RAISE NOTICE 'Scheduled automated refresh for mv_account_balance_history (daily at 2 AM)';
+    ELSE
+        RAISE NOTICE 'pg_cron not available - mv_account_balance_history requires manual refresh';
+    END IF;
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'Could not schedule mv_account_balance_history refresh - pg_cron not available';
+END $$;
 
 -- Schedule refresh of customer account summary every 6 hours (if it exists)
 -- This provides balance between data freshness and resource utilization
-SELECT cron.schedule(
-    'refresh-customer-account-summary',
-    '0 1,7,13,19 * * *',  -- Every 6 hours starting at 1 AM
-    'REFRESH MATERIALIZED VIEW CONCURRENTLY mv_customer_account_summary;'
-);
+-- Only schedule if pg_cron extension is available (PostgreSQL only)
+DO $$ 
+BEGIN
+    -- Check if pg_cron extension is available
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+        PERFORM cron.schedule(
+            'refresh-customer-account-summary',
+            '0 1,7,13,19 * * *',  -- Every 6 hours starting at 1 AM
+            'REFRESH MATERIALIZED VIEW CONCURRENTLY mv_customer_account_summary;'
+        );
+        RAISE NOTICE 'Scheduled automated refresh for mv_customer_account_summary (every 6 hours)';
+    ELSE
+        RAISE NOTICE 'pg_cron not available - mv_customer_account_summary requires manual refresh';
+    END IF;
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'Could not schedule mv_customer_account_summary refresh - pg_cron not available';
+END $$;
 
 -- ===================================================================
 -- MATERIALIZED VIEW MAINTENANCE FUNCTIONS
