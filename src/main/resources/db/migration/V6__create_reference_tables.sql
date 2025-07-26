@@ -9,126 +9,14 @@
 
 --liquibase formatted sql
 
---changeset blitzy-agent:create-transaction-types-table-v6
---comment: Create transaction_types reference table from trantype.txt with 2-character type codes and debit/credit classification
+-- NOTE: transaction_types table is created in V3__create_accounts_table.sql
+-- This changeset was removed to prevent duplicate table creation error
 
--- Create transaction_types table from trantype.txt data source
--- Provides transaction classification with debit/credit indicators for transaction processing
-CREATE TABLE transaction_types (
-    -- Primary key: 2-character transaction type code from trantype.txt
-    transaction_type VARCHAR(2) NOT NULL,
-    
-    -- Descriptive name for transaction type (e.g., "Purchase", "Payment", "Credit")
-    type_description VARCHAR(60) NOT NULL,
-    
-    -- Debit/credit indicator for proper transaction classification and accounting
-    -- TRUE = Debit transaction (increases balance), FALSE = Credit transaction (decreases balance)
-    debit_credit_indicator BOOLEAN NOT NULL DEFAULT true,
-    
-    -- Active status for reference data lifecycle management
-    active_status BOOLEAN NOT NULL DEFAULT true,
-    
-    -- Audit fields for reference data management
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Primary key constraint
-    CONSTRAINT pk_transaction_types PRIMARY KEY (transaction_type),
-    
-    -- Business validation constraints
-    CONSTRAINT chk_transaction_type_format CHECK (transaction_type ~ '^[0-9]{2}$'),
-    CONSTRAINT chk_type_description_length CHECK (length(trim(type_description)) >= 3)
-);
+-- NOTE: transaction_categories table is created in V3__create_accounts_table.sql
+-- This changeset was removed to prevent duplicate table creation error
 
---rollback DROP TABLE transaction_types CASCADE;
-
---changeset blitzy-agent:create-transaction-categories-table-v6
---comment: Create transaction_categories reference table from trancatg.txt with 4-character category codes and hierarchical support
-
--- Create transaction_categories table from trancatg.txt data source
--- Supports hierarchical transaction categorization with parent-child relationships
-CREATE TABLE transaction_categories (
-    -- Primary key: 4-character transaction category code from trancatg.txt
-    -- Note: Original data shows 6-character codes, but last 4 characters form the category
-    transaction_category VARCHAR(4) NOT NULL,
-    
-    -- Parent transaction type (first 2 characters) for hierarchical classification
-    parent_transaction_type VARCHAR(2) NOT NULL,
-    
-    -- Detailed category description (e.g., "Regular Sales Draft", "Cash payment")
-    category_description VARCHAR(60) NOT NULL,
-    
-    -- Active status for category lifecycle management and business rule enforcement
-    active_status BOOLEAN NOT NULL DEFAULT true,
-    
-    -- Audit fields for reference data management
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Primary key constraint
-    CONSTRAINT pk_transaction_categories PRIMARY KEY (transaction_category, parent_transaction_type),
-    
-    -- Foreign key to transaction_types for hierarchical integrity
-    CONSTRAINT fk_transaction_categories_parent_type FOREIGN KEY (parent_transaction_type) 
-        REFERENCES transaction_types(transaction_type) 
-        ON DELETE RESTRICT ON UPDATE CASCADE,
-    
-    -- Business validation constraints
-    CONSTRAINT chk_transaction_category_format CHECK (transaction_category ~ '^[0-9]{4}$'),
-    CONSTRAINT chk_parent_type_format CHECK (parent_transaction_type ~ '^[0-9]{2}$'),
-    CONSTRAINT chk_category_description_length CHECK (length(trim(category_description)) >= 3)
-);
-
---rollback DROP TABLE transaction_categories CASCADE;
-
---changeset blitzy-agent:create-disclosure-groups-table-v6
---comment: Create disclosure_groups reference table from discgrp.txt with precise interest rate management and legal disclosure text
-
--- Create disclosure_groups table from discgrp.txt data source
--- Manages interest rate configurations and legal disclosure requirements
-CREATE TABLE disclosure_groups (
-    -- Primary key: 10-character group identifier (e.g., "A", "DEFAULT", "ZEROAPR")
-    -- Padded to 10 characters for consistency with accounts.group_id foreign key
-    group_id VARCHAR(10) NOT NULL,
-    
-    -- Associated transaction category for interest rate application
-    transaction_category VARCHAR(4) NOT NULL,
-    
-    -- Interest rate with DECIMAL(5,4) precision supporting percentage calculations
-    -- Stores rates as decimal values (e.g., 0.0150 for 1.50% APR)
-    interest_rate DECIMAL(5,4) NOT NULL DEFAULT 0.0000,
-    
-    -- Legal disclosure text for regulatory compliance and customer communication
-    disclosure_text TEXT,
-    
-    -- Effective date for interest rate and disclosure changes
-    effective_date DATE NOT NULL DEFAULT CURRENT_DATE,
-    
-    -- Active status for disclosure group lifecycle management
-    active_status BOOLEAN NOT NULL DEFAULT true,
-    
-    -- Audit fields for compliance tracking and change management
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Primary key constraint
-    CONSTRAINT pk_disclosure_groups PRIMARY KEY (group_id, transaction_category),
-    
-    -- Foreign key to transaction_categories for referential integrity
-    CONSTRAINT fk_disclosure_groups_transaction_category FOREIGN KEY (transaction_category) 
-        REFERENCES transaction_categories(transaction_category) 
-        ON DELETE RESTRICT ON UPDATE CASCADE,
-    
-    -- Business validation constraints
-    CONSTRAINT chk_group_id_format CHECK (length(trim(group_id)) >= 1 AND length(group_id) <= 10),
-    CONSTRAINT chk_interest_rate_range CHECK (interest_rate >= 0.0000 AND interest_rate <= 9.9999),
-    CONSTRAINT chk_effective_date_range CHECK (
-        effective_date >= DATE '1970-01-01' AND 
-        effective_date <= CURRENT_DATE + INTERVAL '10 years'
-    )
-);
-
---rollback DROP TABLE disclosure_groups CASCADE;
+-- NOTE: disclosure_groups table is created in V3__create_accounts_table.sql
+-- This changeset was removed to prevent duplicate table creation error
 
 --changeset blitzy-agent:create-transaction-category-balances-table-v6
 --comment: Create transaction_category_balances table from tcatbal.txt with composite primary key for account-category balance tracking
@@ -292,56 +180,11 @@ CREATE TRIGGER trg_tcatbal_version_update
 --rollback DROP FUNCTION IF EXISTS update_tcatbal_version_and_timestamp();
 --rollback DROP FUNCTION IF EXISTS update_reference_tables_updated_at();
 
---changeset blitzy-agent:populate-reference-tables-initial-data-v6
---comment: Populate reference tables with initial data from ASCII source files
-
--- NOTE: Transaction types data loading moved to separate migration V24__load_transaction_types_data.sql
+-- NOTE: Reference tables initial data loading moved to separate migration scripts:
+-- - transaction_types data: V24__load_transaction_types_data.sql
+-- - transaction_categories data: V25__load_transaction_categories_data.sql  
+-- - disclosure_groups data: V26__load_disclosure_groups_data.sql
 -- This follows Liquibase best practices separating table creation from data loading
-
--- Populate transaction_categories table from trancatg.txt data
--- Extracting 4-character category codes and mapping to parent transaction types
-INSERT INTO transaction_categories (transaction_category, parent_transaction_type, category_description, active_status) VALUES
-('0001', '01', 'Regular Sales Draft', true),
-('0002', '01', 'Regular Cash Advance', true),
-('0003', '01', 'Convenience Check Debit', true),
-('0004', '01', 'ATM Cash Advance', true),
-('0005', '01', 'Interest Amount', true),
-('0001', '02', 'Cash payment', true),
-('0002', '02', 'Electronic payment', true),
-('0003', '02', 'Check payment', true),
-('0001', '03', 'Credit to Account', true),
-('0002', '03', 'Credit to Purchase balance', true),
-('0003', '03', 'Credit to Cash balance', true),
-('0001', '04', 'Zero dollar authorization', true),
-('0002', '04', 'Online purchase authorization', true),
-('0003', '04', 'Travel booking authorization', true),
-('0001', '05', 'Refund credit', true),
-('0001', '06', 'Fraud reversal', true),
-('0002', '06', 'Non-fraud reversal', true),
-('0001', '07', 'Sales draft credit adjustment', true);
-
--- Populate disclosure_groups table from discgrp.txt data
--- Extracting group names, transaction categories, and interest rates
-INSERT INTO disclosure_groups (group_id, transaction_category, interest_rate, disclosure_text, effective_date, active_status) VALUES
--- Group A configurations
-('A', '0001', 0.0150, 'Standard Purchase APR for Group A accounts', CURRENT_DATE, true),
-('A', '0002', 0.0250, 'Cash Advance APR for Group A accounts', CURRENT_DATE, true),
-('A', '0003', 0.0250, 'Convenience Check APR for Group A accounts', CURRENT_DATE, true),
-('A', '0004', 0.0250, 'ATM Cash Advance APR for Group A accounts', CURRENT_DATE, true),
--- DEFAULT group configurations
-('DEFAULT', '0001', 0.0150, 'Standard Purchase APR for Default accounts', CURRENT_DATE, true),
-('DEFAULT', '0002', 0.0250, 'Cash Advance APR for Default accounts', CURRENT_DATE, true),
-('DEFAULT', '0003', 0.0250, 'Convenience Check APR for Default accounts', CURRENT_DATE, true),
-('DEFAULT', '0004', 0.0250, 'ATM Cash Advance APR for Default accounts', CURRENT_DATE, true),
--- ZEROAPR group configurations (promotional rates)
-('ZEROAPR', '0001', 0.0000, 'Promotional Zero APR for Purchases', CURRENT_DATE, true),
-('ZEROAPR', '0002', 0.0000, 'Promotional Zero APR for Cash Advances', CURRENT_DATE, true),
-('ZEROAPR', '0003', 0.0000, 'Promotional Zero APR for Convenience Checks', CURRENT_DATE, true),
-('ZEROAPR', '0004', 0.0000, 'Promotional Zero APR for ATM Cash Advances', CURRENT_DATE, true);
-
---rollback DELETE FROM disclosure_groups;
---rollback DELETE FROM transaction_categories;
---rollback DELETE FROM transaction_types;
 
 --changeset blitzy-agent:create-reference-tables-constraints-v6
 --comment: Add additional business constraints and validation rules for reference data integrity
@@ -354,16 +197,8 @@ CHECK (
     (group_id != 'ZEROAPR' AND interest_rate > 0.0000)
 );
 
--- Add constraint to ensure transaction categories follow hierarchical naming
-ALTER TABLE transaction_categories 
-ADD CONSTRAINT chk_transaction_categories_hierarchy 
-CHECK (
-    substring(transaction_category, 1, 2) = '00' OR 
-    EXISTS (
-        SELECT 1 FROM transaction_types tt 
-        WHERE tt.transaction_type = parent_transaction_type
-    )
-);
+-- NOTE: Hierarchical constraint for transaction_categories moved to V3 migration
+-- where the transaction_categories table is actually created
 
 -- Add unique constraint to ensure one active configuration per group-category combination
 CREATE UNIQUE INDEX idx_disclosure_groups_active_unique 
