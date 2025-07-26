@@ -5,10 +5,16 @@ import com.carddemo.account.repository.AccountRepository;
 import com.carddemo.card.Card;
 import com.carddemo.card.CardRepository;
 import com.carddemo.common.enums.AccountStatus;
+import com.carddemo.common.enums.CardStatus;
+import com.carddemo.common.enums.TransactionCategory;
+import com.carddemo.common.enums.TransactionType;
 import com.carddemo.common.util.BigDecimalUtils;
 import com.carddemo.common.util.ValidationUtils;
 import com.carddemo.transaction.Transaction;
+import com.carddemo.transaction.TransactionDTO;
 import com.carddemo.transaction.TransactionRepository;
+import com.carddemo.account.AccountBalanceDto;
+import com.carddemo.common.dto.AuditInfo;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,8 +79,8 @@ public class BillPaymentService {
     private static final Logger logger = LoggerFactory.getLogger(BillPaymentService.class);
     
     // Transaction constants from COBOL COBIL00C.cbl
-    private static final String TRANSACTION_TYPE_CODE = "02";
-    private static final Integer TRANSACTION_CATEGORY_CODE = 2;
+    private static final TransactionType TRANSACTION_TYPE = TransactionType.PM;
+    private static final TransactionCategory TRANSACTION_CATEGORY = TransactionCategory.PAYMENT;
     private static final String TRANSACTION_SOURCE = "POS TERM";
     private static final String TRANSACTION_DESCRIPTION = "BILL PAYMENT - ONLINE";
     private static final Integer MERCHANT_ID = 999999999;
@@ -166,7 +172,7 @@ public class BillPaymentService {
         }
         
         // Validate account ID format using ValidationUtils
-        if (!ValidationUtils.validateAccountNumber(request.getAccountId())) {
+        if (!ValidationUtils.validateAccountNumber(request.getAccountId()).isValid()) {
             logger.warn("Bill payment validation failed: Invalid account ID format: {}", 
                 request.getAccountId());
             throw new IllegalArgumentException("Invalid account ID format. Must be 11 digits.");
@@ -356,8 +362,8 @@ public class BillPaymentService {
         
         // Set transaction ID and type (from COBOL lines 219-221)
         transaction.setTransactionId(transactionId);
-        transaction.setTransactionType(TRANSACTION_TYPE_CODE);
-        transaction.setCategoryCode(TRANSACTION_CATEGORY_CODE);
+        transaction.setTransactionType(TRANSACTION_TYPE);
+        transaction.setCategoryCode(TRANSACTION_CATEGORY);
         
         // Set transaction source and description (from COBOL lines 222-223)
         transaction.setDescription(TRANSACTION_DESCRIPTION);
@@ -406,7 +412,7 @@ public class BillPaymentService {
         // Find active card for account (equivalent to READ CXACAIX with XREF-ACCT-ID)
         Card card = cardRepository.findByAccountId(accountId)
             .stream()
-            .filter(c -> AccountStatus.ACTIVE.name().equals(c.getActiveStatus()))
+            .filter(c -> CardStatus.ACTIVE.equals(c.getActiveStatus()))
             .findFirst()
             .orElseThrow(() -> {
                 logger.warn("No active card found for account: {}", accountId);
@@ -501,15 +507,14 @@ public class BillPaymentService {
         
         BillPaymentResponseDto response = new BillPaymentResponseDto();
         
-        // Set payment success flag and amount
-        response.setPaymentSuccessful(true);
+        // Set payment amount
         response.setPaymentAmount(paymentAmount);
         
         // Set transaction details
         response.setTransactionDetails(buildTransactionDetails(transaction));
         
         // Set balance update information
-        response.setBalanceUpdate(buildBalanceUpdate(paymentAmount));
+        response.setBalanceUpdate(buildBalanceUpdate(request.getAccountId(), paymentAmount));
         
         // Set audit information
         response.setAuditInfo(buildAuditInfo(request, transaction));
@@ -522,6 +527,9 @@ public class BillPaymentService {
             "Payment successful. Your Transaction ID is %s.", 
             transaction.getTransactionId()));
         
+        // Set payment success flag AFTER setProcessingStatus to avoid override
+        response.setPaymentSuccessful(true);
+        
         logger.debug("Payment response built successfully for transaction: {}", 
             transaction.getTransactionId());
         
@@ -529,29 +537,45 @@ public class BillPaymentService {
     }
     
     /**
-     * Builds transaction details string for response.
+     * Builds transaction details DTO for response.
      * 
      * @param transaction Transaction record
-     * @return Formatted transaction details
+     * @return TransactionDTO with transaction details
      */
-    private String buildTransactionDetails(Transaction transaction) {
-        return String.format("Transaction ID: %s, Type: %s, Amount: %s, Timestamp: %s",
+    private TransactionDTO buildTransactionDetails(Transaction transaction) {
+        return new TransactionDTO(
             transaction.getTransactionId(),
             transaction.getTransactionType(),
-            BigDecimalUtils.formatCurrency(transaction.getAmount()),
-            transaction.getProcessingTimestamp().format(TIMESTAMP_FORMATTER));
+            transaction.getCategoryCode(),
+            transaction.getSource(),
+            transaction.getDescription(),
+            transaction.getAmount(),
+            transaction.getMerchantId(),
+            transaction.getMerchantName(),
+            transaction.getMerchantCity(),
+            transaction.getMerchantZip(),
+            transaction.getCardNumber(),
+            transaction.getOriginalTimestamp(),
+            transaction.getProcessingTimestamp()
+        );
     }
     
     /**
      * Builds balance update information for response.
      * 
+     * @param accountId Account identifier
      * @param paymentAmount Amount paid (previous balance)
-     * @return Formatted balance update information
+     * @return AccountBalanceDto with balance update information
      */
-    private String buildBalanceUpdate(BigDecimal paymentAmount) {
-        return String.format("Previous Balance: %s, Payment Amount: %s, New Balance: $0.00",
-            BigDecimalUtils.formatCurrency(paymentAmount),
-            BigDecimalUtils.formatCurrency(paymentAmount));
+    private AccountBalanceDto buildBalanceUpdate(String accountId, BigDecimal paymentAmount) {
+        // Previous balance was the payment amount, new balance is zero after payment
+        BigDecimal previousBalance = paymentAmount;
+        BigDecimal currentBalance = BigDecimalUtils.createDecimal("0.00");
+        
+        // For bill payment, assume default credit limit of $10,000 if not available
+        BigDecimal creditLimit = BigDecimalUtils.createDecimal("10000.00");
+        
+        return new AccountBalanceDto(accountId, currentBalance, previousBalance, creditLimit);
     }
     
     /**
@@ -559,13 +583,15 @@ public class BillPaymentService {
      * 
      * @param request Original payment request
      * @param transaction Created transaction record
-     * @return Formatted audit information
+     * @return AuditInfo with audit tracking information
      */
-    private String buildAuditInfo(BillPaymentRequestDto request, Transaction transaction) {
-        return String.format("Account: %s, Card: %s, Timestamp: %s, Service: BillPaymentService",
-            request.getAccountId(),
-            maskCardNumber(transaction.getCardNumber()),
-            LocalDateTime.now().format(TIMESTAMP_FORMATTER));
+    private AuditInfo buildAuditInfo(BillPaymentRequestDto request, Transaction transaction) {
+        AuditInfo auditInfo = new AuditInfo();
+        auditInfo.setUserId(request.getAccountId()); // Use account ID as user identifier
+        auditInfo.setOperationType("BILL_PAYMENT");
+        auditInfo.setCorrelationId(transaction.getTransactionId());
+        auditInfo.setSourceSystem("BillPaymentService");
+        return auditInfo;
     }
     
     /**
@@ -597,13 +623,14 @@ public class BillPaymentService {
         response.setProcessingStatus("Confirm to make a bill payment...");
         
         // Set balance information for user review
-        response.setBalanceUpdate(String.format("Current Balance: %s - This amount will be paid in full",
-            BigDecimalUtils.formatCurrency(paymentAmount)));
+        response.setBalanceUpdate(buildBalanceUpdate(request.getAccountId(), paymentAmount));
         
         // Set audit info for tracking
-        response.setAuditInfo(String.format("Account: %s, Confirmation Required, Timestamp: %s",
-            request.getAccountId(),
-            LocalDateTime.now().format(TIMESTAMP_FORMATTER)));
+        AuditInfo confirmationAuditInfo = new AuditInfo();
+        confirmationAuditInfo.setUserId(request.getAccountId());
+        confirmationAuditInfo.setOperationType("BILL_PAYMENT_CONFIRMATION_REQUIRED");
+        confirmationAuditInfo.setSourceSystem("BillPaymentService");
+        response.setAuditInfo(confirmationAuditInfo);
         
         logger.debug("Confirmation required response built for account: {}", request.getAccountId());
         
