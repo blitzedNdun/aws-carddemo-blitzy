@@ -3,8 +3,10 @@
 -- Description: Rollback script for V8__create_materialized_views.sql
 --              Removes all materialized views, functions, indexes, and 
 --              scheduled jobs that replaced VSAM cross-reference functionality
--- Purpose: Enable complete reversal of cross-reference optimization changes
---          and restore system to pre-V8 migration state
+-- Purpose: Enable complete reversal of COBOL mainframe modernization
+--          cross-reference optimization changes and restore system to pre-V8 
+--          migration state with traditional VSAM-equivalent table access patterns
+-- Context: CardDemo COBOL-to-Java modernization project - PostgreSQL rollback
 -- ===================================================================
 
 -- ===================================================================
