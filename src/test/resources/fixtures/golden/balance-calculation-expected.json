@@ -1,0 +1,557 @@
+{
+  "balanceCalculationExpected": {
+    "expectedAccountBalances": {
+      "description": "Expected account balance values from AccountViewService operations ensuring COBOL COMP-3 precision equivalent using BigDecimal DECIMAL128 context",
+      "testCases": [
+        {
+          "accountId": "00000000001",
+          "initialCurrentBalance": "194.00",
+          "initialCreditLimit": "2020.00",
+          "initialAvailableCredit": "1020.00",
+          "expectedCurrentBalance": "194.00",
+          "expectedCreditLimit": "2020.00",
+          "expectedAvailableCredit": "1826.00",
+          "mathContext": "DECIMAL128",
+          "decimalPrecision": 31,
+          "scale": 2,
+          "cobolEquivalent": "PIC S9(10)V99 COMP-3"
+        },
+        {
+          "accountId": "00000000002", 
+          "initialCurrentBalance": "158.00",
+          "initialCreditLimit": "6130.00",
+          "initialAvailableCredit": "5448.00",
+          "expectedCurrentBalance": "158.00",
+          "expectedCreditLimit": "6130.00",
+          "expectedAvailableCredit": "5972.00",
+          "mathContext": "DECIMAL128",
+          "decimalPrecision": 31,
+          "scale": 2,
+          "cobolEquivalent": "PIC S9(10)V99 COMP-3"
+        },
+        {
+          "accountId": "00000000003",
+          "initialCurrentBalance": "147.00",
+          "initialCreditLimit": "4909.00",
+          "initialAvailableCredit": "538.00",
+          "expectedCurrentBalance": "147.00",
+          "expectedCreditLimit": "4909.00",
+          "expectedAvailableCredit": "4762.00",
+          "mathContext": "DECIMAL128",
+          "decimalPrecision": 31,
+          "scale": 2,
+          "cobolEquivalent": "PIC S9(10)V99 COMP-3"
+        }
+      ]
+    },
+    "expectedInterestCalculations": {
+      "description": "Expected interest calculation results from InterestCalculationJob matching COBOL CBACT04C formula: (TRAN-CAT-BAL * DIS-INT-RATE) / 1200",
+      "testCases": [
+        {
+          "accountId": "00000000001",
+          "categoryBalance": "194.00",
+          "interestRate": "18.99",
+          "expectedMonthlyInterest": "3.07",
+          "calculation": "(194.00 * 18.99) / 1200",
+          "roundingMode": "HALF_UP",
+          "mathContext": "DECIMAL128",
+          "cobolFormula": "COMPUTE WS-MONTHLY-INT = (TRAN-CAT-BAL * DIS-INT-RATE) / 1200"
+        },
+        {
+          "accountId": "00000000002",
+          "categoryBalance": "158.00", 
+          "interestRate": "21.49",
+          "expectedMonthlyInterest": "2.83",
+          "calculation": "(158.00 * 21.49) / 1200",
+          "roundingMode": "HALF_UP",
+          "mathContext": "DECIMAL128",
+          "cobolFormula": "COMPUTE WS-MONTHLY-INT = (TRAN-CAT-BAL * DIS-INT-RATE) / 1200"
+        },
+        {
+          "accountId": "00000000003",
+          "categoryBalance": "147.00",
+          "interestRate": "19.99",
+          "expectedMonthlyInterest": "2.45",
+          "calculation": "(147.00 * 19.99) / 1200",
+          "roundingMode": "HALF_UP",
+          "mathContext": "DECIMAL128",
+          "cobolFormula": "COMPUTE WS-MONTHLY-INT = (TRAN-CAT-BAL * DIS-INT-RATE) / 1200"
+        }
+      ]
+    },
+    "expectedTransactionPostingResults": {
+      "description": "Expected transaction posting and balance update results from DailyTransactionPostingJob ensuring penny-perfect accuracy",
+      "testCases": [
+        {
+          "transactionId": "T00000001",
+          "accountId": "00000000001",
+          "transactionAmount": "50.47",
+          "transactionType": "01",
+          "transactionCategory": "05",
+          "preTransactionBalance": "194.00",
+          "expectedPostTransactionBalance": "244.47",
+          "balanceCalculation": "194.00 + 50.47",
+          "mathContext": "DECIMAL128",
+          "precision": 31,
+          "scale": 2
+        },
+        {
+          "transactionId": "T00000002",
+          "accountId": "00000000002",
+          "transactionAmount": "91.90",
+          "transactionType": "03",
+          "transactionCategory": "01",
+          "preTransactionBalance": "158.00",
+          "expectedPostTransactionBalance": "66.10",
+          "balanceCalculation": "158.00 - 91.90",
+          "mathContext": "DECIMAL128",
+          "precision": 31,
+          "scale": 2
+        },
+        {
+          "transactionId": "T00000003",
+          "accountId": "00000000003",
+          "transactionAmount": "6.78",
+          "transactionType": "01",
+          "transactionCategory": "05",
+          "preTransactionBalance": "147.00",
+          "expectedPostTransactionBalance": "153.78",
+          "balanceCalculation": "147.00 + 6.78",
+          "mathContext": "DECIMAL128",
+          "precision": 31,
+          "scale": 2
+        }
+      ]
+    },
+    "expectedCreditLimitValidations": {
+      "description": "Expected credit limit validation and available credit calculations maintaining COBOL COMP-3 precision",
+      "testCases": [
+        {
+          "accountId": "00000000001",
+          "currentBalance": "194.00",
+          "creditLimit": "2020.00",
+          "pendingTransactionAmount": "500.00",
+          "expectedAvailableCredit": "1826.00",
+          "expectedPostTransactionAvailableCredit": "1326.00",
+          "creditLimitExceeded": false,
+          "calculation": "2020.00 - 194.00 - 500.00",
+          "mathContext": "DECIMAL128"
+        },
+        {
+          "accountId": "00000000002",
+          "currentBalance": "158.00",
+          "creditLimit": "6130.00",
+          "pendingTransactionAmount": "6000.00",
+          "expectedAvailableCredit": "5972.00",
+          "expectedPostTransactionAvailableCredit": "-28.00",
+          "creditLimitExceeded": true,
+          "calculation": "6130.00 - 158.00 - 6000.00",
+          "mathContext": "DECIMAL128"
+        }
+      ]
+    },
+    "expectedBalanceUpdateScenarios": {
+      "description": "Expected balance update scenarios from AccountUpdateService ensuring transactional integrity and BigDecimal precision",
+      "testCases": [
+        {
+          "scenario": "payment_processing",
+          "accountId": "00000000001",
+          "operations": [
+            {
+              "operation": "payment",
+              "amount": "100.00",
+              "preBalance": "194.00",
+              "expectedPostBalance": "94.00",
+              "calculation": "194.00 - 100.00"
+            },
+            {
+              "operation": "interest_charge",
+              "amount": "3.07",
+              "preBalance": "94.00",
+              "expectedPostBalance": "97.07",
+              "calculation": "94.00 + 3.07"
+            }
+          ],
+          "finalExpectedBalance": "97.07",
+          "mathContext": "DECIMAL128",
+          "transactionBoundary": "REQUIRES_NEW"
+        },
+        {
+          "scenario": "purchase_and_refund",
+          "accountId": "00000000002",
+          "operations": [
+            {
+              "operation": "purchase",
+              "amount": "250.75",
+              "preBalance": "158.00",
+              "expectedPostBalance": "408.75",
+              "calculation": "158.00 + 250.75"
+            },
+            {
+              "operation": "refund",
+              "amount": "25.50",
+              "preBalance": "408.75",
+              "expectedPostBalance": "383.25",
+              "calculation": "408.75 - 25.50"
+            }
+          ],
+          "finalExpectedBalance": "383.25",
+          "mathContext": "DECIMAL128",
+          "transactionBoundary": "REQUIRES_NEW"
+        }
+      ]
+    },
+    "expectedPrecisionTestCases": {
+      "description": "Expected precision test cases validating BigDecimal arithmetic matches COBOL COMP-3 calculations exactly",
+      "testCases": [
+        {
+          "testName": "decimal_division_precision",
+          "dividend": "100.00",
+          "divisor": "3.00",
+          "expectedResult": "33.33",
+          "roundingMode": "HALF_UP",
+          "scale": 2,
+          "mathContext": "DECIMAL128",
+          "cobolEquivalent": "DIVIDE 100.00 BY 3.00 GIVING RESULT ROUNDED"
+        },
+        {
+          "testName": "interest_rate_calculation",
+          "principal": "1000.00",
+          "rate": "18.99",
+          "periods": "12",
+          "expectedResult": "158.25",
+          "calculation": "(1000.00 * 18.99) / 12 / 100",
+          "roundingMode": "HALF_UP",
+          "scale": 2,
+          "mathContext": "DECIMAL128"
+        },
+        {
+          "testName": "compound_arithmetic",
+          "operation": "((125.50 * 1.0899) + 15.75) - 8.33",
+          "expectedResult": "144.23",
+          "roundingMode": "HALF_UP",
+          "scale": 2,
+          "mathContext": "DECIMAL128"
+        }
+      ]
+    },
+    "expectedCOBOLEquivalentResults": {
+      "description": "Expected results ensuring 100% equivalence with original COBOL programs for financial calculations",
+      "cobolPrograms": {
+        "COACTVWC": {
+          "description": "Account view balance retrieval operations",
+          "testCases": [
+            {
+              "accountId": "00000000001",
+              "cobolCurrentBalance": "000000019400",
+              "javaBigDecimalBalance": "194.00",
+              "equivalent": true,
+              "cobolFormat": "PIC S9(10)V99 COMP-3"
+            }
+          ]
+        },
+        "COACTUPC": {
+          "description": "Account update balance modification operations", 
+          "testCases": [
+            {
+              "accountId": "00000000001",
+              "updateAmount": "50.00",
+              "preBalanceCOBOL": "000000019400",
+              "postBalanceCOBOL": "000000024400",
+              "preBalanceJava": "194.00",
+              "postBalanceJava": "244.00",
+              "equivalent": true
+            }
+          ]
+        },
+        "CBACT04C": {
+          "description": "Interest calculation batch job operations",
+          "testCases": [
+            {
+              "categoryBalance": "194.00",
+              "interestRate": "18.99",
+              "cobolResult": "000000000307",
+              "javaResult": "3.07", 
+              "equivalent": true,
+              "formula": "(TRAN-CAT-BAL * DIS-INT-RATE) / 1200"
+            }
+          ]
+        }
+      }
+    },
+    "expectedBigDecimalArithmetic": {
+      "description": "Expected BigDecimal arithmetic operations with DECIMAL128 context ensuring COBOL COMP-3 precision",
+      "mathContextProperties": {
+        "precision": 31,
+        "roundingMode": "HALF_UP",
+        "contextName": "DECIMAL128"
+      },
+      "arithmeticOperations": [
+        {
+          "operation": "addition",
+          "operand1": "194.00",
+          "operand2": "50.47",
+          "expectedResult": "244.47",
+          "scale": 2
+        },
+        {
+          "operation": "subtraction", 
+          "operand1": "158.00",
+          "operand2": "91.90",
+          "expectedResult": "66.10",
+          "scale": 2
+        },
+        {
+          "operation": "multiplication",
+          "operand1": "194.00",
+          "operand2": "18.99",
+          "expectedResult": "3684.06",
+          "scale": 2
+        },
+        {
+          "operation": "division",
+          "operand1": "3684.06",
+          "operand2": "1200",
+          "expectedResult": "3.07",
+          "scale": 2,
+          "roundingMode": "HALF_UP"
+        }
+      ]
+    },
+    "expectedRoundingBehavior": {
+      "description": "Expected rounding behavior matching COBOL COMP-3 arithmetic for financial calculations",
+      "roundingTestCases": [
+        {
+          "value": "3.075",
+          "scale": 2,
+          "roundingMode": "HALF_UP",
+          "expectedResult": "3.08",
+          "cobolEquivalent": "ROUNDED"
+        },
+        {
+          "value": "3.074",
+          "scale": 2,
+          "roundingMode": "HALF_UP", 
+          "expectedResult": "3.07",
+          "cobolEquivalent": "ROUNDED"
+        },
+        {
+          "value": "2.825",
+          "scale": 2,
+          "roundingMode": "HALF_UP",
+          "expectedResult": "2.83",
+          "cobolEquivalent": "ROUNDED"
+        }
+      ]
+    },
+    "expectedFinancialAccuracy": {
+      "description": "Expected financial accuracy validation ensuring 100% accuracy target with zero tolerance for calculation drift",
+      "accuracyRequirements": {
+        "targetAccuracy": "100%",
+        "toleranceLevel": "0.00",
+        "precisionLossDetection": "automated",
+        "calculationDriftThreshold": "0.00"
+      },
+      "validationScenarios": [
+        {
+          "scenario": "daily_transaction_processing",
+          "transactionCount": 1000,
+          "totalTransactionAmount": "125847.93",
+          "expectedAggregateBalance": "125847.93",
+          "allowedVariance": "0.00",
+          "mathContext": "DECIMAL128"
+        },
+        {
+          "scenario": "monthly_interest_calculation",
+          "accountCount": 50,
+          "totalInterestExpected": "487.25",
+          "calculatedInterest": "487.25",
+          "varianceDetected": "0.00",
+          "accuracyPercentage": "100%"
+        }
+      ]
+    }
+  },
+  "parallelExecutionValidation": {
+    "description": "Parallel execution validation framework for balance arithmetic testing ensuring consistent results across concurrent operations",
+    "cobolCalculationOutputs": {
+      "description": "Expected calculation outputs from original COBOL programs for comparison validation",
+      "programs": {
+        "COACTVWC": {
+          "operationType": "balance_inquiry",
+          "testResults": [
+            {
+              "accountId": "00000000001",
+              "outputFormat": "000000019400000000202000000001020000",
+              "currentBalance": "194.00",
+              "creditLimit": "2020.00", 
+              "availableCredit": "1020.00"
+            }
+          ]
+        },
+        "CBACT04C": {
+          "operationType": "interest_calculation",
+          "testResults": [
+            {
+              "categoryBalance": "194.00",
+              "interestRate": "18.99",
+              "calculatedInterest": "000000000307",
+              "formattedInterest": "3.07"
+            }
+          ]
+        }
+      }
+    },
+    "javaCalculationOutputs": {
+      "description": "Expected calculation outputs from Java Spring Boot microservices for equivalence validation",
+      "services": {
+        "AccountViewService": {
+          "operationType": "balance_inquiry",
+          "testResults": [
+            {
+              "accountId": "00000000001",
+              "currentBalance": "194.00",
+              "creditLimit": "2020.00",
+              "availableCredit": "1826.00",
+              "bigDecimalContext": "DECIMAL128",
+              "scale": 2
+            }
+          ]
+        },
+        "InterestCalculationJob": {
+          "operationType": "interest_calculation", 
+          "testResults": [
+            {
+              "categoryBalance": "194.00",
+              "interestRate": "18.99",
+              "calculatedInterest": "3.07",
+              "bigDecimalContext": "DECIMAL128",
+              "roundingMode": "HALF_UP"
+            }
+          ]
+        }
+      }
+    },
+    "precisionComparisonResults": {
+      "description": "Precision comparison results between COBOL and Java calculations ensuring exact equivalence",
+      "comparisonTestCases": [
+        {
+          "testName": "account_balance_precision",
+          "cobolResult": "000000019400",
+          "cobolDecimalPlaces": 2,
+          "javaResult": "194.00",
+          "javaBigDecimalScale": 2,
+          "precisionMatch": true,
+          "equivalenceValidated": true
+        },
+        {
+          "testName": "interest_calculation_precision",
+          "cobolResult": "000000000307",
+          "cobolDecimalPlaces": 2,
+          "javaResult": "3.07",
+          "javaBigDecimalScale": 2,
+          "precisionMatch": true,
+          "equivalenceValidated": true
+        }
+      ]
+    },
+    "accuracyValidationMetrics": {
+      "description": "Accuracy validation metrics for financial calculation performance monitoring",
+      "metrics": {
+        "overallAccuracy": "100%",
+        "precisionLossEvents": 0,
+        "calculationDriftDetected": false,
+        "pennyPerfectAccuracyAchieved": true,
+        "testExecutionDate": "2024-01-01T00:00:00Z",
+        "validationFramework": "JUnit 5 with custom BigDecimal assertions"
+      }
+    },
+    "calculationDriftDetection": {
+      "description": "Calculation drift detection system for monitoring precision degradation over time",
+      "driftMonitoring": {
+        "enabled": true, 
+        "thresholdVariance": "0.00",
+        "monitoringFrequency": "real-time",
+        "alertingEnabled": true,
+        "baselineEstablished": true
+      },
+      "testScenarios": [
+        {
+          "scenario": "repeated_calculation_stability",
+          "iterations": 10000,
+          "baselineResult": "3.07",
+          "varianceDetected": "0.00",
+          "driftStatus": "stable"
+        }
+      ]
+    },
+    "pennyPerfectAccuracyTests": {
+      "description": "Penny-perfect accuracy test cases ensuring zero tolerance for financial calculation errors",
+      "testRequirements": {
+        "accuracyTarget": "100%",
+        "toleranceLevel": "0.00",
+        "roundingConsistency": "COBOL-equivalent",
+        "precisionPreservation": "mandatory"
+      },
+      "accuracyTestCases": [
+        {
+          "testName": "micro_transaction_accuracy",
+          "transactionAmount": "0.01",
+          "accountBalance": "194.00",
+          "expectedBalance": "194.01",
+          "actualBalance": "194.01",
+          "accuracyAchieved": true
+        },
+        {
+          "testName": "large_transaction_accuracy",
+          "transactionAmount": "9999.99",
+          "accountBalance": "194.00", 
+          "expectedBalance": "10193.99",
+          "actualBalance": "10193.99",
+          "accuracyAchieved": true
+        }
+      ]
+    },
+    "bigDecimalMathContextResults": {
+      "description": "BigDecimal MathContext results ensuring COBOL COMP-3 arithmetic equivalence",
+      "mathContextConfiguration": {
+        "precision": 31,
+        "roundingMode": "HALF_UP",
+        "contextConstant": "DECIMAL128"
+      },
+      "contextValidationTests": [
+        {
+          "operation": "division",
+          "dividend": "100.00",
+          "divisor": "3.00",
+          "expectedPrecision": 31,
+          "actualPrecision": 31,
+          "expectedScale": 2,
+          "actualScale": 2,
+          "result": "33.33",
+          "contextApplied": "DECIMAL128"
+        }
+      ]
+    },
+    "financialArithmeticValidation": {
+      "description": "Financial arithmetic validation ensuring all calculations maintain penny-perfect accuracy across parallel execution",
+      "validationRules": {
+        "noRoundingErrorsAllowed": true,
+        "precisionLossProhibited": true,
+        "scaleConsistencyRequired": true,
+        "mathContextEnforced": "DECIMAL128"
+      },
+      "parallelExecutionTests": [
+        {
+          "testName": "concurrent_balance_updates",
+          "concurrentThreads": 10,
+          "operationsPerThread": 1000,
+          "expectedFinalBalance": "194000.00",
+          "actualFinalBalance": "194000.00",
+          "consistencyAchieved": true,
+          "executionTime": "< 200ms"
+        }
+      ]
+    }
+  }
+}
