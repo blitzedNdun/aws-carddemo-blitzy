@@ -176,11 +176,11 @@ public class AccountProcessingJob {
      * @return Configured Spring Batch Job for account processing
      */
     @Bean
-    public Job accountProcessingJob() {
+    public Job accountBatchJob() {
         logger.info("Creating AccountProcessingJob with comprehensive account processing capabilities");
         
         return new JobBuilder("accountProcessingJob", batchConfiguration.jobRepository())
-                .start(accountProcessingStep())
+                .start(accountBatchStep())
                 .listener(batchConfiguration.jobExecutionListener())
                 .validator(batchConfiguration.jobParametersValidator())
                 .build();
@@ -201,11 +201,11 @@ public class AccountProcessingJob {
      * @return Configured Spring Batch Step for account processing
      */
     @Bean
-    public Step accountProcessingStep() {
-        logger.info("Creating accountProcessingStep with chunk-oriented processing configuration");
+    public Step accountBatchStep() {
+        logger.info("Creating accountBatchStep with chunk-oriented processing configuration");
         
-        return new StepBuilder("accountProcessingStep", batchConfiguration.jobRepository())
-                .<Account, Account>chunk(batchConfiguration.chunkSize(), batchConfiguration.getTransactionManager())
+        return new StepBuilder("accountBatchStep", batchConfiguration.jobRepository())
+                .<Account, Account>chunk(batchConfiguration.chunkSize(), batchConfiguration.batchTransactionManager())
                 .reader(accountItemReader())
                 .processor(accountItemProcessor())
                 .writer(accountItemWriter())
@@ -316,7 +316,7 @@ public class AccountProcessingJob {
                 businessRuleViolationCount.incrementAndGet();
                 
                 // Log error but don't fail the entire job
-                logger.error("Error processing account {}: {}", account.getAccountId(), ex.getMessage(), ex);
+                logger.error("Error processing account " + account.getAccountId() + ": " + ex.getMessage(), ex);
                 
                 // Return null to skip this account in the writer
                 return null;
@@ -350,12 +350,13 @@ public class AccountProcessingJob {
         // Wrap with additional processing for comprehensive account updates
         return new RepositoryItemWriter<Account>() {
             @Override
-            public void write(List<? extends Account> accounts) throws Exception {
-                logger.debug("Writing {} processed accounts to database", accounts.size());
+            public void write(org.springframework.batch.item.Chunk<? extends Account> chunk) throws Exception {
+                java.util.List<? extends Account> accounts = chunk.getItems();
+                logger.debug("Writing " + accounts.size() + " processed accounts to database");
                 
                 try {
                     // Use the configured writer for primary account updates
-                    writer.write(accounts);
+                    writer.write(chunk);
                     
                     // Perform additional cross-reference and balance updates
                     for (Account account : accounts) {
@@ -365,10 +366,10 @@ public class AccountProcessingJob {
                         }
                     }
                     
-                    logger.debug("Successfully wrote {} accounts with cross-reference updates", accounts.size());
+                    logger.debug("Successfully wrote " + accounts.size() + " accounts with cross-reference updates");
                     
                 } catch (Exception ex) {
-                    logger.error("Error writing accounts to database: {}", ex.getMessage(), ex);
+                    logger.error("Error writing accounts to database: " + ex.getMessage(), ex);
                     throw ex;
                 }
             }
@@ -483,8 +484,7 @@ public class AccountProcessingJob {
             return results;
             
         } catch (Exception ex) {
-            logger.error("Error processing business rules for account {}: {}", 
-                        account.getAccountId(), ex.getMessage(), ex);
+            logger.error("Error processing business rules for account " + account.getAccountId() + ": " + ex.getMessage(), ex);
             results.put("processingError", ex.getMessage());
             results.put("processedSuccessfully", false);
             return results;
@@ -568,8 +568,7 @@ public class AccountProcessingJob {
             return ValidationResult.VALID;
             
         } catch (Exception ex) {
-            logger.error("Error during account data validation for {}: {}", 
-                        account.getAccountId(), ex.getMessage(), ex);
+            logger.error("Error during account data validation for " + account.getAccountId() + ": " + ex.getMessage(), ex);
             return ValidationResult.BUSINESS_RULE_VIOLATION;
         }
     }
@@ -654,8 +653,7 @@ public class AccountProcessingJob {
             return account;
             
         } catch (Exception ex) {
-            logger.error("Error updating account balances for {}: {}", 
-                        account.getAccountId(), ex.getMessage(), ex);
+            logger.error("Error updating account balances for " + account.getAccountId() + ": " + ex.getMessage(), ex);
             throw new RuntimeException("Failed to update account balances", ex);
         }
     }
@@ -737,7 +735,7 @@ public class AccountProcessingJob {
             return report;
             
         } catch (Exception ex) {
-            logger.error("Error generating processing report: {}", ex.getMessage(), ex);
+            logger.error("Error generating processing report: " + ex.getMessage(), ex);
             report.put("reportError", ex.getMessage());
             report.put("reportGeneratedAt", LocalDateTime.now());
             return report;
@@ -763,7 +761,7 @@ public class AccountProcessingJob {
     public void handleProcessingErrors(Account account, Exception error) {
         String accountId = account != null ? account.getAccountId() : "unknown";
         
-        logger.error("Processing error occurred for account {}: {}", accountId, error.getMessage(), error);
+        logger.error("Processing error occurred for account " + accountId + ": " + error.getMessage(), error);
         
         try {
             // Categorize error type for reporting
