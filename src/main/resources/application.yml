@@ -180,7 +180,7 @@ spring:
     open-in-view: false                  # Prevent lazy loading issues in web layer
     generate-ddl: false                  # Liquibase handles DDL generation
     show-sql: ${JPA_SHOW_SQL:false}
-    defer-datasource-initialization: true
+    defer-datasource-initialization: false
 
 # =============================================================================
 # LIQUIBASE DATABASE MIGRATION CONFIGURATION
@@ -193,7 +193,7 @@ spring:
     default-schema: "public"
     liquibase-schema: "public"
     contexts: ${LIQUIBASE_CONTEXTS:development}
-    labels: ${LIQUIBASE_LABELS:}
+    label-filter: ${LIQUIBASE_LABELS:}
     drop-first: false
     rollback-file: "rollback.sql"
     test-rollback-on-update: false
