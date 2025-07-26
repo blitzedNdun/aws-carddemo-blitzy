@@ -29,13 +29,7 @@
 # =============================================================================
 
 spring:
-  # Development profile activation and configuration
-  profiles:
-    active: dev
-    include:
-      - database-dev
-      - security-dev
-      - monitoring-dev
+  # Development profile configuration (profile activation handled externally)
 
   # Development application configuration
   application:
@@ -770,12 +764,11 @@ carddemo:
     performance-tracking: true             # Track performance metrics
     cobol-conversion-metrics: true          # Track COBOL conversion metrics
     
-# =============================================================================
-# SPRING BOOT DEVTOOLS CONFIGURATION
-# =============================================================================
-# Hot reloading and development productivity tools
+  # =============================================================================
+  # SPRING BOOT DEVTOOLS CONFIGURATION
+  # =============================================================================
+  # Hot reloading and development productivity tools
 
-spring:
   devtools:
     restart:
       enabled: true                         # Enable automatic restart
