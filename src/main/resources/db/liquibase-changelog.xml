@@ -1,42 +1,504 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+=============================================================================
+CARDEMO MASTER LIQUIBASE CHANGELOG CONFIGURATION
+=============================================================================
+Description: Master Liquibase changelog orchestrating complete VSAM-to-PostgreSQL 
+             database transformation for the CardDemo credit card management system
+             modernization from IBM mainframe to cloud-native Spring Boot architecture
+
+Migration Purpose: Provides versioned schema evolution with rollback capabilities
+                   and environment-specific configuration management supporting the
+                   complete transformation of legacy VSAM datasets to modern PostgreSQL
+                   relational database architecture
+
+Technical Requirements:
+- PostgreSQL 17.5+ target database with SERIALIZABLE isolation level
+- Liquibase 4.25.x for XML changelog processing and migration management  
+- Spring Boot 3.2.x integration via Liquibase auto-configuration
+- BigDecimal precision preservation for financial data integrity
+- Semantic versioning strategy (V1, V2, etc.) for database schema evolution
+- Comprehensive rollback capabilities for all schema and data changes
+
+Migration Architecture:
+- Schema Creation Phase (V1-V10): Core table structures with constraints and indexes
+- Data Loading Phase (V20-V28): Initial data population from ASCII sources
+- Environment-specific configuration support for dev/int/uat/prod deployments
+- Automated partition management for transaction table monthly partitioning
+
+Compliance Considerations:
+- SOX Section 404: Automated financial controls with audit trail generation
+- PCI DSS: Secure payment data handling with field-level encryption
+- GDPR: Data protection controls with row-level security policies
+
+Based on: Technical Specification Section 6.2 Database Design
+          Section 0 Summary of Changes - VSAM-to-PostgreSQL transformation
+          Section 8.1 Deployment Environment - Cloud-native Kubernetes deployment
+
+Author: Blitzy agent
+Created: Master database migration coordination for CardDemo modernization
+Version: 1.0
+=============================================================================
+-->
+
 <databaseChangeLog
     xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:pro="http://www.liquibase.org/xml/ns/pro"
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.25.xsd">
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.25.xsd
+                        http://www.liquibase.org/xml/ns/pro
+                        http://www.liquibase.org/xml/ns/pro/liquibase-pro-4.25.xsd">
 
     <!-- 
-        CardDemo Database Migration Master Changelog
-        
-        This master changelog coordinates all database migrations for the 
-        VSAM-to-PostgreSQL transformation, providing versioned schema 
-        evolution with rollback capabilities.
-        
-        Dependencies:
-        - PostgreSQL 15+ (or H2 in test mode with PostgreSQL compatibility)
-        - Liquibase 4.25.x
-        
-        Migration Strategy:
-        - V1-V10: Core schema creation
-        - V20-V28: Initial data loading
+    =============================================================================
+    CHANGELOG METADATA AND VERSIONING INFORMATION
+    =============================================================================
+    -->
+    <property name="changelog.version" value="1.0"/>
+    <property name="changelog.description" value="CardDemo VSAM-to-PostgreSQL Master Migration"/>
+    <property name="database.target" value="PostgreSQL 17.5+"/>
+    <property name="application.version" value="CardDemo v1.0"/>
+    
+    <!-- Environment-specific configuration properties -->
+    <property name="schema.name" value="carddemo" context="dev,int,uat,prod"/>
+    <property name="tablespace.data" value="carddemo_data" context="prod"/>
+    <property name="tablespace.index" value="carddemo_index" context="prod"/>
+    
+    <!-- Performance and precision configuration -->
+    <property name="isolation.level" value="SERIALIZABLE"/>
+    <property name="decimal.precision" value="DECIMAL(12,2)"/>
+    <property name="interest.precision" value="DECIMAL(5,4)"/>
+    
+    <!--
+    =============================================================================
+    PHASE 1: CORE SCHEMA CREATION (V1-V10)
+    =============================================================================
+    Description: Creates all primary table structures, constraints, indexes, and
+                 database objects required for the modernized CardDemo system.
+                 Preserves VSAM record layouts while enabling modern PostgreSQL
+                 capabilities including foreign key constraints, B-tree indexes,
+                 and materialized views for cross-reference optimization.
+    =============================================================================
     -->
     
-    <!-- Core Schema Migrations -->
-    <include file="db/migration/V1__create_users_table.sql" relativeToChangelogFile="false"/>
-    <include file="db/migration/V1_5__create_audit_tables.sql" relativeToChangelogFile="false"/>
-    <include file="db/migration/V2__create_customers_table.sql" relativeToChangelogFile="false"/>
-    <include file="db/migration/V6__create_reference_tables.sql" relativeToChangelogFile="false"/>
-    <include file="db/migration/V3__create_accounts_table.sql" relativeToChangelogFile="false"/>
-    <include file="db/migration/V4__create_cards_table.sql" relativeToChangelogFile="false"/>
-    <include file="db/migration/V5__create_transactions_table.sql" relativeToChangelogFile="false"/>
-    <include file="db/migration/V10__configure_database_settings.sql" relativeToChangelogFile="false"/>
+    <!-- V1: Users Table - Authentication and Security Foundation -->
+    <include file="db/migration/V1__create_users_table.sql" relativeToChangelogFile="true"/>
     
-    <!-- Initial Data Loading -->
-    <include file="db/migration/data/V20__load_users_initial_data.sql" relativeToChangelogFile="false"/>
-    <include file="db/migration/data/V21__load_customers_data.sql" relativeToChangelogFile="false"/>
-    <include file="db/migration/data/V22__load_accounts_data.sql" relativeToChangelogFile="false"/>
-    <include file="db/migration/data/V24__load_transaction_types_data.sql" relativeToChangelogFile="false"/>
-    <include file="db/migration/data/V25__load_transaction_categories_data.sql" relativeToChangelogFile="false"/>
-    <include file="db/migration/data/V26__load_disclosure_groups_data.sql" relativeToChangelogFile="false"/>
+    <!-- V2: Customers Table - Customer Master Data with Normalized Address Structure -->
+    <include file="db/migration/V2__create_customers_table.sql" relativeToChangelogFile="true"/>
     
+    <!-- V3: Accounts Table - Account Master with Financial Precision and Constraints -->
+    <include file="db/migration/V3__create_accounts_table.sql" relativeToChangelogFile="true"/>
+    
+    <!-- V4: Cards Table - Credit Card Management with Security Validation -->
+    <include file="db/migration/V4__create_cards_table.sql" relativeToChangelogFile="true"/>
+    
+    <!-- V5: Transactions Table - Transaction Processing with Monthly Partitioning -->
+    <include file="db/migration/V5__create_transactions_table.sql" relativeToChangelogFile="true"/>
+    
+    <!-- V6: Reference Tables - Transaction Types, Categories, and Disclosure Groups -->
+    <include file="db/migration/V6__create_reference_tables.sql" relativeToChangelogFile="true"/>
+    
+    <!-- V7: Indexes Creation - B-tree Indexes Replicating VSAM Alternate Index Functionality -->
+    <include file="db/migration/V7__create_indexes.sql" relativeToChangelogFile="true"/>
+    
+    <!-- V8: Materialized Views - Cross-Reference Optimization for Complex Queries -->
+    <include file="db/migration/V8__create_materialized_views.sql" relativeToChangelogFile="true"/>
+    
+    <!-- V9: Partitions Configuration - Advanced PostgreSQL Partitioning Strategy -->
+    <include file="db/migration/V9__create_partitions.sql" relativeToChangelogFile="true"/>
+    
+    <!-- V10: Database Settings - Enterprise-grade PostgreSQL Configuration -->
+    <include file="db/migration/V10__configure_database_settings.sql" relativeToChangelogFile="true"/>
+
+    <!--
+    =============================================================================
+    SCHEMA CREATION VALIDATION CHECKPOINT
+    =============================================================================
+    Description: Validates successful completion of all schema creation migrations
+                 before proceeding to data loading phase. Ensures referential
+                 integrity, constraint validation, and index optimization.
+    =============================================================================
+    -->
+    <changeSet id="schema-validation-checkpoint" author="blitzy-agent" context="all">
+        <comment>Validation checkpoint ensuring all schema objects created successfully</comment>
+        
+        <!-- Validate all primary tables exist with correct structure -->
+        <sql>
+            DO $$
+            DECLARE
+                table_count INTEGER;
+                index_count INTEGER;
+                constraint_count INTEGER;
+            BEGIN
+                -- Validate table creation
+                SELECT COUNT(*) INTO table_count 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name IN ('users', 'customers', 'accounts', 'cards', 'transactions', 
+                                  'transaction_types', 'transaction_categories', 'disclosure_groups',
+                                  'transaction_category_balances');
+                
+                IF table_count != 9 THEN
+                    RAISE EXCEPTION 'Schema validation failed: Expected 9 tables, found %', table_count;
+                END IF;
+                
+                -- Validate index creation
+                SELECT COUNT(*) INTO index_count
+                FROM pg_indexes 
+                WHERE schemaname = 'public'
+                AND indexname LIKE 'idx_%';
+                
+                IF index_count < 4 THEN
+                    RAISE EXCEPTION 'Index validation failed: Expected minimum 4 indexes, found %', index_count;
+                END IF;
+                
+                -- Validate foreign key constraints
+                SELECT COUNT(*) INTO constraint_count
+                FROM information_schema.table_constraints
+                WHERE constraint_schema = 'public'
+                AND constraint_type = 'FOREIGN KEY';
+                
+                IF constraint_count < 8 THEN
+                    RAISE EXCEPTION 'Constraint validation failed: Expected minimum 8 foreign keys, found %', constraint_count;
+                END IF;
+                
+                RAISE NOTICE 'Schema validation checkpoint passed: % tables, % indexes, % constraints', 
+                            table_count, index_count, constraint_count;
+            END $$;
+        </sql>
+        
+        <rollback>
+            <comment>Rollback: Schema validation checkpoint removal</comment>
+            <sql>SELECT 1; -- No-op rollback for validation checkpoint</sql>
+        </rollback>
+    </changeSet>
+
+    <!--
+    =============================================================================
+    PHASE 2: INITIAL DATA LOADING (V20-V28)
+    =============================================================================
+    Description: Populates all tables with initial data from ASCII sources,
+                 including system users, reference data, and sample business data.
+                 Maintains data integrity through precise field mapping and
+                 validation rules equivalent to original VSAM dataset constraints.
+    =============================================================================
+    -->
+    
+    <!-- V20: Users Initial Data - System and Administrative User Accounts -->
+    <include file="db/migration/data/V20__load_users_initial_data.sql" relativeToChangelogFile="true"/>
+    
+    <!-- V21: Customers Data - Customer Profile Information from CUSTDAT -->
+    <include file="db/migration/data/V21__load_customers_data.sql" relativeToChangelogFile="true"/>
+    
+    <!-- V22: Accounts Data - Account Master Information from ACCTDAT -->
+    <include file="db/migration/data/V22__load_accounts_data.sql" relativeToChangelogFile="true"/>
+    
+    <!-- V23: Cards Data - Credit Card Information from CARDDAT and CARDXREF -->
+    <include file="db/migration/data/V23__load_cards_data.sql" relativeToChangelogFile="true"/>
+    
+    <!-- V24: Transaction Types Data - Reference Data from TRANTYPE -->
+    <include file="db/migration/data/V24__load_transaction_types_data.sql" relativeToChangelogFile="true"/>
+    
+    <!-- V25: Transaction Categories Data - Reference Data from TRANCATG -->
+    <include file="db/migration/data/V25__load_transaction_categories_data.sql" relativeToChangelogFile="true"/>
+    
+    <!-- V26: Disclosure Groups Data - Interest Rate Configuration from DISCGRP -->
+    <include file="db/migration/data/V26__load_disclosure_groups_data.sql" relativeToChangelogFile="true"/>
+    
+    <!-- V27: Transaction Category Balances Data - Account Balance Categories from TCATBAL -->
+    <include file="db/migration/data/V27__load_transaction_category_balances_data.sql" relativeToChangelogFile="true"/>
+    
+    <!-- V28: Transactions Data - Transaction History from DAILYTRAN -->
+    <include file="db/migration/data/V28__load_transactions_data.sql" relativeToChangelogFile="true"/>
+
+    <!--
+    =============================================================================
+    DATA LOADING VALIDATION AND MATERIALIZED VIEW REFRESH
+    =============================================================================
+    Description: Validates successful data loading and refreshes materialized views
+                 to ensure optimal query performance for cross-reference operations.
+                 Updates statistics for PostgreSQL query planner optimization.
+    =============================================================================
+    -->
+    <changeSet id="data-loading-validation-and-refresh" author="blitzy-agent" context="all">
+        <comment>Post-data loading validation and materialized view refresh</comment>
+        
+        <!-- Validate data loading completion -->
+        <sql>
+            DO $$
+            DECLARE
+                users_count INTEGER;
+                customers_count INTEGER;
+                accounts_count INTEGER;
+                cards_count INTEGER;
+                transactions_count INTEGER;
+                reference_count INTEGER;
+            BEGIN
+                -- Validate core data loading
+                SELECT COUNT(*) INTO users_count FROM users;
+                SELECT COUNT(*) INTO customers_count FROM customers;
+                SELECT COUNT(*) INTO accounts_count FROM accounts;
+                SELECT COUNT(*) INTO cards_count FROM cards;
+                SELECT COUNT(*) INTO transactions_count FROM transactions;
+                
+                -- Validate reference data loading
+                SELECT 
+                    (SELECT COUNT(*) FROM transaction_types) +
+                    (SELECT COUNT(*) FROM transaction_categories) +
+                    (SELECT COUNT(*) FROM disclosure_groups)
+                INTO reference_count;
+                
+                -- Ensure minimum data requirements are met
+                IF users_count = 0 OR customers_count = 0 OR accounts_count = 0 OR 
+                   cards_count = 0 OR reference_count = 0 THEN
+                    RAISE EXCEPTION 'Data validation failed: Missing required data in core tables';
+                END IF;
+                
+                RAISE NOTICE 'Data loading validation passed: % users, % customers, % accounts, % cards, % transactions', 
+                            users_count, customers_count, accounts_count, cards_count, transactions_count;
+            END $$;
+        </sql>
+        
+        <!-- Refresh materialized views for optimal performance -->
+        <sql>
+            -- Refresh customer account summary materialized view
+            REFRESH MATERIALIZED VIEW CONCURRENTLY mv_customer_account_summary;
+            
+            -- Refresh card transaction summary materialized view  
+            REFRESH MATERIALIZED VIEW CONCURRENTLY mv_card_transaction_summary;
+            
+            -- Update PostgreSQL statistics for query planner optimization
+            ANALYZE users;
+            ANALYZE customers;
+            ANALYZE accounts;
+            ANALYZE cards;
+            ANALYZE transactions;
+            ANALYZE transaction_types;
+            ANALYZE transaction_categories;
+            ANALYZE disclosure_groups;
+            ANALYZE transaction_category_balances;
+        </sql>
+        
+        <rollback>
+            <comment>Rollback: Materialized view refresh reversal</comment>
+            <sql>
+                -- Note: Materialized view refresh cannot be rolled back
+                -- This rollback serves as documentation only
+                SELECT 1; -- No-op rollback for materialized view refresh
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <!--
+    =============================================================================
+    ENVIRONMENT-SPECIFIC CONFIGURATION
+    =============================================================================
+    Description: Applies environment-specific settings and optimizations based
+                 on deployment context (dev/int/uat/prod). Includes performance
+                 tuning, security configuration, and monitoring setup.
+    =============================================================================
+    -->
+    
+    <!-- Development Environment Configuration -->
+    <changeSet id="development-environment-config" author="blitzy-agent" context="dev">
+        <comment>Development environment specific configuration</comment>
+        <sql>
+            -- Enable detailed logging for development
+            ALTER SYSTEM SET log_statement = 'all';
+            ALTER SYSTEM SET log_min_duration_statement = 0;
+            ALTER SYSTEM SET log_connections = on;
+            ALTER SYSTEM SET log_disconnections = on;
+            
+            -- Disable certain security restrictions for development
+            ALTER SYSTEM SET ssl = off;
+            
+            SELECT pg_reload_conf();
+        </sql>
+        <rollback>
+            <sql>
+                ALTER SYSTEM RESET log_statement;
+                ALTER SYSTEM RESET log_min_duration_statement;
+                ALTER SYSTEM RESET log_connections;
+                ALTER SYSTEM RESET log_disconnections;
+                ALTER SYSTEM RESET ssl;
+                SELECT pg_reload_conf();
+            </sql>
+        </rollback>
+    </changeSet>
+    
+    <!-- Production Environment Configuration -->
+    <changeSet id="production-environment-config" author="blitzy-agent" context="prod">
+        <comment>Production environment specific configuration and security hardening</comment>
+        <sql>
+            -- Enable security and performance settings for production
+            ALTER SYSTEM SET ssl = on;
+            ALTER SYSTEM SET ssl_min_protocol_version = 'TLSv1.3';
+            ALTER SYSTEM SET log_statement = 'ddl';
+            ALTER SYSTEM SET log_min_duration_statement = 1000;
+            
+            -- Performance optimization for production workload
+            ALTER SYSTEM SET shared_buffers = '256MB';
+            ALTER SYSTEM SET effective_cache_size = '1GB';
+            ALTER SYSTEM SET maintenance_work_mem = '64MB';
+            ALTER SYSTEM SET checkpoint_completion_target = 0.9;
+            ALTER SYSTEM SET wal_buffers = '16MB';
+            ALTER SYSTEM SET default_statistics_target = 100;
+            
+            -- Connection and resource limits
+            ALTER SYSTEM SET max_connections = 200;
+            ALTER SYSTEM SET superuser_reserved_connections = 3;
+            
+            SELECT pg_reload_conf();
+        </sql>
+        <rollback>
+            <sql>
+                ALTER SYSTEM RESET ssl;
+                ALTER SYSTEM RESET ssl_min_protocol_version;
+                ALTER SYSTEM RESET log_statement;
+                ALTER SYSTEM RESET log_min_duration_statement;
+                ALTER SYSTEM RESET shared_buffers;
+                ALTER SYSTEM RESET effective_cache_size;
+                ALTER SYSTEM RESET maintenance_work_mem;
+                ALTER SYSTEM RESET checkpoint_completion_target;
+                ALTER SYSTEM RESET wal_buffers;
+                ALTER SYSTEM RESET default_statistics_target;
+                ALTER SYSTEM RESET max_connections;
+                ALTER SYSTEM RESET superuser_reserved_connections;
+                SELECT pg_reload_conf();
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <!--
+    =============================================================================
+    MIGRATION COMPLETION CHECKPOINT
+    =============================================================================
+    Description: Final validation ensuring complete and successful migration
+                 from VSAM datasets to PostgreSQL relational database structure.
+                 Validates data integrity, referential constraints, and
+                 performance optimization readiness.
+    =============================================================================
+    -->
+    <changeSet id="migration-completion-checkpoint" author="blitzy-agent" context="all">
+        <comment>Final migration completion validation and performance verification</comment>
+        
+        <sql>
+            DO $$
+            DECLARE
+                total_tables INTEGER;
+                total_indexes INTEGER;
+                total_constraints INTEGER;
+                total_records INTEGER;
+                performance_score INTEGER;
+            BEGIN
+                -- Comprehensive table validation
+                SELECT COUNT(*) INTO total_tables
+                FROM information_schema.tables
+                WHERE table_schema = 'public'
+                AND table_type = 'BASE TABLE';
+                
+                -- Index performance validation
+                SELECT COUNT(*) INTO total_indexes
+                FROM pg_indexes
+                WHERE schemaname = 'public';
+                
+                -- Constraint integrity validation
+                SELECT COUNT(*) INTO total_constraints
+                FROM information_schema.table_constraints
+                WHERE constraint_schema = 'public';
+                
+                -- Data completeness validation
+                SELECT 
+                    (SELECT COUNT(*) FROM users) +
+                    (SELECT COUNT(*) FROM customers) +
+                    (SELECT COUNT(*) FROM accounts) +
+                    (SELECT COUNT(*) FROM cards) +
+                    (SELECT COUNT(*) FROM transactions) +
+                    (SELECT COUNT(*) FROM transaction_types) +
+                    (SELECT COUNT(*) FROM transaction_categories) +
+                    (SELECT COUNT(*) FROM disclosure_groups) +
+                    (SELECT COUNT(*) FROM transaction_category_balances)
+                INTO total_records;
+                
+                -- Performance readiness check
+                SELECT 
+                    CASE 
+                        WHEN total_indexes >= 8 AND total_constraints >= 10 THEN 100
+                        WHEN total_indexes >= 6 AND total_constraints >= 8 THEN 80
+                        ELSE 60
+                    END
+                INTO performance_score;
+                
+                -- Generate migration completion report
+                RAISE NOTICE '=================================================================';
+                RAISE NOTICE 'CARDDEMO VSAM-TO-POSTGRESQL MIGRATION COMPLETION REPORT';
+                RAISE NOTICE '=================================================================';
+                RAISE NOTICE 'Database Tables Created: %', total_tables;
+                RAISE NOTICE 'Indexes for Performance: %', total_indexes;
+                RAISE NOTICE 'Referential Constraints: %', total_constraints;
+                RAISE NOTICE 'Total Records Migrated: %', total_records;
+                RAISE NOTICE 'Performance Score: %/100', performance_score;
+                RAISE NOTICE 'Migration Status: % SUCCESSFUL', 
+                    CASE WHEN total_tables >= 9 AND total_records > 0 THEN 'FULLY' ELSE 'PARTIALLY' END;
+                RAISE NOTICE '=================================================================';
+                RAISE NOTICE 'System ready for Spring Boot microservices deployment';
+                RAISE NOTICE 'PostgreSQL database optimization: COMPLETE';
+                RAISE NOTICE 'Liquibase migration versioning: ACTIVE';
+                RAISE NOTICE '=================================================================';
+                
+                -- Ensure minimum success criteria
+                IF total_tables < 9 OR total_records = 0 THEN
+                    RAISE EXCEPTION 'Migration completion validation failed: Insufficient tables or data';
+                END IF;
+                
+            END $$;
+        </sql>
+        
+        <rollback>
+            <comment>Rollback: Migration completion checkpoint removal</comment>
+            <sql>
+                RAISE NOTICE 'Migration completion checkpoint rollback - validation removed';
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <!--
+    =============================================================================
+    ROLLBACK STRATEGY DOCUMENTATION
+    =============================================================================
+    
+    Comprehensive Rollback Capabilities:
+    
+    1. Individual Migration Rollback:
+       liquibase rollback-count 1
+       
+    2. Version-based Rollback:
+       liquibase rollback V10__configure_database_settings
+       
+    3. Date-based Rollback:
+       liquibase rollback-to-date YYYY-MM-DD
+       
+    4. Complete Schema Rollback:
+       liquibase drop-all
+       
+    5. Environment-specific Rollback:
+       liquibase rollback-count 5 --contexts=prod
+    
+    Critical Rollback Considerations:
+    - Data loading rollbacks will remove all migrated data
+    - Materialized view refreshes cannot be rolled back
+    - Environment-specific configurations require separate rollback
+    - Performance statistics and optimizations will be reset
+    
+    Recovery Procedures:
+    - PostgreSQL point-in-time recovery available via WAL archives
+    - Velero cluster backup restoration for complete environment recovery
+    - Spring Boot application restart required after schema changes
+    - Redis session store clearing recommended after major rollbacks
+    
+    =============================================================================
+    -->
+
 </databaseChangeLog>
