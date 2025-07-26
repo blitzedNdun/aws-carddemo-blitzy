@@ -3,6 +3,7 @@ package com.carddemo.config;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
@@ -48,7 +49,14 @@ import java.math.RoundingMode;
     BatchAutoConfiguration.class
 }, excludeName = {
     "org.springframework.cloud.gateway.config.GatewayAutoConfiguration",
-    "org.springframework.cloud.gateway.config.GatewayRedisAutoConfiguration"
+    "org.springframework.cloud.gateway.config.GatewayRedisAutoConfiguration",
+    "org.springframework.cloud.netflix.eureka.EurekaClientAutoConfiguration",
+    "org.springframework.cloud.netflix.eureka.loadbalancer.LoadBalancerEurekaAutoConfiguration",
+    "org.springframework.cloud.netflix.eureka.EurekaDiscoveryClientConfiguration",
+    "org.springframework.cloud.client.discovery.composite.CompositeDiscoveryClientAutoConfiguration",
+    "org.springframework.cloud.discovery.client.simple.SimpleDiscoveryClientAutoConfiguration",
+    "org.springframework.cloud.config.client.ConfigClientAutoConfiguration",
+    "org.springframework.cloud.gateway.config.GatewayMetricsAutoConfiguration"
 })
 public class CardDemoTestConfiguration {
 
