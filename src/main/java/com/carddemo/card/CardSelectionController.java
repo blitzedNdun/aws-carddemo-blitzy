@@ -340,7 +340,6 @@ public class CardSelectionController {
             errorResponse.setSuccess(false);
             errorResponse.setTimestamp(LocalDateTime.now());
             errorResponse.setErrorMessage(errorMessage);
-            errorResponse.setErrorCode("CARD_NOT_FOUND");
 
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
         }
@@ -350,7 +349,6 @@ public class CardSelectionController {
         errorResponse.setSuccess(false);
         errorResponse.setTimestamp(LocalDateTime.now());
         errorResponse.setErrorMessage("Error reading Card Data File: " + errorMessage);
-        errorResponse.setErrorCode("CARD_DATA_ACCESS_ERROR");
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
@@ -400,7 +398,6 @@ public class CardSelectionController {
         errorResponse.setSuccess(false);
         errorResponse.setTimestamp(LocalDateTime.now());
         errorResponse.setErrorMessage(errorMessage.toString().trim());
-        errorResponse.setErrorCode("VALIDATION_FAILED");
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
@@ -423,7 +420,6 @@ public class CardSelectionController {
         errorResponse.setSuccess(false);
         errorResponse.setTimestamp(LocalDateTime.now());
         errorResponse.setErrorMessage("Insufficient authorization for card selection operations");
-        errorResponse.setErrorCode("AUTHORIZATION_FAILED");
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
     }
