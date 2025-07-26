@@ -744,7 +744,7 @@ public class TransactionController {
      * @return HttpStatus appropriate for the error condition
      */
     private HttpStatus determineHttpStatusForAddition(AddTransactionResponse response) {
-        if (response.getHttpStatus() != null && response.getHttpStatus() > 0) {
+        if (response.getHttpStatus() > 0) {
             return HttpStatus.valueOf(response.getHttpStatus());
         }
         
