@@ -8,6 +8,7 @@ import com.carddemo.common.dto.AuditInfo;
 import com.carddemo.account.dto.AccountDto;
 import com.carddemo.account.dto.CustomerDto;
 import com.carddemo.common.enums.TransactionType;
+import com.carddemo.common.enums.AccountStatus;
 import com.carddemo.common.util.ValidationUtils;
 import com.carddemo.account.AccountViewService;
 
@@ -412,7 +413,7 @@ public class TransactionViewService {
             
             // Create transaction details DTO matching COBOL field structure
             // Note: Using a simple inline DTO creation approach to avoid external dependencies
-            TransactionDTO transactionDetails = createTransactionDTO(transaction);
+            com.carddemo.transaction.TransactionDTO transactionDetails = createTransactionDTO(transaction);
             response.setTransactionDetails(transactionDetails);
             
             // Add account information if available
@@ -420,27 +421,35 @@ public class TransactionViewService {
                 AccountDto accountInfo = new AccountDto();
                 accountInfo.setAccountId(transaction.getAccount().getAccountId());
                 accountInfo.setCurrentBalance(transaction.getAccount().getCurrentBalance());
-                accountInfo.setActiveStatus(transaction.getAccount().getActiveStatus());
+                // Convert String active status to AccountStatus enum
+                String activeStatusStr = transaction.getAccount().getActiveStatus();
+                if (activeStatusStr != null && !activeStatusStr.trim().isEmpty()) {
+                    try {
+                        AccountStatus activeStatus = AccountStatus.fromCode(activeStatusStr);
+                        accountInfo.setActiveStatus(activeStatus);
+                    } catch (IllegalArgumentException e) {
+                        logger.warn("Invalid active status code: {}", activeStatusStr);
+                        accountInfo.setActiveStatus(AccountStatus.INACTIVE); // Default to inactive for invalid codes
+                    }
+                }
                 accountInfo.setCardNumber(transaction.getCardNumber()); // Card used for transaction
                 response.setAccountInfo(accountInfo);
                 
                 // Add customer information if available
-                if (transaction.getAccount().getCustomer() != null) {
+                // Note: Account.getCustomerId() returns customer ID directly
+                String customerIdStr = transaction.getAccount().getCustomerId();
+                if (customerIdStr != null && !customerIdStr.trim().isEmpty()) {
                     CustomerDto customerInfo = new CustomerDto();
-                    customerInfo.setCustomerId(transaction.getAccount().getCustomer().getCustomerId());
-                    customerInfo.setFirstName(transaction.getAccount().getCustomer().getFirstName());
-                    customerInfo.setLastName(transaction.getAccount().getCustomer().getLastName());
-                    
-                    // Create address DTO
-                    com.carddemo.account.dto.AddressDto address = new com.carddemo.account.dto.AddressDto();
-                    address.setAddressLine1(transaction.getAccount().getCustomer().getAddressLine1());
-                    address.setAddressLine2(transaction.getAccount().getCustomer().getAddressLine2());
-                    address.setAddressLine3(transaction.getAccount().getCustomer().getAddressLine3());
-                    address.setStateCode(transaction.getAccount().getCustomer().getStateCode());
-                    address.setZipCode(transaction.getAccount().getCustomer().getZipCode());
-                    customerInfo.setAddress(address);
-                    
-                    response.setCustomerInfo(customerInfo);
+                    // Convert String customerId to Integer for DTO
+                    try {
+                        Integer customerId = Integer.valueOf(customerIdStr);
+                        customerInfo.setCustomerId(customerId);
+                        // Additional customer details would require separate service call
+                        // customerInfo = accountViewService.getCustomerDetails(customerId);
+                        response.setCustomerInfo(customerInfo);
+                    } catch (NumberFormatException e) {
+                        logger.warn("Invalid customer ID format: {}", customerIdStr);
+                    }
                 }
             }
             
@@ -569,11 +578,12 @@ public class TransactionViewService {
      * @param transaction The JPA transaction entity
      * @return TransactionDTO with all fields populated
      */
-    private TransactionDTO createTransactionDTO(Transaction transaction) {
-        TransactionDTO dto = new TransactionDTO();
+    private com.carddemo.transaction.TransactionDTO createTransactionDTO(Transaction transaction) {
+        com.carddemo.transaction.TransactionDTO dto = new com.carddemo.transaction.TransactionDTO();
         
         // Map basic transaction fields
         dto.setTransactionId(transaction.getTransactionId());
+        // External TransactionDTO expects enums, not strings
         dto.setTransactionType(transaction.getTransactionType());
         dto.setCategoryCode(transaction.getCategoryCode());
         dto.setAmount(transaction.getAmount());
@@ -627,85 +637,5 @@ public class TransactionViewService {
         return response;
     }
 
-    /**
-     * Inner DTO class for transaction details.
-     * Represents transaction data structure matching COBOL CVTRA05Y.cpy copybook.
-     * 
-     * This DTO provides a clean separation between the JPA entity and the response structure,
-     * allowing for field-level customization, data masking, and transformation without
-     * affecting the database entity structure.
-     * 
-     * COBOL Field Correspondence:
-     * - TRAN-ID (PIC X(16)) → transactionId (String, 16 chars)
-     * - TRAN-TYPE-CD (PIC X(02)) → transactionType (String, 2 chars)
-     * - TRAN-CAT-CD (PIC 9(04)) → categoryCode (String, 4 digits)
-     * - TRAN-AMT (PIC S9(09)V99 COMP-3) → amount (BigDecimal, precision 11, scale 2)
-     * - TRAN-DESC (PIC X(26)) → description (String, 26 chars)
-     * - TRAN-CARD-NUM (PIC X(16)) → cardNumber (String, 16 chars)
-     * - TRAN-MERCHANT-ID (PIC X(15)) → merchantId (String, 15 chars)
-     * - TRAN-MERCHANT-NAME (PIC X(25)) → merchantName (String, 25 chars)
-     * - TRAN-MERCHANT-CITY (PIC X(25)) → merchantCity (String, 25 chars)
-     * - TRAN-MERCHANT-ZIP (PIC X(10)) → merchantZip (String, 10 chars)
-     * - TRAN-ORIG-TS (PIC X(26)) → originalTimestamp (LocalDateTime)
-     * - TRAN-PROC-TS (PIC X(26)) → processingTimestamp (LocalDateTime)
-     * - TRAN-SOURCE (PIC X(10)) → source (String, 10 chars)
-     */
-    public static class TransactionDTO {
-        private String transactionId;
-        private String transactionType;
-        private String categoryCode;
-        private java.math.BigDecimal amount;
-        private String description;
-        private String cardNumber;
-        private String merchantId;
-        private String merchantName;
-        private String merchantCity;
-        private String merchantZip;
-        private LocalDateTime originalTimestamp;
-        private LocalDateTime processingTimestamp;
-        private String source;
 
-        // Default constructor
-        public TransactionDTO() {}
-
-        // Getters and setters
-        public String getTransactionId() { return transactionId; }
-        public void setTransactionId(String transactionId) { this.transactionId = transactionId; }
-
-        public String getTransactionType() { return transactionType; }
-        public void setTransactionType(String transactionType) { this.transactionType = transactionType; }
-
-        public String getCategoryCode() { return categoryCode; }
-        public void setCategoryCode(String categoryCode) { this.categoryCode = categoryCode; }
-
-        public java.math.BigDecimal getAmount() { return amount; }
-        public void setAmount(java.math.BigDecimal amount) { this.amount = amount; }
-
-        public String getDescription() { return description; }
-        public void setDescription(String description) { this.description = description; }
-
-        public String getCardNumber() { return cardNumber; }
-        public void setCardNumber(String cardNumber) { this.cardNumber = cardNumber; }
-
-        public String getMerchantId() { return merchantId; }
-        public void setMerchantId(String merchantId) { this.merchantId = merchantId; }
-
-        public String getMerchantName() { return merchantName; }
-        public void setMerchantName(String merchantName) { this.merchantName = merchantName; }
-
-        public String getMerchantCity() { return merchantCity; }
-        public void setMerchantCity(String merchantCity) { this.merchantCity = merchantCity; }
-
-        public String getMerchantZip() { return merchantZip; }
-        public void setMerchantZip(String merchantZip) { this.merchantZip = merchantZip; }
-
-        public LocalDateTime getOriginalTimestamp() { return originalTimestamp; }
-        public void setOriginalTimestamp(LocalDateTime originalTimestamp) { this.originalTimestamp = originalTimestamp; }
-
-        public LocalDateTime getProcessingTimestamp() { return processingTimestamp; }
-        public void setProcessingTimestamp(LocalDateTime processingTimestamp) { this.processingTimestamp = processingTimestamp; }
-
-        public String getSource() { return source; }
-        public void setSource(String source) { this.source = source; }
-    }
 }
