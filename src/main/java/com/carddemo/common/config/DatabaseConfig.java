@@ -47,7 +47,11 @@ import java.util.Properties;
  */
 @Configuration
 @EnableTransactionManagement
-@EnableJpaRepositories(basePackages = "com.carddemo")
+@EnableJpaRepositories(basePackages = {
+    "com.carddemo.account.repository",
+    "com.carddemo.common.repository",
+    "com.carddemo.transaction"
+})
 public class DatabaseConfig {
 
     // Database connection properties
