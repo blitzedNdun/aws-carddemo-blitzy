@@ -16,12 +16,13 @@ import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.util.Map;
 import java.time.LocalDateTime;
+import java.time.Duration;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.batch.core.Job;
@@ -135,7 +136,8 @@ import org.slf4j.Logger;
  * @version 1.0
  * @since 2024-01-01
  */
-@Configuration
+@Component
+@org.springframework.context.annotation.Profile("!test")
 public class AccountProcessingJob {
 
     /**
@@ -259,11 +261,11 @@ public class AccountProcessingJob {
      * @return Fully configured Spring Batch Job for account processing operations
      */
     @Bean
-    public Job accountProcessingJob() {
+    public Job accountProcessingBatchJob() {
         logger.info("Configuring account processing job with comprehensive batch workflow");
         
         return new JobBuilder("accountProcessingJob", batchConfiguration.jobRepository())
-                .start(accountProcessingStep())
+                .start(accountProcessingBatchStep())
                 .listener(new AccountProcessingJobListener())
                 .build();
     }
@@ -291,15 +293,15 @@ public class AccountProcessingJob {
      * @return Fully configured Spring Batch Step for account processing
      */
     @Bean
-    public Step accountProcessingStep() {
+    public Step accountProcessingBatchStep() {
         logger.info("Configuring account processing step with chunk size: {} and skip limit: {}", 
                    CHUNK_SIZE, SKIP_LIMIT);
         
         return new StepBuilder("accountProcessingStep", batchConfiguration.jobRepository())
                 .<Account, Account>chunk(CHUNK_SIZE, transactionManager)
-                .reader(accountItemReader())
-                .processor(accountItemProcessor())
-                .writer(accountItemWriter())
+                .reader(accountBatchItemReader())
+                .processor(accountBatchItemProcessor())
+                .writer(accountBatchItemWriter())
                 .listener(new AccountProcessingStepListener())
                 .faultTolerant()
                 .skipLimit(SKIP_LIMIT)
@@ -333,7 +335,7 @@ public class AccountProcessingJob {
      * @return Configured JPA paging ItemReader for account entities
      */
     @Bean
-    public ItemReader<Account> accountItemReader() {
+    public ItemReader<Account> accountBatchItemReader() {
         logger.info("Configuring JPA paging item reader for account processing with page size: {}", CHUNK_SIZE);
         
         return new JpaPagingItemReaderBuilder<Account>()
@@ -370,7 +372,7 @@ public class AccountProcessingJob {
      * @return Custom ItemProcessor for account business rule processing
      */
     @Bean
-    public ItemProcessor<Account, Account> accountItemProcessor() {
+    public ItemProcessor<Account, Account> accountBatchItemProcessor() {
         logger.info("Configuring account item processor with comprehensive business rule validation");
         
         return new ItemProcessor<Account, Account>() {
@@ -434,7 +436,7 @@ public class AccountProcessingJob {
      * @return Configured JPA ItemWriter for account entity persistence
      */
     @Bean
-    public ItemWriter<Account> accountItemWriter() {
+    public ItemWriter<Account> accountBatchItemWriter() {
         logger.info("Configuring JPA item writer for account persistence with bulk operations");
         
         return new JpaItemWriterBuilder<Account>()
@@ -655,7 +657,8 @@ public class AccountProcessingJob {
                 // Aggregate transaction category balances for comprehensive balance tracking
                 Map<String, BigDecimal> categoryBalances = new HashMap<>();
                 account.getTransactions().forEach(transaction -> {
-                    String category = transaction.getTransactionTypeCode();
+                    String category = transaction.getTransactionType() != null 
+                        ? transaction.getTransactionType().getTransactionType() : "UNKNOWN";
                     BigDecimal amount = transaction.getTransactionAmount();
                     categoryBalances.merge(category, amount, 
                         (existing, newAmount) -> BigDecimalUtils.add(existing, newAmount));
@@ -717,7 +720,8 @@ public class AccountProcessingJob {
         
         // Calculate execution duration
         if (jobExecution.getStartTime() != null && jobExecution.getEndTime() != null) {
-            long durationMs = jobExecution.getEndTime().getTime() - jobExecution.getStartTime().getTime();
+            Duration duration = Duration.between(jobExecution.getStartTime(), jobExecution.getEndTime());
+            long durationMs = duration.toMillis();
             report.append("Execution Duration: ").append(durationMs).append(" ms (")
                   .append(durationMs / 1000.0).append(" seconds)\n");
         }
@@ -732,10 +736,13 @@ public class AccountProcessingJob {
             report.append("Skip Count: ").append(stepExecution.getSkipCount()).append("\n");
             report.append("Rollback Count: ").append(stepExecution.getRollbackCount()).append("\n");
             
-            if (stepExecution.getReadCount() > 0) {
-                double throughput = stepExecution.getReadCount() / 
-                    ((stepExecution.getEndTime().getTime() - stepExecution.getStartTime().getTime()) / 1000.0);
-                report.append("Throughput: ").append(String.format("%.2f", throughput)).append(" accounts/second\n");
+            if (stepExecution.getReadCount() > 0 && stepExecution.getStartTime() != null && stepExecution.getEndTime() != null) {
+                Duration stepDuration = Duration.between(stepExecution.getStartTime(), stepExecution.getEndTime());
+                double durationSeconds = stepDuration.toMillis() / 1000.0;
+                if (durationSeconds > 0) {
+                    double throughput = stepExecution.getReadCount() / durationSeconds;
+                    report.append("Throughput: ").append(String.format("%.2f", throughput)).append(" accounts/second\n");
+                }
             }
         });
         
