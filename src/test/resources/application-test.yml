@@ -36,26 +36,10 @@ spring:
     initialize-schema: never
     job:
       enabled: false
-    
-  # Configure single transaction manager for tests
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    properties:
-      hibernate:
-        show_sql: false
-        format_sql: false
-
-# Explicitly disable Spring Batch job execution and transaction manager multiplicity
-spring.batch.job.enabled: false
-
-# Set test profile to exclude batch configurations
-spring.profiles.exclude: batch
-
-# Override component scanning to exclude batch configuration
-spring:
-  main:
-    allow-bean-definition-overriding: true
+      
+  # Set test profile to exclude batch configurations  
+  profiles:
+    exclude: batch
   
   # H2 Database Configuration for Testing
   datasource:
@@ -64,11 +48,11 @@ spring:
     username: sa
     password: ""
     
-  # JPA/Hibernate Configuration for Test Environment
+  # JPA/Hibernate Configuration for Test Environment - merged with above
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: create
+      ddl-auto: create-drop
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
         implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
@@ -79,8 +63,9 @@ spring:
         format_sql: false
         use_sql_comments: false
         globally_quoted_identifiers: true
+        show_sql: false
         hbm2ddl:
-          auto: create
+          auto: create-drop
     packages-to-scan: 
       - com.carddemo.account.entity
       - com.carddemo.card.entity  
