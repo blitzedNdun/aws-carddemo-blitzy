@@ -1,6 +1,6 @@
 package com.carddemo.card;
 
-import com.carddemo.common.config.BaseConfig;
+
 import com.carddemo.common.config.DatabaseConfig;
 import com.carddemo.common.security.SecurityConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
  * - Bill payment processing integration (COBIL00C COBOL equivalent)
  * 
  * Architecture Integration:
- * - Extends BaseConfig for common Spring Boot settings and BigDecimal precision
+ * - Provides card domain-specific Spring Boot configuration with BigDecimal precision
  * - Integrates SecurityConfig for JWT authentication and role-based access control
  * - Utilizes DatabaseConfig for PostgreSQL connection pooling and JPA optimization
  * - Enables Spring Cloud service discovery for microservices communication
@@ -64,7 +64,7 @@ import java.util.concurrent.TimeUnit;
     "classpath:application-card.yml",
     "classpath:application.yml"
 }, ignoreResourceNotFound = true)
-public class CardConfig extends BaseConfig {
+public class CardConfig {
 
     /**
      * Card domain-specific database connection pool maximum size.
