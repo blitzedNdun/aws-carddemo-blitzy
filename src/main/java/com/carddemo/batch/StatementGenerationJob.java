@@ -294,7 +294,7 @@ public class StatementGenerationJob {
             .reader(createStatementItemReader())
             .processor(createStatementItemProcessor())
             .writer(createStatementItemWriter())
-            .taskExecutor(batchConfiguration.taskExecutor())
+            .taskExecutor(batchConfiguration.batchTaskExecutor())
             .build();
     }
 
