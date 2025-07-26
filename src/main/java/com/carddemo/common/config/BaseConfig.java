@@ -128,9 +128,8 @@ public class BaseConfig {
      * @param dataSource PostgreSQL datasource configured with HikariCP
      * @return PlatformTransactionManager with SERIALIZABLE isolation
      */
-    @Bean
-    @Primary
-    public PlatformTransactionManager transactionManager(DataSource dataSource) {
+    @Bean(name = "baseTransactionManager")
+    public PlatformTransactionManager baseTransactionManager(DataSource dataSource) {
         logger.info("Configuring CardDemo TransactionManager with SERIALIZABLE isolation");
         
         DataSourceTransactionManager transactionManager = new DataSourceTransactionManager(dataSource);
