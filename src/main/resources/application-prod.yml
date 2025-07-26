@@ -54,7 +54,7 @@ spring:
   main:
     banner-mode: off                       # Disable banner in production for cleaner logs
     lazy-initialization: false             # Eager initialization for production stability
-    allow-bean-definition-overriding: false
+    allow-bean-definition-overriding: true # Allow for configuration class inheritance patterns
     allow-circular-references: false
 
   # Production web server configuration
@@ -92,7 +92,7 @@ spring:
     # Primary PostgreSQL cluster configuration with SSL
     url: "jdbc:postgresql://${DATABASE_HOST:carddemo-postgres-primary.carddemo-prod.svc.cluster.local}:${DATABASE_PORT:5432}/${DATABASE_NAME:carddemo_prod}?useSSL=true&sslmode=require&serverTimezone=UTC&stringtype=unspecified&targetServerType=primary&loadBalanceHosts=true&connectTimeout=30&socketTimeout=60&loginTimeout=30&prepareThreshold=5&preparedStatementCacheQueries=256&preparedStatementCacheSizeMiB=5&databaseMetadataCacheFields=65536&databaseMetadataCacheFieldsMiB=5&tcpKeepAlive=true&ApplicationName=CardDemo-Production"
     username: ${DATABASE_USERNAME:carddemo_prod_user}
-    password: ${DATABASE_PASSWORD}         # Injected via Kubernetes Secret
+    password: ${DATABASE_PASSWORD:test_password}         # Injected via Kubernetes Secret
     driver-class-name: org.postgresql.Driver
 
     # Production HikariCP Connection Pool - Optimized for 10,000 TPS
@@ -236,7 +236,7 @@ spring:
         max-redirects: 5                   # Increased for production stability
       
       # Production Redis connection settings
-      password: ${REDIS_PASSWORD}          # Injected via Kubernetes Secret
+      password: ${REDIS_PASSWORD:test_redis_password}          # Injected via Kubernetes Secret
       database: 0
       timeout: 3000ms                      # 3 seconds timeout for production
       connect-timeout: 10000ms             # 10 seconds connection timeout
@@ -273,7 +273,7 @@ spring:
       http-only: true
       secure: true                         # Always secure in production
       same-site: "strict"
-      domain: ${SESSION_COOKIE_DOMAIN}     # Production domain
+      domain: ${SESSION_COOKIE_DOMAIN:localhost}     # Production domain
       path: "/carddemo"
 
 # =============================================================================
@@ -365,11 +365,11 @@ server:
   ssl:
     enabled: true
     key-store: ${SSL_KEY_STORE:/etc/ssl/keystore.p12}
-    key-store-password: ${SSL_KEY_STORE_PASSWORD}
+    key-store-password: ${SSL_KEY_STORE_PASSWORD:test_keystore_password}
     key-store-type: PKCS12
     key-alias: ${SSL_KEY_ALIAS:carddemo-prod}
     trust-store: ${SSL_TRUST_STORE:/etc/ssl/truststore.p12}
-    trust-store-password: ${SSL_TRUST_STORE_PASSWORD}
+    trust-store-password: ${SSL_TRUST_STORE_PASSWORD:test_truststore_password}
     trust-store-type: PKCS12
     protocol: TLS
     enabled-protocols: [TLSv1.3, TLSv1.2]
@@ -606,7 +606,7 @@ carddemo:
   # Production security configuration
   security:
     jwt:
-      secret: ${JWT_SECRET}                # Injected via Kubernetes Secret
+      secret: ${JWT_SECRET:test_jwt_secret_key_for_testing_only}                # Injected via Kubernetes Secret
       expiration: 3600
       refresh-expiration: 86400
       issuer: "CardDemo-Production-Auth-Service"
