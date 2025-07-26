@@ -58,8 +58,7 @@ public class CardDemoTestConfiguration {
      * 
      * @return ObjectMapper configured for test scenarios
      */
-    @Bean
-    @Primary
+    @Bean("testObjectMapper")
     public ObjectMapper testObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         
