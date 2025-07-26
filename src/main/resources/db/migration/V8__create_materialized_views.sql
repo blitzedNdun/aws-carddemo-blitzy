@@ -50,6 +50,11 @@ SELECT
     -- Card status from cards table
     c.active_status,
     c.expiration_date,
+    -- Transaction category analytics
+    COUNT(CASE WHEN tc.transaction_category_cd = 'PURCH' THEN 1 END) as purchase_category_count,
+    COUNT(CASE WHEN tc.transaction_category_cd = 'CASH' THEN 1 END) as cash_advance_category_count,
+    COALESCE(SUM(CASE WHEN tc.transaction_category_cd = 'PURCH' 
+                 THEN t.transaction_amount ELSE 0 END), 0.00) as purchase_category_amount,
     -- Risk and compliance metrics
     COUNT(CASE WHEN t.transaction_amount > 1000.00 THEN 1 END) as high_value_transaction_count,
     COUNT(CASE WHEN t.transaction_timestamp >= CURRENT_DATE - INTERVAL '7 days' THEN 1 END) as recent_activity_count,
@@ -58,6 +63,7 @@ SELECT
 FROM cards c
 LEFT JOIN transactions t ON c.card_number = t.card_number
 LEFT JOIN transaction_types tt ON t.transaction_type_cd = tt.transaction_type_cd
+LEFT JOIN transaction_categories tc ON t.transaction_category_cd = tc.transaction_category_cd
 WHERE c.active_status IN ('Y', 'A')  -- Active cards only
 GROUP BY 
     c.card_number, 
@@ -66,9 +72,10 @@ GROUP BY
     c.active_status, 
     c.expiration_date;
 
--- Create unique index on card_number for optimal query performance
+-- Create unique index on card_number for optimal query performance with covering columns
 CREATE UNIQUE INDEX idx_mv_card_trans_summary_card_number 
-ON mv_card_transaction_summary (card_number);
+ON mv_card_transaction_summary (card_number) 
+INCLUDE (total_transactions, total_amount, monthly_volume);
 
 -- Create composite index for account-based queries
 CREATE INDEX idx_mv_card_trans_summary_account_id 
@@ -179,9 +186,10 @@ LEFT JOIN (
     FROM accounts -- This would be enhanced with historical balance tracking in production
 ) prev_month ON a.account_id = prev_month.account_id;
 
--- Create unique index on account_id and snapshot_date
+-- Create unique index on account_id and snapshot_date with covering columns for balance queries
 CREATE UNIQUE INDEX idx_mv_account_balance_hist_account_date 
-ON mv_account_balance_history (account_id, snapshot_date);
+ON mv_account_balance_history (account_id, snapshot_date) 
+INCLUDE (current_balance, credit_limit, available_credit);
 
 -- Create index for customer-based queries
 CREATE INDEX idx_mv_account_balance_hist_customer 
