@@ -6,9 +6,13 @@ import com.carddemo.account.repository.AccountRepository;
 import com.carddemo.account.repository.CustomerRepository;
 import com.carddemo.account.dto.AccountViewRequestDto;
 import com.carddemo.account.dto.AccountViewResponseDto;
+import com.carddemo.account.dto.CustomerDto;
+import com.carddemo.account.dto.AddressDto;
 import com.carddemo.common.util.ValidationUtils;
 import com.carddemo.common.util.BigDecimalUtils;
+import com.carddemo.common.util.DateUtils;
 import com.carddemo.common.enums.AccountStatus;
+import com.carddemo.common.enums.ValidationResult;
 
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -112,7 +116,7 @@ public class AccountViewService {
             }
 
             // Step 2: Validate account ID format and range (COBOL 2210-EDIT-ACCOUNT equivalent)
-            ValidationUtils.ValidationResult validationResult = validateAccountId(request.getAccountId());
+            ValidationResult validationResult = validateAccountId(request.getAccountId());
             if (!validationResult.isValid()) {
                 logger.warn("Account ID validation failed: {}", validationResult);
                 return buildErrorResponse(getValidationErrorMessage(validationResult, request.getAccountId()));
@@ -159,7 +163,7 @@ public class AccountViewService {
      * @param accountId Account ID string to validate
      * @return ValidationResult indicating success or specific validation failure
      */
-    public ValidationUtils.ValidationResult validateAccountId(String accountId) {
+    public ValidationResult validateAccountId(String accountId) {
         logger.debug("Validating account ID: {}", accountId != null ? accountId.substring(0, Math.min(accountId.length(), 4)) + "***" : "null");
 
         // Use ValidationUtils for COBOL-equivalent account number validation
@@ -192,11 +196,8 @@ public class AccountViewService {
         logger.debug("Finding account details for account ID: {}", accountId);
 
         try {
-            // Convert string account ID to Long for repository query
-            Long accountIdLong = Long.valueOf(accountId);
-            
             // Find account by ID - repository will handle active status filtering if needed
-            Optional<Account> accountOptional = accountRepository.findById(accountIdLong);
+            Optional<Account> accountOptional = accountRepository.findById(accountId);
             
             if (accountOptional.isPresent()) {
                 Account account = accountOptional.get();
@@ -275,8 +276,18 @@ public class AccountViewService {
                 logger.debug("Setting customer data for customer ID: {}", customer.getCustomerId());
                 
                 // Create embedded customer DTO - replicating COBOL customer data population
-                AccountViewResponseDto.CustomerDto customerDto = new AccountViewResponseDto.CustomerDto();
-                customerDto.setCustomerId(customer.getCustomerId().toString());
+                CustomerDto customerDto = new CustomerDto();
+                
+                // Convert String customerId to Integer for DTO
+                if (customer.getCustomerId() != null) {
+                    try {
+                        customerDto.setCustomerId(Integer.valueOf(customer.getCustomerId()));
+                    } catch (NumberFormatException e) {
+                        logger.warn("Invalid customer ID format: {}", customer.getCustomerId());
+                        customerDto.setCustomerId(null);
+                    }
+                }
+                
                 customerDto.setFirstName(customer.getFirstName());
                 customerDto.setMiddleName(customer.getMiddleName());
                 customerDto.setLastName(customer.getLastName());
@@ -291,15 +302,17 @@ public class AccountViewService {
                     customerDto.setSsn(customer.getSsn());
                 }
                 
-                customerDto.setDateOfBirth(customer.getDateOfBirth());
+                customerDto.setDateOfBirth(DateUtils.formatCobolDate(customer.getDateOfBirth()));
                 customerDto.setFicoCreditScore(customer.getFicoCreditScore());
                 
-                // Set address information
-                customerDto.setAddressLine1(customer.getAddressLine1());
-                customerDto.setAddressLine2(customer.getAddressLine2());
-                customerDto.setAddressLine3(customer.getAddressLine3());
-                customerDto.setStateCode(customer.getStateCode());
-                customerDto.setZipCode(customer.getZipCode());
+                // Create and set address information using AddressDto
+                AddressDto addressDto = new AddressDto();
+                addressDto.setAddressLine1(customer.getAddressLine1());
+                addressDto.setAddressLine2(customer.getAddressLine2());
+                addressDto.setAddressLine3(customer.getAddressLine3());
+                addressDto.setStateCode(customer.getStateCode());
+                addressDto.setZipCode(customer.getZipCode());
+                customerDto.setAddress(addressDto);
                 
                 // Set contact information
                 customerDto.setPhoneNumber1(customer.getPhoneNumber1());
@@ -314,8 +327,8 @@ public class AccountViewService {
             // Set card number if available (from account's primary card)
             if (account.getCards() != null && !account.getCards().isEmpty()) {
                 // Get the first card associated with the account
-                String cardNumber = account.getCards().iterator().next().getCardNumber();
-                response.setCardNumber(cardNumber);
+                String cardId = account.getCards().iterator().next().getCardId();
+                response.setCardNumber(cardId);
             }
 
             // Set success status
@@ -347,13 +360,9 @@ public class AccountViewService {
         logger.debug("Checking account existence for ID: {}", accountId);
 
         try {
-            Long accountIdLong = Long.valueOf(accountId);
-            boolean exists = accountRepository.existsById(accountIdLong);
+            boolean exists = accountRepository.existsById(accountId);
             logger.debug("Account existence check result for {}: {}", accountId, exists);
             return exists;
-        } catch (NumberFormatException e) {
-            logger.warn("Invalid account ID format for existence check: {}", accountId);
-            return false;
         } catch (Exception e) {
             logger.error("Database error during account existence check", e);
             return false;
@@ -386,7 +395,7 @@ public class AccountViewService {
         
         // Set default values for required fields to prevent null pointer exceptions
         response.setAccountId("");
-        response.setActiveStatus("");
+        response.setActiveStatus(AccountStatus.INACTIVE);
         response.setCurrentBalance(BigDecimal.ZERO);
         response.setCreditLimit(BigDecimal.ZERO);
         response.setCashCreditLimit(BigDecimal.ZERO);
@@ -414,7 +423,7 @@ public class AccountViewService {
      * @param accountId Original account ID that failed validation
      * @return User-friendly error message string
      */
-    private String getValidationErrorMessage(ValidationUtils.ValidationResult validationResult, String accountId) {
+    private String getValidationErrorMessage(ValidationResult validationResult, String accountId) {
         switch (validationResult) {
             case BLANK_FIELD:
                 return "Account number not provided";
