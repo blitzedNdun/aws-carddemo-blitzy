@@ -150,11 +150,11 @@ BEGIN
             IF p_operand2 != 0 THEN
                 v_actual_result := ROUND(p_operand1 / p_operand2, 2);
             ELSE
-                RAISE 'Division by zero not allowed';
+                RAISE EXCEPTION 'Division by zero not allowed';
             END IF;
             v_calculation_type := 'DIVISION';
         ELSE
-            RAISE 'Invalid operation: %', p_operation;
+            RAISE EXCEPTION 'Invalid operation: %', p_operation;
     END CASE;
     
     -- Validate result precision
@@ -823,7 +823,7 @@ BEGIN
         
         RAISE NOTICE '===============================================================================';
         RAISE NOTICE 'TEST EXECUTION SUMMARY';
-        RAISE NOTICE 'Total Tests: %, Passed: %, Failed: %, Success Rate: %%', 
+        RAISE NOTICE 'Total Tests: %, Passed: %, Failed: %, Success Rate: %', 
             v_total_tests, v_passed_tests, v_failed_tests, v_success_rate;
         RAISE NOTICE 'Execution Time: %', v_execution_time;
         RAISE NOTICE '===============================================================================';
@@ -865,7 +865,7 @@ CREATE OR REPLACE FUNCTION generate_precision_test_report() RETURNS TABLE (
 BEGIN
     RETURN QUERY
     SELECT 
-        'FIELD_PRECISION' as report_section,
+        'FIELD_PRECISION'::VARCHAR(50) as report_section,
         ptr.test_category,
         COUNT(*) as total_tests,
         COUNT(CASE WHEN ptr.test_result = 'PASS' THEN 1 END) as passed_tests,
@@ -875,7 +875,7 @@ BEGIN
         CASE 
             WHEN COUNT(CASE WHEN ptr.test_result = 'FAIL' THEN 1 END) = 0 THEN 'SUCCESS'
             ELSE 'FAILED'
-        END as status
+        END::VARCHAR(20) as status
     FROM precision_test_results ptr
     GROUP BY ptr.test_category
     ORDER BY ptr.test_category;
