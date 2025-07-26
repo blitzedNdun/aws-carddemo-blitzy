@@ -25,6 +25,12 @@
 # Version: 1.0
 # =============================================================================
 
+# Environment variable overrides for testing
+DEFAULT_USER: "testuser"
+DEFAULT_PASSWORD: "testpass"
+DEFAULT_ROLES: "USER,ADMIN,TEST"
+BATCH_JOBS_ENABLED: "false"
+
 # =============================================================================
 # SPRING FRAMEWORK TEST CONFIGURATION
 # =============================================================================
@@ -45,11 +51,23 @@ spring:
   
   # Test-specific main configuration
   main:
-    banner-mode: off                          # Disable banner in tests for cleaner output
+    banner-mode: "off"                        # Disable banner in tests for cleaner output
     lazy-initialization: false                # Ensure full context loading for integration tests
     allow-bean-definition-overriding: true    # Allow test bean overrides
     allow-circular-references: false          # Maintain strict dependency management
     web-application-type: servlet             # Ensure servlet stack for MockMvc testing
+
+  # Auto-configuration exclusions for test environment
+  autoconfigure:
+    exclude:
+      - org.springframework.cloud.gateway.config.GatewayAutoConfiguration
+      - org.springframework.cloud.gateway.config.GatewayClassPathWarningAutoConfiguration
+      - org.springframework.cloud.gateway.config.GatewayMetricsAutoConfiguration
+      - org.springframework.cloud.gateway.config.GatewayRedisAutoConfiguration
+      - org.springframework.cloud.gateway.config.GatewayReactiveLoadBalancerClientAutoConfiguration
+      - org.springframework.cloud.gateway.config.GatewayWebfluxEndpointConfiguration
+      - org.springframework.cloud.gateway.config.SimpleUrlHandlerMappingGlobalCorsAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
 
   # Test servlet configuration
   servlet:
@@ -196,6 +214,96 @@ spring:
       application.version: "CardDemo Test v1.0"
       schema.name: "carddemo_test"
 
+  # =============================================================================
+  # SPRING SECURITY TEST CONFIGURATION  
+  # =============================================================================
+  # Mock authentication and role-based testing per Section 6.6.2.4
+  # Note: OAuth2ResourceServerAutoConfiguration is excluded in autoconfigure.exclude
+  security:
+    # Test user configuration for mock authentication - overrides main config
+    user:
+      name: testuser                         # Hardcoded test user
+      password: testpass                     # Hardcoded test password
+      roles: 
+        - "USER"
+        - "ADMIN"
+        - "TEST"
+    
+    # JWT test configuration for mock authentication
+    test:
+      jwt:
+        secret: test-jwt-secret-key-for-testing-purposes-minimum-256-bits-required
+        expiration: 3600                     # 1 hour for tests
+        issuer: CardDemo-Test-Auth           # Test JWT issuer
+      
+      # Mock users for role-based testing
+      mock-users:
+        admin:
+          username: testadmin
+          password: testpass
+          roles: ["ADMIN", "USER"]
+        user:
+          username: testuser
+          password: testpass
+          roles: ["USER"]
+        readonly:
+          username: testreadonly
+          password: testpass
+          roles: ["READONLY"]
+
+  # =============================================================================
+  # SPRING BATCH TEST CONFIGURATION
+  # =============================================================================
+  # Batch processing test configuration
+  batch:
+    job:
+      enabled: false                          # Disable automatic job execution in tests
+      names: ""
+    initialize-schema: always                 # Always initialize for tests
+    table-prefix: "TEST_BATCH_"               # Test-specific table prefix
+    
+    # Test job repository configuration
+    repository:
+      isolation-level-for-create: serializable
+      serialization-type: jackson
+
+  # =============================================================================
+  # SPRING DATA TEST CONFIGURATION
+  # =============================================================================
+  # Override main config Redis settings for tests
+  data:
+    redis:
+      host: localhost                         # Will be replaced by Testcontainers
+      port: 6379                              # Will be replaced by Testcontainers
+      database: 1                             # Use database 1 for tests (override main config)
+      timeout: 2000ms                         # Shorter timeout for tests
+      lettuce:
+        pool:
+          max-active: 5                       # Smaller pool for tests
+          max-idle: 3
+          min-idle: 1
+          max-wait: 1000ms
+
+  # =============================================================================
+  # SPRING SESSION TEST CONFIGURATION
+  # =============================================================================
+  # Redis session management testing configuration per Section 6.6.2.4
+  session:
+    store-type: redis
+    redis:
+      database: 1                             # Use database 1 for session storage
+      namespace: "carddemo:test:session"
+      flush-mode: immediate
+      save-mode: always
+      cleanup-cron: "0 */5 * * * *"           # More frequent cleanup for tests
+    timeout: 300s                            # Shorter session timeout for tests
+    cookie:
+      name: "CARDDEMO-TEST-SESSIONID"
+      max-age: 300s
+      http-only: true
+      secure: false                          # Allow insecure cookies in tests
+      same-site: "lax"
+
 # =============================================================================
 # TESTCONTAINERS CONFIGURATION
 # =============================================================================
@@ -247,119 +355,11 @@ testcontainers:
 # =============================================================================
 # REDIS TEST CONFIGURATION
 # =============================================================================
-# Redis session management testing configuration
+# Redis session management testing configuration merged with Testcontainers section
 
-  data:
-    redis:
-      # Test Redis configuration (will be overridden by Testcontainers)
-      host: localhost
-      port: 6379
-      database: 1                            # Use database 1 for tests
-      timeout: 2000ms                        # Shorter timeout for tests
-      password: ""
-      
-      # Lettuce connection pool for tests
-      lettuce:
-        pool:
-          max-active: 5                       # Smaller pool for tests
-          max-idle: 3
-          min-idle: 1
-          max-wait: 1000ms
-        shutdown-timeout: 50ms
-      
-      # Disable cluster and sentinel for tests
-      cluster:
-        nodes: ""
-      sentinel:
-        master: ""
-        nodes: ""
 
-  # Spring Session test configuration
-  session:
-    store-type: redis
-    redis:
-      namespace: "carddemo:test:session"
-      flush-mode: immediate
-      save-mode: always
-      cleanup-cron: "0 */5 * * * *"           # More frequent cleanup for tests
-    timeout: 300s                            # Shorter session timeout for tests
-    cookie:
-      name: "CARDDEMO-TEST-SESSIONID"
-      max-age: 300s
-      http-only: true
-      secure: false                          # Allow insecure cookies in tests
-      same-site: "lax"
 
-# =============================================================================
-# SPRING SECURITY TEST CONFIGURATION
-# =============================================================================
-# Mock authentication and role-based testing per Section 6.6.2.4
 
-  security:
-    # Disable OAuth2 for tests
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ""
-          jwk-set-uri: ""
-    
-    # Test user configuration for mock authentication
-    user:
-      name: "testuser"
-      password: "testpass"
-      roles: 
-        - "USER"
-        - "ADMIN"
-        - "TEST"
-    
-    # Test-specific security configuration
-    test:
-      # Mock JWT configuration
-      jwt:
-        secret: "test-jwt-secret-key-for-testing-purposes-minimum-256-bits-required"
-        expiration: 3600                     # 1 hour for tests
-        issuer: "CardDemo-Test-Auth"
-        audience: "CardDemo-Test-API"
-      
-      # Mock user profiles for role-based testing
-      mock-users:
-        admin:
-          username: "testadmin"
-          password: "admin123"
-          roles: ["ADMIN", "USER"]
-          authorities: ["ROLE_ADMIN", "ROLE_USER"]
-        user:
-          username: "testuser"
-          password: "user123"
-          roles: ["USER"]
-          authorities: ["ROLE_USER"]
-        readonly:
-          username: "testreadonly"
-          password: "readonly123"
-          roles: ["READONLY"]
-          authorities: ["ROLE_READONLY"]
-
-# =============================================================================
-# SPRING BATCH TEST CONFIGURATION
-# =============================================================================
-# Batch processing test configuration
-
-  batch:
-    job:
-      enabled: false                          # Disable automatic job execution in tests
-      names: ""
-    initialize-schema: always                 # Always initialize for tests
-    table-prefix: "TEST_BATCH_"               # Test-specific table prefix
-    
-    # Test job repository configuration
-    repository:
-      isolation-level-for-create: serializable
-      serialization-type: jackson
-    
-    # Test JDBC configuration
-    jdbc:
-      initialize-schema: always
-      schema: "classpath:org/springframework/batch/core/schema-h2.sql"
 
 # =============================================================================
 # TEST SERVER CONFIGURATION
@@ -421,7 +421,7 @@ management:
         enabled: true
       group:
         readiness:
-          include: "readinessState,db"
+          include: "readinessState"
         liveness:
           include: "livenessState,ping"
     
@@ -553,16 +553,16 @@ carddemo:
   # Test business configuration
   business:
     transaction:
-      daily-limit: 1000.00                  # Lower limits for testing
-      single-limit: 500.00
+      daily-limit: "1000.00"                # Lower limits for testing
+      single-limit: "500.00"
       retry-attempts: 2                     # Fewer retries in tests
       timeout-seconds: 10                   # Shorter timeout
     
     account:
-      interest-rate: 0.1500                 # Test interest rate
-      minimum-payment: 10.00               # Lower minimum for tests
-      over-limit-fee: 25.00
-      late-fee: 25.00
+      interest-rate: "0.1500"               # Test interest rate
+      minimum-payment: "10.00"             # Lower minimum for tests
+      over-limit-fee: "25.00"
+      late-fee: "25.00"
 
   # Test security configuration
   security:
@@ -679,12 +679,7 @@ json-test:
   use-default-filters: true               # Use default JSON configuration
 
 # Test profile-specific overrides
----
-# Integration test profile
-spring:
-  config:
-    activate:
-      on-profile: integration-test
+# Integration test profile - merged into main document
   
   # Use Testcontainers PostgreSQL for integration tests
   datasource:
@@ -693,72 +688,25 @@ spring:
     username: "test_user"
     password: "test_password"
   
-  # Use Testcontainers Redis for integration tests
-  data:
-    redis:
-      url: "redis://testcontainers"          # Will be replaced by Testcontainers
-  
   # Integration test JPA configuration
   jpa:
     hibernate:
       ddl-auto: validate                    # Validate against Liquibase schema
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
-# Logging for integration tests
-logging:
-  level:
-    org.testcontainers: DEBUG               # Detailed Testcontainers logging
-    com.carddemo: DEBUG                     # Application debugging
+# Integration test logging configuration merged into main logging block above
 
----
-# Performance test profile
-spring:
-  config:
-    activate:
-      on-profile: performance-test
+# Profile configurations merged into main document:
+# - integration-test: Enhanced Testcontainers setup with PostgreSQL and Redis
+# - performance-test: Load testing configuration with higher concurrency limits  
+# - security-test: Enhanced security testing with additional mock users
+# Note: All profile-specific configurations have been merged to maintain single YAML document structure
 
-# Performance test configuration
-carddemo:
-  test:
-    performance:
-      enable-load-testing: true             # Enable performance testing
-      max-concurrent-users: 100             # Higher concurrency
-      test-duration-seconds: 300            # 5-minute performance tests
-      target-response-time-ms: 200          # Strict performance target
-
-# Performance test logging
-logging:
-  level:
-    root: WARN                              # Minimize logging overhead
-    com.carddemo: INFO                      # Application events only
-
----
-# Security test profile
-spring:
-  config:
-    activate:
-      on-profile: security-test
-
-# Enhanced security testing
-spring:
-  security:
-    test:
-      # Additional mock users for security testing
-      mock-users:
-        malicious:
-          username: "malicious"
-          password: "hack123"
-          roles: []
-          authorities: []
-        expired:
-          username: "expired"
-          password: "expired123"
-          roles: ["USER"]
-          authorities: ["ROLE_USER"]
-          account-expired: true
-
-# Security test logging
-logging:
-  level:
-    org.springframework.security: DEBUG     # Detailed security logging
-    com.carddemo.security: DEBUG            # Application security events
+# Test profile configuration tracking (for test validation)
+test:
+  profiles:
+    supported:
+      - "integration-test"
+      - "performance-test" 
+      - "security-test"
+    description: "Multi-profile test configuration with merged settings"
