@@ -50,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * @version 1.0
  */
 @SpringBootTest(
+    classes = com.carddemo.config.CardDemoTestApplication.class,
     properties = {
         "spring.cloud.gateway.enabled=false"
     },
