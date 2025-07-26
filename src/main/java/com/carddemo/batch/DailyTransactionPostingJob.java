@@ -158,12 +158,12 @@ public class DailyTransactionPostingJob {
      * Configures the complete batch processing pipeline with error handling, monitoring,
      * and restart capabilities matching the original COBOL functionality.
      */
-    @Bean
+    @Bean("batchDailyTransactionPostingJob")
     public Job dailyTransactionPostingJob() {
         logger.info("Configuring Daily Transaction Posting Job equivalent to COBOL CBTRN02C");
         
         return new JobBuilder("dailyTransactionPostingJob", jobRepository)
-                .start(dailyTransactionPostingStep())
+                .start(createDailyTransactionPostingStep())
                 .listener(batchConfiguration.jobExecutionListener())
                 .build();
     }
@@ -173,8 +173,7 @@ public class DailyTransactionPostingJob {
      * Uses optimal chunk size configuration and comprehensive error handling policies
      * to ensure resilient processing within the 4-hour batch window requirement.
      */
-    @Bean
-    public Step dailyTransactionPostingStep() {
+    private Step createDailyTransactionPostingStep() {
         logger.info("Configuring daily transaction posting step with chunk size: {}", 
                    batchConfiguration.chunkSize());
 
@@ -194,24 +193,21 @@ public class DailyTransactionPostingJob {
      * FlatFileItemReader for processing daily transaction files with exact field mapping
      * from COBOL DALYTRAN-RECORD structure. Supports paginated reading for memory efficiency.
      */
-    @Bean
-    public ItemReader<DailyTransactionDTO> dailyTransactionItemReader() {
+    private ItemReader<DailyTransactionDTO> dailyTransactionItemReader() {
         logger.info("Configuring FlatFileItemReader for daily transaction file: {}", 
                    dailyTransactionInputFile.getFilename());
 
-        DelimitedLineTokenizer tokenizer = new DelimitedLineTokenizer();
-        tokenizer.setDelimiter("|"); // Pipe-delimited format for transaction files
-        tokenizer.setNames("transactionId", "transactionTypeCode", "transactionCategoryCode", 
-                          "transactionSource", "transactionDescription", "transactionAmount",
-                          "merchantId", "merchantName", "merchantCity", "merchantZip", 
-                          "cardNumber", "originalTimestamp", "processingTimestamp");
+        String[] fieldNames = {"transactionId", "transactionTypeCode", "transactionCategoryCode", 
+                               "transactionSource", "transactionDescription", "transactionAmount",
+                               "merchantId", "merchantName", "merchantCity", "merchantZip", 
+                               "cardNumber", "originalTimestamp", "processingTimestamp"};
 
         return new FlatFileItemReaderBuilder<DailyTransactionDTO>()
                 .name("dailyTransactionItemReader")
                 .resource(dailyTransactionInputFile)
                 .delimited()
                 .delimiter("|")
-                .names(tokenizer.getNames())
+                .names(fieldNames)
                 .targetType(DailyTransactionDTO.class)
                 .linesToSkip(1) // Skip header line
                 .build();
@@ -222,8 +218,7 @@ public class DailyTransactionPostingJob {
      * exactly replicating COBOL CBTRN02C validation procedures including cross-reference
      * validation, account limit checks, and expiration date validation.
      */
-    @Bean
-    public ItemProcessor<DailyTransactionDTO, TransactionProcessingResult> dailyTransactionItemProcessor() {
+    private ItemProcessor<DailyTransactionDTO, TransactionProcessingResult> dailyTransactionItemProcessor() {
         return item -> {
             logger.debug("Processing transaction: {}", item.getTransactionId());
             
@@ -261,8 +256,7 @@ public class DailyTransactionPostingJob {
      * Routes transactions to PostgreSQL database and rejections to reject file
      * matching the original COBOL file handling logic.
      */
-    @Bean
-    public ItemWriter<TransactionProcessingResult> dailyTransactionItemWriter() {
+    private ItemWriter<TransactionProcessingResult> dailyTransactionItemWriter() {
         return new CompositeItemWriterBuilder<TransactionProcessingResult>()
                 .delegates(
                     validTransactionItemWriter(),
@@ -275,13 +269,14 @@ public class DailyTransactionPostingJob {
      * JPA ItemWriter for persisting valid transactions to PostgreSQL database
      * with batch insert optimization and transaction management.
      */
-    @Bean 
-    public ItemWriter<TransactionProcessingResult> validTransactionItemWriter() {
+    private ItemWriter<TransactionProcessingResult> validTransactionItemWriter() {
         return items -> {
-            List<Transaction> validTransactions = items.stream()
-                .filter(TransactionProcessingResult::isValid)
-                .map(TransactionProcessingResult::getTransaction)
-                .toList();
+            List<Transaction> validTransactions = new ArrayList<>();
+            for (TransactionProcessingResult result : items) {
+                if (result.isValid()) {
+                    validTransactions.add(result.getTransaction());
+                }
+            }
                 
             if (!validTransactions.isEmpty()) {
                 logger.debug("Writing {} valid transactions to database", validTransactions.size());
@@ -304,13 +299,14 @@ public class DailyTransactionPostingJob {
      * FlatFileItemWriter for writing rejected transactions to reject file
      * with validation trailer information matching COBOL DALYREJS-FILE format.
      */
-    @Bean
-    public ItemWriter<TransactionProcessingResult> rejectedTransactionItemWriter() {
+    private ItemWriter<TransactionProcessingResult> rejectedTransactionItemWriter() {
         return items -> {
-            List<TransactionRejectionRecord> rejectedTransactions = items.stream()
-                .filter(result -> !result.isValid())
-                .map(TransactionProcessingResult::getRejectionRecord)
-                .toList();
+            List<TransactionRejectionRecord> rejectedTransactions = new ArrayList<>();
+            for (TransactionProcessingResult result : items) {
+                if (!result.isValid()) {
+                    rejectedTransactions.add(result.getRejectionRecord());
+                }
+            }
                 
             if (!rejectedTransactions.isEmpty()) {
                 logger.debug("Writing {} rejected transactions to reject file", rejectedTransactions.size());
@@ -354,13 +350,13 @@ public class DailyTransactionPostingJob {
                     transaction.getCardNumber().substring(12));
         
         // Validate card number format using ValidationUtils as specified in schema
-        if (!ValidationUtils.validateRequiredField(transaction.getCardNumber(), "Card Number")) {
+        if (!ValidationUtils.validateRequiredField(transaction.getCardNumber(), "Card Number").isValid()) {
             return new TransactionValidationResult(false, INVALID_CARD_NUMBER, 
                                                  "INVALID CARD NUMBER FOUND", null, null);
         }
         
         // Additional numeric field validation for card number
-        if (!ValidationUtils.validateNumericField(transaction.getCardNumber(), 16)) {
+        if (!ValidationUtils.validateNumericField(transaction.getCardNumber(), 16).isValid()) {
             return new TransactionValidationResult(false, INVALID_CARD_NUMBER,
                                                  "INVALID CARD NUMBER FORMAT", null, null);
         }
@@ -391,7 +387,7 @@ public class DailyTransactionPostingJob {
         logger.debug("Validating account limits for account: {}", card.getAccountId());
         
         // Validate account number format using ValidationUtils as specified in schema
-        if (!ValidationUtils.validateAccountNumber(card.getAccountId())) {
+        if (!ValidationUtils.validateAccountNumber(card.getAccountId()).isValid()) {
             return new TransactionValidationResult(false, ACCOUNT_NOT_FOUND,
                                                  "INVALID ACCOUNT NUMBER FORMAT", null, card);
         }
@@ -432,7 +428,7 @@ public class DailyTransactionPostingJob {
         
         // Expiration date validation using DateUtils as specified in schema
         try {
-            if (!DateUtils.validateDate(transaction.getOriginalTimestamp())) {
+            if (!DateUtils.validateDate(transaction.getOriginalTimestamp()).isValid()) {
                 return new TransactionValidationResult(false, 999,
                                                      "INVALID ORIGINAL TIMESTAMP", account, card);
             }
@@ -463,8 +459,8 @@ public class DailyTransactionPostingJob {
         
         // Map fields exactly as in COBOL 2000-POST-TRANSACTION procedure using correct setter methods
         transaction.setTransactionId(dto.getTransactionId());
-        transaction.setTransactionType(TransactionType.fromCode(dto.getTransactionTypeCode()));
-        transaction.setCategoryCode(TransactionCategory.fromCode(dto.getTransactionCategoryCode()));
+        transaction.setTransactionType(TransactionType.fromCode(dto.getTransactionTypeCode()).orElse(null));
+        transaction.setCategoryCode(TransactionCategory.fromCode(dto.getTransactionCategoryCode()).orElse(null));
         transaction.setAmount(dto.getTransactionAmount());
         transaction.setDescription(dto.getTransactionDescription());
         transaction.setCardNumber(dto.getCardNumber());
@@ -486,11 +482,20 @@ public class DailyTransactionPostingJob {
     public void updateAccountBalance(Transaction transaction) {
         logger.debug("Updating account balance for transaction: {}", transaction.getTransactionId());
         
-        Account account = transaction.getAccount();
-        if (account == null) {
-            logger.error("No account associated with transaction: {}", transaction.getTransactionId());
+        // Get account ID from transaction and look up the account
+        String accountId = transaction.getAccountId();
+        if (accountId == null) {
+            logger.error("No account ID associated with transaction: {}", transaction.getTransactionId());
             return;
         }
+        
+        Optional<Account> accountOpt = accountRepository.findById(accountId);
+        if (accountOpt.isEmpty()) {
+            logger.error("Account not found for transaction: {}", transaction.getTransactionId());
+            return;
+        }
+        
+        Account account = accountOpt.get();
         
         // Get current balances using schema-specified getter methods
         BigDecimal currentBalance = account.getCurrentBalance();
@@ -535,7 +540,7 @@ public class DailyTransactionPostingJob {
         
         try {
             // Get the highest existing transaction ID using schema-specified method
-            Transaction lastTransaction = transactionRepository.findTopByOrderByTransactionIdDesc();
+            Optional<Transaction> lastTransactionOpt = transactionRepository.findTopByOrderByTransactionIdDesc();
             
             // Generate new ID based on count and timestamp
             long currentCount = transactionRepository.count();
