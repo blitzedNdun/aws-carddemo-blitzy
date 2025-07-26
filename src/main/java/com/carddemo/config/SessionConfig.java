@@ -104,8 +104,7 @@ import org.slf4j.LoggerFactory;
 @Configuration
 @EnableRedisHttpSession(
     maxInactiveIntervalInSeconds = 1800, // 30 minutes equivalent to CICS timeout
-    redisNamespace = "carddemo:session",  // Namespace isolation for multi-tenant support
-    cleanupCron = "0 */15 * * * *"        // Session cleanup every 15 minutes
+    redisNamespace = "carddemo:session"   // Namespace isolation for multi-tenant support
 )
 @EnableScheduling
 public class SessionConfig {
@@ -188,7 +187,7 @@ public class SessionConfig {
         factory.setValidateConnection(true);
         
         // Set connection timeout for session operations
-        factory.setTimeout(Duration.ofSeconds(5));
+        factory.setTimeout(Duration.ofSeconds(5).toMillis());
         
         // Enable connection sharing for performance optimization
         factory.setShareNativeConnection(true);
