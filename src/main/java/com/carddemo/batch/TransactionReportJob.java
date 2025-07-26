@@ -224,7 +224,7 @@ public class TransactionReportJob {
                 .faultTolerant()
                 .retryPolicy(batchConfiguration.retryPolicy())
                 .skipPolicy(batchConfiguration.skipPolicy())
-                .taskExecutor(batchConfiguration.taskExecutor())
+                .taskExecutor(batchConfiguration.batchTaskExecutor())
                 .build();
     }
 
