@@ -145,7 +145,7 @@ spring:
     open-in-view: false                  # Prevent lazy loading issues
     generate-ddl: false                  # Liquibase handles DDL
     show-sql: true                       # Show SQL in development
-    defer-datasource-initialization: true
+    defer-datasource-initialization: false
 
 # =============================================================================
 # LOCAL REDIS CONFIGURATION
@@ -251,7 +251,7 @@ spring:
     change-log: classpath:db/liquibase-changelog.xml
     default-schema: "public"
     contexts: development,dev-data       # Include development data contexts
-    labels: development,sample-data      # Include sample data labels
+    label-filter: development,sample-data      # Include sample data labels
     drop-first: false                    # Keep data between restarts
     rollback-file: "dev-rollback.sql"    # Development-specific rollback file
     test-rollback-on-update: true        # Test rollbacks in development
