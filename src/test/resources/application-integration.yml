@@ -190,6 +190,152 @@ spring:
             allowCredentials: false
             maxAge: 3600
 
+  # =============================================================================
+  # INTEGRATION TEST DATABASE CONFIGURATION  
+  # =============================================================================
+  # PostgreSQL Testcontainers integration per Section 6.6.7.3
+
+  # Override base test configuration to use PostgreSQL Testcontainers
+  datasource:
+    # PostgreSQL Testcontainers configuration for integration testing
+    url: "jdbc:tc:postgresql:15-alpine:///carddemo_integration_test?TC_DAEMON=true&TC_TMPFS=/testtmpfs:rw,size=512m&TC_INITSCRIPT=classpath:testcontainers/postgresql/integration-init.sql"
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    username: "integration_test_user"
+    password: "integration_test_password"
+    
+    # HikariCP configuration optimized for integration test execution speed
+    hikari:
+      pool-name: CardDemoIntegrationTestHikariPool
+      connection-timeout: 3000                  # Faster timeout for integration tests
+      idle-timeout: 20000                       # Shorter idle timeout
+      max-lifetime: 180000                      # 3 minutes max lifetime
+      minimum-idle: 2                           # Minimal idle connections for integration tests
+      maximum-pool-size: 15                     # Larger pool for integration testing
+      leak-detection-threshold: 15000           # 15 seconds leak detection
+      connection-test-query: "SELECT 1"
+      validation-timeout: 1000                  # Faster validation
+      auto-commit: false                        # Explicit transaction management
+      
+      # Integration test specific data source properties
+      data-source-properties:
+        cachePrepStmts: true
+        prepStmtCacheSize: 200                  # Larger cache for integration tests
+        prepStmtCacheSqlLimit: 2048
+        useServerPrepStmts: true                # PostgreSQL optimization
+        ApplicationName: "CardDemo-Integration-Test"
+        reWriteBatchedInserts: true             # Batch optimization
+        defaultRowFetchSize: 50                 # Optimized fetch size
+
+  # JPA/Hibernate configuration for integration testing
+  jpa:
+    hibernate:
+      ddl-auto: validate                        # Validate against Liquibase schema
+      naming:
+        physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+        implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+    
+    properties:
+      hibernate:
+        # PostgreSQL dialect for integration testing
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true                        # Format SQL for debugging
+        show_sql: false                         # Controlled by logging
+        use_sql_comments: true                  # Add SQL comments
+        
+        # Integration test transaction and session management
+        default_schema: "carddemo_integration"
+        connection:
+          isolation: 4                          # SERIALIZABLE - match production
+          autocommit: false
+          
+        # Performance settings optimized for integration tests
+        jdbc:
+          batch_size: 50                        # Larger batch size for integration tests
+          batch_versioned_data: true
+          fetch_size: 50                        # Larger fetch size
+          use_streams_for_binary: true
+          time_zone: "UTC"
+          
+        # Enable caching for integration test performance
+        cache:
+          use_second_level_cache: true
+          use_query_cache: true
+          region:
+            factory_class: org.hibernate.cache.ehcache.EhCacheRegionFactory
+          
+        # Schema validation for integration tests
+        hbm2ddl:
+          auto: validate
+          create_namespaces: true
+          
+        # Integration test specific Hibernate settings
+        enable_lazy_load_no_trans: false
+        max_fetch_depth: 3                      # Deeper fetch for integration tests
+        default_batch_fetch_size: 16
+        order_inserts: true
+        order_updates: true
+        generate_statistics: true               # Enable statistics for monitoring
+
+  # =============================================================================
+  # LIQUIBASE INTEGRATION TEST CONFIGURATION
+  # =============================================================================
+
+  liquibase:
+    enabled: true
+    change-log: classpath:db/liquibase-integration-changelog.xml
+    default-schema: "carddemo_integration"
+    liquibase-schema: "carddemo_integration"
+    contexts: "integration-test,test"
+    label-filter: "integration"
+    drop-first: false                           # Preserve schema across tests
+    rollback-file: "integration-test-rollback.sql"
+    test-rollback-on-update: false              # Skip rollback testing in integration tests
+    parameters:
+      database.target: "PostgreSQL Integration Test Database"
+      application.version: "CardDemo Integration Test v1.0"
+      schema.name: "carddemo_integration"
+      namespace.name: "${INTEGRATION_TEST_NAMESPACE:carddemo-integration}"
+
+  # =============================================================================
+  # REDIS INTEGRATION TEST CONFIGURATION
+  # =============================================================================
+  # Distributed session management validation per requirements
+
+  # Redis configuration for distributed session testing
+  data:
+    redis:
+      host: localhost                           # Will be replaced by Testcontainers
+      port: 6379                                # Will be replaced by Testcontainers
+      database: 2                               # Use database 2 for integration tests
+      timeout: 3000ms                           # Longer timeout for integration tests
+      lettuce:
+        pool:
+          max-active: 10                        # Larger pool for integration testing
+          max-idle: 5
+          min-idle: 2
+          max-wait: 2000ms
+        cluster:
+          refresh:
+            adaptive: true
+            period: 30s
+
+  # Spring Session configuration for integration testing
+  session:
+    store-type: redis
+    redis:
+      database: 2                               # Use database 2 for session storage
+      namespace: "carddemo:integration:session"
+      flush-mode: immediate
+      save-mode: always
+      cleanup-cron: "0 */2 * * * *"             # More frequent cleanup
+    timeout: 600s                               # Longer session timeout for integration tests
+    cookie:
+      name: "CARDDEMO-INTEGRATION-SESSIONID"
+      max-age: 600s
+      http-only: true
+      secure: false                             # Allow insecure cookies in tests
+      same-site: "lax"
+
 # =============================================================================
 # RESILIENCE4J CIRCUIT BREAKER INTEGRATION TEST CONFIGURATION
 # =============================================================================
@@ -292,151 +438,6 @@ resilience4j:
         limitForPeriod: 100                     # Higher limit for integration tests
         limitRefreshPeriod: 1s
 
-# =============================================================================
-# INTEGRATION TEST DATABASE CONFIGURATION
-# =============================================================================
-# PostgreSQL Testcontainers integration per Section 6.6.7.3
-
-  # Override base test configuration to use PostgreSQL Testcontainers
-  datasource:
-    # PostgreSQL Testcontainers configuration for integration testing
-    url: "jdbc:tc:postgresql:15-alpine:///carddemo_integration_test?TC_DAEMON=true&TC_TMPFS=/testtmpfs:rw,size=512m&TC_INITSCRIPT=classpath:testcontainers/postgresql/integration-init.sql"
-    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
-    username: "integration_test_user"
-    password: "integration_test_password"
-    
-    # HikariCP configuration optimized for integration test execution speed
-    hikari:
-      pool-name: CardDemoIntegrationTestHikariPool
-      connection-timeout: 3000                  # Faster timeout for integration tests
-      idle-timeout: 20000                       # Shorter idle timeout
-      max-lifetime: 180000                      # 3 minutes max lifetime
-      minimum-idle: 2                           # Minimal idle connections for integration tests
-      maximum-pool-size: 15                     # Larger pool for integration testing
-      leak-detection-threshold: 15000           # 15 seconds leak detection
-      connection-test-query: "SELECT 1"
-      validation-timeout: 1000                  # Faster validation
-      auto-commit: false                        # Explicit transaction management
-      
-      # Integration test specific data source properties
-      data-source-properties:
-        cachePrepStmts: true
-        prepStmtCacheSize: 200                  # Larger cache for integration tests
-        prepStmtCacheSqlLimit: 2048
-        useServerPrepStmts: true                # PostgreSQL optimization
-        ApplicationName: "CardDemo-Integration-Test"
-        reWriteBatchedInserts: true             # Batch optimization
-        defaultRowFetchSize: 50                 # Optimized fetch size
-
-  # JPA/Hibernate configuration for integration testing
-  jpa:
-    hibernate:
-      ddl-auto: validate                        # Validate against Liquibase schema
-      naming:
-        physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
-        implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
-    
-    properties:
-      hibernate:
-        # PostgreSQL dialect for integration testing
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true                        # Format SQL for debugging
-        show_sql: false                         # Controlled by logging
-        use_sql_comments: true                  # Add SQL comments
-        
-        # Integration test transaction and session management
-        default_schema: "carddemo_integration"
-        connection:
-          isolation: 4                          # SERIALIZABLE - match production
-          autocommit: false
-          
-        # Performance settings optimized for integration tests
-        jdbc:
-          batch_size: 50                        # Larger batch size for integration tests
-          batch_versioned_data: true
-          fetch_size: 50                        # Larger fetch size
-          use_streams_for_binary: true
-          time_zone: "UTC"
-          
-        # Enable caching for integration test performance
-        cache:
-          use_second_level_cache: true
-          use_query_cache: true
-          region:
-            factory_class: org.hibernate.cache.ehcache.EhCacheRegionFactory
-          
-        # Schema validation for integration tests
-        hbm2ddl:
-          auto: validate
-          create_namespaces: true
-          
-        # Integration test specific Hibernate settings
-        enable_lazy_load_no_trans: false
-        max_fetch_depth: 3                      # Deeper fetch for integration tests
-        default_batch_fetch_size: 16
-        order_inserts: true
-        order_updates: true
-        generate_statistics: true               # Enable statistics for monitoring
-
-# =============================================================================
-# LIQUIBASE INTEGRATION TEST CONFIGURATION
-# =============================================================================
-
-  liquibase:
-    enabled: true
-    change-log: classpath:db/liquibase-integration-changelog.xml
-    default-schema: "carddemo_integration"
-    liquibase-schema: "carddemo_integration"
-    contexts: "integration-test,test"
-    label-filter: "integration"
-    drop-first: false                           # Preserve schema across tests
-    rollback-file: "integration-test-rollback.sql"
-    test-rollback-on-update: false              # Skip rollback testing in integration tests
-    parameters:
-      database.target: "PostgreSQL Integration Test Database"
-      application.version: "CardDemo Integration Test v1.0"
-      schema.name: "carddemo_integration"
-      namespace.name: "${INTEGRATION_TEST_NAMESPACE:carddemo-integration}"
-
-# =============================================================================
-# REDIS INTEGRATION TEST CONFIGURATION
-# =============================================================================
-# Distributed session management validation per requirements
-
-  # Redis configuration for distributed session testing
-  data:
-    redis:
-      host: localhost                           # Will be replaced by Testcontainers
-      port: 6379                                # Will be replaced by Testcontainers
-      database: 2                               # Use database 2 for integration tests
-      timeout: 3000ms                           # Longer timeout for integration tests
-      lettuce:
-        pool:
-          max-active: 10                        # Larger pool for integration testing
-          max-idle: 5
-          min-idle: 2
-          max-wait: 2000ms
-        cluster:
-          refresh:
-            adaptive: true
-            period: 30s
-
-  # Spring Session configuration for integration testing
-  session:
-    store-type: redis
-    redis:
-      database: 2                               # Use database 2 for session storage
-      namespace: "carddemo:integration:session"
-      flush-mode: immediate
-      save-mode: always
-      cleanup-cron: "0 */2 * * * *"             # More frequent cleanup
-    timeout: 600s                               # Longer session timeout for integration tests
-    cookie:
-      name: "CARDDEMO-INTEGRATION-SESSIONID"
-      max-age: 600s
-      http-only: true
-      secure: false                             # Allow insecure cookies in tests
-      same-site: "lax"
 
 # =============================================================================
 # TESTCONTAINERS INTEGRATION TEST CONFIGURATION
