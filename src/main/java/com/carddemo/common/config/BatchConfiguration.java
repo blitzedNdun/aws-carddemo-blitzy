@@ -409,6 +409,18 @@ public class BatchConfiguration extends DefaultBatchConfiguration {
     }
 
     /**
+     * Public transaction manager bean for batch job configuration.
+     * Exposes the protected getTransactionManager from DefaultBatchConfiguration
+     * for use in job and step configurations.
+     */
+    @Bean
+    @Primary
+    public PlatformTransactionManager batchTransactionManager() {
+        logger.info("Configuring batch transaction manager with DataSource integration");
+        return getTransactionManager();
+    }
+
+    /**
      * Custom job parameters validator for CardDemo batch jobs.
      * Ensures required parameters are present and validates parameter values
      * before job execution to prevent runtime failures.
