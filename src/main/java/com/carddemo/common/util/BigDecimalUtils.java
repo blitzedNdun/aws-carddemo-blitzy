@@ -321,6 +321,30 @@ public final class BigDecimalUtils {
     }
     
     /**
+     * Checks if the first BigDecimal is greater than or equal to the second.
+     * 
+     * @param left The first BigDecimal value
+     * @param right The second BigDecimal value
+     * @return true if left >= right, false otherwise
+     * @throws IllegalArgumentException if either operand is null
+     */
+    public static boolean isGreaterThanOrEqual(BigDecimal left, BigDecimal right) {
+        return compare(left, right) >= 0;
+    }
+    
+    /**
+     * Checks if the first BigDecimal is less than or equal to the second.
+     * 
+     * @param left The first BigDecimal value
+     * @param right The second BigDecimal value
+     * @return true if left <= right, false otherwise
+     * @throws IllegalArgumentException if either operand is null
+     */
+    public static boolean isLessThanOrEqual(BigDecimal left, BigDecimal right) {
+        return compare(left, right) <= 0;
+    }
+    
+    /**
      * Formats a BigDecimal value as a currency string with proper precision.
      * Uses US Dollar formatting with exactly 2 decimal places.
      * 
