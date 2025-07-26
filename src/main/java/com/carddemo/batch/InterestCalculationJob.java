@@ -8,7 +8,6 @@ import com.carddemo.account.repository.AccountRepository;
 import com.carddemo.account.repository.TransactionCategoryBalanceRepository;
 import com.carddemo.transaction.TransactionRepository;
 import com.carddemo.common.util.BigDecimalUtils;
-import com.carddemo.common.util.DateUtils;
 import com.carddemo.common.enums.TransactionType;
 import com.carddemo.common.enums.TransactionCategory;
 import com.carddemo.account.entity.Customer;
@@ -21,8 +20,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.item.Chunk;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.step.builder.StepBuilder;
 
@@ -109,7 +111,6 @@ import org.springframework.batch.core.StepExecutionListener;
  * @since 2024-01-01
  */
 @Configuration
-@EnableBatchProcessing
 public class InterestCalculationJob {
 
     private static final Logger logger = LoggerFactory.getLogger(InterestCalculationJob.class);
@@ -151,9 +152,8 @@ public class InterestCalculationJob {
     @Autowired
     private CardRepository cardRepository;
 
-    // Utility dependencies for calculations and date handling
-    @Autowired
-    private BigDecimalUtils bigDecimalUtils;
+    // Utility dependencies for date handling  
+    // Note: BigDecimalUtils is used as static utility class, not injected
 
     // Configuration parameters for batch processing
     @Value("${carddemo.batch.interest-calculation.chunk-size:1000}")
@@ -176,7 +176,7 @@ public class InterestCalculationJob {
      * 
      * @return Job configured job bean for interest calculation processing
      */
-    @Bean
+    @Bean("batchInterestCalculationJob")
     public Job interestCalculationJob() {
         logger.info("Configuring Interest Calculation Job with chunk size: {}", chunkSize);
         
@@ -199,8 +199,7 @@ public class InterestCalculationJob {
      * 
      * @return Step configured step bean with reader, processor, and writer
      */
-    @Bean
-    public Step interestCalculationStep() {
+    private Step interestCalculationStep() {
         logger.info("Configuring Interest Calculation Step with chunk processing");
         
         return new StepBuilder("interestCalculationStep", jobRepository)
@@ -223,9 +222,8 @@ public class InterestCalculationJob {
      * 
      * @return ItemReader configured reader for transaction category balance records
      */
-    @Bean
     @StepScope
-    public ItemReader<TransactionCategoryBalance> transactionCategoryBalanceItemReader() {
+    private ItemReader<TransactionCategoryBalance> transactionCategoryBalanceItemReader() {
         logger.info("Initializing Transaction Category Balance ItemReader");
         
         // Retrieve all transaction category balances with positive amounts
@@ -255,9 +253,8 @@ public class InterestCalculationJob {
      * 
      * @return ItemProcessor configured processor for interest calculation logic
      */
-    @Bean
     @StepScope
-    public ItemProcessor<TransactionCategoryBalance, InterestCalculationResult> interestTransactionItemProcessor() {
+    private ItemProcessor<TransactionCategoryBalance, InterestCalculationResult> interestTransactionItemProcessor() {
         return new ItemProcessor<TransactionCategoryBalance, InterestCalculationResult>() {
             @Override
             public InterestCalculationResult process(TransactionCategoryBalance item) throws Exception {
@@ -313,12 +310,11 @@ public class InterestCalculationJob {
      * 
      * @return ItemWriter configured writer for transaction creation and account updates
      */
-    @Bean
     @StepScope
-    public ItemWriter<InterestCalculationResult> interestTransactionItemWriter() {
+    private ItemWriter<InterestCalculationResult> interestTransactionItemWriter() {
         return new ItemWriter<InterestCalculationResult>() {
             @Override
-            public void write(List<? extends InterestCalculationResult> items) throws Exception {
+            public void write(Chunk<? extends InterestCalculationResult> items) throws Exception {
                 logger.debug("Writing {} interest calculation results", items.size());
                 
                 for (InterestCalculationResult result : items) {
@@ -362,8 +358,8 @@ public class InterestCalculationJob {
         logger.debug("Calculating monthly interest: balance={}, rate={}", categoryBalance, interestRate);
         
         // Use BigDecimalUtils for COBOL COMP-3 precision maintenance
-        BigDecimal monthlyInterest = bigDecimalUtils.divide(
-                bigDecimalUtils.multiply(categoryBalance, interestRate),
+        BigDecimal monthlyInterest = BigDecimalUtils.divide(
+                BigDecimalUtils.multiply(categoryBalance, interestRate),
                 ANNUAL_PERIODS
         );
         
@@ -403,8 +399,10 @@ public class InterestCalculationJob {
         transaction.setTransactionId(transactionId);
         
         // Set transaction type and category per COBOL constants
-        transaction.setTransactionType(TransactionType.fromCode(INTEREST_TRANSACTION_TYPE));
-        transaction.setCategoryCode(TransactionCategory.fromCode(INTEREST_CATEGORY_CODE));
+        transaction.setTransactionType(TransactionType.fromCode(INTEREST_TRANSACTION_TYPE)
+                .orElseThrow(() -> new RuntimeException("Invalid transaction type: " + INTEREST_TRANSACTION_TYPE)));
+        transaction.setCategoryCode(TransactionCategory.fromCode(INTEREST_CATEGORY_CODE)
+                .orElseThrow(() -> new RuntimeException("Invalid transaction category: " + INTEREST_CATEGORY_CODE)));
         
         // Set transaction amount with exact precision
         transaction.setAmount(interestAmount);
@@ -427,7 +425,7 @@ public class InterestCalculationJob {
         transaction.setProcessingTimestamp(currentTimestamp);
         
         // Clear merchant fields for interest transactions
-        transaction.setMerchantId(BigDecimal.ZERO);
+        transaction.setMerchantId("0");
         transaction.setMerchantName("");
         transaction.setMerchantCity("");
         transaction.setMerchantZip("");
@@ -456,7 +454,7 @@ public class InterestCalculationJob {
                    account.getAccountId(), interestAmount);
         
         // Add interest to current balance equivalent to COBOL ADD WS-TOTAL-INT TO ACCT-CURR-BAL
-        BigDecimal newBalance = bigDecimalUtils.add(account.getCurrentBalance(), interestAmount);
+        BigDecimal newBalance = BigDecimalUtils.add(account.getCurrentBalance(), interestAmount);
         account.setCurrentBalance(newBalance);
         
         // Reset cycle amounts equivalent to COBOL MOVE 0 TO ACCT-CURR-CYC-CREDIT/DEBIT
@@ -487,7 +485,7 @@ public class InterestCalculationJob {
         public void afterJob(JobExecution jobExecution) {
             ExitStatus exitStatus = jobExecution.getExitStatus();
             logger.info("Interest Calculation Job completed with status: {}", exitStatus.getExitCode());
-            logger.info("Job execution time: {} ms", jobExecution.getEndTime().getTime() - jobExecution.getStartTime().getTime());
+            logger.info("Job execution completed at: {}", jobExecution.getEndTime());
             
             if (exitStatus.getExitCode().equals(ExitStatus.FAILED.getExitCode())) {
                 logger.error("Interest Calculation Job failed. Check step execution details for error information.");
