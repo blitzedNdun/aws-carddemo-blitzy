@@ -46,6 +46,9 @@ import java.math.RoundingMode;
 @EnableTransactionManagement
 @EnableAutoConfiguration(exclude = {
     BatchAutoConfiguration.class
+}, excludeName = {
+    "org.springframework.cloud.gateway.config.GatewayAutoConfiguration",
+    "org.springframework.cloud.gateway.config.GatewayRedisAutoConfiguration"
 })
 public class CardDemoTestConfiguration {
 
