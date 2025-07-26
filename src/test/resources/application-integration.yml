@@ -1,0 +1,771 @@
+# =============================================================================
+# CARDDEMO INTEGRATION TEST CONFIGURATION
+# =============================================================================
+# Comprehensive integration test configuration supporting Spring Cloud Gateway
+# microservice interaction testing, circuit breaker validation, distributed
+# session management, and Kubernetes namespace-based testing architecture.
+#
+# This configuration extends the base test configuration (application-test.yml)
+# with specific support for:
+# - Spring Cloud Gateway integration testing with load balancing per Section 5.1.1
+# - Circuit breaker pattern validation using Resilience4j per Section 5.1.1
+# - Kubernetes namespace-based testing architecture per Section 6.6.7.1
+# - PostgreSQL Testcontainers integration per Section 6.6.7.3
+# - Redis session store distributed session management validation
+# - HikariCP connection pooling optimized for integration test execution speed
+# - Microservice interaction testing across service boundaries
+#
+# Based on: Technical Specification Section 5.1.1 High-Level Architecture
+#           Section 6.6.7 Integration Testing Strategy
+#           Section 0 Summary of Changes - Integration Testing Requirements
+#
+# Author: Blitzy agent
+# Created: Integration test configuration supporting microservice interaction testing
+# Version: 1.0
+# =============================================================================
+
+# Environment variable overrides for integration testing
+INTEGRATION_TEST_NAMESPACE: "carddemo-integration"
+GATEWAY_INSTANCE_COUNT: "2"
+CIRCUIT_BREAKER_ENABLED: "true"
+DISTRIBUTED_SESSION_TESTING: "true"
+LOAD_BALANCING_ENABLED: "true"
+
+# =============================================================================
+# SPRING FRAMEWORK INTEGRATION TEST CONFIGURATION
+# =============================================================================
+
+spring:
+  # Integration test profile activation extending base test configuration
+  config:
+    activate:
+      on-profile: integration
+    import:
+      - "optional:classpath:application-test.yml"  # Import base test configuration
+      - "optional:classpath:application.yml"       # Import production configuration for reference
+  
+  # Application identification for integration testing
+  application:
+    name: carddemo-integration-test
+    version: "1.0.0-INTEGRATION"
+    description: "CardDemo Integration Test Environment - Microservice Interaction Testing"
+  
+  # Integration test main configuration
+  main:
+    banner-mode: "off"                        # Disable banner for cleaner test output
+    lazy-initialization: false                # Full context loading required for integration tests
+    allow-bean-definition-overriding: true    # Allow test bean overrides for mocking
+    allow-circular-references: false          # Maintain strict dependency management
+    web-application-type: servlet             # Servlet stack for Spring Cloud Gateway integration
+
+  # Auto-configuration for integration testing - enable Gateway components
+  autoconfigure:
+    exclude:
+      # Remove Gateway exclusions from base test configuration to enable integration testing
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
+      # Keep other exclusions that aren't needed for integration testing
+
+# =============================================================================
+# SPRING CLOUD GATEWAY INTEGRATION TEST CONFIGURATION
+# =============================================================================
+# Spring Cloud Gateway test routing configuration per Section 5.1.1
+
+  cloud:
+    gateway:
+      # Enable Gateway for integration testing
+      enabled: true
+      
+      # Integration test routing configuration
+      routes:
+        # Authentication service routing
+        - id: auth-service-route
+          uri: lb://carddemo-auth-service
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: auth-service-cb
+                fallbackUri: forward:/fallback/auth
+            - name: Retry
+              args:
+                retries: 2
+                backoff:
+                  firstBackoff: 50ms
+                  maxBackoff: 500ms
+        
+        # Account management service routing
+        - id: account-service-route
+          uri: lb://carddemo-account-service
+          predicates:
+            - Path=/api/account/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: account-service-cb
+                fallbackUri: forward:/fallback/account
+            - name: RequestRateLimiter
+              args:
+                rate-limiter: "#{@redisRateLimiter}"
+                key-resolver: "#{@userKeyResolver}"
+        
+        # Card management service routing
+        - id: card-service-route
+          uri: lb://carddemo-card-service
+          predicates:
+            - Path=/api/card/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: card-service-cb
+                fallbackUri: forward:/fallback/card
+        
+        # Transaction processing service routing
+        - id: transaction-service-route
+          uri: lb://carddemo-transaction-service
+          predicates:
+            - Path=/api/transaction/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: transaction-service-cb
+                fallbackUri: forward:/fallback/transaction
+            - name: RequestRateLimiter
+              args:
+                rate-limiter: "#{@redisRateLimiter}"
+                key-resolver: "#{@userKeyResolver}"
+        
+        # Menu navigation service routing
+        - id: menu-service-route
+          uri: lb://carddemo-menu-service
+          predicates:
+            - Path=/api/menu/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: menu-service-cb
+                fallbackUri: forward:/fallback/menu
+      
+      # Load balancing configuration for integration testing
+      loadbalancer:
+        enabled: true
+        ribbon:
+          enabled: false  # Use Spring Cloud LoadBalancer
+      
+      # Circuit breaker discovery configuration
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: integration-test-cb
+      
+      # Global filters for integration testing
+      default-filters:
+        - name: GlobalRequestLogging
+        - name: GlobalResponseLogging
+        - name: AddRequestHeader
+          args:
+            name: X-Integration-Test
+            value: "true"
+        - name: AddRequestHeader
+          args:
+            name: X-Test-Namespace
+            value: "${INTEGRATION_TEST_NAMESPACE:carddemo-integration}"
+
+      # CORS configuration for integration testing
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: false
+            maxAge: 3600
+
+# =============================================================================
+# RESILIENCE4J CIRCUIT BREAKER INTEGRATION TEST CONFIGURATION
+# =============================================================================
+# Circuit breaker pattern validation per Section 5.1.1 requirements
+
+resilience4j:
+  circuitbreaker:
+    # Circuit breaker configurations for integration testing
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowSize: 10                   # Smaller window for faster testing
+        minimumNumberOfCalls: 5                 # Fewer calls needed to trigger circuit breaker
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s             # Shorter wait for testing
+        failureRateThreshold: 50                # 50% failure rate threshold
+        eventConsumerBufferSize: 10
+        recordExceptions:
+          - org.springframework.web.client.HttpServerErrorException
+          - java.util.concurrent.TimeoutException
+          - java.io.IOException
+        ignoreExceptions:
+          - org.springframework.security.access.AccessDeniedException
+    
+    instances:
+      # Authentication service circuit breaker
+      auth-service-cb:
+        baseConfig: default
+        failureRateThreshold: 60                # Higher threshold for auth service
+        waitDurationInOpenState: 10s
+      
+      # Account service circuit breaker
+      account-service-cb:
+        baseConfig: default
+        slidingWindowSize: 15
+        minimumNumberOfCalls: 8
+      
+      # Card service circuit breaker
+      card-service-cb:
+        baseConfig: default
+      
+      # Transaction service circuit breaker
+      transaction-service-cb:
+        baseConfig: default
+        failureRateThreshold: 40                # Lower threshold for critical transactions
+        minimumNumberOfCalls: 10
+      
+      # Menu service circuit breaker
+      menu-service-cb:
+        baseConfig: default
+        waitDurationInOpenState: 3s             # Faster recovery for menu service
+
+  # Retry configuration for integration testing
+  retry:
+    configs:
+      default:
+        maxAttempts: 3
+        waitDuration: 100ms
+        retryExceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - java.util.concurrent.TimeoutException
+        ignoreExceptions:
+          - org.springframework.security.access.AccessDeniedException
+    
+    instances:
+      auth-service-retry:
+        baseConfig: default
+        maxAttempts: 2                          # Fewer retries for auth
+      
+      transaction-service-retry:
+        baseConfig: default
+        maxAttempts: 4                          # More retries for transactions
+        waitDuration: 200ms
+
+  # Bulkhead configuration for resource isolation
+  bulkhead:
+    configs:
+      default:
+        maxConcurrentCalls: 10
+        maxWaitDuration: 100ms
+    
+    instances:
+      transaction-service-bulkhead:
+        maxConcurrentCalls: 5                   # Lower concurrency for transactions
+      
+      account-service-bulkhead:
+        maxConcurrentCalls: 8
+
+  # Rate limiter configuration for integration testing
+  ratelimiter:
+    configs:
+      default:
+        limitForPeriod: 10
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0
+    
+    instances:
+      api-rate-limiter:
+        limitForPeriod: 100                     # Higher limit for integration tests
+        limitRefreshPeriod: 1s
+
+# =============================================================================
+# INTEGRATION TEST DATABASE CONFIGURATION
+# =============================================================================
+# PostgreSQL Testcontainers integration per Section 6.6.7.3
+
+  # Override base test configuration to use PostgreSQL Testcontainers
+  datasource:
+    # PostgreSQL Testcontainers configuration for integration testing
+    url: "jdbc:tc:postgresql:15-alpine:///carddemo_integration_test?TC_DAEMON=true&TC_TMPFS=/testtmpfs:rw,size=512m&TC_INITSCRIPT=classpath:testcontainers/postgresql/integration-init.sql"
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    username: "integration_test_user"
+    password: "integration_test_password"
+    
+    # HikariCP configuration optimized for integration test execution speed
+    hikari:
+      pool-name: CardDemoIntegrationTestHikariPool
+      connection-timeout: 3000                  # Faster timeout for integration tests
+      idle-timeout: 20000                       # Shorter idle timeout
+      max-lifetime: 180000                      # 3 minutes max lifetime
+      minimum-idle: 2                           # Minimal idle connections for integration tests
+      maximum-pool-size: 15                     # Larger pool for integration testing
+      leak-detection-threshold: 15000           # 15 seconds leak detection
+      connection-test-query: "SELECT 1"
+      validation-timeout: 1000                  # Faster validation
+      auto-commit: false                        # Explicit transaction management
+      
+      # Integration test specific data source properties
+      data-source-properties:
+        cachePrepStmts: true
+        prepStmtCacheSize: 200                  # Larger cache for integration tests
+        prepStmtCacheSqlLimit: 2048
+        useServerPrepStmts: true                # PostgreSQL optimization
+        ApplicationName: "CardDemo-Integration-Test"
+        reWriteBatchedInserts: true             # Batch optimization
+        defaultRowFetchSize: 50                 # Optimized fetch size
+
+  # JPA/Hibernate configuration for integration testing
+  jpa:
+    hibernate:
+      ddl-auto: validate                        # Validate against Liquibase schema
+      naming:
+        physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+        implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+    
+    properties:
+      hibernate:
+        # PostgreSQL dialect for integration testing
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true                        # Format SQL for debugging
+        show_sql: false                         # Controlled by logging
+        use_sql_comments: true                  # Add SQL comments
+        
+        # Integration test transaction and session management
+        default_schema: "carddemo_integration"
+        connection:
+          isolation: 4                          # SERIALIZABLE - match production
+          autocommit: false
+          
+        # Performance settings optimized for integration tests
+        jdbc:
+          batch_size: 50                        # Larger batch size for integration tests
+          batch_versioned_data: true
+          fetch_size: 50                        # Larger fetch size
+          use_streams_for_binary: true
+          time_zone: "UTC"
+          
+        # Enable caching for integration test performance
+        cache:
+          use_second_level_cache: true
+          use_query_cache: true
+          region:
+            factory_class: org.hibernate.cache.ehcache.EhCacheRegionFactory
+          
+        # Schema validation for integration tests
+        hbm2ddl:
+          auto: validate
+          create_namespaces: true
+          
+        # Integration test specific Hibernate settings
+        enable_lazy_load_no_trans: false
+        max_fetch_depth: 3                      # Deeper fetch for integration tests
+        default_batch_fetch_size: 16
+        order_inserts: true
+        order_updates: true
+        generate_statistics: true               # Enable statistics for monitoring
+
+# =============================================================================
+# LIQUIBASE INTEGRATION TEST CONFIGURATION
+# =============================================================================
+
+  liquibase:
+    enabled: true
+    change-log: classpath:db/liquibase-integration-changelog.xml
+    default-schema: "carddemo_integration"
+    liquibase-schema: "carddemo_integration"
+    contexts: "integration-test,test"
+    label-filter: "integration"
+    drop-first: false                           # Preserve schema across tests
+    rollback-file: "integration-test-rollback.sql"
+    test-rollback-on-update: false              # Skip rollback testing in integration tests
+    parameters:
+      database.target: "PostgreSQL Integration Test Database"
+      application.version: "CardDemo Integration Test v1.0"
+      schema.name: "carddemo_integration"
+      namespace.name: "${INTEGRATION_TEST_NAMESPACE:carddemo-integration}"
+
+# =============================================================================
+# REDIS INTEGRATION TEST CONFIGURATION
+# =============================================================================
+# Distributed session management validation per requirements
+
+  # Redis configuration for distributed session testing
+  data:
+    redis:
+      host: localhost                           # Will be replaced by Testcontainers
+      port: 6379                                # Will be replaced by Testcontainers
+      database: 2                               # Use database 2 for integration tests
+      timeout: 3000ms                           # Longer timeout for integration tests
+      lettuce:
+        pool:
+          max-active: 10                        # Larger pool for integration testing
+          max-idle: 5
+          min-idle: 2
+          max-wait: 2000ms
+        cluster:
+          refresh:
+            adaptive: true
+            period: 30s
+
+  # Spring Session configuration for integration testing
+  session:
+    store-type: redis
+    redis:
+      database: 2                               # Use database 2 for session storage
+      namespace: "carddemo:integration:session"
+      flush-mode: immediate
+      save-mode: always
+      cleanup-cron: "0 */2 * * * *"             # More frequent cleanup
+    timeout: 600s                               # Longer session timeout for integration tests
+    cookie:
+      name: "CARDDEMO-INTEGRATION-SESSIONID"
+      max-age: 600s
+      http-only: true
+      secure: false                             # Allow insecure cookies in tests
+      same-site: "lax"
+
+# =============================================================================
+# TESTCONTAINERS INTEGRATION TEST CONFIGURATION
+# =============================================================================
+# Extended Testcontainers configuration for integration testing
+
+testcontainers:
+  # PostgreSQL Testcontainer for integration testing
+  postgresql:
+    enabled: true
+    image: "postgres:15-alpine"
+    database-name: "carddemo_integration_test"
+    username: "integration_test_user"
+    password: "integration_test_password"
+    init-script-path: "classpath:testcontainers/postgresql/integration-init.sql"
+    port-bindings:
+      - "0:5432"                                # Dynamic port allocation
+    environment:
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+      POSTGRES_DB: "carddemo_integration_test"
+      POSTGRES_USER: "integration_test_user"
+      POSTGRES_PASSWORD: "integration_test_password"
+      POSTGRES_SCHEMA: "carddemo_integration"
+    tmpfs:
+      - /var/lib/postgresql/data:rw,size=512m   # Larger tmpfs for integration tests
+    shared-memory-size: 256m                    # Larger shared memory
+    wait-strategy: "org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy"
+    wait-strategy-message: "database system is ready to accept connections"
+    startup-timeout: 120s                       # Longer timeout for integration tests
+    
+    # Integration test specific configuration
+    labels:
+      test-type: "integration"
+      namespace: "${INTEGRATION_TEST_NAMESPACE:carddemo-integration}"
+    
+  # Redis Testcontainer for distributed session testing
+  redis:
+    enabled: true
+    image: "redis:7-alpine"
+    port-bindings:
+      - "0:6379"                                # Dynamic port allocation
+    command: 
+      - "redis-server"
+      - "--appendonly"
+      - "yes"
+      - "--maxmemory"
+      - "256mb"                                 # More memory for integration tests
+      - "--maxmemory-policy"
+      - "allkeys-lru"
+      - "--databases"
+      - "16"                                    # More databases available
+    tmpfs:
+      - /data:rw,size=128m                      # Larger tmpfs for Redis data
+    wait-strategy: "org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy"
+    wait-strategy-message: "Ready to accept connections"
+    startup-timeout: 60s
+    
+    # Integration test specific configuration
+    labels:
+      test-type: "integration"
+      namespace: "${INTEGRATION_TEST_NAMESPACE:carddemo-integration}"
+
+# =============================================================================
+# KUBERNETES NAMESPACE TEST CONFIGURATION
+# =============================================================================
+# Kubernetes namespace-based testing architecture per Section 6.6.7.1
+
+kubernetes:
+  # Integration test namespace configuration
+  namespace:
+    name: "${INTEGRATION_TEST_NAMESPACE:carddemo-integration}"
+    labels:
+      app: "carddemo"
+      environment: "integration-test"
+      version: "1.0.0"
+      component: "microservices"
+    
+    # Resource quotas for integration testing
+    resource-quota:
+      requests:
+        cpu: "2000m"                            # 2 CPU cores
+        memory: "4Gi"                           # 4 GB memory
+      limits:
+        cpu: "4000m"                            # 4 CPU cores max
+        memory: "8Gi"                           # 8 GB memory max
+        persistentvolumeclaims: "10"            # 10 PVC limit
+    
+    # Network policies for integration testing
+    network-policy:
+      enabled: true
+      ingress:
+        - from:
+          - namespaceSelector:
+              matchLabels:
+                name: "carddemo-integration"
+          ports:
+          - protocol: TCP
+            port: 8080
+          - protocol: TCP
+            port: 8443
+      egress:
+        - to: []                                # Allow all egress for testing
+          ports:
+          - protocol: TCP
+            port: 5432                          # PostgreSQL
+          - protocol: TCP
+            port: 6379                          # Redis
+
+  # Service discovery configuration for integration testing
+  service-discovery:
+    enabled: true
+    eureka:
+      client:
+        serviceUrl:
+          defaultZone: "http://eureka-server:8761/eureka/"
+        register-with-eureka: true
+        fetch-registry: true
+        registry-fetch-interval-seconds: 5      # Faster refresh for tests
+      instance:
+        prefer-ip-address: true
+        lease-renewal-interval-in-seconds: 5    # Faster renewal
+        lease-expiration-duration-in-seconds: 10
+
+# =============================================================================
+# INTEGRATION TEST SERVER CONFIGURATION
+# =============================================================================
+
+server:
+  port: 0                                       # Random available port
+  servlet:
+    context-path: "/integration-test"
+    session:
+      timeout: 600s                             # Longer timeout for integration tests
+      cookie:
+        name: "INTEGRATION-TEST-JSESSIONID"
+        http-only: true
+        secure: false                           # Allow insecure cookies in tests
+        max-age: 600s
+  
+  # Tomcat configuration optimized for integration testing
+  tomcat:
+    threads:
+      max: 50                                   # More threads for concurrent testing
+      min-spare: 5
+    max-connections: 200                        # Higher connection limit
+    accept-count: 20
+    connection-timeout: 10000ms                 # Longer timeout for integration tests
+    
+    # Enable access logging for integration tests
+    accesslog:
+      enabled: true
+      directory: "target/logs"
+      file-date-format: ".yyyy-MM-dd"
+      pattern: "%h %l %u %t \"%r\" %s %b %D"
+      prefix: "integration-test-access"
+      suffix: ".log"
+
+# =============================================================================
+# INTEGRATION TEST LOGGING CONFIGURATION
+# =============================================================================
+
+logging:
+  level:
+    root: INFO                                  # Higher level for integration tests
+    com.carddemo: DEBUG                         # Application debugging enabled
+    org.springframework.cloud.gateway: DEBUG   # Gateway debugging
+    org.springframework.web.reactive: DEBUG    # Reactive web debugging
+    org.springframework.security: INFO         # Security events
+    org.springframework.web: INFO              # Web layer logging
+    org.springframework.test: INFO             # Test framework logging
+    org.springframework.boot.test: INFO        # Boot test logging
+    org.hibernate: INFO                         # Hibernate logging
+    org.hibernate.SQL: DEBUG                   # Show SQL in integration tests
+    org.hibernate.type.descriptor.sql.BasicBinder: INFO  # Parameter logging
+    org.postgresql: INFO                        # PostgreSQL driver
+    com.zaxxer.hikari: INFO                     # Connection pool
+    org.testcontainers: INFO                    # Testcontainers lifecycle
+    io.micrometer: INFO                         # Metrics framework
+    org.liquibase: INFO                         # Database migration
+    redis.clients.jedis: INFO                  # Redis client
+    org.springframework.batch: INFO             # Batch processing
+    io.github.resilience4j: DEBUG              # Circuit breaker debugging
+    
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %X{correlationId:-} %X{integrationTest:-} %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %X{correlationId:-} %X{integrationTest:-} %msg%n"
+  
+  # Integration test log file configuration
+  file:
+    name: "target/logs/carddemo-integration-test.log"
+    max-size: 50MB                              # Larger log files for integration tests
+    max-history: 5
+    total-size-cap: 250MB
+
+# =============================================================================
+# INTEGRATION TEST CUSTOM PROPERTIES
+# =============================================================================
+
+carddemo:
+  # Integration test business configuration
+  business:
+    transaction:
+      daily-limit: "5000.00"                    # Higher limits for integration testing
+      single-limit: "2000.00"
+      retry-attempts: 3                         # More retries for integration tests
+      timeout-seconds: 30                       # Longer timeout
+    
+    account:
+      interest-rate: "0.1500"
+      minimum-payment: "25.00"
+      over-limit-fee: "35.00"
+      late-fee: "35.00"
+
+  # Integration test security configuration
+  security:
+    jwt:
+      secret: "integration-test-jwt-secret-key-for-testing-purposes-minimum-256-bits-required"
+      expiration: 7200                          # 2 hours for integration tests
+      issuer: "CardDemo-Integration-Test-Auth"
+      audience: "carddemo-integration-services"
+    
+    password:
+      min-length: 8                             # Production-like for integration tests
+      require-uppercase: true
+      require-lowercase: true
+      require-digits: true
+      require-special-chars: false              # Simplified for testing
+    
+    session:
+      max-concurrent: 5                         # Allow more concurrent sessions
+      timeout-warning: 120                      # Longer warning period
+
+  # Integration test performance configuration
+  performance:
+    connection-pool:
+      core-size: 5                              # Larger pools for integration tests
+      max-size: 15
+      queue-capacity: 50
+    
+    cache:
+      ttl-seconds: 300                          # Longer TTL for integration tests
+      max-entries: 1000                         # Larger cache
+    
+    batch:
+      chunk-size: 100                           # Larger chunks for integration tests
+      max-threads: 4                            # More threads
+
+  # Integration test feature flags
+  features:
+    circuit-breaker-enabled: true               # Enable circuit breaker testing
+    load-balancing-enabled: true                # Enable load balancing testing
+    distributed-session-enabled: true          # Enable distributed session testing
+    gateway-routing-enabled: true               # Enable gateway routing testing
+    kubernetes-integration: true                # Enable Kubernetes integration
+    performance-monitoring: true                # Enable performance monitoring
+    audit-logging: true                         # Enable audit logging
+    swagger-ui: true                            # Enable API documentation
+
+  # Integration test specific configuration
+  integration:
+    # Gateway testing configuration
+    gateway:
+      instance-count: 2                         # Multiple gateway instances
+      load-balancer:
+        algorithm: "round-robin"                # Load balancing algorithm
+        health-check:
+          interval: 5s                          # Health check interval
+          timeout: 2s                           # Health check timeout
+      
+      circuit-breaker:
+        enabled: true
+        failure-threshold: 50                   # 50% failure rate
+        recovery-timeout: 10s                   # Recovery timeout
+        half-open-max-calls: 5                  # Max calls in half-open state
+    
+    # Session management testing
+    session:
+      distributed: true                         # Enable distributed session testing
+      replication: true                         # Enable session replication testing
+      failover: true                            # Enable session failover testing
+      timeout-testing: true                     # Enable session timeout testing
+    
+    # Microservice interaction testing
+    microservices:
+      service-count: 5                          # Number of test services
+      interaction-patterns:
+        - "synchronous-rest"                    # REST API interaction
+        - "circuit-breaker"                     # Circuit breaker pattern
+        - "load-balancing"                      # Load balancing pattern
+        - "session-sharing"                     # Shared session pattern
+      
+      test-scenarios:
+        - "service-to-service-communication"    # Service interaction testing
+        - "gateway-routing-validation"          # Gateway routing testing
+        - "circuit-breaker-validation"          # Circuit breaker testing
+        - "load-balancing-validation"           # Load balancing testing
+        - "session-management-validation"       # Session management testing
+    
+    # Kubernetes namespace testing
+    kubernetes:
+      namespace: "${INTEGRATION_TEST_NAMESPACE:carddemo-integration}"
+      pod-count: 10                             # Expected pod count
+      service-count: 5                          # Expected service count
+      resource-validation: true                 # Enable resource quota validation
+      network-policy-validation: true          # Enable network policy validation
+      
+      test-scenarios:
+        - "pod-deployment-validation"           # Pod deployment testing
+        - "service-discovery-validation"        # Service discovery testing
+        - "resource-quota-compliance"           # Resource quota testing
+        - "network-policy-enforcement"          # Network policy testing
+        - "namespace-isolation-validation"      # Namespace isolation testing
+
+# =============================================================================
+# SPRING BOOT TEST CONFIGURATION OVERRIDES
+# =============================================================================
+
+# @SpringBootTest configuration for integration tests
+spring-boot-test:
+  web-environment: DEFINED_PORT               # Use defined port for integration tests
+  classes: []                                 # Auto-detect application classes
+  properties: 
+    - "spring.profiles.active=integration"    # Activate integration profile
+    - "logging.level.org.springframework.cloud.gateway=DEBUG"
+
+# Integration test specific test slice configurations
+integration-test:
+  gateway-enabled: true                       # Enable Gateway for integration tests
+  circuit-breaker-enabled: true              # Enable circuit breaker testing
+  distributed-session-enabled: true          # Enable distributed session testing
+  kubernetes-namespace-enabled: true         # Enable namespace testing
+  performance-monitoring-enabled: true       # Enable performance monitoring
