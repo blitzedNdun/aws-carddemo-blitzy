@@ -8,6 +8,133 @@
 
 --liquibase formatted sql
 
+--changeset blitzy-agent:create-transaction-types-table-v3
+--comment: Create transaction_types reference table from trantype.txt with 2-character type codes and debit/credit classification
+
+-- Create transaction_types table from trantype.txt data source
+-- Provides transaction classification with debit/credit indicators for transaction processing
+CREATE TABLE transaction_types (
+    -- Primary key: 2-character transaction type code from trantype.txt
+    transaction_type VARCHAR(2) NOT NULL,
+    
+    -- Descriptive name for transaction type (e.g., "Purchase", "Payment", "Credit")
+    type_description VARCHAR(60) NOT NULL,
+    
+    -- Debit/credit indicator for proper transaction classification and accounting
+    -- TRUE = Debit transaction (increases balance), FALSE = Credit transaction (decreases balance)
+    debit_credit_indicator BOOLEAN NOT NULL DEFAULT true,
+    
+    -- Active status for reference data lifecycle management
+    active_status BOOLEAN NOT NULL DEFAULT true,
+    
+    -- Audit fields for reference data management
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Primary key constraint
+    CONSTRAINT pk_transaction_types PRIMARY KEY (transaction_type),
+    
+    -- Business validation constraints
+    CONSTRAINT chk_transaction_type_format CHECK (transaction_type ~ '^[0-9]{2}$'),
+    CONSTRAINT chk_type_description_length CHECK (length(trim(type_description)) >= 3)
+);
+
+--rollback DROP TABLE transaction_types CASCADE;
+
+--changeset blitzy-agent:create-transaction-categories-table-v3
+--comment: Create transaction_categories reference table from trancatg.txt with 4-character category codes and hierarchical support
+
+-- Create transaction_categories table from trancatg.txt data source
+-- Supports hierarchical transaction categorization with parent-child relationships
+CREATE TABLE transaction_categories (
+    -- Primary key: 4-character transaction category code from trancatg.txt
+    -- Note: Original data shows 6-character codes, but last 4 characters form the category
+    transaction_category VARCHAR(4) NOT NULL,
+    
+    -- Parent transaction type (first 2 characters) for hierarchical classification
+    parent_transaction_type VARCHAR(2) NOT NULL,
+    
+    -- Detailed category description (e.g., "Regular Sales Draft", "Cash payment")
+    category_description VARCHAR(60) NOT NULL,
+    
+    -- Active status for category lifecycle management and business rule enforcement
+    active_status BOOLEAN NOT NULL DEFAULT true,
+    
+    -- Audit fields for reference data management
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Primary key constraint
+    CONSTRAINT pk_transaction_categories PRIMARY KEY (transaction_category, parent_transaction_type),
+    
+    -- Unique constraint on transaction_category alone for foreign key references
+    CONSTRAINT uk_transaction_categories_category UNIQUE (transaction_category),
+    
+    -- Foreign key to transaction_types for hierarchical integrity
+    CONSTRAINT fk_transaction_categories_parent_type FOREIGN KEY (parent_transaction_type) 
+        REFERENCES transaction_types(transaction_type) 
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    
+    -- Business validation constraints
+    CONSTRAINT chk_transaction_category_format CHECK (transaction_category ~ '^[0-9]{4}$'),
+    CONSTRAINT chk_parent_type_format CHECK (parent_transaction_type ~ '^[0-9]{2}$'),
+    CONSTRAINT chk_category_description_length CHECK (length(trim(category_description)) >= 3)
+);
+
+--rollback DROP TABLE transaction_categories CASCADE;
+
+--changeset blitzy-agent:create-disclosure-groups-table-v3
+--comment: Create disclosure_groups reference table from discgrp.txt with precise interest rate management and legal disclosure text
+
+-- Create disclosure_groups table from discgrp.txt data source
+-- Manages interest rate configurations and legal disclosure requirements
+CREATE TABLE disclosure_groups (
+    -- Primary key: 10-character group identifier (e.g., "A", "DEFAULT", "ZEROAPR")
+    -- Padded to 10 characters for consistency with accounts.group_id foreign key
+    group_id VARCHAR(10) NOT NULL,
+    
+    -- Associated transaction category for interest rate application
+    transaction_category VARCHAR(4) NOT NULL,
+    
+    -- Interest rate with DECIMAL(5,4) precision supporting percentage calculations
+    -- Stores rates as decimal values (e.g., 0.0150 for 1.50% APR)
+    interest_rate DECIMAL(5,4) NOT NULL DEFAULT 0.0000,
+    
+    -- Legal disclosure text for regulatory compliance and customer communication
+    disclosure_text TEXT,
+    
+    -- Effective date for interest rate and disclosure changes
+    effective_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    
+    -- Active status for disclosure group lifecycle management
+    active_status BOOLEAN NOT NULL DEFAULT true,
+    
+    -- Audit fields for compliance tracking and change management
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Primary key constraint
+    CONSTRAINT pk_disclosure_groups PRIMARY KEY (group_id, transaction_category),
+    
+    -- Unique constraint on group_id alone for foreign key references from accounts table
+    CONSTRAINT uk_disclosure_groups_group_id UNIQUE (group_id),
+    
+    -- Foreign key to transaction_categories for referential integrity
+    CONSTRAINT fk_disclosure_groups_transaction_category FOREIGN KEY (transaction_category) 
+        REFERENCES transaction_categories(transaction_category) 
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    
+    -- Business validation constraints
+    CONSTRAINT chk_group_id_format CHECK (length(trim(group_id)) >= 1 AND length(group_id) <= 10),
+    CONSTRAINT chk_interest_rate_range CHECK (interest_rate >= 0.0000 AND interest_rate <= 9.9999),
+    CONSTRAINT chk_effective_date_range CHECK (
+        effective_date >= DATE '1970-01-01' AND 
+        effective_date <= CURRENT_DATE + INTERVAL '10 years'
+    )
+);
+
+--rollback DROP TABLE disclosure_groups CASCADE;
+
 --changeset blitzy-agent:create-accounts-table-v3
 --comment: Create accounts table with exact VSAM ACCTDAT field precision preservation and referential integrity
 
@@ -360,7 +487,7 @@ SELECT
     a.current_cycle_credit - a.current_cycle_debit as net_cycle_activity,
     dg.interest_rate,
     a.open_date,
-    EXTRACT(DAYS FROM (CURRENT_DATE - a.open_date)) as account_age_days
+    (CURRENT_DATE - a.open_date) as account_age_days
 FROM accounts a
 LEFT JOIN disclosure_groups dg ON a.group_id = dg.group_id
 WHERE a.active_status = true;
