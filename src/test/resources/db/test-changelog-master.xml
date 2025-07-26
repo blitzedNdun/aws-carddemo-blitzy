@@ -16,12 +16,13 @@
   - Support for BigDecimal mapping validation from COBOL COMP-3 fields
   - Testcontainers-compatible configuration for Spring Boot integration tests
   
-  Source Mapping from COBOL Copybooks:
-  - CSUSR01Y.cpy → PostgreSQL users table with Spring Security BCrypt support
-  - CVACT01Y.cpy → PostgreSQL accounts table with DECIMAL(12,2) financial precision
-  - CVTRA05Y.cpy → PostgreSQL transactions table with monthly partitioning
-  - CVTRA03Y.cpy → PostgreSQL transaction type reference tables
-  - CVTRA04Y.cpy → PostgreSQL transaction category reference tables
+  Source Mapping from COBOL Copybooks and VSAM Datasets:
+  - USRSEC VSAM/CSUSR01Y.cpy → PostgreSQL users table with Spring Security BCrypt support
+  - ACCTDAT VSAM/CVACT01Y.cpy → PostgreSQL accounts table with DECIMAL(12,2) financial precision
+  - CARDDAT VSAM/CVCRD01Y.cpy → PostgreSQL cards table with security validation
+  - TRANSACT VSAM/CVTRA05Y.cpy → PostgreSQL transactions table with monthly partitioning
+  - TRANTYPE/CVTRA03Y.cpy → PostgreSQL transaction type reference tables
+  - TRANCATG/CVTRA04Y.cpy → PostgreSQL transaction category reference tables
   
   Test Environment Specifications:
   - DECIMAL precision matching COBOL COMP-3 signed numeric fields exactly
