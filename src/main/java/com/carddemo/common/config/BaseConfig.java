@@ -16,8 +16,6 @@ import org.springframework.boot.actuate.audit.InMemoryAuditEventRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import javax.sql.DataSource;
@@ -113,39 +111,22 @@ public class BaseConfig {
     }
 
     /**
-     * Configures PlatformTransactionManager with SERIALIZABLE isolation level.
+     * Transaction Manager Configuration Note
      * 
-     * This configuration replicates VSAM record locking behavior by ensuring:
+     * The primary PlatformTransactionManager with SERIALIZABLE isolation level
+     * is configured in DatabaseConfig.java as a JpaTransactionManager.
+     * 
+     * This provides:
      * - SERIALIZABLE isolation prevents phantom reads and non-repeatable reads
      * - Transaction boundaries equivalent to CICS syncpoint behavior
      * - Automatic rollback on unchecked exceptions
      * - Proper resource cleanup and connection management
+     * - JPA-specific optimizations for entity management
      * 
      * The SERIALIZABLE isolation level is critical for maintaining data consistency
      * equivalent to the original CICS/VSAM environment while supporting concurrent
      * access patterns required by the microservices architecture.
-     * 
-     * @param dataSource PostgreSQL datasource configured with HikariCP
-     * @return PlatformTransactionManager with SERIALIZABLE isolation
      */
-    @Bean(name = "baseTransactionManager")
-    public PlatformTransactionManager baseTransactionManager(DataSource dataSource) {
-        logger.info("Configuring CardDemo TransactionManager with SERIALIZABLE isolation");
-        
-        DataSourceTransactionManager transactionManager = new DataSourceTransactionManager(dataSource);
-        
-        // Set default transaction timeout (30 seconds) to prevent long-running transactions
-        transactionManager.setDefaultTimeout(30);
-        
-        // Enable transaction synchronization for proper resource cleanup
-        transactionManager.setTransactionSynchronization(DataSourceTransactionManager.SYNCHRONIZATION_ALWAYS);
-        
-        // Configure for nested transaction support when required
-        transactionManager.setNestedTransactionAllowed(true);
-        
-        logger.info("TransactionManager configured with CICS-equivalent transaction boundaries");
-        return transactionManager;
-    }
 
     /**
      * Configures AuditEventRepository for comprehensive security and business event tracking.
