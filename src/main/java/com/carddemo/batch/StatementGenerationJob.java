@@ -34,9 +34,12 @@ import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
-import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
-import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
@@ -131,10 +134,10 @@ public class StatementGenerationJob {
     private BatchConfiguration batchConfiguration;
 
     @Autowired
-    private JobBuilderFactory jobBuilderFactory;
+    private JobRepository jobRepository;
 
     @Autowired
-    private StepBuilderFactory stepBuilderFactory;
+    private PlatformTransactionManager transactionManager;
 
     // =======================================================================
     // DATA ACCESS LAYER DEPENDENCIES
@@ -269,12 +272,12 @@ public class StatementGenerationJob {
      * 
      * @return Configured Spring Batch Job for statement generation
      */
-    @Bean
+    @Bean("batchStatementGenerationJob")
     public Job statementGenerationJob() {
         logger.info("Configuring statement generation job with parallel processing capabilities");
         
-        return jobBuilderFactory.get("statementGenerationJob")
-            .start(statementGenerationStep())
+        return new JobBuilder("statementGenerationJob", jobRepository)
+            .start(createStatementGenerationStep())
             .build();
     }
 
@@ -284,15 +287,14 @@ public class StatementGenerationJob {
      * 
      * @return Configured Step for statement processing
      */
-    @Bean
-    public Step statementGenerationStep() {
+    private Step createStatementGenerationStep() {
         logger.info("Configuring statement generation step with chunk size: {}", STATEMENT_CHUNK_SIZE);
         
-        return stepBuilderFactory.get("statementGenerationStep")
-            .<StatementData, StatementData>chunk(STATEMENT_CHUNK_SIZE)
-            .reader(statementItemReader())
-            .processor(statementItemProcessor())
-            .writer(statementItemWriter())
+        return new StepBuilder("statementGenerationStep", jobRepository)
+            .<StatementData, StatementData>chunk(STATEMENT_CHUNK_SIZE, transactionManager)
+            .reader(createStatementItemReader())
+            .processor(createStatementItemProcessor())
+            .writer(createStatementItemWriter())
             .taskExecutor(batchConfiguration.taskExecutor())
             .build();
     }
@@ -307,8 +309,7 @@ public class StatementGenerationJob {
      * 
      * @return ItemReader<StatementData> for account data retrieval
      */
-    @Bean
-    public ItemReader<StatementData> statementItemReader() {
+    private ItemReader<StatementData> createStatementItemReader() {
         logger.info("Configuring statement item reader for account processing");
         
         // Fetch all active accounts for statement generation
@@ -347,8 +348,7 @@ public class StatementGenerationJob {
      * 
      * @return ItemProcessor<StatementData, StatementData> for transaction processing
      */
-    @Bean
-    public ItemProcessor<StatementData, StatementData> statementItemProcessor() {
+    private ItemProcessor<StatementData, StatementData> createStatementItemProcessor() {
         return new ItemProcessor<StatementData, StatementData>() {
             @Override
             public StatementData process(StatementData statementData) throws Exception {
@@ -396,14 +396,13 @@ public class StatementGenerationJob {
      * 
      * @return ItemWriter<StatementData> for statement file generation
      */
-    @Bean
-    public ItemWriter<StatementData> statementItemWriter() {
+    private ItemWriter<StatementData> createStatementItemWriter() {
         return new ItemWriter<StatementData>() {
             @Override
-            public void write(List<? extends StatementData> items) throws Exception {
-                logger.info("Writing {} statement files", items.size());
+            public void write(Chunk<? extends StatementData> chunk) throws Exception {
+                logger.info("Writing {} statement files", chunk.size());
                 
-                for (StatementData statementData : items) {
+                for (StatementData statementData : chunk) {
                     try {
                         // Generate plain text statement (equivalent to COBOL STMT-FILE output)
                         generatePlainTextStatement(statementData);
@@ -434,12 +433,11 @@ public class StatementGenerationJob {
      * 
      * @return ItemWriter<StatementData> for HTML statement generation
      */
-    @Bean
-    public ItemWriter<StatementData> htmlStatementItemWriter() {
+    private ItemWriter<StatementData> createHtmlStatementItemWriter() {
         return new ItemWriter<StatementData>() {
             @Override
-            public void write(List<? extends StatementData> items) throws Exception {
-                for (StatementData statementData : items) {
+            public void write(Chunk<? extends StatementData> chunk) throws Exception {
+                for (StatementData statementData : chunk) {
                     generateHtmlStatement(statementData);
                 }
             }
@@ -466,15 +464,16 @@ public class StatementGenerationJob {
     /**
      * Execute statement generation job programmatically.
      * Provides programmatic job execution interface equivalent to COBOL JCL job submission.
+     * Note: This method requires the job to be injected externally to avoid circular references.
      * 
+     * @param job The statement generation job to execute
      * @throws Exception if job execution fails
      */
     @Transactional
-    public void executeStatementGeneration() throws Exception {
+    public void executeStatementGeneration(Job job) throws Exception {
         logger.info("Starting statement generation job execution");
         
         JobLauncher jobLauncher = batchConfiguration.jobLauncher();
-        Job job = statementGenerationJob();
         JobParameters jobParameters = getJobParameters();
         
         try {
