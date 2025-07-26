@@ -21,16 +21,16 @@
 -- Primary card-account lookup index replicating VSAM CARDAIX alternate index functionality
 -- Supports CardListService rapid card lookups by account with active status filtering
 -- Maps from VSAM: AWS.M2.CARDDEMO.CARDDATA.VSAM.AIX (KEYLEN=11, RKP=5)
-CREATE INDEX idx_cards_account_id ON cards (account_id, active_status);
+CREATE INDEX IF NOT EXISTS idx_cards_account_id ON cards (account_id, active_status);
 
 -- Card customer cross-reference index supporting customer-to-cards navigation
 -- Enables rapid customer card portfolio queries for account management operations
 -- Supports composite foreign key validation and microservice boundary optimization
-CREATE INDEX idx_cards_customer_account ON cards (customer_id, account_id, active_status);
+CREATE INDEX IF NOT EXISTS idx_cards_customer_account ON cards (customer_id, account_id, active_status);
 
 -- Card expiration management index for lifecycle processing and batch operations
 -- Optimizes card renewal processing and expired card identification queries
-CREATE INDEX idx_cards_expiration_active ON cards (expiration_date, active_status) 
+CREATE INDEX IF NOT EXISTS idx_cards_expiration_active ON cards (expiration_date, active_status) 
     WHERE active_status IN ('Y', 'N');
 
 -- =============================================================================
@@ -40,20 +40,20 @@ CREATE INDEX idx_cards_expiration_active ON cards (expiration_date, active_statu
 -- Customer-Account cross-reference index supporting account management operations
 -- Enables rapid customer account portfolio queries and relationship validation
 -- Optimizes JOIN operations across microservice boundaries for customer services
-CREATE INDEX idx_customer_account_xref ON accounts (customer_id, account_id, active_status);
+CREATE INDEX IF NOT EXISTS idx_customer_account_xref ON accounts (customer_id, account_id, active_status);
 
 -- Account balance lookup index with covering strategy for index-only scans
 -- Critical for real-time balance inquiries with sub-200ms response time requirement
 -- INCLUDE clause enables index-only scans avoiding heap lookups for balance queries
-CREATE INDEX idx_account_balance ON accounts (account_id) INCLUDE (current_balance, active_status);
+CREATE INDEX IF NOT EXISTS idx_account_balance ON accounts (account_id) INCLUDE (current_balance, active_status);
 
 -- Account lifecycle management index supporting expiration and renewal processing
 -- Optimizes account portfolio management and lifecycle batch operations
-CREATE INDEX idx_accounts_lifecycle ON accounts (open_date, expiration_date, active_status);
+CREATE INDEX IF NOT EXISTS idx_accounts_lifecycle ON accounts (open_date, expiration_date, active_status);
 
 -- Account group-based queries for interest rate and disclosure management
 -- Supports statement generation and interest calculation microservice operations
-CREATE INDEX idx_accounts_group_active ON accounts (group_id, active_status);
+CREATE INDEX IF NOT EXISTS idx_accounts_group_active ON accounts (group_id, active_status);
 
 -- =============================================================================
 -- TRANSACTION PROCESSING INDEXES (Replicating TRANSACT VSAM AIX functionality)
@@ -63,24 +63,24 @@ CREATE INDEX idx_accounts_group_active ON accounts (group_id, active_status);
 -- Maps from VSAM: AWS.M2.CARDDEMO.TRANSACT.VSAM.AIX (KEYLEN=26, RKP=5)
 -- Supports monthly statement generation and transaction history queries
 -- Leverages native table partitioning for optimal partition pruning
-CREATE INDEX idx_transactions_date_range ON transactions (transaction_timestamp, account_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_date_range ON transactions (transaction_timestamp, account_id);
 
 -- Transaction account lookup index for account-specific transaction queries
 -- Enables rapid transaction history retrieval for account management operations
 -- Supports pagination and filtering requirements for REST API endpoints
-CREATE INDEX idx_transactions_account_lookup ON transactions (account_id, transaction_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_transactions_account_lookup ON transactions (account_id, transaction_timestamp DESC);
 
 -- Transaction card lookup index for card-specific transaction processing
 -- Supports fraud detection, card usage analysis, and transaction authorization
-CREATE INDEX idx_transactions_card_lookup ON transactions (card_number, transaction_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_transactions_card_lookup ON transactions (card_number, transaction_timestamp DESC);
 
 -- Transaction type and category analysis index for classification queries
 -- Supports transaction categorization microservice and reporting operations
-CREATE INDEX idx_transactions_classification ON transactions (transaction_type, transaction_category, transaction_timestamp);
+CREATE INDEX IF NOT EXISTS idx_transactions_classification ON transactions (transaction_type, transaction_category, transaction_timestamp);
 
 -- Transaction amount range index for financial analysis and fraud detection
 -- Enables rapid identification of high-value transactions and spending pattern analysis
-CREATE INDEX idx_transactions_amount_analysis ON transactions (transaction_amount, transaction_timestamp) 
+CREATE INDEX IF NOT EXISTS idx_transactions_amount_analysis ON transactions (transaction_amount, transaction_timestamp) 
     WHERE transaction_amount > 1000.00;
 
 -- =============================================================================
@@ -90,19 +90,19 @@ CREATE INDEX idx_transactions_amount_analysis ON transactions (transaction_amoun
 -- Customer name search index supporting customer service operations
 -- Enables rapid customer lookup by name for support and account management
 -- Uses functional index with UPPER() for case-insensitive searches
-CREATE INDEX idx_customers_name_search ON customers (UPPER(last_name), UPPER(first_name));
+CREATE INDEX IF NOT EXISTS idx_customers_name_search ON customers (UPPER(last_name), UPPER(first_name));
 
 -- Customer address analysis index for geographic and fraud detection queries
 -- Supports ZIP code analysis, regional reporting, and address validation
-CREATE INDEX idx_customers_address_analysis ON customers (state_code, zip_code, country_code);
+CREATE INDEX IF NOT EXISTS idx_customers_address_analysis ON customers (state_code, zip_code, country_code);
 
 -- Customer FICO score index for credit analysis and risk management
 -- Enables credit score distribution analysis and risk assessment queries
-CREATE INDEX idx_customers_credit_analysis ON customers (fico_credit_score, customer_id);
+CREATE INDEX IF NOT EXISTS idx_customers_credit_analysis ON customers (fico_credit_score, customer_id);
 
 -- Customer phone number lookup index for contact and verification operations
 -- Supports customer service phone-based authentication and contact management
-CREATE INDEX idx_customers_phone_lookup ON customers (phone_number_1) WHERE phone_number_1 IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_customers_phone_lookup ON customers (phone_number_1) WHERE phone_number_1 IS NOT NULL;
 
 --rollback DROP INDEX IF EXISTS idx_customers_phone_lookup;
 --rollback DROP INDEX IF EXISTS idx_customers_credit_analysis;
@@ -181,37 +181,36 @@ CREATE INDEX IF NOT EXISTS idx_tcatbal_category_fk ON transaction_category_balan
 
 -- Account management microservice query optimization
 -- Supports paginated account queries with status filtering for Spring Data JPA repositories
-CREATE INDEX idx_accounts_pagination ON accounts (customer_id, active_status, account_id);
+CREATE INDEX IF NOT EXISTS idx_accounts_pagination ON accounts (customer_id, active_status, account_id);
 
 -- Card management microservice query optimization  
 -- Supports card listing with pagination and status filtering for CardListService
-CREATE INDEX idx_cards_pagination ON cards (account_id, active_status, card_number);
+CREATE INDEX IF NOT EXISTS idx_cards_pagination ON cards (account_id, active_status, card_number);
 
 -- Transaction processing microservice query optimization
 -- Supports transaction history pagination with date-based sorting for REST API endpoints
-CREATE INDEX idx_transactions_pagination ON transactions (account_id, transaction_timestamp DESC, transaction_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_pagination ON transactions (account_id, transaction_timestamp DESC, transaction_id);
 
 -- Customer account summary query optimization
 -- Supports customer portfolio analysis and account aggregation operations
-CREATE INDEX idx_customer_portfolio ON accounts (customer_id, active_status, current_balance);
+CREATE INDEX IF NOT EXISTS idx_customer_portfolio ON accounts (customer_id, active_status, current_balance);
 
 -- Transaction amount aggregation index for balance calculations
 -- Optimizes SUM operations for account balance computation and statement generation
-CREATE INDEX idx_transactions_balance_calc ON transactions (account_id, transaction_amount, transaction_timestamp)
-    WHERE transaction_timestamp >= CURRENT_DATE - INTERVAL '90 days';
+CREATE INDEX IF NOT EXISTS idx_transactions_balance_calc ON transactions (account_id, transaction_amount, transaction_timestamp);
 
 -- Card security operations index for CVV and expiration validation
 -- Supports card authentication and security validation microservice operations
-CREATE INDEX idx_cards_security ON cards (card_number, active_status, expiration_date);
+CREATE INDEX IF NOT EXISTS idx_cards_security ON cards (card_number, active_status, expiration_date);
 
 -- Account credit analysis index for risk management operations
 -- Supports credit limit analysis and account risk assessment queries
-CREATE INDEX idx_accounts_credit_risk ON accounts (credit_limit, current_balance, active_status)
+CREATE INDEX IF NOT EXISTS idx_accounts_credit_risk ON accounts (credit_limit, current_balance, active_status)
     WHERE credit_limit > 0;
 
 -- Transaction merchant analysis index for fraud detection and reporting
 -- Supports merchant-based transaction analysis and geographical fraud detection
-CREATE INDEX idx_transactions_merchant ON transactions (merchant_name, merchant_zip, transaction_timestamp)
+CREATE INDEX IF NOT EXISTS idx_transactions_merchant ON transactions (merchant_name, merchant_zip, transaction_timestamp)
     WHERE merchant_name IS NOT NULL;
 
 --rollback DROP INDEX IF EXISTS idx_transactions_merchant;
@@ -232,28 +231,28 @@ CREATE INDEX idx_transactions_merchant ON transactions (merchant_name, merchant_
 
 -- Customer lookup covering index for rapid customer profile queries
 -- Enables index-only scans for customer demographic data without heap access
-CREATE INDEX idx_customers_profile_covering ON customers (customer_id) 
+CREATE INDEX IF NOT EXISTS idx_customers_profile_covering ON customers (customer_id) 
     INCLUDE (first_name, last_name, phone_number_1, fico_credit_score);
 
 -- Account balance covering index for real-time balance inquiries
 -- Critical for achieving sub-200ms response time requirement for balance API endpoints
 -- Extends base idx_account_balance with additional covering columns
-CREATE INDEX idx_accounts_balance_covering ON accounts (account_id, active_status) 
+CREATE INDEX IF NOT EXISTS idx_accounts_balance_covering ON accounts (account_id, active_status) 
     INCLUDE (current_balance, credit_limit, cash_credit_limit, customer_id);
 
 -- Card details covering index for card information API endpoints
 -- Enables rapid card detail retrieval without heap access for CardViewService
-CREATE INDEX idx_cards_details_covering ON cards (card_number) 
+CREATE INDEX IF NOT EXISTS idx_cards_details_covering ON cards (card_number) 
     INCLUDE (account_id, customer_id, embossed_name, expiration_date, active_status);
 
 -- Transaction summary covering index for transaction list operations
 -- Optimizes transaction history API with minimal data access patterns
-CREATE INDEX idx_transactions_summary_covering ON transactions (account_id, transaction_timestamp) 
+CREATE INDEX IF NOT EXISTS idx_transactions_summary_covering ON transactions (account_id, transaction_timestamp) 
     INCLUDE (transaction_id, transaction_amount, description, merchant_name);
 
 -- Customer account summary covering index for portfolio management
 -- Supports customer account overview with comprehensive account details
-CREATE INDEX idx_customer_accounts_covering ON accounts (customer_id, active_status) 
+CREATE INDEX IF NOT EXISTS idx_customer_accounts_covering ON accounts (customer_id, active_status) 
     INCLUDE (account_id, current_balance, credit_limit, open_date, expiration_date);
 
 --rollback DROP INDEX IF EXISTS idx_customer_accounts_covering;
@@ -271,22 +270,22 @@ CREATE INDEX idx_customer_accounts_covering ON accounts (customer_id, active_sta
 
 -- Transaction type lookup optimization for classification operations
 -- Supports rapid transaction type resolution for transaction processing microservices
-CREATE INDEX idx_transaction_types_lookup ON transaction_types (transaction_type, active_status) 
+CREATE INDEX IF NOT EXISTS idx_transaction_types_lookup ON transaction_types (transaction_type, active_status) 
     INCLUDE (type_description, debit_credit_indicator);
 
 -- Transaction category hierarchy optimization for classification queries
 -- Supports parent-child relationship queries for transaction categorization
-CREATE INDEX idx_transaction_categories_hierarchy ON transaction_categories (parent_transaction_type, transaction_category) 
+CREATE INDEX IF NOT EXISTS idx_transaction_categories_hierarchy ON transaction_categories (parent_transaction_type, transaction_category) 
     INCLUDE (category_description, active_status);
 
 -- Disclosure group interest rate lookup optimization
 -- Supports rapid interest rate resolution for statement generation and account management
-CREATE INDEX idx_disclosure_groups_rates ON disclosure_groups (group_id, active_status) 
+CREATE INDEX IF NOT EXISTS idx_disclosure_groups_rates ON disclosure_groups (group_id, active_status) 
     INCLUDE (interest_rate, disclosure_text, effective_date);
 
 -- Transaction category balance optimization for account balance calculations
 -- Supports rapid category balance aggregation for comprehensive account balance views
-CREATE INDEX idx_tcatbal_balance_lookup ON transaction_category_balances (account_id, transaction_category) 
+CREATE INDEX IF NOT EXISTS idx_tcatbal_balance_lookup ON transaction_category_balances (account_id, transaction_category) 
     INCLUDE (category_balance, last_updated, version_number);
 
 --rollback DROP INDEX IF EXISTS idx_tcatbal_balance_lookup;
@@ -303,20 +302,19 @@ CREATE INDEX idx_tcatbal_balance_lookup ON transaction_category_balances (accoun
 
 -- Audit trail indexes for compliance and change tracking
 -- Supports audit queries across all tables for regulatory compliance monitoring
-CREATE INDEX idx_customers_audit ON customers (updated_at, customer_id);
-CREATE INDEX idx_accounts_audit ON accounts (updated_at, account_id);
-CREATE INDEX idx_cards_audit ON cards (updated_at, card_number);
-CREATE INDEX idx_transactions_audit ON transactions (created_at, account_id);
+CREATE INDEX IF NOT EXISTS idx_customers_audit ON customers (updated_at, customer_id);
+CREATE INDEX IF NOT EXISTS idx_accounts_audit ON accounts (updated_at, account_id);
+CREATE INDEX IF NOT EXISTS idx_cards_audit ON cards (updated_at, card_number);
+CREATE INDEX IF NOT EXISTS idx_transactions_audit ON transactions (created_at, account_id);
 
 -- System monitoring indexes for performance analysis and optimization
 -- Supports database performance monitoring and query optimization analysis
-CREATE INDEX idx_recent_transactions ON transactions (transaction_timestamp) 
-    WHERE transaction_timestamp >= CURRENT_DATE - INTERVAL '24 hours';
+CREATE INDEX IF NOT EXISTS idx_recent_transactions ON transactions (transaction_timestamp);
 
-CREATE INDEX idx_active_accounts_monitoring ON accounts (updated_at, active_status) 
+CREATE INDEX IF NOT EXISTS idx_active_accounts_monitoring ON accounts (updated_at, active_status) 
     WHERE active_status = true;
 
-CREATE INDEX idx_active_cards_monitoring ON cards (updated_at, active_status) 
+CREATE INDEX IF NOT EXISTS idx_active_cards_monitoring ON cards (updated_at, active_status) 
     WHERE active_status = 'Y';
 
 --rollback DROP INDEX IF EXISTS idx_active_cards_monitoring;
