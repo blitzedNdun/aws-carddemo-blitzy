@@ -136,7 +136,7 @@ public class BatchConfiguration extends DefaultBatchConfiguration {
         logger.info("Initializing CardDemo JobLauncher with custom task executor");
         TaskExecutorJobLauncher jobLauncher = new TaskExecutorJobLauncher();
         jobLauncher.setJobRepository(jobRepository());
-        jobLauncher.setTaskExecutor(taskExecutor());
+        jobLauncher.setTaskExecutor(batchTaskExecutor());
         try {
             jobLauncher.afterPropertiesSet();
         } catch (Exception e) {
@@ -154,7 +154,7 @@ public class BatchConfiguration extends DefaultBatchConfiguration {
      * Thread pool sizing based on analysis of original CICS MAX TASKS configuration.
      */
     @Bean
-    public TaskExecutor taskExecutor() {
+    public TaskExecutor batchTaskExecutor() {
         logger.info("Configuring TaskExecutor for batch processing: core={}, max={}, queue={}",
                 corePoolSize, maxPoolSize, QUEUE_CAPACITY);
 
