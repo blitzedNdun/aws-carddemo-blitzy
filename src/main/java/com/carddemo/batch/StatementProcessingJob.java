@@ -194,7 +194,7 @@ public class StatementProcessingJob {
      * @return Configured Job for statement processing operations
      */
     @Bean
-    public Job statementProcessingJob() {
+    public Job statementProcessingBatchJob() {
         logger.info("Configuring StatementProcessingJob with multi-step file operations");
         
         return new JobBuilder("statementProcessingJob", jobRepository)
