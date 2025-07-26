@@ -39,6 +39,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
@@ -129,6 +130,12 @@ public class TransactionReportJob {
     private static final String START_DATE_PARAM = "startDate";
     private static final String END_DATE_PARAM = "endDate";
     private static final String REPORT_PATH_PARAM = "reportPath";
+    
+    /**
+     * Placeholder for @StepScope bean method parameters that will be overridden by Spring expressions at runtime.
+     * This follows Spring Batch best practices for @StepScope configuration.
+     */
+    private static final String OVERRIDDEN_BY_EXPRESSION = null;
 
     @Autowired
     private BatchConfiguration batchConfiguration;
@@ -179,8 +186,8 @@ public class TransactionReportJob {
      * 
      * @return Configured Spring Batch Job for transaction reporting
      */
-    @Bean
-    public Job transactionReportJob() {
+    @Bean(name = "transactionReportBatchJob")
+    public Job transactionReportBatchJob() {
         logger.info("Configuring TransactionReportJob - equivalent to COBOL CBTRN03C program");
         
         return new JobBuilder("transactionReportJob", jobRepository)
@@ -210,9 +217,9 @@ public class TransactionReportJob {
         
         return new StepBuilder("transactionReportStep", jobRepository)
                 .<Transaction, TransactionReportDTO>chunk(chunkSize, transactionManager)
-                .reader(transactionItemReader())
+                .reader(transactionItemReader(OVERRIDDEN_BY_EXPRESSION, OVERRIDDEN_BY_EXPRESSION))
                 .processor(transactionItemProcessor())
-                .writer(transactionItemWriter())
+                .writer(transactionItemWriter(OVERRIDDEN_BY_EXPRESSION))
                 .listener(batchConfiguration.stepExecutionListener())
                 .faultTolerant()
                 .retryPolicy(batchConfiguration.retryPolicy())
@@ -640,8 +647,10 @@ public class TransactionReportJob {
         }
         
         // Use DateUtils for COBOL-equivalent date validation and parsing
-        if (DateUtils.validateDate(dateStr)) {
-            return DateUtils.parseDate(dateStr).atStartOfDay();
+        if (DateUtils.isValidDate(dateStr)) {
+            return DateUtils.parseDate(dateStr)
+                    .map(LocalDate::atStartOfDay)
+                    .orElse(LocalDateTime.now());
         } else {
             logger.error("Invalid date parameter: {}, using current date", dateStr);
             return LocalDateTime.now();
