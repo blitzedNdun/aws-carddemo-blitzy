@@ -17,9 +17,11 @@ import com.carddemo.common.enums.AccountStatus;
 import com.carddemo.common.enums.CardStatus;
 import com.carddemo.common.enums.ValidationResult;
 
+import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,6 +34,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -122,6 +125,9 @@ public class TransactionValidationJob {
     @Autowired
     private CustomerRepository customerRepository;
 
+    @Autowired
+    private JobRepository jobRepository;
+
     // Transaction validation metrics for monitoring and reporting
     private volatile long processedRecords = 0;
     private volatile long validatedRecords = 0;
@@ -150,7 +156,7 @@ public class TransactionValidationJob {
     public org.springframework.batch.core.Job transactionValidationJob() {
         logger.info("Configuring transaction validation job - converted from COBOL CBTRN01C.cbl");
         
-        Step step = new StepBuilder(STEP_NAME, batchConfiguration.jobRepository())
+        Step step = new StepBuilder(STEP_NAME, jobRepository)
                 .<DailyTransactionRecord, Transaction>chunk(DEFAULT_CHUNK_SIZE, transactionManager)
                 .reader(transactionItemReader())
                 .processor(transactionItemProcessor())
@@ -163,7 +169,7 @@ public class TransactionValidationJob {
                 .listener(new TransactionValidationStepListener())
                 .build();
         
-        return new JobBuilder(JOB_NAME, batchConfiguration.jobRepository())
+        return new JobBuilder(JOB_NAME, jobRepository)
                 .start(step)
                 .build();
     }
