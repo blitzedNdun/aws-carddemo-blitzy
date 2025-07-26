@@ -24,19 +24,19 @@
 -- 
 -- Field Layout:
 -- Position 1-16:   Transaction ID (16-character unique identifier)
--- Position 17-22:  Account ID (6 digits, expanded to 11 for database)
--- Position 23-24:  Transaction Type (01=POS, 02=Payment, 03=Return)
--- Position 25-28:  Transaction Category (0001-0005 hierarchical codes)
--- Position 29-37:  Transaction Prefix ("POS TERM ", "OPERATOR ")
--- Position 38-137: Description (100 characters with padding)
--- Position 138-149: Amount (12 characters in packed decimal format)
--- Position 150-157: Padding field (8 characters "00000000")
--- Position 158-207: Merchant Name (50 characters with padding)
--- Position 208-257: Merchant City (50 characters with padding)
--- Position 258-267: Merchant ZIP (10 characters)
--- Position 268-284: Card Number (17 characters)
--- Position 285-310: Transaction Timestamp (26 characters)
--- Position 311-350: Trailing padding (40 characters)
+-- Position 17-18:  Transaction Type (01=POS, 02=Payment, 03=Return)
+-- Position 19-22:  Transaction Category (0001-0005 hierarchical codes)
+-- Position 23-32:  Transaction Prefix ("POS TERM ", "OPERATOR ")
+-- Position 33-132: Description (100 characters with padding)
+-- Position 133-144: Amount (12 characters in packed decimal format)
+-- Position 145-152: Padding field (8 characters "00000000")
+-- Position 153-202: Merchant Name (50 characters with padding)
+-- Position 203-252: Merchant City (50 characters with padding)
+-- Position 253-262: Merchant ZIP (10 characters)
+-- Position 263-278: Card Number (16 characters)
+-- Position 279-304: Transaction Timestamp (26 characters)
+-- Position 305-350: Trailing padding (46 characters)
+-- NOTE: Account ID must be derived from card_number via JOIN with cards table
 --
 -- Amount Format Processing:
 -- Packed decimal format with sign indicators:
@@ -51,7 +51,7 @@ CREATE TEMPORARY TABLE temp_transaction_staging (
     line_number SERIAL PRIMARY KEY,
     raw_data TEXT NOT NULL,
     transaction_id VARCHAR(16),
-    account_id VARCHAR(11),
+    account_id VARCHAR(11), -- Will be derived from card_number via JOIN
     transaction_type VARCHAR(2),
     transaction_category VARCHAR(4),
     transaction_amount DECIMAL(12,2),
@@ -400,33 +400,30 @@ UPDATE temp_transaction_staging SET
     -- Extract transaction ID from positions 1-16
     transaction_id = SUBSTRING(raw_data, 1, 16),
     
-    -- Extract account ID from positions 17-22 and pad to 11 characters for database compatibility
-    account_id = LPAD(SUBSTRING(raw_data, 17, 6), 11, '0'),
+    -- Extract transaction type from positions 17-18 (01=POS, 02=Payment, 03=Return)
+    transaction_type = SUBSTRING(raw_data, 17, 2),
     
-    -- Extract transaction type from positions 23-24 (01=POS, 02=Payment, 03=Return)
-    transaction_type = SUBSTRING(raw_data, 23, 2),
+    -- Extract transaction category from positions 19-22 (0001-0005 category codes)
+    transaction_category = SUBSTRING(raw_data, 19, 4),
     
-    -- Extract transaction category from positions 25-28 (0001-0005 category codes)
-    transaction_category = SUBSTRING(raw_data, 25, 4),
+    -- Extract and clean description from positions 33-132 (100 characters)
+    description = TRIM(SUBSTRING(raw_data, 33, 100)),
     
-    -- Extract and clean description from positions 37-136 (100 characters)
-    description = TRIM(SUBSTRING(raw_data, 37, 100)),
+    -- Extract merchant name from positions 153-202 (50 characters) and clean
+    merchant_name = NULLIF(TRIM(SUBSTRING(raw_data, 153, 50)), ''),
     
-    -- Extract merchant name from positions 158-207 (50 characters) and clean
-    merchant_name = NULLIF(TRIM(SUBSTRING(raw_data, 158, 50)), ''),
+    -- Extract merchant city from positions 203-252 (50 characters) and clean  
+    merchant_city = NULLIF(TRIM(SUBSTRING(raw_data, 203, 50)), ''),
     
-    -- Extract merchant city from positions 208-257 (50 characters) and clean  
-    merchant_city = NULLIF(TRIM(SUBSTRING(raw_data, 208, 50)), ''),
+    -- Extract merchant ZIP from positions 253-262 (10 characters) and clean
+    merchant_zip = NULLIF(TRIM(SUBSTRING(raw_data, 253, 10)), ''),
     
-    -- Extract merchant ZIP from positions 258-267 (10 characters) and clean
-    merchant_zip = NULLIF(TRIM(SUBSTRING(raw_data, 258, 10)), ''),
+    -- Extract card number from positions 263-278 (16 characters)
+    card_number = SUBSTRING(raw_data, 263, 16),
     
-    -- Extract card number from positions 268-284 (17 characters) and format to 16 digits
-    card_number = LPAD(SUBSTRING(raw_data, 268, 16), 16, '0'),
-    
-    -- Extract and parse transaction timestamp from positions 285-310 (26 characters)
+    -- Extract and parse transaction timestamp from positions 279-304 (26 characters)
     -- Format: YYYY-MM-DD HH:MM:SS.microseconds
-    transaction_timestamp = CAST(SUBSTRING(raw_data, 285, 26) AS TIMESTAMP WITH TIME ZONE);
+    transaction_timestamp = CAST(SUBSTRING(raw_data, 279, 26) AS TIMESTAMP WITH TIME ZONE);
 
 -- ==============================================================================
 -- PACKED DECIMAL AMOUNT PROCESSING
@@ -442,8 +439,8 @@ DECLARE
     sign_multiplier INTEGER := 1;
     parsed_amount DECIMAL(12,2);
 BEGIN
-    -- Extract the 12-character amount field (positions 138-149 in raw data)
-    amount_str := SUBSTRING(packed_data, 138, 12);
+    -- Extract the 12-character amount field (positions 133-144 in raw data)
+    amount_str := SUBSTRING(packed_data, 133, 12);
     
     -- Get the sign character (last character of the amount field)
     sign_char := RIGHT(amount_str, 1);
@@ -489,15 +486,31 @@ $$ LANGUAGE plpgsql;
 
 -- Apply packed decimal parsing to all staging records
 UPDATE temp_transaction_staging 
-SET transaction_amount = parse_packed_decimal_amount(raw_data),
-    is_valid = TRUE
+SET transaction_amount = parse_packed_decimal_amount(raw_data)
+WHERE transaction_id IS NOT NULL 
+    AND transaction_type IS NOT NULL
+    AND transaction_category IS NOT NULL
+    AND description IS NOT NULL
+    AND card_number IS NOT NULL
+    AND transaction_timestamp IS NOT NULL;
+
+-- Derive account_id from card_number by joining with cards table
+UPDATE temp_transaction_staging ts
+SET account_id = c.account_id
+FROM cards c
+WHERE ts.card_number = c.card_number;
+
+-- Mark records as valid after all parsing and account_id derivation is complete
+UPDATE temp_transaction_staging 
+SET is_valid = TRUE
 WHERE transaction_id IS NOT NULL 
     AND account_id IS NOT NULL 
     AND transaction_type IS NOT NULL
     AND transaction_category IS NOT NULL
     AND description IS NOT NULL
     AND card_number IS NOT NULL
-    AND transaction_timestamp IS NOT NULL;
+    AND transaction_timestamp IS NOT NULL
+    AND transaction_amount IS NOT NULL;
 
 -- Update validation status and capture parsing errors
 UPDATE temp_transaction_staging 
@@ -505,16 +518,16 @@ SET is_valid = FALSE,
     parsing_errors = COALESCE(parsing_errors || '; ', '') ||
         CASE 
             WHEN transaction_id IS NULL THEN 'Missing transaction_id'
-            WHEN account_id IS NULL THEN 'Missing account_id'
+            WHEN account_id IS NULL THEN 'Missing account_id (card not found in cards table)'
             WHEN transaction_type IS NULL THEN 'Missing transaction_type'
             WHEN transaction_category IS NULL THEN 'Missing transaction_category'
             WHEN description IS NULL THEN 'Missing description'
             WHEN card_number IS NULL THEN 'Missing card_number'
             WHEN transaction_timestamp IS NULL THEN 'Missing transaction_timestamp'
-            WHEN transaction_amount = 0.00 THEN 'Amount parsing failed'
+            WHEN transaction_amount IS NULL THEN 'Amount parsing failed'
             ELSE 'Unknown validation error'
         END
-WHERE is_valid = FALSE OR transaction_amount = 0.00;
+WHERE is_valid = FALSE OR transaction_amount IS NULL;
 
 -- ==============================================================================
 -- CREATE 2022 PARTITION FOR HISTORICAL TRANSACTION DATA
