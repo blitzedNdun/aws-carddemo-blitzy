@@ -1,11 +1,10 @@
 package com.carddemo.batch;
 
-import com.carddemo.common.entity.Transaction;
-import com.carddemo.common.entity.Customer;
-import com.carddemo.common.entity.Account;
-import com.carddemo.common.entity.Card;
+import com.carddemo.transaction.Transaction;
 import com.carddemo.common.config.BatchConfiguration;
 import com.carddemo.transaction.TransactionRepository;
+import com.carddemo.common.repository.TransactionTypeRepository;
+import com.carddemo.common.repository.TransactionCategoryRepository;
 import com.carddemo.card.CardRepository;
 import com.carddemo.account.repository.AccountRepository;
 import com.carddemo.account.repository.CustomerRepository;
@@ -15,6 +14,7 @@ import com.carddemo.common.util.DateUtils;
 import com.carddemo.common.enums.TransactionType;
 import com.carddemo.common.enums.TransactionCategory;
 import com.carddemo.common.enums.AccountStatus;
+import com.carddemo.common.enums.CardStatus;
 import com.carddemo.common.enums.ValidationResult;
 
 import org.springframework.batch.core.Step;
@@ -22,7 +22,11 @@ import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -75,7 +79,7 @@ import org.slf4j.LoggerFactory;
  * @version 1.0
  * @since Java 21
  */
-@Component
+@Configuration
 public class TransactionValidationJob {
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(TransactionValidationJob.class);
@@ -97,7 +101,17 @@ public class TransactionValidationJob {
     private BatchConfiguration batchConfiguration;
     
     @Autowired
+    @Qualifier("transactionManager")
+    private PlatformTransactionManager transactionManager;
+    
+    @Autowired
     private TransactionRepository transactionRepository;
+    
+    @Autowired
+    private TransactionTypeRepository transactionTypeRepository;
+    
+    @Autowired
+    private TransactionCategoryRepository transactionCategoryRepository;
     
     @Autowired
     private CardRepository cardRepository;
@@ -132,50 +146,32 @@ public class TransactionValidationJob {
      * 
      * @return Configured Spring Batch Job for transaction validation
      */
-    @Bean
+    @Bean("batchTransactionValidationJob")
     public org.springframework.batch.core.Job transactionValidationJob() {
         logger.info("Configuring transaction validation job - converted from COBOL CBTRN01C.cbl");
         
-        return new JobBuilder(JOB_NAME, batchConfiguration.jobRepository())
-                .start(transactionValidationStep())
-                .build();
-    }
-
-    /**
-     * Spring Batch step definition for transaction validation processing.
-     * 
-     * Implements chunk-oriented processing with optimal chunk size for memory
-     * efficiency and transaction boundary management. The step configuration
-     * replicates COBOL file processing patterns with modern Spring Batch
-     * error handling, retry logic, and monitoring capabilities.
-     * 
-     * Step Processing Flow:
-     * 1. ItemReader: Read daily transaction records (equivalent to DALYTRAN-FILE read)
-     * 2. ItemProcessor: Validate each transaction via cross-reference lookups
-     * 3. ItemWriter: Write validated transactions to PostgreSQL (equivalent to TRANFILE write)
-     * 
-     * @return Configured Spring Batch Step for transaction processing
-     */
-    @Bean
-    public Step transactionValidationStep() {
-        logger.info("Configuring transaction validation step with chunk size: {}", DEFAULT_CHUNK_SIZE);
-        
-        return new StepBuilder(STEP_NAME, batchConfiguration.jobRepository())
-                .<DailyTransactionRecord, Transaction>chunk(DEFAULT_CHUNK_SIZE, batchConfiguration.jobRepository().getJobRepository().getJobRepository())
+        Step step = new StepBuilder(STEP_NAME, batchConfiguration.jobRepository())
+                .<DailyTransactionRecord, Transaction>chunk(DEFAULT_CHUNK_SIZE, transactionManager)
                 .reader(transactionItemReader())
                 .processor(transactionItemProcessor())
                 .writer(transactionItemWriter())
                 .faultTolerant()
                 .retryLimit(MAX_RETRY_ATTEMPTS)
                 .retry(org.springframework.dao.DataAccessException.class)
-                .skipLimit(100) // Allow skipping invalid records similar to COBOL error handling
+                .skipLimit(100)
                 .skip(ValidationException.class)
                 .listener(new TransactionValidationStepListener())
                 .build();
+        
+        return new JobBuilder(JOB_NAME, batchConfiguration.jobRepository())
+                .start(step)
+                .build();
     }
 
+
+
     /**
-     * Spring Batch ItemReader for daily transaction file processing.
+     * Create Spring Batch ItemReader for daily transaction file processing.
      * 
      * Converts COBOL sequential file reading (DALYTRAN-FILE) to Spring Batch
      * ItemReader pattern. Supports multiple input sources including CSV files,
@@ -189,8 +185,7 @@ public class TransactionValidationJob {
      * 
      * @return ItemReader for processing daily transaction records
      */
-    @Bean
-    public org.springframework.batch.item.ItemReader<DailyTransactionRecord> transactionItemReader() {
+    private org.springframework.batch.item.ItemReader<DailyTransactionRecord> transactionItemReader() {
         logger.info("Configuring transaction item reader for daily transaction processing");
         
         // Implementation would use FlatFileItemReader or JdbcPagingItemReader
@@ -203,7 +198,7 @@ public class TransactionValidationJob {
     }
 
     /**
-     * Spring Batch ItemProcessor for transaction validation and cross-reference processing.
+     * Create Spring Batch ItemProcessor for transaction validation and cross-reference processing.
      * 
      * Implements the core validation logic from COBOL CBTRN01C.cbl including:
      * - Card number cross-reference lookup (equivalent to 2000-LOOKUP-XREF)
@@ -221,8 +216,7 @@ public class TransactionValidationJob {
      * 
      * @return ItemProcessor for transaction validation logic
      */
-    @Bean
-    public org.springframework.batch.item.ItemProcessor<DailyTransactionRecord, Transaction> transactionItemProcessor() {
+    private org.springframework.batch.item.ItemProcessor<DailyTransactionRecord, Transaction> transactionItemProcessor() {
         logger.info("Configuring transaction item processor with validation logic");
         
         return dailyRecord -> {
@@ -255,7 +249,7 @@ public class TransactionValidationJob {
     }
 
     /**
-     * Spring Batch ItemWriter for validated transaction persistence.
+     * Create Spring Batch ItemWriter for validated transaction persistence.
      * 
      * Writes successfully validated transactions to PostgreSQL database using
      * JPA repository operations. Implements batch writing for optimal database
@@ -270,8 +264,7 @@ public class TransactionValidationJob {
      * 
      * @return ItemWriter for transaction persistence operations
      */
-    @Bean
-    public ItemWriter<Transaction> transactionItemWriter() {
+    private ItemWriter<Transaction> transactionItemWriter() {
         logger.info("Configuring transaction item writer for database persistence");
         
         return transactions -> {
@@ -279,7 +272,7 @@ public class TransactionValidationJob {
                 logger.debug("Writing {} validated transactions to database", transactions.size());
                 
                 // Use repository batch save for optimal performance
-                transactionRepository.saveAll(transactions);
+                transactionRepository.saveAll(transactions.getItems());
                 
                 logger.info("Successfully persisted {} transactions", transactions.size());
                 
@@ -370,13 +363,13 @@ public class TransactionValidationJob {
             }
             
             // Perform database lookup equivalent to COBOL XREF-FILE READ
-            Optional<Card> cardOptional = cardRepository.findByCardNumber(cardNumber);
+            Optional<com.carddemo.card.Card> cardOptional = cardRepository.findByCardNumber(cardNumber);
             
             if (cardOptional.isPresent()) {
-                Card card = cardOptional.get();
+                com.carddemo.card.Card card = cardOptional.get();
                 
                 // Verify card is active for transaction processing
-                if (!"Y".equals(card.getActiveStatus())) {
+                if (!CardStatus.ACTIVE.equals(card.getActiveStatus())) {
                     logger.warn("Card {} is not active", cardNumber);
                     return CrossReferenceResult.invalid("Card is not active");
                 }
@@ -426,13 +419,13 @@ public class TransactionValidationJob {
             }
             
             // Perform database lookup equivalent to COBOL ACCOUNT-FILE read
-            Optional<Account> accountOptional = accountRepository.findById(accountId);
+            Optional<com.carddemo.account.entity.Account> accountOptional = accountRepository.findById(accountId);
             
             if (accountOptional.isPresent()) {
-                Account account = accountOptional.get();
+                com.carddemo.account.entity.Account account = accountOptional.get();
                 
                 // Verify account is active for transaction processing
-                if (!AccountStatus.ACTIVE.name().equals(account.getActiveStatus())) {
+                if (!AccountStatus.ACTIVE.equals(account.getActiveStatus())) {
                     logger.warn("Account {} is not active", accountId);
                     return false;
                 }
@@ -484,26 +477,39 @@ public class TransactionValidationJob {
             transaction.setTransactionId(dailyRecord.getTransactionId());
             
             // Set transaction type with enum validation
-            TransactionType transactionType = TransactionType.fromCode(dailyRecord.getTransactionType());
-            transaction.setTransactionType(transactionType);
+            Optional<com.carddemo.common.enums.TransactionType> transactionTypeOpt = 
+                com.carddemo.common.enums.TransactionType.fromCode(dailyRecord.getTransactionType());
+            if (!transactionTypeOpt.isPresent()) {
+                throw new ValidationException("Invalid transaction type: " + dailyRecord.getTransactionType());
+            }
+            transaction.setTransactionType(transactionTypeOpt.get());
             
             // Set transaction category with enum validation
-            TransactionCategory transactionCategory = TransactionCategory.fromCode(dailyRecord.getCategoryCode());
-            transaction.setCategoryCode(transactionCategory);
+            Optional<com.carddemo.common.enums.TransactionCategory> transactionCategoryOpt = 
+                com.carddemo.common.enums.TransactionCategory.fromCode(dailyRecord.getCategoryCode());
+            if (!transactionCategoryOpt.isPresent()) {
+                throw new ValidationException("Invalid transaction category: " + dailyRecord.getCategoryCode());
+            }
+            transaction.setCategoryCode(transactionCategoryOpt.get());
             
             // Set transaction amount with BigDecimal precision preservation
-            BigDecimal amount = BigDecimalUtils.createDecimal(dailyRecord.getAmount());
+            BigDecimal amount = dailyRecord.getAmount();
             if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
                 throw new ValidationException("Invalid transaction amount: " + dailyRecord.getAmount());
             }
-            transaction.setAmount(amount);
+            // Ensure proper monetary scale for COBOL COMP-3 equivalent precision
+            BigDecimal monetaryAmount = BigDecimalUtils.roundToMonetary(amount);
+            transaction.setAmount(monetaryAmount);
             
             // Set transaction description with validation
-            String description = ValidationUtils.validateRequiredField(
-                dailyRecord.getDescription(), "Transaction Description").getValue();
-            transaction.setDescription(description);
+            ValidationResult descriptionValidation = ValidationUtils.validateRequiredField(
+                dailyRecord.getDescription(), "Transaction Description");
+            if (!descriptionValidation.isValid()) {
+                throw new ValidationException("Invalid transaction description: " + descriptionValidation.getErrorMessage());
+            }
+            transaction.setDescription(dailyRecord.getDescription());
             
-            // Set card number reference
+            // Set card number reference (cross-reference validation already confirmed card exists)
             transaction.setCardNumber(dailyRecord.getCardNumber());
             
             // Set merchant information with validation
@@ -513,8 +519,10 @@ public class TransactionValidationJob {
             transaction.setMerchantZip(dailyRecord.getMerchantZip());
             
             // Set timestamps with proper date handling
-            LocalDateTime originalTimestamp = DateUtils.parseDate(dailyRecord.getOriginalTimestamp());
-            LocalDateTime processingTimestamp = DateUtils.getCurrentDate();
+            LocalDateTime originalTimestamp = DateUtils.parseDate(dailyRecord.getOriginalTimestamp())
+                .map(localDate -> localDate.atStartOfDay()) // Convert LocalDate to LocalDateTime
+                .orElse(DateUtils.getCurrentTimestamp()); // Use current timestamp as fallback
+            LocalDateTime processingTimestamp = DateUtils.getCurrentTimestamp();
             
             transaction.setOriginalTimestamp(originalTimestamp);
             transaction.setProcessingTimestamp(processingTimestamp);
@@ -525,6 +533,9 @@ public class TransactionValidationJob {
             logger.debug("Transaction record processing completed for: {}", dailyRecord.getTransactionId());
             return transaction;
             
+        } catch (ValidationException e) {
+            // Re-throw ValidationException as-is to preserve specific error messages
+            throw e;
         } catch (Exception e) {
             logger.error("Error processing transaction record: {}", dailyRecord.getTransactionId(), e);
             throw new ValidationException("Failed to process transaction record", e);
