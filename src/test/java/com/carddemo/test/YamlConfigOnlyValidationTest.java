@@ -30,9 +30,19 @@ import static org.assertj.core.api.Assertions.assertThat;
     "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration," +
     "org.springframework.boot.autoconfigure.liquibase.LiquibaseAutoConfiguration," +
     "org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration," +
+    "org.springframework.boot.actuate.autoconfigure.health.HealthContributorAutoConfiguration," +
+    "org.springframework.boot.actuate.autoconfigure.jdbc.DataSourceHealthContributorAutoConfiguration," +
+    "org.springframework.boot.actuate.autoconfigure.data.redis.RedisHealthContributorAutoConfiguration," +
     "org.springframework.cloud.gateway.config.GatewayAutoConfiguration," +
+    "org.springframework.cloud.gateway.config.GatewayMetricsAutoConfiguration," +
+    "org.springframework.cloud.gateway.config.GatewayLoadBalancerClientAutoConfiguration," +
+    "org.springframework.cloud.gateway.config.GatewayReactiveLoadBalancerClientAutoConfiguration," +
     "org.springframework.cloud.netflix.eureka.EurekaClientAutoConfiguration," +
-    "org.springframework.cloud.config.client.ConfigClientAutoConfiguration"
+    "org.springframework.cloud.config.client.ConfigClientAutoConfiguration," +
+    "org.springframework.cloud.commons.httpclient.HttpClientConfiguration",
+    // Disable health endpoint groups that reference excluded components
+    "management.endpoint.health.group.readiness.include=",
+    "management.endpoint.health.group.liveness.include="
 })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class YamlConfigOnlyValidationTest {
@@ -81,7 +91,8 @@ public class YamlConfigOnlyValidationTest {
         System.out.println("✅ Environment name: " + envName);
         
         String dailyLimit = environment.getProperty("carddemo.business.transaction.daily-limit");
-        assertThat(dailyLimit).isEqualTo("100000.00");
+        // YAML parses numeric values and may return without trailing zeros
+        assertThat(dailyLimit).matches("100000(\\.0{1,2})?");
         System.out.println("✅ Daily transaction limit: " + dailyLimit);
     }
 
