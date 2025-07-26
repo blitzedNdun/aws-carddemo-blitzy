@@ -73,7 +73,7 @@ transaction_type,type_description,debit_credit_indicator
 26,ACH Credit,true
 27,ACH Debit,false
 28,Check Deposit,true
-29,Check Payment,false
+29,Check Payment,true
 30,Foreign Exchange,false
 31,Currency Conversion,false
 
@@ -103,7 +103,7 @@ transaction_type,type_description,debit_credit_indicator
 # Supporting database constraint and business rule validation
 48,Maximum Length Description Test - Exactly Sixty Characters,true
 49,Minimum Description,false
-50,Special Characters !@#$%^&*()_+-=[]{}|;':\",./<>?,true
+50,"Special Characters !@#$%^&*()_+-=[]{}|;':"",./<>?",true
 
 # Performance Testing Data
 # Supporting load testing scenarios with realistic transaction volumes
@@ -146,16 +146,16 @@ transaction_type,type_description,debit_credit_indicator
 
 # Digital Payment Types
 # Supporting modern payment method scenarios
-81,Mobile Payment,false
+81,Mobile Payment,true
 82,Digital Wallet,false
 83,Cryptocurrency,false
 84,Online Banking,true
 85,Mobile Banking,true
-86,App-Based Payment,false
-87,QR Code Payment,false
-88,Contactless Payment,false
+86,App-Based Payment,true
+87,QR Code Payment,true
+88,Contactless Payment,true
 89,Tap to Pay,false
-90,Biometric Payment,false
+90,Biometric Payment,true
 
 # Loyalty and Rewards Transaction Types
 # Supporting customer engagement program scenarios
