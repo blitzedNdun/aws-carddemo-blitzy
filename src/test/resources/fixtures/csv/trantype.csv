@@ -1,0 +1,170 @@
+# =============================================================================
+# CardDemo Transaction Type Reference Data - CSV Test Fixture
+# =============================================================================
+# Comprehensive transaction type reference data for Spring Batch testing scenarios
+# supporting transaction classification validation, debit/credit indicator testing,
+# and transaction processing rule validation per Section 6.6 Testing Strategy
+#
+# This CSV fixture enables:
+# - Spring Batch reference table testing with realistic transaction type scenarios
+# - Transaction type classification and debit/credit indicator validation
+# - PostgreSQL reference table constraint testing with comprehensive test data
+# - Transaction processing validation based on transaction type business rules
+# - Integration testing with TransactionType entity mapping validation
+#
+# Source Data: app/data/ASCII/trantype.txt
+# Target Entity: com.carddemo.common.entity.TransactionType
+# Test Configuration: src/test/resources/application-test.yml
+# Batch Configuration: com.carddemo.common.config.BatchConfiguration
+#
+# CSV Schema:
+# - transaction_type: 2-character transaction type code (PRIMARY KEY)
+# - type_description: Descriptive name for transaction type (max 60 chars)
+# - debit_credit_indicator: Boolean flag (true=Credit, false=Debit)
+#
+# Business Logic:
+# - Purchase, Authorization: Debit transactions (decrease account balance)
+# - Payment, Credit, Refund: Credit transactions (increase account balance) 
+# - Reversal, Adjustment: Debit transactions (typically correct previous credits)
+#
+# Author: Blitzy agent
+# Version: 1.0
+# Created: Transaction type CSV test fixture for Spring Batch reference data testing
+# =============================================================================
+
+# CSV Header - matches TransactionType entity field mapping
+transaction_type,type_description,debit_credit_indicator
+
+# Core Transaction Types from ASCII source data with business-appropriate debit/credit indicators
+01,Purchase,false
+02,Payment,true
+03,Credit,true
+04,Authorization,false
+05,Refund,true
+06,Reversal,false
+07,Adjustment,false
+
+# Additional Test Scenarios for Comprehensive Validation
+# Edge case testing with boundary conditions
+08,Cash Advance,false
+09,Balance Transfer,false
+10,Fee Assessment,false
+11,Interest Charge,false
+12,Credit Adjustment,true
+13,Dispute Credit,true
+14,Chargeback,false
+15,Chargeback Reversal,true
+
+# Extended Test Data for Transaction Processing Validation
+# ATM and Point-of-Sale scenarios
+16,ATM Withdrawal,false
+17,ATM Deposit,true
+18,POS Purchase,false
+19,Online Purchase,false
+20,Phone Purchase,false
+21,Mail Order,false
+22,Recurring Payment,true
+23,Auto Payment,true
+
+# Financial Services Specific Transaction Types
+# Supporting complex transaction processing scenarios
+24,Wire Transfer In,true
+25,Wire Transfer Out,false
+26,ACH Credit,true
+27,ACH Debit,false
+28,Check Deposit,true
+29,Check Payment,false
+30,Foreign Exchange,false
+31,Currency Conversion,false
+
+# Special Transaction Types for Error Handling Tests
+# Supporting exception scenarios and edge case validation
+32,Void Transaction,false
+33,Timeout Reversal,true
+34,System Adjustment,true
+35,Manual Adjustment,false
+36,Compliance Hold,false
+37,Fraud Investigation,false
+38,Account Closure,false
+39,Account Reopening,true
+
+# Test Data for Batch Processing Validation
+# Supporting high-volume transaction processing scenarios
+40,Batch Credit,true
+41,Batch Debit,false
+42,End of Day Processing,false
+43,Statement Generation,false
+44,Interest Calculation,false
+45,Fee Calculation,false
+46,Limit Update,true
+47,Status Update,false
+
+# Validation Test Cases for Constraint Testing
+# Supporting database constraint and business rule validation
+48,Maximum Length Description Test - Exactly Sixty Characters,true
+49,Minimum Description,false
+50,Special Characters !@#$%^&*()_+-=[]{}|;':\",./<>?,true
+
+# Performance Testing Data
+# Supporting load testing scenarios with realistic transaction volumes
+51,Performance Test Type A,false
+52,Performance Test Type B,true
+53,Performance Test Type C,false
+54,Performance Test Type D,true
+55,Performance Test Type E,false
+56,Performance Test Type F,true
+57,Performance Test Type G,false
+58,Performance Test Type H,true
+59,Performance Test Type I,false
+60,Performance Test Type J,true
+
+# Boundary Testing for Type Code Validation
+# Testing 2-character constraint with various formats
+61,Numeric Code Test,false
+62,Alpha Code Test,true
+63,Mixed Code Test,false
+64,Boundary Test A,true
+65,Boundary Test B,false
+66,Boundary Test C,true
+67,Boundary Test D,false
+68,Boundary Test E,true
+69,Boundary Test F,false
+70,Boundary Test G,true
+
+# International Transaction Types
+# Supporting global transaction processing scenarios
+71,International Purchase,false
+72,International Payment,true
+73,Currency Exchange,false
+74,Foreign ATM Withdrawal,false
+75,Foreign ATM Deposit,true
+76,International Transfer,false
+77,Cross-Border Payment,true
+78,Import Transaction,false
+79,Export Transaction,true
+80,Travel Transaction,false
+
+# Digital Payment Types
+# Supporting modern payment method scenarios
+81,Mobile Payment,false
+82,Digital Wallet,false
+83,Cryptocurrency,false
+84,Online Banking,true
+85,Mobile Banking,true
+86,App-Based Payment,false
+87,QR Code Payment,false
+88,Contactless Payment,false
+89,Tap to Pay,false
+90,Biometric Payment,false
+
+# Loyalty and Rewards Transaction Types
+# Supporting customer engagement program scenarios
+91,Rewards Redemption,true
+92,Cashback Credit,true
+93,Points Deduction,false
+94,Loyalty Bonus,true
+95,Referral Bonus,true
+96,Signup Bonus,true
+97,Anniversary Bonus,true
+98,Promotional Credit,true
+99,Rebate Credit,true
