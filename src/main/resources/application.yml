@@ -195,7 +195,7 @@ spring:
     contexts: ${LIQUIBASE_CONTEXTS:development}
     label-filter: ${LIQUIBASE_LABELS:}
     drop-first: false
-    rollback-file: "rollback.sql"
+    # rollback-file: "rollback.sql"  # Disabled - conflicts with raw SQL changes
     test-rollback-on-update: false
     parameters:
       database.target: "PostgreSQL 17.5+"
