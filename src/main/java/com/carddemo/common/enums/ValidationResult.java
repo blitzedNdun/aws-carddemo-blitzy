@@ -213,7 +213,7 @@ public enum ValidationResult {
      * @param errorMessage the error message to analyze
      * @return appropriate ValidationResult based on message content
      */
-    private static ValidationResult fromErrorMessage(String errorMessage) {
+    public static ValidationResult fromErrorMessage(String errorMessage) {
         if (errorMessage == null || errorMessage.trim().isEmpty()) {
             return VALID;
         }
