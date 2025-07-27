@@ -967,6 +967,44 @@ Version: 1.0
         </rollback>
     </changeSet>
 
+    <!-- V32: Add Transaction Type to Category Balances -->
+    <changeSet id="V32__add_transaction_type_to_category_balances" author="blitzy-agent">
+        <comment>Add missing transaction_type column to transaction_category_balances table to fix JPA entity schema mismatch</comment>
+        <sqlFile path="migration/V32__add_transaction_type_to_category_balances.sql" relativeToChangelogFile="true" splitStatements="false" stripComments="false"/>
+        <rollback>
+            <sql>
+                -- Rollback V32 changes in reverse order
+                DROP INDEX IF EXISTS idx_tcatbal_balance_lookup;
+                DROP INDEX IF EXISTS idx_tcatbal_transaction_type;
+                ALTER TABLE transaction_category_balances DROP CONSTRAINT IF EXISTS chk_tcatbal_transaction_type_format;
+                DROP VIEW IF EXISTS v_card_account_customer_xref;
+                ALTER TABLE transaction_category_balances DROP CONSTRAINT IF EXISTS fk_tcatbal_transaction_type;
+                ALTER TABLE transaction_category_balances DROP CONSTRAINT IF EXISTS pk_transaction_category_balances;
+                ALTER TABLE transaction_category_balances ADD CONSTRAINT pk_transaction_category_balances PRIMARY KEY (account_id, transaction_category);
+                ALTER TABLE transaction_category_balances DROP COLUMN IF EXISTS transaction_type;
+                
+                -- Recreate original view
+                CREATE VIEW v_card_account_customer_xref AS
+                SELECT 
+                    c.card_number,
+                    c.account_id,
+                    c.customer_id,
+                    a.account_status,
+                    a.account_type,
+                    a.current_balance,
+                    a.available_credit,
+                    cust.first_name,
+                    cust.last_name,
+                    cust.fico_credit_score,
+                    c.card_status,
+                    c.expiry_date
+                FROM cards c
+                INNER JOIN accounts a ON c.account_id = a.account_id
+                INNER JOIN customers cust ON c.customer_id = cust.customer_id;
+            </sql>
+        </rollback>
+    </changeSet>
+
     <!--
     =============================================================================
     DATA LOADING VALIDATION AND MATERIALIZED VIEW REFRESH
