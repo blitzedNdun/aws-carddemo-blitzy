@@ -421,7 +421,7 @@ management:
         enabled: true
       group:
         readiness:
-          include: "readinessState"
+          include: "readinessState,db"           # Exclude redis from readiness group in test profile
         liveness:
           include: "livenessState,ping"
     
