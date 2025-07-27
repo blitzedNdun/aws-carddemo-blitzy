@@ -23,19 +23,12 @@ spring:
     redis:
       repositories:
         enabled: false
-      # Disable Redis auto-configuration completely
-      host: 
-      port: 
-      timeout: 
-      url: 
+      # Redis disabled for testing - no connection properties needed 
   
   # Disable Redis session for tests
   session:
     store-type: none
-    redis:
-      flush-mode: on_save
-      namespace: 
-      cleanup-cron: 
+    # Redis session disabled for testing 
 
   # Completely disable Spring Cloud Gateway for tests
   cloud:
@@ -51,8 +44,12 @@ spring:
   # Disable all Redis auto-configuration
   autoconfigure:
     exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.data.redis.RedisHealthContributorAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.data.redis.RedisReactiveHealthContributorAutoConfiguration
+      - org.springframework.session.boot.autoconfigure.SessionAutoConfiguration
 
 # Disable Eureka for tests
 eureka:
