@@ -1,7 +1,7 @@
 package com.carddemo.account.repository;
 
-import com.carddemo.common.entity.Customer;
-import com.carddemo.common.entity.Account;
+import com.carddemo.account.entity.Customer;
+import com.carddemo.account.entity.Account;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
