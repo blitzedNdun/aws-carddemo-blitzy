@@ -191,7 +191,7 @@ public class CustomerRepositoryTest {
         Account account1 = new Account();
         account1.setAccountId("12345678901");
         account1.setCustomer(savedCustomer1);
-        account1.setActiveStatus(AccountStatus.ACTIVE.name());
+        account1.setActiveStatus(AccountStatus.ACTIVE.isActive());
         account1.setCurrentBalance(new BigDecimal("1500.75"));
         account1.setCreditLimit(new BigDecimal("5000.00"));
         account1.setCashCreditLimit(new BigDecimal("1000.00"));
@@ -204,7 +204,7 @@ public class CustomerRepositoryTest {
         Account account2 = new Account();
         account2.setAccountId("98765432109");
         account2.setCustomer(savedCustomer1);
-        account2.setActiveStatus(AccountStatus.ACTIVE.name());
+        account2.setActiveStatus(AccountStatus.ACTIVE.isActive());
         account2.setCurrentBalance(new BigDecimal("750.25"));
         account2.setCreditLimit(new BigDecimal("3000.00"));
         account2.setCashCreditLimit(new BigDecimal("500.00"));
