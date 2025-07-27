@@ -1,0 +1,743 @@
+# Testcontainers Configuration for CardDemo Integration Testing
+# Supports PostgreSQL 15+ and Redis 7+ containerized testing environments
+# Optimized for parallel execution with resource allocation constraints
+# Maintains memory usage within 10% increase limit per Section 6.6 requirements
+
+# PostgreSQL Test Container Configuration
+# Replicates production PostgreSQL environment with SERIALIZABLE isolation
+# Supports DECIMAL precision, partitioning, and cross-schema relationships
+postgresql:
+  container:
+    # Docker image configuration aligned with Section 8.3 containerization strategy
+    image: "postgres:15-alpine"
+    tag: "15.8-alpine"
+    
+    # Container resource allocation within 10% memory constraint compliance
+    # Base PostgreSQL allocation: ~256MB, constrained to ~280MB maximum
+    resources:
+      memory: "280m"
+      cpus: "0.5"
+      shm_size: "64m"  # Shared memory for PostgreSQL operations
+    
+    # Network isolation for parallel test execution
+    # Ensures test independence across concurrent container instances
+    network:
+      mode: "isolated"
+      name_prefix: "carddemo-test"
+      driver: "bridge"
+      enable_ipv6: false
+    
+    # Container lifecycle management
+    lifecycle:
+      startup_timeout: "60s"
+      shutdown_timeout: "30s"
+      health_check_interval: "10s"
+      health_check_retries: 5
+      restart_policy: "no"
+    
+    # Volume mounts for test data persistence and configuration
+    volumes:
+      - type: "tmpfs"
+        target: "/var/lib/postgresql/data"
+        tmpfs_options:
+          size: "128m"
+          mode: "1777"
+      - type: "bind"
+        source: "src/test/resources/testdata"
+        target: "/docker-entrypoint-initdb.d"
+        read_only: true
+    
+    # Port configuration with dynamic allocation for parallel tests
+    ports:
+      expose:
+        - 5432
+      publish_all: false  # Use dynamic port allocation
+    
+    # PostgreSQL-specific environment configuration
+    environment:
+      POSTGRES_DB: "carddemo_test"
+      POSTGRES_USER: "carddemo_test_user"
+      POSTGRES_PASSWORD: "test_password_123"
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+      PGTZ: "UTC"
+      
+      # PostgreSQL performance optimization for testing
+      POSTGRES_SHARED_BUFFERS: "32MB"
+      POSTGRES_EFFECTIVE_CACHE_SIZE: "128MB"
+      POSTGRES_WORK_MEM: "4MB"
+      POSTGRES_MAINTENANCE_WORK_MEM: "16MB"
+      POSTGRES_MAX_CONNECTIONS: "50"
+      
+      # Enable required PostgreSQL extensions
+      POSTGRES_EXTENSIONS: "pgaudit,pg_stat_statements"
+    
+    # Database initialization configuration
+    # Supports Liquibase migration testing and schema validation
+    initialization:
+      # Schema creation for microservices isolation
+      scripts:
+        - "01-create-schemas.sql"
+        - "02-create-extensions.sql"
+        - "03-setup-users.sql"
+      
+      # Test data loading from ASCII sources
+      test_data:
+        enabled: true
+        sources:
+          - "app/data/ASCII/acctdata.txt"
+          - "app/data/ASCII/custdata.txt"
+        batch_size: 1000
+        parallel_loading: true
+    
+    # Connection configuration for Spring Boot integration
+    connection:
+      # HikariCP-compatible connection properties
+      url_template: "jdbc:postgresql://localhost:${DYNAMIC_PORT}/carddemo_test"
+      driver_class: "org.postgresql.Driver"
+      
+      # Connection pool settings aligned with production values
+      maximum_pool_size: 20  # Reduced from production 50 for test environment
+      minimum_idle: 5
+      connection_timeout: "30000ms"
+      idle_timeout: "300000ms"
+      max_lifetime: "900000ms"
+      leak_detection_threshold: "30000ms"
+      
+      # Transaction isolation configuration
+      # SERIALIZABLE level required for VSAM equivalent behavior
+      isolation_level: "SERIALIZABLE"
+      auto_commit: false
+      read_only: false
+    
+    # Performance monitoring and validation
+    monitoring:
+      enabled: true
+      metrics:
+        - "connection_count"
+        - "active_connections"
+        - "query_execution_time"
+        - "memory_usage"
+      
+      # Performance thresholds aligned with < 200ms response time requirement
+      thresholds:
+        max_response_time: "50ms"  # Database portion of 200ms total
+        max_connection_wait: "10ms"
+        memory_usage_limit: "280MB"
+    
+    # Container cleanup configuration
+    cleanup:
+      remove_on_exit: true
+      remove_volumes: true
+      force_remove: true
+      remove_networks: true
+
+# Redis Test Container Configuration  
+# Supports Spring Session management and application caching
+# Configured for distributed session storage equivalent to CICS terminal management
+redis:
+  container:
+    # Docker image configuration for Redis 7+
+    image: "redis:7-alpine"
+    tag: "7.4-alpine"
+    
+    # Resource allocation optimized for session and cache management
+    # Memory constraint: ~64MB base allocation, ~70MB maximum
+    resources:
+      memory: "70m"
+      cpus: "0.25"
+    
+    # Network isolation matching PostgreSQL configuration
+    network:
+      mode: "isolated"
+      name_prefix: "carddemo-test"
+      driver: "bridge"
+      enable_ipv6: false
+    
+    # Container lifecycle management
+    lifecycle:
+      startup_timeout: "30s"
+      shutdown_timeout: "15s"
+      health_check_interval: "5s"
+      health_check_retries: 3
+      restart_policy: "no"
+    
+    # Volume configuration for Redis persistence testing
+    volumes:
+      - type: "tmpfs"
+        target: "/data"
+        tmpfs_options:
+          size: "32m"
+          mode: "1777"
+    
+    # Port configuration with dynamic allocation
+    ports:
+      expose:
+        - 6379
+      publish_all: false
+    
+    # Redis-specific configuration environment
+    environment:
+      REDIS_PASSWORD: "test_redis_password"
+      REDIS_DATABASES: "16"
+      REDIS_MAXMEMORY: "64mb"
+      REDIS_MAXMEMORY_POLICY: "allkeys-lru"
+    
+    # Redis configuration for Spring Session and caching
+    configuration:
+      # Session storage configuration (Spring Session Data Redis)
+      session:
+        timeout: "1800s"  # 30 minutes session timeout
+        key_prefix: "carddemo:session:"
+        flush_mode: "immediate"
+        save_mode: "always"
+      
+      # Application cache configuration (Spring Cache abstraction)
+      cache:
+        default_ttl: "300s"  # 5 minutes default TTL
+        key_prefix: "carddemo:cache:"
+        
+        # Cache configurations for specific data types
+        configurations:
+          - name: "reference-data"
+            ttl: "86400s"  # 24 hours for reference tables
+            key_pattern: "ref:*"
+          
+          - name: "account-data"
+            ttl: "300s"  # 5 minutes for account data
+            key_pattern: "account:*"
+          
+          - name: "session-data"
+            ttl: "1800s"  # 30 minutes for session data
+            key_pattern: "session:*"
+      
+      # Redis cluster simulation for distributed caching tests
+      cluster:
+        enabled: false  # Single instance for integration tests
+        nodes: 1
+        replicas: 0
+    
+    # Connection configuration for Spring Boot Redis integration
+    connection:
+      # Lettuce connection pool configuration
+      url_template: "redis://localhost:${DYNAMIC_PORT}"
+      
+      # Connection pool settings for optimal performance
+      pool:
+        max_active: 10
+        max_idle: 5
+        min_idle: 2
+        max_wait: "5000ms"
+      
+      # Connection timeout configuration
+      timeout: "2000ms"
+      connect_timeout: "5000ms"
+      command_timeout: "2000ms"
+    
+    # Performance monitoring for Redis operations
+    monitoring:
+      enabled: true
+      metrics:
+        - "memory_usage"
+        - "keyspace_hits"
+        - "keyspace_misses"
+        - "connected_clients"
+      
+      # Performance thresholds for sub-5ms session retrieval
+      thresholds:
+        max_response_time: "5ms"
+        memory_usage_limit: "70MB"
+        hit_ratio_minimum: "0.8"
+    
+    # Container cleanup configuration
+    cleanup:
+      remove_on_exit: true
+      remove_volumes: true
+      force_remove: true
+      remove_networks: true
+
+# Parallel Test Execution Configuration
+# Enables isolated container instances for concurrent test execution
+# Prevents cross-test interference per Section 6.6.5.4 framework requirements
+parallel_execution:
+  enabled: true
+  
+  # Container orchestration for parallel test isolation
+  orchestration:
+    # Maximum concurrent container instances
+    max_concurrent_containers: 5
+    
+    # Container instance isolation strategy
+    isolation:
+      network_per_test: true
+      volume_per_test: true
+      port_allocation: "dynamic"
+      container_naming: "test-class-based"
+    
+    # Resource allocation across parallel instances
+    resource_management:
+      # Total memory allocation across all containers
+      total_memory_limit: "2GB"  # 5 containers × (280MB + 70MB) × 1.15 buffer
+      
+      # CPU allocation strategy
+      cpu_allocation: "shared"
+      cpu_shares: 1024
+      
+      # Disk space allocation
+      disk_space_limit: "1GB"
+      temp_space_cleanup: true
+  
+  # Test coordination and synchronization
+  coordination:
+    # Container startup coordination
+    startup_strategy: "sequential_batched"
+    batch_size: 2
+    startup_delay: "5s"
+    
+    # Container shutdown coordination
+    shutdown_strategy: "parallel"
+    shutdown_timeout: "60s"
+    force_shutdown_timeout: "90s"
+  
+  # Network isolation configuration
+  networking:
+    # Isolated networks per test class
+    network_per_test_class: true
+    network_driver: "bridge"
+    
+    # Port range allocation for parallel tests
+    port_ranges:
+      postgresql: "15432-15437"  # 5 available ports
+      redis: "16379-16384"       # 6 available ports
+    
+    # DNS resolution for container discovery
+    dns:
+      enable_custom_dns: true
+      search_domains: ["test.carddemo.local"]
+
+# Container Resource Optimization
+# Ensures compliance with 10% memory increase constraint
+# Optimizes resource utilization for cost-effective testing
+resource_optimization:
+  # Memory management configuration
+  memory:
+    # Total baseline allocation (production equivalent)
+    baseline_allocation: "1.5GB"
+    
+    # Constraint compliance (10% increase maximum)
+    maximum_allocation: "1.65GB"  # 1.5GB × 1.10
+    
+    # Memory monitoring and enforcement
+    monitoring:
+      enabled: true
+      check_interval: "30s"
+      alert_threshold: "90%"
+      enforcement: "container_restart"
+    
+    # Memory optimization strategies
+    optimization:
+      enable_swap: false
+      oom_kill_disable: false
+      memory_swappiness: 0
+      
+      # Container memory limits
+      postgres_limit: "280m"
+      redis_limit: "70m"
+      overhead_buffer: "50m"
+  
+  # CPU resource management
+  cpu:
+    # CPU allocation strategy
+    allocation_strategy: "weighted_shares"
+    
+    # Container CPU weights
+    weights:
+      postgresql: 70  # Higher weight for database operations
+      redis: 30       # Lower weight for cache operations
+    
+    # CPU throttling configuration
+    throttling:
+      enabled: false  # Disabled for test performance
+      cpu_period: "100000"
+      cpu_quota: "0"
+  
+  # Storage optimization
+  storage:
+    # Temporary storage for containers
+    temp_storage_limit: "512m"
+    
+    # Storage cleanup policies
+    cleanup:
+      auto_cleanup: true
+      cleanup_interval: "24h"
+      retention_policy: "test_completion"
+
+# Test Environment Integration
+# Integrates with Spring Boot test configuration and JUnit 5 framework
+# Supports comprehensive integration testing per Section 6.6.2.1 requirements
+integration:
+  # Spring Boot Test integration
+  spring_boot:
+    # Test profile activation
+    profiles:
+      active: ["test", "testcontainers"]
+      additional: ["integration-test"]
+    
+    # Dynamic property injection
+    dynamic_properties:
+      # PostgreSQL connection properties
+      postgresql:
+        - "spring.datasource.url"
+        - "spring.datasource.username" 
+        - "spring.datasource.password"
+        - "spring.jpa.hibernate.ddl-auto"
+        - "spring.liquibase.change-log"
+      
+      # Redis connection properties
+      redis:
+        - "spring.redis.host"
+        - "spring.redis.port"
+        - "spring.redis.password"
+        - "spring.session.store-type"
+        - "spring.cache.type"
+    
+    # Test context configuration
+    context:
+      cache_contexts: true
+      reload_context: false
+      dirty_context: "test_class"
+  
+  # JUnit 5 integration configuration
+  junit:
+    # Test execution configuration
+    execution:
+      parallel_enabled: true
+      parallel_strategy: "dynamic"
+      parallel_config:
+        fixed_pool_size: 5
+        custom_strategy: "test_class_parallel"
+    
+    # Test lifecycle management
+    lifecycle:
+      # Container lifecycle tied to test execution
+      container_scope: "test_class"
+      cleanup_mode: "after_test_class"
+      
+      # Test data management
+      test_data:
+        reset_between_tests: true
+        isolation_level: "test_method"
+    
+    # Test annotations support
+    annotations:
+      - "@Testcontainers"
+      - "@SpringBootTest"
+      - "@DataJpaTest"
+      - "@DataRedisTest"
+      - "@IntegrationTest"
+
+# CI/CD Pipeline Integration
+# Optimized for automated testing in containerized build environments
+# Supports Docker-in-Docker execution per Section 8.5 CI/CD pipeline
+ci_cd:
+  # Docker-in-Docker configuration
+  docker_in_docker:
+    enabled: true
+    
+    # Docker daemon configuration
+    daemon:
+      host: "unix:///var/run/docker.sock"
+      api_version: "1.41"
+      registry_auth: false
+    
+    # Container registry configuration
+    registry:
+      pull_policy: "if_not_present"
+      authentication: false
+      timeout: "300s"
+  
+  # Build environment optimization
+  build_environment:
+    # Resource constraints for CI environment
+    resources:
+      memory_limit: "4GB"
+      cpu_limit: "2"
+      disk_limit: "10GB"
+    
+    # Build cache optimization
+    cache:
+      enable_layer_caching: true
+      cache_key_strategy: "test_configuration_hash"
+      cache_retention: "7d"
+  
+  # Test execution configuration
+  test_execution:
+    # Timeout configuration for CI environments
+    timeouts:
+      container_startup: "120s"
+      test_execution: "1800s"  # 30 minutes maximum
+      cleanup: "180s"
+    
+    # Retry configuration for flaky tests
+    retry:
+      enabled: true
+      max_attempts: 3
+      retry_delay: "30s"
+      retry_on: ["container_startup_failure", "network_timeout"]
+    
+    # Artifact collection
+    artifacts:
+      collect_logs: true
+      collect_metrics: true
+      retention: "30d"
+
+# Validation and Health Checks
+# Comprehensive health validation ensuring container readiness
+# Validates database connectivity and Redis availability
+validation:
+  # Container health checks
+  health_checks:
+    # PostgreSQL health validation
+    postgresql:
+      enabled: true
+      check_type: "sql_query"
+      query: "SELECT 1"
+      timeout: "10s"
+      interval: "5s"
+      retries: 5
+      
+      # Additional PostgreSQL validations
+      validations:
+        - type: "connection_count"
+          query: "SELECT count(*) FROM pg_stat_activity"
+          expected_range: "1-50"
+        
+        - type: "database_exists"
+          query: "SELECT 1 FROM pg_database WHERE datname = 'carddemo_test'"
+          expected_result: "1"
+        
+        - type: "extensions_loaded"
+          query: "SELECT count(*) FROM pg_extension WHERE extname IN ('pgaudit')"
+          expected_minimum: "1"
+    
+    # Redis health validation
+    redis:
+      enabled: true
+      check_type: "ping"
+      timeout: "5s"
+      interval: "3s"
+      retries: 3
+      
+      # Additional Redis validations
+      validations:
+        - type: "memory_usage"
+          command: "INFO memory"
+          threshold: "70MB"
+        
+        - type: "keyspace_access"
+          command: "SET test:key test:value"
+          expected_result: "OK"
+        
+        - type: "session_configuration"
+          command: "CONFIG GET maxmemory-policy"
+          expected_value: "allkeys-lru"
+  
+  # Performance validation
+  performance:
+    # Response time validation
+    response_times:
+      postgresql_query: "50ms"
+      redis_operation: "5ms"
+      container_startup: "60s"
+    
+    # Resource utilization validation
+    resource_usage:
+      memory_utilization: "85%"
+      cpu_utilization: "80%"
+      network_latency: "1ms"
+    
+    # Throughput validation
+    throughput:
+      postgresql_connections: "20/s"
+      redis_operations: "1000/s"
+
+# Logging and Monitoring Configuration
+# Comprehensive logging for test debugging and performance analysis
+# Integrates with Spring Boot Actuator and test framework logging
+logging:
+  # Container logging configuration
+  containers:
+    # Log collection strategy
+    collection:
+      enabled: true
+      format: "json"
+      timestamp: true
+      
+    # Log levels per container
+    levels:
+      postgresql: "INFO"
+      redis: "NOTICE"
+      testcontainers: "DEBUG"
+    
+    # Log rotation and retention
+    rotation:
+      max_size: "10MB"
+      max_files: 3
+      compress: true
+  
+  # Application logging integration
+  application:
+    # Spring Boot test logging
+    spring_boot:
+      level: "INFO"
+      pattern: "%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n"
+      
+      # Specific logger configurations
+      loggers:
+        - name: "com.carddemo"
+          level: "DEBUG"
+        - name: "org.springframework.test"
+          level: "INFO"
+        - name: "org.testcontainers"
+          level: "DEBUG"
+        - name: "com.zaxxer.hikari"
+          level: "INFO"
+    
+    # Performance logging
+    performance:
+      enabled: true
+      metrics:
+        - "container_startup_time"
+        - "test_execution_time"
+        - "database_query_time"
+        - "redis_operation_time"
+      
+      # Performance alerting
+      alerts:
+        - metric: "database_query_time"
+          threshold: "50ms"
+          action: "log_warning"
+        
+        - metric: "container_startup_time"
+          threshold: "60s"
+          action: "log_error"
+
+# Security Configuration
+# Security controls for test environment container isolation
+# Ensures test data protection and container security
+security:
+  # Container security configuration
+  container_security:
+    # Security context configuration
+    security_context:
+      run_as_non_root: true
+      run_as_user: 1001
+      run_as_group: 1001
+      fs_group: 1001
+      
+      # Security capabilities
+      capabilities:
+        drop: ["ALL"]
+        add: ["CHOWN", "SETGID", "SETUID"]
+      
+      # Security profiles
+      seccomp_profile: "runtime/default"
+      apparmor_profile: "unconfined"
+    
+    # Network security
+    network_security:
+      # Network policies
+      isolation: "strict"
+      ingress_policy: "deny_all"
+      egress_policy: "allow_dns_only"
+      
+      # Port security
+      exposed_ports: "minimal"
+      port_scanning_protection: true
+  
+  # Data security configuration
+  data_security:
+    # Test data protection
+    test_data:
+      encryption_at_rest: false  # Not required for test data
+      encryption_in_transit: false
+      
+      # Data masking for sensitive fields
+      masking:
+        enabled: true
+        fields: ["ssn", "card_number", "password"]
+        strategy: "random_replacement"
+    
+    # Credential management
+    credentials:
+      # Test credentials (non-production)
+      rotation: false
+      complexity: "basic"
+      storage: "environment_variables"
+      
+      # Secret injection
+      secret_management:
+        provider: "environment"
+        auto_generation: true
+        
+# Troubleshooting and Debugging Configuration
+# Comprehensive debugging support for test failures and performance issues
+troubleshooting:
+  # Debug mode configuration
+  debug:
+    enabled: false  # Enable only when needed
+    
+    # Debug features
+    features:
+      container_inspection: true
+      network_inspection: true
+      volume_inspection: true
+      log_streaming: true
+    
+    # Debug artifacts collection
+    artifacts:
+      collect_on_failure: true
+      include_container_logs: true
+      include_system_metrics: true
+      include_network_config: true
+  
+  # Performance profiling
+  profiling:
+    enabled: false  # Enable for performance analysis
+    
+    # Profiling targets
+    targets:
+      - "database_queries"
+      - "redis_operations"
+      - "container_lifecycle"
+      - "network_latency"
+    
+    # Profiling output
+    output:
+      format: "json"
+      include_timeline: true
+      include_resource_usage: true
+  
+  # Common issue resolution
+  issue_resolution:
+    # Automatic issue detection
+    auto_detection:
+      enabled: true
+      checks:
+        - "container_startup_failure"
+        - "port_conflict"
+        - "memory_exhaustion"
+        - "network_connectivity"
+    
+    # Resolution strategies
+    resolution_strategies:
+      - issue: "port_conflict"
+        action: "retry_with_different_port"
+        max_attempts: 5
+      
+      - issue: "memory_exhaustion"
+        action: "restart_with_reduced_memory"
+        memory_reduction: "20%"
+      
+      - issue: "container_startup_failure"
+        action: "clean_and_retry"
+        cleanup_scope: "full"

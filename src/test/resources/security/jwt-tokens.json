@@ -1,0 +1,720 @@
+{
+  "description": "Comprehensive JWT token test dataset for CardDemo Spring Security authentication and authorization testing. This dataset provides complete test coverage for JWT token validation, role-based access control testing, security boundary validation, and comprehensive authentication flow testing. Created for integration with Spring Security JWT authentication framework, JwtTokenUtil validation, and distributed microservice architecture with session correlation support.",
+  "metadata": {
+    "version": "1.0.0",
+    "created_date": "2024-07-27",
+    "purpose": "JWT authentication testing and security validation",
+    "jwt_algorithm": "HS256",
+    "token_expiration": "30_minutes_default",
+    "refresh_token_expiration": "7_days",
+    "test_framework_compatibility": [
+      "Spring Security 6.x",
+      "JWT Authentication",
+      "JwtTokenUtil validation",
+      "OAuth2 Resource Server",
+      "Spring Boot Test",
+      "MockMvc integration testing"
+    ],
+    "security_compliance": [
+      "PCI DSS token validation",
+      "SOX audit trail support",
+      "GDPR privacy-preserving logging"
+    ]
+  },
+
+  "JWTTokenTestDataset": {
+    "valid_admin_token": {
+      "description": "Valid JWT token for admin user TESTADM1 with full administrative privileges including user management, system configuration, and all user functions inheritance.",
+      "user_id": "TESTADM1",
+      "user_type": "A",
+      "roles": ["ROLE_ADMIN", "ROLE_USER"],
+      "jwt_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJURVNUQURNMSIsInVzZXJUeXBlIjoiQSIsInJvbGUiOiJST0xFX0FETUlOIiwic2Vzc2lvbklkIjoiQ0FSRERFTU9fU0VTU0lPTl9hZG1pbi10ZXN0LXNlc3Npb24tMDAxIiwiZmlyc3ROYW1lIjoiU3lzdGVtIiwibGFzdE5hbWUiOiJBZG1pbmlzdHJhdG9yIiwiaXNzIjoiQ2FyZERlbW8tQXV0aC1TZXJ2aWNlIiwiaWF0IjoxNzIyMTA0NDAwLCJleHAiOjE3MjIxMDYyMDB9.kZ8r5VJ2K9Y8p3NfWqMbU6vDx7EcQtR2mA4sH1pL9zA",
+      "header": {
+        "typ": "JWT",
+        "alg": "HS256"
+      },
+      "payload": {
+        "sub": "TESTADM1",
+        "userType": "A",
+        "role": "ROLE_ADMIN",
+        "sessionId": "CARDDEMO_SESSION_admin-test-session-001",
+        "firstName": "System",
+        "lastName": "Administrator",
+        "iss": "CardDemo-Auth-Service",
+        "iat": 1722104400,
+        "exp": 1722106200
+      },
+      "signature": "kZ8r5VJ2K9Y8p3NfWqMbU6vDx7EcQtR2mA4sH1pL9zA",
+      "token_validation_expected": true,
+      "expiration_status": "valid",
+      "test_scenarios": [
+        "Admin authentication validation",
+        "Role-based access control testing",
+        "Administrative endpoint access",
+        "User management operations",
+        "System configuration access",
+        "Audit log access verification"
+      ],
+      "expected_authorities": ["ROLE_ADMIN", "ROLE_USER"],
+      "session_correlation": {
+        "session_id": "admin-test-session-001",
+        "correlation_id": "admin-auth-correlation-001",
+        "redis_key": "CARDDEMO_SESSION_admin-test-session-001"
+      }
+    },
+
+    "valid_user_token": {
+      "description": "Valid JWT token for regular user TESTUSER with standard user privileges including account operations, transaction processing, and card management access.",
+      "user_id": "TESTUSER",
+      "user_type": "U",
+      "roles": ["ROLE_USER"],
+      "jwt_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJURVNUVVNFUiIsInVzZXJUeXBlIjoiVSIsInJvbGUiOiJST0xFX1VTRVIiLCJzZXNzaW9uSWQiOiJDQVJEREVNT19TRVNTSU9OX3VzZXItdGVzdC1zZXNzaW9uLTAwMSIsImZpcnN0TmFtZSI6IlN0YW5kYXJkIiwibGFzdE5hbWUiOiJVc2VyIiwiaXNzIjoiQ2FyZERlbW8tQXV0aC1TZXJ2aWNlIiwiaWF0IjoxNzIyMTA0NDAwLCJleHAiOjE3MjIxMDYyMDB9.mW3t8PL5M2X6k1AgNrFhV4xEy9DsJuK7nC8oQ5tN6qB",
+      "header": {
+        "typ": "JWT",
+        "alg": "HS256"
+      },
+      "payload": {
+        "sub": "TESTUSER",
+        "userType": "U",
+        "role": "ROLE_USER",
+        "sessionId": "CARDDEMO_SESSION_user-test-session-001",
+        "firstName": "Standard",
+        "lastName": "User",
+        "iss": "CardDemo-Auth-Service",
+        "iat": 1722104400,
+        "exp": 1722106200
+      },
+      "signature": "mW3t8PL5M2X6k1AgNrFhV4xEy9DsJuK7nC8oQ5tN6qB",
+      "token_validation_expected": true,
+      "expiration_status": "valid",
+      "test_scenarios": [
+        "User authentication validation",
+        "Account view operations",
+        "Transaction processing access",
+        "Card management functions",
+        "Admin function restriction validation",
+        "Data access boundary enforcement"
+      ],
+      "expected_authorities": ["ROLE_USER"],
+      "session_correlation": {
+        "session_id": "user-test-session-001",
+        "correlation_id": "user-auth-correlation-001",
+        "redis_key": "CARDDEMO_SESSION_user-test-session-001"
+      }
+    },
+
+    "expired_token": {
+      "description": "Expired JWT token for testing token expiration validation and automatic cleanup. Token expired on 2024-01-15 to ensure consistent test results.",
+      "user_id": "TESTUSER",
+      "user_type": "U",
+      "roles": ["ROLE_USER"],
+      "jwt_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJURVNUVVNFUiIsInVzZXJUeXBlIjoiVSIsInJvbGUiOiJST0xFX1VTRVIiLCJzZXNzaW9uSWQiOiJDQVJEREVNT19TRVNTSU9OX2V4cGlyZWQtdGVzdC1zZXNzaW9uLTAwMSIsImZpcnN0TmFtZSI6IlN0YW5kYXJkIiwibGFzdE5hbWUiOiJVc2VyIiwiaXNzIjoiQ2FyZERlbW8tQXV0aC1TZXJ2aWNlIiwiaWF0IjoxNzA1MzEyODAwLCJleHAiOjE3MDUzMTQ2MDB9.pX7v2QL9H8T3m5BgOsChW9yDx6FtMnK4oE2rF8qO7vA",
+      "header": {
+        "typ": "JWT",
+        "alg": "HS256"
+      },
+      "payload": {
+        "sub": "TESTUSER",
+        "userType": "U",
+        "role": "ROLE_USER",
+        "sessionId": "CARDDEMO_SESSION_expired-test-session-001",
+        "firstName": "Standard",
+        "lastName": "User",
+        "iss": "CardDemo-Auth-Service",
+        "iat": 1705312800,
+        "exp": 1705314600
+      },
+      "signature": "pX7v2QL9H8T3m5BgOsChW9yDx6FtMnK4oE2rF8qO7vA",
+      "token_validation_expected": false,
+      "expiration_status": "expired",
+      "expiration_date": "2024-01-15T14:30:00Z",
+      "test_scenarios": [
+        "Token expiration validation",
+        "Expired token rejection",
+        "Authentication failure handling",
+        "Token cleanup verification",
+        "Security boundary enforcement",
+        "Error message validation"
+      ],
+      "expected_error": "ExpiredJwtException",
+      "expected_response_code": 401,
+      "expected_error_message": "JWT token has expired"
+    },
+
+    "invalid_signature_token": {
+      "description": "JWT token with invalid signature for testing signature validation and tamper detection. Token structure is valid but signature is corrupted.",
+      "user_id": "TESTUSER",
+      "user_type": "U",
+      "roles": ["ROLE_USER"],
+      "jwt_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJURVNUVVNFUiIsInVzZXJUeXBlIjoiVSIsInJvbGUiOiJST0xFX1VTRVIiLCJzZXNzaW9uSWQiOiJDQVJEREVNT19TRVNTSU9OX2ludmFsaWQtc2lnbmF0dXJlLXRlc3QtMDAxIiwiZmlyc3ROYW1lIjoiU3RhbmRhcmQiLCJsYXN0TmFtZSI6IlVzZXIiLCJpc3MiOiJDYXJkRGVtby1BdXRoLVNlcnZpY2UiLCJpYXQiOjE3MjIxMDQ0MDAsImV4cCI6MTcyMjEwNjIwMH0.INVALID_SIGNATURE_FOR_TESTING_PURPOSES_ONLY",
+      "header": {
+        "typ": "JWT",
+        "alg": "HS256"
+      },
+      "payload": {
+        "sub": "TESTUSER",
+        "userType": "U",
+        "role": "ROLE_USER",
+        "sessionId": "CARDDEMO_SESSION_invalid-signature-test-001",
+        "firstName": "Standard",
+        "lastName": "User",
+        "iss": "CardDemo-Auth-Service",
+        "iat": 1722104400,
+        "exp": 1722106200
+      },
+      "signature": "INVALID_SIGNATURE_FOR_TESTING_PURPOSES_ONLY",
+      "token_validation_expected": false,
+      "expiration_status": "valid_structure_invalid_signature",
+      "test_scenarios": [
+        "Signature validation testing",
+        "Token tampering detection",
+        "Security boundary enforcement",
+        "Cryptographic validation",
+        "Error handling verification",
+        "Audit logging validation"
+      ],
+      "expected_error": "SignatureException",
+      "expected_response_code": 401,
+      "expected_error_message": "JWT signature does not match locally computed signature"
+    },
+
+    "malformed_token": {
+      "description": "Malformed JWT token for testing token structure validation and error handling. Token is missing required segments and has invalid base64 encoding.",
+      "jwt_token": "MALFORMED.TOKEN.STRUCTURE.INVALID.BASE64.ENCODING",
+      "token_validation_expected": false,
+      "expiration_status": "malformed",
+      "test_scenarios": [
+        "Malformed token handling",
+        "Token structure validation",
+        "Base64 decoding error handling",
+        "Input validation testing",
+        "Error response consistency",
+        "Security robustness testing"
+      ],
+      "expected_error": "MalformedJwtException",
+      "expected_response_code": 401,
+      "expected_error_message": "JWT token is malformed or has invalid structure"
+    },
+
+    "refresh_token_samples": {
+      "admin_refresh_token": {
+        "description": "Long-lived refresh token for admin user session management and token renewal without re-authentication.",
+        "user_id": "TESTADM1",
+        "token_type": "refresh",
+        "jwt_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJURVNUQURNMSIsInNlc3Npb25JZCI6IkNBUkRERU1PX1NFU1NJT05fYWRtaW4tcmVmcmVzaC10ZXN0LTAwMSIsInRva2VuVHlwZSI6InJlZnJlc2giLCJpc3MiOiJDYXJkRGVtby1BdXRoLVNlcnZpY2UiLCJpYXQiOjE3MjIxMDQ0MDAsImV4cCI6MTcyMjcwOTIwMH0.qR5y8WN7L3K2o9TfUrMcZ8wFx4HsRoK6pD7tQ2nM8vB",
+        "header": {
+          "typ": "JWT",
+          "alg": "HS256"
+        },
+        "payload": {
+          "sub": "TESTADM1",
+          "sessionId": "CARDDEMO_SESSION_admin-refresh-test-001",
+          "tokenType": "refresh",
+          "iss": "CardDemo-Auth-Service",
+          "iat": 1722104400,
+          "exp": 1722709200
+        },
+        "signature": "qR5y8WN7L3K2o9TfUrMcZ8wFx4HsRoK6pD7tQ2nM8vB",
+        "token_validation_expected": true,
+        "expiration_status": "valid_long_lived",
+        "expiration_duration": "7_days",
+        "test_scenarios": [
+          "Refresh token validation",
+          "Token renewal process",
+          "Extended session management",
+          "Stateless authentication persistence",
+          "Session correlation validation"
+        ]
+      },
+      "user_refresh_token": {
+        "description": "Long-lived refresh token for regular user session management and seamless token renewal.",
+        "user_id": "TESTUSER",
+        "token_type": "refresh",
+        "jwt_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJURVNUVVNFUiIsInNlc3Npb25JZCI6IkNBUkRERU1PX1NFU1NJT05fdXNlci1yZWZyZXNoLXRlc3QtMDAxIiwidG9rZW5UeXBlIjoicmVmcmVzaCIsImlzcyI6IkNhcmREZW1vLUF1dGgtU2VydmljZSIsImlhdCI6MTcyMjEwNDQwMCwiZXhwIjoxNzIyNzA5MjAwfQ.tS9z6XP3M8L4p2UgVsNdA7yGz5ItSpL8qF4uR7oN5wC",
+        "header": {
+          "typ": "JWT",
+          "alg": "HS256"
+        },
+        "payload": {
+          "sub": "TESTUSER",
+          "sessionId": "CARDDEMO_SESSION_user-refresh-test-001",
+          "tokenType": "refresh",
+          "iss": "CardDemo-Auth-Service",
+          "iat": 1722104400,
+          "exp": 1722709200
+        },
+        "signature": "tS9z6XP3M8L4p2UgVsNdA7yGz5ItSpL8qF4uR7oN5wC",
+        "token_validation_expected": true,
+        "expiration_status": "valid_long_lived",
+        "expiration_duration": "7_days",
+        "test_scenarios": [
+          "User refresh token validation",
+          "Session persistence testing",
+          "Token renewal workflow",
+          "Long-lived token security",
+          "Session correlation verification"
+        ]
+      }
+    },
+
+    "role_based_jwt_claims": {
+      "admin_role_claims": {
+        "description": "Complete JWT claims structure for admin users with elevated privileges and role inheritance.",
+        "claims_structure": {
+          "sub": "TESTADM1",
+          "userType": "A",
+          "role": "ROLE_ADMIN",
+          "sessionId": "CARDDEMO_SESSION_admin-claims-test-001",
+          "firstName": "System",
+          "lastName": "Administrator",
+          "iss": "CardDemo-Auth-Service",
+          "iat": 1722104400,
+          "exp": 1722106200
+        },
+        "spring_security_authorities": ["ROLE_ADMIN", "ROLE_USER"],
+        "role_hierarchy": {
+          "primary_role": "ROLE_ADMIN",
+          "inherited_roles": ["ROLE_USER"],
+          "effective_permissions": [
+            "USER_MANAGEMENT_CREATE",
+            "USER_MANAGEMENT_READ", 
+            "USER_MANAGEMENT_UPDATE",
+            "USER_MANAGEMENT_DELETE",
+            "SYSTEM_ADMINISTRATION",
+            "AUDIT_LOG_ACCESS",
+            "ALL_USER_FUNCTIONS"
+          ]
+        },
+        "test_validation": {
+          "role_extraction": "ROLE_ADMIN",
+          "user_type_extraction": "A",
+          "session_id_extraction": "admin-claims-test-001",
+          "name_extraction": "System Administrator",
+          "authority_mapping": ["ROLE_ADMIN", "ROLE_USER"]
+        }
+      },
+      "user_role_claims": {
+        "description": "Complete JWT claims structure for regular users with standard access privileges.",
+        "claims_structure": {
+          "sub": "TESTUSER",
+          "userType": "U", 
+          "role": "ROLE_USER",
+          "sessionId": "CARDDEMO_SESSION_user-claims-test-001",
+          "firstName": "Standard",
+          "lastName": "User",
+          "iss": "CardDemo-Auth-Service",
+          "iat": 1722104400,
+          "exp": 1722106200
+        },
+        "spring_security_authorities": ["ROLE_USER"],
+        "role_hierarchy": {
+          "primary_role": "ROLE_USER",
+          "inherited_roles": [],
+          "effective_permissions": [
+            "ACCOUNT_VIEW",
+            "ACCOUNT_UPDATE",
+            "TRANSACTION_PROCESS",
+            "CARD_MANAGEMENT",
+            "BILL_PAYMENT"
+          ]
+        },
+        "test_validation": {
+          "role_extraction": "ROLE_USER",
+          "user_type_extraction": "U",
+          "session_id_extraction": "user-claims-test-001",
+          "name_extraction": "Standard User",
+          "authority_mapping": ["ROLE_USER"]
+        }
+      }
+    },
+
+    "session_correlation_ids": {
+      "admin_session_correlations": [
+        {
+          "session_id": "admin-test-session-001",
+          "correlation_id": "admin-auth-correlation-001",
+          "redis_key": "CARDDEMO_SESSION_admin-test-session-001",
+          "user_id": "TESTADM1",
+          "creation_timestamp": "2024-07-27T12:00:00Z",
+          "last_activity": "2024-07-27T12:15:00Z",
+          "session_attributes": {
+            "ip_address": "192.168.1.100",
+            "user_agent": "CardDemo-Test-Client/1.0",
+            "authentication_method": "JWT",
+            "security_context": "HIGH_PRIVILEGE"
+          }
+        },
+        {
+          "session_id": "admin-test-session-002",
+          "correlation_id": "admin-auth-correlation-002", 
+          "redis_key": "CARDDEMO_SESSION_admin-test-session-002",
+          "user_id": "TESTADM2",
+          "creation_timestamp": "2024-07-27T12:05:00Z",
+          "last_activity": "2024-07-27T12:20:00Z",
+          "session_attributes": {
+            "ip_address": "192.168.1.101",
+            "user_agent": "CardDemo-Test-Client/1.0",
+            "authentication_method": "JWT",
+            "security_context": "HIGH_PRIVILEGE"
+          }
+        }
+      ],
+      "user_session_correlations": [
+        {
+          "session_id": "user-test-session-001",
+          "correlation_id": "user-auth-correlation-001",
+          "redis_key": "CARDDEMO_SESSION_user-test-session-001",
+          "user_id": "TESTUSER",
+          "creation_timestamp": "2024-07-27T12:00:00Z",
+          "last_activity": "2024-07-27T12:25:00Z",
+          "session_attributes": {
+            "ip_address": "192.168.1.102",
+            "user_agent": "CardDemo-Test-Client/1.0",
+            "authentication_method": "JWT",
+            "security_context": "STANDARD_USER"
+          }
+        },
+        {
+          "session_id": "user-test-session-002",
+          "correlation_id": "user-auth-correlation-002",
+          "redis_key": "CARDDEMO_SESSION_user-test-session-002",
+          "user_id": "TESTUSR2",
+          "creation_timestamp": "2024-07-27T12:10:00Z",
+          "last_activity": "2024-07-27T12:30:00Z",
+          "session_attributes": {
+            "ip_address": "192.168.1.103",
+            "user_agent": "CardDemo-Test-Client/1.0",
+            "authentication_method": "JWT",
+            "security_context": "STANDARD_USER"
+          }
+        }
+      ]
+    }
+  },
+
+  "SecurityTestTokenSamples": {
+    "HS256_algorithm_tokens": {
+      "description": "JWT tokens specifically for HS256 algorithm validation and cryptographic signature testing.",
+      "valid_hs256_token": {
+        "algorithm": "HS256",
+        "secret_key": "cardDemo2024SecretKeyForJWTTokenGenerationAndValidation",
+        "jwt_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJIUzI1NlRFU1QiLCJ1c2VyVHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwic2Vzc2lvbklkIjoiQ0FSRERFTU9fU0VTU0lPTl9ocy0yNTYtdGVzdC0wMDEiLCJpc3MiOiJDYXJkRGVtby1BdXRoLVNlcnZpY2UiLCJpYXQiOjE3MjIxMDQ0MDAsImV4cCI6MTcyMjEwNjIwMH0.vT4u7XM8K9L5o6VgRsOhX2zHy8GtMqN7pE9sF3nO4wD",
+        "test_purpose": "HS256 algorithm validation",
+        "expected_validation": true
+      },
+      "wrong_algorithm_token": {
+        "algorithm": "RS256",  
+        "jwt_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJXUk9OR0FMRyIsInVzZXJUeXBlIjoiVSIsInJvbGUiOiJST0xFX1VTRVIiLCJzZXNzaW9uSWQiOiJDQVJEREVNT19TRVNTSU9OX3dyb25nLWFsZy10ZXN0LTAwMSIsImlzcyI6IkNhcmREZW1vLUF1dGgtU2VydmljZSIsImlhdCI6MTcyMjEwNDQwMCwiZXhwIjoxNzIyMTA2MjAwfQ.WRONG_ALGORITHM_SIGNATURE",
+        "test_purpose": "Algorithm mismatch detection",
+        "expected_validation": false,
+        "expected_error": "UnsupportedJwtException"
+      }
+    },
+
+    "30_minute_expiration_samples": {
+      "description": "Token samples specifically for testing 30-minute default expiration behavior and time-based validation.",
+      "tokens": [
+        {
+          "token_name": "fresh_30_minute_token",
+          "user_id": "EXPTEST1",
+          "issued_at": 1722104400,
+          "expires_at": 1722106200,
+          "duration_seconds": 1800,
+          "duration_description": "30 minutes",
+          "jwt_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJFWFBURVNUMSIsInVzZXJUeXBlIjoiVSIsInJvbGUiOiJST0xFX1VTRVIiLCJzZXNzaW9uSWQiOiJDQVJEREVNT19TRVNTSU9OX2V4cC10ZXN0LTMwLW1pbi0wMDEiLCJpc3MiOiJDYXJkRGVtby1BdXRoLVNlcnZpY2UiLCJpYXQiOjE3MjIxMDQ0MDAsImV4cCI6MTcyMjEwNjIwMH0.wU5v8YO9M4M6p7WhSuPiY3zJx9HvTrP8rG6qT8pQ9yE",
+          "test_scenarios": [
+            "30-minute expiration validation",
+            "Time-based token validation",
+            "Expiration boundary testing",
+            "Clock synchronization testing"
+          ]
+        },
+        {
+          "token_name": "near_expiry_token",
+          "user_id": "EXPTEST2",
+          "issued_at": 1722104400,
+          "expires_at": 1722104460,
+          "duration_seconds": 60,
+          "duration_description": "1 minute (near expiry test)",
+          "jwt_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJFWFBURVNUMiIsInVzZXJUeXBlIjoiVSIsInJvbGUiOiJST0xFX1VTRVIiLCJzZXNzaW9uSWQiOiJDQVJEREVNT19TRVNTSU9OX25lYXItZXhwaXJ5LXRlc3QtMDAxIiwiaXNzIjoiQ2FyZERlbW8tQXV0aC1TZXJ2aWNlIiwiaWF0IjoxNzIyMTA0NDAwLCJleHAiOjE3MjIxMDQ0NjB9.xV6w9ZP0N5N7q8XiTvQjZ4zKy0IwUsQ9sH7rU9qR0zF",
+          "test_scenarios": [
+            "Near-expiry token handling",
+            "Grace period validation",
+            "Token refresh timing",
+            "Expiration warning testing"
+          ]
+        }
+      ]
+    },
+
+    "admin_role_claims": {
+      "description": "Comprehensive admin role claims for testing administrative access control and privilege validation.",
+      "admin_claims_samples": [
+        {
+          "user_id": "TESTADM1",
+          "user_type": "A",
+          "primary_role": "ROLE_ADMIN",
+          "inherited_roles": ["ROLE_USER"],
+          "claims": {
+            "sub": "TESTADM1",
+            "userType": "A",
+            "role": "ROLE_ADMIN",
+            "sessionId": "CARDDEMO_SESSION_admin-role-test-001",
+            "firstName": "System",
+            "lastName": "Administrator",
+            "authorities": ["ROLE_ADMIN", "ROLE_USER"],
+            "permissions": [
+              "USER_MANAGEMENT_CREATE",
+              "USER_MANAGEMENT_READ",
+              "USER_MANAGEMENT_UPDATE", 
+              "USER_MANAGEMENT_DELETE",
+              "SYSTEM_ADMINISTRATION",
+              "AUDIT_LOG_ACCESS"
+            ]
+          },
+          "jwt_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJURVNUQURNMSIsInVzZXJUeXBlIjoiQSIsInJvbGUiOiJST0xFX0FETUlOIiwic2Vzc2lvbklkIjoiQ0FSRERFTU9fU0VTU0lPTl9hZG1pbi1yb2xlLXRlc3QtMDAxIiwiZmlyc3ROYW1lIjoiU3lzdGVtIiwibGFzdE5hbWUiOiJBZG1pbmlzdHJhdG9yIiwiYXV0aG9yaXRpZXMiOlsiUk9MRV9BRE1JTiIsIlJPTEVfVVNFUiJdLCJpc3MiOiJDYXJkRGVtby1BdXRoLVNlcnZpY2UiLCJpYXQiOjE3MjIxMDQ0MDAsImV4cCI6MTcyMjEwNjIwMH0.yW7x0AQ1O6O8r9YjUwRkA5zMz1JxVtR0tI8sG4oS1xG",
+          "test_endpoints": [
+            "/api/admin/users",
+            "/api/admin/system-status", 
+            "/actuator/health",
+            "/api/admin/audit"
+          ]
+        }
+      ]
+    },
+
+    "user_role_claims": {
+      "description": "Comprehensive user role claims for testing standard user access control and permission boundaries.",
+      "user_claims_samples": [
+        {
+          "user_id": "TESTUSER",
+          "user_type": "U",
+          "primary_role": "ROLE_USER", 
+          "inherited_roles": [],
+          "claims": {
+            "sub": "TESTUSER",
+            "userType": "U",
+            "role": "ROLE_USER",
+            "sessionId": "CARDDEMO_SESSION_user-role-test-001",
+            "firstName": "Standard",
+            "lastName": "User",
+            "authorities": ["ROLE_USER"],
+            "permissions": [
+              "ACCOUNT_VIEW",
+              "ACCOUNT_UPDATE",
+              "TRANSACTION_PROCESS",
+              "CARD_MANAGEMENT",
+              "BILL_PAYMENT"
+            ]
+          },
+          "jwt_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJURVNUVVNFUiIsInVzZXJUeXBlIjoiVSIsInJvbGUiOiJST0xFX1VTRVIiLCJzZXNzaW9uSWQiOiJDQVJEREVNT19TRVNTSU9OX3VzZXItcm9sZS10ZXN0LTAwMSIsImZpcnN0TmFtZSI6IlN0YW5kYXJkIiwibGFzdE5hbWUiOiJVc2VyIiwiYXV0aG9yaXRpZXMiOlsiUk9MRV9VU0VSIl0sImlzcyI6IkNhcmREZW1vLUF1dGgtU2VydmljZSIsImlhdCI6MTcyMjEwNDQwMCwiZXhwIjoxNzIyMTA2MjAwfQ.zX8y1BR2P7P9s0ZkVxSlB6zOz2KyWuS1uJ9tH5pT2yH",
+          "test_endpoints": [
+            "/api/account/view/12345",
+            "/api/transaction/history/12345",
+            "/api/card/list",
+            "/api/bill/payment"
+          ],
+          "restricted_endpoints": [
+            "/api/admin/users",
+            "/actuator/health",
+            "/api/admin/audit"
+          ]
+        }
+      ]
+    },
+
+    "negative_test_scenarios": {
+      "description": "Comprehensive negative test scenarios for security boundary validation and error handling verification.",
+      "scenarios": [
+        {
+          "scenario_name": "missing_authorization_header",
+          "description": "Test request without Authorization header",
+          "request_headers": {},
+          "expected_response_code": 401,
+          "expected_error": "AUTHORIZATION_HEADER_MISSING",
+          "expected_message": "Authorization header is missing"
+        },
+        {
+          "scenario_name": "invalid_bearer_prefix",
+          "description": "Test authorization header without Bearer prefix",
+          "request_headers": {
+            "Authorization": "InvalidPrefix eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+          },
+          "expected_response_code": 401,
+          "expected_error": "INVALID_BEARER_TOKEN",
+          "expected_message": "Authorization header must start with Bearer"
+        },
+        {
+          "scenario_name": "empty_token_after_bearer",
+          "description": "Test authorization header with Bearer prefix but no token",
+          "request_headers": {
+            "Authorization": "Bearer "
+          },
+          "expected_response_code": 401,
+          "expected_error": "EMPTY_JWT_TOKEN",
+          "expected_message": "JWT token cannot be empty"
+        },
+        {
+          "scenario_name": "token_with_invalid_characters",
+          "description": "Test JWT token containing invalid characters",
+          "jwt_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.INVALID!@#$%^&*()CHARACTERS.signature",
+          "expected_response_code": 401,
+          "expected_error": "MALFORMED_JWT_TOKEN",
+          "expected_message": "JWT token contains invalid characters"
+        },
+        {
+          "scenario_name": "token_missing_segments",
+          "description": "Test JWT token with missing segments (header only)",
+          "jwt_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9",
+          "expected_response_code": 401,
+          "expected_error": "MALFORMED_JWT_TOKEN",
+          "expected_message": "JWT token must have exactly 3 segments"
+        },
+        {
+          "scenario_name": "token_with_null_claims",
+          "description": "Test JWT token with null or missing required claims",
+          "jwt_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJDYXJkRGVtby1BdXRoLVNlcnZpY2UiLCJpYXQiOjE3MjIxMDQ0MDAsImV4cCI6MTcyMjEwNjIwMH0.missingSubjectClaim",
+          "expected_response_code": 401,
+          "expected_error": "MISSING_REQUIRED_CLAIMS",
+          "expected_message": "JWT token is missing required claims"
+        }
+      ]
+    },
+
+    "jwt_validation_test_cases": {
+      "description": "Comprehensive JWT validation test cases covering all aspects of token validation logic.",
+      "validation_test_matrix": [
+        {
+          "test_case": "valid_token_all_claims_present",
+          "jwt_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJWQUxJRFRFU1QiLCJ1c2VyVHlwZSI6IlUiLCJyb2xlIjoiUk9MRV9VU0VSIiwic2Vzc2lvbklkIjoiQ0FSRERFTU9fU0VTU0lPTl92YWxpZC10ZXN0LTAwMSIsImZpcnN0TmFtZSI6IlZhbGlkIiwibGFzdE5hbWUiOiJUZXN0IiwiaXNzIjoiQ2FyZERlbW8tQXV0aC1TZXJ2aWNlIiwiaWF0IjoxNzIyMTA0NDAwLCJleHAiOjE3MjIxMDYyMDB9.aB9c0DT3Q8S7t2FeWzQmC6zPz3LzXvT2vK0sI6qS4zI",
+          "expected_result": "VALID",
+          "validation_checks": [
+            "signature_verification",
+            "expiration_check",
+            "required_claims_present",
+            "issuer_validation",
+            "user_type_validation",
+            "role_mapping_validation"
+          ]
+        },
+        {
+          "test_case": "expired_token_validation",
+          "jwt_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJFWFBJUkVEVEVTVCIsInVzZXJUeXBlIjoiVSIsInJvbGUiOiJST0xFX1VTRVIiLCJzZXNzaW9uSWQiOiJDQVJEREVNT19TRVNTSU9OX2V4cGlyZWQtdmFsaWQtdGVzdC0wMDEiLCJpc3MiOiJDYXJkRGVtby1BdXRoLVNlcnZpY2UiLCJpYXQiOjE3MDUzMTI4MDAsImV4cCI6MTcwNTMxNDYwMH0.expiredTokenSignatureForTesting",
+          "expected_result": "EXPIRED",
+          "expected_exception": "ExpiredJwtException",
+          "validation_checks": [
+            "expiration_check_fails",
+            "token_cleanup_triggered",
+            "audit_logging_completed"
+          ]
+        },
+        {
+          "test_case": "invalid_signature_validation",
+          "jwt_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJJTlZBTElEU0lHIiwidXNlclR5cGUiOiJVIiwicm9sZSI6IlJPTEVfVVNFUiIsInNlc3Npb25JZCI6IkNBUkRERU1PX1NFU1NJT05faW52YWxpZC1zaWctdGVzdC0wMDEiLCJpc3MiOiJDYXJkRGVtby1BdXRoLVNlcnZpY2UiLCJpYXQiOjE3MjIxMDQ0MDAsImV4cCI6MTcyMjEwNjIwMH0.invalidSignatureForSecurityTesting",
+          "expected_result": "INVALID_SIGNATURE",
+          "expected_exception": "SignatureException",
+          "validation_checks": [
+            "signature_verification_fails",
+            "security_audit_triggered",
+            "error_logging_completed"
+          ]
+        },
+        {
+          "test_case": "malformed_structure_validation",
+          "jwt_token": "malformed.jwt.token.structure",
+          "expected_result": "MALFORMED",  
+          "expected_exception": "MalformedJwtException",
+          "validation_checks": [
+            "structure_validation_fails",
+            "parsing_error_handled",
+            "graceful_error_response"
+          ]
+        }
+      ]
+    }
+  },
+
+  "test_execution_framework": {
+    "spring_boot_test_integration": {
+      "test_annotations": [
+        "@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)",
+        "@TestPropertySource(locations = \"classpath:application-test.properties\")",
+        "@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)",
+        "@Testcontainers",
+        "@WithMockUser(username = 'TESTADM1', roles = {'ADMIN', 'USER'})",
+        "@WithUserDetails('TESTUSER')"
+      ],
+      "test_profiles": ["test", "security-test", "jwt-test"],
+      "test_containers": {
+        "redis_container": "redis:7-alpine", 
+        "postgres_container": "postgres:15-alpine"
+      }
+    },
+    "mockito_integration": {
+      "mock_beans": [
+        "@MockBean JwtTokenUtil",
+        "@MockBean UserRepository",
+        "@MockBean PasswordEncoder",
+        "@MockBean AuditEventRepository"
+      ],
+      "verification_patterns": [
+        "verify(jwtTokenUtil).validateToken(anyString())",
+        "verify(jwtTokenUtil).extractUsername(anyString())",
+        "verify(jwtTokenUtil).extractUserType(anyString())",
+        "verify(userRepository).findByUserId(anyString())"
+      ]
+    },
+    "web_mvc_test_integration": {
+      "test_endpoints": [
+        "POST /api/auth/login",
+        "POST /api/auth/logout",
+        "POST /api/auth/validate",
+        "POST /api/auth/refresh"
+      ],
+      "mock_mvc_patterns": [
+        "mockMvc.perform(post(\"/api/auth/login\").header(\"Authorization\", \"Bearer \" + validToken))",
+        "mockMvc.perform(get(\"/api/account/view/12345\").header(\"Authorization\", \"Bearer \" + adminToken))",
+        ".andExpect(status().isOk())",
+        ".andExpect(jsonPath(\"$.token\").exists())",
+        ".andExpect(jsonPath(\"$.authorities[0]\").value(\"ROLE_ADMIN\"))"
+      ]
+    },
+    "performance_testing": {
+      "jwt_validation_benchmarks": {
+        "target_validation_time": "<10ms",
+        "target_generation_time": "<50ms",
+        "concurrent_validation_capacity": "10000+ TPS",
+        "memory_usage_limit": "< 10MB heap impact"
+      },
+      "load_testing_scenarios": [
+        {
+          "scenario": "concurrent_token_validation",
+          "thread_count": 100,
+          "iterations_per_thread": 1000,
+          "expected_success_rate": ">99.9%",
+          "expected_avg_response_time": "<10ms"
+        }
+      ]
+    }
+  },
+
+  "compliance_and_audit": {
+    "pci_dss_compliance": {
+      "requirement_3": "JWT tokens do not contain sensitive cardholder data",
+      "requirement_7": "Role-based access control implemented through Spring Security authorities",
+      "requirement_8": "Strong authentication with BCrypt password hashing and JWT tokens",
+      "requirement_10": "Comprehensive audit logging for all authentication events"
+    },
+    "sox_compliance": {
+      "section_404": "Complete audit trail for authentication and authorization events",
+      "financial_data_access": "Role-based controls preventing unauthorized access to financial data",
+      "segregation_of_duties": "Admin and user role separation with appropriate privilege boundaries"
+    },
+    "audit_trail_requirements": {
+      "authentication_events": "All login, logout, and token validation events logged",
+      "authorization_decisions": "All access control decisions logged with correlation IDs",
+      "security_violations": "All failed authentication attempts and security violations logged",
+      "data_retention": "7+ years retention with structured JSON format for compliance queries"
+    }
+  }
+}

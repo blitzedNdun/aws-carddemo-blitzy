@@ -1,0 +1,1417 @@
+{
+  "metadata": {
+    "description": "Comprehensive API security test scenarios for CardDemo Spring Boot microservices architecture",
+    "version": "1.0.0",
+    "created": "2024-03-15",
+    "framework": "Spring Security 6.x with JWT authentication",
+    "coverage": "All 24 CICS-to-REST endpoint transformations with equivalent security protection",
+    "testing_tools": ["RestAssured 5.5.5", "Spring Security Test", "OWASP ZAP 2.16.1", "Testcontainers Redis"],
+    "compliance": ["PCI DSS", "SOX", "GDPR", "Enterprise Security Standards"]
+  },
+  
+  "APISecurityTestScenarios": {
+    "authentication_bypass_tests": {
+      "description": "Comprehensive authentication bypass testing scenarios validating JWT token validation and security enforcement",
+      "test_cases": [
+        {
+          "test_id": "AUTH_BYPASS_001",
+          "name": "Missing Authorization Header Test",
+          "endpoint": "/api/auth/validate",
+          "method": "GET",
+          "headers": {},
+          "expected_status": 401,
+          "expected_message": "Authorization header required",
+          "security_filter": "SecurityGatewayFilter.validateJwtToken()",
+          "cics_equivalent": "SEC-USR-TYPE validation failure"
+        },
+        {
+          "test_id": "AUTH_BYPASS_002", 
+          "name": "Invalid Bearer Token Format Test",
+          "endpoint": "/api/account/view/12345",
+          "method": "GET",
+          "headers": {
+            "Authorization": "InvalidFormat token123"
+          },
+          "expected_status": 401,
+          "expected_message": "Invalid token format",
+          "security_filter": "SecurityGatewayFilter.validateJwtToken()",
+          "cics_equivalent": "RACF authentication failure"
+        },
+        {
+          "test_id": "AUTH_BYPASS_003",
+          "name": "Expired JWT Token Test",
+          "endpoint": "/api/transaction/add",
+          "method": "POST",
+          "headers": {
+            "Authorization": "Bearer ${expired_token}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "accountId": "12345",
+            "amount": "100.00"
+          },
+          "expected_status": 401,
+          "expected_message": "Token expired",
+          "token_reference": "jwt-tokens.expired_token",
+          "security_filter": "SecurityGatewayFilter.validateJwtToken()",
+          "cics_equivalent": "CICS terminal session timeout"
+        },
+        {
+          "test_id": "AUTH_BYPASS_004",
+          "name": "Malformed JWT Token Test", 
+          "endpoint": "/api/card/list/67890",
+          "method": "GET",
+          "headers": {
+            "Authorization": "Bearer ${malformed_token}"
+          },
+          "expected_status": 401,
+          "expected_message": "Malformed token",
+          "token_reference": "jwt-tokens.malformed_token",
+          "security_filter": "SecurityGatewayFilter.validateJwtToken()",
+          "cics_equivalent": "RACF profile corruption error"
+        },
+        {
+          "test_id": "AUTH_BYPASS_005",
+          "name": "Invalid Signature JWT Token Test",
+          "endpoint": "/api/admin/users",
+          "method": "GET", 
+          "headers": {
+            "Authorization": "Bearer ${invalid_signature_token}"
+          },
+          "expected_status": 401,
+          "expected_message": "Invalid token signature",
+          "token_reference": "jwt-tokens.invalid_signature_token",
+          "security_filter": "SecurityGatewayFilter.validateJwtToken()",
+          "cics_equivalent": "RACF security certificate validation failure"
+        }
+      ]
+    },
+    
+    "authorization_flow_tests": {
+      "description": "Role-based authorization flow validation ensuring proper access control enforcement across all microservices",
+      "test_cases": [
+        {
+          "test_id": "AUTHZ_FLOW_001",
+          "name": "Admin Role Access Control Test",
+          "endpoint": "/api/admin/users/create",
+          "method": "POST",
+          "headers": {
+            "Authorization": "Bearer ${valid_admin_token}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "username": "testuser",
+            "userType": "U"
+          },
+          "expected_status": 200,
+          "token_reference": "jwt-tokens.valid_admin_token",
+          "required_role": "ROLE_ADMIN",
+          "spring_security_annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+          "cics_equivalent": "CARDDEMO.ADMIN group access"
+        },
+        {
+          "test_id": "AUTHZ_FLOW_002",
+          "name": "User Role Restriction Test",
+          "endpoint": "/api/admin/users/create",
+          "method": "POST",
+          "headers": {
+            "Authorization": "Bearer ${valid_user_token}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "username": "testuser",
+            "userType": "U"
+          },
+          "expected_status": 403,
+          "expected_message": "Access denied - insufficient privileges",
+          "token_reference": "jwt-tokens.valid_user_token",
+          "required_role": "ROLE_ADMIN",
+          "user_role": "ROLE_USER",
+          "spring_security_annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+          "cics_equivalent": "CARDDEMO.USER group restriction"
+        },
+        {
+          "test_id": "AUTHZ_FLOW_003",
+          "name": "Cross-Service Authorization Test",
+          "endpoint": "/api/account/view/12345",
+          "method": "GET",
+          "headers": {
+            "Authorization": "Bearer ${valid_user_token}"
+          },
+          "expected_status": 200,
+          "token_reference": "jwt-tokens.valid_user_token",
+          "required_role": "ROLE_USER",
+          "spring_security_annotation": "@PreAuthorize(\"hasAnyRole('USER','ADMIN')\")",
+          "gateway_filter": "SecurityGatewayFilter.enforceRateLimit()",
+          "cics_equivalent": "COACTVWC transaction access"
+        },
+        {
+          "test_id": "AUTHZ_FLOW_004",
+          "name": "Method Level Security Test",
+          "endpoint": "/api/transaction/process",
+          "method": "POST",
+          "headers": {
+            "Authorization": "Bearer ${valid_user_token}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "transactionType": "PURCHASE",
+            "amount": "250.00",
+            "cardNumber": "4532123456789012"
+          },
+          "expected_status": 200,
+          "token_reference": "jwt-tokens.valid_user_token",
+          "required_role": "ROLE_USER",
+          "spring_security_annotation": "@PreAuthorize(\"hasAnyRole('USER','ADMIN')\")",
+          "cics_equivalent": "COTRN02C transaction processing"
+        },
+        {
+          "test_id": "AUTHZ_FLOW_005",
+          "name": "Resource Access Validation Test",
+          "endpoint": "/api/card/details/4532123456789012",
+          "method": "GET",
+          "headers": {
+            "Authorization": "Bearer ${valid_user_token}"
+          },
+          "expected_status": 200,
+          "token_reference": "jwt-tokens.valid_user_token",
+          "required_role": "ROLE_USER",
+          "data_access_control": "Customer data filtering by user context",
+          "spring_security_annotation": "@PreAuthorize(\"hasAnyRole('USER','ADMIN')\")",
+          "cics_equivalent": "COCRDSL card selection access"
+        }
+      ]
+    },
+    
+    "rate_limiting_tests": {
+      "description": "Redis-backed rate limiting validation with Spring Cloud Gateway API protection per Section 6.4.2.4",
+      "test_cases": [
+        {
+          "test_id": "RATE_LIMIT_001",
+          "name": "User Rate Limit Enforcement Test",
+          "endpoint": "/api/account/balance",
+          "method": "GET",
+          "headers": {
+            "Authorization": "Bearer ${valid_user_token}"
+          },
+          "expected_status": 200,
+          "rate_limit": {
+            "user_type": "ROLE_USER",
+            "limit": 100,
+            "window": "1 minute",
+            "enforcement": "Redis sliding window"
+          },
+          "test_scenario": "Send 101 requests within 1 minute",
+          "expected_success_count": 100,
+          "expected_blocked_count": 1,
+          "expected_status_blocked": 429,
+          "expected_headers": {
+            "X-RateLimit-Limit": "100",
+            "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": "${epoch_time}"
+          },
+          "token_reference": "jwt-tokens.valid_user_token",
+          "redis_key": "rate_limit:user:${user_id}:${endpoint}",
+          "gateway_filter": "SecurityGatewayFilter.enforceRateLimit()",
+          "cics_equivalent": "CICS transaction class throttling"
+        },
+        {
+          "test_id": "RATE_LIMIT_002",
+          "name": "Admin Rate Limit Enforcement Test",
+          "endpoint": "/api/admin/system/status",
+          "method": "GET",
+          "headers": {
+            "Authorization": "Bearer ${valid_admin_token}"
+          },
+          "expected_status": 200,
+          "rate_limit": {
+            "user_type": "ROLE_ADMIN",
+            "limit": 500,
+            "window": "1 minute",
+            "enforcement": "Redis sliding window"
+          },
+          "test_scenario": "Send 501 requests within 1 minute",
+          "expected_success_count": 500,
+          "expected_blocked_count": 1,
+          "expected_status_blocked": 429,
+          "expected_headers": {
+            "X-RateLimit-Limit": "500",
+            "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": "${epoch_time}"
+          },
+          "token_reference": "jwt-tokens.valid_admin_token",
+          "redis_key": "rate_limit:admin:${user_id}:${endpoint}",
+          "gateway_filter": "SecurityGatewayFilter.enforceRateLimit()",
+          "cics_equivalent": "CICS region protection limits"
+        },
+        {
+          "test_id": "RATE_LIMIT_003",
+          "name": "Burst Capacity Test",
+          "endpoint": "/api/transaction/authorize",
+          "method": "POST",
+          "headers": {
+            "Authorization": "Bearer ${valid_user_token}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "cardNumber": "4532123456789012",
+            "amount": "50.00",
+            "merchantId": "MERCHANT123"
+          },
+          "expected_status": 200,
+          "rate_limit": {
+            "user_type": "ROLE_USER", 
+            "limit": 100,
+            "burst_capacity": 120,
+            "window": "1 minute",
+            "enforcement": "Token bucket algorithm"
+          },
+          "test_scenario": "Send 120 requests in quick succession",
+          "expected_success_count": 120,
+          "expected_blocked_count": 0,
+          "token_reference": "jwt-tokens.valid_user_token",
+          "redis_key": "rate_limit:burst:${user_id}:${endpoint}",
+          "gateway_filter": "SecurityGatewayFilter.enforceRateLimit()",
+          "cics_equivalent": "CICS transaction burst handling"
+        },
+        {
+          "test_id": "RATE_LIMIT_004",
+          "name": "Endpoint Specific Limits Test",
+          "endpoint": "/api/auth/login",
+          "method": "POST",
+          "expected_status": 429,
+          "endpoints": [
+            {
+              "path": "/api/auth/login",
+              "limit": 10,
+              "window": "1 minute",
+              "reason": "Brute force protection"
+            },
+            {
+              "path": "/api/password/reset",
+              "limit": 5,
+              "window": "5 minutes", 
+              "reason": "Account security protection"
+            },
+            {
+              "path": "/api/card/activate",
+              "limit": 3,
+              "window": "10 minutes",
+              "reason": "Card activation security"
+            }
+          ],
+          "test_scenario": "Validate endpoint-specific rate limiting",
+          "expected_behavior": "Each endpoint enforces independent rate limits",
+          "redis_key_pattern": "rate_limit:endpoint:${endpoint}:${client_ip}",
+          "gateway_filter": "SecurityGatewayFilter.enforceRateLimit()",
+          "cics_equivalent": "Transaction-specific resource control"
+        }
+      ]
+    },
+    
+    "jwt_token_validation_tests": {
+      "description": "Comprehensive JWT token validation scenarios ensuring proper token lifecycle management and security",
+      "test_cases": [
+        {
+          "test_id": "JWT_VALIDATION_001",
+          "name": "Valid Token Processing Test",
+          "endpoint": "/api/user/profile",
+          "method": "GET",
+          "headers": {
+            "Authorization": "Bearer ${valid_user_token}"
+          },
+          "expected_status": 200,
+          "token_reference": "jwt-tokens.valid_user_token",
+          "validation_steps": [
+            "Verify token signature with HS256 algorithm",
+            "Check token expiration timestamp", 
+            "Validate issuer claim",
+            "Extract user claims (user_id, roles)"
+          ],
+          "expected_claims": {
+            "sub": "TESTUSER",
+            "roles": ["ROLE_USER"],
+            "user_type": "U",
+            "iss": "carddemo-auth-service"
+          },
+          "gateway_filter": "SecurityGatewayFilter.validateJwtToken()",
+          "cics_equivalent": "RACF user profile validation"
+        },
+        {
+          "test_id": "JWT_VALIDATION_002",
+          "name": "Token Refresh Validation Test",
+          "endpoint": "/api/auth/refresh",
+          "method": "POST",
+          "headers": {
+            "Authorization": "Bearer ${valid_user_token}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "refresh_token": "${user_refresh_token}"
+          },
+          "expected_status": 200,
+          "expected_response": {
+            "access_token": "${new_jwt_token}",
+            "token_type": "Bearer",
+            "expires_in": 1800
+          },
+          "token_reference": "jwt-tokens.valid_user_token",
+          "security_validation": "New token with extended expiration",
+          "gateway_filter": "SecurityGatewayFilter.validateJwtToken()",
+          "cics_equivalent": "CICS session extension"
+        },
+        {
+          "test_id": "JWT_VALIDATION_003",
+          "name": "Expired Token Validation Test",
+          "endpoint": "/api/account/transfer",
+          "method": "POST",
+          "headers": {
+            "Authorization": "Bearer ${expired_token}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "fromAccount": "12345",
+            "toAccount": "67890",
+            "amount": "1000.00"
+          },
+          "expected_status": 401,
+          "expected_message": "Token expired",
+          "token_reference": "jwt-tokens.expired_token",
+          "redis_check": "expired_token_validation",
+          "gateway_filter": "SecurityGatewayFilter.validateJwtToken()",
+          "cics_equivalent": "CICS session timeout"
+        }
+      ]
+    },
+    
+    "endpoint_protection_tests": {
+      "description": "Comprehensive REST endpoint protection validation covering all 24 CICS-to-REST transformations",
+      "cics_transactions": [
+        {
+          "cics_code": "COSGN00C",
+          "rest_endpoint": "/api/auth/login",
+          "method": "POST",
+          "protection_level": "Public with rate limiting",
+          "rate_limit": "10 requests/minute",
+          "security_filters": ["rate_limiting", "input_validation"]
+        },
+        {
+          "cics_code": "COMEN01C", 
+          "rest_endpoint": "/api/menu/main",
+          "method": "GET",
+          "protection_level": "Authenticated users",
+          "required_role": "ROLE_USER",
+          "security_filters": ["jwt_validation", "role_authorization"]
+        },
+        {
+          "cics_code": "COACTVWC",
+          "rest_endpoint": "/api/account/view/{accountId}",
+          "method": "GET", 
+          "protection_level": "Authenticated users with data filtering",
+          "required_role": "ROLE_USER",
+          "security_filters": ["jwt_validation", "role_authorization", "data_access_control"]
+        },
+        {
+          "cics_code": "COACTUPC",
+          "rest_endpoint": "/api/account/update/{accountId}",
+          "method": "PUT",
+          "protection_level": "Authenticated users with audit logging",
+          "required_role": "ROLE_USER", 
+          "security_filters": ["jwt_validation", "role_authorization", "audit_logging", "optimistic_locking"]
+        },
+        {
+          "cics_code": "COCRDLIC",
+          "rest_endpoint": "/api/card/list/{accountId}",
+          "method": "GET",
+          "protection_level": "Authenticated users with pagination",
+          "required_role": "ROLE_USER",
+          "security_filters": ["jwt_validation", "role_authorization", "pagination_security"]
+        },
+        {
+          "cics_code": "COCRDUPC", 
+          "rest_endpoint": "/api/card/update/{cardNumber}",
+          "method": "PUT",
+          "protection_level": "Authenticated users with PCI compliance",
+          "required_role": "ROLE_USER",
+          "security_filters": ["jwt_validation", "role_authorization", "pci_compliance", "card_data_masking"]
+        },
+        {
+          "cics_code": "COTRN00C",
+          "rest_endpoint": "/api/transaction/list/{accountId}",
+          "method": "GET",
+          "protection_level": "Authenticated users with transaction filtering",
+          "required_role": "ROLE_USER",
+          "security_filters": ["jwt_validation", "role_authorization", "transaction_access_control"]
+        },
+        {
+          "cics_code": "COTRN01C",
+          "rest_endpoint": "/api/transaction/details/{transactionId}",
+          "method": "GET",
+          "protection_level": "Authenticated users with detailed access control",
+          "required_role": "ROLE_USER",
+          "security_filters": ["jwt_validation", "role_authorization", "transaction_ownership_validation"]
+        },
+        {
+          "cics_code": "COTRN02C",
+          "rest_endpoint": "/api/transaction/add",
+          "method": "POST",
+          "protection_level": "Authenticated users with financial validation",
+          "required_role": "ROLE_USER",
+          "security_filters": ["jwt_validation", "role_authorization", "financial_validation", "fraud_detection"]
+        },
+        {
+          "cics_code": "COBIL00C",
+          "rest_endpoint": "/api/billing/payment",
+          "method": "POST",
+          "protection_level": "Authenticated users with payment security",
+          "required_role": "ROLE_USER",
+          "security_filters": ["jwt_validation", "role_authorization", "payment_validation", "encryption"]
+        },
+        {
+          "cics_code": "CORPT00C",
+          "rest_endpoint": "/api/reports/generate",
+          "method": "POST",
+          "protection_level": "Admin users only",
+          "required_role": "ROLE_ADMIN",
+          "security_filters": ["jwt_validation", "admin_authorization", "report_access_control"]
+        },
+        {
+          "cics_code": "COUSR00C",
+          "rest_endpoint": "/api/admin/users/list",
+          "method": "GET",
+          "protection_level": "Admin users only",
+          "required_role": "ROLE_ADMIN",
+          "security_filters": ["jwt_validation", "admin_authorization", "user_data_protection"]
+        },
+        {
+          "cics_code": "COUSR01C",
+          "rest_endpoint": "/api/admin/users/create",
+          "method": "POST",
+          "protection_level": "Admin users only",
+          "required_role": "ROLE_ADMIN",
+          "security_filters": ["jwt_validation", "admin_authorization", "user_creation_validation"]
+        },
+        {
+          "cics_code": "COUSR02C",
+          "rest_endpoint": "/api/admin/users/update/{userId}",
+          "method": "PUT",
+          "protection_level": "Admin users only",
+          "required_role": "ROLE_ADMIN",
+          "security_filters": ["jwt_validation", "admin_authorization", "user_modification_audit"]
+        },
+        {
+          "cics_code": "COUSR03C",
+          "rest_endpoint": "/api/admin/users/delete/{userId}",
+          "method": "DELETE",
+          "protection_level": "Admin users only",
+          "required_role": "ROLE_ADMIN",
+          "security_filters": ["jwt_validation", "admin_authorization", "user_deletion_audit"]
+        }
+      ],
+      "batch_transactions": [
+        {
+          "cics_code": "CBACT01C",
+          "rest_endpoint": "/api/batch/account-processing",
+          "method": "POST",
+          "protection_level": "System admin only",
+          "required_role": "ROLE_ADMIN",
+          "security_filters": ["jwt_validation", "admin_authorization", "batch_execution_control"]
+        },
+        {
+          "cics_code": "CBACT02C",
+          "rest_endpoint": "/api/batch/interest-calculation",
+          "method": "POST",
+          "protection_level": "System admin only",
+          "required_role": "ROLE_ADMIN", 
+          "security_filters": ["jwt_validation", "admin_authorization", "financial_batch_control"]
+        },
+        {
+          "cics_code": "CBACT03C",
+          "rest_endpoint": "/api/batch/statement-generation",
+          "method": "POST",
+          "protection_level": "System admin only",
+          "required_role": "ROLE_ADMIN",
+          "security_filters": ["jwt_validation", "admin_authorization", "statement_security"]
+        },
+        {
+          "cics_code": "CBACT04C",
+          "rest_endpoint": "/api/batch/account-maintenance",
+          "method": "POST",
+          "protection_level": "System admin only",
+          "required_role": "ROLE_ADMIN",
+          "security_filters": ["jwt_validation", "admin_authorization", "maintenance_audit"]
+        },
+        {
+          "cics_code": "CBCUS01C",
+          "rest_endpoint": "/api/batch/customer-processing",
+          "method": "POST",
+          "protection_level": "System admin only",
+          "required_role": "ROLE_ADMIN",
+          "security_filters": ["jwt_validation", "admin_authorization", "customer_data_protection"]
+        },
+        {
+          "cics_code": "CBSTM03A",
+          "rest_endpoint": "/api/batch/statement-print",
+          "method": "POST",
+          "protection_level": "System admin only",
+          "required_role": "ROLE_ADMIN",
+          "security_filters": ["jwt_validation", "admin_authorization", "print_security"]
+        },
+        {
+          "cics_code": "CBTRN01C",
+          "rest_endpoint": "/api/batch/transaction-processing",
+          "method": "POST",
+          "protection_level": "System admin only",
+          "required_role": "ROLE_ADMIN",
+          "security_filters": ["jwt_validation", "admin_authorization", "transaction_batch_security"]
+        },
+        {
+          "cics_code": "CBTRN02C",
+          "rest_endpoint": "/api/batch/transaction-reconciliation",
+          "method": "POST",
+          "protection_level": "System admin only",
+          "required_role": "ROLE_ADMIN",
+          "security_filters": ["jwt_validation", "admin_authorization", "reconciliation_audit"]
+        },
+        {
+          "cics_code": "CBTRN03C",
+          "rest_endpoint": "/api/batch/transaction-reporting",
+          "method": "POST",
+          "protection_level": "System admin only",
+          "required_role": "ROLE_ADMIN",
+          "security_filters": ["jwt_validation", "admin_authorization", "reporting_security"]
+        }
+      ]
+    },
+    
+    "security_header_tests": {
+      "description": "Security header validation ensuring proper HTTP security headers are implemented",
+      "test_cases": [
+        {
+          "test_id": "SECURITY_HEADER_001",
+          "name": "Content Security Policy Test",
+          "endpoint": "/api/account/view/12345",
+          "method": "GET",
+          "headers": {
+            "Authorization": "Bearer ${valid_user_token}"
+          },
+          "expected_status": 200,
+          "expected_response_headers": {
+            "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'",
+            "X-Content-Type-Options": "nosniff",
+            "X-Frame-Options": "DENY",
+            "X-XSS-Protection": "1; mode=block",
+            "Strict-Transport-Security": "max-age=31536000; includeSubDomains"
+          },
+          "security_purpose": "Prevent XSS and clickjacking attacks",
+          "compliance": "OWASP security headers"
+        },
+        {
+          "test_id": "SECURITY_HEADER_002",
+          "name": "Cache Control Headers Test",
+          "endpoint": "/api/transaction/details/98765",
+          "method": "GET",
+          "headers": {
+            "Authorization": "Bearer ${valid_user_token}"
+          },
+          "expected_status": 200,
+          "expected_response_headers": {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+          },
+          "security_purpose": "Prevent sensitive data caching",
+          "compliance": "PCI DSS data protection"
+        },
+        {
+          "test_id": "SECURITY_HEADER_003",
+          "name": "HSTS Header Validation Test",
+          "endpoint": "/api/card/list/12345",
+          "method": "GET",
+          "headers": {
+            "Authorization": "Bearer ${valid_user_token}"
+          },
+          "expected_status": 200,
+          "expected_response_headers": {
+            "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload"
+          },
+          "security_purpose": "Enforce HTTPS connections",
+          "compliance": "Transport security requirements"
+        }
+      ]
+    },
+    
+    "csrf_protection_tests": {
+      "description": "CSRF protection validation for state-changing operations",
+      "test_cases": [
+        {
+          "test_id": "CSRF_PROTECTION_001",
+          "name": "Missing CSRF Token Test",
+          "endpoint": "/api/account/update/12345",
+          "method": "PUT",
+          "headers": {
+            "Authorization": "Bearer ${valid_user_token}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "accountStatus": "ACTIVE"
+          },
+          "expected_status": 403,
+          "expected_message": "CSRF token required",
+          "security_purpose": "Prevent cross-site request forgery",
+          "spring_security": "CsrfFilter validation"
+        },
+        {
+          "test_id": "CSRF_PROTECTION_002",
+          "name": "Invalid CSRF Token Test",
+          "endpoint": "/api/transaction/add",
+          "method": "POST",
+          "headers": {
+            "Authorization": "Bearer ${valid_user_token}",
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": "invalid-csrf-token"
+          },
+          "body": {
+            "accountId": "12345",
+            "amount": "100.00",
+            "description": "Test transaction"
+          },
+          "expected_status": 403,
+          "expected_message": "Invalid CSRF token",
+          "security_purpose": "Validate CSRF token authenticity",
+          "spring_security": "CsrfFilter token validation"
+        },
+        {
+          "test_id": "CSRF_PROTECTION_003",
+          "name": "Valid CSRF Token Test",
+          "endpoint": "/api/card/activate",
+          "method": "POST",
+          "headers": {
+            "Authorization": "Bearer ${valid_user_token}",
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": "${valid_csrf_token}"
+          },
+          "body": {
+            "cardNumber": "4532123456789012",
+            "activationCode": "123456"
+          },
+          "expected_status": 200,
+          "security_purpose": "Allow valid CSRF protected operations",
+          "spring_security": "CsrfFilter successful validation"
+        }
+      ]
+    },
+    
+    "cors_validation_tests": {
+      "description": "CORS policy validation ensuring proper cross-origin request handling",
+      "test_cases": [
+        {
+          "test_id": "CORS_VALIDATION_001",
+          "name": "Allowed Origin Test",
+          "endpoint": "/api/account/balance/12345",
+          "method": "GET",
+          "headers": {
+            "Authorization": "Bearer ${valid_user_token}",
+            "Origin": "https://carddemo.example.com"
+          },
+          "expected_status": 200,
+          "expected_response_headers": {
+            "Access-Control-Allow-Origin": "https://carddemo.example.com",
+            "Access-Control-Allow-Credentials": "true"
+          },
+          "security_purpose": "Allow requests from authorized origins",
+          "spring_security": "CorsConfigurationSource validation"
+        },
+        {
+          "test_id": "CORS_VALIDATION_002",
+          "name": "Blocked Origin Test",
+          "endpoint": "/api/account/balance/12345", 
+          "method": "GET",
+          "headers": {
+            "Authorization": "Bearer ${valid_user_token}",
+            "Origin": "https://malicious-site.com"
+          },
+          "expected_status": 403,
+          "expected_message": "CORS policy violation",
+          "security_purpose": "Block requests from unauthorized origins",
+          "spring_security": "CorsConfigurationSource rejection"
+        },
+        {
+          "test_id": "CORS_VALIDATION_003",
+          "name": "Preflight Request Test",
+          "endpoint": "/api/transaction/add",
+          "method": "OPTIONS",
+          "headers": {
+            "Origin": "https://carddemo.example.com",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "Authorization, Content-Type"
+          },
+          "expected_status": 200,
+          "expected_response_headers": {
+            "Access-Control-Allow-Origin": "https://carddemo.example.com",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Authorization, Content-Type, X-CSRF-TOKEN",
+            "Access-Control-Max-Age": "3600"
+          },
+          "security_purpose": "Handle CORS preflight requests properly",
+          "spring_security": "CorsConfigurationSource preflight handling"
+        }
+      ]
+    }
+  },
+  
+  "RateLimitingTestCases": {
+    "redis_backed_rate_limiting": {
+      "description": "Redis-backed rate limiting enforcement with sliding window algorithm",
+      "configuration": {
+        "redis_version": "7+",
+        "algorithm": "sliding_window",
+        "key_pattern": "rate_limit:{role}:{user_id}:{endpoint}",
+        "ttl": "window_duration + 60 seconds"
+      },
+      "test_scenarios": [
+        {
+          "scenario": "Normal usage within limits",
+          "user_role": "ROLE_USER",
+          "endpoint": "/api/account/view/{id}",
+          "requests_per_minute": 50,
+          "expected_result": "All requests succeed",
+          "redis_operations": [
+            "ZADD rate_limit:user:123:/api/account/view {timestamp} {request_id}",
+            "ZCOUNT rate_limit:user:123:/api/account/view {window_start} {window_end}",
+            "EXPIRE rate_limit:user:123:/api/account/view 120"
+          ]
+        },
+        {
+          "scenario": "Rate limit exceeded",
+          "user_role": "ROLE_USER", 
+          "endpoint": "/api/transaction/add",
+          "requests_per_minute": 150,
+          "expected_result": "First 100 succeed, remaining 50 blocked with 429 status",
+          "redis_operations": [
+            "ZREMRANGEBYSCORE rate_limit:user:123:/api/transaction/add 0 {expired_threshold}",
+            "ZCARD rate_limit:user:123:/api/transaction/add",
+            "ZADD rate_limit:user:123:/api/transaction/add {timestamp} {request_id}"
+          ]
+        }
+      ]
+    },
+    
+    "user_specific_limits": {
+      "description": "Role-based rate limiting with different limits per user type",
+      "limits": {
+        "ROLE_USER": {
+          "requests_per_minute": 100,
+          "burst_capacity": 120,
+          "enforcement": "Strict after burst capacity"
+        },
+        "ROLE_ADMIN": {
+          "requests_per_minute": 500,
+          "burst_capacity": 600,
+          "enforcement": "Lenient for administrative operations"
+        },
+        "ANONYMOUS": {
+          "requests_per_minute": 10,
+          "burst_capacity": 15,
+          "enforcement": "Strict for unauthenticated requests"
+        }
+      },
+      "test_validation": [
+        "Verify rate limits are applied based on JWT role claims",
+        "Confirm Redis keys are role-specific",
+        "Test burst capacity handling for each role",
+        "Validate rate limit reset behavior"
+      ]
+    },
+    
+    "endpoint_specific_limits": {
+      "description": "Endpoint-specific rate limiting for critical operations",
+      "critical_endpoints": [
+        {
+          "endpoint": "/api/auth/login",
+          "limit": 10,
+          "window": "1 minute",
+          "purpose": "Brute force protection",
+          "key_strategy": "IP-based"
+        },
+        {
+          "endpoint": "/api/password/reset",
+          "limit": 5,
+          "window": "5 minutes",
+          "purpose": "Account security",
+          "key_strategy": "User-based"
+        },
+        {
+          "endpoint": "/api/card/activate", 
+          "limit": 3,
+          "window": "10 minutes",
+          "purpose": "Card security",
+          "key_strategy": "Card-number-based"
+        },
+        {
+          "endpoint": "/api/transaction/authorize",
+          "limit": 1000,
+          "window": "1 minute",
+          "purpose": "High-volume transaction processing",
+          "key_strategy": "Merchant-based"
+        }
+      ]
+    },
+    
+    "burst_capacity_tests": {
+      "description": "Token bucket algorithm testing for burst request handling",
+      "configuration": {
+        "algorithm": "token_bucket",
+        "bucket_size": "burst_capacity",
+        "refill_rate": "requests_per_minute / 60",
+        "refill_interval": "1 second"
+      },
+      "test_scenarios": [
+        {
+          "scenario": "Burst within capacity",
+          "initial_tokens": 120,
+          "burst_requests": 100,
+          "expected_success": 100,
+          "expected_remaining_tokens": 20
+        },
+        {
+          "scenario": "Burst exceeding capacity",
+          "initial_tokens": 120,
+          "burst_requests": 150,
+          "expected_success": 120,
+          "expected_blocked": 30,
+          "expected_remaining_tokens": 0
+        },
+        {
+          "scenario": "Token refill validation",
+          "initial_tokens": 0,
+          "wait_seconds": 60,
+          "expected_tokens": 100,
+          "refill_rate": "100 tokens per minute"
+        }
+      ]
+    },
+    
+    "rate_limit_headers": {
+      "description": "Rate limiting response headers for client awareness",
+      "required_headers": {
+        "X-RateLimit-Limit": "Maximum requests allowed in window",
+        "X-RateLimit-Remaining": "Remaining requests in current window", 
+        "X-RateLimit-Reset": "Unix timestamp when rate limit resets",
+        "X-RateLimit-Policy": "Rate limiting policy applied"
+      },
+      "example_response": {
+        "status": 200,
+        "headers": {
+          "X-RateLimit-Limit": "100",
+          "X-RateLimit-Remaining": "75",
+          "X-RateLimit-Reset": "1679832000",
+          "X-RateLimit-Policy": "100 per minute"
+        }
+      },
+      "rate_limited_response": {
+        "status": 429,
+        "headers": {
+          "X-RateLimit-Limit": "100",
+          "X-RateLimit-Remaining": "0", 
+          "X-RateLimit-Reset": "1679832060",
+          "X-RateLimit-Policy": "100 per minute",
+          "Retry-After": "60"
+        },
+        "body": {
+          "error": "Rate limit exceeded",
+          "message": "Too many requests. Please try again later.",
+          "retryAfter": 60
+        }
+      }
+    },
+    
+    "limit_exceeded_responses": {
+      "description": "Standardized responses when rate limits are exceeded",
+      "response_format": {
+        "status_code": 429,
+        "content_type": "application/json",
+        "body_structure": {
+          "error": "RATE_LIMIT_EXCEEDED",
+          "message": "Request rate limit exceeded",
+          "details": {
+            "limit": "${requests_per_window}",
+            "window": "${window_duration}",
+            "reset_time": "${unix_timestamp}",
+            "retry_after": "${seconds_until_reset}"
+          }
+        }
+      },
+      "logging": {
+        "level": "WARN",
+        "format": "Rate limit exceeded for user ${user_id} on endpoint ${endpoint}",
+        "fields": [
+          "user_id",
+          "endpoint", 
+          "current_count",
+          "limit",
+          "window_start",
+          "client_ip",
+          "user_agent"
+        ]
+      }
+    }
+  },
+  
+  "AuthenticationTestCases": {
+    "jwt_authentication_bypass": {
+      "description": "JWT authentication bypass testing scenarios",
+      "attack_vectors": [
+        {
+          "attack": "None algorithm attack",
+          "payload": {
+            "header": {
+              "alg": "none",
+              "typ": "JWT"
+            },
+            "payload": {
+              "sub": "admin",
+              "roles": ["ROLE_ADMIN"],
+              "exp": 9999999999
+            }
+          },
+          "expected_result": "Rejected with 401 Unauthorized",
+          "security_control": "Algorithm whitelist enforcement"
+        },
+        {
+          "attack": "Algorithm confusion attack",
+          "payload": {
+            "header": {
+              "alg": "RS256",
+              "typ": "JWT"
+            }
+          },
+          "description": "Attempt to use public key as HMAC secret", 
+          "expected_result": "Rejected due to algorithm mismatch",
+          "security_control": "Strict algorithm validation"
+        },
+        {
+          "attack": "Token replay attack",
+          "scenario": "Use valid token after user logout",
+          "expected_result": "Rejected if token blacklisting is enabled",
+          "security_control": "Token blacklist validation"
+        }
+      ]
+    },
+    
+    "token_expiration_tests": {
+      "description": "JWT token expiration and refresh testing",
+      "test_scenarios": [
+        {
+          "scenario": "Expired token usage",
+          "token_reference": "jwt-tokens.expired_token",
+          "expected_status": 401,
+          "expected_message": "Token expired",
+          "validation": "exp claim verification"
+        },
+        {
+          "scenario": "Token nearing expiration",
+          "token_exp_threshold": "5 minutes",
+          "expected_behavior": "Return refresh suggestion in response headers",
+          "header": "X-Token-Refresh-Suggested: true"
+        },
+        {
+          "scenario": "Token refresh flow",
+          "steps": [
+            "Present expired access token",
+            "Provide valid refresh token",
+            "Receive new access token",
+            "Verify old refresh token is invalidated"
+          ],
+          "validation": "New token with extended expiration"
+        }
+      ]
+    },
+    
+    "invalid_signature_tests": {
+      "description": "JWT signature validation testing",
+      "test_cases": [
+        {
+          "test": "Modified payload signature",
+          "token_reference": "jwt-tokens.invalid_signature_token",
+          "expected_status": 401,
+          "expected_message": "Invalid token signature",
+          "security_validation": "HMAC-SHA256 signature verification"
+        },
+        {
+          "test": "Wrong signing key",
+          "scenario": "Token signed with different secret",
+          "expected_result": "Signature verification failure",
+          "security_control": "Key validation"
+        },
+        {
+          "test": "Truncated signature",
+          "scenario": "Partial signature in token",
+          "expected_result": "Malformed token error",
+          "security_control": "Token format validation"
+        }
+      ]
+    },
+    
+    "malformed_token_tests": {
+      "description": "Malformed JWT token handling",
+      "test_scenarios": [
+        {
+          "scenario": "Missing header section",
+          "token_format": "..{payload}.{signature}",
+          "token_reference": "jwt-tokens.malformed_token",
+          "expected_status": 401,
+          "expected_message": "Malformed token structure"
+        },
+        {
+          "scenario": "Invalid Base64 encoding",
+          "token_format": "Invalid_Base64.{payload}.{signature}",
+          "expected_status": 401,
+          "expected_message": "Token encoding error"
+        },
+        {
+          "scenario": "Non-JSON payload",
+          "token_format": "{header}.Invalid_JSON.{signature}",
+          "expected_status": 401,
+          "expected_message": "Token payload parsing error"
+        },
+        {
+          "scenario": "Empty token",
+          "token_format": "",
+          "expected_status": 401,
+          "expected_message": "Authorization header required"
+        }
+      ]
+    },
+    
+    "missing_authorization_header": {
+      "description": "Missing or invalid Authorization header testing",
+      "test_cases": [
+        {
+          "scenario": "No Authorization header",
+          "headers": {},
+          "expected_status": 401,
+          "expected_message": "Authorization header required"
+        },
+        {
+          "scenario": "Invalid Bearer format",
+          "headers": {
+            "Authorization": "InvalidFormat token123"
+          },
+          "expected_status": 401,
+          "expected_message": "Invalid authorization header format"
+        },
+        {
+          "scenario": "Empty Bearer token",
+          "headers": {
+            "Authorization": "Bearer "
+          },
+          "expected_status": 401,
+          "expected_message": "Bearer token required"
+        },
+        {
+          "scenario": "Basic auth instead of Bearer",
+          "headers": {
+            "Authorization": "Basic dXNlcjpwYXNz"
+          },
+          "expected_status": 401,
+          "expected_message": "Bearer token required"
+        }
+      ]
+    },
+    
+    "bearer_token_validation": {
+      "description": "Bearer token format and validation testing",
+      "valid_format": "Bearer {jwt_token}",
+      "validation_steps": [
+        {
+          "step": 1,
+          "action": "Extract Bearer token from Authorization header",
+          "validation": "Verify 'Bearer ' prefix"
+        },
+        {
+          "step": 2,
+          "action": "Parse JWT token structure",
+          "validation": "Verify three base64-encoded parts separated by dots"
+        },
+        {
+          "step": 3,
+          "action": "Decode and validate header",
+          "validation": "Verify algorithm and token type"
+        },
+        {
+          "step": 4,
+          "action": "Decode and validate payload",
+          "validation": "Verify required claims and expiration"
+        },
+        {
+          "step": 5,
+          "action": "Verify signature",
+          "validation": "HMAC-SHA256 signature verification with secret key"
+        }
+      ],
+      "security_controls": [
+        "Algorithm whitelist (HS256 only)",
+        "Signature verification with server secret",
+        "Expiration time validation",
+        "Issuer claim validation",
+        "Token blacklist checking"
+      ]
+    }
+  },
+  
+  "AuthorizationFlowTests": {
+    "role_based_access_control": {
+      "description": "Spring Security role-based access control testing",
+      "roles": {
+        "ROLE_ADMIN": {
+          "description": "Administrative privileges with full system access",
+          "allowed_endpoints": [
+            "/api/admin/**",
+            "/api/users/**",
+            "/api/reports/**",
+            "/api/batch/**",
+            "/api/account/**",
+            "/api/transaction/**",
+            "/api/card/**"
+          ],
+          "spring_security_expression": "hasRole('ADMIN')"
+        },
+        "ROLE_USER": {
+          "description": "Standard user privileges with limited access",
+          "allowed_endpoints": [
+            "/api/account/view/**",
+            "/api/account/update/**",
+            "/api/transaction/list/**",
+            "/api/transaction/add",
+            "/api/card/list/**",
+            "/api/card/update/**"
+          ],
+          "restricted_endpoints": [
+            "/api/admin/**",
+            "/api/users/**",
+            "/api/reports/**",
+            "/api/batch/**"
+          ],
+          "spring_security_expression": "hasRole('USER')"
+        },
+        "ANONYMOUS": {
+          "description": "Unauthenticated access with minimal permissions",
+          "allowed_endpoints": [
+            "/api/auth/login",
+            "/api/health",
+            "/api/version"
+          ],
+          "restricted_endpoints": [
+            "/api/account/**",
+            "/api/transaction/**",
+            "/api/card/**",
+            "/api/admin/**"
+          ]
+        }
+      }
+    },
+    
+    "admin_only_endpoints": {
+      "description": "Endpoints requiring administrative privileges",
+      "endpoints": [
+        {
+          "path": "/api/admin/users/create",
+          "method": "POST",
+          "required_role": "ROLE_ADMIN",
+          "spring_security": "@PreAuthorize(\"hasRole('ADMIN')\")",
+          "test_scenario": "Verify user role cannot access admin endpoint",
+          "expected_user_response": 403
+        },
+        {
+          "path": "/api/admin/system/configuration",
+          "method": "GET",
+          "required_role": "ROLE_ADMIN",
+          "spring_security": "@PreAuthorize(\"hasRole('ADMIN')\")",
+          "sensitive_data": true,
+          "data_classification": "System configuration"
+        },
+        {
+          "path": "/api/batch/interest-calculation",
+          "method": "POST",
+          "required_role": "ROLE_ADMIN",
+          "spring_security": "@PreAuthorize(\"hasRole('ADMIN')\")",
+          "business_impact": "High - Financial calculation batch job",
+          "audit_required": true
+        },
+        {
+          "path": "/api/reports/financial-summary",
+          "method": "GET",
+          "required_role": "ROLE_ADMIN",
+          "spring_security": "@PreAuthorize(\"hasRole('ADMIN')\")",
+          "pci_compliance": true,
+          "data_sensitivity": "High"
+        }
+      ]
+    },
+    
+    "user_role_restrictions": {
+      "description": "User role access restrictions and data filtering",
+      "restrictions": [
+        {
+          "endpoint": "/api/account/view/{accountId}",
+          "restriction": "Users can only view their own account data",
+          "implementation": "Data filtering by user ID in JWT claims",
+          "spring_security": "@PreAuthorize(\"hasRole('USER') and @accountService.isOwner(#accountId, authentication.name)\")"
+        },
+        {
+          "endpoint": "/api/transaction/list/{accountId}",
+          "restriction": "Users can only view transactions for their accounts",
+          "implementation": "Account ownership validation",
+          "spring_security": "@PreAuthorize(\"hasRole('USER') and @accountService.isOwner(#accountId, authentication.name)\")"
+        },
+        {
+          "endpoint": "/api/card/update/{cardNumber}",
+          "restriction": "Users can only update their own cards",
+          "implementation": "Card ownership validation through account relationship",
+          "spring_security": "@PreAuthorize(\"hasRole('USER') and @cardService.isOwner(#cardNumber, authentication.name)\")"
+        }
+      ]
+    },
+    
+    "cross_service_authorization": {
+      "description": "Authorization validation across microservice boundaries",
+      "scenarios": [
+        {
+          "scenario": "Account service calling transaction service",
+          "flow": [
+            "User requests account balance",
+            "Account service needs transaction summary",
+            "JWT token propagated to transaction service",
+            "Transaction service validates user access"
+          ],
+          "security_validation": "JWT token propagation and validation"
+        },
+        {
+          "scenario": "Card service validating account access",
+          "flow": [
+            "User requests card activation",
+            "Card service validates account ownership",
+            "Account service called with propagated JWT",
+            "Account access authorized for user"
+          ],
+          "security_control": "Cross-service authorization validation"
+        }
+      ]
+    },
+    
+    "method_level_security": {
+      "description": "Spring Security method-level authorization testing",
+      "annotations": [
+        {
+          "annotation": "@PreAuthorize(\"hasRole('ADMIN')\")",
+          "usage": "Simple role-based access control",
+          "example": "Administrative operations",
+          "test_validation": "Verify 403 response for insufficient privileges"
+        },
+        {
+          "annotation": "@PreAuthorize(\"hasRole('USER') and @securityService.isOwner(#resourceId, authentication.name)\")",
+          "usage": "Role and ownership validation",
+          "example": "User accessing their own resources",
+          "test_validation": "Verify ownership validation logic"
+        },
+        {
+          "annotation": "@PostAuthorize(\"returnObject.userId == authentication.name or hasRole('ADMIN')\")",
+          "usage": "Post-execution authorization",
+          "example": "Data filtering after method execution",
+          "test_validation": "Verify unauthorized data is filtered"
+        },
+        {
+          "annotation": "@Secured(\"ROLE_ADMIN\")",
+          "usage": "Simple security annotation",
+          "example": "Legacy security annotation support",
+          "test_validation": "Verify role enforcement"
+        }
+      ]
+    },
+    
+    "resource_access_validation": {
+      "description": "Resource-level access control and data protection",
+      "validation_types": [
+        {
+          "type": "Account Access Validation",
+          "description": "Ensure users can only access their own account data",
+          "implementation": "Database query filtering by user ID",
+          "test_cases": [
+            "User accessing own account - allowed",
+            "User accessing other account - denied",
+            "Admin accessing any account - allowed"
+          ]
+        },
+        {
+          "type": "Transaction Access Validation",
+          "description": "Restrict transaction access to account owners",
+          "implementation": "Account-transaction relationship validation",
+          "test_cases": [
+            "User viewing own transactions - allowed",
+            "User viewing other user transactions - denied",
+            "Admin viewing any transactions - allowed"
+          ]
+        },
+        {
+          "type": "Card Access Validation",
+          "description": "Restrict card operations to card owners",
+          "implementation": "Card-account-user relationship validation", 
+          "test_cases": [
+            "User managing own cards - allowed",
+            "User managing other cards - denied",
+            "Admin managing any cards - allowed"
+          ]
+        },
+        {
+          "type": "Sensitive Data Protection",
+          "description": "Mask sensitive data based on user permissions",
+          "implementation": "JSON response filtering and field masking",
+          "test_cases": [
+            "User sees masked card numbers",
+            "Admin sees full card numbers",
+            "Anonymous users see no sensitive data"
+          ]
+        }
+      ]
+    }
+  },
+  
+  "test_execution_configuration": {
+    "description": "Configuration for executing API security test scenarios",
+    "test_environment": {
+      "base_url": "http://localhost:8080",
+      "test_database": "carddemo_test",
+      "redis_instance": "redis://localhost:6379/0",
+      "security_configuration": "test-security-context.yml"
+    },
+    "test_data": {
+      "jwt_tokens_file": "src/test/resources/security/jwt-tokens.json",
+      "test_users": [
+        {
+          "username": "TESTADM1",
+          "role": "ROLE_ADMIN",
+          "token_reference": "valid_admin_token"
+        },
+        {
+          "username": "TESTUSER",
+          "role": "ROLE_USER", 
+          "token_reference": "valid_user_token"
+        }
+      ]
+    },
+    "validation_rules": {
+      "response_time_threshold": "200ms",
+      "rate_limit_accuracy": "±1 request tolerance",
+      "security_header_presence": "mandatory",
+      "jwt_signature_validation": "strict",
+      "audit_logging": "all security events"
+    },
+    "reporting": {
+      "format": "JSON and HTML reports",
+      "security_metrics": true,
+      "vulnerability_assessment": true,
+      "compliance_mapping": ["PCI DSS", "SOX", "OWASP Top 10"]
+    }
+  }
+}

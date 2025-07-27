@@ -1,0 +1,181 @@
+# =============================================================================
+# DISCLOSURE GROUP CSV TEST FIXTURE
+# =============================================================================
+# Comprehensive test data for disclosure group reference table supporting
+# Spring Batch processing, BigDecimal precision validation, and integration
+# testing scenarios for the CardDemo credit card management system.
+#
+# This CSV fixture supports:
+# - Interest rate configuration testing with DECIMAL(5,4) precision
+# - Spring Batch FlatFileItemReader test scenarios  
+# - PostgreSQL reference table integration testing
+# - Business rule validation for disclosure group assignment
+# - Rate calculation validation with BigDecimal arithmetic precision
+# - Legal disclosure text validation and effective date processing
+#
+# Data Structure Maps to DisclosureGroup JPA Entity:
+# - group_id: VARCHAR(10) - unique interest rate group identifier
+# - disclosure_text: TEXT - legal disclosure content for regulatory compliance
+# - interest_rate: DECIMAL(5,4) - annual percentage rate with 4 decimal precision
+# - effective_date: TIMESTAMP - rate effectiveness timestamp for tracking
+#
+# Source: Converted from app/data/ASCII/discgrp.txt maintaining exact
+#         functional equivalence per Section 0.3.2 requirements
+# 
+# Author: Blitzy agent
+# Created: CSV test fixture supporting comprehensive testing scenarios
+# Version: 1.0
+# =============================================================================
+
+group_id,disclosure_text,interest_rate,effective_date
+# =============================================================================
+# ALPHANUMERIC GROUP IDENTIFIERS - Core Test Data
+# =============================================================================
+# Group A series - Standard interest rate configurations converted from ASCII format
+A000000001,"Interest rate applies to qualifying purchases. Rate may vary based on creditworthiness and market conditions.",0.1500,2024-01-01T00:00:00
+A000000001,"Promotional interest rate for balance transfers. See terms and conditions for complete details.",0.0250,2024-02-01T00:00:00
+A000000001,"Cash advance interest rate. Higher rate applies to cash transactions per federal regulations.",0.0250,2024-03-01T00:00:00
+A000000001,"Penalty interest rate may apply for late payments. Review cardholder agreement for specifics.",0.0250,2024-04-01T00:00:00
+A000000002,"Zero percent introductory rate for new cardholders. Rate subject to change after promotional period.",0.0000,2024-01-01T00:00:00
+A000000002,"Standard purchase rate applies after introductory period expires. Minimum finance charge may apply.",0.0000,2024-02-01T00:00:00
+A000000002,"Balance transfer rate for existing balances. Transfer fees may apply per transaction.",0.0000,2024-03-01T00:00:00
+A000000003,"Premium card interest rate for high-limit accounts. Rate based on excellent credit qualification.",0.0000,2024-01-01T00:00:00
+A000000003,"Travel rewards card rate structure. Bonus rate applies to travel and dining purchases.",0.0000,2024-02-01T00:00:00
+A000000003,"Business card interest rate for commercial accounts. Different terms apply for business use.",0.0000,2024-03-01T00:00:00
+A000000004,"Student card interest rate with educational benefits. Lower rate for qualifying students.",0.1500,2024-01-01T00:00:00
+A000000004,"Secured card rate for credit building purposes. Security deposit required for account opening.",0.1500,2024-02-01T00:00:00
+A000000004,"Joint account interest rate for shared cardholders. Both parties responsible for balance.",0.1500,2024-03-01T00:00:00
+A000000005,"Corporate card rate for business expense management. Volume discounts may apply.",0.1500,2024-01-01T00:00:00
+A000000006,"Retail partnership card with store-specific benefits. Higher rate for non-partner purchases.",0.1500,2024-01-01T00:00:00
+A000000006,"Cashback rewards card with tiered rate structure. Rate varies by spending category.",0.1500,2024-02-01T00:00:00
+A000000007,"Airline co-branded card with travel benefits. Miles earned on all purchases.",0.1500,2024-01-01T00:00:00
+
+# =============================================================================
+# DEFAULT GROUP CONFIGURATIONS - Fallback Test Scenarios
+# =============================================================================
+# Standard default rates for accounts without specific group assignment
+DEFAULT,"Default interest rate applies when no specific rate group is assigned. Standard terms and conditions apply.",0.1500,2024-01-01T00:00:00
+DEFAULT,"Default promotional rate for qualifying new accounts. Subject to credit approval and verification.",0.0250,2024-02-01T00:00:00
+DEFAULT,"Default balance transfer rate for existing cardholders. Transfer limits and fees may apply.",0.0250,2024-03-01T00:00:00
+DEFAULT,"Default cash advance rate for emergency transactions. Daily limits and fees apply per transaction.",0.0250,2024-04-01T00:00:00
+DEFAULT,"Default introductory rate for approved applications. Rate changes after promotional period ends.",0.0000,2024-01-01T00:00:00
+DEFAULT,"Default standard rate for general purchases and transactions. Minimum payment requirements apply.",0.0000,2024-02-01T00:00:00
+DEFAULT,"Default penalty rate for accounts with payment violations. May apply after 60 days delinquency.",0.0000,2024-03-01T00:00:00
+DEFAULT,"Default premium rate for high-value accounts with enhanced benefits and rewards programs.",0.0000,2024-01-01T00:00:00
+DEFAULT,"Default secured rate for accounts requiring security deposit. Deposit amount varies by creditworthiness.",0.0000,2024-02-01T00:00:00
+DEFAULT,"Default business rate for commercial account holders. Business terms and conditions apply.",0.0000,2024-03-01T00:00:00
+DEFAULT,"Default joint rate for shared account responsibility. Both cardholders liable for all charges.",0.1500,2024-01-01T00:00:00
+DEFAULT,"Default student rate for educational institution partnerships. Student verification required.",0.1500,2024-02-01T00:00:00
+DEFAULT,"Default senior rate for cardholders age 65 and older. Age verification required for qualification.",0.1500,2024-03-01T00:00:00
+DEFAULT,"Default military rate for active duty and veteran cardholders. Military ID verification required.",0.1500,2024-01-01T00:00:00
+DEFAULT,"Default employee rate for company partnership programs. Employment verification required.",0.1500,2024-02-01T00:00:00
+DEFAULT,"Default VIP rate for high-net-worth individuals. Asset verification and minimum balance required.",0.0000,2024-01-01T00:00:00
+
+# =============================================================================
+# ZERO APR GROUP CONFIGURATIONS - Special Rate Test Scenarios
+# =============================================================================
+# Comprehensive zero-interest rate testing for promotional and special accounts
+ZEROAPR,"Zero percent APR promotional offer for qualified new cardholders. Limited time promotional rate.",0.0000,2024-01-01T00:00:00
+ZEROAPR,"Zero percent balance transfer rate for existing balances. Transfer fees may still apply.",0.0000,2024-02-01T00:00:00
+ZEROAPR,"Zero percent purchase rate for qualifying transactions. Promotional period has expiration date.",0.0000,2024-03-01T00:00:00
+ZEROAPR,"Zero percent cash advance rate for emergency situations. Standard fees may still apply.",0.0000,2024-04-01T00:00:00
+ZEROAPR,"Zero percent introductory rate for new customer acquisition. Credit approval required.",0.0000,2024-01-01T00:00:00
+ZEROAPR,"Zero percent loyalty rate for long-term customers. Account history review required.",0.0000,2024-02-01T00:00:00
+ZEROAPR,"Zero percent employee rate for company staff members. Employment verification required.",0.0000,2024-03-01T00:00:00
+ZEROAPR,"Zero percent military rate for active duty personnel. Military ID verification required.",0.0000,2024-01-01T00:00:00
+ZEROAPR,"Zero percent student rate for college partnerships. Valid student ID required for application.",0.0000,2024-02-01T00:00:00
+ZEROAPR,"Zero percent senior rate for retirement community partnerships. Age verification required.",0.0000,2024-03-01T00:00:00
+ZEROAPR,"Zero percent nonprofit rate for charitable organization partnerships. 501c3 verification required.",0.0000,2024-01-01T00:00:00
+ZEROAPR,"Zero percent government rate for federal employee programs. Employment verification required.",0.0000,2024-02-01T00:00:00
+ZEROAPR,"Zero percent healthcare rate for medical professional partnerships. License verification required.",0.0000,2024-03-01T00:00:00
+ZEROAPR,"Zero percent education rate for teacher and faculty programs. Education verification required.",0.0000,2024-01-01T00:00:00
+ZEROAPR,"Zero percent first responder rate for emergency service partnerships. Service verification required.",0.0000,2024-02-01T00:00:00
+ZEROAPR,"Zero percent union rate for labor organization partnerships. Union membership verification required.",0.0000,2024-01-01T00:00:00
+
+# =============================================================================
+# BIGDECIMAL PRECISION TEST SCENARIOS - Financial Calculation Validation
+# =============================================================================
+# Comprehensive decimal precision testing covering DECIMAL(5,4) range limits
+PREC0001,"Minimum precision test rate - lowest possible interest rate value.",0.0001,2024-01-01T00:00:00
+PREC0010,"Low precision test rate - demonstrating 0.10% annual percentage rate.",0.0010,2024-01-01T00:00:00
+PREC0100,"Mid precision test rate - demonstrating 1.00% annual percentage rate.",0.0100,2024-01-01T00:00:00
+PREC1000,"High precision test rate - demonstrating 10.00% annual percentage rate.",0.1000,2024-01-01T00:00:00
+PREC2500,"Standard market rate - demonstrating 25.00% annual percentage rate.",0.2500,2024-01-01T00:00:00
+PREC5000,"High market rate - demonstrating 50.00% annual percentage rate.",0.5000,2024-01-01T00:00:00
+PREC7500,"Premium market rate - demonstrating 75.00% annual percentage rate.",0.7500,2024-01-01T00:00:00
+PREC9999,"Maximum precision test rate - highest possible interest rate value approaching 100%.",0.9999,2024-01-01T00:00:00
+
+# =============================================================================
+# EFFECTIVE DATE TEST SCENARIOS - Rate Change Tracking Validation
+# =============================================================================
+# Historical, current, and future rate changes for temporal testing
+HIST2023,"Historical rate from previous year for audit trail testing.",0.1250,2023-01-01T00:00:00
+HIST2023,"Mid-year historical rate change for tracking validation.",0.1375,2023-06-01T00:00:00
+HIST2023,"Year-end historical rate adjustment for compliance testing.",0.1500,2023-12-01T00:00:00
+CURR2024,"Current year rate effective from beginning of year.",0.1600,2024-01-01T00:00:00
+CURR2024,"Mid-year rate adjustment for market condition changes.",0.1700,2024-06-01T00:00:00
+CURR2024,"Third quarter rate change for seasonal adjustment.",0.1800,2024-09-01T00:00:00
+CURR2024,"Fourth quarter rate for year-end processing.",0.1900,2024-12-01T00:00:00
+FUTR2025,"Future rate effective beginning of next year.",0.2000,2025-01-01T00:00:00
+FUTR2025,"Future mid-year rate for advance planning scenarios.",0.2100,2025-06-01T00:00:00
+FUTR2025,"Future year-end rate for long-term testing.",0.2200,2025-12-01T00:00:00
+
+# =============================================================================
+# BUSINESS RULE VALIDATION TEST SCENARIOS
+# =============================================================================
+# Edge cases and business rule validation for comprehensive testing
+BUSRULE01,"Credit score based rate for excellent credit (750+ FICO score).",0.0899,2024-01-01T00:00:00
+BUSRULE02,"Credit score based rate for good credit (700-749 FICO score).",0.1299,2024-01-01T00:00:00
+BUSRULE03,"Credit score based rate for fair credit (650-699 FICO score).",0.1699,2024-01-01T00:00:00
+BUSRULE04,"Credit score based rate for poor credit (below 650 FICO score).",0.2399,2024-01-01T00:00:00
+BUSRULE05,"Income based rate for high-income applicants ($100K+ annual).",0.0999,2024-01-01T00:00:00
+BUSRULE06,"Income based rate for medium-income applicants ($50K-99K annual).",0.1499,2024-01-01T00:00:00
+BUSRULE07,"Income based rate for low-income applicants (below $50K annual).",0.1999,2024-01-01T00:00:00
+BUSRULE08,"Account age based rate for customers with 5+ year history.",0.1099,2024-01-01T00:00:00
+BUSRULE09,"Account age based rate for customers with 2-4 year history.",0.1399,2024-01-01T00:00:00
+BUSRULE10,"Account age based rate for customers with less than 2 year history.",0.1799,2024-01-01T00:00:00
+
+# =============================================================================
+# RATE CALCULATION VALIDATION TEST SCENARIOS - BigDecimal Arithmetic
+# =============================================================================
+# Specific rates for testing financial calculation precision and accuracy
+CALC001,"Rate for monthly interest calculation testing - 12% annual (1% monthly).",0.1200,2024-01-01T00:00:00
+CALC002,"Rate for daily interest calculation testing - 18.25% annual (0.05% daily).",0.1825,2024-01-01T00:00:00
+CALC003,"Rate for compound interest testing - 15.39% annual for compounding scenarios.",0.1539,2024-01-01T00:00:00
+CALC004,"Rate for minimum payment calculation - 21.99% annual for payment testing.",0.2199,2024-01-01T00:00:00
+CALC005,"Rate for penalty calculation testing - 29.99% annual for late payment scenarios.",0.2999,2024-01-01T00:00:00
+CALC006,"Rate for promotional expiration testing - 0% intro then 16.99% standard.",0.1699,2024-07-01T00:00:00
+CALC007,"Rate for balance transfer calculation - 3.99% introductory for 12 months.",0.0399,2024-01-01T00:00:00
+CALC008,"Rate for cash advance calculation - 24.99% annual for cash transaction testing.",0.2499,2024-01-01T00:00:00
+CALC009,"Rate for overlimit fee calculation - 19.99% annual plus fees.",0.1999,2024-01-01T00:00:00
+CALC010,"Rate for foreign transaction testing - 18.99% annual plus currency fees.",0.1899,2024-01-01T00:00:00
+
+# =============================================================================
+# SPRING BATCH PROCESSING TEST SCENARIOS
+# =============================================================================
+# Data designed for FlatFileItemReader and batch processing validation
+BATCH001,"Batch processing test record 1 for FlatFileItemReader validation scenarios.",0.1500,2024-01-01T00:00:00
+BATCH002,"Batch processing test record 2 for chunk processing and transaction management.",0.1600,2024-01-01T00:00:00
+BATCH003,"Batch processing test record 3 for error handling and skip logic testing.",0.1700,2024-01-01T00:00:00
+BATCH004,"Batch processing test record 4 for retry mechanism and failure recovery.",0.1800,2024-01-01T00:00:00
+BATCH005,"Batch processing test record 5 for performance testing and throughput validation.",0.1900,2024-01-01T00:00:00
+BATCH006,"Batch processing test record 6 for parallel processing and thread safety.",0.2000,2024-01-01T00:00:00
+BATCH007,"Batch processing test record 7 for commit interval and transaction boundary testing.",0.2100,2024-01-01T00:00:00
+BATCH008,"Batch processing test record 8 for job restart and recovery scenario validation.",0.2200,2024-01-01T00:00:00
+BATCH009,"Batch processing test record 9 for step execution and flow control testing.",0.2300,2024-01-01T00:00:00
+BATCH010,"Batch processing test record 10 for completion status and metrics collection.",0.2400,2024-01-01T00:00:00
+
+# =============================================================================
+# POSTGRESQL INTEGRATION TEST SCENARIOS
+# =============================================================================
+# Foreign key relationships and database constraint validation
+PGTEST01,"PostgreSQL foreign key constraint testing for account relationships.",0.1250,2024-01-01T00:00:00
+PGTEST02,"PostgreSQL unique constraint testing for group identifier validation.",0.1350,2024-01-01T00:00:00
+PGTEST03,"PostgreSQL check constraint testing for interest rate range validation.",0.1450,2024-01-01T00:00:00
+PGTEST04,"PostgreSQL transaction isolation testing for concurrent access scenarios.",0.1550,2024-01-01T00:00:00
+PGTEST05,"PostgreSQL index performance testing for high-volume query scenarios.",0.1650,2024-01-01T00:00:00
+PGTEST06,"PostgreSQL backup and recovery testing for data integrity validation.",0.1750,2024-01-01T00:00:00
+PGTEST07,"PostgreSQL migration testing for schema evolution and versioning.",0.1850,2024-01-01T00:00:00
+PGTEST08,"PostgreSQL replication testing for high availability scenarios.",0.1950,2024-01-01T00:00:00
+PGTEST09,"PostgreSQL connection pooling testing for resource management.",0.2050,2024-01-01T00:00:00
+PGTEST10,"PostgreSQL monitoring and metrics testing for performance analysis.",0.2150,2024-01-01T00:00:00

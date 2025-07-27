@@ -1,0 +1,806 @@
+# ==============================================================================
+# Spring Batch Data Loading Job Configuration
+# File: data-loading-job.yml
+# Description: Complete orchestration of 9 ASCII file loading pipeline from 
+#              legacy VSAM system to PostgreSQL database with exact BigDecimal
+#              precision preservation and efficient bulk loading operations
+# Author: Blitzy agent
+# Version: 1.0
+# Purpose: Coordinate loading of account, customer, card, transaction, and 
+#          reference data with proper sequencing and comprehensive error handling
+# ==============================================================================
+
+# Spring Batch job configuration for complete data loading pipeline
+# Processes all 9 ASCII files from VSAM export maintaining COBOL COMP-3 precision
+# Supports chunk-based processing with 1000-record chunks and bulk loading
+spring:
+  batch:
+    # ==============================================================================
+    # PRIMARY DATA LOADING JOB CONFIGURATION
+    # ==============================================================================
+    job:
+      # Master data loading job orchestrating all ASCII file processing
+      carddemo-data-loading-pipeline:
+        description: "Complete data loading pipeline for CardDemo VSAM-to-PostgreSQL migration"
+        enabled: true
+        # Job execution configuration per Section 0.3.1 technical approach
+        execution:
+          # 4-hour processing window requirement per Section 0.6.1
+          timeout: PT4H
+          # Allow restart from failure points for operational resilience
+          restartable: true
+          # Prevent duplicate execution during concurrent deployments
+          preventRestart: false
+          # Job execution listener for comprehensive monitoring
+          listeners:
+            - "jobExecutionListener"
+            - "jobMetricsListener"
+            - "jobAuditListener"
+        
+        # ==============================================================================
+        # STEP EXECUTION SEQUENCE WITH DEPENDENCY MANAGEMENT
+        # ==============================================================================
+        # Processing sequence ensuring referential integrity and optimal performance
+        # Steps ordered by foreign key dependencies and data volume considerations
+        steps:
+          
+          # ------------------------------------------------------------------------
+          # STEP 1: REFERENCE DATA LOADING
+          # ------------------------------------------------------------------------
+          # Load reference tables first to support foreign key constraints
+          - name: "load-reference-data"
+            description: "Load all reference data from 5 ASCII files (trantype, trancatg, discgrp, tcatbal, cardxref)"
+            order: 1
+            next: "load-customer-data"
+            
+            # Configure MultiResourceItemReader for 5 reference files
+            reader:
+              type: "MultiResourceItemReader"
+              delegate: "referenceItemReader"
+              # Reference file resources in dependency order
+              resources:
+                - "classpath:data/trantype.txt"
+                - "classpath:data/trancatg.txt" 
+                - "classpath:data/discgrp.txt"
+                - "classpath:data/tcatbal.txt"
+                - "classpath:data/cardxref.txt"
+              # Compare resources by filename for consistent ordering
+              comparator: "simpleResourceComparator"
+              strict: true
+              
+            # Reference data processor with validation
+            processor:
+              type: "CompositeItemProcessor"
+              delegates:
+                - "referenceDataValidator"
+                - "referenceDataTransformer"
+                - "referenceDataEnricher"
+              
+            # Multi-table writer for reference data persistence
+            writer:
+              type: "CompositeItemWriter"
+              delegates:
+                - "transactionTypeWriter"
+                - "transactionCategoryWriter"
+                - "disclosureGroupWriter"
+                - "transactionCategoryBalanceWriter"
+                - "cardCrossReferenceWriter"
+            
+            # Error handling for reference data quality issues
+            faultTolerance:
+              skipLimit: 50
+              skipPolicy: "referenceDataSkipPolicy"
+              retryLimit: 3
+              retryPolicy: "transientExceptionRetryPolicy"
+            
+            # Performance monitoring for reference data loading
+            metrics:
+              enabled: true
+              recordCounts: true
+              processingTimes: true
+              errorCounts: true
+          
+          # ------------------------------------------------------------------------
+          # STEP 2: CUSTOMER DATA LOADING  
+          # ------------------------------------------------------------------------
+          # Load customer data before accounts for foreign key integrity
+          - name: "load-customer-data"
+            description: "Load customer data from custdata.txt with PII protection and 312-character record processing"
+            order: 2
+            next: "load-account-data"
+            
+            # Customer data reader configuration
+            reader:
+              type: "FlatFileItemReader"
+              resource: "classpath:data/custdata.txt"
+              encoding: "UTF-8"
+              strict: true
+              # Reference existing customer data reader configuration
+              configuration: "${customer-data-reader}"
+              
+            # Customer data processor with PII protection
+            processor:
+              type: "CustomerDataProcessor"
+              configuration:
+                # PII masking for sensitive data fields
+                piiProtection:
+                  enabled: true
+                  maskFields: ["ssn", "phone", "email"]
+                  encryptFields: ["ssn"]
+                # Address normalization and validation
+                addressProcessing:
+                  enabled: true
+                  normalize: true
+                  validate: true
+                # FICO score range validation (300-850)
+                ficoValidation:
+                  enabled: true
+                  minScore: 300
+                  maxScore: 850
+                  
+            # JPA writer for customer table persistence
+            writer:
+              type: "JpaItemWriter"
+              entityManagerFactory: "customerEntityManagerFactory"
+              entityClass: "com.carddemo.common.entity.Customer"
+              
+            # Customer-specific error handling
+            faultTolerance:
+              skipLimit: 25
+              skipExceptions:
+                - "org.springframework.dao.DataIntegrityViolationException"
+                - "javax.validation.ConstraintViolationException"
+              retryLimit: 3
+              retryExceptions:
+                - "org.springframework.dao.TransientDataAccessException"
+                - "java.sql.SQLException"
+          
+          # ------------------------------------------------------------------------
+          # STEP 3: ACCOUNT DATA LOADING
+          # ------------------------------------------------------------------------
+          # Load account data after customers for foreign key relationships
+          - name: "load-account-data"
+            description: "Load account data from acctdata.txt with BigDecimal precision and fixed-width record parsing"
+            order: 3
+            next: "load-card-data"
+            
+            # Account data reader with BigDecimal conversion
+            reader:
+              type: "FlatFileItemReader"
+              resource: "classpath:data/acctdata.txt"
+              encoding: "UTF-8"
+              strict: true
+              # Reference existing account data reader configuration
+              configuration: "${account-data-reader}"
+              
+            # Account data processor with COBOL decimal conversion
+            processor:
+              type: "AccountDataProcessor"
+              configuration:
+                # BigDecimal precision preservation per Section 0.1.2
+                decimalConversion:
+                  enabled: true
+                  mathContext: "DECIMAL128"
+                  scale: 2
+                  roundingMode: "HALF_EVEN"
+                  stripDelimiter: "{"
+                # Date field validation and conversion
+                dateProcessing:
+                  enabled: true
+                  inputFormat: "yyyy-MM-dd"
+                  validateRanges: true
+                # Credit limit and balance validation
+                financialValidation:
+                  enabled: true
+                  maxCreditLimit: "999999999.99"
+                  balanceRangeCheck: true
+                  
+            # JPA writer for account table persistence
+            writer:
+              type: "JpaItemWriter"
+              entityManagerFactory: "accountEntityManagerFactory"
+              entityClass: "com.carddemo.common.entity.Account"
+              
+            # Account-specific error handling
+            faultTolerance:
+              skipLimit: 50
+              skipExceptions:
+                - "java.text.ParseException"
+                - "java.lang.NumberFormatException"
+              retryLimit: 3
+              
+          # ------------------------------------------------------------------------
+          # STEP 4: CARD DATA LOADING
+          # ------------------------------------------------------------------------
+          # Load card data after accounts for account linkage
+          - name: "load-card-data"
+            description: "Load card data from carddata.txt with Luhn algorithm verification and PCI compliance"
+            order: 4
+            next: "load-transaction-data"
+            
+            # Card data reader with fixed-width parsing
+            reader:
+              type: "FlatFileItemReader"
+              resource: "classpath:data/carddata.txt"
+              encoding: "UTF-8"
+              strict: true
+              # Reference existing card data reader configuration
+              configuration: "${card-data-reader}"
+              
+            # Card data processor with security validation
+            processor:
+              type: "CardDataProcessor"
+              configuration:
+                # Luhn algorithm validation for card numbers
+                luhnValidation:
+                  enabled: true
+                  validateChecksum: true
+                # PCI compliance processing
+                pciCompliance:
+                  enabled: true
+                  maskCardNumber: true
+                  encryptSensitiveData: true
+                # Card-account linkage validation
+                accountLinkage:
+                  enabled: true
+                  validateAccountExists: true
+                # Expiration date validation
+                expirationValidation:
+                  enabled: true
+                  minimumMonthsValid: 1
+                  
+            # JPA writer for card table persistence
+            writer:
+              type: "JpaItemWriter"
+              entityManagerFactory: "cardEntityManagerFactory"
+              entityClass: "com.carddemo.common.entity.Card"
+              
+            # Card-specific error handling
+            faultTolerance:
+              skipLimit: 75
+              skipExceptions:
+                - "com.carddemo.exception.LuhnValidationException"
+                - "com.carddemo.exception.CardExpirationException"
+              retryLimit: 3
+          
+          # ------------------------------------------------------------------------
+          # STEP 5: TRANSACTION DATA LOADING
+          # ------------------------------------------------------------------------
+          # Load transaction data last due to volume and dependency on all other tables
+          - name: "load-transaction-data"
+            description: "Load transaction data from dailytran.txt with high-volume processing and BigDecimal precision"
+            order: 5
+            
+            # Transaction data reader with partition support
+            reader:
+              type: "FlatFileItemReader"
+              resource: "classpath:data/dailytran.txt"
+              encoding: "UTF-8"
+              strict: true
+              # Reference existing transaction data reader configuration
+              configuration: "${transaction-data-reader}"
+              # Enable partition processing for large volume
+              partitioned: true
+              partitionSize: 10000
+              
+            # Transaction data processor with comprehensive validation
+            processor:
+              type: "TransactionDataProcessor"
+              configuration:
+                # Amount field processing with BigDecimal precision
+                amountProcessing:
+                  enabled: true
+                  mathContext: "DECIMAL128"
+                  scale: 2
+                  roundingMode: "HALF_EVEN"
+                  stripDelimiter: "{"
+                # Timestamp parsing with microsecond precision
+                timestampProcessing:
+                  enabled: true
+                  inputFormat: "yyyy-MM-dd HH:mm:ss.SSSSSS"
+                  timeZone: "UTC"
+                # Transaction category validation
+                categoryValidation:
+                  enabled: true
+                  validateTransactionType: true
+                  validateMerchantInfo: true
+                # Duplicate transaction detection
+                duplicateDetection:
+                  enabled: true
+                  checkWindow: "PT24H"
+                  
+            # Bulk writer for high-volume transaction persistence
+            writer:
+              type: "JdbcBatchItemWriter"
+              dataSource: "transactionDataSource"
+              sql: |
+                INSERT INTO transactions (
+                  transaction_id, account_id, card_number, transaction_type_cd,
+                  transaction_category_cd, transaction_source, transaction_desc,
+                  transaction_amount, transaction_timestamp, merchant_name,
+                  merchant_city, merchant_zip, originating_account_number
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              # Enable PostgreSQL COPY for bulk loading performance
+              copyEnabled: true
+              batchSize: 1000
+              
+            # Transaction-specific error handling for high volume
+            faultTolerance:
+              skipLimit: 100
+              skipExceptions:
+                - "org.springframework.dao.DuplicateKeyException"
+                - "java.time.format.DateTimeParseException"
+              retryLimit: 3
+              
+            # Parallel processing for transaction volume
+            parallel:
+              enabled: true
+              gridSize: 4
+              corePoolSize: 4
+              maxPoolSize: 8
+        
+        # ==============================================================================
+        # GLOBAL JOB CONFIGURATION
+        # ==============================================================================
+        # Job-wide settings applied to all steps
+        
+        # Chunk processing configuration per Section 0.2.3
+        chunk:
+          size: 1000
+          commitInterval: 1000
+          skipPolicy: "defaultSkipPolicy"
+          retryPolicy: "defaultRetryPolicy"
+          completionPolicy: "simpleCompletionPolicy"
+          
+        # Transaction management configuration
+        transaction:
+          isolation: "SERIALIZABLE"
+          propagation: "REQUIRES_NEW"
+          timeout: 300
+          rollbackForAnyException: true
+          
+        # Performance and monitoring configuration
+        performance:
+          # Memory management per Section 0.1.2 constraints
+          memoryManagement:
+            maxHeapIncrease: "10%"
+            gcAlgorithm: "G1GC"
+            gcMaxPause: "200ms"
+          # Threading configuration for parallel processing
+          threading:
+            corePoolSize: 4
+            maxPoolSize: 8
+            queueCapacity: 100
+            threadNamePrefix: "data-load-"
+          # I/O optimization for ASCII file processing
+          ioOptimization:
+            bufferSize: 65536
+            readBufferSize: 32768
+            writeBufferSize: 32768
+            nioEnabled: true
+            
+        # Comprehensive error handling strategy
+        errorHandling:
+          # Global skip policy for data quality issues
+          globalSkipPolicy:
+            skipLimit: 1000
+            skipExceptions:
+              - "org.springframework.batch.item.file.FlatFileParseException"
+              - "org.springframework.batch.item.validator.ValidationException"
+              - "java.text.ParseException"
+              - "java.lang.NumberFormatException"
+              - "org.springframework.dao.DataIntegrityViolationException"
+          # Global retry policy for transient failures
+          globalRetryPolicy:
+            maxAttempts: 3
+            backoffPolicy: "exponentialBackoff"
+            initialDelay: 1000
+            maxDelay: 10000
+            multiplier: 2.0
+            retryExceptions:
+              - "org.springframework.dao.TransientDataAccessException"
+              - "java.sql.SQLException"
+              - "javax.persistence.PersistenceException"
+          # Dead letter queue for failed records
+          deadLetterQueue:
+            enabled: true
+            queuePath: "/var/log/carddemo/batch/dead-letter"
+            maxRecordsPerFile: 1000
+            fileRotation: "daily"
+            
+        # Comprehensive monitoring and metrics
+        monitoring:
+          # Job execution metrics
+          metrics:
+            enabled: true
+            exportInterval: 60
+            includeJvmMetrics: true
+            includeIoMetrics: true
+            prometheusEnabled: true
+          # Audit trail configuration
+          audit:
+            enabled: true
+            logLevel: "INFO"
+            includeDataValues: false
+            recordCounts: true
+            processingTimes: true
+            memoryUsage: true
+          # Health check configuration
+          healthCheck:
+            enabled: true
+            timeout: 30000
+            databaseCheck: true
+            fileSystemCheck: true
+            memoryCheck: true
+            
+    # ==============================================================================
+    # INFRASTRUCTURE CONFIGURATION
+    # ==============================================================================
+    # Supporting infrastructure for data loading operations
+    
+    # Database configuration for bulk loading
+    datasource:
+      # Primary data source for bulk operations
+      primary:
+        url: "${DB_URL:jdbc:postgresql://localhost:5432/carddemo}"
+        username: "${DB_USERNAME:carddemo_user}"
+        password: "${DB_PASSWORD:carddemo_pass}"
+        driver-class-name: "org.postgresql.Driver"
+        # HikariCP optimization for batch processing
+        hikari:
+          maximumPoolSize: 20
+          minimumIdle: 5
+          connectionTimeout: 30000
+          idleTimeout: 600000
+          maxLifetime: 1800000
+          leakDetectionThreshold: 60000
+          poolName: "DataLoadingPool"
+          # Batch processing optimizations
+          preparedStatementCacheSize: 250
+          preparedStatementCacheSqlLimit: 2048
+          batchInsertEnabled: true
+          
+    # Item reader configurations from imported dependencies
+    readers:
+      # Account data reader configuration
+      accountItemReader:
+        resource: "classpath:data/acctdata.txt"
+        lineMapper:
+          lineTokenizer:
+            type: "FixedLengthTokenizer"
+            ranges: "1-11,12-12,13-23,24-34,36-45,47-56,58-67,68-77,78-87,88-98,99-109,110-119,120-129"
+            names: "accountId,activeStatus,customerId,currentBalance,creditLimit,cashCreditLimit,openDate,expirationDate,reissueDate,currentCycleCredit,currentCycleDebit,addressZip,groupId"
+          fieldSetMapper:
+            type: "BeanWrapperFieldSetMapper"
+            targetType: "com.carddemo.common.entity.Account"
+            customEditors:
+              "java.math.BigDecimal": "decimalConverter"
+              "java.time.LocalDate": "dateConverter"
+              
+      # Customer data reader configuration  
+      customerItemReader:
+        resource: "classpath:data/custdata.txt"
+        lineMapper:
+          lineTokenizer:
+            type: "FixedLengthTokenizer"
+            ranges: "1-9,10-35,36-60,61-85,86-135,136-185,186-235,236-245,246-255,256-270,271-284,285-296,297-308,309-312"
+            names: "customerId,firstName,middleName,lastName,addressLine1,addressLine2,city,state,zipCode,phoneHome,phoneWork,ssn,ficoScore,birthDate"
+          fieldSetMapper:
+            type: "BeanWrapperFieldSetMapper"
+            targetType: "com.carddemo.common.entity.Customer"
+            customEditors:
+              "java.time.LocalDate": "dateConverter"
+              
+      # Card data reader configuration
+      cardItemReader:
+        resource: "classpath:data/carddata.txt"
+        lineMapper:
+          lineTokenizer:
+            type: "FixedLengthTokenizer" 
+            ranges: "1-16,17-27,28-77,78-87,88-88"
+            names: "cardNumber,accountId,cardholderName,expirationDate,activeStatus"
+          fieldSetMapper:
+            type: "BeanWrapperFieldSetMapper"
+            targetType: "com.carddemo.common.entity.Card"
+            customEditors:
+              "java.time.LocalDate": "dateConverter"
+              
+      # Transaction data reader configuration
+      transactionItemReader:
+        resource: "classpath:data/dailytran.txt"
+        lineMapper:
+          lineTokenizer:
+            type: "FixedLengthTokenizer"
+            ranges: "1-16,17-27,28-43,44-52,53-102,103-113,114-123,124-173,174-183,184-189"
+            names: "transactionId,accountId,cardNumber,transactionTypeCode,transactionDesc,transactionAmount,transactionSourceCode,merchantName,merchantCity,transactionTimestamp"
+          fieldSetMapper:
+            type: "BeanWrapperFieldSetMapper"
+            targetType: "com.carddemo.common.entity.Transaction"
+            customEditors:
+              "java.math.BigDecimal": "decimalConverter"
+              "java.time.LocalDateTime": "timestampConverter"
+              
+      # Reference data reader configuration
+      referenceItemReader:
+        # MultiResourceItemReader configuration handled by individual files
+        strict: true
+        comparator: "simpleResourceComparator"
+    
+    # Item processors for data transformation
+    processors:
+      # Decimal converter for COBOL COMP-3 precision
+      decimalConverter:
+        class: "com.carddemo.batch.converter.CobolDecimalConverter"
+        stripDelimiters: ["{", "}"]
+        scale: 2
+        roundingMode: "HALF_EVEN"
+        mathContext: "DECIMAL128"
+        validateRange: true
+        minValue: "-9999999999.99"
+        maxValue: "9999999999.99"
+        
+      # Date converter for COBOL date formats
+      dateConverter:
+        class: "com.carddemo.batch.converter.CobolDateConverter"
+        inputPattern: "yyyy-MM-dd"
+        lenientParsing: false
+        timeZone: "UTC"
+        validateRanges: true
+        
+      # Timestamp converter for transaction timestamps
+      timestampConverter:
+        class: "com.carddemo.batch.converter.TransactionTimestampConverter"
+        inputPattern: "yyyy-MM-dd HH:mm:ss.SSSSSS"
+        timeZone: "UTC"
+        microsecondPrecision: true
+    
+    # Item writers for database persistence
+    writers:
+      # JPA writers for entity-based persistence
+      accountJpaWriter:
+        entityManagerFactory: "accountEntityManagerFactory"
+        usePersist: true
+        
+      customerJpaWriter:
+        entityManagerFactory: "customerEntityManagerFactory"
+        usePersist: true
+        
+      cardJpaWriter:
+        entityManagerFactory: "cardEntityManagerFactory" 
+        usePersist: true
+        
+      # JDBC batch writer for high-volume transactions
+      transactionJdbcWriter:
+        dataSource: "transactionDataSource"
+        assertUpdates: true
+        batchSize: 1000
+        
+    # Job execution listeners for monitoring
+    listeners:
+      jobExecutionListener:
+        class: "com.carddemo.batch.listener.DataLoadingJobExecutionListener"
+        logJobStart: true
+        logJobEnd: true
+        includeMetrics: true
+        
+      jobMetricsListener:
+        class: "com.carddemo.batch.listener.JobMetricsListener"
+        exportMetrics: true
+        prometheusEnabled: true
+        
+      jobAuditListener:
+        class: "com.carddemo.batch.listener.JobAuditListener"
+        auditLevel: "INFO"
+        logDataCounts: true
+        
+    # Step execution listeners for detailed monitoring
+    stepListeners:
+      stepExecutionListener:
+        class: "com.carddemo.batch.listener.StepExecutionListener"
+        logStepStart: true
+        logStepEnd: true
+        includeTimings: true
+        
+      stepMetricsListener:
+        class: "com.carddemo.batch.listener.StepMetricsListener"
+        recordMetrics: true
+        includeMemoryUsage: true
+
+# ==============================================================================
+# LOGGING CONFIGURATION FOR DATA LOADING OPERATIONS
+# ==============================================================================
+# Comprehensive logging configuration supporting audit and troubleshooting
+logging:
+  level:
+    # Spring Batch framework logging
+    org.springframework.batch: INFO
+    # Data loading specific logging
+    com.carddemo.batch: DEBUG
+    # SQL and database logging
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    # Connection pool logging
+    com.zaxxer.hikari: INFO
+    # PostgreSQL driver logging
+    org.postgresql: INFO
+    
+  # Custom appenders for different log types
+  appenders:
+    # Main data loading log
+    dataLoading:
+      type: "RollingFileAppender"
+      file: "logs/data-loading.log"
+      pattern: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+      rollingPolicy:
+        maxFileSize: "100MB"
+        maxHistory: 30
+        totalSizeCap: "10GB"
+        
+    # Audit log for compliance
+    audit:
+      type: "RollingFileAppender" 
+      file: "logs/data-loading-audit.log"
+      pattern: "%d{yyyy-MM-dd HH:mm:ss} [AUDIT] %msg%n"
+      rollingPolicy:
+        maxFileSize: "50MB"
+        maxHistory: 90
+        
+    # Error log for failures
+    error:
+      type: "RollingFileAppender"
+      file: "logs/data-loading-errors.log" 
+      pattern: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n%ex"
+      rollingPolicy:
+        maxFileSize: "100MB"
+        maxHistory: 60
+
+# ==============================================================================
+# MANAGEMENT AND MONITORING CONFIGURATION  
+# ==============================================================================
+# Actuator endpoints and health checks for operational monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ["batch", "health", "metrics", "info", "prometheus"]
+      base-path: "/actuator"
+    jmx:
+      exposure:
+        include: ["batch", "health", "metrics"]
+        
+  # Batch-specific endpoints
+  endpoint:
+    batch:
+      enabled: true
+      show-details: "when-authorized"
+    health:
+      enabled: true
+      show-details: "when-authorized"
+      
+  # Metrics configuration
+  metrics:
+    enabled: true
+    export:
+      prometheus:
+        enabled: true
+        step: "10s"
+      jmx:
+        enabled: true
+    tags:
+      application: "carddemo"
+      module: "data-loading-pipeline"
+      environment: "${SPRING_PROFILES_ACTIVE:development}"
+      
+  # Health indicators
+  health:
+    batch:
+      enabled: true
+    datasource:
+      enabled: true
+    diskspace:
+      enabled: true
+      
+# ==============================================================================
+# SECURITY CONFIGURATION FOR PRODUCTION DEPLOYMENT
+# ==============================================================================
+# Security controls for batch operations and data protection
+security:
+  # Authentication for batch endpoints
+  authentication:
+    enabled: true
+    type: "basic"
+    
+  # Authorization for batch operations
+  authorization:
+    enabled: true
+    roles: ["BATCH_ADMIN", "SYSTEM_ADMIN"]
+    
+  # Data encryption configuration
+  encryption:
+    atRest: true
+    inTransit: true
+    keyRotationDays: 90
+    
+  # PII protection settings
+  pii:
+    maskLogging: true
+    encryptFields: ["ssn", "card_number", "cvv_code"]
+    auditAccess: true
+    retentionDays: 2555
+    
+# ==============================================================================
+# ENVIRONMENT-SPECIFIC OVERRIDES
+# ==============================================================================
+# Configuration variations for different deployment environments
+
+---
+# Development environment configuration
+spring:
+  profiles: development
+  batch:
+    job:
+      carddemo-data-loading-pipeline:
+        chunk:
+          size: 100
+        errorHandling:
+          globalSkipPolicy:
+            skipLimit: 10
+        performance:
+          threading:
+            corePoolSize: 2
+            maxPoolSize: 4
+            
+logging:
+  level:
+    com.carddemo.batch: DEBUG
+    org.springframework.batch: DEBUG
+
+---
+# Test environment configuration  
+spring:
+  profiles: test
+  batch:
+    job:
+      carddemo-data-loading-pipeline:
+        chunk:
+          size: 500
+        errorHandling:
+          globalSkipPolicy:
+            skipLimit: 25
+        performance:
+          threading:
+            corePoolSize: 2
+            maxPoolSize: 6
+            
+logging:
+  level:
+    com.carddemo.batch: INFO
+    org.springframework.batch: INFO
+
+---
+# Production environment configuration
+spring:
+  profiles: production
+  batch:
+    job:
+      carddemo-data-loading-pipeline:
+        chunk:
+          size: 1000
+        errorHandling:
+          globalSkipPolicy:
+            skipLimit: 100
+        performance:
+          threading:
+            corePoolSize: 4
+            maxPoolSize: 8
+            
+logging:
+  level:
+    com.carddemo.batch: WARN
+    org.springframework.batch: WARN
+    
+security:
+  authentication:
+    enabled: true
+  authorization:
+    enabled: true

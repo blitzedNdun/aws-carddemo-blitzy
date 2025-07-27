@@ -1,0 +1,551 @@
+# Spring Batch FlatFileItemReader Configuration for Transaction Data Loading
+# CardDemo System - VSAM to PostgreSQL Migration 
+# Processes dailytran.txt with 189-character equivalent records maintaining BigDecimal precision
+
+# =====================================================================================
+# TRANSACTION DATA READER CONFIGURATION
+# =====================================================================================
+# This configuration supports the transformation from mainframe VSAM TRANSACT dataset
+# to PostgreSQL transactions table with exact financial precision preservation and
+# comprehensive transaction processing per Section 6.6.2.3 requirements.
+#
+# Source Data Format (dailytran.txt):
+# - 189-character fixed-width ASCII records
+# - Transaction amounts with implied 2 decimal places requiring BigDecimal conversion
+# - Transaction timestamps with microsecond precision for partition key support
+# - Foreign key relationships to accounts, cards, transaction_types, and transaction_categories
+# - Merchant information fields for fraud detection and geographic analysis
+#
+# Key Features:
+# - FlatFileItemReader for processing high-volume transaction data
+# - BigDecimal precision for DECIMAL(12,2) transaction amounts
+# - LocalDateTime parsing with microsecond precision for partitioning
+# - Foreign key constraint validation during processing
+# - Monthly RANGE partition support through timestamp handling
+# - Comprehensive field validation and data integrity checks
+# =====================================================================================
+
+batch:
+  jobs:
+    transaction-data-load:
+      description: "High-volume transaction data loading from dailytran.txt to PostgreSQL transactions table"
+      
+      # =====================================================================================
+      # JOB EXECUTION CONFIGURATION
+      # =====================================================================================
+      execution:
+        chunk-size: 5000
+        skip-limit: 100
+        retry-limit: 3
+        commit-interval: 1000
+        transaction-isolation: SERIALIZABLE
+        thread-count: 4  # Parallel processing for high-volume data
+        
+      # =====================================================================================
+      # TRANSACTION DATA PROCESSING STEP
+      # =====================================================================================
+      steps:
+        - name: "load-transaction-data"
+          description: "Load transaction data with BigDecimal precision and timestamp partitioning support"
+          order: 1
+          
+          reader:
+            type: "FlatFileItemReader"
+            resource: "classpath:data/dailytran.txt"
+            encoding: "UTF-8"
+            line-mapper:
+              type: "FixedLengthTokenizer"
+              strict: true
+              columns:
+                # Transaction identifier - Primary key field
+                - name: "transactionIdRaw"
+                  range: "1-10"
+                  type: "String"
+                  trim: true
+                  required: true
+                  description: "Raw transaction ID requiring 16-character formatting"
+                  validation:
+                    pattern: "^[0-9]{10}$"
+                    
+                # Account identifier - Foreign key to accounts table
+                - name: "accountId"
+                  range: "11-16"
+                  type: "String"
+                  trim: true
+                  required: true
+                  description: "6-digit account ID requiring 11-character zero-padding"
+                  validation:
+                    pattern: "^[0-9]{6}$"
+                    
+                # Transaction type - Foreign key to transaction_types table
+                - name: "transactionType"
+                  range: "17-18"
+                  type: "String"
+                  trim: true
+                  required: true
+                  description: "2-character transaction type code (01=POS, 03=OPERATOR, etc.)"
+                  validation:
+                    exact-length: 2
+                    pattern: "^[0-9]{2}$"
+                    
+                # Transaction category - Foreign key to transaction_categories table
+                - name: "transactionCategory"
+                  range: "19-22"
+                  type: "String"
+                  trim: true
+                  required: true
+                  description: "4-character transaction category code for detailed classification"
+                  validation:
+                    exact-length: 4
+                    pattern: "^[0-9]{4}$"
+                    
+                # Transaction description - Business context information
+                - name: "description"
+                  range: "23-122"
+                  type: "String"
+                  trim: true
+                  required: true
+                  description: "Transaction description with merchant and operation details"
+                  validation:
+                    max-length: 100
+                    min-length: 1
+                    
+                # Transaction amount - Requires BigDecimal conversion
+                - name: "transactionAmountRaw"
+                  range: "123-132"
+                  type: "String"
+                  trim: true
+                  required: true
+                  description: "10-digit amount with implied 2 decimal places"
+                  validation:
+                    pattern: "^[0-9]{10}$"
+                    
+                # Amount sign indicator
+                - name: "amountSignRaw"
+                  range: "133-133"
+                  type: "String"
+                  trim: true
+                  required: true
+                  description: "Amount sign character for positive/negative determination"
+                  
+                # Padding field
+                - name: "padding1"
+                  range: "134-142"
+                  type: "String"
+                  description: "Reserved padding field"
+                  
+                # Merchant name - Geographic and fraud analysis
+                - name: "merchantName"
+                  range: "143-192"
+                  type: "String"
+                  trim: true
+                  description: "Merchant business name for transaction identification"
+                  validation:
+                    max-length: 50
+                    
+                # Merchant city - Geographic analysis
+                - name: "merchantCity"
+                  range: "193-242"
+                  type: "String"
+                  trim: true
+                  description: "Merchant location city for geographic transaction tracking"
+                  validation:
+                    max-length: 30
+                    
+                # Merchant ZIP code - Location validation
+                - name: "merchantZip"
+                  range: "243-252"
+                  type: "String"
+                  trim: true
+                  description: "Merchant postal code for location-based analysis"
+                  validation:
+                    max-length: 10
+                    pattern: "^[0-9]{5}(-[0-9]{4})?$|^[A-Z][0-9][A-Z]\\s[0-9][A-Z][0-9]$|^$"
+                    
+                # Padding field
+                - name: "padding2"
+                  range: "253-257"
+                  type: "String"
+                  description: "Reserved padding field"
+                  
+                # Card number - Foreign key to cards table
+                - name: "cardNumber"
+                  range: "258-274"
+                  type: "String"
+                  trim: true
+                  required: true
+                  description: "17-digit card number requiring 16-character formatting"
+                  validation:
+                    pattern: "^[0-9]{17}$"
+                    
+                # Transaction timestamp - Partition key field
+                - name: "transactionTimestampRaw"
+                  range: "275-300"
+                  type: "String"
+                  trim: true
+                  required: true
+                  description: "Transaction timestamp with microsecond precision"
+                  validation:
+                    pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}$"
+                    
+                # Remaining padding
+                - name: "padding3"
+                  range: "301-315"
+                  type: "String"
+                  description: "Final padding field to complete 315-character record"
+                  
+          processor:
+            type: "Custom"
+            class: "com.carddemo.batch.processor.TransactionDataProcessor"
+            configuration:
+              # Transaction ID generation - Convert 10-digit to 16-character format
+              transaction-id-formatting:
+                format-pattern: "TXN%010d%06d"  # TXN + 10-digit ID + random 6-digit suffix
+                validation:
+                  ensure-unique: true
+                  max-retries: 3
+                  
+              # Account ID formatting - Zero-pad 6-digit to 11-character
+              account-id-formatting:
+                padding-length: 11
+                padding-character: "0"
+                alignment: "left"
+                validation:
+                  foreign-key-check: true
+                  table: "accounts"
+                  column: "account_id"
+                  
+              # Card number formatting - Truncate 17-digit to 16-digit
+              card-number-formatting:
+                truncate-length: 16
+                truncate-position: "right"  # Remove last digit
+                validation:
+                  luhn-check: true
+                  foreign-key-check: true
+                  table: "cards"
+                  column: "card_number"
+                  
+              # BigDecimal amount conversion with COBOL COMP-3 precision
+              transaction-amount-conversion:
+                decimal-places: 2
+                precision: 12
+                scale: 2
+                math-context: "DECIMAL128"
+                rounding-mode: "HALF_EVEN"
+                transformation:
+                  # Convert 10-digit string to BigDecimal with 2 decimal places
+                  formula: "parseImpliedDecimal(transactionAmountRaw, 2)"
+                  sign-handling: "processSignCharacter(amountSignRaw)"
+                  validation:
+                    min-value: "0.01"
+                    max-value: "99999999.99"
+                    
+              # LocalDateTime timestamp conversion with microsecond precision
+              timestamp-conversion:
+                input-format: "yyyy-MM-dd HH:mm:ss.SSSSSS"
+                output-format: "ISO_LOCAL_DATE_TIME"
+                timezone-handling: "UTC"
+                validation:
+                  date-range:
+                    min-date: "2020-01-01T00:00:00"
+                    max-date: "2030-12-31T23:59:59"
+                  partition-validation:
+                    ensure-partition-exists: true
+                    auto-create-partition: false
+                    
+              # Foreign key constraint validation
+              foreign-key-validation:
+                validate-transaction-type:
+                  enabled: true
+                  table: "transaction_types"
+                  column: "transaction_type"
+                  cache-lookups: true
+                  
+                validate-transaction-category:
+                  enabled: true
+                  table: "transaction_categories"
+                  column: "transaction_category"
+                  cache-lookups: true
+                  
+                validate-account-exists:
+                  enabled: true
+                  table: "accounts"
+                  column: "account_id"
+                  cache-lookups: true
+                  
+                validate-card-exists:
+                  enabled: true
+                  table: "cards"
+                  column: "card_number"
+                  cache-lookups: true
+                  
+              # Merchant information processing
+              merchant-data-enrichment:
+                merchant-name:
+                  max-length: 50
+                  cleanup-patterns:
+                    - "remove-extra-spaces"
+                    - "title-case-conversion"
+                    
+                merchant-city:
+                  max-length: 30
+                  cleanup-patterns:
+                    - "remove-extra-spaces"
+                    - "title-case-conversion"
+                    
+                merchant-zip:
+                  format-validation: "US_CANADIAN_POSTAL"
+                  normalization: "standard-format"
+                  
+              # Business rule validation
+              business-rules:
+                transaction-type-amount-consistency:
+                  # Purchase transactions (01, 02) must have positive amounts
+                  positive-amount-types: ["01", "02"]
+                  # Return transactions (03) must have negative amounts  
+                  negative-amount-types: ["03"]
+                  
+                merchant-information-completeness:
+                  # Require merchant name for POS transactions
+                  require-merchant-name-types: ["01"]
+                  require-merchant-city-types: ["01"]
+                  
+                timestamp-business-hours:
+                  # Flag transactions outside business hours for fraud analysis
+                  flag-after-hours: true
+                  business-hours-start: "06:00:00"
+                  business-hours-end: "23:00:00"
+                  
+          writer:
+            type: "JpaItemWriter"
+            entity-class: "com.carddemo.common.entity.Transaction"
+            repository: "com.carddemo.repository.TransactionRepository"
+            write-mode: "INSERT"
+            configuration:
+              # Batch insert optimization for high-volume processing
+              batch-size: 1000
+              flush-mode: "COMMIT"
+              
+              # Partition-aware writing for optimal performance
+              partition-routing:
+                enabled: true
+                routing-field: "transaction_timestamp"
+                partition-strategy: "monthly_range"
+                
+              # Concurrent writing support
+              multi-threading:
+                enabled: true
+                thread-pool-size: 4
+                queue-capacity: 10000
+
+      # =====================================================================================
+      # POST-PROCESSING CONFIGURATION
+      # =====================================================================================
+      post-processing:
+        # Transaction validation and reconciliation
+        data-validation:
+          enabled: true
+          validation-queries:
+            # Verify transaction count matches source file
+            - name: "transaction-count-validation"
+              query: "SELECT COUNT(*) FROM transactions WHERE DATE(transaction_timestamp) = CURRENT_DATE"
+              expected-result-type: "count-match"
+              
+            # Verify amount precision accuracy
+            - name: "amount-precision-validation"
+              query: "SELECT COUNT(*) FROM transactions WHERE scale(transaction_amount) != 2"
+              expected-result: 0
+              
+            # Verify foreign key integrity
+            - name: "foreign-key-integrity-check"
+              query: "SELECT COUNT(*) FROM transactions t WHERE NOT EXISTS (SELECT 1 FROM accounts a WHERE a.account_id = t.account_id)"
+              expected-result: 0
+              
+        # Performance metrics collection
+        metrics:
+          enabled: true
+          collect-processing-time: true
+          collect-record-counts: true
+          collect-error-statistics: true
+          export-to-prometheus: true
+          
+        # Cache warming for transaction processing
+        cache-warming:
+          enabled: true
+          cache-provider: "redis"
+          caches:
+            - name: "accountLookup"
+              key-pattern: "account:*"
+              ttl: "3600"  # 1 hour
+              
+            - name: "cardLookup"
+              key-pattern: "card:*"
+              ttl: "3600"  # 1 hour
+              
+            - name: "transactionTypeLookup"
+              key-pattern: "transaction-type:*"
+              ttl: "86400"  # 24 hours
+              
+            - name: "transactionCategoryLookup"
+              key-pattern: "transaction-category:*"
+              ttl: "86400"  # 24 hours
+
+# =====================================================================================
+# SPRING BATCH INFRASTRUCTURE CONFIGURATION
+# =====================================================================================
+spring:
+  batch:
+    job:
+      enabled: false  # Prevent auto-execution on startup
+    jdbc:
+      initialize-schema: embedded
+      table-prefix: "BATCH_"
+      
+  datasource:
+    # PostgreSQL connection configuration optimized for high-volume processing
+    url: "${DATABASE_URL:jdbc:postgresql://localhost:5432/carddemo}"
+    username: "${DATABASE_USERNAME:carddemo_user}"
+    password: "${DATABASE_PASSWORD:carddemo_pass}"
+    driver-class-name: "org.postgresql.Driver"
+    
+    # HikariCP connection pool optimization for transaction processing
+    hikari:
+      maximum-pool-size: 100
+      minimum-idle: 20
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+      pool-name: "TransactionDataPool"
+      # Batch processing optimizations
+      connection-init-sql: "SET application_name='transaction-data-loader'"
+      data-source-properties:
+        cachePrepStmts: true
+        prepStmtCacheSize: 250
+        prepStmtCacheSqlLimit: 2048
+        
+  # Redis configuration for caching and performance optimization
+  redis:
+    host: "${REDIS_HOST:localhost}"
+    port: "${REDIS_PORT:6379}"
+    timeout: "2000ms"
+    lettuce:
+      pool:
+        max-active: 16
+        max-idle: 16
+        min-idle: 4
+
+# =====================================================================================  
+# LOGGING CONFIGURATION
+# =====================================================================================
+logging:
+  level:
+    com.carddemo.batch: INFO
+    org.springframework.batch: INFO
+    org.postgresql: WARN
+    org.hibernate.SQL: WARN
+    org.hibernate.type: WARN
+    root: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# =====================================================================================
+# ACTUATOR ENDPOINTS FOR MONITORING
+# =====================================================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,metrics,info,batch,prometheus"
+  endpoint:
+    health:
+      show-details: "when-authorized"
+    metrics:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: "carddemo-transaction-loader"
+      environment: "${ENVIRONMENT:development}"
+
+# =====================================================================================
+# PROFILE-SPECIFIC OVERRIDES
+# =====================================================================================
+---
+spring:
+  config:
+    activate:
+      on-profile: "production"
+      
+logging:
+  level:
+    com.carddemo.batch: INFO
+    root: WARN
+    
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 200
+      minimum-idle: 50
+      connection-timeout: 60000
+      
+batch:
+  jobs:
+    transaction-data-load:
+      execution:
+        chunk-size: 10000
+        thread-count: 8
+
+---  
+spring:
+  config:
+    activate:
+      on-profile: "development"
+      
+logging:
+  level:
+    com.carddemo.batch: DEBUG
+    org.springframework.batch: DEBUG
+    org.hibernate.SQL: DEBUG
+    
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 10
+      leak-detection-threshold: 30000
+      
+batch:
+  jobs:
+    transaction-data-load:
+      execution:
+        chunk-size: 1000
+        thread-count: 2
+
+---
+spring:
+  config:
+    activate:
+      on-profile: "test"
+      
+logging:
+  level:
+    com.carddemo.batch: DEBUG
+    root: INFO
+    
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      
+batch:
+  jobs:
+    transaction-data-load:
+      execution:
+        chunk-size: 100
+        skip-limit: 0
+        thread-count: 1

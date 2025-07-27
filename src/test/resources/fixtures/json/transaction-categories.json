@@ -1,0 +1,402 @@
+{
+  "metadata": {
+    "description": "Transaction Category Reference Data Test Fixture",
+    "purpose": "Supports category validation, balance tracking, and Redis cache testing scenarios",
+    "source": "Converted from app/data/ASCII/trancatg.txt",
+    "lastUpdated": "2024-12-19",
+    "version": "1.0",
+    "totalCategories": 18
+  },
+  "categoryGroups": {
+    "SALES_DRAFTS": {
+      "groupCode": "01",
+      "groupName": "Sales and Debit Transactions",
+      "description": "Regular sales transactions and cash advances",
+      "balanceImpact": "DEBIT",
+      "categories": ["010001", "010002", "010003", "010004", "010005"]
+    },
+    "PAYMENTS": {
+      "groupCode": "02", 
+      "groupName": "Payment Transactions",
+      "description": "Various payment methods reducing account balance",
+      "balanceImpact": "CREDIT",
+      "categories": ["020001", "020002", "020003"]
+    },
+    "CREDITS": {
+      "groupCode": "03",
+      "groupName": "Credit Transactions", 
+      "description": "Credits applied to account or specific balances",
+      "balanceImpact": "CREDIT",
+      "categories": ["030001", "030002", "030003"]
+    },
+    "AUTHORIZATIONS": {
+      "groupCode": "04",
+      "groupName": "Authorization Transactions",
+      "description": "Authorization holds and pre-approvals",
+      "balanceImpact": "HOLD",
+      "categories": ["040001", "040002", "040003"]
+    },
+    "REFUNDS": {
+      "groupCode": "05",
+      "groupName": "Refund Transactions",
+      "description": "Refund credits to customer accounts",
+      "balanceImpact": "CREDIT",
+      "categories": ["050001"]
+    },
+    "REVERSALS": {
+      "groupCode": "06", 
+      "groupName": "Reversal Transactions",
+      "description": "Transaction reversals for fraud and non-fraud cases",
+      "balanceImpact": "REVERSAL",
+      "categories": ["060001", "060002"]
+    },
+    "ADJUSTMENTS": {
+      "groupCode": "07",
+      "groupName": "Adjustment Transactions",
+      "description": "Manual adjustments and corrections",
+      "balanceImpact": "ADJUSTMENT", 
+      "categories": ["070001"]
+    }
+  },
+  "categories": [
+    {
+      "categoryCode": "010001",
+      "categoryName": "Regular Sales Draft",
+      "description": "Regular Sales Draft",
+      "groupCode": "01",
+      "groupName": "Sales and Debit Transactions",
+      "status": "ACTIVE",
+      "statusCode": "0000",
+      "balanceType": "PURCHASE",
+      "balanceImpact": "DEBIT",
+      "requiresAuth": true,
+      "allowsReversal": true,
+      "cacheable": true,
+      "testScenarios": ["balance_tracking", "category_validation", "redis_cache"]
+    },
+    {
+      "categoryCode": "010002", 
+      "categoryName": "Regular Cash Advance",
+      "description": "Regular Cash Advance",
+      "groupCode": "01",
+      "groupName": "Sales and Debit Transactions", 
+      "status": "ACTIVE",
+      "statusCode": "0000",
+      "balanceType": "CASH",
+      "balanceImpact": "DEBIT",
+      "requiresAuth": true,
+      "allowsReversal": true,
+      "cacheable": true,
+      "testScenarios": ["cash_advance_fee", "balance_tracking", "category_validation"]
+    },
+    {
+      "categoryCode": "010003",
+      "categoryName": "Convenience Check Debit", 
+      "description": "Convenience Check Debit",
+      "groupCode": "01",
+      "groupName": "Sales and Debit Transactions",
+      "status": "ACTIVE",
+      "statusCode": "0000", 
+      "balanceType": "PURCHASE",
+      "balanceImpact": "DEBIT",
+      "requiresAuth": false,
+      "allowsReversal": true,
+      "cacheable": true,
+      "testScenarios": ["check_processing", "balance_tracking"]
+    },
+    {
+      "categoryCode": "010004",
+      "categoryName": "ATM Cash Advance",
+      "description": "ATM Cash Advance", 
+      "groupCode": "01",
+      "groupName": "Sales and Debit Transactions",
+      "status": "ACTIVE",
+      "statusCode": "0000",
+      "balanceType": "CASH",
+      "balanceImpact": "DEBIT", 
+      "requiresAuth": true,
+      "allowsReversal": true,
+      "cacheable": true,
+      "testScenarios": ["atm_processing", "cash_advance_fee", "daily_limits"]
+    },
+    {
+      "categoryCode": "010005",
+      "categoryName": "Interest Amount",
+      "description": "Interest Amount",
+      "groupCode": "01", 
+      "groupName": "Sales and Debit Transactions",
+      "status": "ACTIVE",
+      "statusCode": "0000",
+      "balanceType": "INTEREST",
+      "balanceImpact": "DEBIT",
+      "requiresAuth": false,
+      "allowsReversal": false,
+      "cacheable": true,
+      "testScenarios": ["interest_calculation", "monthly_processing"]
+    },
+    {
+      "categoryCode": "020001",
+      "categoryName": "Cash payment", 
+      "description": "Cash payment",
+      "groupCode": "02",
+      "groupName": "Payment Transactions",
+      "status": "ACTIVE",
+      "statusCode": "0000",
+      "balanceType": "PAYMENT",
+      "balanceImpact": "CREDIT",
+      "requiresAuth": false,
+      "allowsReversal": true,
+      "cacheable": true,
+      "testScenarios": ["payment_processing", "balance_reduction", "redis_cache"]
+    },
+    {
+      "categoryCode": "020002",
+      "categoryName": "Electronic payment",
+      "description": "Electronic payment",
+      "groupCode": "02",
+      "groupName": "Payment Transactions", 
+      "status": "ACTIVE",
+      "statusCode": "0000",
+      "balanceType": "PAYMENT",
+      "balanceImpact": "CREDIT",
+      "requiresAuth": false,
+      "allowsReversal": true,
+      "cacheable": true,
+      "testScenarios": ["ach_processing", "payment_validation", "balance_reduction"]
+    },
+    {
+      "categoryCode": "020003",
+      "categoryName": "Check payment",
+      "description": "Check payment",
+      "groupCode": "02", 
+      "groupName": "Payment Transactions",
+      "status": "ACTIVE",
+      "statusCode": "0000",
+      "balanceType": "PAYMENT",
+      "balanceImpact": "CREDIT",
+      "requiresAuth": false,
+      "allowsReversal": true,
+      "cacheable": true,
+      "testScenarios": ["check_processing", "payment_validation", "balance_reduction"]
+    },
+    {
+      "categoryCode": "030001",
+      "categoryName": "Credit to Account",
+      "description": "Credit to Account",
+      "groupCode": "03",
+      "groupName": "Credit Transactions",
+      "status": "ACTIVE", 
+      "statusCode": "0000",
+      "balanceType": "CREDIT",
+      "balanceImpact": "CREDIT",
+      "requiresAuth": false,
+      "allowsReversal": true,
+      "cacheable": true,
+      "testScenarios": ["credit_processing", "account_adjustment", "balance_tracking"]
+    },
+    {
+      "categoryCode": "030002",
+      "categoryName": "Credit to Purchase balance",
+      "description": "Credit to Purchase balance", 
+      "groupCode": "03",
+      "groupName": "Credit Transactions",
+      "status": "ACTIVE",
+      "statusCode": "0000",
+      "balanceType": "PURCHASE",
+      "balanceImpact": "CREDIT",
+      "requiresAuth": false,
+      "allowsReversal": true,
+      "cacheable": true,
+      "testScenarios": ["purchase_credit", "balance_allocation", "redis_cache"]
+    },
+    {
+      "categoryCode": "030003",
+      "categoryName": "Credit to Cash balance", 
+      "description": "Credit to Cash balance",
+      "groupCode": "03",
+      "groupName": "Credit Transactions",
+      "status": "ACTIVE",
+      "statusCode": "0000",
+      "balanceType": "CASH",
+      "balanceImpact": "CREDIT",
+      "requiresAuth": false,
+      "allowsReversal": true,
+      "cacheable": true,
+      "testScenarios": ["cash_credit", "balance_allocation"]
+    },
+    {
+      "categoryCode": "040001",
+      "categoryName": "Zero dollar authorization",
+      "description": "Zero dollar authorization",
+      "groupCode": "04",
+      "groupName": "Authorization Transactions",
+      "status": "ACTIVE",
+      "statusCode": "0000",
+      "balanceType": "AUTHORIZATION",
+      "balanceImpact": "HOLD",
+      "requiresAuth": true,
+      "allowsReversal": true,
+      "cacheable": true,
+      "testScenarios": ["auth_validation", "zero_amount_handling", "card_verification"]
+    },
+    {
+      "categoryCode": "040002",
+      "categoryName": "Online purchase authorization",
+      "description": "Online purchase authorization",
+      "groupCode": "04",
+      "groupName": "Authorization Transactions",
+      "status": "ACTIVE",
+      "statusCode": "0000",
+      "balanceType": "AUTHORIZATION",
+      "balanceImpact": "HOLD",
+      "requiresAuth": true,
+      "allowsReversal": true,
+      "cacheable": true,
+      "testScenarios": ["online_auth", "credit_limit_check", "fraud_detection"]
+    },
+    {
+      "categoryCode": "040003",
+      "categoryName": "Travel booking authorization",
+      "description": "Travel booking authorization",
+      "groupCode": "04",
+      "groupName": "Authorization Transactions",
+      "status": "ACTIVE",
+      "statusCode": "0000",
+      "balanceType": "AUTHORIZATION", 
+      "balanceImpact": "HOLD",
+      "requiresAuth": true,
+      "allowsReversal": true,
+      "cacheable": true,
+      "testScenarios": ["travel_auth", "enhanced_auth", "merchant_category"]
+    },
+    {
+      "categoryCode": "050001",
+      "categoryName": "Refund credit",
+      "description": "Refund credit",
+      "groupCode": "05",
+      "groupName": "Refund Transactions",
+      "status": "ACTIVE",
+      "statusCode": "0000",
+      "balanceType": "REFUND",
+      "balanceImpact": "CREDIT",
+      "requiresAuth": false,
+      "allowsReversal": true,
+      "cacheable": true,
+      "testScenarios": ["refund_processing", "merchant_refund", "balance_adjustment"]
+    },
+    {
+      "categoryCode": "060001",
+      "categoryName": "Fraud reversal",
+      "description": "Fraud reversal",
+      "groupCode": "06",
+      "groupName": "Reversal Transactions",
+      "status": "ACTIVE",
+      "statusCode": "0000",
+      "balanceType": "REVERSAL",
+      "balanceImpact": "REVERSAL",
+      "requiresAuth": false,
+      "allowsReversal": false,
+      "cacheable": true,
+      "testScenarios": ["fraud_reversal", "dispute_processing", "balance_restoration"]
+    },
+    {
+      "categoryCode": "060002",
+      "categoryName": "Non-fraud reversal",
+      "description": "Non-fraud reversal", 
+      "groupCode": "06",
+      "groupName": "Reversal Transactions",
+      "status": "ACTIVE",
+      "statusCode": "0000",
+      "balanceType": "REVERSAL",
+      "balanceImpact": "REVERSAL",
+      "requiresAuth": false,
+      "allowsReversal": false,
+      "cacheable": true,
+      "testScenarios": ["system_reversal", "error_correction", "balance_restoration"]
+    },
+    {
+      "categoryCode": "070001",
+      "categoryName": "Sales draft credit adjustment",
+      "description": "Sales draft credit adjustment",
+      "groupCode": "07",
+      "groupName": "Adjustment Transactions",
+      "status": "ACTIVE",
+      "statusCode": "0000",
+      "balanceType": "ADJUSTMENT",
+      "balanceImpact": "ADJUSTMENT",
+      "requiresAuth": false,
+      "allowsReversal": true,
+      "cacheable": true,
+      "testScenarios": ["manual_adjustment", "error_correction", "balance_correction"]
+    }
+  ],
+  "testScenarios": {
+    "balance_tracking": {
+      "description": "Tests for transaction category impact on account balances",
+      "applicableCategories": ["010001", "010002", "010003", "010004", "020001", "020002", "020003", "030001", "030002", "030003"],
+      "testCases": ["debit_balance_increase", "credit_balance_decrease", "balance_allocation_logic"]
+    },
+    "category_validation": {
+      "description": "Tests for transaction category code validation and lookup",
+      "applicableCategories": ["010001", "010002", "020001", "030002"],
+      "testCases": ["valid_category_lookup", "invalid_category_rejection", "category_status_check"]
+    },
+    "redis_cache": {
+      "description": "Tests for Redis cache behavior with reference data per Section 6.2.4.2",
+      "applicableCategories": ["010001", "020001", "030002"],
+      "testCases": ["cache_hit_scenario", "cache_miss_scenario", "cache_eviction_scenario", "spring_cache_abstraction"]
+    },
+    "business_rule_validation": {
+      "description": "Tests for financial processing categorization rules",
+      "applicableCategories": ["010001", "010002", "010004", "040001", "040002", "060001"],
+      "testCases": ["category_group_validation", "balance_type_assignment", "authorization_requirements"]
+    }
+  },
+  "validationRules": {
+    "categoryCodeFormat": {
+      "pattern": "^[0-9]{6}$",
+      "description": "Category code must be exactly 6 digits"
+    },
+    "statusCodeValues": {
+      "validValues": ["0000", "0001", "9999"],
+      "descriptions": {
+        "0000": "Active category",
+        "0001": "Inactive category", 
+        "9999": "Deprecated category"
+      }
+    },
+    "balanceImpactTypes": {
+      "validValues": ["DEBIT", "CREDIT", "HOLD", "REVERSAL", "ADJUSTMENT"],
+      "descriptions": {
+        "DEBIT": "Increases balance owed",
+        "CREDIT": "Decreases balance owed",
+        "HOLD": "Places temporary hold on available credit",
+        "REVERSAL": "Reverses previous transaction impact",
+        "ADJUSTMENT": "Manual balance correction"
+      }
+    },
+    "balanceTypes": {
+      "validValues": ["PURCHASE", "CASH", "INTEREST", "PAYMENT", "CREDIT", "AUTHORIZATION", "REFUND", "REVERSAL", "ADJUSTMENT"],
+      "descriptions": {
+        "PURCHASE": "Regular purchase transactions",
+        "CASH": "Cash advance transactions",
+        "INTEREST": "Interest charges",
+        "PAYMENT": "Payment transactions",
+        "CREDIT": "Credit transactions",
+        "AUTHORIZATION": "Authorization holds",
+        "REFUND": "Refund transactions",
+        "REVERSAL": "Transaction reversals",
+        "ADJUSTMENT": "Manual adjustments"
+      }
+    }
+  },
+  "cacheConfiguration": {
+    "cacheNames": ["transactionCategories", "categoryGroups", "validationRules"],
+    "ttl": 3600,
+    "maxEntries": 1000,
+    "evictionPolicy": "LRU",
+    "springCacheManager": "redisCacheManager",
+    "keyPrefix": "trxcat:",
+    "description": "Redis cache configuration for transaction category reference data per Section 6.2.4.2"
+  }
+}

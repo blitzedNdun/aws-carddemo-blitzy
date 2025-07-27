@@ -1,0 +1,799 @@
+{
+  "description": "Comprehensive test user credentials dataset for CardDemo Spring Security authentication and authorization testing. This dataset provides complete test coverage for RACF-to-Spring Security migration scenarios, BCrypt password validation, role-based access control testing, and comprehensive security boundary validation. Created for integration with Spring Security JWT authentication framework and PostgreSQL users table structure.",
+  "metadata": {
+    "version": "1.0.0",
+    "created_date": "2024-07-27",
+    "purpose": "Security testing and authentication validation",
+    "bcrypt_rounds": 12,
+    "password_format": "8_character_legacy_compatible",
+    "role_mapping": {
+      "A": "ROLE_ADMIN",
+      "U": "ROLE_USER"
+    },
+    "test_framework_compatibility": [
+      "Spring Security 6.x",
+      "JWT Authentication",
+      "PostgreSQL users table",
+      "BCrypt password encoder",
+      "@WithMockUser annotations",
+      "Spring Boot Test"
+    ]
+  },
+  
+  "TestUserDataset": {
+    "admin_user_credentials": [
+      {
+        "user_id": "TESTADM1",
+        "first_name": "System",
+        "last_name": "Administrator",
+        "password_plain": "admin123",
+        "password_hash": "$2a$12$7GmZ8F8bGvmJ7EoHp2M/IeE3qP4aZh7FJfXKg2M5N6Qu8Rv9TsWxO",
+        "user_type": "A",
+        "spring_security_roles": ["ROLE_ADMIN", "ROLE_USER"],
+        "created_at": "2024-01-15T09:00:00",
+        "last_login": "2024-01-20T14:30:00",
+        "account_status": "ACTIVE",
+        "description": "Primary admin test user with full system privileges including user management, system configuration, and complete transaction processing access. Used for testing administrative operations and elevated privilege scenarios.",
+        "test_scenarios": [
+          "Admin menu access validation",
+          "User management CRUD operations",
+          "System configuration access",
+          "All user functions inheritance",
+          "Audit log access verification"
+        ],
+        "jwt_claims": {
+          "sub": "TESTADM1",
+          "user_type": "A",
+          "roles": ["ROLE_ADMIN", "ROLE_USER"],
+          "session_id": "admin-test-session-001"
+        }
+      },
+      {
+        "user_id": "TESTADM2",
+        "first_name": "Security",
+        "last_name": "Manager",
+        "password_plain": "secure99",
+        "password_hash": "$2a$12$9HkZ2G5bHvnI8FpIq3N/OfF4qQ5bZi8GKgYLh3N6O7Rq0Sz0TuXyQ",
+        "user_type": "A",
+        "spring_security_roles": ["ROLE_ADMIN", "ROLE_USER"],
+        "created_at": "2024-01-10T08:15:00",
+        "last_login": "2024-01-19T16:45:00",
+        "account_status": "ACTIVE",
+        "description": "Secondary admin user for testing concurrent administrative sessions and role-based authorization boundaries. Validates admin privilege inheritance and method-level security enforcement.",
+        "test_scenarios": [
+          "Concurrent admin sessions",
+          "Administrative role validation",
+          "Security audit operations",
+          "Multi-admin conflict resolution",
+          "Privilege escalation prevention"
+        ],
+        "jwt_claims": {
+          "sub": "TESTADM2",
+          "user_type": "A",
+          "roles": ["ROLE_ADMIN", "ROLE_USER"],
+          "session_id": "admin-test-session-002"
+        }
+      }
+    ],
+    
+    "regular_user_credentials": [
+      {
+        "user_id": "TESTUSER",
+        "first_name": "Standard",
+        "last_name": "User",
+        "password_plain": "pass1234",
+        "password_hash": "$2a$12$4CK4fPUNgRRl9.9b2xQM/eJf0GmqTnOKfIb8.OqKu8S.KqPz6XhG2",
+        "user_type": "U",
+        "spring_security_roles": ["ROLE_USER"],
+        "created_at": "2024-01-12T10:30:00",
+        "last_login": "2024-01-21T09:15:00",
+        "account_status": "ACTIVE",
+        "description": "Primary regular user for testing standard transaction processing, account viewing, and card management operations. Validates user-level access restrictions and authorization boundaries.",
+        "test_scenarios": [
+          "Account view operations",
+          "Transaction processing",
+          "Card management access",
+          "Admin function restriction",
+          "Data access boundaries"
+        ],
+        "jwt_claims": {
+          "sub": "TESTUSER",
+          "user_type": "U",
+          "roles": ["ROLE_USER"],
+          "session_id": "user-test-session-001"
+        }
+      },
+      {
+        "user_id": "TESTUSR2",
+        "first_name": "Account",
+        "last_name": "Holder",
+        "password_plain": "user5678",
+        "password_hash": "$2a$12$5DL5fQOQsSmKj0.c3yRM0eFg1HnqUoPlCj9.PrLv9T.LrQa7YvHnK",
+        "user_type": "U",
+        "spring_security_roles": ["ROLE_USER"],
+        "created_at": "2024-01-14T11:45:00",
+        "last_login": "2024-01-20T13:20:00",
+        "account_status": "ACTIVE",
+        "description": "Secondary regular user for testing concurrent user sessions and cross-user data isolation. Validates that users can only access their own account data and transaction history.",
+        "test_scenarios": [
+          "Concurrent user sessions",
+          "Data isolation validation",
+          "Cross-user access prevention",
+          "Session management testing",
+          "Transaction boundary enforcement"
+        ],
+        "jwt_claims": {
+          "sub": "TESTUSR2",
+          "user_type": "U",
+          "roles": ["ROLE_USER"],
+          "session_id": "user-test-session-002"
+        }
+      },
+      {
+        "user_id": "TESTUSR3",
+        "first_name": "Customer",
+        "last_name": "Service",
+        "password_plain": "cust9999",
+        "password_hash": "$2a$12$6EK6gROSt.nLk1.d4zSN1fGh2IoqVpQmDk0.QsM0v9U.MsRb8yIoO",
+        "user_type": "U",
+        "spring_security_roles": ["ROLE_USER"],
+        "created_at": "2024-01-16T14:20:00",
+        "last_login": "2024-01-21T11:30:00",
+        "account_status": "ACTIVE",
+        "description": "Customer service representative user for testing role-based menu generation and service-specific access patterns. Validates appropriate function visibility and authorization controls.",
+        "test_scenarios": [
+          "Role-based menu generation",
+          "Customer service operations",
+          "Account inquiry functions",
+          "Transaction history access",
+          "Restricted administrative functions"
+        ],
+        "jwt_claims": {
+          "sub": "TESTUSR3",
+          "user_type": "U",
+          "roles": ["ROLE_USER"],
+          "session_id": "user-test-session-003"
+        }
+      }
+    ],
+    
+    "disabled_user_accounts": [
+      {
+        "user_id": "TESTDIS1",
+        "first_name": "Disabled",
+        "last_name": "Account",
+        "password_plain": "disabled",
+        "password_hash": "$2a$12$7FL7hRPTu.oMl2.e5{SQ2gGi3JprWqRnEl1.RtN1w0V.NtSc9zJpS",
+        "user_type": "U",
+        "spring_security_roles": ["ROLE_USER"],
+        "created_at": "2024-01-05T12:00:00",
+        "last_login": "2024-01-08T15:30:00",
+        "account_status": "DISABLED",
+        "description": "Disabled user account for testing authentication rejection and security boundary enforcement. Validates that disabled accounts cannot authenticate regardless of correct credentials.",
+        "test_scenarios": [
+          "Authentication rejection validation",
+          "Account status enforcement",
+          "Security boundary testing",
+          "Login attempt logging",
+          "Audit trail verification"
+        ],
+        "expected_authentication_result": "AUTHENTICATION_FAILED",
+        "expected_error_message": "Account is disabled"
+      },
+      {
+        "user_id": "TESTDIS2",
+        "first_name": "Suspended",
+        "last_name": "User",
+        "password_plain": "suspend1",
+        "password_hash": "$2a$12$8GM8iSQUv.pNm3.f6zTR3hHj4KqsXrSnFm2.SuO2x1W.OuTd0zKqT",
+        "user_type": "A",
+        "spring_security_roles": ["ROLE_ADMIN", "ROLE_USER"],
+        "created_at": "2024-01-03T10:15:00",
+        "last_login": "2024-01-07T09:45:00",
+        "account_status": "SUSPENDED",
+        "description": "Suspended admin account for testing security controls on privileged accounts. Validates that even administrative accounts can be properly disabled and access revoked.",
+        "test_scenarios": [
+          "Admin account suspension",
+          "Privilege revocation testing",
+          "Administrative access denial",
+          "Security audit logging",
+          "Account recovery procedures"
+        ],
+        "expected_authentication_result": "AUTHENTICATION_FAILED",
+        "expected_error_message": "Account is suspended"
+      }
+    ],
+    
+    "expired_password_users": [
+      {
+        "user_id": "TESTEXP1",
+        "first_name": "Expired",
+        "last_name": "Password",
+        "password_plain": "expired1",
+        "password_hash": "$2a$12$9HN9jTRVw.qOo4.g7zUT4iIj5LstYsToGn3.TvP3y2X.PvUe1zLrU",
+        "user_type": "U",
+        "spring_security_roles": ["ROLE_USER"],
+        "created_at": "2024-01-01T08:00:00",
+        "last_login": "2024-01-02T12:30:00",
+        "password_expiry_date": "2024-01-15T23:59:59",
+        "account_status": "PASSWORD_EXPIRED",
+        "description": "User with expired password for testing password policy enforcement and forced password reset scenarios. Validates authentication flows for expired credentials.",
+        "test_scenarios": [
+          "Password expiry enforcement",
+          "Forced password reset flow",
+          "Authentication with expired credentials",
+          "Security policy validation",
+          "Audit trail for password events"
+        ],
+        "expected_authentication_result": "PASSWORD_CHANGE_REQUIRED",
+        "expected_error_message": "Password has expired and must be changed"
+      }
+    ],
+    
+    "invalid_role_users": [
+      {
+        "user_id": "TESTINV1",
+        "first_name": "Invalid",
+        "last_name": "Role",
+        "password_plain": "invalid1",
+        "password_hash": "$2a$12$0IO0kURWx.rPp5.h8zUV5jJk6MtuZtUpHo4.UwQ4z3Y.QwVf2zMsW",
+        "user_type": "X",
+        "spring_security_roles": [],
+        "created_at": "2024-01-18T16:00:00",
+        "last_login": null,
+        "account_status": "ACTIVE",
+        "description": "User with invalid role type for testing authorization framework robustness and edge case handling. Validates system behavior with malformed role data.",
+        "test_scenarios": [
+          "Invalid role type handling",
+          "Authorization framework robustness",
+          "Edge case validation",
+          "Error handling verification",
+          "Security boundary testing"
+        ],
+        "expected_authentication_result": "ROLE_VALIDATION_FAILED",
+        "expected_error_message": "Invalid user role specified"
+      },
+      {
+        "user_id": "TESTNUL1",
+        "first_name": "Null",
+        "last_name": "Role",
+        "password_plain": "nullrole",
+        "password_hash": "$2a$12$1JR1lVSXy.sPq6.i9zVW6kKl7NvuavVqIp5.VxR5z4Z.RxWg3zNtX",
+        "user_type": null,
+        "spring_security_roles": [],
+        "created_at": "2024-01-19T17:30:00",
+        "last_login": null,
+        "account_status": "ACTIVE",
+        "description": "User with null role for testing null pointer exception handling and defensive programming validation. Ensures graceful error handling for missing role data.",
+        "test_scenarios": [
+          "Null role handling",
+          "Null pointer exception prevention",
+          "Defensive programming validation",
+          "Error response consistency",
+          "Logging and monitoring verification"
+        ],
+        "expected_authentication_result": "ROLE_VALIDATION_FAILED",
+        "expected_error_message": "User role cannot be null"
+      }
+    ],
+    
+    "bcrypt_password_test_cases": [
+      {
+        "test_case_name": "bcrypt_rounds_12_validation",
+        "user_id": "BCRYPT12",
+        "first_name": "BCrypt",
+        "last_name": "Twelve",
+        "password_plain": "rounds12",
+        "password_hash": "$2a$12$2KS2mVTYz.tQr7.j0zXX7lLm8OvwbwWrJq6.WyS6{4[.SyXh4zOrV",
+        "user_type": "U",
+        "bcrypt_rounds": 12,
+        "hash_algorithm": "BCrypt",
+        "description": "Test case validating BCrypt password hashing with 12 salt rounds as specified in security requirements. Verifies minimum security standard compliance.",
+        "test_scenarios": [
+          "BCrypt 12 rounds validation",
+          "Password hash verification",
+          "Security standard compliance",
+          "Hash algorithm validation",
+          "Performance benchmarking"
+        ]
+      },
+      {
+        "test_case_name": "bcrypt_rounds_14_enhanced",
+        "user_id": "BCRYPT14",
+        "first_name": "BCrypt",
+        "last_name": "Fourteen",
+        "password_plain": "rounds14",
+        "password_hash": "$2a$14$4MS4oWUb{.vRs9.k2zYY9mMn0QxycxXsKr8.XzT8z6.TzYi6zQsX",
+        "user_type": "A",
+        "bcrypt_rounds": 14,
+        "hash_algorithm": "BCrypt",
+        "description": "Enhanced security test case with 14 BCrypt rounds for administrative accounts. Validates configurable security levels and enhanced protection for privileged users.",
+        "test_scenarios": [
+          "Enhanced BCrypt 14 rounds",
+          "Admin password security",
+          "Configurable security levels",
+          "Performance impact assessment",
+          "Security vs performance balance"
+        ]
+      },
+      {
+        "test_case_name": "legacy_migration_validation",
+        "user_id": "LEGACY01",
+        "first_name": "Legacy",
+        "last_name": "Migration",
+        "password_plain": "legacy01",
+        "password_hash": "$2a$12$5NT5pXVc.wSt0.l3{ZZ0oOo9RyudzYTtLs9.Y{U9{7.U{Zj7{RtY",
+        "user_type": "U",
+        "original_racf_password": "LEGACY01",
+        "migration_date": "2024-01-20T00:00:00",
+        "description": "Legacy RACF password migration test case validating password conversion from mainframe to Spring Security BCrypt format. Tests migration process integrity.",
+        "test_scenarios": [
+          "RACF to BCrypt migration",
+          "Password conversion validation",
+          "Migration process integrity",
+          "Backward compatibility testing",
+          "Migration audit trail"
+        ]
+      }
+    ],
+    
+    "authentication_flow_test_data": [
+      {
+        "flow_name": "successful_admin_authentication",
+        "user_id": "TESTADM1",
+        "expected_steps": [
+          "Username case conversion to uppercase",
+          "PostgreSQL users table query",
+          "BCrypt password verification",
+          "JWT token generation with admin claims",
+          "Redis session creation",
+          "Admin menu component rendering"
+        ],
+        "expected_jwt_claims": {
+          "sub": "TESTADM1",
+          "user_type": "A",
+          "roles": ["ROLE_ADMIN", "ROLE_USER"],
+          "iat": "current_timestamp",
+          "exp": "current_timestamp + 1800"
+        },
+        "expected_response_code": 200,
+        "expected_redirect": "/admin/menu"
+      },
+      {
+        "flow_name": "successful_user_authentication",
+        "user_id": "TESTUSER",
+        "expected_steps": [
+          "Username case conversion to uppercase",
+          "PostgreSQL users table query",
+          "BCrypt password verification",
+          "JWT token generation with user claims",
+          "Redis session creation",
+          "User menu component rendering"
+        ],
+        "expected_jwt_claims": {
+          "sub": "TESTUSER",
+          "user_type": "U",
+          "roles": ["ROLE_USER"],
+          "iat": "current_timestamp",
+          "exp": "current_timestamp + 1800"
+        },
+        "expected_response_code": 200,
+        "expected_redirect": "/user/menu"
+      },
+      {
+        "flow_name": "failed_authentication_invalid_password",
+        "user_id": "TESTUSER",
+        "invalid_password": "wrongpass",
+        "expected_steps": [
+          "Username case conversion to uppercase",
+          "PostgreSQL users table query",
+          "BCrypt password verification failure",
+          "Authentication failure logging",
+          "Error response generation"
+        ],
+        "expected_response_code": 401,
+        "expected_error_message": "Invalid username or password",
+        "expected_audit_event": "AUTHENTICATION_FAILURE"
+      }
+    ],
+    
+    "authorization_boundary_test_scenarios": [
+      {
+        "scenario_name": "admin_user_management_access",
+        "user_id": "TESTADM1",
+        "endpoint": "/api/users",
+        "http_method": "GET",
+        "required_roles": ["ROLE_ADMIN"],
+        "expected_result": "ACCESS_GRANTED",
+        "preauthorize_expression": "hasRole('ADMIN')",
+        "description": "Validates that admin users can access user management endpoints with proper role-based authorization."
+      },
+      {
+        "scenario_name": "user_admin_access_denial",
+        "user_id": "TESTUSER",
+        "endpoint": "/api/users",
+        "http_method": "GET",
+        "required_roles": ["ROLE_ADMIN"],
+        "expected_result": "ACCESS_DENIED",
+        "expected_response_code": 403,
+        "preauthorize_expression": "hasRole('ADMIN')",
+        "description": "Validates that regular users are denied access to administrative endpoints."
+      },
+      {
+        "scenario_name": "user_account_access",
+        "user_id": "TESTUSER",
+        "endpoint": "/api/account/view/12345",
+        "http_method": "GET",
+        "required_roles": ["ROLE_USER"],
+        "expected_result": "ACCESS_GRANTED",
+        "preauthorize_expression": "hasAnyRole('USER','ADMIN')",
+        "description": "Validates that users can access their own account information with appropriate authorization."
+      },
+      {
+        "scenario_name": "admin_inherits_user_permissions",
+        "user_id": "TESTADM1",
+        "endpoint": "/api/account/view/12345",
+        "http_method": "GET",
+        "required_roles": ["ROLE_USER"],
+        "expected_result": "ACCESS_GRANTED",
+        "preauthorize_expression": "hasAnyRole('USER','ADMIN')",
+        "description": "Validates that admin users inherit all user permissions through role hierarchy."
+      }
+    ]
+  },
+  
+  "RACFMigrationTestScenarios": {
+    "legacy_racf_user_mappings": [
+      {
+        "racf_user_id": "ADMIN001",
+        "racf_group": "CARDDEMO.ADMIN",
+        "racf_attributes": {
+          "name": "SYSTEM ADMINISTRATOR",
+          "created": "2020-01-15",
+          "last_access": "2024-01-20",
+          "password_interval": 90,
+          "revoke_count": 0
+        },
+        "spring_security_mapping": {
+          "user_id": "ADMIN001",
+          "first_name": "SYSTEM",
+          "last_name": "ADMINISTRATOR",
+          "user_type": "A",
+          "spring_roles": ["ROLE_ADMIN", "ROLE_USER"],
+          "password_hash": "$2a$12$AdnXpOSt.wNvEd.l4zXX8lLn9QwxdxYsLr7.XzU7z6[.TzZi7zRtZ"
+        },
+        "migration_validation": {
+          "role_mapping_correct": true,
+          "password_migrated": true,
+          "audit_trail_preserved": true,
+          "access_patterns_equivalent": true
+        }
+      },
+      {
+        "racf_user_id": "USER0001",
+        "racf_group": "CARDDEMO.USER",
+        "racf_attributes": {
+          "name": "STANDARD USER",
+          "created": "2022-03-10",
+          "last_access": "2024-01-21",
+          "password_interval": 60,
+          "revoke_count": 0
+        },
+        "spring_security_mapping": {
+          "user_id": "USER0001",
+          "first_name": "STANDARD",
+          "last_name": "USER",
+          "user_type": "U",
+          "spring_roles": ["ROLE_USER"],
+          "password_hash": "$2a$12$StdXqPTu.xOvFe.m5zYY0pPo0RxzfzZtMs8.YzV8z7.VzZj8zStA"
+        },
+        "migration_validation": {
+          "role_mapping_correct": true,
+          "password_migrated": true,
+          "audit_trail_preserved": true,
+          "access_patterns_equivalent": true
+        }
+      }
+    ],
+    
+    "spring_security_role_conversions": [
+      {
+        "legacy_role": "CARDDEMO.ADMIN",
+        "spring_security_role": "ROLE_ADMIN",
+        "inherited_roles": ["ROLE_USER"],
+        "permissions": [
+          "USER_MANAGEMENT_CREATE",
+          "USER_MANAGEMENT_READ",
+          "USER_MANAGEMENT_UPDATE",
+          "USER_MANAGEMENT_DELETE",
+          "SYSTEM_ADMINISTRATION",
+          "AUDIT_LOG_ACCESS",
+          "ALL_USER_FUNCTIONS"
+        ],
+        "endpoint_access": [
+          "/api/admin/**",
+          "/api/users/**",
+          "/actuator/**",
+          "/api/account/**",
+          "/api/transaction/**",
+          "/api/card/**"
+        ]
+      },
+      {
+        "legacy_role": "CARDDEMO.USER",
+        "spring_security_role": "ROLE_USER",
+        "inherited_roles": [],
+        "permissions": [
+          "ACCOUNT_VIEW",
+          "ACCOUNT_UPDATE",
+          "TRANSACTION_PROCESS",
+          "CARD_MANAGEMENT",
+          "BILL_PAYMENT"
+        ],
+        "endpoint_access": [
+          "/api/account/**",
+          "/api/transaction/**",
+          "/api/card/**",
+          "/api/bill/**"
+        ],
+        "restricted_endpoints": [
+          "/api/admin/**",
+          "/api/users/**",
+          "/actuator/**"
+        ]
+      }
+    ],
+    
+    "admin_to_role_admin_scenarios": [
+      {
+        "test_scenario": "admin_user_crud_operations",
+        "description": "Validates complete CRUD operations for user management by admin users",
+        "test_user": "TESTADM1",
+        "operations": [
+          {
+            "operation": "CREATE_USER",
+            "endpoint": "POST /api/users",
+            "expected_result": "SUCCESS",
+            "required_role": "ROLE_ADMIN"
+          },
+          {
+            "operation": "READ_ALL_USERS",
+            "endpoint": "GET /api/users",
+            "expected_result": "SUCCESS",
+            "required_role": "ROLE_ADMIN"
+          },
+          {
+            "operation": "UPDATE_USER",
+            "endpoint": "PUT /api/users/TESTUSER",
+            "expected_result": "SUCCESS",
+            "required_role": "ROLE_ADMIN"
+          },
+          {
+            "operation": "DELETE_USER",
+            "endpoint": "DELETE /api/users/TESTUSER",
+            "expected_result": "SUCCESS",
+            "required_role": "ROLE_ADMIN"
+          }
+        ]
+      },
+      {
+        "test_scenario": "admin_system_configuration",
+        "description": "Validates administrative access to system configuration and monitoring",
+        "test_user": "TESTADM2",
+        "operations": [
+          {
+            "operation": "SYSTEM_STATUS",
+            "endpoint": "GET /api/admin/system-status",
+            "expected_result": "SUCCESS",
+            "required_role": "ROLE_ADMIN"
+          },
+          {
+            "operation": "ACTUATOR_HEALTH",
+            "endpoint": "GET /actuator/health",
+            "expected_result": "SUCCESS",
+            "required_role": "ROLE_ADMIN"
+          },
+          {
+            "operation": "AUDIT_LOGS",
+            "endpoint": "GET /api/admin/audit",
+            "expected_result": "SUCCESS",
+            "required_role": "ROLE_ADMIN"
+          }
+        ]
+      }
+    ],
+    
+    "user_to_role_user_scenarios": [
+      {
+        "test_scenario": "user_account_operations",
+        "description": "Validates user access to account-related operations with proper restrictions",
+        "test_user": "TESTUSER",
+        "operations": [
+          {
+            "operation": "VIEW_ACCOUNT",
+            "endpoint": "GET /api/account/view/12345",
+            "expected_result": "SUCCESS",
+            "required_role": "ROLE_USER"
+          },
+          {
+            "operation": "UPDATE_ACCOUNT",
+            "endpoint": "PUT /api/account/update/12345",
+            "expected_result": "SUCCESS",
+            "required_role": "ROLE_USER"
+          },
+          {
+            "operation": "VIEW_TRANSACTIONS",
+            "endpoint": "GET /api/transaction/history/12345",
+            "expected_result": "SUCCESS",
+            "required_role": "ROLE_USER"
+          },
+          {
+            "operation": "ADMIN_ACCESS_DENIED",
+            "endpoint": "GET /api/users",
+            "expected_result": "ACCESS_DENIED",
+            "expected_response_code": 403
+          }
+        ]
+      }
+    ],
+    
+    "authentication_migration_validation": [
+      {
+        "validation_name": "password_hash_migration",
+        "description": "Validates successful migration from RACF fixed-length passwords to BCrypt hashes",
+        "test_cases": [
+          {
+            "original_racf_password": "ADMIN123",
+            "migrated_bcrypt_hash": "$2a$12$AdminHashExample.ValidationString",
+            "validation_successful": true,
+            "migration_timestamp": "2024-01-20T00:00:00"
+          },
+          {
+            "original_racf_password": "USER5678",
+            "migrated_bcrypt_hash": "$2a$12$UserHashExample.ValidationString", 
+            "validation_successful": true,
+            "migration_timestamp": "2024-01-20T00:00:00"
+          }
+        ]
+      },
+      {
+        "validation_name": "session_management_migration",
+        "description": "Validates transition from CICS terminal storage to Redis session management",
+        "comparison": {
+          "legacy_cics_session": {
+            "storage_type": "CICS Terminal Storage",
+            "timeout": "20 minutes",
+            "state_preservation": "Terminal-bound",
+            "scalability": "Single region"
+          },
+          "modern_redis_session": {
+            "storage_type": "Redis Distributed Cache",
+            "timeout": "30 minutes (configurable)",
+            "state_preservation": "JWT token + Redis context",
+            "scalability": "Horizontally scalable"
+          }
+        },
+        "migration_benefits": [
+          "Improved scalability",
+          "Enhanced security",
+          "Better performance",
+          "Cloud-native compatibility"
+        ]
+      }
+    ],
+    
+    "password_hash_upgrade_tests": [
+      {
+        "upgrade_scenario": "racf_to_bcrypt_12_rounds",
+        "description": "Standard migration from RACF passwords to BCrypt with 12 rounds",
+        "test_data": [
+          {
+            "user_id": "UPGRADE1",
+            "racf_password": "RACFPWD1",
+            "bcrypt_hash": "$2a$12$UpgradeExample1.BCryptHashString",
+            "rounds": 12,
+            "migration_status": "COMPLETED",
+            "performance_metrics": {
+              "hash_generation_time_ms": 250,
+              "verification_time_ms": 45
+            }
+          }
+        ]
+      },
+      {
+        "upgrade_scenario": "enhanced_security_14_rounds",
+        "description": "Enhanced security migration with 14 BCrypt rounds for admin accounts",
+        "test_data": [
+          {
+            "user_id": "UPGRADE2",
+            "racf_password": "ADMINPWD",
+            "bcrypt_hash": "$2a$14$EnhancedExample.BCryptHashString",
+            "rounds": 14,
+            "migration_status": "COMPLETED",
+            "performance_metrics": {
+              "hash_generation_time_ms": 850,
+              "verification_time_ms": 125
+            }
+          }
+        ]
+      }
+    ],
+    
+    "audit_trail_comparison_data": [
+      {
+        "comparison_category": "authentication_events",
+        "legacy_racf_audit": {
+          "format": "SMF Record Type 80",
+          "storage": "SMF datasets",
+          "retention": "SMF dumping cycle",
+          "accessibility": "RACF reports and extracts"
+        },
+        "modern_spring_security_audit": {
+          "format": "Structured JSON events",
+          "storage": "ELK Stack (Elasticsearch)",
+          "retention": "7+ years with lifecycle management",
+          "accessibility": "Kibana dashboards and REST APIs"
+        },
+        "comparison_metrics": {
+          "legacy_query_time": "Minutes to hours",
+          "modern_query_time": "Seconds",
+          "legacy_format_flexibility": "Fixed SMF format",
+          "modern_format_flexibility": "Structured JSON with custom fields",
+          "legacy_real_time_analysis": "Not available",
+          "modern_real_time_analysis": "Real-time dashboards and alerting"
+        }
+      },
+      {
+        "comparison_category": "authorization_decisions",
+        "legacy_racf_audit": {
+          "event_tracking": "Resource access success/failure",
+          "granularity": "Dataset/resource level",
+          "correlation": "Limited correlation capabilities"
+        },
+        "modern_spring_security_audit": {
+          "event_tracking": "Method-level authorization decisions",
+          "granularity": "API endpoint and operation level",
+          "correlation": "Full request correlation with trace IDs"
+        },
+        "security_improvements": [
+          "Real-time threat detection",
+          "Automated incident response",
+          "Enhanced compliance reporting",
+          "Better forensic capabilities"
+        ]
+      }
+    ]
+  },
+  
+  "test_execution_metadata": {
+    "compatible_test_frameworks": [
+      "Spring Boot Test",
+      "@SpringBootTest",
+      "@WebMvcTest", 
+      "@DataJpaTest",
+      "TestContainers",
+      "Mockito",
+      "JUnit 5"
+    ],
+    "mock_user_annotations": [
+      "@WithMockUser(username='TESTADM1', roles={'ADMIN','USER'})",
+      "@WithMockUser(username='TESTUSER', roles={'USER'})",
+      "@WithUserDetails('TESTADM1')",
+      "@WithUserDetails('TESTUSER')"
+    ],
+    "jwt_test_tokens": {
+      "admin_token_template": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJURVNUQURNMSIsInVzZXJfdHlwZSI6IkEiLCJyb2xlcyI6WyJST0xFX0FETUlOIiwiUk9MRV9VU0VSIl0sImlhdCI6MTcwMzc1MDQwMCwiZXhwIjo5OTk5OTk5OTk5fQ",
+      "user_token_template": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJURVNUVVNFUiIsInVzZXJfdHlwZSI6IlUiLCJyb2xlcyI6WyJST0xFX1VTRVIiXSwiaWF0IjoxNzAzNzUwNDAwLCJleHAiOjk5OTk5OTk5OTl9"
+    },
+    "security_test_profiles": [
+      "test",
+      "security-test", 
+      "integration-test"
+    ],
+    "database_test_configuration": {
+      "testcontainer_image": "postgres:15-alpine",
+      "test_data_loading": "src/test/resources/db/test-data/users-test-data.sql",
+      "cleanup_strategy": "TRUNCATE_AFTER_TEST"
+    }
+  }
+}

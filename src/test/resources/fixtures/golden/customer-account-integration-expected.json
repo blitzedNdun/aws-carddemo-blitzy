@@ -1,0 +1,358 @@
+{
+  "test_metadata": {
+    "test_suite": "customer-account-card-integration",
+    "description": "Golden file for validating customer-account-card relationship preservation during VSAM-to-PostgreSQL migration",
+    "version": "1.0.0",
+    "created_date": "2024-01-15",
+    "validation_scope": "referential_integrity_preservation",
+    "compliance_requirements": [
+      "Section 6.2.1.1 entity relationships validation",
+      "PostgreSQL foreign key constraints matching VSAM cross-reference logic",
+      "Data consistency across service boundaries",
+      "BigDecimal precision preservation for financial data"
+    ]
+  },
+  "test_scenarios": {
+    "customer_account_relationships": {
+      "description": "Validate customer-to-account relationship preservation",
+      "test_cases": [
+        {
+          "test_id": "CAR_001",
+          "customer_id": "000000001",
+          "customer_name": "Immanuel Kessler",
+          "expected_accounts": [
+            {
+              "account_id": "00000000001",
+              "account_status": "Y",
+              "relationship_type": "primary_holder",
+              "validation_rules": [
+                "customer_id foreign key must reference customers.customer_id",
+                "account balance must preserve DECIMAL(12,2) precision",
+                "account status must map from COBOL 88-level conditions"
+              ]
+            }
+          ],
+          "cross_reference_validation": {
+            "vsam_equivalent": "CXACAIX alternate index lookup",
+            "postgresql_implementation": "B-tree index on accounts(customer_id, account_id)",
+            "performance_requirement": "sub-5ms lookup time"
+          }
+        },
+        {
+          "test_id": "CAR_002",
+          "customer_id": "000000002",
+          "customer_name": "Enrico Rosenbaum",
+          "expected_accounts": [
+            {
+              "account_id": "00000000002",
+              "account_status": "Y",
+              "relationship_type": "primary_holder",
+              "validation_rules": [
+                "referential integrity must be enforced via PostgreSQL constraints",
+                "account creation timestamp must be preserved",
+                "credit limit precision must match COBOL COMP-3 calculations"
+              ]
+            }
+          ],
+          "data_consistency_checks": {
+            "customer_profile_validation": true,
+            "account_balance_precision": "exact_decimal_match",
+            "audit_trail_preservation": true
+          }
+        }
+      ]
+    },
+    "account_card_relationships": {
+      "description": "Validate account-to-card linkage preservation",
+      "test_cases": [
+        {
+          "test_id": "ACR_001",
+          "account_id": "00000000001",
+          "expected_cards": [
+            {
+              "card_number": "9680294154603697",
+              "customer_id": "000000001",
+              "expiration_date": "2025-05-20",
+              "active_status": "Y",
+              "validation_rules": [
+                "card_number must maintain 16-character format with Luhn validation",
+                "account_id foreign key must enforce referential integrity",
+                "expiration_date must preserve original date format",
+                "active_status must map from COBOL boolean logic"
+              ]
+            }
+          ],
+          "cross_reference_mapping": {
+            "cardxref_source": "050002445376574000000005000000000050",
+            "parsed_components": {
+              "card_number": "050002445376574000000000050747",
+              "account_id": "00000000050",
+              "customer_id": "000000050"
+            },
+            "postgresql_constraints": [
+              "FOREIGN KEY (account_id) REFERENCES accounts(account_id)",
+              "FOREIGN KEY (customer_id) REFERENCES customers(customer_id)",
+              "UNIQUE (card_number)"
+            ]
+          }
+        },
+        {
+          "test_id": "ACR_002",
+          "account_id": "00000000027",
+          "expected_cards": [
+            {
+              "card_number": "0683586198171516",
+              "customer_id": "000000027",
+              "expiration_date": "2025-07-13",
+              "active_status": "Y",
+              "validation_rules": [
+                "card issuance must maintain customer-account relationship",
+                "card expiration logic must preserve business rules",
+                "CVV generation must follow security requirements"
+              ]
+            }
+          ],
+          "relationship_validation": {
+            "customer_account_consistency": true,
+            "card_account_linkage": true,
+            "cross_reference_integrity": true
+          }
+        }
+      ]
+    },
+    "customer_card_integration": {
+      "description": "Validate end-to-end customer-card relationships through account linkage",
+      "test_cases": [
+        {
+          "test_id": "CCI_001",
+          "customer_id": "000000050",
+          "customer_name": "Aniya Von",
+          "integration_flow": {
+            "step_1": {
+              "action": "customer_lookup",
+              "expected_result": {
+                "customer_found": true,
+                "customer_data": {
+                  "first_name": "Aniya",
+                  "last_name": "Von",
+                  "fico_score": 623,
+                  "primary_cardholder": true
+                }
+              }
+            },
+            "step_2": {
+              "action": "account_discovery",
+              "expected_result": {
+                "accounts_found": [
+                  {
+                    "account_id": "00000000050",
+                    "account_status": "ACTIVE",
+                    "credit_limit": "5000.00",
+                    "current_balance": "303.87"
+                  }
+                ]
+              }
+            },
+            "step_3": {
+              "action": "card_enumeration",
+              "expected_result": {
+                "cards_found": [
+                  {
+                    "card_number": "0500024453765740",
+                    "account_id": "00000000050",
+                    "expiration_date": "2023-03-09",
+                    "active_status": "Y"
+                  }
+                ]
+              }
+            },
+            "step_4": {
+              "action": "relationship_validation",
+              "expected_result": {
+                "customer_account_valid": true,
+                "account_card_valid": true,
+                "customer_card_valid": true,
+                "referential_integrity_preserved": true
+              }
+            }
+          },
+          "database_validation": {
+            "foreign_key_constraints": [
+              "accounts.customer_id → customers.customer_id",
+              "cards.account_id → accounts.account_id",
+              "cards.customer_id → customers.customer_id"
+            ],
+            "index_performance": {
+              "customer_account_lookup": "< 1ms via idx_customer_account_xref",
+              "account_card_lookup": "< 1ms via idx_cards_account_id",
+              "cross_reference_query": "< 5ms for complex joins"
+            }
+          }
+        }
+      ]
+    },
+    "data_precision_validation": {
+      "description": "Validate BigDecimal precision preservation for financial data",
+      "test_cases": [
+        {
+          "test_id": "DPV_001",
+          "data_type": "account_balances",
+          "precision_requirements": {
+            "cobol_source": "S9(10)V99 COMP-3",
+            "postgresql_target": "DECIMAL(12,2)",
+            "java_implementation": "BigDecimal with DECIMAL128 context"
+          },
+          "test_values": [
+            {
+              "input_balance": "0000000493684",
+              "expected_decimal": "4936.84",
+              "scale_validation": 2,
+              "precision_validation": 12,
+              "rounding_mode": "HALF_UP"
+            },
+            {
+              "input_balance": "0000005062103",
+              "expected_decimal": "50621.03",
+              "scale_validation": 2,
+              "precision_validation": 12,
+              "rounding_mode": "HALF_UP"
+            }
+          ],
+          "validation_criteria": {
+            "exact_decimal_match": true,
+            "no_floating_point_errors": true,
+            "arithmetic_equivalence": true,
+            "penny_perfect_accuracy": true
+          }
+        }
+      ]
+    },
+    "transaction_isolation_testing": {
+      "description": "Validate PostgreSQL SERIALIZABLE isolation equivalent to VSAM record locking",
+      "test_cases": [
+        {
+          "test_id": "TIT_001",
+          "scenario": "concurrent_account_updates",
+          "isolation_level": "SERIALIZABLE",
+          "test_steps": [
+            {
+              "step": "initiate_concurrent_transactions",
+              "transaction_1": {
+                "action": "update_account_balance",
+                "account_id": "00000000001",
+                "operation": "debit",
+                "amount": "100.00"
+              },
+              "transaction_2": {
+                "action": "update_account_balance",
+                "account_id": "00000000001",
+                "operation": "credit",
+                "amount": "50.00"
+              }
+            },
+            {
+              "step": "validate_transaction_serialization",
+              "expected_behavior": {
+                "one_transaction_commits": true,
+                "other_transaction_retries": true,
+                "final_balance_consistent": true,
+                "no_phantom_reads": true
+              }
+            }
+          ],
+          "vsam_equivalence": {
+            "record_locking_behavior": "exclusive lock during update",
+            "deadlock_prevention": "timeout and retry mechanism",
+            "data_integrity": "atomic updates with rollback capability"
+          }
+        }
+      ]
+    },
+    "materialized_view_validation": {
+      "description": "Validate materialized views for cross-reference query optimization",
+      "test_cases": [
+        {
+          "test_id": "MVV_001",
+          "view_name": "mv_customer_account_summary",
+          "expected_structure": {
+            "columns": [
+              "customer_id",
+              "customer_name",
+              "account_count",
+              "total_credit_limit",
+              "total_current_balance",
+              "card_count",
+              "last_updated"
+            ],
+            "aggregation_logic": {
+              "account_count": "COUNT(accounts.account_id)",
+              "total_credit_limit": "SUM(accounts.credit_limit)",
+              "total_current_balance": "SUM(accounts.current_balance)",
+              "card_count": "COUNT(cards.card_number)"
+            }
+          },
+          "refresh_strategy": {
+            "frequency": "daily_2am",
+            "method": "REFRESH MATERIALIZED VIEW CONCURRENTLY",
+            "index_maintenance": "automatic_refresh_of_covering_indexes"
+          },
+          "performance_validation": {
+            "customer_portfolio_query": "< 10ms response time",
+            "cross_reference_aggregation": "< 5ms for customer summary",
+            "index_only_scans": "covering indexes eliminate heap access"
+          }
+        }
+      ]
+    }
+  },
+  "validation_framework": {
+    "test_execution_strategy": {
+      "framework": "Spring Boot TestContainers",
+      "database_setup": "PostgreSQL 15 with test schema",
+      "data_loading": "Liquibase migrations + CSV import",
+      "isolation": "transaction_per_test_method"
+    },
+    "assertion_methods": {
+      "referential_integrity": "foreign_key_constraint_validation",
+      "data_precision": "BigDecimal_exact_comparison",
+      "performance_validation": "execution_time_measurement",
+      "relationship_consistency": "cross_reference_query_validation"
+    },
+    "success_criteria": {
+      "all_foreign_keys_valid": true,
+      "zero_referential_integrity_violations": true,
+      "exact_decimal_precision_match": true,
+      "sub_millisecond_primary_key_lookups": true,
+      "cross_reference_query_optimization": true
+    }
+  },
+  "regression_testing": {
+    "baseline_comparison": {
+      "cobol_vsam_output": "legacy_system_results.dat",
+      "java_postgresql_output": "modernized_system_results.json",
+      "comparison_method": "field_by_field_exact_match",
+      "tolerance": "zero_deviation_for_financial_data"
+    },
+    "performance_benchmarks": {
+      "customer_lookup": "< 1ms",
+      "account_enumeration": "< 2ms",
+      "card_listing": "< 3ms",
+      "cross_reference_join": "< 5ms",
+      "materialized_view_query": "< 10ms"
+    }
+  },
+  "compliance_validation": {
+    "database_design_compliance": {
+      "section_6_2_1_1": "entity_relationships_preserved",
+      "foreign_key_constraints": "postgresql_referential_integrity",
+      "index_strategy": "b_tree_indexes_equivalent_to_vsam_alternate_indexes",
+      "precision_requirements": "decimal_12_2_for_financial_amounts"
+    },
+    "testing_strategy_compliance": {
+      "section_6_6_3": "integration_testing_approach",
+      "testcontainers_usage": "database_integration_validation",
+      "cross_reference_testing": "relationship_preservation_verification",
+      "performance_validation": "sub_200ms_response_time_compliance"
+    }
+  }
+}

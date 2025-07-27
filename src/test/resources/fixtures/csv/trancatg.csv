@@ -1,0 +1,162 @@
+# =============================================================================
+# TRANSACTION CATEGORY TEST FIXTURE - CSV FORMAT
+# =============================================================================
+# CSV test fixture for transaction category reference data supporting comprehensive
+# testing scenarios for Spring Batch processing, validation, and database integration.
+# 
+# This fixture supports:
+# - Transaction category code validation and format testing
+# - Category description mapping and length validation
+# - Active/inactive status handling and business rule testing  
+# - Foreign key constraint validation with transaction data
+# - Spring Batch reference table processing validation
+# - PostgreSQL database migration and data loading testing
+#
+# Based on: app/data/ASCII/trancatg.txt - Original COBOL reference data
+#           TransactionCategory.java - JPA entity structure and validation rules
+#           V6__create_reference_tables.sql - Database schema constraints
+#
+# Format: transaction_category,category_description,active_status
+# Constraints: 
+# - transaction_category: 4-character numeric string (required, unique)
+# - category_description: 1-60 character string (required, non-blank)
+# - active_status: boolean (true/false, defaults to true)
+#
+# Author: Blitzy agent
+# Created: CSV test fixture supporting transaction category validation testing
+# Version: 1.0
+# =============================================================================
+
+transaction_category,category_description,active_status
+# =============================================================================
+# ACTIVE PURCHASE TRANSACTION CATEGORIES
+# =============================================================================
+# Purchase-related categories for retail sales and transaction processing
+0001,Regular Sales Draft,true
+0002,Regular Cash Advance,true
+0003,Convenience Check Debit,true
+0004,ATM Cash Advance,true
+0005,Interest Amount,true
+
+# =============================================================================
+# ACTIVE PAYMENT TRANSACTION CATEGORIES  
+# =============================================================================
+# Payment processing categories for customer payment transactions
+0101,Cash Payment,true
+0102,Electronic Payment,true
+0103,Check Payment,true
+
+# =============================================================================
+# ACTIVE CREDIT TRANSACTION CATEGORIES
+# =============================================================================
+# Credit transaction categories for account balance adjustments
+0201,Credit to Account,true
+0202,Credit to Purchase Balance,true
+0203,Credit to Cash Balance,true
+
+# =============================================================================
+# ACTIVE AUTHORIZATION TRANSACTION CATEGORIES
+# =============================================================================
+# Authorization categories for transaction validation and approval
+0301,Zero Dollar Authorization,true
+0302,Online Purchase Authorization,true
+0303,Travel Booking Authorization,true
+
+# =============================================================================
+# ACTIVE REFUND TRANSACTION CATEGORIES
+# =============================================================================
+# Refund processing categories for returned transactions
+0401,Refund Credit,true
+
+# =============================================================================
+# ACTIVE REVERSAL TRANSACTION CATEGORIES
+# =============================================================================
+# Reversal categories for transaction correction and fraud handling
+0501,Fraud Reversal,true
+0502,Non-fraud Reversal,true
+
+# =============================================================================
+# ACTIVE ADJUSTMENT TRANSACTION CATEGORIES
+# =============================================================================
+# Adjustment categories for account balance corrections
+0601,Sales Draft Credit Adjustment,true
+
+# =============================================================================
+# INACTIVE TRANSACTION CATEGORIES FOR TESTING
+# =============================================================================
+# Inactive categories to test business rules and validation scenarios
+9901,Obsolete Transaction Type,false
+9902,Discontinued Category,false
+9903,Legacy Transaction Code,false
+
+# =============================================================================
+# EDGE CASE TEST SCENARIOS
+# =============================================================================
+# Categories designed to test validation rules and boundary conditions
+
+# Minimum length description (1 character)
+9801,A,true
+
+# Maximum length description (60 characters)
+9802,Maximum Length Category Description for Validation Testing,true
+
+# Category with special characters in description
+9803,Special Chars: !@#$%^&*()_+-=[]{}|;:<>?.`~,true
+
+# Category with numeric description
+9804,12345 Numeric Description Test,true
+
+# Category for foreign key relationship testing with transaction data
+9805,Foreign Key Test Category,true
+
+# =============================================================================
+# VALIDATION TEST CATEGORIES  
+# =============================================================================
+# Categories specifically designed for validation testing scenarios
+
+# Test category for exact 4-character validation  
+9711,Four Character Code Test,true
+
+# Test category for business rule validation
+9712,Business Rule Validation Test,true
+
+# Test category for lookup table integration testing
+9713,Lookup Table Integration Test,true
+
+# Test category for Spring Batch processing validation
+9714,Spring Batch Processing Test,true
+
+# Test category for PostgreSQL constraint testing
+9715,PostgreSQL Constraint Test,true
+
+# =============================================================================
+# PERFORMANCE TEST CATEGORIES
+# =============================================================================
+# Categories for performance and load testing scenarios
+
+# Bulk processing test categories
+9601,Bulk Processing Category 001,true
+9602,Bulk Processing Category 002,true
+9603,Bulk Processing Category 003,true
+9604,Bulk Processing Category 004,true
+9605,Bulk Processing Category 005,true
+
+# =============================================================================
+# REFERENCE DATA CONSISTENCY TEST CATEGORIES
+# =============================================================================
+# Categories for testing data consistency and referential integrity
+
+# Category for cross-reference testing
+9501,Cross Reference Test Category,true
+
+# Category for referential integrity testing
+9502,Referential Integrity Test,true
+
+# Category for data migration validation
+9503,Data Migration Validation Test,true
+
+# Category for transaction categorization testing
+9504,Transaction Categorization Test,true
+
+# Category for category balance relationship testing
+9505,Category Balance Relationship Test,true

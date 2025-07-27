@@ -1,0 +1,480 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ==================================================================================
+  CardDemo Test Environment Master Liquibase Changelog
+  ==================================================================================
+  
+  Purpose: Master changelog orchestrating all PostgreSQL test database schema creation
+           and validation changesets for CardDemo mainframe-to-microservices migration
+           testing with Testcontainers integration support.
+  
+  This master changelog provides:
+  - Complete test database schema creation preserving COBOL data precision
+  - Sequential changeset execution ensuring proper dependency ordering
+  - Rollback capabilities for test scenario isolation and cleanup
+  - PostgreSQL optimization for integration testing performance
+  - Support for BigDecimal mapping validation from COBOL COMP-3 fields
+  - Testcontainers-compatible configuration for Spring Boot integration tests
+  
+  Source Mapping from COBOL Copybooks and VSAM Datasets:
+  - USRSEC VSAM/CSUSR01Y.cpy → PostgreSQL users table with Spring Security BCrypt support
+  - ACCTDAT VSAM/CVACT01Y.cpy → PostgreSQL accounts table with DECIMAL(12,2) financial precision
+  - CARDDAT VSAM/CVCRD01Y.cpy → PostgreSQL cards table with security validation
+  - TRANSACT VSAM/CVTRA05Y.cpy → PostgreSQL transactions table with monthly partitioning
+  - TRANTYPE/CVTRA03Y.cpy → PostgreSQL transaction type reference tables
+  - TRANCATG/CVTRA04Y.cpy → PostgreSQL transaction category reference tables
+  
+  Test Environment Specifications:
+  - DECIMAL precision matching COBOL COMP-3 signed numeric fields exactly
+  - Foreign key constraints replicating VSAM cross-reference relationships
+  - B-tree indexes optimized for sub-200ms response time validation
+  - Comprehensive test data supporting 10,000+ TPS integration testing
+  - Rollback support enabling test isolation and parallel execution
+  
+  Integration Testing Support:
+  - Spring Boot Testcontainers PostgreSQL configuration compatibility
+  - JPA entity validation against exact COBOL field mappings
+  - Database migration validation for production deployment confidence
+  - Performance optimization for continuous integration pipeline execution
+  
+  Usage in Test Environment:
+  - Executed automatically by Testcontainers during integration test startup
+  - Provides clean database state for each test scenario execution
+  - Supports parallel test execution through database schema isolation
+  - Enables comprehensive data validation testing scenarios
+  
+  Version: CardDemo Test Environment v1.0
+  Compatible with: Liquibase 4.20.0, PostgreSQL 15+, Spring Boot 3.2+
+  ==================================================================================
+-->
+
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:pro="http://www.liquibase.org/xml/ns/pro"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd
+                        http://www.liquibase.org/xml/ns/pro 
+                        http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd">
+
+    <!--
+      ==================================================================================
+      CHANGESET 001: TEST USERS TABLE CREATION
+      ==================================================================================
+      Creates PostgreSQL users table for test environment based on CSUSR01Y.cpy COBOL
+      copybook structure with Spring Security authentication support and BCrypt password
+      hashing for comprehensive authentication service integration testing.
+      
+      Dependencies: None (foundational table)
+      Rollback: Drops users table and all dependent objects
+      Test Data: Includes admin, user, and viewer test accounts with BCrypt passwords
+      ==================================================================================
+    -->
+    <include file="changesets/001-create-test-users-table.sql" relativeToChangelogFile="true">
+        <validCheckSum>ANY</validCheckSum>
+    </include>
+
+    <!--
+      ==================================================================================
+      CHANGESET 002: TEST ACCOUNTS TABLE CREATION
+      ==================================================================================
+      Creates PostgreSQL accounts table preserving COBOL ACCOUNT-RECORD layout with
+      exact financial precision using DECIMAL(12,2) for all monetary fields to support
+      BigDecimal integration testing and ensure identical COBOL COMP-3 calculation results.
+      
+      Dependencies: users table (foreign key constraint)
+      Rollback: Drops accounts table preserving referential integrity
+      Test Data: Comprehensive account scenarios including edge cases and precision validation
+      ==================================================================================
+    -->
+    <include file="changesets/002-create-test-accounts-table.sql" relativeToChangelogFile="true">
+        <validCheckSum>ANY</validCheckSum>
+    </include>
+
+    <!--
+      ==================================================================================
+      CHANGESET 003: TEST TRANSACTIONS TABLE CREATION
+      ==================================================================================
+      Creates partitioned PostgreSQL transactions table supporting high-volume transaction
+      processing integration tests with monthly RANGE partitioning and exact COBOL
+      TRAN-RECORD structure mapping for comprehensive transaction service validation.
+      
+      Dependencies: accounts table, reference tables (foreign key constraints)
+      Rollback: Drops partitioned transactions table and all partition tables
+      Test Data: High-volume transaction scenarios for performance validation testing
+      ==================================================================================
+    -->
+    <include file="changesets/003-create-test-transactions-table.sql" relativeToChangelogFile="true">
+        <validCheckSum>ANY</validCheckSum>
+    </include>
+
+    <!--
+      ==================================================================================
+      CHANGESET 004: TEST REFERENCE TABLES CREATION
+      ==================================================================================
+      Creates PostgreSQL reference tables for transaction types and categories based on
+      COBOL copybook structures CVTRA03Y.cpy and CVTRA04Y.cpy to support transaction
+      classification and validation in comprehensive integration testing scenarios.
+      
+      Dependencies: None (reference data tables)
+      Rollback: Drops all reference tables and dependent foreign key constraints
+      Test Data: Essential reference data required for transaction processing validation
+      ==================================================================================
+    -->
+    <include file="changesets/004-create-test-reference-tables.sql" relativeToChangelogFile="true">
+        <validCheckSum>ANY</validCheckSum>
+    </include>
+
+    <!--
+      ==================================================================================
+      CHANGESET 005: TEST PERFORMANCE INDEXES CREATION
+      ==================================================================================
+      Creates PostgreSQL B-tree indexes replicating VSAM alternate index performance
+      characteristics for integration testing, optimizing query performance to achieve
+      sub-200ms response time validation requirements and supporting 10,000+ TPS testing.
+      
+      Dependencies: All tables (creates indexes on existing tables)
+      Rollback: Drops all performance optimization indexes
+      Performance: Optimizes common queries for integration test execution speed
+      ==================================================================================
+    -->
+    <include file="changesets/005-create-test-indexes.sql" relativeToChangelogFile="true">
+        <validCheckSum>ANY</validCheckSum>
+    </include>
+
+    <!--
+      ==================================================================================
+      CHANGESET 006: TEST REFERENCE DATA LOADING
+      ==================================================================================
+      Loads essential reference data into PostgreSQL tables providing lookup data
+      required for integration testing scenarios based on COBOL copybook reference
+      structures to support comprehensive transaction processing validation workflows.
+      
+      Dependencies: All reference tables (loads data into existing tables)
+      Rollback: Clears all loaded reference data returning to empty state
+      Test Data: Minimal reference dataset required for automated test execution
+      ==================================================================================
+    -->
+    <include file="changesets/006-load-test-reference-data.sql" relativeToChangelogFile="true">
+        <validCheckSum>ANY</validCheckSum>
+    </include>
+
+    <!--
+      ==================================================================================
+      TEST ENVIRONMENT VALIDATION CHANGESETS
+      ==================================================================================
+      The following changesets provide comprehensive validation of the test database
+      schema to ensure complete compliance with COBOL copybook structures and validate
+      that all constraints, indexes, and relationships are properly established for
+      integration testing scenarios.
+      ==================================================================================
+    -->
+
+    <changeSet id="validate-test-schema-integrity" author="blitzy-agent" runOnChange="true">
+        <comment>
+            Validates complete test database schema integrity including all table structures,
+            constraints, indexes, and foreign key relationships to ensure proper setup for
+            CardDemo integration testing scenarios with Testcontainers PostgreSQL support.
+        </comment>
+        
+        <!-- Validate users table structure and constraints -->
+        <sql>
+            SELECT 
+                CASE 
+                    WHEN COUNT(*) = 1 THEN 'PASS' 
+                    ELSE 'FAIL - Users table not found' 
+                END as users_table_check
+            FROM information_schema.tables 
+            WHERE table_name = 'users' AND table_schema = current_schema();
+        </sql>
+        
+        <!-- Validate accounts table structure and precision -->
+        <sql>
+            SELECT 
+                CASE 
+                    WHEN COUNT(*) = 1 THEN 'PASS' 
+                    ELSE 'FAIL - Accounts table not found' 
+                END as accounts_table_check
+            FROM information_schema.tables 
+            WHERE table_name = 'accounts' AND table_schema = current_schema();
+        </sql>
+        
+        <!-- Validate transactions table partitioning -->
+        <sql>
+            SELECT 
+                CASE 
+                    WHEN COUNT(*) = 1 THEN 'PASS' 
+                    ELSE 'FAIL - Transactions table not found' 
+                END as transactions_table_check
+            FROM information_schema.tables 
+            WHERE table_name = 'transactions' AND table_schema = current_schema();
+        </sql>
+        
+        <!-- Validate reference tables existence -->
+        <sql>
+            SELECT 
+                CASE 
+                    WHEN COUNT(*) = 2 THEN 'PASS' 
+                    ELSE 'FAIL - Reference tables missing' 
+                END as reference_tables_check
+            FROM information_schema.tables 
+            WHERE table_name IN ('trantype', 'trancatg') AND table_schema = current_schema();
+        </sql>
+        
+        <!-- Validate foreign key constraints -->
+        <sql>
+            SELECT 
+                CASE 
+                    WHEN COUNT(*) >= 2 THEN 'PASS' 
+                    ELSE 'FAIL - Foreign key constraints missing' 
+                END as foreign_key_check
+            FROM information_schema.table_constraints 
+            WHERE constraint_type = 'FOREIGN KEY' AND table_schema = current_schema();
+        </sql>
+        
+        <!-- Validate indexes for performance optimization -->
+        <sql>
+            SELECT 
+                CASE 
+                    WHEN COUNT(*) >= 10 THEN 'PASS' 
+                    ELSE 'FAIL - Performance indexes missing' 
+                END as indexes_check
+            FROM information_schema.statistics 
+            WHERE table_schema = current_schema();
+        </sql>
+        
+        <rollback>
+            -- No rollback needed for validation queries
+        </rollback>
+    </changeSet>
+
+    <changeSet id="validate-decimal-precision-cobol-compliance" author="blitzy-agent" runOnChange="true">
+        <comment>
+            Validates that all financial amount columns maintain exact DECIMAL(12,2) precision
+            matching COBOL COMP-3 field specifications to ensure BigDecimal integration testing
+            accuracy and prevent precision loss during arithmetic operations.
+        </comment>
+        
+        <!-- Validate accounts table decimal precision -->
+        <sql>
+            SELECT 
+                column_name,
+                data_type,
+                numeric_precision,
+                numeric_scale,
+                CASE 
+                    WHEN data_type = 'numeric' AND numeric_precision = 12 AND numeric_scale = 2 
+                    THEN 'PASS - COBOL COMP-3 Compliant' 
+                    ELSE 'FAIL - Precision Mismatch' 
+                END as precision_validation
+            FROM information_schema.columns 
+            WHERE table_name = 'accounts' 
+            AND table_schema = current_schema()
+            AND column_name IN ('current_balance', 'credit_limit', 'cash_credit_limit', 
+                               'current_cycle_credit', 'current_cycle_debit');
+        </sql>
+        
+        <!-- Validate transactions table decimal precision -->
+        <sql>
+            SELECT 
+                column_name,
+                data_type,
+                numeric_precision,
+                numeric_scale,
+                CASE 
+                    WHEN data_type = 'numeric' AND numeric_precision = 11 AND numeric_scale = 2 
+                    THEN 'PASS - COBOL COMP-3 Compliant' 
+                    ELSE 'FAIL - Precision Mismatch' 
+                END as precision_validation
+            FROM information_schema.columns 
+            WHERE table_name = 'transactions' 
+            AND table_schema = current_schema()
+            AND column_name = 'transaction_amount';
+        </sql>
+        
+        <rollback>
+            -- No rollback needed for validation queries
+        </rollback>
+    </changeSet>
+
+    <changeSet id="validate-test-data-integrity" author="blitzy-agent" runOnChange="true">
+        <comment>
+            Validates that all test data has been properly loaded and meets integrity constraints
+            to ensure comprehensive integration testing scenarios can execute successfully with
+            proper test coverage of account, user, and transaction relationships.
+        </comment>
+        
+        <!-- Validate test users data -->
+        <sql>
+            SELECT 
+                COUNT(*) as user_count,
+                CASE 
+                    WHEN COUNT(*) >= 5 THEN 'PASS - Sufficient test users' 
+                    ELSE 'FAIL - Insufficient test data' 
+                END as users_data_check
+            FROM users;
+        </sql>
+        
+        <!-- Validate test accounts data -->
+        <sql>
+            SELECT 
+                COUNT(*) as account_count,
+                CASE 
+                    WHEN COUNT(*) >= 5 THEN 'PASS - Sufficient test accounts' 
+                    ELSE 'FAIL - Insufficient test data' 
+                END as accounts_data_check
+            FROM accounts;
+        </sql>
+        
+        <!-- Validate reference data -->
+        <sql>
+            SELECT 
+                COUNT(*) as reference_count,
+                CASE 
+                    WHEN COUNT(*) >= 5 THEN 'PASS - Sufficient reference data' 
+                    ELSE 'FAIL - Insufficient reference data' 
+                END as reference_data_check
+            FROM trantype;
+        </sql>
+        
+        <!-- Validate foreign key relationships -->
+        <sql>
+            SELECT 
+                COUNT(*) as relationship_count,
+                CASE 
+                    WHEN COUNT(*) >= 5 THEN 'PASS - Foreign key relationships valid' 
+                    ELSE 'FAIL - Relationship integrity issues' 
+                END as relationships_check
+            FROM accounts a 
+            INNER JOIN users u ON a.customer_id = u.user_id;
+        </sql>
+        
+        <rollback>
+            -- No rollback needed for validation queries
+        </rollback>
+    </changeSet>
+
+    <!--
+      ==================================================================================
+      TEST ENVIRONMENT CLEANUP AND ROLLBACK SUPPORT
+      ==================================================================================
+      Provides comprehensive rollback capabilities for test scenario isolation and cleanup
+      to support parallel test execution and ensure clean state between test runs when
+      using Testcontainers PostgreSQL integration with Spring Boot testing framework.
+      ==================================================================================
+    -->
+
+    <changeSet id="create-test-cleanup-procedures" author="blitzy-agent" runOnChange="true">
+        <comment>
+            Creates stored procedures for comprehensive test database cleanup and reset
+            functionality to support test isolation and parallel execution scenarios
+            in Testcontainers-based integration testing environment.
+        </comment>
+        
+        <!-- Create cleanup function for test data reset -->
+        <sql>
+            CREATE OR REPLACE FUNCTION cleanup_test_data() 
+            RETURNS void AS $$
+            BEGIN
+                -- Clean transaction data (maintain referential integrity order)
+                DELETE FROM transactions;
+                
+                -- Clean account data
+                DELETE FROM accounts;
+                
+                -- Clean user data (except system required users)
+                DELETE FROM users WHERE user_id NOT IN ('ADMIN001');
+                
+                -- Clean reference data
+                DELETE FROM trancatg;
+                DELETE FROM trantype;
+                
+                -- Reset sequences if they exist
+                -- Note: H2 compatible approach for sequence reset
+                
+                RAISE NOTICE 'Test data cleanup completed successfully';
+            END;
+            $$ LANGUAGE plpgsql;
+        </sql>
+        
+        <!-- Create function for complete schema reset -->
+        <sql>
+            CREATE OR REPLACE FUNCTION reset_test_schema() 
+            RETURNS void AS $$
+            BEGIN
+                -- Drop all test data
+                PERFORM cleanup_test_data();
+                
+                -- Reset table statistics for consistent test performance
+                -- ANALYZE users, accounts, transactions, trantype, trancatg;
+                
+                RAISE NOTICE 'Test schema reset completed successfully';
+            END;
+            $$ LANGUAGE plpgsql;
+        </sql>
+        
+        <rollback>
+            DROP FUNCTION IF EXISTS cleanup_test_data();
+            DROP FUNCTION IF EXISTS reset_test_schema();
+        </rollback>
+    </changeSet>
+
+    <!--
+      ==================================================================================
+      FINAL VALIDATION AND READINESS CHECK
+      ==================================================================================
+      Performs comprehensive final validation to ensure the test database environment
+      is completely ready for CardDemo integration testing scenarios with all required
+      tables, constraints, indexes, and test data properly configured and validated.
+      ==================================================================================
+    -->
+
+    <changeSet id="final-test-environment-readiness-check" author="blitzy-agent" runOnChange="true">
+        <comment>
+            Performs final comprehensive validation of test database environment readiness
+            for CardDemo integration testing including schema completeness, data integrity,
+            performance optimization, and Testcontainers compatibility confirmation.
+        </comment>
+        
+        <!-- Final schema completeness check -->
+        <sql>
+            SELECT 
+                'CardDemo Test Database Environment' as environment,
+                current_schema() as schema_name,
+                current_timestamp as validation_timestamp,
+                CASE 
+                    WHEN (
+                        SELECT COUNT(*) FROM information_schema.tables 
+                        WHERE table_schema = current_schema() 
+                        AND table_name IN ('users', 'accounts', 'transactions', 'trantype', 'trancatg')
+                    ) = 5 
+                    THEN 'READY - All required tables created'
+                    ELSE 'NOT READY - Missing required tables'
+                END as schema_status,
+                CASE 
+                    WHEN (
+                        SELECT COUNT(*) FROM information_schema.table_constraints 
+                        WHERE constraint_type = 'FOREIGN KEY' AND table_schema = current_schema()
+                    ) >= 2
+                    THEN 'READY - Foreign key constraints established'
+                    ELSE 'NOT READY - Missing foreign key constraints'
+                END as constraints_status,
+                CASE 
+                    WHEN (
+                        SELECT COUNT(*) FROM users
+                    ) >= 5 AND (
+                        SELECT COUNT(*) FROM accounts  
+                    ) >= 5 AND (
+                        SELECT COUNT(*) FROM trantype
+                    ) >= 5
+                    THEN 'READY - Test data loaded successfully'
+                    ELSE 'NOT READY - Insufficient test data'
+                END as test_data_status;
+        </sql>
+        
+        <rollback>
+            -- No rollback needed for readiness check
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

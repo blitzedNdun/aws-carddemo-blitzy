@@ -1,0 +1,436 @@
+# ==============================================================================
+# Spring Batch Customer Data Reader Configuration
+# File: customer-data-reader.yml
+# Description: FlatFileItemReader configuration for processing customer data from custdata.txt
+# Author: Blitzy agent
+# Version: 1.0
+# ==============================================================================
+
+# Customer Data Reader Configuration for Spring Batch ItemReader
+# Processes 326-character fixed-width records from custdata.txt with PII protection and validation
+spring:
+  batch:
+    job:
+      customer-data-import:
+        # Job-level configuration for customer data import
+        enabled: true
+        description: "Import customer data from ASCII custdata.txt file with 326-character fixed-width records"
+        
+        step:
+          customer-data-processing:
+            # Step configuration for processing customer records
+            chunk-size: 10
+            skip-limit: 5
+            reader:
+              # FlatFileItemReader configuration for custdata.txt processing
+              type: "FlatFileItemReader"
+              name: "customerDataReader"
+              description: "Reads 326-character fixed-width customer records from custdata.txt"
+              
+              # Resource configuration
+              resource:
+                file-path: "classpath:data/custdata.txt"
+                encoding: "UTF-8"
+                description: "Customer data file with 50 fixed-width records (326 characters each)"
+              
+              # Line tokenizer configuration for fixed-width parsing
+              line-tokenizer:
+                type: "FixedLengthTokenizer"
+                strict: true
+                columns:
+                  # Customer identification fields
+                  - name: "customerId"
+                    start: 1
+                    end: 9
+                    description: "9-digit customer identifier (PIC 9(09))"
+                    
+                  # Customer name fields  
+                  - name: "firstName"
+                    start: 10
+                    end: 30
+                    description: "Customer first name (PIC X(21))"
+                    
+                  - name: "middleName"
+                    start: 31
+                    end: 51
+                    description: "Customer middle name (PIC X(21))"
+                    
+                  - name: "lastName"
+                    start: 52
+                    end: 72
+                    description: "Customer last name (PIC X(21))"
+                    
+                  # Address fields with normalization support
+                  - name: "addressLine1"
+                    start: 73
+                    end: 122
+                    description: "Primary address line (PIC X(50))"
+                    
+                  - name: "addressLine2"
+                    start: 123
+                    end: 172
+                    description: "Secondary address line (PIC X(50))"
+                    
+                  - name: "addressLine3"
+                    start: 173
+                    end: 222
+                    description: "Third address line/City (PIC X(50))"
+                    
+                  - name: "stateCode"
+                    start: 223
+                    end: 224
+                    description: "State code (PIC X(02))"
+                    
+                  - name: "countryCode"
+                    start: 225
+                    end: 227
+                    description: "Country code (PIC X(03))"
+                    
+                  - name: "zipCode"
+                    start: 228
+                    end: 238
+                    description: "ZIP code (PIC X(11))"
+                    
+                  # Contact information fields
+                  - name: "phoneNumber1"
+                    start: 239
+                    end: 253
+                    description: "Primary phone number (PIC X(15))"
+                    
+                  - name: "phoneNumber2"
+                    start: 254
+                    end: 268
+                    description: "Secondary phone number (PIC X(15))"
+                    
+                  # PII fields requiring encryption protection
+                  - name: "ssn"
+                    start: 269
+                    end: 277
+                    description: "Social Security Number (PIC 9(09)) - requires encryption"
+                    pii-field: true
+                    encryption-required: true
+                    
+                  - name: "governmentId"
+                    start: 278
+                    end: 302
+                    description: "Government-issued ID (PIC X(25))"
+                    pii-field: true
+                    
+                  # Personal information fields
+                  - name: "dateOfBirth"
+                    start: 303
+                    end: 312
+                    description: "Date of birth YYYY-MM-DD (PIC X(10))"
+                    date-format: "yyyy-MM-dd"
+                    
+                  - name: "eftAccountId"
+                    start: 313
+                    end: 322
+                    description: "EFT account identifier (PIC X(10))"
+                    
+                  - name: "primaryCardholderIndicator"
+                    start: 323
+                    end: 323
+                    description: "Primary cardholder flag Y/N (PIC X(01))"
+                    
+                  - name: "ficoCreditScore"
+                    start: 324
+                    end: 326
+                    description: "FICO credit score 300-850 (PIC 9(03))"
+                    numeric: true
+                    validation:
+                      min-value: 300
+                      max-value: 850
+              
+              # Field set mapper configuration
+              field-set-mapper:
+                type: "BeanWrapperFieldSetMapper"
+                target-type: "com.carddemo.common.entity.Customer"
+                strict: true
+                
+                # Field mapping and validation rules
+                field-mappings:
+                  # Customer identification with format validation
+                  customerId:
+                    required: true
+                    trim: true
+                    validation:
+                      pattern: "^[0-9]{9}$"
+                      message: "Customer ID must be exactly 9 digits"
+                      
+                  # Name fields with length validation and trimming
+                  firstName:
+                    required: true
+                    trim: true
+                    max-length: 20
+                    validation:
+                      not-empty: true
+                      message: "First name cannot be empty"
+                      
+                  middleName:
+                    required: false
+                    trim: true
+                    max-length: 20
+                    nullable: true
+                    
+                  lastName:
+                    required: true
+                    trim: true
+                    max-length: 20
+                    validation:
+                      not-empty: true
+                      message: "Last name cannot be empty"
+                      
+                  # Address fields with normalization
+                  addressLine1:
+                    required: true
+                    trim: true
+                    max-length: 50
+                    address-normalization: true
+                    validation:
+                      not-empty: true
+                      message: "Address line 1 cannot be empty"
+                      
+                  addressLine2:
+                    required: false
+                    trim: true
+                    max-length: 50
+                    address-normalization: true
+                    nullable: true
+                    
+                  addressLine3:
+                    required: false
+                    trim: true
+                    max-length: 50
+                    address-normalization: true
+                    nullable: true
+                    
+                  stateCode:
+                    required: true
+                    trim: true
+                    uppercase: true
+                    validation:
+                      pattern: "^[A-Z]{2}$"
+                      message: "State code must be 2 uppercase letters"
+                      
+                  countryCode:
+                    required: true
+                    trim: true
+                    uppercase: true
+                    default-value: "USA"
+                    validation:
+                      pattern: "^[A-Z]{3}$"
+                      message: "Country code must be 3 uppercase letters"
+                      
+                  zipCode:
+                    required: true
+                    trim: true
+                    validation:
+                      pattern: "^[0-9]{5}(-[0-9]{4})?$"
+                      message: "ZIP code must be in format 12345 or 12345-6789"
+                      
+                  # Phone number fields with format validation
+                  phoneNumber1:
+                    required: false
+                    trim: true
+                    max-length: 15
+                    phone-formatting: true
+                    validation:
+                      pattern: "^\\([0-9]{3}\\)[0-9]{3}-[0-9]{4}$|^[0-9]{10}$"
+                      message: "Phone number must be valid US format"
+                      
+                  phoneNumber2:
+                    required: false
+                    trim: true
+                    max-length: 15
+                    phone-formatting: true
+                    validation:
+                      pattern: "^\\([0-9]{3}\\)[0-9]{3}-[0-9]{4}$|^[0-9]{10}$"
+                      message: "Phone number must be valid US format"
+                      
+                  # PII fields with encryption support
+                  ssn:
+                    required: true
+                    trim: true
+                    pii-field: true
+                    encryption:
+                      enabled: true
+                      algorithm: "AES-256-GCM"
+                      key-reference: "customer-ssn-key"
+                    validation:
+                      pattern: "^[0-9]{9}$"
+                      message: "SSN must be exactly 9 digits"
+                      
+                  governmentId:
+                    required: true
+                    trim: true
+                    max-length: 20
+                    pii-field: true
+                    validation:
+                      not-empty: true
+                      message: "Government ID cannot be empty"
+                      
+                  # Date field with proper parsing
+                  dateOfBirth:
+                    required: true
+                    type: "LocalDate"
+                    date-format: "yyyy-MM-dd"
+                    validation:
+                      min-date: "1900-01-01"
+                      max-date: "today-13years"
+                      message: "Date of birth must be between 1900-01-01 and 13 years ago"
+                      
+                  # Financial fields
+                  eftAccountId:
+                    required: false
+                    trim: true
+                    max-length: 10
+                    nullable: true
+                    
+                  primaryCardholderIndicator:
+                    required: true
+                    trim: true
+                    uppercase: true
+                    default-value: "Y"
+                    validation:
+                      pattern: "^[YN]$"
+                      message: "Primary cardholder indicator must be Y or N"
+                      
+                  ficoCreditScore:
+                    required: true
+                    type: "Integer"
+                    validation:
+                      min-value: 300
+                      max-value: 850
+                      message: "FICO credit score must be between 300 and 850"
+
+              # Error handling configuration
+              error-handling:
+                skip-policy:
+                  - "ValidationException"
+                  - "ConversionException"
+                  - "FlatFileParseException"
+                  
+                retry-policy:
+                  max-attempts: 3
+                  retry-exceptions:
+                    - "TransientDataAccessException"
+                    - "DataIntegrityViolationException"
+                    
+                # PII anonymization for test environments
+                data-anonymization:
+                  enabled: "${app.environment:prod}" != "prod"
+                  fields:
+                    - ssn
+                    - governmentId
+                    - firstName
+                    - lastName
+                    - addressLine1
+                    - phoneNumber1
+                    - phoneNumber2
+                  anonymization-strategy: "hash-with-salt"
+                  salt: "${app.anonymization.salt:default-salt-key}"
+
+# Privacy and compliance configuration
+privacy:
+  pii-protection:
+    enabled: true
+    encryption:
+      # SSN encryption configuration per Section 6.2.3.3 privacy controls
+      ssn:
+        algorithm: "AES-256-GCM"
+        key-derivation: "PBKDF2"
+        key-length: 256
+        key-source: "environment"
+        key-rotation: true
+        rotation-interval: "P90D"
+        
+      # Government ID protection
+      government-id:
+        algorithm: "AES-256-GCM"
+        masking-pattern: "***-**-{last4}"
+        
+    # Audit logging for PII access
+    audit:
+      enabled: true
+      log-level: "INFO"
+      include-fields:
+        - "customerId"
+        - "accessType"
+        - "timestamp"
+        - "userId"
+      exclude-pii-values: true
+
+# Data quality validation rules
+data-quality:
+  validation:
+    enabled: true
+    
+    # Customer ID sequence validation
+    customer-id:
+      sequence-validation: true
+      format-check: true
+      uniqueness-check: true
+      
+    # Address normalization rules
+    address-normalization:
+      enabled: true
+      service: "USPS-API"
+      fallback: "internal-rules"
+      standardize-abbreviations: true
+      validate-zip-codes: true
+      
+    # Phone number standardization
+    phone-normalization:
+      enabled: true
+      default-country-code: "US"
+      format: "E164"
+      validation: "strict"
+      
+    # FICO score business validation
+    fico-validation:
+      strict-range: true
+      business-rules:
+        - name: "valid-range"
+          min: 300
+          max: 850
+        - name: "reasonable-score"
+          warn-below: 350
+          warn-above: 820
+
+# Logging configuration for customer data processing
+logging:
+  level:
+    com.carddemo.batch.customer: DEBUG
+    org.springframework.batch: INFO
+    
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    
+  # Exclude PII from logs
+  pii-exclusion:
+    enabled: true
+    masked-fields:
+      - "ssn"
+      - "governmentId"
+      - "dateOfBirth"
+    masking-pattern: "***MASKED***"
+
+# Performance optimization settings
+performance:
+  batch-processing:
+    chunk-size: 10
+    thread-pool-size: 4
+    commit-interval: 10
+    read-timeout: 30000
+    
+  database:
+    batch-size: 20
+    fetch-size: 100
+    connection-pool:
+      min-size: 2
+      max-size: 10
+      
+  memory:
+    max-heap-size: "512m"
+    gc-optimization: true

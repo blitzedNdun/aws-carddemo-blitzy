@@ -1,0 +1,444 @@
+{
+  "transactionTypes": [
+    {
+      "transactionType": "01",
+      "typeDescription": "Purchase",
+      "debitCreditIndicator": false,
+      "isCredit": false,
+      "isDebit": true,
+      "legacyCode": "01",
+      "mappingSource": "app/data/ASCII/trantype.txt:line1"
+    },
+    {
+      "transactionType": "02",
+      "typeDescription": "Payment",
+      "debitCreditIndicator": true,
+      "isCredit": true,
+      "isDebit": false,
+      "legacyCode": "02",
+      "mappingSource": "app/data/ASCII/trantype.txt:line2"
+    },
+    {
+      "transactionType": "03",
+      "typeDescription": "Credit",
+      "debitCreditIndicator": true,
+      "isCredit": true,
+      "isDebit": false,
+      "legacyCode": "03",
+      "mappingSource": "app/data/ASCII/trantype.txt:line3"
+    },
+    {
+      "transactionType": "04",
+      "typeDescription": "Authorization",
+      "debitCreditIndicator": false,
+      "isCredit": false,
+      "isDebit": true,
+      "legacyCode": "04",
+      "mappingSource": "app/data/ASCII/trantype.txt:line4"
+    },
+    {
+      "transactionType": "05",
+      "typeDescription": "Refund",
+      "debitCreditIndicator": true,
+      "isCredit": true,
+      "isDebit": false,
+      "legacyCode": "05",
+      "mappingSource": "app/data/ASCII/trantype.txt:line5"
+    },
+    {
+      "transactionType": "06",
+      "typeDescription": "Reversal",
+      "debitCreditIndicator": true,
+      "isCredit": true,
+      "isDebit": false,
+      "legacyCode": "06",
+      "mappingSource": "app/data/ASCII/trantype.txt:line6"
+    },
+    {
+      "transactionType": "07",
+      "typeDescription": "Adjustment",
+      "debitCreditIndicator": false,
+      "isCredit": false,
+      "isDebit": true,
+      "legacyCode": "07",
+      "mappingSource": "app/data/ASCII/trantype.txt:line7"
+    }
+  ],
+  "transactionCategories": [
+    {
+      "transactionCategory": "0100",
+      "categoryDescription": "Regular Sales Draft",
+      "activeStatus": true,
+      "isActive": true,
+      "legacyCode": "010001",
+      "fullLegacyDescription": "Regular Sales Draft",
+      "mappingSource": "app/data/ASCII/trancatg.txt:line1"
+    },
+    {
+      "transactionCategory": "0100",
+      "categoryDescription": "Regular Cash Advance",
+      "activeStatus": true,
+      "isActive": true,
+      "legacyCode": "010002",
+      "fullLegacyDescription": "Regular Cash Advance",
+      "mappingSource": "app/data/ASCII/trancatg.txt:line2"
+    },
+    {
+      "transactionCategory": "0100",
+      "categoryDescription": "Convenience Check Debit",
+      "activeStatus": true,
+      "isActive": true,
+      "legacyCode": "010003",
+      "fullLegacyDescription": "Convenience Check Debit",
+      "mappingSource": "app/data/ASCII/trancatg.txt:line3"
+    },
+    {
+      "transactionCategory": "0100",
+      "categoryDescription": "ATM Cash Advance",
+      "activeStatus": true,
+      "isActive": true,
+      "legacyCode": "010004",
+      "fullLegacyDescription": "ATM Cash Advance",
+      "mappingSource": "app/data/ASCII/trancatg.txt:line4"
+    },
+    {
+      "transactionCategory": "0100",
+      "categoryDescription": "Interest Amount",
+      "activeStatus": true,
+      "isActive": true,
+      "legacyCode": "010005",
+      "fullLegacyDescription": "Interest Amount",
+      "mappingSource": "app/data/ASCII/trancatg.txt:line5"
+    },
+    {
+      "transactionCategory": "0200",
+      "categoryDescription": "Cash payment",
+      "activeStatus": true,
+      "isActive": true,
+      "legacyCode": "020001",
+      "fullLegacyDescription": "Cash payment",
+      "mappingSource": "app/data/ASCII/trancatg.txt:line6"
+    },
+    {
+      "transactionCategory": "0200",
+      "categoryDescription": "Electronic payment",
+      "activeStatus": true,
+      "isActive": true,
+      "legacyCode": "020002",
+      "fullLegacyDescription": "Electronic payment",
+      "mappingSource": "app/data/ASCII/trancatg.txt:line7"
+    },
+    {
+      "transactionCategory": "0200",
+      "categoryDescription": "Check payment",
+      "activeStatus": true,
+      "isActive": true,
+      "legacyCode": "020003",
+      "fullLegacyDescription": "Check payment",
+      "mappingSource": "app/data/ASCII/trancatg.txt:line8"
+    },
+    {
+      "transactionCategory": "0300",
+      "categoryDescription": "Credit to Account",
+      "activeStatus": true,
+      "isActive": true,
+      "legacyCode": "030001",
+      "fullLegacyDescription": "Credit to Account",
+      "mappingSource": "app/data/ASCII/trancatg.txt:line9"
+    },
+    {
+      "transactionCategory": "0300",
+      "categoryDescription": "Credit to Purchase balance",
+      "activeStatus": true,
+      "isActive": true,
+      "legacyCode": "030002",
+      "fullLegacyDescription": "Credit to Purchase balance",
+      "mappingSource": "app/data/ASCII/trancatg.txt:line10"
+    },
+    {
+      "transactionCategory": "0300",
+      "categoryDescription": "Credit to Cash balance",
+      "activeStatus": true,
+      "isActive": true,
+      "legacyCode": "030003",
+      "fullLegacyDescription": "Credit to Cash balance",
+      "mappingSource": "app/data/ASCII/trancatg.txt:line11"
+    },
+    {
+      "transactionCategory": "0400",
+      "categoryDescription": "Zero dollar authorization",
+      "activeStatus": true,
+      "isActive": true,
+      "legacyCode": "040001",
+      "fullLegacyDescription": "Zero dollar authorization",
+      "mappingSource": "app/data/ASCII/trancatg.txt:line12"
+    },
+    {
+      "transactionCategory": "0400",
+      "categoryDescription": "Online purchase authorization",
+      "activeStatus": true,
+      "isActive": true,
+      "legacyCode": "040002",
+      "fullLegacyDescription": "Online purchase authorization",
+      "mappingSource": "app/data/ASCII/trancatg.txt:line13"
+    },
+    {
+      "transactionCategory": "0400",
+      "categoryDescription": "Travel booking authorization",
+      "activeStatus": true,
+      "isActive": true,
+      "legacyCode": "040003",
+      "fullLegacyDescription": "Travel booking authorization",
+      "mappingSource": "app/data/ASCII/trancatg.txt:line14"
+    },
+    {
+      "transactionCategory": "0500",
+      "categoryDescription": "Refund credit",
+      "activeStatus": true,
+      "isActive": true,
+      "legacyCode": "050001",
+      "fullLegacyDescription": "Refund credit",
+      "mappingSource": "app/data/ASCII/trancatg.txt:line15"
+    },
+    {
+      "transactionCategory": "0600",
+      "categoryDescription": "Fraud reversal",
+      "activeStatus": true,
+      "isActive": true,
+      "legacyCode": "060001",
+      "fullLegacyDescription": "Fraud reversal",
+      "mappingSource": "app/data/ASCII/trancatg.txt:line16"
+    },
+    {
+      "transactionCategory": "0600",
+      "categoryDescription": "Non-fraud reversal",
+      "activeStatus": true,
+      "isActive": true,
+      "legacyCode": "060002",
+      "fullLegacyDescription": "Non-fraud reversal",
+      "mappingSource": "app/data/ASCII/trancatg.txt:line17"
+    },
+    {
+      "transactionCategory": "0700",
+      "categoryDescription": "Sales draft credit adjustment",
+      "activeStatus": true,
+      "isActive": true,
+      "legacyCode": "070001",
+      "fullLegacyDescription": "Sales draft credit adjustment",
+      "mappingSource": "app/data/ASCII/trancatg.txt:line18"
+    }
+  ],
+  "disclosureGroups": [
+    {
+      "groupId": "A000000000",
+      "disclosureText": "Standard disclosure group A with variable interest rates for account type 01, category 01",
+      "interestRate": "0.0150",
+      "effectiveDate": "2024-01-01T00:00:00",
+      "isCurrentlyEffective": true,
+      "monthlyInterestRate": "0.001250",
+      "dailyInterestRate": "0.000041",
+      "legacyFormat": "A00000000001000100150",
+      "mappingSource": "app/data/ASCII/discgrp.txt:line1"
+    },
+    {
+      "groupId": "A000000000",
+      "disclosureText": "Standard disclosure group A with variable interest rates for account type 01, category 02",
+      "interestRate": "0.0250",
+      "effectiveDate": "2024-01-01T00:00:00",
+      "isCurrentlyEffective": true,
+      "monthlyInterestRate": "0.002083",
+      "dailyInterestRate": "0.000068",
+      "legacyFormat": "A00000000001000200250",
+      "mappingSource": "app/data/ASCII/discgrp.txt:line2"
+    },
+    {
+      "groupId": "A000000000",
+      "disclosureText": "Standard disclosure group A with variable interest rates for account type 01, category 03",
+      "interestRate": "0.0250",
+      "effectiveDate": "2024-01-01T00:00:00",
+      "isCurrentlyEffective": true,
+      "monthlyInterestRate": "0.002083",
+      "dailyInterestRate": "0.000068",
+      "legacyFormat": "A00000000001000300250",
+      "mappingSource": "app/data/ASCII/discgrp.txt:line3"
+    },
+    {
+      "groupId": "A000000000",
+      "disclosureText": "Standard disclosure group A with variable interest rates for account type 01, category 04",
+      "interestRate": "0.0250",
+      "effectiveDate": "2024-01-01T00:00:00",
+      "isCurrentlyEffective": true,
+      "monthlyInterestRate": "0.002083",
+      "dailyInterestRate": "0.000068",
+      "legacyFormat": "A00000000001000400250",
+      "mappingSource": "app/data/ASCII/discgrp.txt:line4"
+    },
+    {
+      "groupId": "A000000000",
+      "disclosureText": "Standard disclosure group A with zero interest rates for account type 02, category 01",
+      "interestRate": "0.0000",
+      "effectiveDate": "2024-01-01T00:00:00",
+      "isCurrentlyEffective": true,
+      "monthlyInterestRate": "0.000000",
+      "dailyInterestRate": "0.000000",
+      "legacyFormat": "A00000000002000100000",
+      "mappingSource": "app/data/ASCII/discgrp.txt:line5"
+    },
+    {
+      "groupId": "DEFAULT",
+      "disclosureText": "Default disclosure group with standard interest rates for all account types and categories",
+      "interestRate": "0.0150",
+      "effectiveDate": "2024-01-01T00:00:00",
+      "isCurrentlyEffective": true,
+      "monthlyInterestRate": "0.001250",
+      "dailyInterestRate": "0.000041",
+      "legacyFormat": "DEFAULT   01000100150",
+      "mappingSource": "app/data/ASCII/discgrp.txt:line18"
+    },
+    {
+      "groupId": "ZEROAPR",
+      "disclosureText": "Zero APR promotional disclosure group with 0.00% interest rates for qualifying accounts",
+      "interestRate": "0.0000",
+      "effectiveDate": "2024-01-01T00:00:00",
+      "isCurrentlyEffective": true,
+      "monthlyInterestRate": "0.000000",  
+      "dailyInterestRate": "0.000000",
+      "legacyFormat": "ZEROAPR   01000100000",
+      "mappingSource": "app/data/ASCII/discgrp.txt:line35"
+    }
+  ],
+  "cacheValidationData": {
+    "redisConfig": {
+      "transactionTypesCache": {
+        "cacheName": "transactionTypes",
+        "ttl": 86400,
+        "keyPattern": "carddemo:reference:transaction-types:*",
+        "expectedEntryCount": 7,
+        "refreshFrequency": "daily"
+      },
+      "transactionCategoriesCache": {
+        "cacheName": "transactionCategories", 
+        "ttl": 86400,
+        "keyPattern": "carddemo:reference:transaction-categories:*",
+        "expectedEntryCount": 18,
+        "refreshFrequency": "daily"
+      },
+      "disclosureGroupsCache": {
+        "cacheName": "disclosureGroups",
+        "ttl": 3600,
+        "keyPattern": "carddemo:reference:disclosure-groups:*", 
+        "expectedEntryCount": 7,
+        "refreshFrequency": "hourly"
+      }
+    },
+    "validationRules": {
+      "transactionTypeValidation": {
+        "codeFormat": "^[0-9]{2}$",
+        "descriptionMaxLength": 60,
+        "debitCreditRequired": true,
+        "cacheableAnnotationRequired": true
+      },
+      "transactionCategoryValidation": {
+        "codeFormat": "^[0-9]{4}$",
+        "descriptionMaxLength": 60,
+        "activeStatusRequired": true,
+        "relationshipRequired": "TransactionCategoryBalance"
+      },
+      "disclosureGroupValidation": {
+        "groupIdMaxLength": 10,
+        "interestRatePrecision": 5,
+        "interestRateScale": 4,
+        "effectiveDateRequired": false,
+        "bigDecimalRequired": true
+      }
+    },
+    "cacheIntegrityChecks": {
+      "dataConsistency": {
+        "checkEntityToCache": true,
+        "checkCacheToDatabase": true,
+        "validateSerializationRoundtrip": true
+      },
+      "performanceThresholds": {
+        "cacheHitRatio": 0.95,
+        "avgLookupTime": 5,
+        "maxLookupTime": 50
+      }
+    }
+  },
+  "entityMappingData": {
+    "cobolTojavaMapping": {
+      "transactionType": {
+        "originalCopybook": "CVTRA03Y.cpy",
+        "originalFields": {
+          "TRAN-TYPE": "PIC X(02)",
+          "TRAN-TYPE-DESC": "PIC X(50)"
+        },
+        "jpaEntityFields": {
+          "transactionType": "VARCHAR(2) PRIMARY KEY",
+          "typeDescription": "VARCHAR(60) NOT NULL",
+          "debitCreditIndicator": "BOOLEAN NOT NULL (added)"
+        },
+        "validationAnnotations": [
+          "@NotBlank",
+          "@Size(min=2, max=2)",
+          "@NotNull"
+        ]
+      },
+      "transactionCategory": {
+        "originalCopybook": "CVTRA04Y.cpy", 
+        "originalFields": {
+          "TRAN-CAT-CD": "PIC 9(04)",
+          "TRAN-CAT-TYPE-DESC": "PIC X(50)"
+        },
+        "jpaEntityFields": {
+          "transactionCategory": "VARCHAR(4) PRIMARY KEY",
+          "categoryDescription": "VARCHAR(60) NOT NULL",
+          "activeStatus": "BOOLEAN NOT NULL DEFAULT TRUE (added)"
+        },
+        "relationshipMappings": {
+          "transactionCategoryBalances": "OneToMany with TransactionCategoryBalance"
+        }
+      },
+      "disclosureGroup": {
+        "originalCopybook": "CVTRA02Y.cpy",
+        "originalFields": {
+          "DIS-ACCT-GROUP-ID": "PIC X(10)",
+          "DIS-INT-RATE": "PIC S9(04)V99 COMP-3"
+        },
+        "jpaEntityFields": {
+          "groupId": "VARCHAR(10) PRIMARY KEY",
+          "disclosureText": "TEXT (added)",
+          "interestRate": "DECIMAL(5,4) using BigDecimal",
+          "effectiveDate": "TIMESTAMP (added)"
+        },
+        "precisionMapping": {
+          "cobolComp3": "PIC S9(04)V99 COMP-3",
+          "javaBigDecimal": "DECIMAL(5,4) with MathContext.DECIMAL128",
+          "rounding": "RoundingMode.HALF_EVEN"
+        }
+      }
+    },
+    "dataTypeConversions": {
+      "picX": "String with @Size validation",
+      "pic9": "String with numeric validation or Integer/Long",
+      "picS9V99Comp3": "BigDecimal with exact precision",
+      "boolean": "Boolean with @NotNull validation"
+    },
+    "indexingStrategy": {
+      "primaryKeys": {
+        "transaction_types.transaction_type": "B-tree index (automatic)",
+        "transaction_categories.transaction_category": "B-tree index (automatic)", 
+        "disclosure_groups.group_id": "B-tree index (automatic)"
+      },
+      "foreignKeys": {
+        "accounts.disclosure_group_id": "References disclosure_groups(group_id)",
+        "transactions.transaction_type": "References transaction_types(transaction_type)",
+        "transactions.transaction_category": "References transaction_categories(transaction_category)"
+      },
+      "performanceIndexes": {
+        "transaction_categories.active_status": "For active category lookups",
+        "disclosure_groups.effective_date": "For rate history queries"
+      }
+    }
+  }
+}

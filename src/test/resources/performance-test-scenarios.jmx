@@ -1,0 +1,1058 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
+  <hashTree>
+    <!-- CardDemo Performance Test Plan -->
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="CardDemo Performance Test Plan" enabled="true">
+      <stringProp name="TestPlan.comments">
+        CardDemo Modernization Performance Test Suite
+        
+        PERFORMANCE REQUIREMENTS:
+        - API Response Time: &lt;200ms at 95th percentile (Section 6.6.1.3)
+        - Transaction Throughput: 10,000 TPS sustained load
+        - Batch Processing: &lt;4 hour daily completion window (Section 6.6.6.1)
+        - Memory Utilization: ≤10% increase from baseline (&lt;110% baseline)
+        
+        TEST COVERAGE:
+        - Account View Operations (CAVW → GET /api/cavw/accounts/{id})
+        - Account Update Operations (CAUP → PUT /api/accounts/{id})
+        - Transaction Processing (CT00/CT01/CT02 → Transaction Controller endpoints)
+        - Load Testing up to 10,000 TPS with Spring Cloud Gateway validation
+        - Response time SLA compliance validation
+        - Automated threshold monitoring and baseline comparison
+        
+        MONITORING INTEGRATION:
+        - Prometheus metrics collection
+        - Grafana dashboard integration
+        - Spring Boot Actuator endpoint validation
+        - JMeter Plugins for enhanced monitoring
+      </stringProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
+      <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
+      <elementProp name="TestPlan.arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+        <collectionProp name="Arguments.arguments">
+          <!-- Test Environment Configuration -->
+          <elementProp name="BASE_URL" elementType="Argument">
+            <stringProp name="Argument.name">BASE_URL</stringProp>
+            <stringProp name="Argument.value">${__P(base.url,http://localhost:8080)}</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="ACTUATOR_URL" elementType="Argument">
+            <stringProp name="Argument.name">ACTUATOR_URL</stringProp>
+            <stringProp name="Argument.value">${BASE_URL}/actuator</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <!-- Performance SLA Thresholds -->
+          <elementProp name="RESPONSE_TIME_SLA" elementType="Argument">
+            <stringProp name="Argument.name">RESPONSE_TIME_SLA</stringProp>
+            <stringProp name="Argument.value">200</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="TARGET_TPS" elementType="Argument">
+            <stringProp name="Argument.name">TARGET_TPS</stringProp>
+            <stringProp name="Argument.value">10000</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="ALERT_THRESHOLD_TPS" elementType="Argument">
+            <stringProp name="Argument.name">ALERT_THRESHOLD_TPS</stringProp>
+            <stringProp name="Argument.value">9000</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <!-- Test Data Parameters -->
+          <elementProp name="TEST_ACCOUNT_ID" elementType="Argument">
+            <stringProp name="Argument.name">TEST_ACCOUNT_ID</stringProp>
+            <stringProp name="Argument.value">0000000000683580</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="TEST_TRANSACTION_ID" elementType="Argument">
+            <stringProp name="Argument.name">TEST_TRANSACTION_ID</stringProp>
+            <stringProp name="Argument.value">01</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="TEST_CARD_NUMBER" elementType="Argument">
+            <stringProp name="Argument.name">TEST_CARD_NUMBER</stringProp>
+            <stringProp name="Argument.value">4859452612877065</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+        </collectionProp>
+      </elementProp>
+      <stringProp name="TestPlan.user_define_classpath"></stringProp>
+    </TestPlan>
+    <hashTree>
+      
+      <!-- Authentication Setup -->
+      <SetupThreadGroup guiclass="SetupThreadGroupGui" testclass="SetupThreadGroup" testname="Authentication Setup" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlGui" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">1</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">1</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">1</stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="ThreadGroup.delay"></stringProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+      </SetupThreadGroup>
+      <hashTree>
+        <!-- JWT Token Authentication -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Authenticate for Testing" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="username" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">TESTUSER</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+                <stringProp name="Argument.name">username</stringProp>
+              </elementProp>
+              <elementProp name="password" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">TESTPASS</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+                <stringProp name="Argument.name">password</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${__javaScript(var url = "${BASE_URL}"; url.replace(/^https?:\/\//, '').split('/')[0].split(':')[0])}</stringProp>
+          <stringProp name="HTTPSampler.port">${__javaScript(var url = "${BASE_URL}"; var port = url.replace(/^https?:\/\//, '').split('/')[0].split(':')[1]; port ? port : (url.startsWith('https') ? '443' : '8080'))}</stringProp>
+          <stringProp name="HTTPSampler.protocol">${__javaScript("${BASE_URL}".startsWith('https') ? 'https' : 'http')}</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/api/auth/login</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Content-Type</stringProp>
+                <stringProp name="Header.value">application/x-www-form-urlencoded</stringProp>
+              </elementProp>
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Accept</stringProp>
+                <stringProp name="Header.value">application/json</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+          <!-- Extract JWT Token -->
+          <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="Extract JWT Token" enabled="true">
+            <stringProp name="JSONPostProcessor.referenceNames">jwt_token</stringProp>
+            <stringProp name="JSONPostProcessor.jsonPathExprs">$.token</stringProp>
+            <stringProp name="JSONPostProcessor.match_numbers">1</stringProp>
+            <stringProp name="JSONPostProcessor.defaultValues">INVALID_TOKEN</stringProp>
+          </JSONPostProcessor>
+          <hashTree/>
+        </hashTree>
+      </hashTree>
+
+      <!-- API Response Time Validation Test Group -->
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="API Response Time Validation" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlGui" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">100</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">50</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">30</stringProp>
+        <boolProp name="ThreadGroup.scheduler">true</boolProp>
+        <stringProp name="ThreadGroup.duration">300</stringProp>
+        <stringProp name="ThreadGroup.delay">5</stringProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">false</boolProp>
+      </ThreadGroup>
+      <hashTree>
+        <!-- Account View Performance Test (CAVW → GET /api/cavw/accounts/{id}) -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Account View API - Sub-200ms Validation" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${__javaScript(var url = "${BASE_URL}"; url.replace(/^https?:\/\//, '').split('/')[0].split(':')[0])}</stringProp>
+          <stringProp name="HTTPSampler.port">${__javaScript(var url = "${BASE_URL}"; var port = url.replace(/^https?:\/\//, '').split('/')[0].split(':')[1]; port ? port : (url.startsWith('https') ? '443' : '8080'))}</stringProp>
+          <stringProp name="HTTPSampler.protocol">${__javaScript("${BASE_URL}".startsWith('https') ? 'https' : 'http')}</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/api/cavw/accounts/${TEST_ACCOUNT_ID}</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout">5000</stringProp>
+          <stringProp name="HTTPSampler.response_timeout">10000</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="API Headers" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Authorization</stringProp>
+                <stringProp name="Header.value">Bearer ${jwt_token}</stringProp>
+              </elementProp>
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Accept</stringProp>
+                <stringProp name="Header.value">application/json</stringProp>
+              </elementProp>
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">User-Agent</stringProp>
+                <stringProp name="Header.value">CardDemo-Performance-Test/1.0</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+          <!-- Response Time Assertion - Sub-200ms SLA -->
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Response Time &lt; 200ms SLA" enabled="true">
+            <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+          </DurationAssertion>
+          <hashTree/>
+          <!-- HTTP Status Code Validation -->
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="HTTP 200 OK Response" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="49586">200</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.custom_message">Account View API should return HTTP 200</stringProp>
+            <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+            <boolProp name="Assertion.assume_success">false</boolProp>
+            <intProp name="Assertion.test_type">1</intProp>
+          </ResponseAssertion>
+          <hashTree/>
+        </hashTree>
+
+        <!-- Account Update Performance Test (CAUP → PUT /api/accounts/{id}) -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Account Update API - Transactional Performance" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${__javaScript(var url = "${BASE_URL}"; url.replace(/^https?:\/\//, '').split('/')[0].split(':')[0])}</stringProp>
+          <stringProp name="HTTPSampler.port">${__javaScript(var url = "${BASE_URL}"; var port = url.replace(/^https?:\/\//, '').split('/')[0].split(':')[1]; port ? port : (url.startsWith('https') ? '443' : '8080'))}</stringProp>
+          <stringProp name="HTTPSampler.protocol">${__javaScript("${BASE_URL}".startsWith('https') ? 'https' : 'http')}</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/api/accounts/${TEST_ACCOUNT_ID}</stringProp>
+          <stringProp name="HTTPSampler.method">PUT</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout">5000</stringProp>
+          <stringProp name="HTTPSampler.response_timeout">10000</stringProp>
+          <stringProp name="HTTPSampler.postBodyRaw">true</stringProp>
+          <elementProp name="HTTPsampler.postBodyRaw" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">{
+  "accountId": "${TEST_ACCOUNT_ID}",
+  "accountStatus": "A",
+  "accountLimit": "5000.00",
+  "accountBalance": "1250.75",
+  "lastUpdateTimestamp": "${__time(yyyy-MM-dd'T'HH:mm:ss.SSS'Z')}"
+}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Update API Headers" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Authorization</stringProp>
+                <stringProp name="Header.value">Bearer ${jwt_token}</stringProp>
+              </elementProp>
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Content-Type</stringProp>
+                <stringProp name="Header.value">application/json</stringProp>
+              </elementProp>
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Accept</stringProp>
+                <stringProp name="Header.value">application/json</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+          <!-- Response Time Assertion -->
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Update Response Time &lt; 200ms" enabled="true">
+            <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+          </DurationAssertion>
+          <hashTree/>
+          <!-- Response Code Validation -->
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="HTTP 200 Update Success" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="49586">200</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.custom_message">Account Update API should return HTTP 200</stringProp>
+            <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+            <boolProp name="Assertion.assume_success">false</boolProp>
+            <intProp name="Assertion.test_type">1</intProp>
+          </ResponseAssertion>
+          <hashTree/>
+        </hashTree>
+
+        <!-- Transaction List Performance Test (CT00 → GET /api/ct00/transactions) -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Transaction List API - High Volume Performance" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="page" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">${__Random(0,10)}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+                <stringProp name="Argument.name">page</stringProp>
+              </elementProp>
+              <elementProp name="size" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">20</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+                <stringProp name="Argument.name">size</stringProp>
+              </elementProp>
+              <elementProp name="accountId" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">${TEST_ACCOUNT_ID}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+                <stringProp name="Argument.name">accountId</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${__javaScript(var url = "${BASE_URL}"; url.replace(/^https?:\/\//, '').split('/')[0].split(':')[0])}</stringProp>
+          <stringProp name="HTTPSampler.port">${__javaScript(var url = "${BASE_URL}"; var port = url.replace(/^https?:\/\//, '').split('/')[0].split(':')[1]; port ? port : (url.startsWith('https') ? '443' : '8080'))}</stringProp>
+          <stringProp name="HTTPSampler.protocol">${__javaScript("${BASE_URL}".startsWith('https') ? 'https' : 'http')}</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/api/ct00/transactions</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout">5000</stringProp>
+          <stringProp name="HTTPSampler.response_timeout">10000</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Transaction API Headers" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Authorization</stringProp>
+                <stringProp name="Header.value">Bearer ${jwt_token}</stringProp>
+              </elementProp>
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Accept</stringProp>
+                <stringProp name="Header.value">application/json</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+          <!-- Response Time Assertion -->
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Transaction List Response Time &lt; 200ms" enabled="true">
+            <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+          </DurationAssertion>
+          <hashTree/>
+        </hashTree>
+
+        <!-- Transaction Add Performance Test (CT02 → POST /api/ct02/transactions) -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Transaction Add API - Sub-300ms Processing" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${__javaScript(var url = "${BASE_URL}"; url.replace(/^https?:\/\//, '').split('/')[0].split(':')[0])}</stringProp>
+          <stringProp name="HTTPSampler.port">${__javaScript(var url = "${BASE_URL}"; var port = url.replace(/^https?:\/\//, '').split('/')[0].split(':')[1]; port ? port : (url.startsWith('https') ? '443' : '8080'))}</stringProp>
+          <stringProp name="HTTPSampler.protocol">${__javaScript("${BASE_URL}".startsWith('https') ? 'https' : 'http')}</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/api/ct02/transactions</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout">5000</stringProp>
+          <stringProp name="HTTPSampler.response_timeout">15000</stringProp>
+          <stringProp name="HTTPSampler.postBodyRaw">true</stringProp>
+          <elementProp name="HTTPsampler.postBodyRaw" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">{
+  "transactionId": "${__UUID()}",
+  "accountId": "${TEST_ACCOUNT_ID}",
+  "cardNumber": "${TEST_CARD_NUMBER}",
+  "transactionType": "01",
+  "transactionCategory": "POS TERM",
+  "transactionAmount": "${__Random(100,999)}.${__Random(10,99)}",
+  "transactionDescription": "Performance Test Transaction at ${__time(yyyy-MM-dd HH:mm:ss)}",
+  "merchantName": "JMeter Performance Test",
+  "merchantCity": "Test City",
+  "merchantZip": "12345",
+  "processDate": "${__time(yyyy-MM-dd)}",
+  "processTime": "${__time(HH:mm:ss)}"
+}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Transaction Post Headers" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Authorization</stringProp>
+                <stringProp name="Header.value">Bearer ${jwt_token}</stringProp>
+              </elementProp>
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Content-Type</stringProp>
+                <stringProp name="Header.value">application/json</stringProp>
+              </elementProp>
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Accept</stringProp>
+                <stringProp name="Header.value">application/json</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+          <!-- Response Time Assertion - 300ms for transaction posting -->
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Transaction Post Response Time &lt; 300ms" enabled="true">
+            <stringProp name="DurationAssertion.duration">300</stringProp>
+          </DurationAssertion>
+          <hashTree/>
+          <!-- Success Response Validation -->
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="HTTP 201 Created Response" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="51508">201</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.custom_message">Transaction Add API should return HTTP 201</stringProp>
+            <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+            <boolProp name="Assertion.assume_success">false</boolProp>
+            <intProp name="Assertion.test_type">1</intProp>
+          </ResponseAssertion>
+          <hashTree/>
+        </hashTree>
+      </hashTree>
+
+      <!-- Throughput Load Testing - 10,000 TPS Sustained Load -->
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Throughput Load Testing - 10,000 TPS" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlGui" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">-1</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">1000</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">120</stringProp>
+        <boolProp name="ThreadGroup.scheduler">true</boolProp>
+        <stringProp name="ThreadGroup.duration">1800</stringProp>
+        <stringProp name="ThreadGroup.delay">10</stringProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">false</boolProp>
+      </ThreadGroup>
+      <hashTree>
+        <!-- Throughput Controller for precise TPS control -->
+        <ThroughputController guiclass="ThroughputControllerGui" testclass="ThroughputController" testname="10K TPS Controller" enabled="true">
+          <intProp name="ThroughputController.style">1</intProp>
+          <boolProp name="ThroughputController.perThread">false</boolProp>
+          <intProp name="ThroughputController.maxThroughput">10000</intProp>
+          <stringProp name="ThroughputController.percentThroughput">100.0</stringProp>
+        </ThroughputController>
+        <hashTree>
+          <!-- Random Transaction Selection for Load Testing -->
+          <RandomController guiclass="RandomControllerGui" testclass="RandomController" testname="Random API Selection" enabled="true"/>
+          <hashTree>
+            <!-- Account View Load Test -->
+            <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Load Test - Account View" enabled="true">
+              <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+                <collectionProp name="Arguments.arguments"/>
+              </elementProp>
+              <stringProp name="HTTPSampler.domain">${__javaScript(var url = "${BASE_URL}"; url.replace(/^https?:\/\//, '').split('/')[0].split(':')[0])}</stringProp>
+              <stringProp name="HTTPSampler.port">${__javaScript(var url = "${BASE_URL}"; var port = url.replace(/^https?:\/\//, '').split('/')[0].split(':')[1]; port ? port : (url.startsWith('https') ? '443' : '8080'))}</stringProp>
+              <stringProp name="HTTPSampler.protocol">${__javaScript("${BASE_URL}".startsWith('https') ? 'https' : 'http')}</stringProp>
+              <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+              <stringProp name="HTTPSampler.path">/api/cavw/accounts/${__Random(683580,999999999)}</stringProp>
+              <stringProp name="HTTPSampler.method">GET</stringProp>
+              <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+              <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+              <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+              <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+              <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+              <stringProp name="HTTPSampler.connect_timeout">2000</stringProp>
+              <stringProp name="HTTPSampler.response_timeout">5000</stringProp>
+            </HTTPSamplerProxy>
+            <hashTree>
+              <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Load Test Headers" enabled="true">
+                <collectionProp name="HeaderManager.headers">
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">Authorization</stringProp>
+                    <stringProp name="Header.value">Bearer ${jwt_token}</stringProp>
+                  </elementProp>
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">Accept</stringProp>
+                    <stringProp name="Header.value">application/json</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </HeaderManager>
+              <hashTree/>
+            </hashTree>
+
+            <!-- Transaction List Load Test -->
+            <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Load Test - Transaction List" enabled="true">
+              <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+                <collectionProp name="Arguments.arguments">
+                  <elementProp name="page" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                    <stringProp name="Argument.value">${__Random(0,50)}</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <stringProp name="Argument.name">page</stringProp>
+                  </elementProp>
+                  <elementProp name="size" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                    <stringProp name="Argument.value">10</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <stringProp name="Argument.name">size</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </elementProp>
+              <stringProp name="HTTPSampler.domain">${__javaScript(var url = "${BASE_URL}"; url.replace(/^https?:\/\//, '').split('/')[0].split(':')[0])}</stringProp>
+              <stringProp name="HTTPSampler.port">${__javaScript(var url = "${BASE_URL}"; var port = url.replace(/^https?:\/\//, '').split('/')[0].split(':')[1]; port ? port : (url.startsWith('https') ? '443' : '8080'))}</stringProp>
+              <stringProp name="HTTPSampler.protocol">${__javaScript("${BASE_URL}".startsWith('https') ? 'https' : 'http')}</stringProp>
+              <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+              <stringProp name="HTTPSampler.path">/api/ct00/transactions</stringProp>
+              <stringProp name="HTTPSampler.method">GET</stringProp>
+              <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+              <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+              <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+              <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+              <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+              <stringProp name="HTTPSampler.connect_timeout">2000</stringProp>
+              <stringProp name="HTTPSampler.response_timeout">5000</stringProp>
+            </HTTPSamplerProxy>
+            <hashTree>
+              <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Transaction Load Headers" enabled="true">
+                <collectionProp name="HeaderManager.headers">
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">Authorization</stringProp>
+                    <stringProp name="Header.value">Bearer ${jwt_token}</stringProp>
+                  </elementProp>
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">Accept</stringProp>
+                    <stringProp name="Header.value">application/json</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </HeaderManager>
+              <hashTree/>
+            </hashTree>
+
+            <!-- Transaction Detail Load Test -->
+            <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Load Test - Transaction Detail" enabled="true">
+              <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+                <collectionProp name="Arguments.arguments"/>
+              </elementProp>
+              <stringProp name="HTTPSampler.domain">${__javaScript(var url = "${BASE_URL}"; url.replace(/^https?:\/\//, '').split('/')[0].split(':')[0])}</stringProp>
+              <stringProp name="HTTPSampler.port">${__javaScript(var url = "${BASE_URL}"; var port = url.replace(/^https?:\/\//, '').split('/')[0].split(':')[1]; port ? port : (url.startsWith('https') ? '443' : '8080'))}</stringProp>
+              <stringProp name="HTTPSampler.protocol">${__javaScript("${BASE_URL}".startsWith('https') ? 'https' : 'http')}</stringProp>
+              <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+              <stringProp name="HTTPSampler.path">/api/ct01/transactions/${__Random(1,1000)}</stringProp>
+              <stringProp name="HTTPSampler.method">GET</stringProp>
+              <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+              <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+              <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+              <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+              <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+              <stringProp name="HTTPSampler.connect_timeout">2000</stringProp>
+              <stringProp name="HTTPSampler.response_timeout">5000</stringProp>
+            </HTTPSamplerProxy>
+            <hashTree>
+              <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Detail Load Headers" enabled="true">
+                <collectionProp name="HeaderManager.headers">
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">Authorization</stringProp>
+                    <stringProp name="Header.value">Bearer ${jwt_token}</stringProp>
+                  </elementProp>
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">Accept</stringProp>
+                    <stringProp name="Header.value">application/json</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </HeaderManager>
+              <hashTree/>
+            </hashTree>
+          </hashTree>
+        </hashTree>
+
+        <!-- Constant Throughput Timer for precise TPS control -->
+        <ConstantThroughputTimer guiclass="TestBeanGUI" testclass="ConstantThroughputTimer" testname="10K TPS Timer" enabled="true">
+          <doubleProp>
+            <name>throughput</name>
+            <value>600000.0</value>
+            <savedValue>0.0</savedValue>
+          </doubleProp>
+          <intProp name="calcMode">0</intProp>
+        </ConstantThroughputTimer>
+        <hashTree/>
+      </hashTree>
+
+      <!-- Batch Processing Performance Validation -->
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Batch Processing Window Validation" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlGui" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">1</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">1</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">1</stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="ThreadGroup.delay"></stringProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+      </ThreadGroup>
+      <hashTree>
+        <!-- Batch Job Status Check -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Check Daily Batch Job Status" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${__javaScript(var url = "${BASE_URL}"; url.replace(/^https?:\/\//, '').split('/')[0].split(':')[0])}</stringProp>
+          <stringProp name="HTTPSampler.port">${__javaScript(var url = "${BASE_URL}"; var port = url.replace(/^https?:\/\//, '').split('/')[0].split(':')[1]; port ? port : (url.startsWith('https') ? '443' : '8080'))}</stringProp>
+          <stringProp name="HTTPSampler.protocol">${__javaScript("${BASE_URL}".startsWith('https') ? 'https' : 'http')}</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/actuator/metrics/spring.batch.job.duration</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout">5000</stringProp>
+          <stringProp name="HTTPSampler.response_timeout">30000</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Actuator Headers" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Authorization</stringProp>
+                <stringProp name="Header.value">Bearer ${jwt_token}</stringProp>
+              </elementProp>
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Accept</stringProp>
+                <stringProp name="Header.value">application/json</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+          <!-- Extract batch processing duration -->
+          <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="Extract Batch Duration" enabled="true">
+            <stringProp name="JSONPostProcessor.referenceNames">batch_duration</stringProp>
+            <stringProp name="JSONPostProcessor.jsonPathExprs">$.measurements[0].value</stringProp>
+            <stringProp name="JSONPostProcessor.match_numbers">1</stringProp>
+            <stringProp name="JSONPostProcessor.defaultValues">0</stringProp>
+          </JSONPostProcessor>
+          <hashTree/>
+          <!-- Batch completion time validation (4 hours = 14400 seconds) -->
+          <JSR223Assertion guiclass="TestBeanGUI" testclass="JSR223Assertion" testname="Batch 4-Hour Window Validation" enabled="true">
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="script">
+// Convert milliseconds to hours for batch duration validation
+double durationMs = Double.parseDouble(vars.get("batch_duration"));
+double durationHours = durationMs / (1000 * 60 * 60);
+double maxAllowedHours = 4.0;
+
+log.info("Batch processing duration: " + durationHours + " hours");
+log.info("Maximum allowed duration: " + maxAllowedHours + " hours");
+
+if (durationHours > maxAllowedHours) {
+    AssertionResult.setFailureMessage("Batch processing exceeded 4-hour window. Actual: " + durationHours + " hours");
+    AssertionResult.setFailure(true);
+} else {
+    log.info("Batch processing completed within SLA window");
+}
+            </stringProp>
+            <stringProp name="scriptLanguage">groovy</stringProp>
+          </JSR223Assertion>
+          <hashTree/>
+        </hashTree>
+
+        <!-- Memory Utilization Check -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Memory Utilization Baseline Check" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${__javaScript(var url = "${BASE_URL}"; url.replace(/^https?:\/\//, '').split('/')[0].split(':')[0])}</stringProp>
+          <stringProp name="HTTPSampler.port">${__javaScript(var url = "${BASE_URL}"; var port = url.replace(/^https?:\/\//, '').split('/')[0].split(':')[1]; port ? port : (url.startsWith('https') ? '443' : '8080'))}</stringProp>
+          <stringProp name="HTTPSampler.protocol">${__javaScript("${BASE_URL}".startsWith('https') ? 'https' : 'http')}</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/actuator/metrics/jvm.memory.used</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout">5000</stringProp>
+          <stringProp name="HTTPSampler.response_timeout">10000</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Memory Check Headers" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Authorization</stringProp>
+                <stringProp name="Header.value">Bearer ${jwt_token}</stringProp>
+              </elementProp>
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Accept</stringProp>
+                <stringProp name="Header.value">application/json</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+          <!-- Extract memory usage -->
+          <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="Extract Memory Usage" enabled="true">
+            <stringProp name="JSONPostProcessor.referenceNames">memory_used</stringProp>
+            <stringProp name="JSONPostProcessor.jsonPathExprs">$.measurements[0].value</stringProp>
+            <stringProp name="JSONPostProcessor.match_numbers">1</stringProp>
+            <stringProp name="JSONPostProcessor.defaultValues">0</stringProp>
+          </JSONPostProcessor>
+          <hashTree/>
+          <!-- Memory utilization baseline validation -->
+          <JSR223Assertion guiclass="TestBeanGUI" testclass="JSR223Assertion" testname="Memory Baseline &lt;110% Validation" enabled="true">
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="script">
+// Memory utilization validation against baseline (≤110% of baseline)
+double currentMemory = Double.parseDouble(vars.get("memory_used"));
+// Assuming baseline memory from CICS system (in bytes) - this would be configured based on actual baseline
+double baselineMemory = 1073741824; // 1GB baseline example
+double maxAllowedMemory = baselineMemory * 1.10; // 110% of baseline
+
+double utilizationPercent = (currentMemory / baselineMemory) * 100;
+
+log.info("Current memory usage: " + (currentMemory / 1024 / 1024) + " MB");
+log.info("Baseline memory: " + (baselineMemory / 1024 / 1024) + " MB");
+log.info("Memory utilization: " + utilizationPercent + "% of baseline");
+
+if (currentMemory > maxAllowedMemory) {
+    AssertionResult.setFailureMessage("Memory utilization exceeded 110% of baseline. Current: " + utilizationPercent + "%");
+    AssertionResult.setFailure(true);
+} else {
+    log.info("Memory utilization within acceptable range");
+}
+            </stringProp>
+            <stringProp name="scriptLanguage">groovy</stringProp>
+          </JSR223Assertion>
+          <hashTree/>
+        </hashTree>
+      </hashTree>
+
+      <!-- Performance Monitoring and Baseline Comparison -->
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Performance Baseline Comparison" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlGui" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">1</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">1</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">1</stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="ThreadGroup.delay">5</stringProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+      </ThreadGroup>
+      <hashTree>
+        <!-- Prometheus Metrics Collection -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Collect Prometheus Metrics" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${__javaScript(var url = "${BASE_URL}"; url.replace(/^https?:\/\//, '').split('/')[0].split(':')[0])}</stringProp>
+          <stringProp name="HTTPSampler.port">${__javaScript(var url = "${BASE_URL}"; var port = url.replace(/^https?:\/\//, '').split('/')[0].split(':')[1]; port ? port : (url.startsWith('https') ? '443' : '8080'))}</stringProp>
+          <stringProp name="HTTPSampler.protocol">${__javaScript("${BASE_URL}".startsWith('https') ? 'https' : 'http')}</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/actuator/prometheus</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout">10000</stringProp>
+          <stringProp name="HTTPSampler.response_timeout">30000</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Prometheus Headers" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Accept</stringProp>
+                <stringProp name="Header.value">text/plain</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+          <!-- Response validation for metrics collection -->
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Metrics Collection Success" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="49586">200</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.custom_message">Prometheus metrics collection should succeed</stringProp>
+            <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+            <boolProp name="Assertion.assume_success">false</boolProp>
+            <intProp name="Assertion.test_type">1</intProp>
+          </ResponseAssertion>
+          <hashTree/>
+          <!-- Save metrics to file for baseline comparison -->
+          <BeanShellPostProcessor guiclass="TestBeanGUI" testclass="BeanShellPostProcessor" testname="Save Metrics for Baseline" enabled="true">
+            <boolProp name="resetInterpreter">false</boolProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="script">
+import java.io.FileWriter;
+import java.io.BufferedWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+// Save performance metrics for baseline comparison
+String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+String metricsData = new String(data);
+
+// Extract key metrics for comparison
+String[] lines = metricsData.split("\n");
+StringBuilder keyMetrics = new StringBuilder();
+keyMetrics.append("# Performance Test Results - " + timestamp + "\n");
+
+for (String line : lines) {
+    if (line.contains("http_server_requests_seconds") || 
+        line.contains("jvm_memory_used_bytes") || 
+        line.contains("spring_batch_job_duration_seconds") ||
+        line.contains("system_cpu_usage")) {
+        keyMetrics.append(line + "\n");
+    }
+}
+
+// Write to file for historical comparison
+try {
+    FileWriter fw = new FileWriter("performance-baseline-" + System.currentTimeMillis() + ".txt");
+    BufferedWriter bw = new BufferedWriter(fw);
+    bw.write(keyMetrics.toString());
+    bw.close();
+    fw.close();
+    log.info("Performance metrics saved for baseline comparison");
+} catch (Exception e) {
+    log.error("Failed to save metrics: " + e.getMessage());
+}
+            </stringProp>
+          </BeanShellPostProcessor>
+          <hashTree/>
+        </hashTree>
+
+        <!-- Health Check Validation -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Application Health Check" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${__javaScript(var url = "${BASE_URL}"; url.replace(/^https?:\/\//, '').split('/')[0].split(':')[0])}</stringProp>
+          <stringProp name="HTTPSampler.port">${__javaScript(var url = "${BASE_URL}"; var port = url.replace(/^https?:\/\//, '').split('/')[0].split(':')[1]; port ? port : (url.startsWith('https') ? '443' : '8080'))}</stringProp>
+          <stringProp name="HTTPSampler.protocol">${__javaScript("${BASE_URL}".startsWith('https') ? 'https' : 'http')}</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/actuator/health</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout">5000</stringProp>
+          <stringProp name="HTTPSampler.response_timeout">10000</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Health Check Headers" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Accept</stringProp>
+                <stringProp name="Header.value">application/json</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+          <!-- Validate system health -->
+          <JSONPathAssertion guiclass="JSONPathAssertionGui" testclass="JSONPathAssertion" testname="System Health UP" enabled="true">
+            <stringProp name="JSON_PATH">$.status</stringProp>
+            <stringProp name="EXPECTED_VALUE">UP</stringProp>
+            <boolProp name="JSONVALIDATION">true</boolProp>
+            <boolProp name="EXPECT_NULL">false</boolProp>
+            <boolProp name="INVERT">false</boolProp>
+            <boolProp name="ISREGEX">false</boolProp>
+          </JSONPathAssertion>
+          <hashTree/>
+        </hashTree>
+      </hashTree>
+
+      <!-- Test Results and Monitoring -->
+      <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
+        <boolProp name="ResultCollector.error_logging">false</boolProp>
+        <objProp>
+          <name>saveConfig</name>
+          <value class="SampleSaveConfiguration">
+            <time>true</time>
+            <latency>true</latency>
+            <timestamp>true</timestamp>
+            <success>true</success>
+            <label>true</label>
+            <code>true</code>
+            <message>true</message>
+            <threadName>true</threadName>
+            <dataType>true</dataType>
+            <encoding>false</encoding>
+            <assertions>true</assertions>
+            <subresults>true</subresults>
+            <responseData>false</responseData>
+            <samplerData>false</samplerData>
+            <xml>false</xml>
+            <fieldNames>true</fieldNames>
+            <responseHeaders>false</responseHeaders>
+            <requestHeaders>false</requestHeaders>
+            <responseDataOnError>false</responseDataOnError>
+            <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+            <assertionsResultsToSave>0</assertionsResultsToSave>
+            <bytes>true</bytes>
+            <sentBytes>true</sentBytes>
+            <url>true</url>
+            <threadCounts>true</threadCounts>
+            <idleTime>true</idleTime>
+            <connectTime>true</connectTime>
+          </value>
+        </objProp>
+        <stringProp name="filename">performance-test-results.jtl</stringProp>
+      </ResultCollector>
+      <hashTree/>
+
+      <!-- Aggregate Report for SLA Analysis -->
+      <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="Aggregate Report - SLA Analysis" enabled="true">
+        <boolProp name="ResultCollector.error_logging">false</boolProp>
+        <objProp>
+          <name>saveConfig</name>
+          <value class="SampleSaveConfiguration">
+            <time>true</time>
+            <latency>true</latency>
+            <timestamp>true</timestamp>
+            <success>true</success>
+            <label>true</label>
+            <code>true</code>
+            <message>true</message>
+            <threadName>true</threadName>
+            <dataType>true</dataType>
+            <encoding>false</encoding>
+            <assertions>true</assertions>
+            <subresults>true</subresults>
+            <responseData>false</responseData>
+            <samplerData>false</samplerData>
+            <xml>false</xml>
+            <fieldNames>true</fieldNames>
+            <responseHeaders>false</responseHeaders>
+            <requestHeaders>false</requestHeaders>
+            <responseDataOnError>false</responseDataOnError>
+            <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+            <assertionsResultsToSave>0</assertionsResultsToSave>
+            <bytes>true</bytes>
+            <sentBytes>true</sentBytes>
+            <url>true</url>
+            <threadCounts>true</threadCounts>
+            <idleTime>true</idleTime>
+            <connectTime>true</connectTime>
+          </value>
+        </objProp>
+        <stringProp name="filename">sla-analysis-report.jtl</stringProp>
+      </ResultCollector>
+      <hashTree/>
+
+      <!-- Response Time Graph for 95th Percentile Analysis -->
+      <kg.apc.jmeter.vizualizers.CorrectedResultCollector guiclass="kg.apc.jmeter.vizualizers.ResponseTimesOverTimeGui" testclass="kg.apc.jmeter.vizualizers.CorrectedResultCollector" testname="Response Times Over Time - 95th Percentile" enabled="true">
+        <boolProp name="ResultCollector.error_logging">false</boolProp>
+        <objProp>
+          <name>saveConfig</name>
+          <value class="SampleSaveConfiguration">
+            <time>true</time>
+            <latency>true</latency>
+            <timestamp>true</timestamp>
+            <success>true</success>
+            <label>true</label>
+            <code>true</code>
+            <message>true</message>
+            <threadName>true</threadName>
+            <dataType>true</dataType>
+            <encoding>false</encoding>
+            <assertions>true</assertions>
+            <subresults>true</subresults>
+            <responseData>false</responseData>
+            <samplerData>false</samplerData>
+            <xml>false</xml>
+            <fieldNames>true</fieldNames>
+            <responseHeaders>false</responseHeaders>
+            <requestHeaders>false</requestHeaders>
+            <responseDataOnError>false</responseDataOnError>
+            <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+            <assertionsResultsToSave>0</assertionsResultsToSave>
+            <bytes>true</bytes>
+            <sentBytes>true</sentBytes>
+            <url>true</url>
+            <threadCounts>true</threadCounts>
+            <idleTime>true</idleTime>
+            <connectTime>true</connectTime>
+          </value>
+        </objProp>
+        <stringProp name="filename">response-times-95th-percentile.jtl</stringProp>
+        <longProp name="interval_grouping">5000</longProp>
+        <boolProp name="graph_aggregated">false</boolProp>
+        <stringProp name="include_sample_labels"></stringProp>
+        <stringProp name="exclude_sample_labels"></stringProp>
+        <stringProp name="start_offset"></stringProp>
+        <stringProp name="end_offset"></stringProp>
+      </kg.apc.jmeter.vizualizers.CorrectedResultCollector>
+      <hashTree/>
+
+      <!-- Transactions Per Second Graph -->
+      <kg.apc.jmeter.vizualizers.CorrectedResultCollector guiclass="kg.apc.jmeter.vizualizers.TransactionsPerSecondGui" testclass="kg.apc.jmeter.vizualizers.CorrectedResultCollector" testname="Transactions Per Second - 10K TPS Validation" enabled="true">
+        <boolProp name="ResultCollector.error_logging">false</boolProp>
+        <objProp>
+          <name>saveConfig</name>
+          <value class="SampleSaveConfiguration">
+            <time>true</time>
+            <latency>true</latency>
+            <timestamp>true</timestamp>
+            <success>true</success>
+            <label>true</label>
+            <code>true</code>
+            <message>true</message>
+            <threadName>true</threadName>
+            <dataType>true</dataType>
+            <encoding>false</encoding>
+            <assertions>true</assertions>
+            <subresults>true</subresults>
+            <responseData>false</responseData>
+            <samplerData>false</samplerData>
+            <xml>false</xml>
+            <fieldNames>true</fieldNames>
+            <responseHeaders>false</responseHeaders>
+            <requestHeaders>false</requestHeaders>
+            <responseDataOnError>false</responseDataOnError>
+            <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+            <assertionsResultsToSave>0</assertionsResultsToSave>
+            <bytes>true</bytes>
+            <sentBytes>true</sentBytes>
+            <url>true</url>
+            <threadCounts>true</threadCounts>
+            <idleTime>true</idleTime>
+            <connectTime>true</connectTime>
+          </value>
+        </objProp>
+        <stringProp name="filename">transactions-per-second-10k.jtl</stringProp>
+        <longProp name="interval_grouping">1000</longProp>
+        <boolProp name="graph_aggregated">false</boolProp>
+        <stringProp name="include_sample_labels"></stringProp>
+        <stringProp name="exclude_sample_labels"></stringProp>
+        <stringProp name="start_offset"></stringProp>
+        <stringProp name="end_offset"></stringProp>
+      </kg.apc.jmeter.vizualizers.CorrectedResultCollector>
+      <hashTree/>
+
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>

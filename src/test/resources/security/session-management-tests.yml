@@ -1,0 +1,832 @@
+# Session Management Test Scenarios for CardDemo Spring Session Configuration
+# Comprehensive validation of Redis-backed Spring Session with TTL-based expiration,
+# distributed session consistency, and CICS pseudo-conversational processing equivalence
+#
+# This configuration provides complete test coverage for session management including:
+# - Redis-backed Spring Session configuration validation
+# - Session lifecycle testing (creation, validation, timeout, cleanup)
+# - Distributed session management across microservice boundaries
+# - TTL-based expiration handling and automatic session cleanup
+# - JWT correlation IDs and cross-service session consistency
+# - Session security testing with HttpOnly cookies and SameSite protection
+# - Session event handling and lifecycle monitoring
+# - Performance validation for 10,000+ TPS session operations
+#
+# Based on Technical Specification Section 6.4.1.3 Session Management Architecture
+# Integrates with SessionConfig.java Redis configuration and Spring Security JWT authentication
+# Supports transformation from CICS terminal storage to modern distributed session management
+#
+# Author: Blitzy agent
+# Created: Redis-backed session management test scenarios replacing CICS session testing
+# Version: 1.0 - Complete session lifecycle validation with distributed consistency testing
+# ======================================================================================
+
+# ==============================================================================
+# SESSION MANAGEMENT TEST SCENARIOS (Default Export)
+# Primary configuration providing Redis session creation tests, session lifecycle
+# validation, TTL-based expiration testing, and distributed session consistency tests
+# ==============================================================================
+
+SessionManagementTestScenarios:
+  # Redis-backed Spring Session configuration validation
+  redis-session-creation-tests:
+    # Basic session creation test scenarios
+    basic-creation:
+      # Valid session creation with all required attributes
+      valid-session-creation:
+        test-name: "Valid session creation with Redis backend"
+        redis-config:
+          host: "localhost"
+          port: 6379
+          database: 0
+          timeout: "5s"
+          namespace: "carddemo:test:session"
+        session-attributes:
+          timeout-seconds: 1800  # 30 minutes equivalent to CICS timeout
+          cookie-name: "CARDDEMO-TEST-SESSIONID"
+          cookie-secure: false    # Disabled for test environment
+          cookie-http-only: true
+          cookie-same-site: "strict"
+        expected-outcomes:
+          session-created: true
+          redis-key-exists: true
+          session-timeout-set: true
+          cookie-attributes-valid: true
+        validation-checks:
+          - "session.getId() != null"
+          - "session.getMaxInactiveInterval().getSeconds() == 1800"
+          - "redisTemplate.hasKey('carddemo:test:session:sessions:' + sessionId)"
+          - "session.getCreationTime() != null"
+          
+      # Session creation with custom attributes
+      custom-attributes-creation:
+        test-name: "Session creation with custom timeout and namespace"
+        redis-config:
+          namespace: "carddemo:custom:session"
+          timeout-seconds: 900  # 15 minutes custom timeout
+        session-attributes:
+          user-id: "testuser001"
+          user-type: "U"
+          roles: ["ROLE_USER"]
+          jwt-token: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+        expected-outcomes:
+          session-created: true
+          custom-attributes-stored: true
+          namespace-isolation-verified: true
+        validation-checks:
+          - "session.getAttribute('user-id') == 'testuser001'"
+          - "session.getAttribute('roles').contains('ROLE_USER')"
+          - "redisTemplate.hasKey('carddemo:custom:session:sessions:' + sessionId)"
+          
+      # Concurrent session creation test
+      concurrent-creation:
+        test-name: "Concurrent session creation stress test"
+        concurrency-config:
+          thread-count: 50
+          sessions-per-thread: 20
+          total-expected-sessions: 1000
+        performance-targets:
+          max-creation-time-ms: 100
+          max-redis-latency-ms: 10
+          success-rate-threshold: 99.5
+        validation-checks:
+          - "createdSessions.size() == expectedSessionCount"
+          - "averageCreationTime < maxCreationTimeMs"
+          - "redis connection pool stable"
+
+    # Session attribute management tests
+    attribute-management:
+      # Session attribute storage and retrieval
+      attribute-storage:
+        test-name: "Session attribute storage and retrieval validation"
+        test-attributes:
+          string-attribute:
+            name: "username"
+            value: "testuser"
+            type: "String"
+          json-attribute:
+            name: "user-profile"
+            value: '{"firstName": "Test", "lastName": "User", "email": "test@example.com"}'
+            type: "JSON"
+          list-attribute:
+            name: "permissions"
+            value: ["READ_ACCOUNT", "VIEW_TRANSACTIONS", "UPDATE_PROFILE"]
+            type: "List<String>"
+          complex-attribute:
+            name: "session-context"
+            value:
+              current-transaction: "COSGN00C"
+              menu-stack: ["MAIN", "ACCOUNT", "VIEW"]
+              last-activity: "2024-01-15T10:30:00Z"
+            type: "Map<String, Object>"
+        validation-checks:
+          - "session.getAttribute('username') == 'testuser'"
+          - "session.getAttribute('user-profile') != null"
+          - "session.getAttribute('permissions').size() == 3"
+          - "session.getAttribute('session-context').get('current-transaction') == 'COSGN00C'"
+          
+      # Session attribute serialization testing
+      serialization-tests:
+        test-name: "Session attribute JSON serialization validation"
+        serialization-config:
+          serializer: "GenericJackson2JsonRedisSerializer"
+          key-serializer: "StringRedisSerializer"
+        test-objects:
+          user-context:
+            class: "com.carddemo.common.dto.UserContext"
+            fields:
+              userId: "USER001"
+              userType: "U"
+              roles: ["ROLE_USER"]
+              lastLoginTime: "2024-01-15T10:30:00Z"
+          account-context:
+            class: "com.carddemo.common.dto.AccountContext"
+            fields:
+              accountId: "12345678901"
+              currentBalance: 1500.75
+              creditLimit: 5000.00
+              lastTransactionTime: "2024-01-15T10:29:45Z"
+        validation-checks:
+          - "deserializedUserContext.getUserId() == 'USER001'"
+          - "deserializedAccountContext.getCurrentBalance().equals(BigDecimal.valueOf(1500.75))"
+          - "json serialization maintains precision for financial data"
+
+  # Session lifecycle validation tests
+  session-lifecycle-validation:
+    # Session creation lifecycle
+    creation-lifecycle:
+      # New session creation event testing
+      session-creation-events:
+        test-name: "Session creation event handling and metrics"
+        event-listeners:
+          - "SessionCreatedEvent listener validation"
+          - "Session metrics counter increment"
+          - "Audit logging for session creation"
+        test-scenarios:
+          new-user-session:
+            user-id: "newuser001"
+            expected-events: ["SessionCreatedEvent"]
+            expected-metrics: 
+              sessions-created-count: "+1"
+              active-sessions-count: "+1"
+            audit-expectations:
+              log-level: "INFO"
+              log-message-pattern: "Session created - ID: .*, Creation Time: .*, Total Sessions Created: .*"
+        validation-checks:
+          - "sessionCreatedEvent.getSession().getId() != null"
+          - "sessionMetrics.getSessionsCreated() > previousCount"
+          - "auditLog.contains('Session created')"
+          
+      # Session initialization with user context
+      user-context-initialization:
+        test-name: "Session initialization with authenticated user context"
+        authentication-context:
+          username: "testuser"
+          user-type: "U"
+          roles: ["ROLE_USER"]
+          jwt-claims:
+            sub: "testuser"
+            user_type: "U"
+            roles: ["ROLE_USER"]
+            session_id: "generated-correlation-id"
+            iat: 1705320000
+            exp: 1705321800
+        session-initialization:
+          correlation-id: "jwt-session-correlation"
+          security-context: "Spring Security Authentication"
+          user-attributes: "User profile and permissions"
+        validation-checks:
+          - "session.getAttribute('username') == 'testuser'"
+          - "session.getAttribute('jwt-correlation-id') != null"
+          - "SecurityContextHolder.getContext().getAuthentication() != null"
+
+    # Session validation and access patterns
+    validation-access:
+      # Session validation for authenticated requests
+      authenticated-request-validation:
+        test-name: "Session validation for authenticated API requests"
+        request-scenarios:
+          valid-session-request:
+            session-id: "valid-session-001"
+            cookie-header: "CARDDEMO-TEST-SESSIONID=valid-session-001"
+            expected-outcome: "SESSION_VALID"
+            user-context-available: true
+          invalid-session-request:
+            session-id: "invalid-session-999"
+            cookie-header: "CARDDEMO-TEST-SESSIONID=invalid-session-999"
+            expected-outcome: "SESSION_INVALID"
+            redirect-to-login: true
+          missing-session-request:
+            session-id: null
+            cookie-header: null
+            expected-outcome: "NO_SESSION"
+            anonymous-access: true
+        validation-checks:
+          - "valid session returns user context"
+          - "invalid session returns null context"
+          - "missing session allows anonymous access where configured"
+          
+      # Cross-microservice session access
+      cross-service-access:
+        test-name: "Session access across microservice boundaries"
+        microservice-scenarios:
+          auth-to-account-service:
+            source-service: "authentication-service"
+            target-service: "account-service"
+            session-propagation: "HTTP session cookie"
+            jwt-correlation: "Bearer token header"
+            expected-user-context: "preserved across services"
+          account-to-transaction-service:
+            source-service: "account-service"
+            target-service: "transaction-service"
+            session-consistency: "Redis-backed shared session"
+            user-permissions: "maintained across boundaries"
+        validation-checks:
+          - "session data consistent between services"
+          - "user context preserved in target service"
+          - "JWT correlation ID matches session correlation"
+
+    # Session timeout and expiration handling
+    timeout-expiration:
+      # TTL-based session expiration testing
+      ttl-expiration-tests:
+        test-name: "TTL-based session expiration equivalent to CICS timeout"
+        timeout-scenarios:
+          normal-timeout:
+            initial-timeout: 1800  # 30 minutes
+            activity-pattern: "no activity"
+            expected-expiration: "after 30 minutes"
+            cleanup-verification: "session removed from Redis"
+          activity-extension:
+            initial-timeout: 1800
+            activity-pattern: "activity at 25 minutes"
+            expected-expiration: "extended to 30 minutes from last activity"
+            session-refresh: "TTL reset in Redis"
+          custom-timeout:
+            initial-timeout: 900   # 15 minutes custom
+            activity-pattern: "no activity"
+            expected-expiration: "after 15 minutes"
+            namespace-isolation: "verified"
+        validation-checks:
+          - "expired sessions trigger SessionExpiredEvent"
+          - "Redis TTL matches session timeout configuration"
+          - "session cleanup removes all associated data"
+          
+      # Session expiration event handling
+      expiration-events:
+        test-name: "Session expiration event handling and cleanup"
+        expiration-scenarios:
+          timeout-expiration:
+            expiration-cause: "TTL timeout"
+            expected-events: ["SessionExpiredEvent"]
+            cleanup-actions: ["Redis key removal", "metrics update"]
+          explicit-invalidation:
+            expiration-cause: "session.invalidate()"
+            expected-events: ["SessionDeletedEvent"]
+            cleanup-actions: ["immediate removal", "audit logging"]
+        event-validation:
+          session-expired-event:
+            event-properties: ["session ID", "expiration time", "session duration"]
+            metrics-updates: ["sessions-expired-count", "active-sessions-count"]
+            audit-logging: "session expiration logged for compliance"
+        validation-checks:
+          - "SessionExpiredEvent contains correct session ID"
+          - "session metrics updated correctly"
+          - "audit trail includes expiration reason"
+
+    # Session cleanup automation
+    cleanup-automation:
+      # Automatic session cleanup validation
+      automatic-cleanup:
+        test-name: "Automatic session cleanup with cron scheduling"
+        cleanup-configuration:
+          cleanup-interval: "0 */15 * * * *"  # Every 15 minutes
+          batch-size: 1000
+          expired-session-removal: true
+          orphaned-data-cleanup: true
+        cleanup-scenarios:
+          scheduled-cleanup:
+            trigger: "cron schedule"
+            expected-actions: ["expired session scan", "Redis key removal"]
+            performance-target: "cleanup within 30 seconds"
+          manual-cleanup:
+            trigger: "administrative action"
+            cleanup-scope: "all expired sessions"
+            verification: "cleanup metrics updated"
+        validation-checks:
+          - "scheduled cleanup executes on time"
+          - "expired sessions removed from Redis"
+          - "cleanup metrics reflect processed sessions"
+          
+      # Memory management and resource cleanup
+      memory-management:
+        test-name: "Session memory management and resource optimization"
+        memory-scenarios:
+          high-session-volume:
+            concurrent-sessions: 10000
+            memory-monitoring: "enabled"
+            garbage-collection: "monitored"
+            redis-memory-usage: "tracked"
+          session-attribute-limits:
+            max-attribute-size: "1MB per session"
+            attribute-count-limit: 100
+            serialization-overhead: "measured"
+        performance-targets:
+          session-creation-time: "< 100ms at 95th percentile"
+          session-retrieval-time: "< 10ms average"
+          memory-overhead: "< 10% increase from baseline"
+          redis-connection-efficiency: "> 95% pool utilization"
+        validation-checks:
+          - "session creation meets performance targets"
+          - "memory usage stays within limits"
+          - "Redis connection pool remains stable"
+
+  # Distributed session consistency tests
+  distributed-session-consistency-tests:
+    # Cross-microservice session sharing
+    cross-service-consistency:
+      # Session data consistency across services
+      session-data-consistency:
+        test-name: "Session data consistency across microservice boundaries"
+        consistency-scenarios:
+          user-context-sharing:
+            primary-service: "authentication-service"
+            secondary-services: ["account-service", "transaction-service", "card-service"]
+            shared-data:
+              username: "testuser"
+              user-type: "U"
+              roles: ["ROLE_USER"]
+              last-activity: "synchronized timestamp"
+            consistency-validation: "eventual consistency within 100ms"
+          session-attribute-updates:
+            update-service: "account-service"
+            consuming-services: ["transaction-service", "card-service"]
+            update-data:
+              account-balance: "updated value"
+              last-transaction: "new transaction details"
+            propagation-time: "< 50ms across services"
+        validation-checks:
+          - "session data consistent across all services"
+          - "updates propagate within performance targets"
+          - "no data conflicts or inconsistencies"
+          
+      # JWT correlation with session management
+      jwt-session-correlation:
+        test-name: "JWT token correlation with Redis session management"
+        correlation-scenarios:
+          token-session-mapping:
+            jwt-claims:
+              session_id: "redis-session-correlation-id"
+              sub: "testuser"
+              user_type: "U"
+            redis-session:
+              session-id: "matching-correlation-id"
+              user-attributes: "matching user context"
+            correlation-validation: "JWT and session data synchronized"
+          token-refresh-session-update:
+            scenario: "JWT token refresh updates session"
+            jwt-refresh:
+              new-expiration: "extended token lifetime"
+              session-correlation: "maintained"
+            session-update:
+              ttl-extension: "session timeout extended"
+              correlation-maintained: true
+        validation-checks:
+          - "JWT session_id claim matches Redis session correlation"
+          - "token refresh extends session lifetime"
+          - "session data remains consistent during token operations"
+
+    # Session failover and high availability
+    failover-high-availability:
+      # Redis cluster session failover
+      redis-cluster-failover:
+        test-name: "Session failover with Redis cluster configuration"
+        cluster-scenarios:
+          primary-node-failure:
+            cluster-setup: "3 Redis nodes with replication"
+            failure-simulation: "primary node shutdown"
+            expected-behavior: "automatic failover to replica"
+            session-continuity: "no session data loss"
+          network-partition:
+            partition-scenario: "network split between nodes"
+            consistency-model: "eventual consistency"
+            session-recovery: "session data reconciliation"
+        failover-validation:
+          recovery-time: "< 5 seconds for session access restoration"
+          data-consistency: "session data preserved during failover"
+          performance-impact: "< 10% performance degradation during recovery"
+        validation-checks:
+          - "sessions remain accessible after failover"
+          - "no data loss during node failures"
+          - "performance meets targets during recovery"
+          
+      # Service mesh session routing
+      service-mesh-routing:
+        test-name: "Session routing and consistency in service mesh"
+        mesh-scenarios:
+          load-balancer-routing:
+            session-affinity: "enabled"
+            routing-strategy: "session-based"
+            service-instances: ["auth-service-1", "auth-service-2", "auth-service-3"]
+            expected-behavior: "requests routed to correct service instance"
+          service-discovery-updates:
+            scenario: "service instance scaling events"
+            session-redistribution: "sessions remain accessible"
+            health-check-integration: "unhealthy instances excluded"
+        validation-checks:
+          - "session affinity maintained across requests"
+          - "service scaling preserves session access"
+          - "health checks protect session routing"
+
+    # Session security across microservices
+    cross-service-security:
+      # Session security boundary enforcement
+      security-boundary-enforcement:
+        test-name: "Session security enforcement across service boundaries"
+        security-scenarios:
+          unauthorized-session-access:
+            scenario: "service attempts to access unauthorized session"
+            security-context: "missing or invalid authentication"
+            expected-behavior: "access denied with security event logged"
+          session-hijacking-prevention:
+            scenario: "malicious session ID usage"
+            security-measures: ["HttpOnly cookies", "SameSite strict", "session IP validation"]
+            expected-behavior: "session rejected with security alert"
+          cross-origin-session-protection:
+            scenario: "cross-origin request with session cookie"
+            security-policy: "SameSite strict enforcement"
+            expected-behavior: "cookie not sent with cross-origin requests"
+        security-validation:
+          access-control: "unauthorized access blocked"
+          audit-logging: "security events logged for compliance"
+          threat-detection: "suspicious activity flagged"
+        validation-checks:
+          - "unauthorized session access blocked"
+          - "security events logged in audit trail"
+          - "session security policies enforced"
+          
+      # Session data encryption and privacy
+      data-encryption-privacy:
+        test-name: "Session data encryption and privacy protection"
+        encryption-scenarios:
+          session-data-encryption:
+            encryption-method: "AES-256 encryption for sensitive attributes"
+            encrypted-attributes: ["SSN", "card numbers", "financial data"]
+            key-management: "Redis encryption keys managed by Kubernetes secrets"
+          pii-data-protection:
+            pii-fields: ["customer name", "address", "phone number"]
+            protection-method: "field-level encryption with masking"
+            compliance-requirement: "GDPR and PCI DSS"
+        privacy-validation:
+          data-encryption: "sensitive data encrypted at rest in Redis"
+          access-logging: "PII access logged for audit compliance"
+          data-retention: "session data retention policies enforced"
+        validation-checks:
+          - "sensitive session data encrypted in Redis"
+          - "PII access tracked in audit logs"
+          - "data retention policies automatically enforced"
+
+# ==============================================================================
+# REDIS SESSION TEST CONFIGURATION (Supporting Configuration)
+# Supporting configuration providing Redis container test setup, session store
+# configuration, TTL expiration settings, and session data persistence tests
+# ==============================================================================
+
+RedisSessionTestConfiguration:
+  # Redis container test setup for Testcontainers integration
+  redis-container-setup:
+    # Redis container configuration
+    container-config:
+      image: "redis:7-alpine"
+      port: 6379
+      memory-limit: "512mb"
+      persistence: false  # Disabled for test performance
+      config-overrides:
+        maxmemory: "256mb"
+        maxmemory-policy: "allkeys-lru"
+        save: ""  # Disable RDB snapshots for tests
+    
+    # Redis connection configuration for tests
+    connection-config:
+      host: "localhost"
+      port: 6379  # Mapped from container
+      database: 1  # Dedicated test database
+      timeout: "5s"
+      password: null  # No password for test container
+      
+    # Connection pool configuration
+    connection-pool:
+      max-active: 20
+      max-idle: 10
+      min-idle: 2
+      max-wait: "10s"
+      test-on-borrow: true
+      test-while-idle: true
+      
+    # Container lifecycle management
+    lifecycle:
+      startup-timeout: "30s"
+      health-check-interval: "5s"
+      cleanup-on-exit: true
+
+  # Session store configuration testing
+  session-store-configuration:
+    # Spring Session Redis configuration
+    spring-session-config:
+      namespace: "carddemo:test:session"
+      timeout: 1800  # 30 minutes
+      cleanup-cron: "0 */1 * * * *"  # Every minute for fast test execution
+      cookie-name: "CARDDEMO-TEST-SESSIONID"
+      cookie-path: "/carddemo"
+      
+    # Redis serialization configuration
+    serialization-config:
+      key-serializer: "StringRedisSerializer"
+      value-serializer: "GenericJackson2JsonRedisSerializer"
+      hash-key-serializer: "StringRedisSerializer"
+      hash-value-serializer: "GenericJackson2JsonRedisSerializer"
+      
+    # Session repository configuration
+    repository-config:
+      flush-mode: "ON_SAVE"
+      save-mode: "ALWAYS"
+      session-event-publisher: "enabled"
+      
+    # Configuration validation tests
+    config-validation:
+      namespace-isolation:
+        test-namespaces: ["carddemo:test:session", "carddemo:prod:session"]
+        isolation-verification: "no cross-namespace access"
+      timeout-configuration:
+        test-timeouts: [300, 900, 1800, 3600]  # 5min, 15min, 30min, 1hour
+        ttl-verification: "Redis TTL matches session timeout"
+      serialization-testing:
+        test-objects: ["String", "Integer", "Map", "Custom POJO"]
+        round-trip-verification: "serialization preserves object integrity"
+
+  # TTL expiration settings and testing
+  ttl-expiration-settings:
+    # TTL configuration for different session types
+    ttl-configurations:
+      standard-user-session:
+        timeout-seconds: 1800  # 30 minutes
+        activity-extension: true
+        idle-timeout: 1800
+        max-session-duration: 7200  # 2 hours absolute maximum
+      admin-user-session:
+        timeout-seconds: 3600  # 1 hour for admin users
+        activity-extension: true
+        idle-timeout: 3600
+        max-session-duration: 14400  # 4 hours absolute maximum
+      api-service-session:
+        timeout-seconds: 300   # 5 minutes for service-to-service
+        activity-extension: false
+        idle-timeout: 300
+        max-session-duration: 300
+        
+    # TTL testing scenarios
+    ttl-test-scenarios:
+      normal-expiration:
+        test-description: "Session expires after configured TTL"
+        session-timeout: 60  # 1 minute for test speed
+        activity-pattern: "no activity"
+        expected-result: "session expired after 60 seconds"
+        validation: "SessionExpiredEvent fired"
+      activity-extension:
+        test-description: "Session TTL extended by activity"
+        session-timeout: 60
+        activity-pattern: "activity at 45 seconds"
+        expected-result: "TTL extended to 60 seconds from activity"
+        validation: "session remains valid beyond original timeout"
+      max-duration-limit:
+        test-description: "Session expires at absolute maximum duration"
+        session-timeout: 60
+        max-duration: 120
+        activity-pattern: "continuous activity"
+        expected-result: "session expires at 120 seconds despite activity"
+        validation: "hard limit enforced regardless of activity"
+        
+    # Expiration cleanup testing
+    cleanup-testing:
+      expired-session-cleanup:
+        cleanup-interval: "*/30 * * * * *"  # Every 30 seconds for tests
+        batch-size: 100
+        cleanup-verification: "expired sessions removed from Redis"
+      orphaned-data-cleanup:
+        scenario: "cleanup orphaned session attributes"
+        detection: "session keys without corresponding session"
+        cleanup-action: "remove orphaned keys"
+      memory-pressure-cleanup:
+        scenario: "aggressive cleanup under memory pressure"
+        memory-threshold: "80% Redis memory usage"
+        cleanup-strategy: "LRU eviction with TTL prioritization"
+
+  # Session data persistence tests
+  session-data-persistence:
+    # Data persistence across Redis restarts
+    persistence-scenarios:
+      redis-restart-persistence:
+        test-description: "Session data survives Redis container restart"
+        setup: "create sessions with test data"
+        restart-action: "restart Redis container"
+        validation: "sessions recoverable after restart"
+        note: "requires Redis persistence configuration"
+      graceful-shutdown-persistence:
+        test-description: "Session data persisted during graceful shutdown"
+        setup: "active sessions with ongoing transactions"
+        shutdown-process: "graceful application shutdown"
+        validation: "sessions preserved for recovery"
+        
+    # Data integrity testing
+    data-integrity:
+      concurrent-access-integrity:
+        test-description: "Session data integrity under concurrent access"
+        concurrency-level: 50  # 50 concurrent threads
+        operations: ["read", "write", "update", "delete"]
+        validation: "no data corruption or inconsistency"
+      large-session-data:
+        test-description: "Large session attribute storage and retrieval"
+        attribute-sizes: ["1KB", "10KB", "100KB", "1MB"]
+        serialization-test: "JSON serialization performance"
+        validation: "large attributes stored and retrieved correctly"
+      complex-object-persistence:
+        test-description: "Complex object graph persistence"
+        test-objects:
+          - "nested Maps with Lists"
+          - "custom POJOs with inheritance"
+          - "circular references (handled gracefully)"
+        validation: "complex objects serialized and deserialized correctly"
+        
+    # Performance persistence testing
+    performance-persistence:
+      high-throughput-persistence:
+        operations-per-second: 1000
+        session-attribute-updates: "frequent updates to test persistence"
+        redis-performance-monitoring: "latency and throughput metrics"
+        validation: "persistence maintains performance targets"
+      memory-efficient-persistence:
+        large-session-count: 10000
+        memory-monitoring: "Redis memory usage tracking"
+        compression-testing: "session data compression evaluation"
+        validation: "memory usage remains within limits"
+
+  # Session namespace isolation testing
+  session-namespace-isolation:
+    # Multi-tenant session isolation
+    multi-tenant-isolation:
+      tenant-configurations:
+        tenant-a:
+          namespace: "carddemo:tenant-a:session"
+          isolation-level: "complete"
+          session-sharing: "prohibited"
+        tenant-b:
+          namespace: "carddemo:tenant-b:session"
+          isolation-level: "complete"
+          session-sharing: "prohibited"
+      cross-tenant-access-testing:
+        scenario: "attempt cross-tenant session access"
+        expected-result: "access denied"
+        security-logging: "unauthorized access attempts logged"
+        
+    # Environment-based isolation
+    environment-isolation:
+      environment-configurations:
+        test-environment:
+          namespace: "carddemo:test:session"
+          data-isolation: "complete"
+          cleanup-policy: "aggressive"
+        staging-environment:
+          namespace: "carddemo:staging:session"
+          data-isolation: "complete"
+          cleanup-policy: "standard"
+      isolation-validation:
+        cross-environment-access: "prohibited"
+        namespace-collision-prevention: "verified"
+        data-leakage-testing: "no data visible across environments"
+
+  # Session event handling tests
+  session-event-handling:
+    # Session lifecycle event testing
+    lifecycle-events:
+      session-created-event:
+        event-properties: ["session-id", "creation-time", "user-context"]
+        event-handlers: ["metrics-collector", "audit-logger", "security-monitor"]
+        validation: "all handlers receive and process event correctly"
+      session-destroyed-event:
+        trigger-scenarios: ["explicit invalidation", "timeout expiration", "administrative termination"]
+        event-properties: ["session-id", "destruction-reason", "session-duration"]
+        cleanup-verification: "all session data removed after destruction"
+      session-expired-event:
+        expiration-triggers: ["TTL timeout", "max-duration limit", "policy-based expiration"]
+        event-properties: ["session-id", "expiration-time", "last-access-time"]
+        metrics-updates: ["expired-sessions-count", "average-session-duration"]
+        
+    # Custom session event processing
+    custom-event-processing:
+      business-logic-events:
+        user-login-event:
+          trigger: "successful authentication"
+          session-initialization: "user context setup"
+          audit-requirements: "login attempt logged"
+        transaction-processing-event:
+          trigger: "financial transaction in session"
+          session-updates: ["last-transaction-time", "transaction-count"]
+          compliance-logging: "financial activity audit trail"
+      security-events:
+        suspicious-activity-detection:
+          patterns: ["multiple login attempts", "unusual access patterns", "concurrent sessions"]
+          response-actions: ["session invalidation", "security alert", "access restriction"]
+        session-hijacking-detection:
+          detection-methods: ["IP address changes", "user-agent changes", "activity patterns"]
+          prevention-measures: ["session regeneration", "additional authentication", "access logging"]
+
+  # Integration testing with Spring Security
+  spring-security-integration:
+    # Authentication integration testing
+    authentication-integration:
+      jwt-session-correlation:
+        scenario: "JWT authentication creates correlated session"
+        jwt-claims: ["sub", "user_type", "roles", "session_id"]
+        session-attributes: ["username", "user-type", "roles", "jwt-correlation-id"]
+        validation: "JWT claims match session attributes"
+      oauth2-session-management:
+        scenario: "OAuth2 authentication with session management"
+        oauth2-flow: "authorization code flow"
+        session-creation: "post-authentication session establishment"
+        token-session-binding: "OAuth2 tokens linked to session"
+        
+    # Authorization integration testing
+    authorization-integration:
+      role-based-session-access:
+        admin-session-access:
+          required-roles: ["ROLE_ADMIN"]
+          session-permissions: ["admin-functions", "user-management", "system-configuration"]
+          validation: "admin permissions available in session context"
+        user-session-access:
+          required-roles: ["ROLE_USER"]
+          session-permissions: ["account-access", "transaction-processing", "profile-management"]
+          validation: "user permissions correctly limited in session"
+      method-security-session-context:
+        preauthorize-integration:
+          annotations: ["@PreAuthorize('hasRole(ADMIN)')", "@PreAuthorize('@sessionService.canAccess(authentication, #resourceId)')"]
+          session-context-usage: "session data used in authorization decisions"
+          validation: "method security correctly uses session context"
+
+  # Performance and scalability testing
+  performance-scalability:
+    # Load testing configuration
+    load-testing:
+      concurrent-sessions:
+        session-count: 10000
+        concurrent-operations: 1000
+        operation-types: ["create", "read", "update", "delete", "expire"]
+        performance-targets:
+          session-creation: "< 100ms at 95th percentile"
+          session-retrieval: "< 10ms average"
+          session-update: "< 50ms at 95th percentile"
+      sustained-load:
+        duration: "30 minutes"
+        session-churn-rate: "100 sessions/second create/destroy"
+        memory-stability: "no memory leaks detected"
+        redis-performance: "maintains consistent performance"
+        
+    # Scalability testing
+    scalability-testing:
+      horizontal-scaling:
+        application-instances: [1, 2, 4, 8]
+        redis-cluster-nodes: [1, 3, 5]
+        session-distribution: "even across cluster nodes"
+        performance-linearity: "performance scales with resources"
+      vertical-scaling:
+        redis-memory-sizes: ["256MB", "512MB", "1GB", "2GB"]
+        session-capacity: "proportional to memory allocation"
+        performance-improvement: "measured with increased resources"
+
+# Test execution and monitoring configuration
+test-execution-monitoring:
+  # Test environment setup
+  environment-setup:
+    testcontainers-config:
+      redis-container: "redis:7-alpine"
+      container-startup-timeout: "30s"
+      container-cleanup: "automatic"
+    spring-test-config:
+      profiles: ["test", "session-test"]
+      context-caching: "enabled"
+      transaction-rollback: "after-each-test"
+      
+  # Test monitoring and reporting
+  monitoring-reporting:
+    session-metrics-collection:
+      metrics: ["session-count", "creation-rate", "expiration-rate", "average-duration"]
+      collection-interval: "10 seconds"
+      export-format: "Prometheus format"
+    performance-monitoring:
+      redis-latency: "p50, p95, p99 latencies measured"
+      memory-usage: "Redis memory consumption tracked"
+      throughput: "operations per second measured"
+    test-reporting:
+      format: ["JUnit XML", "JSON", "HTML"]
+      include-performance-data: true
+      include-session-metrics: true
+      export-location: "target/session-test-reports"

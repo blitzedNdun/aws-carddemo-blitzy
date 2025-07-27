@@ -1,0 +1,399 @@
+[
+  {
+    "customerId": "000000001",
+    "firstName": "John",
+    "middleName": "Michael",
+    "lastName": "Smith",
+    "addressLine1": "123 Main Street",
+    "addressLine2": "Apt 101",
+    "addressLine3": "Springfield",
+    "stateCode": "IL",
+    "countryCode": "USA",
+    "zipCode": "62701",
+    "phoneNumber1": "(555)123-4567",
+    "phoneNumber2": "(555)987-6543",
+    "ssn": "123456789",
+    "governmentIssuedId": "D12345678",
+    "dateOfBirth": "1985-06-15",
+    "eftAccountId": "1234567890",
+    "primaryCardholderIndicator": "Y",
+    "ficoCreditScore": 750,
+    "testScenarios": [
+      "primary_cardholder_validation",
+      "address_normalization_test",
+      "phone_format_validation",
+      "high_credit_score_scenario"
+    ],
+    "accountRelationships": [
+      {
+        "accountId": "12345678901",
+        "accountType": "CREDIT",
+        "relationshipType": "PRIMARY"
+      }
+    ],
+    "privacyCompliance": {
+      "dataAnonymized": false,
+      "testPurpose": "functional_validation",
+      "gdprConsent": true
+    }
+  },
+  {
+    "customerId": "000000002",
+    "firstName": "Sarah",
+    "middleName": "Jane",
+    "lastName": "Johnson",
+    "addressLine1": "456 Oak Avenue",
+    "addressLine2": "Suite 200",
+    "addressLine3": "Chicago",
+    "stateCode": "IL",
+    "countryCode": "USA",
+    "zipCode": "60601-1234",
+    "phoneNumber1": "(312)555-0123",
+    "phoneNumber2": "(312)555-0456",
+    "ssn": "987654321",
+    "governmentIssuedId": "DL987654321",
+    "dateOfBirth": "1978-11-23",
+    "eftAccountId": "9876543210",
+    "primaryCardholderIndicator": "Y",
+    "ficoCreditScore": 820,
+    "testScenarios": [
+      "extended_zip_code_validation",
+      "dual_phone_verification",
+      "excellent_credit_tier",
+      "business_address_format"
+    ],
+    "accountRelationships": [
+      {
+        "accountId": "23456789012",
+        "accountType": "CREDIT",
+        "relationshipType": "PRIMARY"
+      },
+      {
+        "accountId": "34567890123",
+        "accountType": "CHECKING",
+        "relationshipType": "LINKED"
+      }
+    ],
+    "privacyCompliance": {
+      "dataAnonymized": false,
+      "testPurpose": "integration_testing",
+      "gdprConsent": true
+    }
+  },
+  {
+    "customerId": "000000003",
+    "firstName": "Robert",
+    "middleName": "William",
+    "lastName": "Brown",
+    "addressLine1": "789 Pine Street",
+    "addressLine2": "",
+    "addressLine3": "Milwaukee",
+    "stateCode": "WI",
+    "countryCode": "USA",
+    "zipCode": "53202",
+    "phoneNumber1": "(414)555-7890",
+    "phoneNumber2": "(414)555-0987",
+    "ssn": "456789123",
+    "governmentIssuedId": "WI456789123",
+    "dateOfBirth": "1992-03-08",
+    "eftAccountId": "4567891230",
+    "primaryCardholderIndicator": "N",
+    "ficoCreditScore": 680,
+    "testScenarios": [
+      "secondary_cardholder_test",
+      "empty_address_line_handling",
+      "fair_credit_validation",
+      "cross_state_validation"
+    ],
+    "accountRelationships": [
+      {
+        "accountId": "12345678901",
+        "accountType": "CREDIT",
+        "relationshipType": "AUTHORIZED_USER"
+      }
+    ],
+    "privacyCompliance": {
+      "dataAnonymized": false,
+      "testPurpose": "business_logic_validation",
+      "gdprConsent": true
+    }
+  },
+  {
+    "customerId": "000000004",
+    "firstName": "Maria",
+    "middleName": "Elena",
+    "lastName": "Garcia",
+    "addressLine1": "321 Elm Drive",
+    "addressLine2": "Unit B",
+    "addressLine3": "Phoenix",
+    "stateCode": "AZ",
+    "countryCode": "USA",
+    "zipCode": "85001-5555",
+    "phoneNumber1": "(602)555-1111",
+    "phoneNumber2": "(602)555-2222",
+    "ssn": "789123456",
+    "governmentIssuedId": "AZ789123456",
+    "dateOfBirth": "1989-09-12",
+    "eftAccountId": "7891234560",
+    "primaryCardholderIndicator": "Y",
+    "ficoCreditScore": 720,
+    "testScenarios": [
+      "hispanic_name_validation",
+      "southwestern_address_test",
+      "good_credit_scenario",
+      "multi_cultural_support"
+    ],
+    "accountRelationships": [
+      {
+        "accountId": "45678901234",
+        "accountType": "CREDIT",
+        "relationshipType": "PRIMARY"
+      }
+    ],
+    "privacyCompliance": {
+      "dataAnonymized": false,
+      "testPurpose": "cultural_validation",
+      "gdprConsent": true
+    }
+  },
+  {
+    "customerId": "000000005",
+    "firstName": "[ANON_FIRST_001]",
+    "middleName": "[ANON_MIDDLE_001]",
+    "lastName": "[ANON_LAST_001]",
+    "addressLine1": "[ANON_ADDR1_001]",
+    "addressLine2": "[ANON_ADDR2_001]",
+    "addressLine3": "[ANON_CITY_001]",
+    "stateCode": "CA",
+    "countryCode": "USA",
+    "zipCode": "90210-XXXX",
+    "phoneNumber1": "(XXX)XXX-1001",
+    "phoneNumber2": "(XXX)XXX-1002",
+    "ssn": "XXXXXXXXX",
+    "governmentIssuedId": "ANON_ID_001",
+    "dateOfBirth": "19XX-XX-XX",
+    "eftAccountId": "ANON_EFT001",
+    "primaryCardholderIndicator": "Y",
+    "ficoCreditScore": 999,
+    "testScenarios": [
+      "pii_anonymization_test",
+      "gdpr_compliance_validation",
+      "data_masking_verification",
+      "privacy_protection_test"
+    ],
+    "accountRelationships": [
+      {
+        "accountId": "ANON_ACCT_001",
+        "accountType": "CREDIT",
+        "relationshipType": "PRIMARY"
+      }
+    ],
+    "privacyCompliance": {
+      "dataAnonymized": true,
+      "testPurpose": "privacy_compliance_testing",
+      "gdprConsent": false,
+      "anonymizationMethod": "PLACEHOLDER_REPLACEMENT",
+      "dataRetentionPolicy": "TEST_ONLY"
+    }
+  },
+  {
+    "customerId": "000000006",
+    "firstName": "David",
+    "middleName": "Andrew",
+    "lastName": "Wilson",
+    "addressLine1": "654 Maple Lane",
+    "addressLine2": "Floor 3",
+    "addressLine3": "Seattle",
+    "stateCode": "WA",
+    "countryCode": "USA",
+    "zipCode": "98101",
+    "phoneNumber1": "(206)555-3333",
+    "phoneNumber2": "",
+    "ssn": "321654987",
+    "governmentIssuedId": "WA321654987",
+    "dateOfBirth": "1975-12-25",
+    "eftAccountId": "3216549870",
+    "primaryCardholderIndicator": "Y",
+    "ficoCreditScore": 300,
+    "testScenarios": [
+      "minimum_credit_score_test",
+      "missing_secondary_phone",
+      "holiday_birthday_validation",
+      "pacific_northwest_address"
+    ],
+    "accountRelationships": [
+      {
+        "accountId": "56789012345",
+        "accountType": "SECURED_CREDIT",
+        "relationshipType": "PRIMARY"
+      }
+    ],
+    "privacyCompliance": {
+      "dataAnonymized": false,
+      "testPurpose": "edge_case_validation",
+      "gdprConsent": true
+    }
+  },
+  {
+    "customerId": "000000007",
+    "firstName": "Jennifer",
+    "middleName": "Michelle",
+    "lastName": "Davis",
+    "addressLine1": "987 Cedar Court",
+    "addressLine2": "Penthouse",
+    "addressLine3": "Miami",
+    "stateCode": "FL",
+    "countryCode": "USA",
+    "zipCode": "33101-9999",
+    "phoneNumber1": "(305)555-4444",
+    "phoneNumber2": "(305)555-5555",
+    "ssn": "654321987",
+    "governmentIssuedId": "FL654321987",
+    "dateOfBirth": "1982-07-04",
+    "eftAccountId": "6543219870",
+    "primaryCardholderIndicator": "Y",
+    "ficoCreditScore": 850,
+    "testScenarios": [
+      "maximum_credit_score_test",
+      "premium_address_format",
+      "independence_day_birthday",
+      "southeastern_validation"
+    ],
+    "accountRelationships": [
+      {
+        "accountId": "67890123456",
+        "accountType": "PLATINUM_CREDIT",
+        "relationshipType": "PRIMARY"
+      },
+      {
+        "accountId": "78901234567",
+        "accountType": "REWARDS_CREDIT",
+        "relationshipType": "PRIMARY"
+      }
+    ],
+    "privacyCompliance": {
+      "dataAnonymized": false,
+      "testPurpose": "premium_tier_testing",
+      "gdprConsent": true
+    }
+  },
+  {
+    "customerId": "000000008",
+    "firstName": "Christopher",
+    "middleName": "",
+    "lastName": "Taylor",
+    "addressLine1": "147 Birch Boulevard",
+    "addressLine2": "Apt 25A",
+    "addressLine3": "Boston",
+    "stateCode": "MA",
+    "countryCode": "USA",
+    "zipCode": "02101",
+    "phoneNumber1": "(617)555-6666",
+    "phoneNumber2": "(617)555-7777",
+    "ssn": "159753486",
+    "governmentIssuedId": "MA159753486",
+    "dateOfBirth": "1995-02-29",
+    "eftAccountId": "1597534860",
+    "primaryCardholderIndicator": "N",
+    "ficoCreditScore": 620,
+    "testScenarios": [
+      "leap_year_birthday_test",
+      "no_middle_name_validation",
+      "fair_credit_authorization",
+      "northeastern_format"
+    ],
+    "accountRelationships": [
+      {
+        "accountId": "67890123456",
+        "accountType": "PLATINUM_CREDIT",
+        "relationshipType": "AUTHORIZED_USER"
+      }
+    ],
+    "privacyCompliance": {
+      "dataAnonymized": false,
+      "testPurpose": "date_validation_testing",
+      "gdprConsent": true
+    }
+  },
+  {
+    "customerId": "000000009",
+    "firstName": "Amanda",
+    "middleName": "Rose",
+    "lastName": "Martinez",
+    "addressLine1": "258 Willow Way",
+    "addressLine2": "Building C",
+    "addressLine3": "Austin",
+    "stateCode": "TX",
+    "countryCode": "USA",
+    "zipCode": "73301-0000",
+    "phoneNumber1": "(512)555-8888",
+    "phoneNumber2": "(512)555-9999",
+    "ssn": "753951486",
+    "governmentIssuedId": "TX753951486",
+    "dateOfBirth": "1988-05-15",
+    "eftAccountId": "7539514860",
+    "primaryCardholderIndicator": "Y",
+    "ficoCreditScore": 780,
+    "testScenarios": [
+      "texas_address_validation",
+      "very_good_credit_tier",
+      "building_designation_test",
+      "southwestern_culture"
+    ],
+    "accountRelationships": [
+      {
+        "accountId": "89012345678",
+        "accountType": "BUSINESS_CREDIT",
+        "relationshipType": "PRIMARY"
+      }
+    ],
+    "privacyCompliance": {
+      "dataAnonymized": false,
+      "testPurpose": "regional_validation",
+      "gdprConsent": true
+    }
+  },
+  {
+    "customerId": "000000010",
+    "firstName": "Michael",
+    "middleName": "Joseph",
+    "lastName": "Anderson",
+    "addressLine1": "369 Spruce Street",
+    "addressLine2": "Ground Floor",
+    "addressLine3": "Denver",
+    "stateCode": "CO",
+    "countryCode": "USA",
+    "zipCode": "80201",
+    "phoneNumber1": "(303)555-0000",
+    "phoneNumber2": "(720)555-1111",
+    "ssn": "852741963",
+    "governmentIssuedId": "CO852741963",
+    "dateOfBirth": "1970-01-01",
+    "eftAccountId": "8527419630",
+    "primaryCardholderIndicator": "Y",
+    "ficoCreditScore": 700,
+    "testScenarios": [
+      "new_year_birthday_test",
+      "dual_area_code_phones",
+      "mountain_time_validation",
+      "ground_floor_designation"
+    ],
+    "accountRelationships": [
+      {
+        "accountId": "90123456789",
+        "accountType": "CREDIT",
+        "relationshipType": "PRIMARY"
+      },
+      {
+        "accountId": "01234567890",
+        "accountType": "SAVINGS",
+        "relationshipType": "LINKED"
+      }
+    ],
+    "privacyCompliance": {
+      "dataAnonymized": false,
+      "testPurpose": "comprehensive_validation",
+      "gdprConsent": true
+    }
+  }
+]

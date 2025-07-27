@@ -1,0 +1,1098 @@
+/**
+ * CardDemo Layout CSS - Responsive 24×80 Terminal Grid System
+ * 
+ * This CSS file implements a comprehensive responsive layout system that preserves
+ * the exact 24×80 character terminal structure from the original BMS (Basic Mapping Support)
+ * maps while enabling modern responsive design through CSS Grid and Flexbox integration.
+ * 
+ * Key Implementation Features:
+ * - Precise 24×80 character grid positioning equivalent to terminal coordinates
+ * - CSS Grid layout system maintaining exact field coordinates from BMS maps
+ * - Responsive breakpoints adapting to different screen sizes while preserving field relationships
+ * - Container framework replicating BMS screen organization (header, content, footer)
+ * - Material-UI Grid integration with 12-column responsive system
+ * - Flexbox layout patterns for complex form arrangements with tab sequence preservation
+ * 
+ * Technical Specification Reference: Section 0.3.1 - BMS-to-React UI Transformation
+ * Original BMS Structure: COSGN00.bms, COMEN01.bms, COACTVW.bms, COTRN00.bms
+ * Theme Integration: src/main/webapp/styles/theme.js
+ */
+
+/* ============================================================================
+ * CSS CUSTOM PROPERTIES - THEME INTEGRATION
+ * ============================================================================
+ * These custom properties correspond to theme.js values for consistent styling
+ * across the application while maintaining CSS-only implementation capability.
+ */
+:root {
+  /* Responsive breakpoint values - matching theme.breakpoints.values */
+  --breakpoint-xs: 0px;
+  --breakpoint-sm: 600px;
+  --breakpoint-md: 960px;
+  --breakpoint-lg: 1280px;
+  --breakpoint-xl: 1920px;
+  
+  /* Material-UI spacing system - matching theme.spacing() */
+  --spacing-unit: 8px;
+  --spacing-1: 8px;
+  --spacing-2: 16px;
+  --spacing-3: 24px;
+  --spacing-4: 32px;
+  --spacing-6: 48px;
+  --spacing-8: 64px;
+  --spacing-12: 96px;
+  
+  /* Terminal character dimensions */
+  --terminal-char-width: 0.6em;   /* Monospace character width */
+  --terminal-char-height: 1.2em;  /* Monospace line height */
+  --terminal-cols: 80;             /* Terminal columns */
+  --terminal-rows: 24;             /* Terminal rows */
+  
+  /* BMS color palette - matching theme.palette values */
+  --color-primary-main: #0080FF;     /* theme.palette.primary.main */
+  --color-secondary-main: #00FFFF;   /* theme.palette.secondary.main */
+  --color-success-main: #00FF00;     /* DFHGREEN */
+  --color-error-main: #FF0000;       /* DFHRED */
+  --color-warning-main: #FFFF00;     /* DFHYELLOW */
+  --color-info-main: #0080FF;        /* DFHBLUE */
+  --color-neutral: #C0C0C0;          /* Terminal neutral */
+  --color-terminal-black: #000000;   /* Terminal background */
+  --color-terminal-white: #FFFFFF;   /* Terminal foreground */
+  --color-terminal-gray: #808080;    /* Protected fields */
+  
+  /* Typography - matching theme.typography.fontFamily */
+  --font-family-monospace: "Courier New", Monaco, "Lucida Console", Consolas, monospace;
+  --font-size-base: 14px;
+  --line-height-base: 1.2;
+  --letter-spacing-terminal: 0.05em;
+}
+
+/* ============================================================================
+ * TERMINAL GRID LAYOUT SYSTEM
+ * ============================================================================
+ * Implements precise 24×80 character terminal structure using CSS Grid.
+ * Each grid cell corresponds to exactly one terminal character position.
+ */
+
+/**
+ * Main terminal grid container - establishes 24×80 character grid
+ * This container maintains exact terminal dimensions and character positioning
+ */
+.terminal-grid-container {
+  display: grid;
+  grid-template-columns: repeat(var(--terminal-cols), var(--terminal-char-width));
+  grid-template-rows: repeat(var(--terminal-rows), var(--terminal-char-height));
+  width: calc(var(--terminal-cols) * var(--terminal-char-width));
+  min-height: calc(var(--terminal-rows) * var(--terminal-char-height));
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  letter-spacing: var(--letter-spacing-terminal);
+  background-color: var(--color-terminal-white);
+  color: var(--color-terminal-black);
+  border: 1px solid var(--color-terminal-gray);
+  position: relative;
+  overflow: hidden;
+  margin: 0 auto;
+}
+
+/**
+ * 24×80 character grid implementation
+ * Provides exact terminal coordinate mapping for field positioning
+ */
+.character-grid-24x80 {
+  display: contents; /* Allow children to participate in parent grid */
+}
+
+/**
+ * Terminal row wrapper - represents one terminal line (1-24)
+ * Maintains horizontal alignment and provides row-level styling hooks
+ */
+.terminal-row {
+  display: contents;
+  position: relative;
+}
+
+/* Individual row styling for debugging and visual organization */
+.terminal-row[data-row="1"] { grid-row: 1; }
+.terminal-row[data-row="2"] { grid-row: 2; }
+.terminal-row[data-row="3"] { grid-row: 3; }
+.terminal-row[data-row="4"] { grid-row: 4; }
+.terminal-row[data-row="5"] { grid-row: 5; }
+.terminal-row[data-row="6"] { grid-row: 6; }
+.terminal-row[data-row="7"] { grid-row: 7; }
+.terminal-row[data-row="8"] { grid-row: 8; }
+.terminal-row[data-row="9"] { grid-row: 9; }
+.terminal-row[data-row="10"] { grid-row: 10; }
+.terminal-row[data-row="11"] { grid-row: 11; }
+.terminal-row[data-row="12"] { grid-row: 12; }
+.terminal-row[data-row="13"] { grid-row: 13; }
+.terminal-row[data-row="14"] { grid-row: 14; }
+.terminal-row[data-row="15"] { grid-row: 15; }
+.terminal-row[data-row="16"] { grid-row: 16; }
+.terminal-row[data-row="17"] { grid-row: 17; }
+.terminal-row[data-row="18"] { grid-row: 18; }
+.terminal-row[data-row="19"] { grid-row: 19; }
+.terminal-row[data-row="20"] { grid-row: 20; }
+.terminal-row[data-row="21"] { grid-row: 21; }
+.terminal-row[data-row="22"] { grid-row: 22; }
+.terminal-row[data-row="23"] { grid-row: 23; }
+.terminal-row[data-row="24"] { grid-row: 24; }
+
+/**
+ * Terminal column positioning - represents character columns (1-80)
+ * Enables precise field placement matching BMS POS=(row,col) attributes
+ */
+.terminal-col {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+  min-height: var(--terminal-char-height);
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+}
+
+/**
+ * Field positioning utility classes
+ * Direct mapping from BMS POS=(row,col) to CSS Grid coordinates
+ */
+.field-positioning {
+  position: relative;
+  z-index: 1;
+}
+
+/* Precise coordinate mapping utilities */
+.coordinate-mapping {
+  /* Grid positioning functions for exact BMS coordinate replication */
+}
+
+/* Column span utilities for multi-character fields */
+.col-span-1 { grid-column: span 1; }
+.col-span-2 { grid-column: span 2; }
+.col-span-3 { grid-column: span 3; }
+.col-span-4 { grid-column: span 4; }
+.col-span-5 { grid-column: span 5; }
+.col-span-6 { grid-column: span 6; }
+.col-span-8 { grid-column: span 8; }
+.col-span-10 { grid-column: span 10; }
+.col-span-11 { grid-column: span 11; }
+.col-span-12 { grid-column: span 12; }
+.col-span-13 { grid-column: span 13; }
+.col-span-15 { grid-column: span 15; }
+.col-span-16 { grid-column: span 16; }
+.col-span-20 { grid-column: span 20; }
+.col-span-25 { grid-column: span 25; }
+.col-span-26 { grid-column: span 26; }
+.col-span-40 { grid-column: span 40; }
+.col-span-42 { grid-column: span 42; }
+.col-span-50 { grid-column: span 50; }
+.col-span-78 { grid-column: span 78; }
+
+/* Row span utilities for multi-line fields */
+.row-span-1 { grid-row: span 1; }
+.row-span-2 { grid-row: span 2; }
+.row-span-3 { grid-row: span 3; }
+
+/* ============================================================================
+ * CONTAINER FRAMEWORK - BMS SCREEN ORGANIZATION
+ * ============================================================================
+ * Replicates the standard BMS screen layout structure with header, content,
+ * and footer sections matching the original terminal organization.
+ */
+
+/**
+ * Main application container
+ * Establishes the overall page structure and responsive behavior
+ */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: auto;
+  font-family: var(--font-family-monospace);
+  background-color: var(--color-terminal-white);
+  color: var(--color-terminal-black);
+}
+
+/**
+ * Header section - Lines 1-3 of terminal screen
+ * Contains transaction info, program name, date/time, and system identification
+ */
+.header-section {
+  flex-shrink: 0;
+  background-color: var(--color-primary-main);
+  color: var(--color-terminal-white);
+  padding: var(--spacing-2);
+  border-bottom: 2px solid var(--color-terminal-gray);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  letter-spacing: var(--letter-spacing-terminal);
+}
+
+/**
+ * Content section - Lines 4-22 of terminal screen
+ * Main application content area with flexible layout capabilities
+ */
+.content-section {
+  flex: 1;
+  padding: var(--spacing-3);
+  background-color: var(--color-terminal-white);
+  overflow-y: auto;
+  position: relative;
+}
+
+/**
+ * Footer section - Lines 23-24 of terminal screen
+ * Contains error messages and function key instructions
+ */
+.footer-section {
+  flex-shrink: 0;
+  background-color: var(--color-terminal-white);
+  border-top: 1px solid var(--color-terminal-gray);
+  padding: var(--spacing-2);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+}
+
+/**
+ * Navigation divider - Separates content sections
+ * Provides visual hierarchy matching terminal screen organization
+ */
+.navigation-divider {
+  width: 100%;
+  height: 1px;
+  background-color: var(--color-terminal-gray);
+  margin: var(--spacing-2) 0;
+  border: none;
+}
+
+/**
+ * Message area - Line 23 error message display
+ * Styled for error, warning, and informational messages
+ */
+.message-area {
+  min-height: var(--terminal-char-height);
+  padding: var(--spacing-1);
+  margin-bottom: var(--spacing-1);
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-base);
+  background-color: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+}
+
+.message-area.error {
+  color: var(--color-error-main);
+  background-color: #FFE5E5;
+}
+
+.message-area.warning {
+  color: var(--color-warning-main);
+  background-color: #FFFFCC;
+}
+
+.message-area.info {
+  color: var(--color-info-main);
+  background-color: #E3F2FD;
+}
+
+/* ============================================================================
+ * MATERIAL-UI GRID INTEGRATION
+ * ============================================================================
+ * Seamless integration with Material-UI's 12-column grid system while
+ * preserving terminal character positioning and field relationships.
+ */
+
+/**
+ * Material-UI large container integration
+ * Responsive container that adapts to Material-UI breakpoints
+ */
+.mui-container-lg {
+  width: 100%;
+  max-width: var(--breakpoint-lg);
+  margin: 0 auto;
+  padding: 0 var(--spacing-2);
+  box-sizing: border-box;
+}
+
+/**
+ * 12-column grid system integration
+ * Compatible with Material-UI Grid component layout patterns
+ */
+.grid-12-column {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--spacing-2);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/**
+ * Responsive grid system
+ * Adapts column layout based on screen size while preserving field relationships
+ */
+.grid-responsive {
+  display: grid;
+  gap: var(--spacing-2);
+  width: 100%;
+}
+
+/* Responsive column definitions */
+@media (min-width: 0px) {
+  .grid-responsive {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 600px) {
+  .grid-responsive {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 960px) {
+  .grid-responsive {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .grid-responsive {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/**
+ * Grid item positioning utilities
+ * Enables precise placement within 12-column grid system
+ */
+.grid-item-positioning {
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Material-UI Grid item spans */
+.grid-item-positioning.span-1 { grid-column: span 1; }
+.grid-item-positioning.span-2 { grid-column: span 2; }
+.grid-item-positioning.span-3 { grid-column: span 3; }
+.grid-item-positioning.span-4 { grid-column: span 4; }
+.grid-item-positioning.span-6 { grid-column: span 6; }
+.grid-item-positioning.span-8 { grid-column: span 8; }
+.grid-item-positioning.span-9 { grid-column: span 9; }
+.grid-item-positioning.span-12 { grid-column: span 12; }
+
+/**
+ * CSS Grid overlay system
+ * Provides terminal grid positioning within Material-UI containers
+ */
+.css-grid-overlay {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.css-grid-overlay .terminal-grid-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.css-grid-overlay .content {
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
+}
+
+/* ============================================================================
+ * RESPONSIVE BREAKPOINTS
+ * ============================================================================
+ * Responsive design system that adapts to different screen sizes while
+ * maintaining terminal field relationships and coordinate positioning.
+ */
+
+/**
+ * Extra small devices (portrait phones)
+ * Maintain terminal structure with minimal scaling
+ */
+.breakpoint-xs {
+  display: block;
+}
+
+@media (min-width: 600px) {
+  .breakpoint-xs {
+    display: none;
+  }
+}
+
+/**
+ * Small devices (landscape phones, small tablets)
+ * Optimize for touch interaction while preserving layout
+ */
+.breakpoint-sm {
+  display: none;
+}
+
+@media (min-width: 600px) and (max-width: 959px) {
+  .breakpoint-sm {
+    display: block;
+  }
+  
+  .terminal-grid-container {
+    transform: scale(0.9);
+    transform-origin: top left;
+  }
+  
+  .app-container {
+    font-size: 13px;
+  }
+}
+
+/**
+ * Medium devices (tablets, small desktops)
+ * Primary terminal layout - 80-character width optimization
+ */
+.breakpoint-md {
+  display: none;
+}
+
+@media (min-width: 960px) and (max-width: 1279px) {
+  .breakpoint-md {
+    display: block;
+  }
+  
+  .terminal-grid-container {
+    transform: scale(1.0);
+  }
+  
+  .app-container {
+    font-size: var(--font-size-base);
+  }
+}
+
+/**
+ * Large devices (desktops)
+ * Wide terminal emulation with enhanced spacing
+ */
+.breakpoint-lg {
+  display: none;
+}
+
+@media (min-width: 1280px) and (max-width: 1919px) {
+  .breakpoint-lg {
+    display: block;
+  }
+  
+  .terminal-grid-container {
+    transform: scale(1.1);
+    transform-origin: top center;
+  }
+  
+  .app-container {
+    font-size: 15px;
+  }
+}
+
+/**
+ * Extra large devices (large desktops)
+ * Full terminal grid with maximum readability
+ */
+.breakpoint-xl {
+  display: none;
+}
+
+@media (min-width: 1920px) {
+  .breakpoint-xl {
+    display: block;
+  }
+  
+  .terminal-grid-container {
+    transform: scale(1.2);
+    transform-origin: top center;
+  }
+  
+  .app-container {
+    font-size: 16px;
+  }
+}
+
+/**
+ * Responsive field relationships
+ * Maintains field positioning and relationships across breakpoints
+ */
+.responsive-field-relationships {
+  position: relative;
+  transition: all 0.3s ease-in-out;
+}
+
+@media (max-width: 599px) {
+  .responsive-field-relationships {
+    /* Stack fields vertically on small screens */
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+  }
+  
+  .responsive-field-relationships .terminal-col {
+    width: 100%;
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 600px) {
+  .responsive-field-relationships {
+    /* Maintain grid positioning on larger screens */
+    display: contents;
+  }
+}
+
+/* ============================================================================
+ * FLEXBOX LAYOUT PATTERNS
+ * ============================================================================
+ * Complex form arrangement patterns using Flexbox while preserving
+ * tab sequence and field grouping from original BMS organization.
+ */
+
+/**
+ * Flexible form container
+ * Provides structure for complex form layouts with terminal-like organization
+ */
+.flex-form-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  width: 100%;
+  padding: var(--spacing-2);
+  background-color: var(--color-terminal-white);
+  border: 1px solid var(--color-terminal-gray);
+  font-family: var(--font-family-monospace);
+}
+
+/**
+ * Field group container
+ * Groups related fields while maintaining tab sequence and visual hierarchy
+ */
+.flex-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2);
+  border: 1px solid var(--color-terminal-gray);
+  background-color: #FAFAFA;
+  position: relative;
+}
+
+.flex-field-group::before {
+  content: attr(data-group-title);
+  position: absolute;
+  top: -0.5em;
+  left: var(--spacing-1);
+  background-color: var(--color-terminal-white);
+  padding: 0 var(--spacing-1);
+  font-size: 0.9em;
+  font-weight: bold;
+  color: var(--color-primary-main);
+}
+
+/* Horizontal field group for inline fields */
+.flex-field-group.horizontal {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--spacing-2);
+}
+
+.flex-field-group.horizontal > * {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+/**
+ * Tab sequence preservation
+ * Ensures logical tab order matches original BMS field sequence
+ */
+.tab-sequence-preservation {
+  position: relative;
+}
+
+.tab-sequence-preservation [tabindex] {
+  position: relative;
+}
+
+.tab-sequence-preservation [tabindex]:focus {
+  outline: 2px solid var(--color-primary-main);
+  outline-offset: 2px;
+  background-color: var(--color-warning-main);
+  color: var(--color-terminal-black);
+  z-index: 10;
+}
+
+/**
+ * Complex form arrangement patterns
+ * Handles multi-section forms like account details, customer information
+ */
+.complex-form-arrangement {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: calc(var(--terminal-cols) * var(--terminal-char-width));
+  margin: 0 auto;
+}
+
+/* Form section styling */
+.complex-form-arrangement .form-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+  border-bottom: 1px solid var(--color-terminal-gray);
+  position: relative;
+}
+
+.complex-form-arrangement .form-section:last-child {
+  border-bottom: none;
+}
+
+/* Section title styling */
+.complex-form-arrangement .section-title {
+  font-size: 1.1em;
+  font-weight: bold;
+  color: var(--color-primary-main);
+  margin-bottom: var(--spacing-2);
+  padding-bottom: var(--spacing-1);
+  border-bottom: 1px solid var(--color-terminal-gray);
+  text-align: center;
+}
+
+/* Field row arrangements */
+.complex-form-arrangement .field-row {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.complex-form-arrangement .field-row > * {
+  flex: 1 1 0;
+  min-width: 120px;
+}
+
+.complex-form-arrangement .field-row.full-width > * {
+  flex: 1 1 100%;
+}
+
+/**
+ * Field grouping patterns
+ * Specific patterns for different types of field arrangements
+ */
+.field-grouping-patterns {
+  /* Base field grouping container */
+}
+
+/* Name field grouping (first, middle, last) */
+.field-grouping-patterns.name-group {
+  display: flex;
+  gap: var(--spacing-1);
+  align-items: flex-end;
+}
+
+.field-grouping-patterns.name-group .first-name {
+  flex: 2;
+}
+
+.field-grouping-patterns.name-group .middle-name {
+  flex: 1;
+}
+
+.field-grouping-patterns.name-group .last-name {
+  flex: 2;
+}
+
+/* Address field grouping (street, city, state, zip) */
+.field-grouping-patterns.address-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.field-grouping-patterns.address-group .address-line {
+  width: 100%;
+}
+
+.field-grouping-patterns.address-group .city-state-zip {
+  display: flex;
+  gap: var(--spacing-1);
+  align-items: flex-end;
+}
+
+.field-grouping-patterns.address-group .city {
+  flex: 3;
+}
+
+.field-grouping-patterns.address-group .state {
+  flex: 1;
+  max-width: 60px;
+}
+
+.field-grouping-patterns.address-group .zip {
+  flex: 1;
+  max-width: 80px;
+}
+
+/* Financial field grouping (amounts, dates, percentages) */
+.field-grouping-patterns.financial-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--spacing-2);
+}
+
+.field-grouping-patterns.financial-group .amount-field {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: bold;
+  color: var(--color-success-main);
+}
+
+.field-grouping-patterns.financial-group .date-field {
+  font-family: var(--font-family-monospace);
+  text-align: center;
+}
+
+.field-grouping-patterns.financial-group .percentage-field {
+  text-align: right;
+  max-width: 80px;
+}
+
+/* Phone number field grouping */
+.field-grouping-patterns.phone-group {
+  display: flex;
+  gap: var(--spacing-1);
+  align-items: flex-end;
+}
+
+.field-grouping-patterns.phone-group .area-code {
+  flex: 0 0 60px;
+}
+
+.field-grouping-patterns.phone-group .exchange {
+  flex: 0 0 60px;
+}
+
+.field-grouping-patterns.phone-group .number {
+  flex: 0 0 80px;
+}
+
+/* ============================================================================
+ * BMS SCREEN ORGANIZATION
+ * ============================================================================
+ * Direct replication of BMS screen structure and field coordinate system
+ * maintaining exact positioning and boundary definitions.
+ */
+
+/**
+ * BMS screen replica container
+ * Exact replication of terminal screen dimensions and characteristics
+ */
+.bms-screen-replica {
+  width: calc(var(--terminal-cols) * var(--terminal-char-width));
+  height: calc(var(--terminal-rows) * var(--terminal-char-height));
+  background-color: var(--color-terminal-black);
+  color: var(--color-success-main);
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  letter-spacing: var(--letter-spacing-terminal);
+  position: relative;
+  overflow: hidden;
+  border: 2px solid var(--color-terminal-gray);
+  margin: 0 auto;
+}
+
+/**
+ * Field coordinate system
+ * Direct mapping from BMS POS=(row,col) attributes to CSS positioning
+ */
+.field-coordinate-system {
+  position: absolute;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Coordinate calculation utilities */
+.field-coordinate-system[data-pos] {
+  /* Position calculated from data-pos="row,col" attribute */
+}
+
+/**
+ * Terminal positioning utilities
+ * Precise positioning classes for each possible terminal coordinate
+ */
+.terminal-positioning {
+  position: absolute;
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-base);
+  line-height: var(--terminal-char-height);
+  letter-spacing: var(--letter-spacing-terminal);
+}
+
+/* Row positioning classes (1-24) */
+.terminal-positioning.row-1 { top: calc(0 * var(--terminal-char-height)); }
+.terminal-positioning.row-2 { top: calc(1 * var(--terminal-char-height)); }
+.terminal-positioning.row-3 { top: calc(2 * var(--terminal-char-height)); }
+.terminal-positioning.row-4 { top: calc(3 * var(--terminal-char-height)); }
+.terminal-positioning.row-5 { top: calc(4 * var(--terminal-char-height)); }
+.terminal-positioning.row-6 { top: calc(5 * var(--terminal-char-height)); }
+.terminal-positioning.row-7 { top: calc(6 * var(--terminal-char-height)); }
+.terminal-positioning.row-8 { top: calc(7 * var(--terminal-char-height)); }
+.terminal-positioning.row-9 { top: calc(8 * var(--terminal-char-height)); }
+.terminal-positioning.row-10 { top: calc(9 * var(--terminal-char-height)); }
+.terminal-positioning.row-11 { top: calc(10 * var(--terminal-char-height)); }
+.terminal-positioning.row-12 { top: calc(11 * var(--terminal-char-height)); }
+.terminal-positioning.row-13 { top: calc(12 * var(--terminal-char-height)); }
+.terminal-positioning.row-14 { top: calc(13 * var(--terminal-char-height)); }
+.terminal-positioning.row-15 { top: calc(14 * var(--terminal-char-height)); }
+.terminal-positioning.row-16 { top: calc(15 * var(--terminal-char-height)); }
+.terminal-positioning.row-17 { top: calc(16 * var(--terminal-char-height)); }
+.terminal-positioning.row-18 { top: calc(17 * var(--terminal-char-height)); }
+.terminal-positioning.row-19 { top: calc(18 * var(--terminal-char-height)); }
+.terminal-positioning.row-20 { top: calc(19 * var(--terminal-char-height)); }
+.terminal-positioning.row-21 { top: calc(20 * var(--terminal-char-height)); }
+.terminal-positioning.row-22 { top: calc(21 * var(--terminal-char-height)); }
+.terminal-positioning.row-23 { top: calc(22 * var(--terminal-char-height)); }
+.terminal-positioning.row-24 { top: calc(23 * var(--terminal-char-height)); }
+
+/* Column positioning classes (1-80) - Sample for key positions */
+.terminal-positioning.col-1 { left: calc(0 * var(--terminal-char-width)); }
+.terminal-positioning.col-7 { left: calc(6 * var(--terminal-char-width)); }
+.terminal-positioning.col-8 { left: calc(7 * var(--terminal-char-width)); }
+.terminal-positioning.col-21 { left: calc(20 * var(--terminal-char-width)); }
+.terminal-positioning.col-29 { left: calc(28 * var(--terminal-char-width)); }
+.terminal-positioning.col-33 { left: calc(32 * var(--terminal-char-width)); }
+.terminal-positioning.col-35 { left: calc(34 * var(--terminal-char-width)); }
+.terminal-positioning.col-43 { left: calc(42 * var(--terminal-char-width)); }
+.terminal-positioning.col-65 { left: calc(64 * var(--terminal-char-width)); }
+.terminal-positioning.col-71 { left: calc(70 * var(--terminal-char-width)); }
+
+/**
+ * Screen boundary - 80 character width container
+ * Enforces terminal width limitations and character overflow handling
+ */
+.screen-boundary-80ch {
+  width: calc(80 * var(--terminal-char-width));
+  max-width: calc(80 * var(--terminal-char-width));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  letter-spacing: var(--letter-spacing-terminal);
+  box-sizing: border-box;
+}
+
+/**
+ * Line 24 structure - Terminal bottom line
+ * Special styling for function key instructions and status information
+ */
+.line-24-structure {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(2 * var(--terminal-char-height));
+  background-color: var(--color-primary-main);
+  color: var(--color-terminal-white);
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  letter-spacing: var(--letter-spacing-terminal);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--spacing-2);
+  border-top: 2px solid var(--color-terminal-gray);
+  z-index: 1000;
+}
+
+.line-24-structure .function-keys {
+  display: flex;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+}
+
+.line-24-structure .function-key {
+  background-color: var(--color-info-main);
+  color: var(--color-terminal-white);
+  padding: 2px 8px;
+  border: 1px solid var(--color-terminal-white);
+  border-radius: 2px;
+  font-size: 0.9em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.line-24-structure .function-key:hover {
+  background-color: var(--color-terminal-white);
+  color: var(--color-info-main);
+}
+
+/* ============================================================================
+ * UTILITY CLASSES AND RESPONSIVE ENHANCEMENTS
+ * ============================================================================
+ * Additional utility classes for enhanced functionality and responsive behavior
+ */
+
+/* Terminal field attribute classes matching BMS DFHMDF attributes */
+.terminal-field {
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  letter-spacing: var(--letter-spacing-terminal);
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+}
+
+.terminal-field.askip {
+  color: var(--color-terminal-gray);
+  cursor: default;
+  user-select: none;
+}
+
+.terminal-field.unprot {
+  background-color: var(--color-terminal-white);
+  color: var(--color-terminal-black);
+  border-bottom: 1px solid var(--color-success-main);
+}
+
+.terminal-field.prot {
+  background-color: #F0F0F0;
+  color: var(--color-terminal-gray);
+  cursor: default;
+}
+
+.terminal-field.brt {
+  font-weight: bold;
+  color: var(--color-warning-main);
+}
+
+.terminal-field.norm {
+  font-weight: normal;
+}
+
+.terminal-field.ic {
+  /* Initial cursor - will receive focus */
+}
+
+.terminal-field.fset {
+  /* Modified data indicator */
+  position: relative;
+}
+
+.terminal-field.fset::after {
+  content: '•';
+  position: absolute;
+  right: -8px;
+  top: 0;
+  color: var(--color-info-main);
+  font-size: 8px;
+}
+
+/* Color attribute classes */
+.color-blue { color: var(--color-info-main); }
+.color-red { color: var(--color-error-main); }
+.color-green { color: var(--color-success-main); }
+.color-yellow { color: var(--color-warning-main); }
+.color-turquoise { color: var(--color-secondary-main); }
+.color-neutral { color: var(--color-neutral); }
+
+/* Highlight attribute classes */
+.hilight-underline {
+  text-decoration: underline;
+  text-decoration-color: var(--color-success-main);
+}
+
+.hilight-blink {
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Print media styles for terminal output */
+@media print {
+  .terminal-grid-container,
+  .bms-screen-replica {
+    background-color: white !important;
+    color: black !important;
+    border: 1px solid black !important;
+  }
+  
+  .app-container {
+    min-height: auto !important;
+  }
+  
+  .header-section,
+  .footer-section {
+    background-color: white !important;
+    color: black !important;
+    border: 1px solid black !important;
+  }
+  
+  .line-24-structure {
+    position: static !important;
+    background-color: white !important;
+    color: black !important;
+    border: 1px solid black !important;
+  }
+}
+
+/* Accessibility enhancements */
+@media (prefers-reduced-motion: reduce) {
+  .terminal-field.hilight-blink {
+    animation: none;
+  }
+  
+  .responsive-field-relationships {
+    transition: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --color-terminal-black: #000000;
+    --color-terminal-white: #FFFFFF;
+    --color-success-main: #00FF00;
+    --color-error-main: #FF0000;
+    --color-warning-main: #FFFF00;
+    --color-info-main: #0080FF;
+  }
+  
+  .terminal-grid-container,
+  .bms-screen-replica {
+    border-width: 3px;
+  }
+  
+  .terminal-field.unprot {
+    border-bottom-width: 2px;
+  }
+}

@@ -1,0 +1,398 @@
+{
+  "_metadata": {
+    "description": "CardDemo User Authentication Test Fixture",
+    "version": "1.0.0",
+    "cobol_source": "app/cpy/CSUSR01Y.cpy",
+    "entity_mapping": "com.carddemo.common.entity.User",
+    "created_date": "2024-01-15T10:00:00Z",
+    "purpose": "Comprehensive Spring Security authentication testing and JWT token validation scenarios",
+    "compliance": "SOX audit trail support and BCrypt password validation per Section 6.4 Security Architecture",
+    "test_coverage": [
+      "JWT authentication flow testing",
+      "BCrypt password validation scenarios",
+      "Role-based authorization testing (ROLE_ADMIN, ROLE_USER)",
+      "Spring Security integration validation",
+      "User type differentiation testing",
+      "Authentication error scenario testing",
+      "Session management validation",
+      "RACF to Spring Security role mapping verification"
+    ]
+  },
+  "UserAuthenticationTestData": {
+    "admin_users": [
+      {
+        "userId": "ADMIN001",
+        "firstName": "System",
+        "lastName": "Administrator",
+        "passwordHash": "$2a$12$rQWGlJK8h5VJ8h5VJ8h5VJOwn/Qb8J8h5VJ8h5VJ8h5VJ8h5VJ8h6",
+        "userType": "A",
+        "createdAt": "2023-01-01T08:00:00",
+        "lastLogin": "2024-01-15T09:30:00",
+        "plainTextPassword": "Admin123",
+        "roles": ["ROLE_ADMIN"],
+        "testScenarios": [
+          "successful_admin_login",
+          "admin_role_authorization",
+          "user_management_access",
+          "administrative_dashboard_access",
+          "jwt_token_admin_claims"
+        ],
+        "description": "Primary administrative user for testing admin-level authentication and authorization scenarios"
+      },
+      {
+        "userId": "TESTADM",
+        "firstName": "Test",
+        "lastName": "Admin",
+        "passwordHash": "$2a$12$TQWGlJK8h5VJ8h5VJ8h5VJOwn/Tb8J8h5VJ8h5VJ8h5VJ8h5VJ8h7",
+        "userType": "A",
+        "createdAt": "2023-06-15T14:00:00",
+        "lastLogin": "2024-01-14T16:45:00",
+        "plainTextPassword": "TestAdm1",
+        "roles": ["ROLE_ADMIN"],
+        "testScenarios": [
+          "admin_password_complexity_validation",
+          "admin_session_timeout_testing",
+          "admin_concurrent_login_testing",
+          "admin_privilege_escalation_testing"
+        ],
+        "description": "Secondary administrative user for testing complex admin authentication scenarios and edge cases"
+      }
+    ],
+    "regular_users": [
+      {
+        "userId": "USER0001",
+        "firstName": "John",
+        "lastName": "Smith",
+        "passwordHash": "$2a$12$UQWGlJK8h5VJ8h5VJ8h5VJOwn/Ub8J8h5VJ8h5VJ8h5VJ8h5VJ8h8",
+        "userType": "U",
+        "createdAt": "2023-03-10T10:30:00",
+        "lastLogin": "2024-01-15T08:15:00",
+        "plainTextPassword": "User1234",
+        "roles": ["ROLE_USER"],
+        "testScenarios": [
+          "successful_user_login",
+          "user_role_authorization",
+          "transaction_access_validation",
+          "account_management_access",
+          "jwt_token_user_claims"
+        ],
+        "description": "Standard user for testing regular user authentication and transaction access scenarios"
+      },
+      {
+        "userId": "TESTUSER",
+        "firstName": "Jane",
+        "lastName": "Doe",
+        "passwordHash": "$2a$12$VQWGlJK8h5VJ8h5VJ8h5VJOwn/Vb8J8h5VJ8h5VJ8h5VJ8h5VJ8h9",
+        "userType": "U",
+        "createdAt": "2023-08-20T13:45:00",
+        "lastLogin": "2024-01-14T17:30:00",
+        "plainTextPassword": "Test5678",
+        "roles": ["ROLE_USER"],
+        "testScenarios": [
+          "user_password_validation",
+          "user_session_management",
+          "user_access_restriction_testing",
+          "user_transaction_limits"
+        ],
+        "description": "Test user for validating standard user access patterns and security restrictions"
+      },
+      {
+        "userId": "CARDUSER",
+        "firstName": "Michael",
+        "lastName": "Johnson",
+        "passwordHash": "$2a$12$WQWGlJK8h5VJ8h5VJ8h5VJOwn/Wb8J8h5VJ8h5VJ8h5VJ8h5VJ8hA",
+        "userType": "U",
+        "createdAt": "2023-11-05T09:15:00",
+        "lastLogin": "2024-01-15T07:00:00",
+        "plainTextPassword": "Card9876",
+        "roles": ["ROLE_USER"],
+        "testScenarios": [
+          "card_management_operations",
+          "transaction_processing_access",
+          "bill_payment_functionality",
+          "account_view_permissions"
+        ],
+        "description": "Card management user for testing credit card-specific operations and transaction processing"
+      }
+    ],
+    "authentication_error_scenarios": [
+      {
+        "userId": "NOEXIST",
+        "firstName": "Non",
+        "lastName": "Existent",
+        "passwordHash": "$2a$12$XQWGlJK8h5VJ8h5VJ8h5VJOwn/Xb8J8h5VJ8h5VJ8h5VJ8h5VJ8hB",
+        "userType": "U",
+        "createdAt": "2023-12-01T12:00:00",
+        "lastLogin": null,
+        "plainTextPassword": "NoExist1",
+        "roles": ["ROLE_USER"],
+        "testScenarios": [
+          "user_not_found_error",
+          "invalid_credentials_handling",
+          "authentication_failure_logging"
+        ],
+        "description": "Test user for validating authentication error handling and security logging",
+        "testNote": "This user should not exist in the actual database for negative testing scenarios"
+      }
+    ],
+    "password_validation_scenarios": [
+      {
+        "userId": "PWDTEST1",
+        "firstName": "Password",
+        "lastName": "Tester",
+        "passwordHash": "$2a$12$YQWGlJK8h5VJ8h5VJ8h5VJOwn/Yb8J8h5VJ8h5VJ8h5VJ8h5VJ8hC",
+        "userType": "U",
+        "createdAt": "2024-01-01T00:00:00",
+        "lastLogin": "2024-01-15T06:00:00",
+        "plainTextPassword": "ValidPwd",
+        "invalidPasswords": [
+          "wrongpwd",
+          "VALIDPWD",
+          "validpwd",
+          "Invalid1",
+          ""
+        ],
+        "roles": ["ROLE_USER"],
+        "testScenarios": [
+          "bcrypt_password_validation",
+          "case_sensitive_password_testing",
+          "password_complexity_validation",
+          "empty_password_handling",
+          "invalid_password_attempts"
+        ],
+        "description": "Specialized user for comprehensive password validation testing scenarios"
+      }
+    ]
+  },
+  "SpringSecurityTestScenarios": {
+    "jwt_token_validation": {
+      "valid_tokens": [
+        {
+          "userId": "ADMIN001",
+          "tokenType": "access_token",
+          "algorithm": "HS256",
+          "expirationMinutes": 60,
+          "claims": {
+            "userId": "ADMIN001",
+            "userType": "A",
+            "roles": ["ROLE_ADMIN"],
+            "firstName": "System",
+            "lastName": "Administrator"
+          },
+          "testScenarios": ["valid_admin_token", "admin_role_extraction", "token_expiration_validation"]
+        },
+        {
+          "userId": "USER0001",
+          "tokenType": "access_token",
+          "algorithm": "HS256",
+          "expirationMinutes": 60,
+          "claims": {
+            "userId": "USER0001",
+            "userType": "U",
+            "roles": ["ROLE_USER"],
+            "firstName": "John",
+            "lastName": "Smith"
+          },
+          "testScenarios": ["valid_user_token", "user_role_extraction", "standard_claims_validation"]
+        }
+      ],
+      "invalid_tokens": [
+        {
+          "tokenType": "expired_token",
+          "description": "Token with past expiration date",
+          "testScenarios": ["expired_token_rejection", "automatic_logout_handling"]
+        },
+        {
+          "tokenType": "malformed_token",
+          "description": "Token with invalid JWT structure",
+          "testScenarios": ["malformed_token_rejection", "security_error_handling"]
+        },
+        {
+          "tokenType": "invalid_signature",
+          "description": "Token with incorrect signature",
+          "testScenarios": ["signature_validation", "token_tampering_detection"]
+        }
+      ]
+    },
+    "role_based_authorization": {
+      "admin_only_operations": [
+        {
+          "operation": "user_management",
+          "endpoint": "/api/admin/users",
+          "requiredRole": "ROLE_ADMIN",
+          "testUsers": ["ADMIN001", "TESTADM"],
+          "unauthorizedUsers": ["USER0001", "TESTUSER", "CARDUSER"]
+        },
+        {
+          "operation": "system_configuration",
+          "endpoint": "/api/admin/config",
+          "requiredRole": "ROLE_ADMIN",
+          "testUsers": ["ADMIN001", "TESTADM"],
+          "unauthorizedUsers": ["USER0001", "TESTUSER", "CARDUSER"]
+        }
+      ],
+      "user_operations": [
+        {
+          "operation": "account_view",
+          "endpoint": "/api/account/view",
+          "requiredRole": "ROLE_USER",
+          "testUsers": ["USER0001", "TESTUSER", "CARDUSER"],
+          "adminAccess": true,
+          "adminUsers": ["ADMIN001", "TESTADM"]
+        },
+        {
+          "operation": "transaction_processing",
+          "endpoint": "/api/transaction/process",
+          "requiredRole": "ROLE_USER",
+          "testUsers": ["USER0001", "TESTUSER", "CARDUSER"],
+          "adminAccess": true,
+          "adminUsers": ["ADMIN001", "TESTADM"]
+        }
+      ]
+    },
+    "session_management": {
+      "concurrent_sessions": [
+        {
+          "userId": "ADMIN001",
+          "maxSessions": 3,
+          "testScenarios": ["concurrent_admin_sessions", "session_limit_enforcement"]
+        },
+        {
+          "userId": "USER0001",
+          "maxSessions": 2,
+          "testScenarios": ["concurrent_user_sessions", "session_timeout_handling"]
+        }
+      ],
+      "session_timeout": {
+        "adminTimeout": 120,
+        "userTimeout": 60,
+        "testScenarios": ["session_expiration", "automatic_logout", "session_refresh"]
+      }
+    }
+  },
+  "COBOLConversionTestData": {
+    "field_validation": {
+      "user_id_constraints": {
+        "maxLength": 8,
+        "required": true,
+        "pattern": "^[A-Z0-9]{1,8}$",
+        "validExamples": ["ADMIN001", "USER0001", "TESTADM", "A", "12345678"],
+        "invalidExamples": ["admin001", "TOOLONGID", "", "INVALID@", "USER 001"]
+      },
+      "first_name_constraints": {
+        "maxLength": 20,
+        "required": true,
+        "validExamples": ["John", "System", "Test", "Michael", "Jane"],
+        "invalidExamples": ["", "VeryLongFirstNameThatExceedsTwentyCharacters"]
+      },
+      "last_name_constraints": {
+        "maxLength": 20,
+        "required": true,
+        "validExamples": ["Smith", "Administrator", "Admin", "Johnson", "Doe"],
+        "invalidExamples": ["", "VeryLongLastNameThatExceedsTwentyCharacters"]
+      },
+      "user_type_constraints": {
+        "maxLength": 1,
+        "required": true,
+        "validValues": ["A", "U"],
+        "invalidValues": ["", "a", "u", "X", "12", "AB"]
+      }
+    },
+    "legacy_racf_mapping": {
+      "racf_to_spring_security": [
+        {
+          "racfUserType": "A",
+          "springSecurityRole": "ROLE_ADMIN",
+          "description": "Administrative privileges including user management and system configuration",
+          "cobolEquivalent": "SEC-USR-TYPE = 'A'",
+          "javaImplementation": "user.getUserType().equals(\"A\")"
+        },
+        {
+          "racfUserType": "U",
+          "springSecurityRole": "ROLE_USER",
+          "description": "Standard user privileges for transaction processing and account management",
+          "cobolEquivalent": "SEC-USR-TYPE = 'U'",
+          "javaImplementation": "user.getUserType().equals(\"U\")"
+        }
+      ]
+    },
+    "data_integrity_validation": {
+      "bcrypt_password_hashing": {
+        "algorithm": "BCrypt",
+        "saltRounds": 12,
+        "hashLength": 60,
+        "testCases": [
+          {
+            "plainText": "Admin123",
+            "expectedHashPattern": "^\\$2a\\$12\\$.{53}$",
+            "description": "Admin password with complexity requirements"
+          },
+          {
+            "plainText": "User1234",
+            "expectedHashPattern": "^\\$2a\\$12\\$.{53}$",
+            "description": "Standard user password validation"
+          }
+        ]
+      },
+      "timestamp_precision": {
+        "createdAt": {
+          "format": "yyyy-MM-dd'T'HH:mm:ss",
+          "timezone": "UTC",
+          "required": true,
+          "description": "Account creation timestamp for audit trail compliance"
+        },
+        "lastLogin": {
+          "format": "yyyy-MM-dd'T'HH:mm:ss",
+          "timezone": "UTC",
+          "required": false,
+          "description": "Last successful login timestamp for security monitoring"
+        }
+      }
+    }
+  },
+  "testDataLoader": {
+    "loadOrder": [
+      "admin_users",
+      "regular_users",
+      "password_validation_scenarios"
+    ],
+    "cleanupOrder": [
+      "password_validation_scenarios",
+      "regular_users", 
+      "admin_users"
+    ],
+    "testDatabaseConfiguration": {
+      "schema": "public",
+      "table": "users",
+      "primaryKey": "user_id",
+      "indexes": ["user_id", "user_type", "created_at", "last_login"],
+      "constraints": {
+        "user_id_unique": true,
+        "user_type_check": ["A", "U"],
+        "password_hash_not_null": true
+      }
+    }
+  },
+  "performanceTestData": {
+    "loadTestScenarios": [
+      {
+        "scenarioName": "authentication_load_test",
+        "concurrentUsers": 1000,
+        "requestsPerSecond": 100,
+        "duration": "5m",
+        "testUsers": ["USER0001", "TESTUSER", "CARDUSER"],
+        "expectedResponseTime": "200ms",
+        "successRate": "99.9%"
+      },
+      {
+        "scenarioName": "admin_operations_load_test",
+        "concurrentUsers": 50,
+        "requestsPerSecond": 10,
+        "duration": "2m",
+        "testUsers": ["ADMIN001", "TESTADM"],
+        "expectedResponseTime": "500ms",
+        "successRate": "99.5%"
+      }
+    ]
+  }
+}

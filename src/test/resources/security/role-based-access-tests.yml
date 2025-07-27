@@ -1,0 +1,1420 @@
+# Role-Based Access Control Test Scenarios
+# Validates Spring Security authorization patterns equivalent to legacy RACF permissions
+# Maps COBOL security model (CSUSR01Y, COADM02Y, COMEN02Y) to Spring Security @PreAuthorize annotations
+# Comprehensive coverage of administrative and user operations per Section 6.4.2 Security Framework
+
+# =============================================================================
+# DEFAULT EXPORT: RoleBasedAccessTestScenarios
+# Primary test scenario configuration mapping RACF groups to Spring Security roles
+# =============================================================================
+RoleBasedAccessTestScenarios:
+  
+  # ADMIN-only operations testing - validates RACF administrative group permissions
+  # Maps to COADM02Y.cpy admin menu structure and UserManagementController security
+  admin_only_operations_tests:
+    description: "Validates ADMIN role exclusive access to user management operations"
+    security_annotation: "@PreAuthorize('hasRole(\"ADMIN\")')"
+    racf_mapping: "RACF administrative group ('A' user type) to ROLE_ADMIN"
+    
+    test_scenarios:
+      - name: "admin_user_list_access"
+        endpoint: "GET /api/admin/users"
+        controller: "UserManagementController.listUsers()"
+        required_role: "ROLE_ADMIN"
+        test_users:
+          - username: "admin001"
+            roles: ["ROLE_ADMIN"]
+            expected_status: 200
+            expected_access: true
+          - username: "user001" 
+            roles: ["ROLE_USER"]
+            expected_status: 403
+            expected_access: false
+          - username: "teller001"
+            roles: ["ROLE_TELLER"] 
+            expected_status: 403
+            expected_access: false
+            
+      - name: "admin_user_creation"
+        endpoint: "POST /api/admin/users"
+        controller: "UserManagementController.createUser()"
+        required_role: "ROLE_ADMIN"
+        request_body:
+          userId: "NEWUSER01"
+          firstName: "Test"
+          lastName: "User"
+          userType: "U"
+          password: "Password123!"
+        test_users:
+          - username: "admin001"
+            roles: ["ROLE_ADMIN"]
+            expected_status: 201
+            expected_access: true
+          - username: "user001"
+            roles: ["ROLE_USER"]
+            expected_status: 403
+            expected_access: false
+            
+      - name: "admin_user_update"
+        endpoint: "PUT /api/admin/users/{userId}"
+        controller: "UserManagementController.updateUser()"
+        required_role: "ROLE_ADMIN"
+        path_variables:
+          userId: "USER0001"
+        request_body:
+          firstName: "Updated"
+          lastName: "Name"
+        test_users:
+          - username: "admin001"
+            roles: ["ROLE_ADMIN"]
+            expected_status: 200
+            expected_access: true
+          - username: "user001"
+            roles: ["ROLE_USER"]
+            expected_status: 403
+            expected_access: false
+            
+      - name: "admin_user_deletion"
+        endpoint: "DELETE /api/admin/users/{userId}"
+        controller: "UserManagementController.deleteUser()"
+        required_role: "ROLE_ADMIN"
+        path_variables:
+          userId: "USER0001"
+        test_users:
+          - username: "admin001"
+            roles: ["ROLE_ADMIN"]
+            expected_status: 204
+            expected_access: true
+          - username: "user001"
+            roles: ["ROLE_USER"]
+            expected_status: 403
+            expected_access: false
+            
+      - name: "admin_user_details"
+        endpoint: "GET /api/admin/users/{userId}"
+        controller: "UserManagementController.getUserById()"
+        required_role: "ROLE_ADMIN"
+        path_variables:
+          userId: "USER0001"
+        test_users:
+          - username: "admin001"
+            roles: ["ROLE_ADMIN"]
+            expected_status: 200
+            expected_access: true
+          - username: "user001"
+            roles: ["ROLE_USER"]
+            expected_status: 403
+            expected_access: false
+
+  # USER role operations testing - validates standard user permissions 
+  # Maps to COMEN02Y.cpy user menu structure and shared USER/ADMIN endpoints
+  user_role_operations_tests:
+    description: "Validates USER role access to account and transaction operations"
+    security_annotation: "@PreAuthorize('hasRole(\"USER\") or hasRole(\"ADMIN\")')"
+    racf_mapping: "RACF user group ('U' user type) to ROLE_USER"
+    
+    test_scenarios:
+      - name: "user_account_view_access"
+        endpoint: "GET /api/account/view/{accountId}"
+        controller: "AccountViewController.viewAccount()"
+        security_rule: "@PreAuthorize('hasRole(\"USER\") or hasRole(\"ADMIN\")')"
+        path_variables:
+          accountId: "12345678901"
+        test_users:
+          - username: "user001"
+            roles: ["ROLE_USER"]
+            expected_status: 200
+            expected_access: true
+          - username: "admin001"
+            roles: ["ROLE_ADMIN"]
+            expected_status: 200
+            expected_access: true
+          - username: "anonymous"
+            roles: []
+            expected_status: 401
+            expected_access: false
+            
+      - name: "user_transaction_list_access"
+        endpoint: "GET /api/ct00/transactions"
+        controller: "TransactionController.getTransactions()"
+        security_rule: "@PreAuthorize('hasRole(\"USER\") or hasRole(\"ADMIN\") or hasRole(\"TELLER\")')"
+        request_params:
+          accountId: "12345678901"
+          pageNumber: "0"
+          pageSize: "10"
+        test_users:
+          - username: "user001"
+            roles: ["ROLE_USER"]
+            expected_status: 200
+            expected_access: true
+          - username: "admin001"
+            roles: ["ROLE_ADMIN"]
+            expected_status: 200
+            expected_access: true
+          - username: "teller001"
+            roles: ["ROLE_TELLER"]
+            expected_status: 200
+            expected_access: true
+          - username: "anonymous"
+            roles: []
+            expected_status: 401
+            expected_access: false
+            
+      - name: "user_transaction_view_access"
+        endpoint: "GET /api/ct01/transactions/{id}"
+        controller: "TransactionController.getTransactionById()"
+        security_rule: "@PreAuthorize('hasRole(\"USER\") or hasRole(\"ADMIN\") or hasRole(\"TELLER\")')"
+        path_variables:
+          id: "1234567890123456"
+        test_users:
+          - username: "user001"
+            roles: ["ROLE_USER"]
+            expected_status: 200
+            expected_access: true
+          - username: "admin001" 
+            roles: ["ROLE_ADMIN"]
+            expected_status: 200
+            expected_access: true
+          - username: "teller001"
+            roles: ["ROLE_TELLER"]
+            expected_status: 200
+            expected_access: true
+            
+      - name: "user_transaction_search_access"
+        endpoint: "GET /api/ct00/transactions/search"
+        controller: "TransactionController.searchTransactions()"
+        security_rule: "@PreAuthorize('hasRole(\"USER\") or hasRole(\"ADMIN\") or hasRole(\"TELLER\")')"
+        request_params:
+          accountId: "12345678901"
+          startDate: "20240101"
+          endDate: "20241231"
+        test_users:
+          - username: "user001"
+            roles: ["ROLE_USER"]
+            expected_status: 200
+            expected_access: true
+          - username: "admin001"
+            roles: ["ROLE_ADMIN"]
+            expected_status: 200
+            expected_access: true
+          - username: "teller001"
+            roles: ["ROLE_TELLER"] 
+            expected_status: 200
+            expected_access: true
+            
+      - name: "user_transaction_history_access"
+        endpoint: "GET /api/ct00/transactions/history"
+        controller: "TransactionController.getTransactionHistory()"
+        security_rule: "@PreAuthorize('hasRole(\"USER\") or hasRole(\"ADMIN\") or hasRole(\"TELLER\")')"
+        request_params:
+          startDate: "20240101"
+          endDate: "20241231"
+          pageNumber: "0"
+          pageSize: "10"
+        test_users:
+          - username: "user001"
+            roles: ["ROLE_USER"]
+            expected_status: 200
+            expected_access: true
+          - username: "admin001"
+            roles: ["ROLE_ADMIN"]
+            expected_status: 200
+            expected_access: true
+          - username: "teller001"
+            roles: ["ROLE_TELLER"]
+            expected_status: 200
+            expected_access: true
+
+  # Unauthorized access testing - validates security boundaries and access denial
+  unauthorized_access_tests:
+    description: "Validates proper access denial for insufficient permissions"
+    
+    test_scenarios:
+      - name: "user_attempts_admin_operations"
+        description: "USER role attempting ADMIN-only operations should be denied"
+        tests:
+          - endpoint: "GET /api/admin/users"
+            username: "user001"
+            roles: ["ROLE_USER"]
+            expected_status: 403
+            expected_error: "Access Denied"
+          - endpoint: "POST /api/admin/users"
+            username: "user001"
+            roles: ["ROLE_USER"]
+            expected_status: 403
+            expected_error: "Access Denied"
+          - endpoint: "DELETE /api/admin/users/USER0001"
+            username: "user001"
+            roles: ["ROLE_USER"]
+            expected_status: 403
+            expected_error: "Access Denied"
+            
+      - name: "anonymous_access_attempts"
+        description: "Unauthenticated requests should be rejected"
+        tests:
+          - endpoint: "GET /api/account/view/12345678901"
+            username: null
+            roles: []
+            expected_status: 401
+            expected_error: "Authentication Required"
+          - endpoint: "GET /api/ct00/transactions"
+            username: null
+            roles: []
+            expected_status: 401
+            expected_error: "Authentication Required"
+          - endpoint: "GET /api/admin/users"
+            username: null
+            roles: []
+            expected_status: 401
+            expected_error: "Authentication Required"
+            
+      - name: "disabled_user_access_attempts"
+        description: "Disabled users should be denied access"
+        tests:
+          - endpoint: "GET /api/account/view/12345678901"
+            username: "disabled001"
+            roles: ["ROLE_USER"]
+            account_status: "DISABLED"
+            expected_status: 403
+            expected_error: "Account Disabled"
+
+  # Method-level security validation - validates @PreAuthorize annotations
+  method_level_security_validation:
+    description: "Validates Spring Security @PreAuthorize method-level annotations"
+    
+    test_scenarios:
+      - name: "preauthorize_admin_only_validation"
+        annotation: "@PreAuthorize('hasRole(\"ADMIN\")')"
+        target_methods:
+          - "UserManagementController.listUsers()"
+          - "UserManagementController.createUser()"
+          - "UserManagementController.updateUser()"
+          - "UserManagementController.deleteUser()"
+          - "UserManagementController.getUserById()"
+        validation_tests:
+          - role: "ROLE_ADMIN"
+            expected_access: true
+          - role: "ROLE_USER"
+            expected_access: false
+          - role: "ROLE_TELLER"
+            expected_access: false
+          - role: null
+            expected_access: false
+            
+      - name: "preauthorize_user_admin_validation"
+        annotation: "@PreAuthorize('hasRole(\"USER\") or hasRole(\"ADMIN\")')"
+        target_methods:
+          - "AccountViewController.viewAccount()"
+        validation_tests:
+          - role: "ROLE_USER"
+            expected_access: true
+          - role: "ROLE_ADMIN"
+            expected_access: true
+          - role: "ROLE_TELLER"
+            expected_access: false
+          - role: null
+            expected_access: false
+            
+      - name: "preauthorize_complex_ownership_validation"
+        annotation: "@PreAuthorize('hasRole(\"ADMIN\") or (hasRole(\"USER\") and @accountSecurityService.canUpdateAccount(#accountId, authentication.name))')"
+        target_methods:
+          - "AccountUpdateController.updateAccount()"
+        validation_tests:
+          - role: "ROLE_ADMIN"
+            account_ownership: false
+            expected_access: true
+          - role: "ROLE_USER"
+            account_ownership: true
+            expected_access: true
+          - role: "ROLE_USER"
+            account_ownership: false
+            expected_access: false
+          - role: "ROLE_TELLER"
+            account_ownership: true
+            expected_access: false
+            
+      - name: "preauthorize_multi_role_validation"  
+        annotation: "@PreAuthorize('hasRole(\"USER\") or hasRole(\"ADMIN\") or hasRole(\"TELLER\")')"
+        target_methods:
+          - "TransactionController.getTransactions()"
+          - "TransactionController.getTransactionById()"
+          - "TransactionController.searchTransactions()"
+          - "TransactionController.getTransactionHistory()"
+        validation_tests:
+          - role: "ROLE_USER"
+            expected_access: true
+          - role: "ROLE_ADMIN"
+            expected_access: true
+          - role: "ROLE_TELLER"
+            expected_access: true
+          - role: null
+            expected_access: false
+            
+      - name: "preauthorize_admin_teller_validation"
+        annotation: "@PreAuthorize('hasRole(\"ADMIN\") or hasRole(\"TELLER\")')"
+        target_methods:
+          - "TransactionController.addTransaction()"
+        validation_tests:
+          - role: "ROLE_ADMIN"
+            expected_access: true
+          - role: "ROLE_TELLER"
+            expected_access: true
+          - role: "ROLE_USER"
+            expected_access: false
+          - role: null
+            expected_access: false
+
+  # Spring Security annotation testing - validates framework integration
+  spring_security_annotation_tests:
+    description: "Validates Spring Security framework annotation processing"
+    
+    test_scenarios:
+      - name: "annotation_parsing_validation"
+        description: "Validates that @PreAuthorize annotations are correctly parsed"
+        annotations_under_test:
+          - annotation: "@PreAuthorize('hasRole(\"ADMIN\")')"
+            expected_roles: ["ROLE_ADMIN"]
+            expected_logic: "single_role"
+          - annotation: "@PreAuthorize('hasRole(\"USER\") or hasRole(\"ADMIN\")')"
+            expected_roles: ["ROLE_USER", "ROLE_ADMIN"]
+            expected_logic: "or_logic"
+          - annotation: "@PreAuthorize('hasRole(\"ADMIN\") or (hasRole(\"USER\") and @accountSecurityService.canUpdateAccount(#accountId, authentication.name))')"
+            expected_roles: ["ROLE_ADMIN", "ROLE_USER"]
+            expected_logic: "complex_with_service_call"
+            
+      - name: "security_context_validation"
+        description: "Validates Spring Security context is properly populated"
+        validation_points:
+          - context_element: "authentication.name"
+            expected_source: "JWT token subject claim"
+          - context_element: "authentication.authorities"
+            expected_source: "JWT token roles claim"
+          - context_element: "authentication.isAuthenticated()"
+            expected_value: true
+
+  # RACF to Spring Security mapping tests - validates legacy conversion
+  racf_to_spring_security_mapping_tests:
+    description: "Validates RACF group permissions mapping to Spring Security roles"
+    legacy_reference: "CSUSR01Y.cpy SEC-USR-TYPE field mapping"
+    
+    test_scenarios:
+      - name: "racf_admin_group_mapping"
+        legacy_config:
+          racf_group: "ADMIN"
+          user_type_code: "A"
+          permissions: ["USER_MGMT", "SYSTEM_ADMIN", "AUDIT_ACCESS"]
+        spring_security_mapping:
+          role: "ROLE_ADMIN" 
+          authorities: ["ROLE_ADMIN"]
+          accessible_endpoints:
+            - "/api/admin/**"
+            - "/api/account/**"
+            - "/api/ct00/**"
+            - "/api/ct01/**" 
+            - "/api/ct02/**"
+        validation_tests:
+          - username: "admin001"
+            legacy_user_type: "A"
+            expected_spring_role: "ROLE_ADMIN"
+            expected_access_level: "FULL_SYSTEM_ACCESS"
+            
+      - name: "racf_user_group_mapping"
+        legacy_config:
+          racf_group: "USER"
+          user_type_code: "U"
+          permissions: ["ACCOUNT_VIEW", "TRANSACTION_VIEW", "CARD_MGMT"]
+        spring_security_mapping:
+          role: "ROLE_USER"
+          authorities: ["ROLE_USER"]
+          accessible_endpoints:
+            - "/api/account/view/**"
+            - "/api/ct00/**"
+            - "/api/ct01/**"
+          restricted_endpoints:
+            - "/api/admin/**"
+            - "/api/ct02/**"
+        validation_tests:
+          - username: "user001"
+            legacy_user_type: "U"
+            expected_spring_role: "ROLE_USER"
+            expected_access_level: "LIMITED_USER_ACCESS"
+            
+      - name: "racf_teller_group_mapping"
+        legacy_config:
+          racf_group: "TELLER"
+          user_type_code: "T"
+          permissions: ["TRANSACTION_CREATE", "TRANSACTION_VIEW", "CUSTOMER_SERVICE"]
+        spring_security_mapping:
+          role: "ROLE_TELLER"
+          authorities: ["ROLE_TELLER"]
+          accessible_endpoints:
+            - "/api/ct00/**"
+            - "/api/ct01/**"
+            - "/api/ct02/**"
+          restricted_endpoints:
+            - "/api/admin/**"
+        validation_tests:
+          - username: "teller001"
+            legacy_user_type: "T"
+            expected_spring_role: "ROLE_TELLER"
+            expected_access_level: "TRANSACTION_FOCUSED_ACCESS"
+
+  # Cross-service authorization tests - validates microservice security
+  cross_service_authorization_tests:
+    description: "Validates authorization across microservice boundaries"
+    
+    test_scenarios:
+      - name: "service_to_service_authorization"
+        description: "Validates proper JWT token propagation between services"
+        service_calls:
+          - from_service: "AccountViewController"
+            to_service: "AccountService"
+            required_token: "JWT with ROLE_USER or ROLE_ADMIN"
+            expected_behavior: "Token forwarded with original claims"
+          - from_service: "TransactionController"
+            to_service: "TransactionService"
+            required_token: "JWT with ROLE_USER, ROLE_ADMIN, or ROLE_TELLER"
+            expected_behavior: "Token forwarded with original claims"
+            
+      - name: "service_security_isolation"
+        description: "Validates that services enforce their own security rules"
+        isolation_tests:
+          - service: "UserManagementService"
+            external_call_attempt: "Direct service call bypassing controller"
+            expected_behavior: "Access denied - controller security bypassed"
+          - service: "AccountService"
+            invalid_token: "Expired JWT token"
+            expected_behavior: "Token validation failure"
+
+  # Role hierarchy validation tests - validates role inheritance patterns
+  role_hierarchy_validation_tests:
+    description: "Validates Spring Security role hierarchy configuration"
+    hierarchy_config: "ROLE_ADMIN > ROLE_TELLER > ROLE_USER"
+    
+    test_scenarios:
+      - name: "admin_inherits_all_permissions"
+        description: "ADMIN role should have access to all USER and TELLER operations"
+        inheritance_tests:
+          - admin_accessing_user_endpoint: "/api/account/view/12345678901"
+            expected_result: "ACCESS_GRANTED"
+          - admin_accessing_teller_endpoint: "/api/ct02/transactions"
+            expected_result: "ACCESS_GRANTED"
+          - admin_accessing_admin_endpoint: "/api/admin/users"
+            expected_result: "ACCESS_GRANTED"
+            
+      - name: "teller_inherits_user_permissions"
+        description: "TELLER role should have access to USER operations but not ADMIN"
+        inheritance_tests:
+          - teller_accessing_user_endpoint: "/api/account/view/12345678901"
+            expected_result: "ACCESS_DENIED"  # Based on actual annotation analysis
+          - teller_accessing_teller_endpoint: "/api/ct02/transactions"
+            expected_result: "ACCESS_GRANTED"
+          - teller_accessing_admin_endpoint: "/api/admin/users"
+            expected_result: "ACCESS_DENIED"
+            
+      - name: "user_base_level_permissions"
+        description: "USER role should only have access to user-level operations"
+        base_level_tests:
+          - user_accessing_user_endpoint: "/api/account/view/12345678901"
+            expected_result: "ACCESS_GRANTED"
+          - user_accessing_teller_endpoint: "/api/ct02/transactions"
+            expected_result: "ACCESS_DENIED"
+          - user_accessing_admin_endpoint: "/api/admin/users"
+            expected_result: "ACCESS_DENIED"
+
+# =============================================================================
+# NAMED EXPORT: SecurityTestConfiguration  
+# Detailed security test configuration with comprehensive scenario coverage
+# =============================================================================
+SecurityTestConfiguration:
+  
+  # Admin user management tests - comprehensive CRUD operation validation
+  admin_user_management_tests:
+    description: "Comprehensive testing of admin-only user management operations"
+    base_endpoint: "/api/admin/users"
+    security_model: "ADMIN role exclusive access per RACF administrative group mapping"
+    
+    test_configurations:
+      - operation: "LIST_USERS"
+        method: "GET"
+        endpoint: "/api/admin/users"
+        controller_method: "UserManagementController.listUsers()"
+        security_annotation: "@PreAuthorize('hasRole(\"ADMIN\")')"
+        request_format: "No body required"
+        response_format: "UserListResponse with pagination"
+        test_data:
+          valid_admin:
+            username: "admin001"
+            password: "AdminPass123!"
+            roles: ["ROLE_ADMIN"]
+            expected_status: 200
+            expected_response_fields: ["users", "totalCount", "pageNumber", "pageSize"]
+          invalid_user:
+            username: "user001"
+            password: "UserPass123!"
+            roles: ["ROLE_USER"]
+            expected_status: 403
+            expected_error: "Access Denied"
+          invalid_teller:
+            username: "teller001"
+            password: "TellerPass123!"
+            roles: ["ROLE_TELLER"]
+            expected_status: 403
+            expected_error: "Access Denied"
+            
+      - operation: "CREATE_USER"
+        method: "POST"
+        endpoint: "/api/admin/users"
+        controller_method: "UserManagementController.createUser()"
+        security_annotation: "@PreAuthorize('hasRole(\"ADMIN\")')"
+        request_format: "CreateUserRequest DTO"
+        response_format: "UserResponse with created user details"
+        test_data:
+          valid_admin_creates_user:
+            username: "admin001"
+            roles: ["ROLE_ADMIN"]
+            request_body:
+              userId: "NEWUSER01"
+              firstName: "John"
+              lastName: "Doe"
+              userType: "U"
+              password: "NewUser123!"
+            expected_status: 201
+            expected_response_fields: ["userId", "firstName", "lastName", "userType", "createdDate"]
+          valid_admin_creates_admin:
+            username: "admin001"
+            roles: ["ROLE_ADMIN"]
+            request_body:
+              userId: "NEWADMIN1"
+              firstName: "Jane"
+              lastName: "Admin"
+              userType: "A"
+              password: "AdminNew123!"
+            expected_status: 201
+          invalid_user_attempt:
+            username: "user001"
+            roles: ["ROLE_USER"]
+            request_body:
+              userId: "HACKER001"
+              firstName: "Bad"
+              lastName: "Actor"
+              userType: "A"
+              password: "HackAttempt!"
+            expected_status: 403
+            expected_error: "Access Denied"
+            
+      - operation: "UPDATE_USER"
+        method: "PUT"
+        endpoint: "/api/admin/users/{userId}"
+        controller_method: "UserManagementController.updateUser()"
+        security_annotation: "@PreAuthorize('hasRole(\"ADMIN\")')"
+        request_format: "UpdateUserRequest DTO with path variable"
+        response_format: "UserResponse with updated user details"
+        test_data:
+          valid_admin_update:
+            username: "admin001"
+            roles: ["ROLE_ADMIN"]
+            path_variables:
+              userId: "USER0001"
+            request_body:
+              firstName: "Updated"
+              lastName: "Name"
+              userType: "U"
+            expected_status: 200
+          invalid_user_attempt:
+            username: "user001"
+            roles: ["ROLE_USER"]
+            path_variables:
+              userId: "USER0001"
+            request_body:
+              firstName: "Hacked"
+              lastName: "Update"
+            expected_status: 403
+            expected_error: "Access Denied"
+            
+      - operation: "DELETE_USER"
+        method: "DELETE"
+        endpoint: "/api/admin/users/{userId}"
+        controller_method: "UserManagementController.deleteUser()"
+        security_annotation: "@PreAuthorize('hasRole(\"ADMIN\")')"
+        request_format: "Path variable only"
+        response_format: "No content on successful deletion"
+        test_data:
+          valid_admin_delete:
+            username: "admin001"
+            roles: ["ROLE_ADMIN"]
+            path_variables:
+              userId: "USER0002"
+            expected_status: 204
+          invalid_user_attempt:
+            username: "user001"
+            roles: ["ROLE_USER"]
+            path_variables:
+              userId: "USER0002"
+            expected_status: 403
+            expected_error: "Access Denied"
+            
+      - operation: "GET_USER_DETAILS"
+        method: "GET"
+        endpoint: "/api/admin/users/{userId}"
+        controller_method: "UserManagementController.getUserById()"
+        security_annotation: "@PreAuthorize('hasRole(\"ADMIN\")')"
+        request_format: "Path variable only"
+        response_format: "UserResponse with complete user details"
+        test_data:
+          valid_admin_get:
+            username: "admin001"
+            roles: ["ROLE_ADMIN"]
+            path_variables:
+              userId: "USER0001"
+            expected_status: 200
+            expected_response_fields: ["userId", "firstName", "lastName", "userType", "lastLoginDate"]
+          invalid_user_attempt:
+            username: "user001"
+            roles: ["ROLE_USER"]
+            path_variables:
+              userId: "USER0001"
+            expected_status: 403
+            expected_error: "Access Denied"
+
+  # User account operations tests - shared USER/ADMIN access validation  
+  user_account_operations_tests:
+    description: "Testing USER and ADMIN shared access to account operations"
+    base_endpoint: "/api/account"
+    security_model: "USER or ADMIN role access per COMEN02Y.cpy menu structure"
+    
+    test_configurations:
+      - operation: "VIEW_ACCOUNT"
+        method: "GET"
+        endpoint: "/api/account/view/{accountId}"
+        controller_method: "AccountViewController.viewAccount()"
+        security_annotation: "@PreAuthorize('hasRole(\"USER\") or hasRole(\"ADMIN\")')"
+        request_format: "Path variable only"
+        response_format: "AccountViewResponse with account details"
+        test_data:
+          valid_user_access:
+            username: "user001"
+            roles: ["ROLE_USER"]
+            path_variables:
+              accountId: "12345678901"
+            expected_status: 200
+            expected_response_fields: ["accountId", "accountStatus", "currentBalance", "creditLimit"]
+          valid_admin_access:
+            username: "admin001"
+            roles: ["ROLE_ADMIN"]
+            path_variables:
+              accountId: "12345678901"
+            expected_status: 200
+          invalid_teller_access:
+            username: "teller001"
+            roles: ["ROLE_TELLER"]
+            path_variables:
+              accountId: "12345678901"
+            expected_status: 403
+            expected_error: "Access Denied"
+          invalid_anonymous_access:
+            username: null
+            roles: []
+            path_variables:
+              accountId: "12345678901"
+            expected_status: 401
+            expected_error: "Authentication Required"
+            
+      - operation: "UPDATE_ACCOUNT"
+        method: "PUT"
+        endpoint: "/api/account/update/{accountId}"
+        controller_method: "AccountUpdateController.updateAccount()"
+        security_annotation: "@PreAuthorize('hasRole(\"ADMIN\") or (hasRole(\"USER\") and @accountSecurityService.canUpdateAccount(#accountId, authentication.name))')"
+        request_format: "UpdateAccountRequest DTO with path variable"
+        response_format: "AccountUpdateResponse with update confirmation"
+        test_data:
+          valid_admin_any_account:
+            username: "admin001"
+            roles: ["ROLE_ADMIN"]
+            path_variables:
+              accountId: "12345678901"
+            request_body:
+              creditLimit: "5000.00"
+              accountStatus: "ACTIVE"
+            expected_status: 200
+            ownership_check: false  # Admin bypasses ownership
+          valid_user_own_account:
+            username: "user001"
+            roles: ["ROLE_USER"]
+            path_variables:
+              accountId: "12345678901"  # User's own account
+            request_body:
+              creditLimit: "3000.00"
+            expected_status: 200
+            ownership_check: true
+          invalid_user_other_account:
+            username: "user001"
+            roles: ["ROLE_USER"]
+            path_variables:
+              accountId: "98765432109"  # Different user's account
+            request_body:
+              creditLimit: "10000.00"
+            expected_status: 403
+            expected_error: "Access Denied - Account Ownership Required"
+            ownership_check: true
+          invalid_teller_access:
+            username: "teller001"
+            roles: ["ROLE_TELLER"]
+            path_variables:
+              accountId: "12345678901"
+            request_body:
+              creditLimit: "4000.00"
+            expected_status: 403
+            expected_error: "Access Denied"
+
+  # User transaction processing tests - multi-role access validation
+  user_transaction_processing_tests:
+    description: "Testing USER, ADMIN, and TELLER access to transaction operations"
+    base_endpoint: "/api/ct00"
+    security_model: "Multi-role access patterns with operation-specific restrictions"
+    
+    test_configurations:
+      - operation: "LIST_TRANSACTIONS"
+        method: "GET"
+        endpoint: "/api/ct00/transactions"
+        controller_method: "TransactionController.getTransactions()"
+        security_annotation: "@PreAuthorize('hasRole(\"USER\") or hasRole(\"ADMIN\") or hasRole(\"TELLER\")')"
+        request_format: "Query parameters for filtering"
+        response_format: "TransactionListResponse with paginated results"
+        test_data:
+          valid_user_access:
+            username: "user001"
+            roles: ["ROLE_USER"]
+            request_params:
+              accountId: "12345678901"
+              pageNumber: "0"
+              pageSize: "10"
+            expected_status: 200
+          valid_admin_access:
+            username: "admin001"
+            roles: ["ROLE_ADMIN"]
+            request_params:
+              accountId: "12345678901"
+              pageNumber: "0"
+              pageSize: "20"
+            expected_status: 200
+          valid_teller_access:
+            username: "teller001"
+            roles: ["ROLE_TELLER"]
+            request_params:
+              accountId: "12345678901"
+              pageNumber: "0"
+              pageSize: "15"
+            expected_status: 200
+          invalid_anonymous_access:
+            username: null
+            roles: []
+            request_params:
+              accountId: "12345678901"
+            expected_status: 401
+            expected_error: "Authentication Required"
+            
+      - operation: "VIEW_TRANSACTION"
+        method: "GET"
+        endpoint: "/api/ct01/transactions/{id}"
+        controller_method: "TransactionController.getTransactionById()"
+        security_annotation: "@PreAuthorize('hasRole(\"USER\") or hasRole(\"ADMIN\") or hasRole(\"TELLER\")')"
+        request_format: "Path variable for transaction ID"
+        response_format: "TransactionViewResponse with complete transaction details"
+        test_data:
+          valid_user_access:
+            username: "user001"
+            roles: ["ROLE_USER"]
+            path_variables:
+              id: "1234567890123456"
+            expected_status: 200
+            expected_response_fields: ["transactionId", "accountId", "amount", "processingDate", "merchantName"]
+          valid_admin_access:
+            username: "admin001"
+            roles: ["ROLE_ADMIN"]
+            path_variables:
+              id: "1234567890123456"
+            expected_status: 200
+          valid_teller_access:
+            username: "teller001"
+            roles: ["ROLE_TELLER"]
+            path_variables:
+              id: "1234567890123456"
+            expected_status: 200
+            
+      - operation: "ADD_TRANSACTION"
+        method: "POST"
+        endpoint: "/api/ct02/transactions"
+        controller_method: "TransactionController.addTransaction()"
+        security_annotation: "@PreAuthorize('hasRole(\"ADMIN\") or hasRole(\"TELLER\")')"
+        request_format: "AddTransactionRequest DTO"
+        response_format: "AddTransactionResponse with confirmation"
+        test_data:
+          valid_admin_add:
+            username: "admin001"
+            roles: ["ROLE_ADMIN"]
+            request_body:
+              accountId: "12345678901"
+              cardNumber: "4111111111111111"
+              transactionAmount: "150.75"
+              transactionTypeCode: "PURCHASE"
+              transactionCategoryCode: "RETAIL"
+              merchantName: "Test Merchant"
+              merchantCity: "Test City"
+              merchantZip: "12345"
+            expected_status: 201
+            expected_response_fields: ["transactionId", "confirmationNumber", "processedDate"]
+          valid_teller_add:
+            username: "teller001"
+            roles: ["ROLE_TELLER"]
+            request_body:
+              accountId: "12345678901"
+              cardNumber: "4111111111111111"
+              transactionAmount: "75.00"
+              transactionTypeCode: "PAYMENT"
+              transactionCategoryCode: "CREDIT"
+              merchantName: "Payment Center"
+            expected_status: 201
+          invalid_user_add:
+            username: "user001"
+            roles: ["ROLE_USER"]
+            request_body:
+              accountId: "12345678901"
+              cardNumber: "4111111111111111"
+              transactionAmount: "999.99"
+              transactionTypeCode: "PURCHASE"
+            expected_status: 403
+            expected_error: "Access Denied - Transaction creation restricted to ADMIN and TELLER roles"
+            
+      - operation: "SEARCH_TRANSACTIONS"
+        method: "GET"
+        endpoint: "/api/ct00/transactions/search"
+        controller_method: "TransactionController.searchTransactions()"
+        security_annotation: "@PreAuthorize('hasRole(\"USER\") or hasRole(\"ADMIN\") or hasRole(\"TELLER\")')"
+        request_format: "Query parameters for search criteria"
+        response_format: "TransactionListResponse with search results"
+        test_data:
+          valid_user_search:
+            username: "user001"
+            roles: ["ROLE_USER"]
+            request_params:
+              accountId: "12345678901"
+              startDate: "20240101"
+              endDate: "20241231"
+              merchantName: "Amazon"
+            expected_status: 200
+          valid_admin_search:
+            username: "admin001"
+            roles: ["ROLE_ADMIN"]
+            request_params:
+              accountId: "12345678901"
+              transactionType: "PURCHASE"
+              minAmount: "100.00"
+              maxAmount: "500.00"
+            expected_status: 200
+          valid_teller_search:
+            username: "teller001"
+            roles: ["ROLE_TELLER"]
+            request_params:
+              startDate: "20240601"
+              endDate: "20240630"
+              transactionCategory: "RETAIL"
+            expected_status: 200
+            
+      - operation: "GET_TRANSACTION_HISTORY"
+        method: "GET"
+        endpoint: "/api/ct00/transactions/history"
+        controller_method: "TransactionController.getTransactionHistory()"
+        security_annotation: "@PreAuthorize('hasRole(\"USER\") or hasRole(\"ADMIN\") or hasRole(\"TELLER\")')"
+        request_format: "Query parameters for date range and pagination"
+        response_format: "TransactionListResponse with historical data"
+        test_data:
+          valid_user_history:
+            username: "user001"
+            roles: ["ROLE_USER"]
+            request_params:
+              startDate: "20240101"
+              endDate: "20241231"
+              pageNumber: "0"
+              pageSize: "25"
+            expected_status: 200
+          valid_admin_history:
+            username: "admin001"
+            roles: ["ROLE_ADMIN"]
+            request_params:
+              startDate: "20230101"
+              endDate: "20231231"
+              accountId: "12345678901"
+              pageNumber: "0"
+              pageSize: "50"
+            expected_status: 200
+          valid_teller_history:
+            username: "teller001"
+            roles: ["ROLE_TELLER"]
+            request_params:
+              startDate: "20240601"
+              endDate: "20240630"
+              pageNumber: "0"
+              pageSize: "100"
+            expected_status: 200
+
+  # User card management tests - role-based card operation validation
+  user_card_management_tests:
+    description: "Testing role-based access to card management operations"
+    base_endpoint: "/api/card"
+    security_model: "Role-based card operation restrictions"
+    
+    test_configurations:
+      - operation: "LIST_CARDS"
+        method: "GET"
+        endpoint: "/api/card/list"
+        expected_security: "USER and ADMIN access for owned cards, ADMIN for all cards"
+        test_data:
+          valid_user_own_cards:
+            username: "user001"
+            roles: ["ROLE_USER"]
+            request_params:
+              accountId: "12345678901"  # User's own account
+            expected_status: 200
+            card_ownership_validation: true
+          valid_admin_any_cards:
+            username: "admin001"
+            roles: ["ROLE_ADMIN"]
+            request_params:
+              accountId: "98765432109"  # Any account
+            expected_status: 200
+            card_ownership_validation: false
+            
+      - operation: "UPDATE_CARD"
+        method: "PUT"
+        endpoint: "/api/card/update/{cardNumber}"
+        expected_security: "ADMIN only for card status changes, USER for limited updates"
+        test_data:
+          valid_admin_status_change:
+            username: "admin001"
+            roles: ["ROLE_ADMIN"]
+            path_variables:
+              cardNumber: "4111111111111111"
+            request_body:
+              cardStatus: "BLOCKED"
+              reason: "Security concern"
+            expected_status: 200
+          valid_user_limited_update:
+            username: "user001"
+            roles: ["ROLE_USER"]
+            path_variables:
+              cardNumber: "4111111111111111"  # User's own card
+            request_body:
+              creditLimit: "2000.00"
+            expected_status: 200
+            ownership_validation: true
+          invalid_user_status_change:
+            username: "user001"
+            roles: ["ROLE_USER"]
+            path_variables:
+              cardNumber: "4111111111111111"
+            request_body:
+              cardStatus: "ACTIVE"  # Status change restricted
+            expected_status: 403
+            expected_error: "Access Denied - Card status changes restricted to ADMIN"
+
+  # Authorization boundary validation - edge case and boundary testing
+  authorization_boundary_validation:
+    description: "Validates security boundaries and edge cases in authorization"
+    
+    test_scenarios:
+      - name: "jwt_token_expiration_handling"
+        description: "Validates behavior with expired JWT tokens"
+        test_cases:
+          - scenario: "expired_token_access_attempt"
+            token_status: "EXPIRED"
+            endpoint: "/api/account/view/12345678901"
+            expected_status: 401
+            expected_error: "Token Expired"
+          - scenario: "malformed_token_access_attempt"
+            token_status: "MALFORMED"
+            endpoint: "/api/admin/users"
+            expected_status: 401
+            expected_error: "Invalid Token"
+          - scenario: "missing_token_access_attempt"
+            token_status: "MISSING"
+            endpoint: "/api/ct00/transactions"
+            expected_status: 401
+            expected_error: "Authentication Required"
+            
+      - name: "role_claim_validation"
+        description: "Validates JWT role claims processing"
+        test_cases:
+          - scenario: "missing_role_claim"
+            jwt_claims:
+              sub: "user001"
+              # roles claim missing
+            endpoint: "/api/account/view/12345678901"
+            expected_status: 403 
+            expected_error: "No Roles Found"
+          - scenario: "invalid_role_format"
+            jwt_claims:
+              sub: "user001"
+              roles: "INVALID_FORMAT"  # Should be array
+            endpoint: "/api/account/view/12345678901"
+            expected_status: 403
+            expected_error: "Invalid Role Format"
+          - scenario: "empty_roles_array"
+            jwt_claims:
+              sub: "user001"
+              roles: []
+            endpoint: "/api/account/view/12345678901"
+            expected_status: 403
+            expected_error: "No Valid Roles"
+            
+      - name: "account_ownership_boundary_testing"
+        description: "Validates account ownership validation edge cases"
+        test_cases:
+          - scenario: "user_accessing_nonexistent_account"
+            username: "user001"
+            roles: ["ROLE_USER"]
+            account_id: "99999999999"  # Non-existent account
+            expected_status: 404
+            expected_error: "Account Not Found"
+          - scenario: "user_accessing_deleted_account"
+            username: "user001"
+            roles: ["ROLE_USER"]
+            account_id: "11111111111"  # Deleted account
+            expected_status: 410
+            expected_error: "Account No Longer Available"
+          - scenario: "ownership_service_unavailable"
+            username: "user001"
+            roles: ["ROLE_USER"]
+            account_id: "12345678901"
+            service_status: "accountSecurityService_DOWN"
+            expected_status: 500
+            expected_error: "Unable to Validate Account Access"
+
+  # @PreAuthorize annotation testing - comprehensive annotation validation
+  preauthorize_annotation_testing:
+    description: "Comprehensive testing of @PreAuthorize annotation processing"
+    
+    test_scenarios:
+      - name: "simple_role_annotation_testing"
+        annotation: "@PreAuthorize('hasRole(\"ADMIN\")')"
+        target_methods:
+          - class: "UserManagementController"
+            methods: ["listUsers", "createUser", "updateUser", "deleteUser", "getUserById"]
+        validation_matrix:
+          ROLE_ADMIN:
+            expected_access: true
+            test_scenarios: ["valid_admin_user", "admin_with_additional_roles"]
+          ROLE_USER:
+            expected_access: false
+            test_scenarios: ["standard_user", "user_with_multiple_roles"]
+          ROLE_TELLER:
+            expected_access: false
+            test_scenarios: ["teller_user", "teller_attempting_admin_ops"]
+          NO_ROLE:
+            expected_access: false
+            test_scenarios: ["unauthenticated_user", "authenticated_no_roles"]
+            
+      - name: "multiple_role_or_annotation_testing"
+        annotation: "@PreAuthorize('hasRole(\"USER\") or hasRole(\"ADMIN\")')"
+        target_methods:
+          - class: "AccountViewController"
+            methods: ["viewAccount"]
+        validation_matrix:
+          ROLE_USER:
+            expected_access: true
+            test_scenarios: ["standard_user_access", "user_accessing_own_account"]
+          ROLE_ADMIN:
+            expected_access: true
+            test_scenarios: ["admin_accessing_any_account", "admin_with_user_role"]
+          ROLE_TELLER:
+            expected_access: false
+            test_scenarios: ["teller_accessing_account", "teller_only_role"]
+          ROLE_USER_AND_ADMIN:
+            expected_access: true
+            test_scenarios: ["user_with_admin_privileges"]
+            
+      - name: "complex_spel_annotation_testing"
+        annotation: "@PreAuthorize('hasRole(\"ADMIN\") or (hasRole(\"USER\") and @accountSecurityService.canUpdateAccount(#accountId, authentication.name))')"
+        target_methods:
+          - class: "AccountUpdateController"
+            methods: ["updateAccount"]
+        validation_scenarios:
+          admin_bypass_ownership:
+            user_role: "ROLE_ADMIN"
+            account_ownership: false
+            expected_access: true
+            test_description: "Admin should bypass ownership check"
+          user_owns_account:
+            user_role: "ROLE_USER"
+            account_ownership: true
+            ownership_service_response: true
+            expected_access: true
+            test_description: "User should access their own account"
+          user_not_owner:
+            user_role: "ROLE_USER"
+            account_ownership: false
+            ownership_service_response: false
+            expected_access: false
+            expected_error: "Access Denied - Account Ownership Required"
+          teller_with_ownership:
+            user_role: "ROLE_TELLER"
+            account_ownership: true
+            ownership_service_response: true
+            expected_access: false
+            expected_error: "Access Denied - Insufficient Role"
+            
+      - name: "method_parameter_injection_testing"
+        description: "Validates SpEL parameter injection in @PreAuthorize expressions"
+        test_scenarios:
+          parameter_injection_validation:
+            annotation: "@PreAuthorize('hasRole(\"ADMIN\") or (hasRole(\"USER\") and @accountSecurityService.canUpdateAccount(#accountId, authentication.name))')"
+            method_signature: "updateAccount(String accountId, UpdateAccountRequest request, Authentication authentication)"
+            injection_tests:
+              - parameter: "#accountId"
+                test_value: "12345678901"
+                expected_injection: "12345678901"
+              - parameter: "authentication.name"
+                test_value: "user001"
+                expected_injection: "user001"
+            service_call_validation:
+              service_method: "@accountSecurityService.canUpdateAccount(#accountId, authentication.name)"
+              expected_parameters: ["12345678901", "user001"]
+              service_response_scenarios:
+                - response: true
+                  expected_authorization: "GRANTED (if USER role)"
+                - response: false
+                  expected_authorization: "DENIED"
+                - exception: "ServiceUnavailable"
+                  expected_authorization: "DENIED"
+
+  # Security context validation - Spring Security context testing
+  security_context_validation:
+    description: "Validates Spring Security context population and management"
+    
+    test_scenarios:
+      - name: "authentication_object_validation"
+        description: "Validates Authentication object structure and content"
+        validation_points:
+          authentication_name:
+            jwt_claim: "sub"
+            expected_value: "user001"
+            test_endpoint: "/api/account/view/12345678901"
+            validation_method: "authentication.getName()"
+          authentication_authorities:
+            jwt_claim: "roles"
+            expected_values: ["ROLE_USER"]
+            test_endpoint: "/api/account/view/12345678901"
+            validation_method: "authentication.getAuthorities()"
+          authentication_details:
+            expected_type: "JwtAuthenticationToken"
+            jwt_token_presence: true
+            test_endpoint: "/api/account/view/12345678901"
+          authentication_principal:
+            expected_type: "JwtPrincipal"
+            jwt_claims_access: true
+            test_endpoint: "/api/account/view/12345678901"
+            
+      - name: "security_context_holder_validation"
+        description: "Validates SecurityContextHolder context management"
+        test_cases:
+          context_availability:
+            test_point: "Controller method entry"
+            expected_context: "Present"
+            expected_authentication: "Present"
+          context_propagation:
+            test_point: "Service method call"
+            expected_context: "Propagated"
+            expected_authentication: "Same as controller"
+          context_cleanup:
+            test_point: "Request completion"
+            expected_context: "Cleared"
+            expected_authentication: "Null"
+            
+      - name: "jwt_token_validation"
+        description: "Validates JWT token processing and validation"
+        test_scenarios:
+          valid_token_processing:
+            token_structure:
+              header: "Valid JWT header"
+              payload: "Valid claims including sub and roles"
+              signature: "Valid signature"
+            expected_authentication: "Successful"
+            expected_roles: "Extracted and available"
+          expired_token_handling:
+            token_structure:
+              header: "Valid JWT header"
+              payload: "Valid claims but expired"
+              signature: "Valid signature"
+            expected_authentication: "Failed"
+            expected_error: "Token Expired"
+          invalid_signature_handling:
+            token_structure:
+              header: "Valid JWT header"
+              payload: "Valid claims"
+              signature: "Invalid signature"
+            expected_authentication: "Failed"
+            expected_error: "Invalid Token Signature"
+
+  # JWT role claims testing - JWT token role processing validation
+  jwt_role_claims_testing:
+    description: "Validates JWT token role claims processing and authorization"
+    
+    test_scenarios:
+      - name: "role_claim_extraction"
+        description: "Validates role extraction from JWT tokens"
+        jwt_token_scenarios:
+          standard_user_token:
+            jwt_payload:
+              sub: "user001"
+              roles: ["ROLE_USER"]
+              iat: 1640995200
+              exp: 1641081600
+            expected_roles: ["ROLE_USER"]
+            expected_authorities: ["ROLE_USER"]
+            test_endpoints:
+              - "/api/account/view/12345678901"
+              - "/api/ct00/transactions"
+          admin_user_token:
+            jwt_payload:
+              sub: "admin001"
+              roles: ["ROLE_ADMIN"]
+              iat: 1640995200
+              exp: 1641081600
+            expected_roles: ["ROLE_ADMIN"]
+            expected_authorities: ["ROLE_ADMIN"]
+            test_endpoints:
+              - "/api/admin/users"
+              - "/api/account/view/12345678901"
+          multi_role_token:
+            jwt_payload:
+              sub: "superuser001"
+              roles: ["ROLE_USER", "ROLE_ADMIN"]
+              iat: 1640995200
+              exp: 1641081600
+            expected_roles: ["ROLE_USER", "ROLE_ADMIN"]
+            expected_authorities: ["ROLE_USER", "ROLE_ADMIN"]
+            test_endpoints:
+              - "/api/admin/users"  # Should succeed with ADMIN
+              - "/api/account/view/12345678901"  # Should succeed with USER or ADMIN
+          teller_token:
+            jwt_payload:
+              sub: "teller001"
+              roles: ["ROLE_TELLER"]
+              iat: 1640995200
+              exp: 1641081600
+            expected_roles: ["ROLE_TELLER"]
+            expected_authorities: ["ROLE_TELLER"]
+            test_endpoints:
+              - "/api/ct02/transactions"  # Should succeed with TELLER
+              - "/api/ct00/transactions"  # Should succeed with TELLER
+              - "/api/admin/users"  # Should fail - ADMIN only
+              
+      - name: "role_claim_validation_edge_cases"
+        description: "Validates edge cases in role claim processing"
+        edge_case_scenarios:
+          missing_roles_claim:
+            jwt_payload:
+              sub: "user001"
+              iat: 1640995200
+              exp: 1641081600
+              # roles claim missing
+            expected_behavior: "Authentication failure or no roles assigned"
+            expected_access: "Denied for all role-protected endpoints"
+          empty_roles_array:
+            jwt_payload:
+              sub: "user001"
+              roles: []
+              iat: 1640995200
+              exp: 1641081600
+            expected_behavior: "No roles assigned"
+            expected_access: "Denied for all role-protected endpoints"
+          invalid_role_format:
+            jwt_payload:
+              sub: "user001"
+              roles: "ROLE_USER"  # String instead of array
+              iat: 1640995200
+              exp: 1641081600
+            expected_behavior: "Role parsing error"
+            expected_access: "Denied or error response"
+          non_standard_role_names:
+            jwt_payload:
+              sub: "user001"
+              roles: ["USER", "ADMIN"]  # Missing ROLE_ prefix
+              iat: 1640995200
+              exp: 1641081600
+            expected_behavior: "Role name normalization or rejection"
+            expected_access: "Depends on Spring Security configuration"
+            
+      - name: "role_hierarchy_jwt_testing"
+        description: "Validates role hierarchy with JWT role claims"
+        hierarchy_scenarios:
+          admin_accessing_user_resources:
+            jwt_payload:
+              sub: "admin001"
+              roles: ["ROLE_ADMIN"]
+            target_endpoint: "/api/account/view/12345678901"
+            endpoint_security: "@PreAuthorize('hasRole(\"USER\") or hasRole(\"ADMIN\")')"
+            expected_access: true
+            hierarchy_rule: "ADMIN should have USER privileges"
+          user_accessing_admin_resources:
+            jwt_payload:
+              sub: "user001"
+              roles: ["ROLE_USER"]
+            target_endpoint: "/api/admin/users"
+            endpoint_security: "@PreAuthorize('hasRole(\"ADMIN\")')"
+            expected_access: false
+            hierarchy_rule: "USER should not have ADMIN privileges"
+          teller_role_isolation:
+            jwt_payload:
+              sub: "teller001"
+              roles: ["ROLE_TELLER"]
+            test_endpoints:
+              user_endpoint:
+                url: "/api/account/view/12345678901"
+                security: "@PreAuthorize('hasRole(\"USER\") or hasRole(\"ADMIN\")')"
+                expected_access: false
+              teller_endpoint:
+                url: "/api/ct02/transactions"
+                security: "@PreAuthorize('hasRole(\"ADMIN\") or hasRole(\"TELLER\")')"
+                expected_access: true
+              admin_endpoint:
+                url: "/api/admin/users"
+                security: "@PreAuthorize('hasRole(\"ADMIN\")')"
+                expected_access: false
+
+# =============================================================================
+# TEST EXECUTION METADATA
+# Provides execution context and configuration for test scenarios
+# =============================================================================
+test_execution_metadata:
+  framework_integration:
+    junit_version: "5.13.3"
+    spring_security_test_version: "6.2.x"
+    spring_boot_test_version: "3.2.x"
+    
+  test_configuration:
+    security_test_slice: "@SecurityTest"
+    mock_mvc_configuration: "@AutoConfigureMockMvc"
+    test_security_configuration: "@TestSecurityConfiguration"
+    
+  test_data_management:
+    test_users_source: "src/test/resources/security/test-users.json"
+    jwt_test_tokens: "Generated dynamically per test scenario"
+    role_mappings: "Configured in test security context"
+    
+  validation_assertions:
+    access_granted_validation: "HTTP 200/201/204 status codes"
+    access_denied_validation: "HTTP 403 status with proper error message"
+    authentication_required_validation: "HTTP 401 status with authentication error"
+    authorization_error_format: "Consistent error response structure"
+    
+  performance_requirements:
+    authorization_check_performance: "< 10ms per @PreAuthorize evaluation"
+    jwt_token_validation_performance: "< 5ms per token validation"
+    security_context_setup_performance: "< 15ms per request"
+    
+  compliance_validation:
+    racf_equivalence: "All RACF group permissions accurately mapped"
+    cobol_menu_alignment: "Security matches COADM02Y and COMEN02Y structures"
+    spring_security_best_practices: "Follows Spring Security 6.x patterns"
+    audit_trail_compliance: "All security events properly logged"
