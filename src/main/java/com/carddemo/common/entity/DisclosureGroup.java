@@ -1,12 +1,13 @@
 package com.carddemo.common.entity;
 
+import com.carddemo.common.entity.Account;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -72,7 +73,7 @@ public class DisclosureGroup implements Serializable {
      * regulatory compliance and audit trail requirements.
      */
     @Column(name = "effective_date")
-    private LocalDateTime effectiveDate;
+    private LocalDate effectiveDate;
 
     /**
      * One-to-many relationship with Account entity.
@@ -102,12 +103,12 @@ public class DisclosureGroup implements Serializable {
         this();
         this.groupId = groupId;
         this.interestRate = interestRate;
-        this.effectiveDate = LocalDateTime.now();
+        this.effectiveDate = LocalDate.now();
     }
 
     /**
      * Constructor with all fields including specific effective date.
-     * Uses LocalDateTime.of() method for precise date specification.
+     * Uses LocalDate.of() method for precise date specification.
      * 
      * @param groupId The unique group identifier
      * @param interestRate The annual interest rate
@@ -115,16 +116,14 @@ public class DisclosureGroup implements Serializable {
      * @param year The year for effective date
      * @param month The month for effective date
      * @param dayOfMonth The day for effective date  
-     * @param hour The hour for effective date
-     * @param minute The minute for effective date
      */
     public DisclosureGroup(String groupId, BigDecimal interestRate, String disclosureText,
-                          int year, int month, int dayOfMonth, int hour, int minute) {
+                          int year, int month, int dayOfMonth) {
         this();
         this.groupId = groupId;
         this.interestRate = interestRate;
         this.disclosureText = disclosureText;
-        this.effectiveDate = LocalDateTime.of(year, month, dayOfMonth, hour, minute);
+        this.effectiveDate = LocalDate.of(year, month, dayOfMonth);
     }
 
     /**
@@ -185,18 +184,18 @@ public class DisclosureGroup implements Serializable {
     /**
      * Gets the effective date for rate tracking.
      * 
-     * @return The timestamp when this rate configuration became effective
+     * @return The date when this rate configuration became effective
      */
-    public LocalDateTime getEffectiveDate() {
+    public LocalDate getEffectiveDate() {
         return effectiveDate;
     }
 
     /**
      * Sets the effective date for rate change tracking and historical analysis.
      * 
-     * @param effectiveDate The timestamp for rate effectiveness
+     * @param effectiveDate The date for rate effectiveness
      */
-    public void setEffectiveDate(LocalDateTime effectiveDate) {
+    public void setEffectiveDate(LocalDate effectiveDate) {
         this.effectiveDate = effectiveDate;
     }
 
@@ -289,7 +288,7 @@ public class DisclosureGroup implements Serializable {
         if (effectiveDate == null) {
             return true; // No effective date restriction
         }
-        return !effectiveDate.isAfter(LocalDateTime.now());
+        return !effectiveDate.isAfter(LocalDate.now());
     }
 
     /**
