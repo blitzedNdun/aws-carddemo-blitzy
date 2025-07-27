@@ -303,7 +303,7 @@
         "first_name": "BCrypt",
         "last_name": "Fourteen",
         "password_plain": "rounds14",
-        "password_hash": "$2a$14$4MS4oWUb{.vRs9.k2zYY9mMn0QxycxXsKr8.XzT8z6\.TzYi6zQsX",
+        "password_hash": "$2a$14$4MS4oWUb{.vRs9.k2zYY9mMn0QxycxXsKr8.XzT8z6.TzYi6zQsX",
         "user_type": "A",
         "bcrypt_rounds": 14,
         "hash_algorithm": "BCrypt",
@@ -322,7 +322,7 @@
         "first_name": "Legacy",
         "last_name": "Migration",
         "password_plain": "legacy01",
-        "password_hash": "$2a$12$5NT5pXVc\.wSt0.l3{ZZ0oOo9RyudzYTtLs9.Y{U9{7\.U{Zj7{RtY",
+        "password_hash": "$2a$12$5NT5pXVc.wSt0.l3{ZZ0oOo9RyudzYTtLs9.Y{U9{7.U{Zj7{RtY",
         "user_type": "U",
         "original_racf_password": "LEGACY01",
         "migration_date": "2024-01-20T00:00:00",
@@ -485,7 +485,7 @@
           "last_name": "USER",
           "user_type": "U",
           "spring_roles": ["ROLE_USER"],
-          "password_hash": "$2a$12$StdXqPTu.xOvFe.m5zYY0pPo0RxzfzZtMs8.YzV8z7\.VzZj8zStA"
+          "password_hash": "$2a$12$StdXqPTu.xOvFe.m5zYY0pPo0RxzfzZtMs8.YzV8z7.VzZj8zStA"
         },
         "migration_validation": {
           "role_mapping_correct": true,
