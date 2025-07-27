@@ -1,7 +1,7 @@
 package com.carddemo.transaction;
 
 import com.carddemo.transaction.TransactionRepository;
-import com.carddemo.common.entity.Transaction;
+import com.carddemo.transaction.Transaction;
 import com.carddemo.transaction.TransactionViewResponse;
 import com.carddemo.common.dto.BaseResponseDto;
 import com.carddemo.common.dto.AuditInfo;
@@ -421,24 +421,18 @@ public class TransactionViewService {
                 AccountDto accountInfo = new AccountDto();
                 accountInfo.setAccountId(transaction.getAccount().getAccountId());
                 accountInfo.setCurrentBalance(transaction.getAccount().getCurrentBalance());
-                // Convert Boolean active status to AccountStatus enum
-                Boolean activeStatusBool = transaction.getAccount().getActiveStatus();
-                if (activeStatusBool != null) {
-                    String activeStatusStr = Boolean.TRUE.equals(activeStatusBool) ? "Y" : "N";
-                    try {
-                        AccountStatus activeStatus = AccountStatus.fromCode(activeStatusStr);
-                        accountInfo.setActiveStatus(activeStatus);
-                    } catch (IllegalArgumentException e) {
-                        logger.warn("Invalid active status code: {}", activeStatusStr);
-                        accountInfo.setActiveStatus(AccountStatus.INACTIVE); // Default to inactive for invalid codes
-                    }
+                // Set AccountStatus directly from account entity
+                AccountStatus activeStatus = transaction.getAccount().getActiveStatus();
+                if (activeStatus != null) {
+                    accountInfo.setActiveStatus(activeStatus);
                 }
                 accountInfo.setCardNumber(transaction.getCardNumber()); // Card used for transaction
                 response.setAccountInfo(accountInfo);
                 
                 // Add customer information if available
-                // Note: Account.getCustomerId() returns customer ID directly
-                String customerIdStr = transaction.getAccount().getCustomerId();
+                // Note: Account.getCustomer().getCustomerId() returns customer ID
+                String customerIdStr = transaction.getAccount().getCustomer() != null ? 
+                    transaction.getAccount().getCustomer().getCustomerId() : null;
                 if (customerIdStr != null && !customerIdStr.trim().isEmpty()) {
                     CustomerDto customerInfo = new CustomerDto();
                     // Convert String customerId to Integer for DTO
@@ -585,8 +579,8 @@ public class TransactionViewService {
         // Map basic transaction fields
         dto.setTransactionId(transaction.getTransactionId());
         // External TransactionDTO expects enums, not strings
-        dto.setTransactionType(transaction.getTransactionTypeEnum());
-        dto.setCategoryCode(transaction.getTransactionCategoryEnum());
+        dto.setTransactionType(transaction.getTransactionType());
+        dto.setCategoryCode(transaction.getCategoryCode());
         dto.setAmount(transaction.getAmount());
         dto.setDescription(transaction.getDescription());
         dto.setCardNumber(transaction.getCardNumber());
