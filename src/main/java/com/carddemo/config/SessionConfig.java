@@ -71,6 +71,8 @@ import org.springframework.session.events.SessionExpiredEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -102,6 +104,8 @@ import org.slf4j.LoggerFactory;
  * - Provides session correlation for JWT authentication and authorization
  */
 @Configuration
+@ConditionalOnClass(RedisConnectionFactory.class)
+@ConditionalOnProperty(name = "spring.session.store-type", havingValue = "redis", matchIfMissing = true)
 @EnableRedisHttpSession(
     maxInactiveIntervalInSeconds = 1800, // 30 minutes equivalent to CICS timeout
     redisNamespace = "carddemo:session"   // Namespace isolation for multi-tenant support
@@ -290,6 +294,7 @@ public class SessionConfig {
      * @return RedisTemplate configured for session data operations
      */
     @Bean
+    @ConditionalOnBean(RedisConnectionFactory.class)
     public RedisTemplate<String, Object> sessionRedisTemplate(RedisConnectionFactory connectionFactory) {
         logger.info("Configuring Redis template for session data operations");
         
