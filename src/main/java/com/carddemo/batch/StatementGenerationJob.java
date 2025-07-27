@@ -34,6 +34,7 @@ import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.core.repository.JobRepository;
@@ -49,6 +50,7 @@ import org.springframework.batch.item.support.ListItemReader;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -136,6 +138,7 @@ public class StatementGenerationJob {
     private JobRepository jobRepository;
 
     @Autowired
+    @Qualifier("batchTransactionManager")
     private PlatformTransactionManager transactionManager;
 
     // =======================================================================
@@ -308,7 +311,10 @@ public class StatementGenerationJob {
      * 
      * @return ItemReader<StatementData> for account data retrieval
      */
-    private ItemReader<StatementData> createStatementItemReader() {
+    @Bean
+    @StepScope
+    @org.springframework.transaction.annotation.Transactional(transactionManager = "batchTransactionManager")
+    public ItemReader<StatementData> createStatementItemReader() {
         logger.info("Configuring statement item reader for account processing");
         
         // Fetch all active accounts for statement generation
