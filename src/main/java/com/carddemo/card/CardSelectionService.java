@@ -1,9 +1,9 @@
 package com.carddemo.card;
 
-import com.carddemo.common.entity.Card;
+import com.carddemo.card.Card;
 
-import com.carddemo.common.entity.Account;
-import com.carddemo.common.entity.Customer;
+import com.carddemo.account.entity.Account;
+import com.carddemo.account.entity.Customer;
 import com.carddemo.account.repository.AccountRepository;
 import com.carddemo.account.dto.AccountDto;
 import com.carddemo.account.dto.CustomerDto;
@@ -281,7 +281,7 @@ public class CardSelectionService {
         response.setMaskedCardNumber(cardEntity.getMaskedCardNumber());
         response.setEmbossedName(cardEntity.getEmbossedName());
         response.setExpirationDate(cardEntity.getExpirationDate().atStartOfDay());
-        response.setActiveStatus(cardEntity.getActiveStatus());
+        response.setActiveStatus(cardEntity.getActiveStatus().getCode());
         response.setCvvCode(cardEntity.getCvvCode());
 
         // Set account information if available
