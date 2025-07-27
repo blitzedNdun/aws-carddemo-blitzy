@@ -6,7 +6,7 @@ import jakarta.persistence.*;
  * Minimal Card entity stub for Customer.java validation testing
  * This is a temporary stub to allow Customer.java compilation and testing
  */
-@Entity
+@Entity(name = "AccountCard")
 @Table(name = "cards")
 public class Card {
     
