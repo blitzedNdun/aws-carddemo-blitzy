@@ -47,12 +47,23 @@ spring:
   application:
     name: carddemo-test
     
-  # Exclude Redis auto-configuration to avoid health check conflicts in test environment
+  # Auto-configuration exclusions for test environment (merged duplicate sections)
   autoconfigure:
     exclude:
+      # Redis auto-configuration exclusions to avoid health check conflicts in test environment
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration
       - org.springframework.boot.actuate.autoconfigure.redis.RedisHealthContributorAutoConfiguration
+      # Gateway auto-configuration exclusions for test environment
+      - org.springframework.cloud.gateway.config.GatewayAutoConfiguration
+      - org.springframework.cloud.gateway.config.GatewayClassPathWarningAutoConfiguration
+      - org.springframework.cloud.gateway.config.GatewayMetricsAutoConfiguration
+      - org.springframework.cloud.gateway.config.GatewayRedisAutoConfiguration
+      - org.springframework.cloud.gateway.config.GatewayReactiveLoadBalancerClientAutoConfiguration
+      - org.springframework.cloud.gateway.config.GatewayWebfluxEndpointConfiguration
+      - org.springframework.cloud.gateway.config.SimpleUrlHandlerMappingGlobalCorsAutoConfiguration
+      # OAuth2 security exclusions for test environment
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
     version: "1.0.0-TEST"
     description: "CardDemo Test Environment - Comprehensive Testing Configuration"
   
@@ -63,18 +74,6 @@ spring:
     allow-bean-definition-overriding: true    # Allow test bean overrides
     allow-circular-references: false          # Maintain strict dependency management
     web-application-type: servlet             # Ensure servlet stack for MockMvc testing
-
-  # Auto-configuration exclusions for test environment
-  autoconfigure:
-    exclude:
-      - org.springframework.cloud.gateway.config.GatewayAutoConfiguration
-      - org.springframework.cloud.gateway.config.GatewayClassPathWarningAutoConfiguration
-      - org.springframework.cloud.gateway.config.GatewayMetricsAutoConfiguration
-      - org.springframework.cloud.gateway.config.GatewayRedisAutoConfiguration
-      - org.springframework.cloud.gateway.config.GatewayReactiveLoadBalancerClientAutoConfiguration
-      - org.springframework.cloud.gateway.config.GatewayWebfluxEndpointConfiguration
-      - org.springframework.cloud.gateway.config.SimpleUrlHandlerMappingGlobalCorsAutoConfiguration
-      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
 
   # Test servlet configuration
   servlet:
@@ -294,9 +293,9 @@ spring:
   # =============================================================================
   # SPRING SESSION TEST CONFIGURATION
   # =============================================================================
-  # Redis session management testing configuration per Section 6.6.2.4
+  # Disable Redis session management for test environment
   session:
-    store-type: redis
+    store-type: none
     redis:
       database: 1                             # Use database 1 for session storage
       namespace: "carddemo:test:session"
