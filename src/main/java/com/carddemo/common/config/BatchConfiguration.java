@@ -412,9 +412,11 @@ public class BatchConfiguration extends DefaultBatchConfiguration {
      * Public transaction manager bean for batch job configuration.
      * Exposes the protected getTransactionManager from DefaultBatchConfiguration
      * for use in job and step configurations.
+     * 
+     * Note: Not marked as @Primary to avoid conflicts with main DatabaseConfig transactionManager.
+     * Batch jobs that need this specific transaction manager should reference it by name.
      */
     @Bean
-    @Primary
     public PlatformTransactionManager batchTransactionManager() {
         logger.info("Configuring batch transaction manager with DataSource integration");
         return getTransactionManager();
