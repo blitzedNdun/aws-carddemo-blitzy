@@ -10,15 +10,19 @@
 
 --comment: Fix disclosure_groups table schema to support transaction type prefixes
 
--- Step 1: Add transaction_type_prefix column to distinguish different transaction types
+-- Step 1: Drop the foreign key constraint from accounts table first
+-- This is blocking the unique constraint drop
+ALTER TABLE accounts DROP CONSTRAINT IF EXISTS fk_accounts_disclosure_group;
+
+-- Step 2: Add transaction_type_prefix column to distinguish different transaction types
 -- within same group and category (01xxx, 02xxx, 03xxx, etc.)
 ALTER TABLE disclosure_groups 
 ADD COLUMN IF NOT EXISTS transaction_type_prefix VARCHAR(2);
 
--- Step 2: Drop the existing primary key constraint
+-- Step 3: Drop the existing primary key constraint
 ALTER TABLE disclosure_groups DROP CONSTRAINT pk_disclosure_groups;
 
--- Step 3: Drop the problematic unique constraint on group_id alone
+-- Step 4: Drop the problematic unique constraint on group_id alone
 -- This was preventing multiple records per group_id
 ALTER TABLE disclosure_groups DROP CONSTRAINT uk_disclosure_groups_group_id;
 
