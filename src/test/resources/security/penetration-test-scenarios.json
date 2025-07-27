@@ -97,6 +97,56 @@
             "authenticationScript": "session-hijacking.py",
             "payloadFiles": ["session-tokens.txt", "session-fixation-attempts.txt"]
           }
+        },
+        {
+          "scenarioId": "AUTH-004",
+          "name": "JWT Token Validation Bypass Testing",
+          "description": "Test authentication validation endpoint for JWT token manipulation and bypass attempts",
+          "attackVector": "JWT validation endpoint exploitation",
+          "targetEndpoint": "/api/auth/validate",
+          "methodology": {
+            "step1": "Send malformed JWT tokens to validation endpoint",
+            "step2": "Test with expired, modified signature, and tampered payload tokens",
+            "step3": "Attempt validation bypass using injection in token parameters",
+            "step4": "Test rate limiting and DDoS protection on validation endpoint"
+          },
+          "expectedBehavior": "Spring Security JWT validation should reject all invalid tokens and enforce rate limiting",
+          "validationCriteria": [
+            "Malformed JWT tokens are rejected with appropriate error codes",
+            "Token signature verification prevents tampering",
+            "Expired tokens are consistently rejected",
+            "Rate limiting prevents validation endpoint abuse"
+          ],
+          "owaspZapConfiguration": {
+            "scanPolicy": "jwt-validation-scan",
+            "authenticationScript": "jwt-manipulation.py",
+            "payloadFiles": ["jwt-malformed-tokens.txt", "jwt-tampering-payloads.txt"]
+          }
+        },
+        {
+          "scenarioId": "AUTH-005",
+          "name": "Logout Session Invalidation Testing",
+          "description": "Test secure logout functionality and session invalidation mechanisms",
+          "attackVector": "Session management exploitation",
+          "targetEndpoint": "/api/auth/logout",
+          "methodology": {
+            "step1": "Authenticate and obtain valid JWT token",
+            "step2": "Call logout endpoint and capture session invalidation response",
+            "step3": "Attempt to reuse JWT token after successful logout",
+            "step4": "Test logout with invalid or expired tokens"
+          },
+          "expectedBehavior": "Logout should invalidate JWT tokens and prevent further API access",
+          "validationCriteria": [
+            "JWT tokens are blacklisted or invalidated after logout",
+            "Subsequent API calls with logged-out tokens are rejected",
+            "Logout endpoint handles invalid tokens gracefully",
+            "Session cleanup occurs on server side"
+          ],
+          "owaspZapConfiguration": {
+            "scanPolicy": "logout-validation-scan",
+            "authenticationScript": "logout-session-testing.py",
+            "payloadFiles": ["logout-token-reuse.txt", "invalid-logout-requests.txt"]
+          }
         }
       ]
     },
@@ -180,6 +230,33 @@
             "scanPolicy": "gateway-bypass-scan",
             "authenticationScript": "direct-service-access.py",
             "payloadFiles": ["internal-service-endpoints.txt", "bypass-headers.txt"]
+          }
+        },
+        {
+          "scenarioId": "AUTHZ-004",
+          "name": "User Management Authorization Testing",
+          "description": "Test role-based access control for user management operations",
+          "attackVector": "Role-based privilege escalation",
+          "targetEndpoint": "/api/users",
+          "methodology": {
+            "step1": "Authenticate with different user roles (ROLE_USER, ROLE_ADMIN)",
+            "step2": "Test GET /api/users for user enumeration restrictions",
+            "step3": "Attempt POST /api/users to create unauthorized users",
+            "step4": "Test PUT/DELETE operations on user records",
+            "step5": "Verify sensitive user data filtering based on role"
+          },
+          "expectedBehavior": "User management endpoints should enforce strict role-based access control",
+          "validationCriteria": [
+            "Regular users cannot access user listing endpoint",
+            "Only ROLE_ADMIN can perform user CRUD operations", 
+            "Sensitive user data filtered based on requester role",
+            "User creation requires administrative privileges",
+            "Audit logging captures all user management attempts"
+          ],
+          "owaspZapConfiguration": {
+            "scanPolicy": "user-management-authorization",
+            "authenticationScript": "user-role-testing.py",
+            "payloadFiles": ["user-crud-operations.txt", "role-escalation-payloads.txt"]
           }
         }
       ]
@@ -471,6 +548,34 @@
             "authenticationScript": "workflow-bypass-test.py",
             "payloadFiles": ["workflow-manipulation.txt", "state-bypass-attempts.txt"]
           }
+        },
+        {
+          "scenarioId": "BIZ-003",
+          "name": "Transaction Addition Security Testing",
+          "description": "Test transaction creation endpoint for business logic bypass and security controls",
+          "attackVector": "Transaction creation manipulation and validation bypass",
+          "targetEndpoint": "/api/transaction/add",
+          "methodology": {
+            "step1": "Authenticate with valid user credentials",
+            "step2": "Attempt to create transactions with manipulated amounts",
+            "step3": "Test for negative amount validation",
+            "step4": "Verify account balance validation before transaction",
+            "step5": "Test concurrent transaction creation for same account"
+          },
+          "expectedBehavior": "Transaction creation should enforce all business rules and security controls",
+          "validationCriteria": [
+            "Only positive transaction amounts allowed",
+            "Account balance validation prevents overdrafts",
+            "User can only create transactions for owned accounts",
+            "Concurrent transaction handling prevents race conditions",
+            "Transaction amounts use BigDecimal precision",
+            "All transaction attempts are audit logged"
+          ],
+          "owaspZapConfiguration": {
+            "scanPolicy": "transaction-creation-scan",
+            "authenticationScript": "transaction-manipulation-test.py",
+            "payloadFiles": ["negative-amounts.txt", "balance-bypass-attempts.txt"]
+          }
         }
       ]
     }
@@ -676,6 +781,378 @@
           "testingFrequency": "Annual",
           "focusAreas": ["Authentication controls", "Authorization controls", "Audit logging"]
         }
+      }
+    },
+
+    "detailedTestExecutionPlans": {
+      "authenticationTestExecution": {
+        "testPhases": [
+          {
+            "phase": "Preparation",
+            "duration": "2 hours",
+            "activities": [
+              "Environment setup and target application deployment",
+              "OWASP ZAP configuration and baseline scan",
+              "Test data preparation and user account creation",
+              "Network connectivity and endpoint discovery"
+            ],
+            "deliverables": [
+              "Test environment validation report",
+              "Baseline vulnerability scan results",
+              "Test data setup confirmation"
+            ]
+          },
+          {
+            "phase": "Authentication Testing",
+            "duration": "6 hours", 
+            "activities": [
+              "JWT token manipulation testing",
+              "Brute force attack simulation",
+              "Session hijacking and fixation testing",
+              "Multi-factor authentication bypass attempts"
+            ],
+            "deliverables": [
+              "Authentication vulnerability assessment",
+              "JWT security analysis report",
+              "Session management security findings"
+            ]
+          },
+          {
+            "phase": "Authorization Testing",
+            "duration": "4 hours",
+            "activities": [
+              "Horizontal privilege escalation testing",
+              "Vertical privilege escalation testing",
+              "Role-based access control validation",
+              "API gateway bypass attempts"
+            ],
+            "deliverables": [
+              "Authorization security assessment",
+              "RBAC configuration validation report",
+              "Privilege escalation vulnerability findings"
+            ]
+          }
+        ]
+      },
+      "injectionTestExecution": {
+        "testPhases": [
+          {
+            "phase": "SQL Injection Testing",
+            "duration": "4 hours",
+            "activities": [
+              "PostgreSQL injection point identification",
+              "JPA query parameter manipulation testing",
+              "Stored procedure injection testing", 
+              "Database schema enumeration attempts"
+            ],
+            "deliverables": [
+              "SQL injection vulnerability report",
+              "Database security assessment",
+              "JPA security configuration validation"
+            ]
+          },
+          {
+            "phase": "NoSQL Injection Testing",
+            "duration": "2 hours",
+            "activities": [
+              "Redis command injection testing",
+              "Cache key manipulation attempts",
+              "Session data injection testing"
+            ],
+            "deliverables": [
+              "NoSQL injection assessment report",
+              "Redis security configuration review"
+            ]
+          }
+        ]
+      },
+      "businessLogicTestExecution": {
+        "testPhases": [
+          {
+            "phase": "Financial Logic Testing", 
+            "duration": "6 hours",
+            "activities": [
+              "Transaction amount manipulation testing",
+              "BigDecimal precision validation",
+              "Race condition testing for balance updates",
+              "Transaction rollback mechanism validation"
+            ],
+            "deliverables": [
+              "Financial logic security assessment",
+              "Precision handling validation report",
+              "Transaction integrity analysis"
+            ]
+          },
+          {
+            "phase": "Workflow Security Testing",
+            "duration": "4 hours", 
+            "activities": [
+              "Business workflow bypass testing",
+              "State transition validation",
+              "Multi-step process manipulation",
+              "Concurrent workflow execution testing"
+            ],
+            "deliverables": [
+              "Workflow security assessment",
+              "Business rule validation report",
+              "Process integrity findings"
+            ]
+          }
+        ]
+      }
+    },
+
+    "securityTestingToolConfiguration": {
+      "owaspZapAdvancedConfiguration": {
+        "spiderConfiguration": {
+          "maxDepth": 5,
+          "maxChildren": 100,
+          "requestDelay": 500,
+          "maxDuration": 30,
+          "acceptCookies": true,
+          "handleParametersViaGET": true,
+          "userAgent": "OWASP ZAP 2.16.1 CardDemo Security Testing"
+        },
+        "activeScanConfiguration": {
+          "policyDefinitions": {
+            "authenticationScan": {
+              "injectionRules": ["SQL Injection", "Cross Site Scripting (Persistent)", "Cross Site Scripting (Reflected)"],
+              "authenticationRules": ["Authentication Bypass", "Session Management", "Weak Authentication Method"],
+              "attackStrength": "HIGH",
+              "alertThreshold": "LOW"
+            },
+            "authorizationScan": {
+              "accessControlRules": ["Forced Browse", "Information Disclosure", "Improper Access Control"],
+              "authorizationRules": ["Authorization Bypass", "Privilege Escalation"],
+              "attackStrength": "HIGH",
+              "alertThreshold": "MEDIUM"
+            },
+            "comprehensiveScan": {
+              "allRules": true,
+              "attackStrength": "INSANE",
+              "alertThreshold": "LOW",
+              "maxScanDuration": 120
+            }
+          }
+        },
+        "reportingConfiguration": {
+          "reportFormats": ["HTML", "XML", "JSON", "MD"],
+          "reportSections": [
+            "Executive Summary",
+            "Vulnerability Details",
+            "Risk Assessment", 
+            "Remediation Recommendations",
+            "Technical Details",
+            "Compliance Mapping"
+          ],
+          "customReportFields": [
+            "Business Impact Assessment",
+            "COBOL Transformation Specific Findings",
+            "Spring Security Configuration Issues",
+            "PCI DSS Compliance Status"
+          ]
+        }
+      },
+      "additionalSecurityTools": {
+        "burpSuite": {
+          "version": "2024.1",
+          "extensions": [
+            "JWT Editor",
+            "Param Miner",
+            "Active Scan++",
+            "Spring Boot Actuator Extension"
+          ],
+          "scanConfiguration": {
+            "crawlAndAuditMode": "thorough",
+            "injectionPoints": ["parameters", "headers", "cookies", "body"],
+            "passiveScanning": true,
+            "activeScanAccuracy": "normal"
+          }
+        },
+        "nikto": {
+          "version": "2.5.0",
+          "scanOptions": [
+            "-h https://carddemo-api-gateway:8080",
+            "-Tuning 1,2,3,4,5,6,7,8,9,a,b,c",
+            "-Format htm",
+            "-output nikto-scan-results.html"
+          ]
+        },
+        "nuclei": {
+          "version": "3.1.0",
+          "templateCategories": [
+            "cves",
+            "exposures", 
+            "misconfiguration",
+            "takeovers",
+            "vulnerabilities"
+          ],
+          "customTemplates": [
+            "spring-boot-actuator-exposure.yaml",
+            "jwt-secrets-exposure.yaml",
+            "postgresql-default-creds.yaml"
+          ]
+        }
+      }
+    },
+
+    "riskAssessmentFramework": {
+      "vulnerabilityScoring": {
+        "cvssV3": {
+          "baseScore": {
+            "attackVector": ["Network", "Adjacent", "Local", "Physical"],
+            "attackComplexity": ["Low", "High"],
+            "privilegesRequired": ["None", "Low", "High"],
+            "userInteraction": ["None", "Required"],
+            "scope": ["Unchanged", "Changed"],
+            "confidentialityImpact": ["None", "Low", "High"],
+            "integrityImpact": ["None", "Low", "High"],
+            "availabilityImpact": ["None", "Low", "High"]
+          },
+          "temporalScore": {
+            "exploitCodeMaturity": ["Not Defined", "Unproven", "Proof-of-Concept", "Functional", "High"],
+            "remediationLevel": ["Not Defined", "Official Fix", "Temporary Fix", "Workaround", "Unavailable"],
+            "reportConfidence": ["Not Defined", "Unknown", "Reasonable", "Confirmed"]
+          }
+        },
+        "businessImpactAssessment": {
+          "financialImpact": ["Low", "Medium", "High", "Critical"],
+          "reputationalImpact": ["Low", "Medium", "High", "Critical"],
+          "regulatoryImpact": ["Low", "Medium", "High", "Critical"],
+          "operationalImpact": ["Low", "Medium", "High", "Critical"]
+        }
+      },
+      "riskPrioritization": {
+        "criticalVulnerabilities": {
+          "criteria": [
+            "CVSS score >= 9.0",
+            "Remote code execution capability",
+            "Authentication bypass potential",
+            "Financial data exposure risk"
+          ],
+          "responseTime": "4 hours",
+          "escalationRequired": true
+        },
+        "highVulnerabilities": {
+          "criteria": [
+            "CVSS score 7.0-8.9",
+            "Privilege escalation potential",
+            "Sensitive data exposure",
+            "Business logic bypass"
+          ],
+          "responseTime": "24 hours",
+          "escalationRequired": false
+        },
+        "mediumVulnerabilities": {
+          "criteria": [
+            "CVSS score 4.0-6.9",
+            "Information disclosure",
+            "Denial of service potential",
+            "Configuration weaknesses"
+          ],
+          "responseTime": "72 hours",
+          "escalationRequired": false
+        }
+      }
+    },
+
+    "continuousSecurityMonitoring": {
+      "realTimeSecurityAlerts": {
+        "authenticationFailures": {
+          "thresholds": {
+            "warningLevel": "10 failures per minute",
+            "criticalLevel": "50 failures per minute"
+          },
+          "responseActions": [
+            "Account lockout after 3 consecutive failures",
+            "IP blocking after 10 failures from same source",
+            "Security team notification for critical level",
+            "Automated incident creation for investigation"
+          ]
+        },
+        "suspiciousAPIActivity": {
+          "indicators": [
+            "Rapid sequential API calls from single IP",
+            "Unusual request patterns outside normal business hours",
+            "High-volume data extraction attempts",
+            "Repeated authorization failure patterns"
+          ],
+          "responseActions": [
+            "Rate limiting enforcement",
+            "API key suspension for repeated violations",
+            "Security incident escalation",
+            "Forensic logging activation"
+          ]
+        }
+      },
+      "securityMetricsDashboard": {
+        "authenticationMetrics": {
+          "successRate": "Percentage of successful authentications",
+          "failurePatterns": "Analysis of authentication failure types",
+          "sessionDuration": "Average and median session durations",
+          "concurrentSessions": "Peak concurrent session counts"
+        },
+        "authorizationMetrics": {
+          "accessDenialRate": "Percentage of access denial events",
+          "privilegeEscalationAttempts": "Count of detected escalation attempts",
+          "roleValidationErrors": "Frequency of role validation failures",
+          "adminFunctionAccess": "Tracking of administrative function usage"
+        },
+        "securityIncidentMetrics": {
+          "vulnerabilityDetection": "Rate of new vulnerability discovery",
+          "patchingTimeToResolution": "Average time from detection to remediation",
+          "falsePositiveRate": "Percentage of false security alerts",
+          "securityTestCoverage": "Percentage of application covered by security tests"
+        }
+      }
+    },
+
+    "incidentResponsePlaybooks": {
+      "authenticationCompromise": {
+        "detectionCriteria": [
+          "Multiple failed authentication attempts",
+          "Successful login from unusual location",
+          "JWT token manipulation detected",
+          "Session hijacking indicators"
+        ],
+        "immediateActions": [
+          "Suspend affected user accounts",
+          "Invalidate all active sessions for compromised accounts",
+          "Block suspicious IP addresses",
+          "Preserve forensic evidence"
+        ],
+        "investigationSteps": [
+          "Analyze authentication logs for attack patterns",
+          "Review network traffic for malicious activity",
+          "Validate JWT token integrity and sources",
+          "Assess scope of potential data exposure"
+        ],
+        "recoveryProcedures": [
+          "Force password reset for affected accounts",
+          "Re-enable accounts after security validation",
+          "Update security policies based on lessons learned",
+          "Conduct post-incident security assessment"
+        ]
+      },
+      "dataExfiltrationSuspicion": {
+        "detectionCriteria": [
+          "Large volume data export requests",
+          "Access to sensitive endpoints outside normal patterns",
+          "Database query performance anomalies",
+          "Unusual API response sizes"
+        ],
+        "containmentActions": [
+          "Temporarily restrict API access for affected accounts",
+          "Enable enhanced logging for suspicious activities",
+          "Monitor network traffic for data transmission",
+          "Coordinate with database administrators"
+        ],
+        "forensicAnalysis": [
+          "Database access log analysis",
+          "API call pattern investigation",
+          "Network traffic inspection",
+          "File integrity monitoring review"
+        ]
       }
     }
   }
