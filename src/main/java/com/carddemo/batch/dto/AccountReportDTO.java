@@ -1,6 +1,6 @@
 package com.carddemo.batch.dto;
 
-import com.carddemo.common.entity.Account;
+import com.carddemo.account.entity.Account;
 import com.carddemo.common.util.BigDecimalUtils;
 import com.carddemo.common.util.DateUtils;
 import java.math.BigDecimal;
