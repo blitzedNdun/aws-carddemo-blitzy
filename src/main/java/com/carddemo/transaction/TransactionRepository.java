@@ -1,5 +1,6 @@
 package com.carddemo.transaction;
 
+import com.carddemo.common.entity.Transaction;
 import com.carddemo.common.enums.TransactionType;
 import com.carddemo.common.enums.TransactionCategory;
 
@@ -181,7 +182,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, String
      * @param transactionCategory The transaction category for balance calculation
      * @return Optional containing the calculated balance, or empty if no transactions exist
      */
-    @Query("SELECT COALESCE(SUM(CASE WHEN t.transactionType IN ('PU', 'ON', 'RP', 'CA', 'CB', 'AF', 'LF', 'OF', 'IN', 'BT') THEN t.amount ELSE -t.amount END), 0) FROM Transaction t WHERE t.account.accountId = :accountId AND t.categoryCode = :transactionCategory")
+    @Query("SELECT COALESCE(SUM(CASE WHEN t.transactionType.transactionType IN ('PU', 'ON', 'RP', 'CA', 'CB', 'AF', 'LF', 'OF', 'IN', 'BT') THEN t.amount ELSE -t.amount END), 0) FROM Transaction t WHERE t.account.accountId = :accountId AND t.categoryCode = :transactionCategory")
     Optional<BigDecimal> findCategoryBalanceByAccountAndCategory(@Param("accountId") String accountId, @Param("transactionCategory") TransactionCategory transactionCategory);
 
     /**
@@ -228,7 +229,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, String
      * @param endDate The end date for summation (inclusive)
      * @return The sum of transaction amounts for the account within the date range, or zero if none
      */
-    @Query("SELECT COALESCE(SUM(CASE WHEN t.transactionType IN ('PU', 'ON', 'RP', 'CA', 'CB', 'AF', 'LF', 'OF', 'IN', 'BT') THEN t.amount ELSE -t.amount END), 0) FROM Transaction t WHERE t.account.accountId = :accountId AND t.processingTimestamp >= :startDate AND t.processingTimestamp <= :endDate")
+    @Query("SELECT COALESCE(SUM(CASE WHEN t.transactionType.transactionType IN ('PU', 'ON', 'RP', 'CA', 'CB', 'AF', 'LF', 'OF', 'IN', 'BT') THEN t.amount ELSE -t.amount END), 0) FROM Transaction t WHERE t.account.accountId = :accountId AND t.processingTimestamp >= :startDate AND t.processingTimestamp <= :endDate")
     BigDecimal sumAmountByAccountIdAndDateRange(@Param("accountId") String accountId, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
     /**
