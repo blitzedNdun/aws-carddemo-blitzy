@@ -46,6 +46,13 @@ spring:
   # Application identification for test environment
   application:
     name: carddemo-test
+    
+  # Exclude Redis auto-configuration to avoid health check conflicts in test environment
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.redis.RedisHealthContributorAutoConfiguration
     version: "1.0.0-TEST"
     description: "CardDemo Test Environment - Comprehensive Testing Configuration"
   
