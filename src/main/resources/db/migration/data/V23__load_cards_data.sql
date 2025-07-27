@@ -8,9 +8,8 @@
 -- Migration Type: DATA LOADING with Luhn algorithm validation, CVV security, and cross-reference integration
 -- ==============================================================================
 
---liquibase formatted sql
-
---changeset blitzy-agent:load-cards-data-v23
+-- This file is now included via XML changeset in liquibase-changelog.xml
+-- Liquibase-specific comments have been moved to the XML changeset definition
 --comment: Load card data from carddata.txt and cardxref.txt with 16-digit card_number primary key, Luhn algorithm validation, composite foreign key relationships, CVV security formatting, and cross-reference functionality
 
 -- =============================================================================
@@ -95,7 +94,7 @@ INSERT INTO temp_load_statistics (total_carddata_records, total_cardxref_records
 
 -- Load raw card data from carddata.txt using optimized bulk loading
 -- Format: card_number(16) + padding(8) + customer_id(3) + cvv(3) + embossed_name(50) + expiration_date(10) + active_status(1)
-\echo 'Loading card data from carddata.txt...'
+RAISE NOTICE 'Loading card data from carddata.txt...';
 
 -- Insert card records from carddata.txt with exact line preservation
 INSERT INTO temp_carddata_raw (raw_data) VALUES
@@ -160,7 +159,7 @@ SET total_carddata_records = (SELECT COUNT(*) FROM temp_carddata_raw);
 
 -- Load raw cross-reference data from cardxref.txt
 -- Format: card_number(16) + account_id(11) + customer_id(7)
-\echo 'Loading card cross-reference data from cardxref.txt...'
+RAISE NOTICE 'Loading card cross-reference data from cardxref.txt...';
 
 -- Insert cross-reference records from cardxref.txt with exact format preservation
 INSERT INTO temp_cardxref_raw (raw_data) VALUES
@@ -223,7 +222,7 @@ SET total_cardxref_records = (SELECT COUNT(*) FROM temp_cardxref_raw);
 -- PHASE 4: Parse and Validate carddata.txt Records
 -- =============================================================================
 
-\echo 'Parsing and validating carddata.txt records...'
+RAISE NOTICE 'Parsing and validating carddata.txt records...';
 
 -- Parse carddata.txt records with comprehensive field extraction and validation
 INSERT INTO temp_cards_parsed (
@@ -310,7 +309,7 @@ SET
     luhn_validation_failures = (SELECT COUNT(*) FROM temp_cards_parsed WHERE luhn_valid = FALSE);
 
 -- Log carddata validation summary
-\echo 'Carddata validation summary:'
+RAISE NOTICE 'Carddata validation summary:';
 SELECT 
     COUNT(*) AS total_records,
     COUNT(*) FILTER (WHERE is_valid = TRUE) AS valid_records,
@@ -322,7 +321,7 @@ FROM temp_cards_parsed;
 -- PHASE 5: Parse and Validate cardxref.txt Records
 -- =============================================================================
 
-\echo 'Parsing and validating cardxref.txt records...'
+RAISE NOTICE 'Parsing and validating cardxref.txt records...';
 
 -- Parse cardxref.txt records with comprehensive field extraction and validation
 INSERT INTO temp_cardxref_parsed (
@@ -375,7 +374,7 @@ UPDATE temp_load_statistics
 SET valid_cardxref_records = (SELECT COUNT(*) FROM temp_cardxref_parsed WHERE is_valid = TRUE);
 
 -- Log cardxref validation summary
-\echo 'Cardxref validation summary:'
+RAISE NOTICE 'Cardxref validation summary:';
 SELECT 
     COUNT(*) AS total_records,
     COUNT(*) FILTER (WHERE is_valid = TRUE) AS valid_records,
@@ -386,7 +385,7 @@ FROM temp_cardxref_parsed;
 -- PHASE 6: Cross-Reference Integration and Foreign Key Validation
 -- =============================================================================
 
-\echo 'Integrating carddata with cardxref and validating foreign key relationships...'
+RAISE NOTICE 'Integrating carddata with cardxref and validating foreign key relationships...';
 
 -- Create final card records by joining carddata with cardxref
 INSERT INTO temp_cards_final (
@@ -425,7 +424,7 @@ SET
     loaded_records = (SELECT COUNT(*) FROM temp_cards_final WHERE validation_status = 'VALID');
 
 -- Log foreign key validation summary
-\echo 'Foreign key validation summary:'
+RAISE NOTICE 'Foreign key validation summary:';
 SELECT 
     validation_status,
     COUNT(*) AS record_count
@@ -437,7 +436,7 @@ ORDER BY validation_status;
 -- PHASE 7: Final Data Loading into cards Table
 -- =============================================================================
 
-\echo 'Loading validated card records into cards table...'
+RAISE NOTICE 'Loading validated card records into cards table...';
 
 -- Insert valid card records into the cards table with comprehensive audit trail
 INSERT INTO cards (
@@ -474,7 +473,7 @@ SET
 -- PHASE 8: Data Loading Summary and Audit Report
 -- =============================================================================
 
-\echo 'Card data loading completed. Generating summary report...'
+RAISE NOTICE 'Card data loading completed. Generating summary report...';
 
 -- Generate comprehensive loading summary
 SELECT 
@@ -527,7 +526,7 @@ SELECT
 FROM temp_load_statistics;
 
 -- Verify loaded data integrity
-\echo 'Verifying loaded card data integrity...'
+RAISE NOTICE 'Verifying loaded card data integrity...';
 
 SELECT 
     'Data Integrity Verification' AS verification_section,
@@ -572,7 +571,7 @@ FROM (
 ) status_counts;
 
 -- Refresh materialized view for cross-reference functionality
-\echo 'Refreshing cards cross-reference materialized view...'
+RAISE NOTICE 'Refreshing cards cross-reference materialized view...';
 REFRESH MATERIALIZED VIEW CONCURRENTLY mv_cards_cross_reference;
 
 -- Log successful completion with security notice
@@ -580,16 +579,13 @@ SELECT
     'SUCCESS: Card data loading completed successfully' AS status,
     'SECURITY NOTICE: CVV codes loaded - ensure proper access controls in production' AS security_note;
 
---rollback DELETE FROM cards; REFRESH MATERIALIZED VIEW CONCURRENTLY mv_cards_cross_reference;
-
---comment: Card data successfully loaded from carddata.txt and cardxref.txt with Luhn validation and cross-reference integration
+-- Card data successfully loaded from carddata.txt and cardxref.txt with Luhn validation and cross-reference integration
 
 -- =============================================================================
 -- PHASE 9: Performance Optimization and Index Utilization Verification
 -- =============================================================================
 
---changeset blitzy-agent:verify-cards-indexes-v23
---comment: Verify performance indexes are properly utilized after data loading
+-- Verify performance indexes are properly utilized after data loading
 
 -- Analyze table statistics for query optimization
 ANALYZE cards;
@@ -598,7 +594,7 @@ ANALYZE cards;
 ANALYZE mv_cards_cross_reference;
 
 -- Verify index usage and performance
-\echo 'Verifying card table index performance...'
+RAISE NOTICE 'Verifying card table index performance...';
 
 -- Check primary key distribution
 SELECT 
@@ -625,16 +621,13 @@ SELECT
     MIN(expiration_date)::TEXT || ' to ' || MAX(expiration_date)::TEXT
 FROM cards;
 
---rollback: No rollback needed for analysis
-
---comment: Card data indexes verified and optimized for performance
+-- Card data indexes verified and optimized for performance
 
 -- =============================================================================
 -- SUCCESS CONFIRMATION
 -- =============================================================================
 
---changeset blitzy-agent:cards-data-loading-completion-v23
---comment: Confirm successful completion of cards data loading with all validations
+-- Confirm successful completion of cards data loading with all validations
 
 -- Final success confirmation with comprehensive status
 SELECT 'CardDemo Migration V23: Cards data loading completed successfully with:' AS status
@@ -664,9 +657,8 @@ SELECT '  ✓ Spring Boot JPA integration ready with populated data'
 UNION ALL
 SELECT '  ✓ Microservices architecture support enabled with comprehensive card management';
 
---rollback SELECT 'Cards data loading rollback completed' AS status;
-
---comment: Cards data migration V23 completed successfully with comprehensive validation and cross-reference integration
+-- Cards data migration V23 completed successfully with comprehensive validation and cross-reference integration
+-- Rollback directives have been moved to the XML changeset definition
 
 -- =============================================================================
 -- END OF MIGRATION
