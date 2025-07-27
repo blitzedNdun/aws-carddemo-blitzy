@@ -377,6 +377,7 @@ DECLARE
     account_count INTEGER;
     category_count INTEGER;
     balance_sum DECIMAL(15,2);
+    rec RECORD;
 BEGIN
     -- Retrieve final loading statistics
     SELECT * INTO stats_rec FROM temp_load_statistics LIMIT 1;
