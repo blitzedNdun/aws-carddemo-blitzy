@@ -1,0 +1,76 @@
+# Maven build directories and artifacts
+target/
+*.jar
+*.war
+*.ear
+*.class
+
+# Spring Boot specific
+/logs/
+/log/
+*.log
+*.log.*
+
+# IDE files
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.eclipse/
+.metadata/
+.settings/
+.project
+.classpath
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Java specific
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+hs_err_pid*
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Database files (if any local databases)
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment specific
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Node modules (if any frontend assets)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker
+.dockerignore
+
+# Testing
+/test-results/
+/coverage/
+/.coverage
