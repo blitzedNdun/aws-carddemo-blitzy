@@ -10,10 +10,8 @@
 -- Target: transaction_category_balances table with account-category composite keys
 -- ==============================================================================
 
---liquibase formatted sql
-
---changeset blitzy-agent:load-transaction-category-balances-data-v27
---comment: Load transaction category balance data from tcatbal.txt with composite primary key (account_id, transaction_category), DECIMAL(12,2) precision, and foreign key relationships to accounts and transaction_categories tables
+-- This file is now included via XML changeset in liquibase-changelog.xml
+-- Liquibase-specific comments have been moved to the XML changeset definition
 
 -- =============================================================================
 -- PHASE 1: Data Validation and Preparation
@@ -64,7 +62,7 @@ INSERT INTO temp_load_statistics (total_records) VALUES (0);
 
 -- Load raw transaction category balance data from tcatbal.txt using structured parsing
 -- Format: 12-digit record ID + 15-digit numeric field + "{" delimiter + 22-digit zero field
-\echo 'Loading transaction category balance data from tcatbal.txt...'
+-- Loading transaction category balance data from tcatbal.txt...
 
 -- Insert tcatbal.txt records with exact line preservation for audit purposes
 -- Record format: record_id(12)numeric_field(15){zero_field(22)
@@ -128,7 +126,7 @@ UPDATE temp_load_statistics SET total_records = (SELECT COUNT(*) FROM temp_tcatb
 -- =============================================================================
 
 -- Parse raw tcatbal.txt data into structured fields with validation
-\echo 'Parsing tcatbal.txt data structure with field validation...'
+-- Parsing tcatbal.txt data structure with field validation...
 
 -- Extract structured fields from raw data lines using PostgreSQL string functions
 UPDATE temp_tcatbal_raw SET
@@ -178,7 +176,7 @@ $$;
 -- =============================================================================
 
 -- Process parsed data into business entities with account-category relationships
-\echo 'Processing business logic for account-category balance mapping...'
+-- Processing business logic for account-category balance mapping...
 
 -- Insert parsed records with business logic transformation
 -- Map record sequence numbers to account IDs and distribute across transaction categories
@@ -232,7 +230,7 @@ WHERE tr.processed = TRUE
 -- =============================================================================
 
 -- Comprehensive validation of parsed data against business rules and constraints
-\echo 'Validating parsed data against foreign key constraints and business rules...'
+-- Validating parsed data against foreign key constraints and business rules...
 
 -- Validate account_id foreign key relationships
 UPDATE temp_tcatbal_parsed 
@@ -282,7 +280,7 @@ UPDATE temp_load_statistics SET
 -- =============================================================================
 
 -- Load validated data into transaction_category_balances table with comprehensive error handling
-\echo 'Loading validated transaction category balance data with ACID transaction management...'
+-- Loading validated transaction category balance data with ACID transaction management...
 
 -- Clear any existing test data to ensure clean migration
 DELETE FROM transaction_category_balances 
@@ -319,7 +317,7 @@ UPDATE temp_load_statistics SET
 -- =============================================================================
 
 -- Comprehensive data quality verification and audit trail generation
-\echo 'Performing data quality verification and generating audit reports...'
+-- Performing data quality verification and generating audit reports...
 
 -- Verify foreign key constraint integrity post-loading
 DO $$
@@ -448,10 +446,7 @@ BEGIN
 END;
 $$;
 
---rollback DELETE FROM transaction_category_balances WHERE account_id IN (SELECT DISTINCT account_id FROM (VALUES ('00000000001'),('00000000002'),('00000000003'),('00000000004'),('00000000005'),('00000000006'),('00000000007'),('00000000008'),('00000000009'),('00000000010'),('00000000011'),('00000000012'),('00000000013'),('00000000014'),('00000000015'),('00000000016'),('00000000017'),('00000000018'),('00000000019'),('00000000020'),('00000000021'),('00000000022'),('00000000023'),('00000000024'),('00000000025'),('00000000026'),('00000000027'),('00000000028'),('00000000029'),('00000000030'),('00000000031'),('00000000032'),('00000000033'),('00000000034'),('00000000035'),('00000000036'),('00000000037'),('00000000038'),('00000000039'),('00000000040'),('00000000041'),('00000000042'),('00000000043'),('00000000044'),('00000000045'),('00000000046'),('00000000047'),('00000000048'),('00000000049'),('00000000050')) AS t(account_id));
-
---changeset blitzy-agent:verify-transaction-category-balances-data-integrity-v27
---comment: Verify data integrity and create supporting indexes for transaction category balances table performance optimization
+-- Data integrity verification and index creation for performance optimization
 
 -- Create performance optimization index for account-based category balance queries
 -- This index supports efficient lookup of all category balances for a specific account
@@ -532,12 +527,4 @@ BEGIN
 END;
 $$;
 
---rollback DROP INDEX IF EXISTS idx_tcatbal_audit_tracking;
---rollback DROP INDEX IF EXISTS idx_tcatbal_category_aggregation;
---rollback DROP INDEX IF EXISTS idx_tcatbal_account_lookup;
---rollback COMMENT ON COLUMN transaction_category_balances.version_number IS NULL;
---rollback COMMENT ON COLUMN transaction_category_balances.last_updated IS NULL;
---rollback COMMENT ON COLUMN transaction_category_balances.category_balance IS NULL;
---rollback COMMENT ON COLUMN transaction_category_balances.transaction_category IS NULL;
---rollback COMMENT ON COLUMN transaction_category_balances.account_id IS NULL;
---rollback COMMENT ON TABLE transaction_category_balances IS NULL;
+-- Rollback directives have been moved to the XML changeset definition
