@@ -125,15 +125,15 @@ card_number,account_id,customer_id,relationship_type,test_scenario,expected_resu
 # These records test system behavior at boundary conditions and edge cases
 
 # Minimum value testing - smallest valid identifiers
-0000000000000001,00000000001,000000001,BOUNDARY_MIN,minimum_value_validation,VALID
-0000000000000002,00000000001,000000001,BOUNDARY_MIN,minimum_value_validation,VALID
+0000000000000018,00000000001,000000001,BOUNDARY_MIN,minimum_value_validation,VALID
+0000000000000026,00000000001,000000001,BOUNDARY_MIN,minimum_value_validation,VALID
 
 # Maximum value testing - largest valid identifiers  
-9999999999999998,99999999999,999999999,BOUNDARY_MAX,maximum_value_validation,VALID
-9999999999999999,99999999999,999999999,BOUNDARY_MAX,maximum_value_validation,VALID
+9999999999999995,99999999999,999999999,BOUNDARY_MAX,maximum_value_validation,VALID
+9999999999999987,99999999999,999999999,BOUNDARY_MAX,maximum_value_validation,VALID
 
 # Leading zero preservation testing - ensuring proper handling of zero-padded IDs
-0000000000001234,00000000001,000000001,ZERO_PADDING,leading_zero_preservation,VALID
+0000000000001230,00000000001,000000001,ZERO_PADDING,leading_zero_preservation,VALID
 0000000000005678,00000000002,000000002,ZERO_PADDING,leading_zero_preservation,VALID
 
 # =============================================================================
@@ -157,16 +157,16 @@ card_number,account_id,customer_id,relationship_type,test_scenario,expected_resu
 # These records support performance testing scenarios for large dataset processing
 
 # Batch processing test data - standardized relationships for performance benchmarking
-6000000000000001,00000000010,000000010,PERFORMANCE_TEST,batch_processing_standard,VALID
-6000000000000002,00000000011,000000011,PERFORMANCE_TEST,batch_processing_standard,VALID
-6000000000000003,00000000012,000000012,PERFORMANCE_TEST,batch_processing_standard,VALID
-6000000000000004,00000000013,000000013,PERFORMANCE_TEST,batch_processing_standard,VALID
-6000000000000005,00000000014,000000014,PERFORMANCE_TEST,batch_processing_standard,VALID
-6000000000000006,00000000015,000000015,PERFORMANCE_TEST,batch_processing_standard,VALID
-6000000000000007,00000000016,000000016,PERFORMANCE_TEST,batch_processing_standard,VALID
-6000000000000008,00000000017,000000017,PERFORMANCE_TEST,batch_processing_standard,VALID
-6000000000000009,00000000018,000000018,PERFORMANCE_TEST,batch_processing_standard,VALID
-6000000000000010,00000000019,000000019,PERFORMANCE_TEST,batch_processing_standard,VALID
+6000000000000007,00000000010,000000010,PERFORMANCE_TEST,batch_processing_standard,VALID
+6000000000000015,00000000011,000000011,PERFORMANCE_TEST,batch_processing_standard,VALID
+6000000000000023,00000000012,000000012,PERFORMANCE_TEST,batch_processing_standard,VALID
+6000000000000031,00000000013,000000013,PERFORMANCE_TEST,batch_processing_standard,VALID
+6000000000000049,00000000014,000000014,PERFORMANCE_TEST,batch_processing_standard,VALID
+6000000000000056,00000000015,000000015,PERFORMANCE_TEST,batch_processing_standard,VALID
+6000000000000064,00000000016,000000016,PERFORMANCE_TEST,batch_processing_standard,VALID
+6000000000000072,00000000017,000000017,PERFORMANCE_TEST,batch_processing_standard,VALID
+6000000000000080,00000000018,000000018,PERFORMANCE_TEST,batch_processing_standard,VALID
+6000000000000098,00000000019,000000019,PERFORMANCE_TEST,batch_processing_standard,VALID
 
 # =============================================================================
 # SECTION 8: INTEGRATION TESTING SCENARIOS - Cross-service validation
@@ -174,13 +174,13 @@ card_number,account_id,customer_id,relationship_type,test_scenario,expected_resu
 # These records support microservices integration testing with complex scenarios
 
 # Multi-service relationship validation
-7000000000000001,00000000050,000000050,INTEGRATION_TEST,cross_service_validation,VALID
-7000000000000002,00000000051,000000051,INTEGRATION_TEST,cross_service_validation,VALID
-7000000000000003,00000000052,000000052,INTEGRATION_TEST,cross_service_validation,VALID
+7000000000000005,00000000050,000000050,INTEGRATION_TEST,cross_service_validation,VALID
+7000000000000013,00000000051,000000051,INTEGRATION_TEST,cross_service_validation,VALID
+7000000000000021,00000000052,000000052,INTEGRATION_TEST,cross_service_validation,VALID
 
 # Distributed transaction testing scenarios
-7000000000000004,00000000053,000000053,INTEGRATION_TEST,distributed_transaction,VALID
-7000000000000005,00000000054,000000054,INTEGRATION_TEST,distributed_transaction,VALID
+7000000000000039,00000000053,000000053,INTEGRATION_TEST,distributed_transaction,VALID
+7000000000000047,00000000054,000000054,INTEGRATION_TEST,distributed_transaction,VALID
 
 # =============================================================================
 # SECTION 9: DATA MIGRATION VALIDATION - Legacy system compatibility
