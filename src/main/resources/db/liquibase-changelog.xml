@@ -765,6 +765,21 @@ Version: 1.0
         </rollback>
     </changeSet>
     
+    <!-- V25.5: Fix Disclosure Groups Schema - Add transaction_type_prefix column -->
+    <changeSet id="V25_5__fix_disclosure_groups_schema" author="blitzy-agent">
+        <comment>Fix disclosure_groups table schema to properly accommodate multiple transaction type prefixes per group and category</comment>
+        <sqlFile path="migration/V25_5__fix_disclosure_groups_schema.sql" relativeToChangelogFile="true" splitStatements="false" stripComments="false"/>
+        <rollback>
+            -- Rollback schema changes
+            DROP INDEX IF EXISTS idx_disclosure_groups_default_group;
+            ALTER TABLE disclosure_groups DROP CONSTRAINT IF EXISTS chk_transaction_type_prefix_format;
+            ALTER TABLE disclosure_groups DROP CONSTRAINT pk_disclosure_groups_v2;
+            ALTER TABLE disclosure_groups ADD CONSTRAINT uk_disclosure_groups_group_id UNIQUE (group_id);
+            ALTER TABLE disclosure_groups ADD CONSTRAINT pk_disclosure_groups PRIMARY KEY (group_id, transaction_category);
+            ALTER TABLE disclosure_groups DROP COLUMN IF EXISTS transaction_type_prefix;
+        </rollback>
+    </changeSet>
+    
     <!-- V26: Disclosure Groups Data - Interest Rate Configuration from DISCGRP -->
     <changeSet id="V26__load_disclosure_groups_data" author="blitzy-agent">
         <comment>Load disclosure groups interest rate configuration data from DISCGRP</comment>
@@ -793,6 +808,18 @@ Version: 1.0
             COMMENT ON COLUMN disclosure_groups.transaction_category IS NULL;
             COMMENT ON COLUMN disclosure_groups.group_id IS NULL;
             COMMENT ON TABLE disclosure_groups IS NULL;
+        </rollback>
+    </changeSet>
+    
+    <!-- V26.5: Fix Accounts Disclosure Groups Foreign Key -->
+    <changeSet id="V26_5__fix_accounts_disclosure_groups_fk" author="blitzy-agent">
+        <comment>Fix accounts table foreign key to disclosure_groups after schema changes</comment>
+        <sqlFile path="migration/V26_5__fix_accounts_disclosure_groups_fk.sql" relativeToChangelogFile="true" splitStatements="false" stripComments="false"/>
+        <rollback>
+            DROP TRIGGER IF EXISTS trg_accounts_disclosure_group_validation ON accounts;
+            DROP FUNCTION IF EXISTS validate_accounts_disclosure_group_reference();
+            DROP VIEW IF EXISTS v_disclosure_groups_defaults;
+            ALTER TABLE accounts ADD CONSTRAINT fk_accounts_disclosure_group FOREIGN KEY (group_id) REFERENCES disclosure_groups(group_id);
         </rollback>
     </changeSet>
     
