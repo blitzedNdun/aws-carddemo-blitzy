@@ -13,7 +13,7 @@ import java.io.Serializable;
  * with financial balances using BigDecimal precision, account status tracking,
  * date management, and foreign key relationships to customers and disclosure groups
  */
-@Entity
+@Entity(name = "CommonAccount")
 @Table(name = "accounts")
 public class Account implements Serializable {
 
