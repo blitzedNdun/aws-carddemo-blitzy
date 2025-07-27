@@ -1,6 +1,6 @@
 package com.carddemo.transaction;
 
-import com.carddemo.common.entity.Transaction;
+import com.carddemo.transaction.Transaction;
 import com.carddemo.common.enums.TransactionType;
 import com.carddemo.common.enums.TransactionCategory;
 
