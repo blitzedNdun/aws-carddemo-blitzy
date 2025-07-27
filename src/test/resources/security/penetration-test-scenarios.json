@@ -28,7 +28,7 @@
                 "username": "testuser@carddemo.com",
                 "password": "SecureTestPass123!"
               },
-              "expectedResponse": "JWT token in response body"
+              "expectedResult": "JWT token in response body"
             },
             {
               "step": 2,
@@ -235,7 +235,8 @@
           ],
           "securityControls": [
             "Spring MVC parameter validation",
-            "Type-safe query parameters",
+            "Type-safe query parameters", 
+            "JPA prepared statements",
             "JPA repository method protection",
             "Role-based data access control"
           ]
