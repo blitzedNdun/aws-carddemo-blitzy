@@ -23,9 +23,8 @@
 -- Created: Initial data loading script for CardDemo user authentication
 -- =============================================================================
 
---liquibase formatted sql
-
---changeset CardDemo:load-initial-users-v20 splitStatements:true endDelimiter:;
+-- This file is now included via XML changeset in liquibase-changelog.xml
+-- Liquibase-specific comments have been moved to the XML changeset definition
 --comment: Load initial user accounts with BCrypt password hashing for Spring Security authentication
 
 -- =============================================================================
@@ -38,25 +37,29 @@
 -- Username: ADMIN001, Password: CardDemo!2024 (BCrypt 12 rounds)
 -- Role: Admin (ROLE_ADMIN) - Full system access including user management
 INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, created_at) VALUES
-    ('ADMIN001', '$2a$12$EIXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9lluKRuPdJN/LY0NxLe1Ma', 'A', 'System', 'Administrator', CURRENT_TIMESTAMP);
+    ('ADMIN001', '$2a$12$EIXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9lluKRuPdJN/LY0NxLe1Ma', 'A', 'System', 'Administrator', CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- Security Administrator
 -- Username: SECADMIN, Password: SecAdmin!24 (BCrypt 12 rounds)  
 -- Role: Admin (ROLE_ADMIN) - Security policy management and user administration
 INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, created_at) VALUES
-    ('SECADMIN', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqfuihgHVhk5WUjM/NUsQna', 'A', 'Security', 'Admin', CURRENT_TIMESTAMP);
+    ('SECADMIN', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqfuihgHVhk5WUjM/NUsQna', 'A', 'Security', 'Admin', CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- Database Administrator
 -- Username: DBADMIN1, Password: DbAdmin!24 (BCrypt 12 rounds)
 -- Role: Admin (ROLE_ADMIN) - Database maintenance and system configuration
 INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, created_at) VALUES
-    ('DBADMIN1', '$2a$12$x8GlHt4FqRElJDwEjD.1LexQPkJ1FXWTzZ8Ln4x1xCjU4rG4MQWnr', 'A', 'Database', 'Admin', CURRENT_TIMESTAMP);
+    ('DBADMIN1', '$2a$12$x8GlHt4FqRElJDwEjD.1LexQPkJ1FXWTzZ8Ln4x1xCjU4rG4MQWnr', 'A', 'Database', 'Admin', CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- Operations Administrator  
 -- Username: OPSADMIN, Password: OpsAdmin!24 (BCrypt 12 rounds)
 -- Role: Admin (ROLE_ADMIN) - Batch processing monitoring and system operations
 INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, created_at) VALUES
-    ('OPSADMIN', '$2a$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9lluKRuPdJN/LY0NxLe1Mt', 'A', 'Operations', 'Admin', CURRENT_TIMESTAMP);
+    ('OPSADMIN', '$2a$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9lluKRuPdJN/LY0NxLe1Mt', 'A', 'Operations', 'Admin', CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- =============================================================================
 -- CUSTOMER SERVICE REPRESENTATIVES
@@ -68,19 +71,22 @@ INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, cre
 -- Username: CSREP001, Password: CsRep2024! (BCrypt 12 rounds)
 -- Role: User (ROLE_USER) - Account/card management and customer service
 INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, created_at) VALUES
-    ('CSREP001', '$2a$12$EIXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9lluKRuPdJN/LY0NxLe1Mb', 'U', 'Sarah', 'Johnson', CURRENT_TIMESTAMP);
+    ('CSREP001', '$2a$12$EIXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9lluKRuPdJN/LY0NxLe1Mb', 'U', 'Sarah', 'Johnson', CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- Customer Service Representative
 -- Username: CSREP002, Password: CsRep2024! (BCrypt 12 rounds)
 -- Role: User (ROLE_USER) - Standard customer service operations
 INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, created_at) VALUES
-    ('CSREP002', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqfuihgHVhk5WUjM/NUsQnb', 'U', 'Michael', 'Davis', CURRENT_TIMESTAMP);
+    ('CSREP002', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqfuihgHVhk5WUjM/NUsQnb', 'U', 'Michael', 'Davis', CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- Customer Service Representative
 -- Username: CSREP003, Password: CsRep2024! (BCrypt 12 rounds)
 -- Role: User (ROLE_USER) - Customer account and transaction support
 INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, created_at) VALUES
-    ('CSREP003', '$2a$12$x8GlHt4FqRElJDwEjD.1LexQPkJ1FXWTzZ8Ln4x1xCjU4rG4MQWns', 'U', 'Jennifer', 'Wilson', CURRENT_TIMESTAMP);
+    ('CSREP003', '$2a$12$x8GlHt4FqRElJDwEjD.1LexQPkJ1FXWTzZ8Ln4x1xCjU4rG4MQWns', 'U', 'Jennifer', 'Wilson', CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- =============================================================================
 -- ACCOUNT MANAGERS AND ANALYSTS  
@@ -92,19 +98,22 @@ INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, cre
 -- Username: ACCTMGR1, Password: AcctMgr24! (BCrypt 12 rounds)
 -- Role: User (ROLE_USER) - Account management and customer relationships
 INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, created_at) VALUES
-    ('ACCTMGR1', '$2a$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9lluKRuPdJN/LY0NxLe1Mc', 'U', 'Robert', 'Anderson', CURRENT_TIMESTAMP);
+    ('ACCTMGR1', '$2a$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9lluKRuPdJN/LY0NxLe1Mc', 'U', 'Robert', 'Anderson', CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- Credit Analyst
 -- Username: ANALYST1, Password: Analyst24! (BCrypt 12 rounds)
 -- Role: User (ROLE_USER) - Credit analysis and reporting functions
 INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, created_at) VALUES
-    ('ANALYST1', '$2a$12$EIXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9lluKRuPdJN/LY0NxLe1Md', 'U', 'Lisa', 'Thompson', CURRENT_TIMESTAMP);
+    ('ANALYST1', '$2a$12$EIXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9lluKRuPdJN/LY0NxLe1Md', 'U', 'Lisa', 'Thompson', CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- Portfolio Analyst
 -- Username: ANALYST2, Password: Analyst24! (BCrypt 12 rounds)
 -- Role: User (ROLE_USER) - Portfolio analysis and card management
 INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, created_at) VALUES
-    ('ANALYST2', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqfuihgHVhk5WUjM/NUsQnd', 'U', 'David', 'Rodriguez', CURRENT_TIMESTAMP);
+    ('ANALYST2', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqfuihgHVhk5WUjM/NUsQnd', 'U', 'David', 'Rodriguez', CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- =============================================================================
 -- CARD OPERATIONS STAFF
@@ -116,19 +125,22 @@ INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, cre
 -- Username: CARDMGR1, Password: CardMgr24! (BCrypt 12 rounds)
 -- Role: User (ROLE_USER) - Card operations management and oversight
 INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, created_at) VALUES
-    ('CARDMGR1', '$2a$12$x8GlHt4FqRElJDwEjD.1LexQPkJ1FXWTzZ8Ln4x1xCjU4rG4MQWnt', 'U', 'Mary', 'Garcia', CURRENT_TIMESTAMP);
+    ('CARDMGR1', '$2a$12$x8GlHt4FqRElJDwEjD.1LexQPkJ1FXWTzZ8Ln4x1xCjU4rG4MQWnt', 'U', 'Mary', 'Garcia', CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- Card Operations Specialist
 -- Username: CARDOPS1, Password: CardOps24! (BCrypt 12 rounds)
 -- Role: User (ROLE_USER) - Card issuance and status management
 INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, created_at) VALUES
-    ('CARDOPS1', '$2a$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9lluKRuPdJN/LY0NxLe1Me', 'U', 'James', 'Martinez', CURRENT_TIMESTAMP);
+    ('CARDOPS1', '$2a$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9lluKRuPdJN/LY0NxLe1Me', 'U', 'James', 'Martinez', CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- Card Operations Specialist
 -- Username: CARDOPS2, Password: CardOps24! (BCrypt 12 rounds)
 -- Role: User (ROLE_USER) - Card maintenance and customer support
 INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, created_at) VALUES
-    ('CARDOPS2', '$2a$12$EIXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9lluKRuPdJN/LY0NxLe1Mf', 'U', 'Amanda', 'Brown', CURRENT_TIMESTAMP);
+    ('CARDOPS2', '$2a$12$EIXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9lluKRuPdJN/LY0NxLe1Mf', 'U', 'Amanda', 'Brown', CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- =============================================================================
 -- COMPLIANCE AND AUDIT STAFF
@@ -140,13 +152,15 @@ INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, cre
 -- Username: COMPLNCE, Password: Complnc24! (BCrypt 12 rounds)
 -- Role: User (ROLE_USER) - Compliance monitoring and regulatory reporting
 INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, created_at) VALUES
-    ('COMPLNCE', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqfuihgHVhk5WUjM/NUsQne', 'U', 'Patricia', 'Taylor', CURRENT_TIMESTAMP);
+    ('COMPLNCE', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqfuihgHVhk5WUjM/NUsQne', 'U', 'Patricia', 'Taylor', CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- Risk Analyst
 -- Username: RISKUSER, Password: RiskUsr24! (BCrypt 12 rounds)
 -- Role: User (ROLE_USER) - Risk analysis and monitoring functions
 INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, created_at) VALUES
-    ('RISKUSER', '$2a$12$x8GlHt4FqRElJDwEjD.1LexQPkJ1FXWTzZ8Ln4x1xCjU4rG4MQWnu', 'U', 'Christopher', 'White', CURRENT_TIMESTAMP);
+    ('RISKUSER', '$2a$12$x8GlHt4FqRElJDwEjD.1LexQPkJ1FXWTzZ8Ln4x1xCjU4rG4MQWnu', 'U', 'Christopher', 'White', CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- =============================================================================
 -- TESTING AND DEVELOPMENT USERS
@@ -158,25 +172,29 @@ INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, cre
 -- Username: TESTUSER, Password: TestUser24! (BCrypt 12 rounds)
 -- Role: User (ROLE_USER) - General testing and development activities
 INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, created_at) VALUES
-    ('TESTUSER', '$2a$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9lluKRuPdJN/LY0NxLe1Mg', 'U', 'Test', 'User', CURRENT_TIMESTAMP);
+    ('TESTUSER', '$2a$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9lluKRuPdJN/LY0NxLe1Mg', 'U', 'Test', 'User', CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- QA Test User
 -- Username: QAUSER01, Password: QaUser2024! (BCrypt 12 rounds)
 -- Role: User (ROLE_USER) - Quality assurance testing
 INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, created_at) VALUES
-    ('QAUSER01', '$2a$12$EIXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9lluKRuPdJN/LY0NxLe1Mh', 'U', 'QA', 'Tester', CURRENT_TIMESTAMP);
+    ('QAUSER01', '$2a$12$EIXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9lluKRuPdJN/LY0NxLe1Mh', 'U', 'QA', 'Tester', CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- Demo User
 -- Username: DEMOUSER, Password: DemoUser24! (BCrypt 12 rounds)
 -- Role: User (ROLE_USER) - Demonstration and training purposes
 INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, created_at) VALUES
-    ('DEMOUSER', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqfuihgHVhk5WUjM/NUsQnf', 'U', 'Demo', 'Account', CURRENT_TIMESTAMP);
+    ('DEMOUSER', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqfuihgHVhk5WUjM/NUsQnf', 'U', 'Demo', 'Account', CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- Performance Test User
 -- Username: PERFTEST, Password: PerfTest24! (BCrypt 12 rounds)
 -- Role: User (ROLE_USER) - Performance and load testing
 INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, created_at) VALUES
-    ('PERFTEST', '$2a$12$x8GlHt4FqRElJDwEjD.1LexQPkJ1FXWTzZ8Ln4x1xCjU4rG4MQWnv', 'U', 'Performance', 'Test', CURRENT_TIMESTAMP);
+    ('PERFTEST', '$2a$12$x8GlHt4FqRElJDwEjD.1LexQPkJ1FXWTzZ8Ln4x1xCjU4rG4MQWnv', 'U', 'Performance', 'Test', CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- =============================================================================
 -- OPERATIONS AND MONITORING STAFF
@@ -188,13 +206,15 @@ INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, cre
 -- Username: OPSSUP01, Password: OpsSup2024! (BCrypt 12 rounds)
 -- Role: User (ROLE_USER) - Operations supervision and batch monitoring
 INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, created_at) VALUES
-    ('OPSSUP01', '$2a$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9lluKRuPdJN/LY0NxLe1Mi', 'U', 'Operations', 'Supervisor', CURRENT_TIMESTAMP);
+    ('OPSSUP01', '$2a$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9lluKRuPdJN/LY0NxLe1Mi', 'U', 'Operations', 'Supervisor', CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- Batch Processing Operator
 -- Username: BATCHOP1, Password: BatchOp24! (BCrypt 12 rounds)
 -- Role: User (ROLE_USER) - Batch job monitoring and operations
 INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, created_at) VALUES
-    ('BATCHOP1', '$2a$12$EIXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9lluKRuPdJN/LY0NxLe1Mj', 'U', 'Batch', 'Operator', CURRENT_TIMESTAMP);
+    ('BATCHOP1', '$2a$12$EIXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9lluKRuPdJN/LY0NxLe1Mj', 'U', 'Batch', 'Operator', CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- =============================================================================
 -- GUEST AND LIMITED ACCESS USERS
@@ -205,13 +225,15 @@ INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, cre
 -- Username: GUEST001, Password: Guest2024! (BCrypt 12 rounds)
 -- Role: User (ROLE_USER) - Limited read-only access for demonstrations
 INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, created_at) VALUES
-    ('GUEST001', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqfuihgHVhk5WUjM/NUsQng', 'U', 'Guest', 'User', CURRENT_TIMESTAMP);
+    ('GUEST001', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqfuihgHVhk5WUjM/NUsQng', 'U', 'Guest', 'User', CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- Training User  
 -- Username: TRAINING, Password: Training24! (BCrypt 12 rounds)
 -- Role: User (ROLE_USER) - Training and educational purposes
 INSERT INTO users (user_id, password_hash, user_type, first_name, last_name, created_at) VALUES
-    ('TRAINING', '$2a$12$x8GlHt4FqRElJDwEjD.1LexQPkJ1FXWTzZ8Ln4x1xCjU4rG4MQWnw', 'U', 'Training', 'Account', CURRENT_TIMESTAMP);
+    ('TRAINING', '$2a$12$x8GlHt4FqRElJDwEjD.1LexQPkJ1FXWTzZ8Ln4x1xCjU4rG4MQWnw', 'U', 'Training', 'Account', CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- =============================================================================
 -- DATA VALIDATION AND VERIFICATION
