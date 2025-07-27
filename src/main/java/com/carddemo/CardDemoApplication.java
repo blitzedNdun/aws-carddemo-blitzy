@@ -3,6 +3,14 @@ package com.carddemo;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
+
+import javax.sql.DataSource;
 
 /**
  * CardDemoApplication - Main Spring Boot Application Class
@@ -118,7 +126,18 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
         "com.carddemo.common"        // Shared components and utilities
     }
 )
+@EnableJpaRepositories(
+    basePackages = {
+        "com.carddemo.auth.repository",
+        "com.carddemo.account.repository", 
+        "com.carddemo.card",
+        "com.carddemo.transaction",
+        "com.carddemo.batch.repository",
+        "com.carddemo.common.repository"
+    }
+)
 @EnableDiscoveryClient
+
 public class CardDemoApplication {
 
     /**
@@ -180,6 +199,27 @@ public class CardDemoApplication {
      * @see org.springframework.boot.autoconfigure.SpringBootApplication
      * @see org.springframework.cloud.client.discovery.EnableDiscoveryClient
      */
+    /**
+     * Test DataSource bean for test profile only.
+     * Creates a simple embedded H2 database without connection pooling to avoid JMX/MBean conflicts.
+     */
+    @Bean("dataSource")
+    @Primary
+    @Profile("test")
+    public DataSource dataSource() {
+        System.out.println("*** Creating test DataSource bean in main application class ***");
+        
+        String dbName = "testdb_" + System.currentTimeMillis();
+        DataSource dataSource = new EmbeddedDatabaseBuilder()
+                .setType(EmbeddedDatabaseType.H2)
+                .setName(dbName)
+                .continueOnError(true)
+                .build();
+        
+        System.out.println("Created embedded H2 test database: " + dbName);
+        return dataSource;
+    }
+
     public static void main(String[] args) {
         // Configure system properties for optimal performance
         configureSystemProperties();
