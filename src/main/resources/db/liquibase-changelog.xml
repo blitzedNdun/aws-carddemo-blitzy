@@ -794,6 +794,18 @@ Version: 1.0
         </rollback>
     </changeSet>
     
+    <!-- V26.2: Fix Disclosure Groups Active Unique Constraint -->
+    <changeSet id="V26_2__fix_disclosure_groups_active_unique_constraint" author="blitzy-agent">
+        <comment>Fix unique constraint on disclosure_groups to include transaction_type_prefix</comment>
+        <sqlFile path="migration/V26_2__fix_disclosure_groups_active_unique_constraint.sql" relativeToChangelogFile="true" splitStatements="false" stripComments="false"/>
+        <rollback>
+            DROP INDEX IF EXISTS idx_disclosure_groups_active_unique_v2;
+            CREATE UNIQUE INDEX idx_disclosure_groups_active_unique 
+            ON disclosure_groups (group_id, transaction_category) 
+            WHERE active_status = true;
+        </rollback>
+    </changeSet>
+    
     <!-- V26: Disclosure Groups Data - Interest Rate Configuration from DISCGRP -->
     <changeSet id="V26__load_disclosure_groups_data" author="blitzy-agent">
         <comment>Load disclosure groups interest rate configuration data from DISCGRP</comment>
