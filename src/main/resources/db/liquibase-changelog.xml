@@ -780,6 +780,20 @@ Version: 1.0
         </rollback>
     </changeSet>
     
+    <!-- V25.1: Fix Disclosure Groups Constraint Before Data Load -->
+    <changeSet id="V25_1__fix_disclosure_constraint_before_data_load" author="blitzy-agent">
+        <comment>Fix disclosure groups constraint to allow zero interest rates before data loading begins</comment>
+        <sqlFile path="migration/V25_1__fix_disclosure_constraint_before_data_load.sql" relativeToChangelogFile="true" splitStatements="false" stripComments="false"/>
+        <rollback>
+            ALTER TABLE disclosure_groups DROP CONSTRAINT IF EXISTS chk_disclosure_groups_rate_consistency;
+            ALTER TABLE disclosure_groups ADD CONSTRAINT chk_disclosure_groups_rate_consistency 
+            CHECK (
+                (group_id = 'ZEROAPR' AND interest_rate = 0.0000) OR
+                (group_id != 'ZEROAPR' AND interest_rate &gt; 0.0000)
+            );
+        </rollback>
+    </changeSet>
+    
     <!-- V26: Disclosure Groups Data - Interest Rate Configuration from DISCGRP -->
     <changeSet id="V26__load_disclosure_groups_data" author="blitzy-agent">
         <comment>Load disclosure groups interest rate configuration data from DISCGRP</comment>
