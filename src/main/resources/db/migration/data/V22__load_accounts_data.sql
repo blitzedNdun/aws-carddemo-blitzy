@@ -503,35 +503,10 @@ BEGIN
     RAISE NOTICE 'Account data loading completed successfully!';
 END $$;
 
--- Create permanent audit record for the loading operation
-INSERT INTO migration_audit_log (
-    migration_version,
-    migration_name,
-    table_name,
-    operation_type,
-    records_processed,
-    records_loaded,
-    records_failed,
-    start_time,
-    end_time,
-    duration_seconds,
-    success_status,
-    notes
-) 
-SELECT 
-    'V22',
-    'load_accounts_data',
-    'accounts',
-    'DATA_LOAD',
-    total_records,
-    loaded_records,
-    invalid_records,
-    start_time,
-    end_time,
-    EXTRACT(EPOCH FROM (end_time - start_time)),
-    CASE WHEN loaded_records = valid_records THEN TRUE ELSE FALSE END,
-    'Loaded account data from acctdata.txt with DECIMAL(12,2) precision and foreign key validation'
-FROM temp_load_statistics;
+-- Audit logging commented out until migration_audit_log table is created
+-- Future enhancement: Create migration_audit_log table in earlier migration
+-- INSERT INTO migration_audit_log (migration_version, migration_name, table_name, operation_type, ...)
+-- SELECT 'V22', 'load_accounts_data', 'accounts', 'DATA_LOAD', ... FROM temp_load_statistics;
 
 -- =============================================================================
 -- PHASE 10: Cleanup and Final Verification
