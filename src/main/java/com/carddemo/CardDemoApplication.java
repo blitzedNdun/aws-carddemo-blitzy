@@ -7,7 +7,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
 
@@ -127,22 +127,11 @@ import javax.sql.DataSource;
         "com.carddemo.common"        // Shared components and utilities
     }
 )
-@EnableJpaRepositories(
-    basePackages = {
-        "com.carddemo.auth.repository",
-        "com.carddemo.account.repository", 
-        "com.carddemo.card",
-        "com.carddemo.transaction",
-        "com.carddemo.batch.repository",
-        "com.carddemo.common.repository"
-    }
-)
+
 @EntityScan(
     basePackages = {
         "com.carddemo.auth.entity",
         "com.carddemo.account.entity",
-        "com.carddemo.card",
-        "com.carddemo.transaction",
         "com.carddemo.batch.entity",
         "com.carddemo.common.entity"
     }
