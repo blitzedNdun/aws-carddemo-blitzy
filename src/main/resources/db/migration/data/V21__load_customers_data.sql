@@ -6,9 +6,8 @@
 -- Migration Type: DATA LOADING with comprehensive customer profile management
 -- ==============================================================================
 
---liquibase formatted sql
-
---changeset blitzy-agent:load-customers-data-v21
+-- This file is now included via XML changeset in liquibase-changelog.xml
+-- Liquibase-specific comments have been moved to the XML changeset definition
 --comment: Load customer data from custdata.txt with exact 312-character fixed-width record parsing, 9-digit customer_id structure, normalized address fields, dual phone numbers, PII handling, and FICO score validation
 
 -- =============================================================================
@@ -18,7 +17,7 @@
 -- Create temporary working table for data parsing and validation
 CREATE TEMPORARY TABLE temp_custdata_raw (
     line_number SERIAL,
-    raw_data VARCHAR(312) NOT NULL,
+    raw_data VARCHAR(340) NOT NULL,
     processed BOOLEAN DEFAULT FALSE
 );
 
@@ -202,7 +201,7 @@ SELECT
     END as fico_credit_score
     
 FROM temp_custdata_raw
-WHERE LENGTH(raw_data) = 312;  -- Ensure exact 312-character format
+WHERE LENGTH(raw_data) = 332;  -- Ensure exact 332-character format (excluding newline)
 
 -- =============================================================================
 -- PHASE 4: Comprehensive Data Validation and Error Handling
@@ -472,9 +471,7 @@ DROP TABLE temp_custdata_raw;
 DROP TABLE temp_customers_parsed;
 DROP TABLE temp_load_statistics;
 
---rollback DELETE FROM customers WHERE created_at >= (SELECT MIN(created_at) FROM customers WHERE customer_id BETWEEN '000000001' AND '000000050');
-
---changeset blitzy-agent:verify-customers-data-load-v21
+-- Data load verification and integrity checks
 --comment: Verify customer data loading results and generate summary statistics
 
 -- Generate data loading verification report
@@ -503,4 +500,4 @@ BEGIN
     RAISE NOTICE '  Data loading verification completed successfully.';
 END $$;
 
---rollback SELECT 'Verification rollback completed' as status;
+-- Rollback directives have been moved to the XML changeset definition
