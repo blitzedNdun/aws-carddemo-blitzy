@@ -159,24 +159,26 @@ SELECT
     SUBSTRING(tar.raw_data, 12, 1) as active_status_char,
     -- Extract 9-digit customer_id from positions 13-21
     SUBSTRING(tar.raw_data, 13, 9) as customer_id,
-    -- Parse monetary fields using "{" as delimiter and convert from cents to DECIMAL
-    -- Split by "{" and extract current_balance (field 2)
-    CAST(split_part(SUBSTRING(tar.raw_data, 22), '{', 1) AS BIGINT) as current_balance_cents,
-    -- Extract credit_limit (field 3) 
-    CAST(split_part(SUBSTRING(tar.raw_data, 22), '{', 2) AS BIGINT) as credit_limit_cents,
-    -- Extract cash_credit_limit (field 4) - need to get first 11 characters
-    CAST(LEFT(split_part(SUBSTRING(tar.raw_data, 22), '{', 3), 11) AS BIGINT) as cash_credit_limit_cents,
-    -- Extract dates from the combined field (after cash_credit_limit)
-    -- The dates start after the first 11 characters of field 4
-    SUBSTRING(split_part(SUBSTRING(tar.raw_data, 22), '{', 3), 12, 10) as open_date_str,
-    SUBSTRING(split_part(SUBSTRING(tar.raw_data, 22), '{', 3), 22, 10) as expiration_date_str,
-    SUBSTRING(split_part(SUBSTRING(tar.raw_data, 22), '{', 3), 32, 10) as reissue_date_str,
-    -- Extract current_cycle_credit (last 11 characters of field 4)
-    CAST(RIGHT(split_part(SUBSTRING(tar.raw_data, 22), '{', 3), 11) AS BIGINT) as current_cycle_credit_cents,
-    -- Extract current_cycle_debit (field 5)
-    CAST(split_part(SUBSTRING(tar.raw_data, 22), '{', 4) AS BIGINT) as current_cycle_debit_cents,
-    -- Extract group_id (field 6) - trim whitespace
-    TRIM(split_part(SUBSTRING(tar.raw_data, 22), '{', 5)) as group_id
+    -- Parse using position-based extraction to handle embedded delimiters
+    -- current_balance: positions 22-32 (11 chars)
+    CAST(SUBSTRING(tar.raw_data, 22, 11) AS BIGINT) as current_balance_cents,
+    -- credit_limit: positions 34-44 (11 chars, skip delimiter at 33)
+    CAST(SUBSTRING(tar.raw_data, 34, 11) AS BIGINT) as credit_limit_cents,
+    -- cash_credit_limit: positions 46-56 (11 chars, skip delimiter at 45)
+    CAST(SUBSTRING(tar.raw_data, 46, 11) AS BIGINT) as cash_credit_limit_cents,
+    -- Dates are embedded in field 3 without delimiters: positions 57-86 (30 chars)
+    -- open_date: positions 57-66 (10 chars)
+    SUBSTRING(tar.raw_data, 57, 10) as open_date_str,
+    -- expiration_date: positions 67-76 (10 chars)
+    SUBSTRING(tar.raw_data, 67, 10) as expiration_date_str,
+    -- reissue_date: positions 77-86 (10 chars)
+    SUBSTRING(tar.raw_data, 77, 10) as reissue_date_str,
+    -- current_cycle_credit: positions 87-97 (11 chars)
+    CAST(SUBSTRING(tar.raw_data, 87, 11) AS BIGINT) as current_cycle_credit_cents,
+    -- current_cycle_debit: positions 99-109 (11 chars, skip delimiter at 98)
+    CAST(SUBSTRING(tar.raw_data, 99, 11) AS BIGINT) as current_cycle_debit_cents,
+    -- group_id: positions 111-120 (10 chars, skip delimiter at 110)
+    TRIM(SUBSTRING(tar.raw_data, 111, 10)) as group_id
 FROM temp_acctdata_raw tar
 WHERE NOT tar.processed;
 
