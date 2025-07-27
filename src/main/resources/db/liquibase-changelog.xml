@@ -837,6 +837,22 @@ Version: 1.0
         </rollback>
     </changeSet>
     
+    <!-- V26.7: Fix Disclosure Groups Constraint Logic -->
+    <changeSet id="V26_7__fix_disclosure_groups_constraint_logic" author="blitzy-agent">
+        <comment>Fix disclosure groups rate consistency constraint with simplified logic for payment and credit transactions</comment>
+        <sqlFile path="migration/V26_7__fix_disclosure_groups_constraint_logic.sql" relativeToChangelogFile="true" splitStatements="false" stripComments="false"/>
+        <rollback>
+            ALTER TABLE disclosure_groups DROP CONSTRAINT IF EXISTS chk_disclosure_groups_rate_consistency;
+            ALTER TABLE disclosure_groups ADD CONSTRAINT chk_disclosure_groups_rate_consistency 
+            CHECK (
+                (group_id = 'ZEROAPR' AND interest_rate = 0.0000) OR
+                (transaction_type_prefix = '02' AND interest_rate = 0.0000) OR
+                (transaction_type_prefix = '03' AND interest_rate = 0.0000) OR
+                (group_id != 'ZEROAPR' AND transaction_type_prefix NOT IN ('02', '03') AND interest_rate > 0.0000)
+            );
+        </rollback>
+    </changeSet>
+    
     <!-- V27: Transaction Category Balances Data - Account Balance Categories from TCATBAL -->
     <changeSet id="V27__load_transaction_category_balances_data" author="blitzy-agent">
         <comment>Load transaction category balance data from tcatbal.txt with composite primary key (account_id, transaction_category), DECIMAL(12,2) precision, and foreign key relationships to accounts and transaction_categories tables</comment>
