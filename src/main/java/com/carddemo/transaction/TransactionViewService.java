@@ -1,7 +1,7 @@
 package com.carddemo.transaction;
 
 import com.carddemo.transaction.TransactionRepository;
-import com.carddemo.transaction.Transaction;
+import com.carddemo.common.entity.Transaction;
 import com.carddemo.transaction.TransactionViewResponse;
 import com.carddemo.common.dto.BaseResponseDto;
 import com.carddemo.common.dto.AuditInfo;
@@ -421,10 +421,11 @@ public class TransactionViewService {
                 AccountDto accountInfo = new AccountDto();
                 accountInfo.setAccountId(transaction.getAccount().getAccountId());
                 accountInfo.setCurrentBalance(transaction.getAccount().getCurrentBalance());
-                // Convert String active status to AccountStatus enum
-                String activeStatusStr = transaction.getAccount().getActiveStatus();
-                if (activeStatusStr != null && !activeStatusStr.trim().isEmpty()) {
+                // Convert Boolean active status to AccountStatus enum
+                Boolean activeStatusBool = transaction.getAccount().getActiveStatus();
+                if (activeStatusBool != null) {
                     try {
+                        String activeStatusStr = Boolean.TRUE.equals(activeStatusBool) ? "Y" : "N";
                         AccountStatus activeStatus = AccountStatus.fromCode(activeStatusStr);
                         accountInfo.setActiveStatus(activeStatus);
                     } catch (IllegalArgumentException e) {
@@ -584,8 +585,8 @@ public class TransactionViewService {
         // Map basic transaction fields
         dto.setTransactionId(transaction.getTransactionId());
         // External TransactionDTO expects enums, not strings
-        dto.setTransactionType(transaction.getTransactionType());
-        dto.setCategoryCode(transaction.getCategoryCode());
+        dto.setTransactionType(transaction.getTransactionTypeEnum());
+        dto.setCategoryCode(transaction.getTransactionCategoryEnum());
         dto.setAmount(transaction.getAmount());
         dto.setDescription(transaction.getDescription());
         dto.setCardNumber(transaction.getCardNumber());
