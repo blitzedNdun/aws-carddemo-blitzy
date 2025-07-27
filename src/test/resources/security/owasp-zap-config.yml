@@ -842,7 +842,6 @@ configuration_validation:
     report_backup_location: "/opt/zaproxy/backups"
     configuration_versioning: true
 
----
 # Configuration Metadata
 config_metadata:
   schema_version: "1.0"
