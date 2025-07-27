@@ -446,7 +446,7 @@ management:
     db:
       enabled: true
     redis:
-      enabled: true
+      enabled: false                           # Redis disabled for test profile
     diskspace:
       enabled: true
       threshold: 1MB                         # Lower threshold for tests
