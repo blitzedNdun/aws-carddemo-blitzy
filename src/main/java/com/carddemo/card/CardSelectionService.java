@@ -1,7 +1,9 @@
 package com.carddemo.card;
 
-import com.carddemo.account.entity.Account;
-import com.carddemo.account.entity.Customer;
+import com.carddemo.common.entity.Card;
+
+import com.carddemo.common.entity.Account;
+import com.carddemo.common.entity.Customer;
 import com.carddemo.account.repository.AccountRepository;
 import com.carddemo.account.dto.AccountDto;
 import com.carddemo.account.dto.CustomerDto;
@@ -279,7 +281,7 @@ public class CardSelectionService {
         response.setMaskedCardNumber(cardEntity.getMaskedCardNumber());
         response.setEmbossedName(cardEntity.getEmbossedName());
         response.setExpirationDate(cardEntity.getExpirationDate().atStartOfDay());
-        response.setActiveStatus(cardEntity.getActiveStatus().getCode());
+        response.setActiveStatus(cardEntity.getActiveStatus());
         response.setCvvCode(cardEntity.getCvvCode());
 
         // Set account information if available
@@ -394,7 +396,7 @@ public class CardSelectionService {
         }
 
         // Validate account exists and is active
-        if (cardEntity.getAccount() != null && cardEntity.getAccount().getActiveStatus() != AccountStatus.ACTIVE) {
+        if (cardEntity.getAccount() != null && !AccountStatus.ACTIVE.name().equals(cardEntity.getAccount().getActiveStatus())) {
             logger.warn("Cross-reference validation failed: account {} is not active", requestedAccountId);
             throw new IllegalArgumentException("Account is not active for card operations");
         }
@@ -530,7 +532,7 @@ public class CardSelectionService {
         dto.setAccountId(account.getAccountId());
         dto.setCurrentBalance(account.getCurrentBalance());
         dto.setCreditLimit(account.getCreditLimit());
-        dto.setActiveStatus(account.getActiveStatus());
+        dto.setActiveStatus(Boolean.TRUE.equals(account.getActiveStatus()) ? AccountStatus.ACTIVE : AccountStatus.INACTIVE);
         dto.setOpenDate(account.getOpenDate().toString());
         return dto;
     }
