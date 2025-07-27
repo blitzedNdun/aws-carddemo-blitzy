@@ -1,6 +1,6 @@
 package com.carddemo.batch;
 
-import com.carddemo.account.entity.Account;
+import com.carddemo.common.entity.Account;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.item.ExecutionContext;
@@ -264,7 +264,7 @@ public class AccountDataItemReader extends FlatFileItemReader<Account> {
                 // Map active status with validation
                 String activeStatus = fieldSet.readString("activeStatus").trim();
                 validateActiveStatus(activeStatus);
-                account.setActiveStatus(parseActiveStatus(activeStatus));
+                account.setActiveStatus(parseActiveStatus(activeStatus).isActive());
                 
                 // Map financial amounts with COBOL COMP-3 precision
                 account.setCurrentBalance(parseCobolDecimal(fieldSet.readString("currentBalance")));
