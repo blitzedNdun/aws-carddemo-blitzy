@@ -424,8 +424,8 @@ public class TransactionViewService {
                 // Convert Boolean active status to AccountStatus enum
                 Boolean activeStatusBool = transaction.getAccount().getActiveStatus();
                 if (activeStatusBool != null) {
+                    String activeStatusStr = Boolean.TRUE.equals(activeStatusBool) ? "Y" : "N";
                     try {
-                        String activeStatusStr = Boolean.TRUE.equals(activeStatusBool) ? "Y" : "N";
                         AccountStatus activeStatus = AccountStatus.fromCode(activeStatusStr);
                         accountInfo.setActiveStatus(activeStatus);
                     } catch (IllegalArgumentException e) {
