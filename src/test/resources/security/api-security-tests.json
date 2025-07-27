@@ -194,6 +194,7 @@
           "headers": {
             "Authorization": "Bearer ${valid_user_token}"
           },
+          "expected_status": 200,
           "rate_limit": {
             "user_type": "ROLE_USER",
             "limit": 100,
@@ -222,6 +223,7 @@
           "headers": {
             "Authorization": "Bearer ${valid_admin_token}"
           },
+          "expected_status": 200,
           "rate_limit": {
             "user_type": "ROLE_ADMIN",
             "limit": 500,
@@ -256,6 +258,7 @@
             "amount": "50.00",
             "merchantId": "MERCHANT123"
           },
+          "expected_status": 200,
           "rate_limit": {
             "user_type": "ROLE_USER", 
             "limit": 100,
@@ -274,6 +277,9 @@
         {
           "test_id": "RATE_LIMIT_004",
           "name": "Endpoint Specific Limits Test",
+          "endpoint": "/api/auth/login",
+          "method": "POST",
+          "expected_status": 429,
           "endpoints": [
             {
               "path": "/api/auth/login",
@@ -356,11 +362,11 @@
         },
         {
           "test_id": "JWT_VALIDATION_003",
-          "name": "Token Blacklist Validation Test",
+          "name": "Expired Token Validation Test",
           "endpoint": "/api/account/transfer",
           "method": "POST",
           "headers": {
-            "Authorization": "Bearer ${blacklisted_token}",
+            "Authorization": "Bearer ${expired_token}",
             "Content-Type": "application/json"
           },
           "body": {
@@ -369,11 +375,11 @@
             "amount": "1000.00"
           },
           "expected_status": 401,
-          "expected_message": "Token has been revoked",
-          "token_reference": "jwt-tokens.blacklisted_token",
-          "redis_check": "blacklist:token:${token_jti}",
+          "expected_message": "Token expired",
+          "token_reference": "jwt-tokens.expired_token",
+          "redis_check": "expired_token_validation",
           "gateway_filter": "SecurityGatewayFilter.validateJwtToken()",
-          "cics_equivalent": "RACF user revocation"
+          "cics_equivalent": "CICS session timeout"
         }
       ]
     },
@@ -589,6 +595,7 @@
           "headers": {
             "Authorization": "Bearer ${valid_user_token}"
           },
+          "expected_status": 200,
           "expected_response_headers": {
             "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'",
             "X-Content-Type-Options": "nosniff",
@@ -607,6 +614,7 @@
           "headers": {
             "Authorization": "Bearer ${valid_user_token}"
           },
+          "expected_status": 200,
           "expected_response_headers": {
             "Cache-Control": "no-cache, no-store, must-revalidate",
             "Pragma": "no-cache",
@@ -623,6 +631,7 @@
           "headers": {
             "Authorization": "Bearer ${valid_user_token}"
           },
+          "expected_status": 200,
           "expected_response_headers": {
             "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload"
           },
