@@ -9,9 +9,8 @@
 -- Target Table: transaction_types (created in V6__create_reference_tables.sql)
 -- ==============================================================================
 
---liquibase formatted sql
-
---changeset blitzy-agent:load-transaction-types-data-v24
+-- This file is now included via XML changeset in liquibase-changelog.xml
+-- Liquibase-specific comments and rollback directives have been moved to the XML changeset definition
 --comment: Load transaction type reference data from trantype.txt with proper debit/credit classification for high-performance transaction validation
 
 -- ==============================================================================
@@ -95,13 +94,11 @@ INSERT INTO transaction_types (
     -- Usage: Account balance corrections and administrative adjustments
     ('07', 'Adjustment', true, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
---rollback DELETE FROM transaction_types WHERE transaction_type IN ('01', '02', '03', '04', '05', '06', '07');
 
 -- ==============================================================================
 -- POST-LOAD VALIDATION AND OPTIMIZATION
 -- ==============================================================================
 
---changeset blitzy-agent:validate-transaction-types-data-v24
 --comment: Validate loaded transaction type data for consistency and establish performance optimization
 
 -- Validate that all 7 transaction types were loaded successfully
@@ -121,9 +118,7 @@ BEGIN
     RAISE NOTICE 'Transaction types data validation successful: % records loaded', record_count;
 END $$;
 
---rollback -- No rollback needed for validation block
 
---changeset blitzy-agent:optimize-transaction-types-performance-v24
 --comment: Optimize transaction types table for high-performance lookup operations and caching strategies
 
 -- Update table statistics for optimal query planner performance
@@ -143,14 +138,11 @@ ON transaction_types (transaction_type)
 INCLUDE (type_description, debit_credit_indicator, active_status)
 WHERE active_status = true;
 
---rollback DROP INDEX IF EXISTS idx_transaction_types_lookup_covering;
---rollback DROP INDEX IF EXISTS idx_transaction_types_debit_credit_active;
 
 -- ==============================================================================
 -- REFERENCE DATA INTEGRITY VALIDATION
 -- ==============================================================================
 
---changeset blitzy-agent:validate-transaction-types-integrity-v24
 --comment: Comprehensive data integrity validation for transaction types reference data
 
 -- Validate transaction type code format compliance
@@ -215,13 +207,11 @@ BEGIN
     RAISE NOTICE 'Transaction type description validation successful: All descriptions properly populated';
 END $$;
 
---rollback -- No rollback needed for validation blocks
 
 -- ==============================================================================
 -- PERFORMANCE BENCHMARKING AND CACHING OPTIMIZATION
 -- ==============================================================================
 
---changeset blitzy-agent:benchmark-transaction-types-performance-v24
 --comment: Establish performance benchmarks and caching optimization for transaction type lookups
 
 -- Create performance benchmark for sub-millisecond lookup validation
@@ -263,13 +253,11 @@ BEGIN
     END IF;
 END $$;
 
---rollback -- No rollback needed for benchmark block
 
 -- ==============================================================================
 -- AUDIT TRAIL AND MONITORING SETUP
 -- ==============================================================================
 
---changeset blitzy-agent:setup-transaction-types-monitoring-v24
 --comment: Establish monitoring and audit capabilities for transaction types reference data
 
 -- Create audit log entry for successful data loading
@@ -279,8 +267,7 @@ INSERT INTO audit_log (
     operation,
     old_values,
     new_values,
-    change_timestamp,
-    changed_by
+    change_timestamp
 ) VALUES (
     'transaction_types',
     'DATA_LOAD_V24',
@@ -292,8 +279,7 @@ INSERT INTO audit_log (
         'credit_types', (SELECT COUNT(*) FROM transaction_types WHERE debit_credit_indicator = false),
         'active_types', (SELECT COUNT(*) FROM transaction_types WHERE active_status = true)
     ),
-    CURRENT_TIMESTAMP,
-    'Liquibase Migration V24'
+    CURRENT_TIMESTAMP
 ) ON CONFLICT DO NOTHING;
 
 -- Add table comment documenting the data loading process and source
@@ -310,17 +296,11 @@ COMMENT ON COLUMN transaction_types.type_description IS
 COMMENT ON COLUMN transaction_types.debit_credit_indicator IS 
 'Boolean classification for proper financial transaction processing logic. TRUE indicates debit transactions that increase account balance (Purchase=01, Authorization=04, Adjustment=07). FALSE indicates credit transactions that decrease account balance (Payment=02, Credit=03, Refund=05, Reversal=06). Critical for accurate financial calculations and accounting integration with Spring Boot transaction processing services.';
 
---rollback DELETE FROM audit_log WHERE table_name = 'transaction_types' AND record_id = 'DATA_LOAD_V24';
---rollback COMMENT ON COLUMN transaction_types.debit_credit_indicator IS NULL;
---rollback COMMENT ON COLUMN transaction_types.type_description IS NULL;
---rollback COMMENT ON COLUMN transaction_types.transaction_type IS NULL;
---rollback COMMENT ON TABLE transaction_types IS NULL;
 
 -- ==============================================================================
 -- FINAL VALIDATION AND COMPLETION STATUS
 -- ==============================================================================
 
---changeset blitzy-agent:finalize-transaction-types-data-loading-v24
 --comment: Final validation and completion status for transaction types reference data loading
 
 -- Comprehensive final validation of the loaded transaction types data
@@ -366,8 +346,7 @@ BEGIN
             record_id,
             operation,
             new_values,
-            change_timestamp,
-            changed_by
+            change_timestamp
         ) VALUES (
             'transaction_types',
             'MIGRATION_COMPLETE_V24',
@@ -377,8 +356,7 @@ BEGIN
                 'validation_results', row_to_json(validation_results),
                 'message', success_message
             ),
-            CURRENT_TIMESTAMP,
-            'Liquibase Migration V24'
+            CURRENT_TIMESTAMP
         ) ON CONFLICT DO NOTHING;
         
     ELSE
@@ -386,7 +364,6 @@ BEGIN
     END IF;
 END $$;
 
---rollback DELETE FROM audit_log WHERE table_name = 'transaction_types' AND record_id = 'MIGRATION_COMPLETE_V24';
 
 -- ==============================================================================
 -- MIGRATION COMPLETION
