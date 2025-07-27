@@ -90,6 +90,7 @@ import static org.junit.jupiter.api.Assertions.*;
 })
 @TestMethodOrder(MethodOrderer.DisplayName.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@Sql(value = "/test-data/customer-test-data.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 public class CustomerRepositoryTest {
 
 
@@ -264,6 +265,7 @@ public class CustomerRepositoryTest {
     }
 
     @Test
+    @Transactional
     @DisplayName("Test 1.3: Entity Relationship Loading - Customer-Account Association")
     void testEntityRelationshipLoading() {
         Optional<Customer> customer = customerRepository.findById("100000001");
@@ -558,7 +560,6 @@ public class CustomerRepositoryTest {
 
     @Test
     @DisplayName("Test 5.1: existsByCustomerIdAndActiveStatus - Active Customer Validation")
-    @Sql("/test-data/customer-test-data.sql")
     void testExistsByCustomerIdAndActiveStatus() {
         // Test existing customer with 'Y' primary card holder status
         boolean existsActive = customerRepository.existsByCustomerIdAndActiveStatus("100000001", "Y");
