@@ -60,15 +60,15 @@ ALTER TABLE users ADD CONSTRAINT chk_users_user_type
 
 -- Password hash constraint: Ensure BCrypt format (starts with $2a$, $2b$, $2x$, or $2y$)
 -- BCrypt hash format validation for Spring Security compatibility
--- Note: Using H2-compatible REGEXP function instead of PostgreSQL ~ operator
+-- PostgreSQL syntax using ~ operator for regular expression matching
 ALTER TABLE users ADD CONSTRAINT chk_users_password_hash_format
-    CHECK (REGEXP_LIKE(password_hash, '^\$2[abxy]\$[0-9]{2}\$.{53}$'));
+    CHECK (password_hash ~ '^\$2[abxy]\$[0-9]{2}\$.{53}$');
 
 -- User ID format constraint: Ensure uppercase alphanumeric characters only
 -- Maintains VSAM USRSEC dataset key format requirements
--- Note: Using H2-compatible REGEXP function instead of PostgreSQL ~ operator
+-- PostgreSQL syntax using ~ operator for regular expression matching
 ALTER TABLE users ADD CONSTRAINT chk_users_userid_format
-    CHECK (REGEXP_LIKE(user_id, '^[A-Z0-9]{1,8}$'));
+    CHECK (user_id ~ '^[A-Z0-9]{1,8}$');
 
 -- Name constraints: Ensure proper capitalization and non-empty values
 ALTER TABLE users ADD CONSTRAINT chk_users_first_name_not_empty
