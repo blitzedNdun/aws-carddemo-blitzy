@@ -9,10 +9,7 @@
 
 --comment: Fix accounts table foreign key constraint for disclosure_groups
 
--- Step 1: Drop the existing foreign key constraint
-ALTER TABLE accounts DROP CONSTRAINT fk_accounts_disclosure_group;
-
--- Step 2: Create a view for default disclosure groups that accounts can reference
+-- Step 1: Create a view for default disclosure groups that accounts can reference
 -- This view shows one record per group_id using the default transaction type (01) and category (0001)
 CREATE OR REPLACE VIEW v_disclosure_groups_defaults AS
 SELECT 
@@ -30,11 +27,11 @@ WHERE transaction_type_prefix = '01'
 AND transaction_category = '0001'
 AND active_status = true;
 
--- Step 3: Foreign key constraint cannot be recreated because disclosure_groups 
+-- Step 2: Foreign key constraint cannot be recreated because disclosure_groups 
 -- no longer has unique constraint on group_id alone. Instead, we rely on the
 -- validation trigger below to ensure referential integrity.
 
--- Step 4: Create a function to validate the foreign key reference
+-- Step 3: Create a function to validate the foreign key reference
 -- This ensures the referenced group_id has a default configuration
 CREATE OR REPLACE FUNCTION validate_accounts_disclosure_group_reference()
 RETURNS TRIGGER AS $$
@@ -54,7 +51,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Step 5: Create trigger to validate accounts foreign key references
+-- Step 4: Create trigger to validate accounts foreign key references
 CREATE TRIGGER trg_accounts_disclosure_group_validation
     BEFORE INSERT OR UPDATE ON accounts
     FOR EACH ROW
