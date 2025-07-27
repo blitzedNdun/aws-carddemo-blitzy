@@ -1,6 +1,6 @@
 package com.carddemo.account;
 
-import com.carddemo.account.entity.Account;
+import com.carddemo.common.entity.Account;
 import com.carddemo.account.repository.AccountRepository;
 import com.carddemo.account.dto.AccountUpdateRequestDto;
 import com.carddemo.account.dto.AccountUpdateResponseDto;
@@ -339,7 +339,7 @@ public class AccountUpdateService {
         if (requestDto.getActiveStatus() != null) {
             logger.debug("Updating account status from {} to {} for account: {}", 
                         existingAccount.getActiveStatus(), requestDto.getActiveStatus(), existingAccount.getAccountId());
-            updatedAccount.setActiveStatus(requestDto.getActiveStatus());
+            updatedAccount.setActiveStatus(requestDto.getActiveStatus().isActive());
         }
         
         // Update account dates if provided (COBOL date field updates)
@@ -465,7 +465,7 @@ public class AccountUpdateService {
         
         if (requestDto.getActiveStatus() != null) {
             auditTrail.addChangeDetail("activeStatus", 
-                String.format("Updated to: %s", savedAccount.getActiveStatus().getDisplayName()));
+                String.format("Updated to: %s", savedAccount.getActiveStatus()));
         }
         
         // Add metadata for debugging and monitoring
