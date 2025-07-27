@@ -1,7 +1,7 @@
 package com.carddemo.account.repository;
 
-import com.carddemo.account.entity.Customer;
-import com.carddemo.account.entity.Account;
+import com.carddemo.common.entity.Customer;
+import com.carddemo.common.entity.Account;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -159,7 +159,7 @@ public interface CustomerRepository extends JpaRepository<Customer, String> {
      * Usage Note: This method is typically used for validation before expensive
      * customer data retrieval operations to prevent unnecessary processing.
      */
-    @Query("SELECT COUNT(c) > 0 FROM Customer c WHERE c.customerId = :customerId AND c.primaryCardHolderIndicator = :activeStatus")
+    @Query("SELECT COUNT(c) > 0 FROM Customer c WHERE c.customerId = :customerId AND c.primaryCardholderIndicator = :activeStatus")
     boolean existsByCustomerIdAndActiveStatus(@Param("customerId") String customerId, @Param("activeStatus") String activeStatus);
 
     /**
