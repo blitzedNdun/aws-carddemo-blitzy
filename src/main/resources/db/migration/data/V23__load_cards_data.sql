@@ -70,23 +70,8 @@ CREATE TEMPORARY TABLE temp_cards_final (
     validation_status TEXT DEFAULT 'VALID'
 );
 
--- Create regular table for data loading statistics and audit trail (will be dropped at end)
-CREATE TABLE temp_load_statistics (
-    total_carddata_records INTEGER DEFAULT 0,
-    total_cardxref_records INTEGER DEFAULT 0,
-    valid_carddata_records INTEGER DEFAULT 0,
-    valid_cardxref_records INTEGER DEFAULT 0,
-    invalid_records INTEGER DEFAULT 0,
-    skipped_records INTEGER DEFAULT 0,
-    loaded_records INTEGER DEFAULT 0,
-    luhn_validation_failures INTEGER DEFAULT 0,
-    foreign_key_violations INTEGER DEFAULT 0,
-    start_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    end_time TIMESTAMP WITH TIME ZONE
-);
-
--- Initialize statistics record
-INSERT INTO temp_load_statistics (total_carddata_records, total_cardxref_records) VALUES (0, 0);
+-- Statistics tracking has been removed to avoid Liquibase transaction scope issues
+-- All data loading will proceed directly without intermediate statistics collection
 
 -- =============================================================================
 -- PHASE 2: Raw Data Loading from carddata.txt
@@ -149,9 +134,7 @@ INSERT INTO temp_carddata_raw (raw_data) VALUES
 ('968029415460369700000000001045Immanuel Kessler                                  2025-05-20Y                                                           '),
 ('980558340899658800000000040908Davon Emmerich                                    2023-10-27Y                                                           ');
 
--- Update statistics with carddata record count
-UPDATE temp_load_statistics 
-SET total_carddata_records = (SELECT COUNT(*) FROM temp_carddata_raw);
+-- Carddata records loaded successfully
 
 -- =============================================================================
 -- PHASE 3: Raw Data Loading from cardxref.txt
@@ -214,9 +197,7 @@ INSERT INTO temp_cardxref_raw (raw_data) VALUES
 ('968029415460369700000000100000000001'),
 ('980558340899658800000004000000000040');
 
--- Update statistics with cardxref record count
-UPDATE temp_load_statistics 
-SET total_cardxref_records = (SELECT COUNT(*) FROM temp_cardxref_raw);
+-- Cardxref records loaded successfully
 
 -- =============================================================================
 -- PHASE 4: Parse and Validate carddata.txt Records
@@ -302,11 +283,7 @@ SET
         luhn_valid = TRUE
     );
 
--- Update statistics with carddata validation results
-UPDATE temp_load_statistics 
-SET 
-    valid_carddata_records = (SELECT COUNT(*) FROM temp_cards_parsed WHERE is_valid = TRUE),
-    luhn_validation_failures = (SELECT COUNT(*) FROM temp_cards_parsed WHERE luhn_valid = FALSE);
+-- Carddata validation completed
 
 -- Log carddata validation summary
 -- Carddata validation summary:
@@ -369,9 +346,7 @@ SET
         customer_id IS NOT NULL AND LENGTH(customer_id) = 9 AND customer_id ~ '^[0-9]{9}$'
     );
 
--- Update statistics with cardxref validation results
-UPDATE temp_load_statistics 
-SET valid_cardxref_records = (SELECT COUNT(*) FROM temp_cardxref_parsed WHERE is_valid = TRUE);
+-- Cardxref validation completed
 
 -- Log cardxref validation summary
 -- Cardxref validation summary:
@@ -417,11 +392,7 @@ FROM temp_cards_parsed cd
 INNER JOIN temp_cardxref_parsed cr ON cd.card_number = cr.card_number
 WHERE cd.is_valid = TRUE AND cr.is_valid = TRUE;
 
--- Update statistics with foreign key validation results
-UPDATE temp_load_statistics 
-SET 
-    foreign_key_violations = (SELECT COUNT(*) FROM temp_cards_final WHERE validation_status != 'VALID'),
-    loaded_records = (SELECT COUNT(*) FROM temp_cards_final WHERE validation_status = 'VALID');
+-- Foreign key validation completed
 
 -- Log foreign key validation summary
 -- Foreign key validation summary:
@@ -463,11 +434,7 @@ SELECT
 FROM temp_cards_final
 WHERE validation_status = 'VALID';
 
--- Update final statistics
-UPDATE temp_load_statistics 
-SET 
-    end_time = CURRENT_TIMESTAMP,
-    loaded_records = (SELECT COUNT(*) FROM cards);
+-- Card data loading into final table completed
 
 -- =============================================================================
 -- PHASE 8: Data Loading Summary and Audit Report
@@ -475,55 +442,15 @@ SET
 
 -- Card data loading completed. Generating summary report...
 
--- Generate comprehensive loading summary
+-- Generate data loading summary
 SELECT 
     'CardDemo Cards Data Loading Summary' AS report_section,
-    '' AS details
+    'Data Source Files: carddata.txt, cardxref.txt' AS details
 UNION ALL
 SELECT 
-    '==========================================',
-    ''
-UNION ALL
-SELECT 
-    'Data Source Files:',
-    'carddata.txt, cardxref.txt'
-UNION ALL
-SELECT 
-    'Total carddata.txt records:',
-    total_carddata_records::TEXT
-UNION ALL
-SELECT 
-    'Total cardxref.txt records:',
-    total_cardxref_records::TEXT
-UNION ALL
-SELECT 
-    'Valid carddata records:',
-    valid_carddata_records::TEXT
-UNION ALL
-SELECT 
-    'Valid cardxref records:',
-    valid_cardxref_records::TEXT
-UNION ALL
-SELECT 
-    'Luhn validation failures:',
-    luhn_validation_failures::TEXT
-UNION ALL
-SELECT 
-    'Foreign key violations:',
-    foreign_key_violations::TEXT
-UNION ALL
-SELECT 
-    'Successfully loaded records:',
-    loaded_records::TEXT
-UNION ALL
-SELECT 
-    'Processing time (seconds):',
-    EXTRACT(EPOCH FROM (end_time - start_time))::TEXT
-UNION ALL
-SELECT 
-    'Load completion timestamp:',
-    end_time::TEXT
-FROM temp_load_statistics;
+    'Cards loaded:',
+    COUNT(*)::TEXT || ' records successfully loaded'
+FROM cards;
 
 -- Verify loaded data integrity
 -- Verifying loaded card data integrity...
@@ -664,8 +591,7 @@ SELECT '  ✓ Microservices architecture support enabled with comprehensive card
 -- PHASE 10: Cleanup
 -- =============================================================================
 
--- Drop the regular statistics table now that migration is complete
-DROP TABLE temp_load_statistics;
+-- No cleanup required - temporary tables will be automatically dropped at transaction end
 
 -- =============================================================================
 -- END OF MIGRATION
