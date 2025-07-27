@@ -1,6 +1,6 @@
 package com.carddemo.batch.dto;
 
-import com.carddemo.account.entity.Account;
+import com.carddemo.common.entity.Account;
 import com.carddemo.common.util.BigDecimalUtils;
 import com.carddemo.common.util.DateUtils;
 import java.math.BigDecimal;
@@ -186,8 +186,7 @@ public class AccountReportDTO {
         this();
         if (account != null) {
             this.accountId = account.getAccountId();
-            this.activeStatus = account.getActiveStatus() != null ? 
-                account.getActiveStatus().getCode() : "N";
+            this.activeStatus = Boolean.TRUE.equals(account.getActiveStatus()) ? "Y" : "N";
             this.currentBalance = account.getCurrentBalance();
             this.creditLimit = account.getCreditLimit();
             this.cashCreditLimit = account.getCashCreditLimit();
