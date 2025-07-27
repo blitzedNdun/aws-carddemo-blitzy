@@ -1,6 +1,6 @@
 package com.carddemo.account;
 
-import com.carddemo.common.entity.Account;
+import com.carddemo.account.entity.Account;
 import com.carddemo.account.repository.AccountRepository;
 import com.carddemo.account.dto.AccountUpdateRequestDto;
 import com.carddemo.account.dto.AccountUpdateResponseDto;
@@ -339,7 +339,7 @@ public class AccountUpdateService {
         if (requestDto.getActiveStatus() != null) {
             logger.debug("Updating account status from {} to {} for account: {}", 
                         existingAccount.getActiveStatus(), requestDto.getActiveStatus(), existingAccount.getAccountId());
-            updatedAccount.setActiveStatus(requestDto.getActiveStatus().isActive());
+            updatedAccount.setActiveStatus(requestDto.getActiveStatus());
         }
         
         // Update account dates if provided (COBOL date field updates)
