@@ -1,6 +1,6 @@
 package com.carddemo.account.service;
 
-import com.carddemo.common.entity.Account;
+import com.carddemo.account.entity.Account;
 import com.carddemo.account.repository.AccountRepository;
 import com.carddemo.account.repository.CustomerRepository;
 import com.carddemo.account.AccountUpdateService;
@@ -588,7 +588,7 @@ public class AccountService {
             }
             
             // Cross-Reference 2: Verify customer exists in customer repository
-            Optional<com.carddemo.common.entity.Customer> customerOptional = 
+            Optional<com.carddemo.account.entity.Customer> customerOptional = 
                 customerRepository.findById(customerId);
             
             if (!customerOptional.isPresent()) {
@@ -598,7 +598,7 @@ public class AccountService {
             }
             
             // Cross-Reference 3: Validate customer-account relationship consistency
-            com.carddemo.common.entity.Customer customer = customerOptional.get();
+            com.carddemo.account.entity.Customer customer = customerOptional.get();
             boolean accountFoundInCustomer = customer.getAccounts().stream()
                 .anyMatch(customerAccount -> customerAccount.getAccountId().equals(account.getAccountId()));
             
@@ -756,7 +756,7 @@ public class AccountService {
             
             // Update account status and save
             Account account = accountOptional.get();
-            account.setActiveStatus(newStatus.isActive());
+            account.setActiveStatus(newStatus);
             accountRepository.save(account);
             
             logger.info("Account status updated successfully: {} to {}", accountId, newStatus);
