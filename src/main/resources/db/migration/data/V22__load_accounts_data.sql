@@ -6,9 +6,8 @@
 -- Migration Type: DATA LOADING with DECIMAL(12,2) precision, foreign key integrity, and COBOL COMP-3 equivalence
 -- ==============================================================================
 
---liquibase formatted sql
-
---changeset blitzy-agent:load-accounts-data-v22
+-- This file is now included via XML changeset in liquibase-changelog.xml
+-- Liquibase-specific comments have been moved to the XML changeset definition
 --comment: Load account data from acctdata.txt with exact 11-digit account_id preservation, DECIMAL(12,2) precision for monetary fields, customer-account relationships, and disclosure group associations
 
 -- =============================================================================
@@ -70,7 +69,7 @@ INSERT INTO temp_load_statistics (total_records) VALUES (0);
 
 -- Load raw account data from acctdata.txt using COPY command for optimal performance
 -- Note: In production, this would use COPY FROM file, but for this migration we'll use INSERT statements
-\echo 'Loading account data from acctdata.txt...'
+DO $$ BEGIN RAISE NOTICE 'Loading account data from acctdata.txt...'; END $$;
 
 -- Insert account records from acctdata.txt with exact line preservation
 -- Format: account_id(11)active_status(1)customer_id(9){current_balance{credit_limit{cash_credit_limit{dates(30)current_cycle_credit{current_cycle_debit{group_id(10)
@@ -133,7 +132,7 @@ UPDATE temp_load_statistics SET total_records = (SELECT COUNT(*) FROM temp_acctd
 -- PHASE 3: Data Parsing and Field Extraction
 -- =============================================================================
 
-\echo 'Parsing account data with "{" delimiter processing...'
+DO $$ BEGIN RAISE NOTICE 'Parsing account data with "{" delimiter processing...'; END $$;
 
 -- Parse account records with comprehensive field extraction and validation
 -- Record format: account_id(11)active_status(1)customer_id(9){current_balance{credit_limit{cash_credit_limit{dates(30)current_cycle_credit{current_cycle_debit{group_id(10)
@@ -188,7 +187,7 @@ UPDATE temp_acctdata_raw SET processed = TRUE;
 -- PHASE 4: Data Type Conversion and Validation
 -- =============================================================================
 
-\echo 'Converting data types and validating field formats...'
+DO $$ BEGIN RAISE NOTICE 'Converting data types and validating field formats...'; END $$;
 
 -- Convert parsed string fields to appropriate data types with comprehensive validation
 UPDATE temp_accounts_parsed SET
@@ -224,7 +223,7 @@ UPDATE temp_accounts_parsed SET
 -- PHASE 5: Comprehensive Data Validation
 -- =============================================================================
 
-\echo 'Performing comprehensive data validation...'
+DO $$ BEGIN RAISE NOTICE 'Performing comprehensive data validation...'; END $$;
 
 -- Validate parsed records and accumulate validation errors
 UPDATE temp_accounts_parsed SET
@@ -319,7 +318,7 @@ UPDATE temp_load_statistics SET
 -- PHASE 6: Foreign Key Validation
 -- =============================================================================
 
-\echo 'Validating foreign key relationships...'
+DO $$ BEGIN RAISE NOTICE 'Validating foreign key relationships...'; END $$;
 
 -- Validate customer_id references exist in customers table
 UPDATE temp_accounts_parsed tap SET
@@ -351,7 +350,7 @@ UPDATE temp_load_statistics SET
 -- PHASE 7: Data Loading into Accounts Table
 -- =============================================================================
 
-\echo 'Loading validated account data into accounts table...'
+DO $$ BEGIN RAISE NOTICE 'Loading validated account data into accounts table...'; END $$;
 
 -- Insert valid account records into the accounts table with comprehensive field mapping
 INSERT INTO accounts (
@@ -400,7 +399,7 @@ UPDATE temp_load_statistics SET
 -- PHASE 8: Data Validation and Integrity Verification
 -- =============================================================================
 
-\echo 'Performing post-load data integrity verification...'
+DO $$ BEGIN RAISE NOTICE 'Performing post-load data integrity verification...'; END $$;
 
 -- Verify account data integrity after loading
 DO $$
@@ -457,7 +456,7 @@ END $$;
 -- PHASE 9: Loading Summary and Audit Trail
 -- =============================================================================
 
-\echo 'Generating loading summary and audit trail...'
+DO $$ BEGIN RAISE NOTICE 'Generating loading summary and audit trail...'; END $$;
 
 -- Display comprehensive loading summary
 DO $$
@@ -574,6 +573,6 @@ BEGIN
     RAISE NOTICE 'Final verification passed: % accounts loaded with valid relationships', account_count;
 END $$;
 
---rollback DELETE FROM accounts WHERE created_at >= CURRENT_TIMESTAMP - INTERVAL '1 hour';
+-- Rollback directives have been moved to the XML changeset definition
 
-\echo 'Account data loading migration V22 completed successfully!'
+DO $$ BEGIN RAISE NOTICE 'Account data loading migration V22 completed successfully!'; END $$;
