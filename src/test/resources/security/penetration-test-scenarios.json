@@ -360,7 +360,8 @@
               "headers": {},
               "expected_response": {
                 "status_code": 401,
-                "error_code": "JWT_TOKEN_MISSING"
+                "error_code": "JWT_TOKEN_MISSING",
+                "security_behavior": "AUTHORIZATION_HEADER_REQUIRED"
               }
             },
             {
@@ -574,6 +575,11 @@
             {
               "payload_name": "HTTP Method Privilege Escalation",
               "description": "Attempt privileged operations through different HTTP methods",
+              "authenticated_user": {
+                "userId": "TESTUSER",
+                "userType": "U",
+                "role": "ROLE_USER"
+              },
               "test_cases": [
                 {
                   "endpoint": "/api/users/TESTUSER",
@@ -587,7 +593,11 @@
                   "user_role": "ROLE_USER",
                   "expected_behavior": "CONDITIONAL_ACCESS_WITH_OWNERSHIP_CHECK"
                 }
-              ]
+              ],
+              "expected_response": {
+                "status_code": 403,
+                "security_behavior": "HTTP_METHOD_ACCESS_DENIED"
+              }
             }
           ]
         }
