@@ -85,7 +85,7 @@
               "q": "<img src=x onerror=alert('XSS')>",
               "page": "1"
             },
-            "expectedResult": "JSON response with escaped content - React should sanitize rendering",
+            "expectedResult": "400 Bad Request - Malicious script parameters should be rejected or sanitized",
             "validation": "API responses must escape special characters in JSON",
             "severity": "MEDIUM",
             "owaspCategory": "A07:2021 – Cross-Site Scripting (XSS)"
@@ -250,7 +250,7 @@
               "amount": "100.00",
               "description": "Concurrent attack"
             },
-            "expectedResult": "Rate limiting should throttle excessive requests",
+            "expectedResult": "429 Too Many Requests - Rate limiting should block excessive concurrent requests",
             "validation": "Spring Cloud Gateway rate limiting must prevent concurrent abuse", 
             "severity": "MEDIUM",
             "owaspCategory": "A04:2021 – Insecure Design"
