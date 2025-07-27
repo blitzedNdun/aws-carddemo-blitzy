@@ -51,10 +51,8 @@ spring:
   # Disable all Redis auto-configuration
   autoconfigure:
     exclude:
-      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
-      - org.springframework.session.data.redis.config.annotation.web.http.RedisHttpSessionConfiguration
 
 # Disable Eureka for tests
 eureka:
