@@ -488,7 +488,7 @@ BEGIN
            MIN(date_of_birth), 
            MAX(date_of_birth),
            AVG(fico_credit_score),
-           COUNT(DISTINCT address_state)
+           COUNT(DISTINCT state_code)
     INTO total_customers, date_range_start, date_range_end, fico_avg, state_count
     FROM customers;
     
