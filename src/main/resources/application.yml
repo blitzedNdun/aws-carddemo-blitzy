@@ -725,15 +725,21 @@ spring:
     database-platform: org.hibernate.dialect.H2Dialect
     defer-datasource-initialization: true
     
-  # Disable Redis for testing
+  # Enable Redis for testing (consistent with application-test.yml)
   data:
     redis:
+      host: localhost
+      port: 6379
+      database: 1
       repositories:
-        enabled: false
+        enabled: true
         
-  # Test session configuration (in-memory)
+  # Test session configuration (Redis-based for consistency)
   session:
-    store-type: none
+    store-type: redis
+    redis:
+      database: 1
+      namespace: "carddemo:test:session"
     
 # Test logging configuration
 logging:
