@@ -1,7 +1,7 @@
 package com.carddemo.account;
 
-import com.carddemo.account.entity.Account;
-import com.carddemo.account.entity.Customer;
+import com.carddemo.common.entity.Account;
+import com.carddemo.common.entity.Customer;
 import com.carddemo.account.repository.AccountRepository;
 import com.carddemo.account.repository.CustomerRepository;
 import com.carddemo.account.dto.AccountViewRequestDto;
@@ -251,7 +251,7 @@ public class AccountViewService {
         try {
             // Set account basic information
             response.setAccountId(account.getAccountId().toString());
-            response.setActiveStatus(account.getActiveStatus());
+            response.setActiveStatus(Boolean.TRUE.equals(account.getActiveStatus()) ? AccountStatus.ACTIVE : AccountStatus.INACTIVE);
             
             // Set financial information with exact COBOL COMP-3 precision
             response.setCurrentBalance(account.getCurrentBalance());
@@ -327,7 +327,7 @@ public class AccountViewService {
             // Set card number if available (from account's primary card)
             if (account.getCards() != null && !account.getCards().isEmpty()) {
                 // Get the first card associated with the account
-                String cardId = account.getCards().iterator().next().getCardId();
+                String cardId = account.getCards().iterator().next().getCardNumber();
                 response.setCardNumber(cardId);
             }
 
