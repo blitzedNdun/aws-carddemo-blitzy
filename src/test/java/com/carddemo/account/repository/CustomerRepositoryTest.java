@@ -65,7 +65,14 @@ import static org.junit.jupiter.api.Assertions.*;
     "logging.level.org.hibernate.SQL=DEBUG"
 })
 @ActiveProfiles("test")
-@EntityScan(basePackages = "com.carddemo.account.entity")
+@EntityScan(basePackages = {
+    "com.carddemo.auth.entity",
+    "com.carddemo.account.entity",
+    "com.carddemo.card",
+    "com.carddemo.transaction",
+    "com.carddemo.batch.entity",
+    "com.carddemo.common.entity"
+})
 @Transactional
 public class CustomerRepositoryTest {
 
