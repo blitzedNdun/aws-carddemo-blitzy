@@ -4,8 +4,8 @@ import com.carddemo.common.enums.TransactionType;
 import com.carddemo.common.enums.TransactionCategory;
 import com.carddemo.common.validator.ValidCardNumber;
 import com.carddemo.common.validator.ValidCurrency;
-import com.carddemo.common.entity.Account;
-import com.carddemo.common.entity.Card;
+import com.carddemo.account.entity.Account;
+import com.carddemo.card.Card;
 import com.carddemo.common.util.BigDecimalUtils;
 
 import jakarta.persistence.*;
