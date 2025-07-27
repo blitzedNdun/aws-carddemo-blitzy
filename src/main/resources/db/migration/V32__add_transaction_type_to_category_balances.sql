@@ -61,8 +61,8 @@ SELECT
     cust.first_name,
     cust.last_name,
     cust.fico_credit_score,
-    c.card_status,
-    c.expiry_date
+    c.active_status AS card_status,
+    c.expiration_date
 FROM cards c
 INNER JOIN accounts a ON c.account_id = a.account_id
 INNER JOIN customers cust ON c.customer_id = cust.customer_id;
