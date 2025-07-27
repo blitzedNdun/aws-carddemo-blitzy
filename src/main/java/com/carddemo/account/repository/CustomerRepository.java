@@ -159,7 +159,7 @@ public interface CustomerRepository extends JpaRepository<Customer, String> {
      * Usage Note: This method is typically used for validation before expensive
      * customer data retrieval operations to prevent unnecessary processing.
      */
-    @Query("SELECT COUNT(c) > 0 FROM Customer c WHERE c.customerId = :customerId AND c.primaryCardholderIndicator = :activeStatus")
+    @Query("SELECT COUNT(c) > 0 FROM Customer c WHERE c.customerId = :customerId AND c.primaryCardHolderIndicator = :activeStatus")
     boolean existsByCustomerIdAndActiveStatus(@Param("customerId") String customerId, @Param("activeStatus") String activeStatus);
 
     /**
