@@ -13,7 +13,7 @@ import java.io.Serializable;
  * with UUID primary key, BigDecimal financial precision, timestamp partitioning support,
  * and foreign key relationships for comprehensive transaction management
  */
-@Entity
+@Entity(name = "CommonTransaction")
 @Table(name = "transactions")
 public class Transaction implements Serializable {
 
