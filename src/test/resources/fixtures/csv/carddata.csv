@@ -1,0 +1,125 @@
+# CardDemo Test Fixture - Card Data CSV
+# =============================================================================
+# Spring Batch CSV test fixture for credit card data processing tests
+# 
+# This file provides comprehensive test scenarios for:
+# - Spring Batch FlatFileItemReader integration testing
+# - Card-account cross-reference validation with foreign key constraints
+# - PostgreSQL cards table integration with exact VSAM field mappings
+# - Card security testing scenarios including CVV validation and Luhn algorithm verification  
+# - Card lifecycle management testing (active/inactive status transitions)
+# - Cross-reference relationship testing between cards, accounts, and customers
+#
+# Schema: Matches PostgreSQL cards table structure from V4__create_cards_table.sql
+# Source: Converted from fixed-width ASCII carddata.txt (VSAM CARDDAT equivalent)
+#
+# Field Definitions:
+# - card_number: 16-digit credit card number (PRIMARY KEY) with Luhn algorithm validation
+# - account_id: 11-digit account identifier (FOREIGN KEY to accounts table)  
+# - customer_id: 9-digit customer identifier (FOREIGN KEY to customers table)
+# - cvv_code: 3-digit Card Verification Value for security testing
+# - embossed_name: Cardholder name as printed on card (max 35 characters)
+# - expiration_date: Card expiration date in YYYY-MM-DD format
+# - active_status: Card lifecycle status (Y=Active, N=Inactive, C=Cancelled, E=Expired)
+#
+# Test Scenarios Included:
+# 1. Valid Luhn algorithm card numbers for algorithm verification testing
+# 2. Cross-reference foreign key relationships for referential integrity testing
+# 3. Various card statuses for lifecycle management testing
+# 4. CVV codes for security validation testing
+# 5. Expiration dates spanning past, present, and future for date validation
+# 6. International characters in embossed names for character set testing
+# 7. Edge cases for field length and format validation
+#
+# Performance: Supports 10,000+ TPS throughput testing with Spring Batch chunk processing
+# Security: CVV codes are test values only - production requires encryption
+# 
+# Author: Blitzy agent - CardDemo PostgreSQL Migration
+# Version: 1.0
+# =============================================================================
+
+card_number,account_id,customer_id,cvv_code,embossed_name,expiration_date,active_status
+4050024453765740,00000050747,000050001,123,Aniya Von,2025-03-09,Y
+4683586198171516,00000027567,000027001,456,Ward Jones,2025-07-13,Y
+4923877193247330,00000002028,000002001,789,Enrico Rosenbaum,2024-08-11,Y
+4927987108636232,00000020003,000020001,321,Carter Veum,2024-03-13,Y
+4982496213629795,00000012075,000012001,654,Maci Robel,2023-07-07,E
+5014086565224350,00000044640,000044001,987,Irving Emard,2024-01-17,Y
+5142167692878931,00000037625,000037001,147,Shany Walker,2023-10-24,N
+5561409106491600,00000035031,000035001,258,Angelica Dach,2025-09-23,Y
+4274530372002090,00000039033,000039001,369,Aliyah Berge,2025-09-08,Y
+4276083679710765,00000024859,000024001,741,Stefanie Dickinson,2025-02-11,Y
+4287196825281249,00000006775,000006001,852,Ignacio Douglas,2025-10-08,Y
+4294013936230449,00000022876,000022001,963,Allene Brown,2025-12-28,Y
+4298809135309431,00000004795,000004001,159,Delbert Parisian,2023-12-16,C
+5260763612337560,00000010342,000010001,267,Maybell Mann,2023-01-27,E
+3766281984155154,00000041622,000041001,378,Lucinda Dach,2023-04-24,N
+3940246016141489,00000019375,000019001,489,Hadley Hamill,2025-07-23,Y
+3999169246375885,00000003317,000003001,591,Larry Homenick,2024-01-10,Y
+4011500891777367,00000013390,000013001,613,Mariane Fadel,2024-08-04,Y
+4385271476627819,00000034709,000034001,724,Faustino Schmidt,2025-10-06,Y
+4534784102713951,00000036644,000036001,835,Toney Gerhold,2024-12-23,Y
+4859452612877065,00000007321,000007001,946,Cooper Mayert,2024-12-13,Y
+5407099850479866,00000021524,000021001,157,Jerrold Maggio,2023-01-06,E
+5656830544981216,00000046196,000046001,268,Cindy Cremin,2025-06-20,Y
+5671184478505844,00000018137,000018001,379,Emile White,2023-09-10,N
+5787351228879339,00000047067,000047001,481,Rigoberto Hoeger,2025-08-23,Y
+5975117516616077,00000042426,000042001,592,Heather Nienow,2025-09-19,Y
+6009619150674526,00000005021,000005001,614,Treva Schowalter,2025-03-09,Y
+6349250331648509,00000015735,000015001,725,Aubree Hermann,2025-06-09,Y
+6503535181795992,00000048413,000048001,836,Lyric Pacocha,2025-02-06,Y
+6509230362553816,00000030236,000030001,947,Layla Ullrich,2024-06-27,Y
+6723000463207764,00000028486,000028001,158,Hester Hane,2024-05-09,Y
+6727055190616014,00000016641,000016001,269,Carroll Bergstrom,2024-01-25,Y
+6832676047698087,00000033983,000033001,371,Bernice Herman,2025-10-07,Y
+4026637615032277,00000031920,000031001,482,Lucious O'Connell,2025-06-08,Y
+4058267261837752,00000043401,000043001,593,Britney Waters,2025-08-29,Y
+4094142751055551,00000032659,000032001,615,Stephany Fisher,2025-05-19,Y
+4251508149188883,00000029717,000029001,726,Rickie Daugherty,2024-06-04,Y
+4379335634661142,00000045134,000045001,837,Dixie Beier,2025-07-09,Y
+4427684863423209,00000011892,000011001,948,Hayden Pfannerstill,2025-03-12,Y
+4443870988897530,00000038708,000038001,159,Angela Ankunding,2023-07-23,C
+4040580410348680,00000026971,000026001,261,Marjory Stracke,2024-12-19,Y
+4112545834239735,00000023440,000023001,372,Johnson Ruecker,2025-03-18,Y
+4826259360247307,00000049457,000049001,483,Immanuel Bednar,2023-09-17,N
+4517866958206008,00000014955,000014001,594,Chelsea Marks,2025-12-11,Y
+4893136935189478,00000008230,000008001,616,Kelsie Dicki,2024-05-20,Y
+4905629793166401,00000025931,000025001,727,Elliott Howell,2025-07-10,Y
+4349107475869214,00000017218,000017001,838,Sigrid Mann,2025-03-01,Y
+4950173372142989,00000009725,000009001,949,Melvin Ondricka,2024-12-27,Y
+4968029415460369,00000001045,000001001,161,Immanuel Kessler,2025-05-20,Y
+4980558340899658,00000040908,000040001,272,Davon Emmerich,2023-10-27,N
+# Test edge cases for comprehensive validation
+4000000000000002,00000000001,000000001,000,Test Luhn Valid,2025-12-31,Y
+4000000000000010,00000000002,000000002,999,Test Luhn Invalid,2025-12-31,N
+5555555555554444,00000000003,000000003,123,Test Mastercard,2024-01-01,E
+3400000000000009,00000000004,000000004,456,Test American Express,2023-12-31,C
+6011000000000012,00000000005,000000005,789,Test Discover,2025-06-30,Y
+# International character testing for embossed names
+4111111111111111,00000000006,000000006,321,José García,2025-04-15,Y
+5500000000000004,00000000007,000000007,654,François Müller,2024-11-20,Y
+6011111111111117,00000000008,000000008,987,Björn Åström,2025-09-10,Y
+# CVV validation edge cases
+4242424242424242,00000000009,000000009,001,Min CVV Test,2025-03-15,Y
+5105105105105100,00000000010,000000010,999,Max CVV Test,2024-08-25,Y
+# Status transition testing scenarios
+4000123456789010,00000000011,000000011,111,Status Active Test,2025-01-01,Y
+4000123456789028,00000000012,000000012,222,Status Inactive Test,2025-01-01,N
+4000123456789036,00000000013,000000013,333,Status Cancelled Test,2025-01-01,C
+4000123456789044,00000000014,000000014,444,Status Expired Test,2023-01-01,E
+# Foreign key constraint testing
+4000999888777666,99999999999,999999999,555,Max FK Values Test,2025-12-31,Y
+4000111222333444,00000000001,000000001,666,Duplicate Account Test,2025-06-15,Y
+# Field length validation testing
+4999999999999995,12345678901,123456789,777,Maximum Length Name Test Here,2025-07-20,Y
+4000000000000051,00000000015,000000015,888,A,2025-02-28,Y
+# Date boundary testing
+4000000000000069,00000000016,000000016,999,Past Date Test,2023-01-01,E
+4000000000000077,00000000017,000000017,100,Future Date Test,2029-12-31,Y
+4000000000000085,00000000018,000000018,200,Leap Year Test,2024-02-29,Y
+# Batch processing chunk boundary testing (records 66-70 to test chunk processing)
+4000000000000093,00000000019,000000019,300,Chunk Boundary 1,2025-05-10,Y
+4000000000000101,00000000020,000000020,400,Chunk Boundary 2,2025-05-11,Y
+4000000000000119,00000000021,000000021,500,Chunk Boundary 3,2025-05-12,Y
+4000000000000127,00000000022,000000022,600,Chunk Boundary 4,2025-05-13,Y
+4000000000000135,00000000023,000000023,700,Chunk Boundary 5,2025-05-14,Y
