@@ -1,7 +1,7 @@
 package com.carddemo.account.repository;
 
-import com.carddemo.common.entity.Customer;
-import com.carddemo.common.entity.Account;
+import com.carddemo.account.entity.Customer;
+import com.carddemo.account.entity.Account;
 import com.carddemo.account.repository.AccountRepository;
 import com.carddemo.common.enums.AccountStatus;
 import com.carddemo.config.CardDemoTestConfiguration;
@@ -90,7 +90,10 @@ import static org.junit.jupiter.api.Assertions.*;
 })
 @TestMethodOrder(MethodOrderer.DisplayName.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@Sql(value = "/test-data/customer-test-data.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
+@Sql(scripts = {
+    "/test-data/customer-test-data.sql",
+    "/test-data/account-test-data.sql"
+}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 public class CustomerRepositoryTest {
 
 
@@ -191,7 +194,7 @@ public class CustomerRepositoryTest {
         Account account1 = new Account();
         account1.setAccountId("12345678901");
         account1.setCustomer(savedCustomer1);
-        account1.setActiveStatus(AccountStatus.ACTIVE.isActive());
+        account1.setActiveStatus(AccountStatus.ACTIVE);
         account1.setCurrentBalance(new BigDecimal("1500.75"));
         account1.setCreditLimit(new BigDecimal("5000.00"));
         account1.setCashCreditLimit(new BigDecimal("1000.00"));
@@ -204,7 +207,7 @@ public class CustomerRepositoryTest {
         Account account2 = new Account();
         account2.setAccountId("98765432109");
         account2.setCustomer(savedCustomer1);
-        account2.setActiveStatus(AccountStatus.ACTIVE.isActive());
+        account2.setActiveStatus(AccountStatus.ACTIVE);
         account2.setCurrentBalance(new BigDecimal("750.25"));
         account2.setCreditLimit(new BigDecimal("3000.00"));
         account2.setCashCreditLimit(new BigDecimal("500.00"));
