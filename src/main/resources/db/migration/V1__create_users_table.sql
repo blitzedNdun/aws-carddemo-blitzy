@@ -61,8 +61,9 @@ ALTER TABLE users ADD CONSTRAINT chk_users_user_type
 -- Password hash constraint: Ensure BCrypt format (starts with $2a$, $2b$, $2x$, or $2y$)
 -- BCrypt hash format validation for Spring Security compatibility
 -- PostgreSQL syntax using ~ operator for regular expression matching
+-- BCrypt hashes are typically 60 characters: $2a$12$ + 53 chars = 59-60 total
 ALTER TABLE users ADD CONSTRAINT chk_users_password_hash_format
-    CHECK (password_hash ~ '^\$2[abxy]\$[0-9]{2}\$.{53}$');
+    CHECK (password_hash ~ '^\$2[abxy]\$[0-9]{2}\$.{52,53}$');
 
 -- User ID format constraint: Ensure uppercase alphanumeric characters only
 -- Maintains VSAM USRSEC dataset key format requirements
