@@ -10,10 +10,8 @@
 -- Target Table: transactions with monthly partitioning support
 -- ==============================================================================
 
---liquibase formatted sql
-
---changeset blitzy-agent:load-transactions-data-v28
---comment: Load daily transaction data from dailytran.txt with comprehensive parsing, DECIMAL(12,2) precision, and foreign key validation
+-- This file is now included via XML changeset in liquibase-changelog.xml
+-- Liquibase-specific comments have been moved to the XML changeset definition
 
 -- ==============================================================================
 -- DAILY TRANSACTION DATA LOADING FROM dailytran.txt
@@ -57,7 +55,7 @@ CREATE TEMPORARY TABLE temp_transaction_staging (
     transaction_amount DECIMAL(12,2),
     description VARCHAR(100),
     merchant_name VARCHAR(50),
-    merchant_city VARCHAR(30),
+    merchant_city VARCHAR(50),
     merchant_zip VARCHAR(10),
     card_number VARCHAR(16),
     transaction_timestamp TIMESTAMP WITH TIME ZONE,
@@ -535,7 +533,7 @@ WHERE is_valid = FALSE OR transaction_amount IS NULL;
 
 -- Create partition for 2022 transaction data (all transactions are from 2022-06-10)
 -- This ensures proper partition pruning and optimal query performance
-CREATE TABLE transactions_2022_06 PARTITION OF transactions
+CREATE TABLE IF NOT EXISTS transactions_2022_06 PARTITION OF transactions
     FOR VALUES FROM ('2022-06-01') TO ('2022-07-01');
 
 -- ==============================================================================
@@ -681,11 +679,6 @@ SELECT 'Migration V28 completed successfully. ' || COUNT(*)::TEXT || ' transacti
 -- Clean up temporary functions and staging table
 DROP FUNCTION IF EXISTS parse_packed_decimal_amount(TEXT);
 DROP TABLE IF EXISTS temp_transaction_staging;
-
---rollback DELETE FROM transactions WHERE DATE(transaction_timestamp) = '2022-06-10';
---rollback DROP TABLE IF EXISTS transactions_2022_06;
---rollback DROP FUNCTION IF EXISTS parse_packed_decimal_amount(TEXT);
---rollback DROP TABLE IF EXISTS temp_transaction_staging;
 
 -- ==============================================================================
 -- END OF MIGRATION V28
