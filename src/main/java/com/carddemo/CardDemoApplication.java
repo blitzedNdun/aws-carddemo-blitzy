@@ -2,6 +2,7 @@ package com.carddemo;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
@@ -134,6 +135,16 @@ import javax.sql.DataSource;
         "com.carddemo.transaction",
         "com.carddemo.batch.repository",
         "com.carddemo.common.repository"
+    }
+)
+@EntityScan(
+    basePackages = {
+        "com.carddemo.auth.entity",
+        "com.carddemo.account.entity",
+        "com.carddemo.card",
+        "com.carddemo.transaction.entity",
+        "com.carddemo.batch.entity",
+        "com.carddemo.common.entity"
     }
 )
 @EnableDiscoveryClient
