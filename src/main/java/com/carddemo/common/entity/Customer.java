@@ -217,27 +217,50 @@ public class Customer implements Serializable {
         return "XXX-XX-XXXX";
     }
 
+    public String getFormattedAddress() {
+        // COBOL-style address formatting combining all address components
+        StringBuilder formattedAddress = new StringBuilder();
+        
+        if (addressLine1 != null && !addressLine1.trim().isEmpty()) {
+            formattedAddress.append(addressLine1.trim());
+        }
+        
+        if (addressLine2 != null && !addressLine2.trim().isEmpty()) {
+            if (formattedAddress.length() > 0) formattedAddress.append(", ");
+            formattedAddress.append(addressLine2.trim());
+        }
+        
+        if (addressLine3 != null && !addressLine3.trim().isEmpty()) {
+            if (formattedAddress.length() > 0) formattedAddress.append(", ");
+            formattedAddress.append(addressLine3.trim());
+        }
+        
+        // Add state code if available
+        if (stateCode != null && !stateCode.trim().isEmpty()) {
+            if (formattedAddress.length() > 0) formattedAddress.append(", ");
+            formattedAddress.append(stateCode.trim());
+        }
+        
+        // Add ZIP code if available
+        if (zipCode != null && !zipCode.trim().isEmpty()) {
+            if (formattedAddress.length() > 0) formattedAddress.append(" ");
+            formattedAddress.append(zipCode.trim());
+        }
+        
+        // Add country code if available
+        if (countryCode != null && !countryCode.trim().isEmpty()) {
+            if (formattedAddress.length() > 0) formattedAddress.append(", ");
+            formattedAddress.append(countryCode.trim());
+        }
+        
+        return formattedAddress.toString();
+    }
+
     public boolean isValidFicoScore() {
         return ficoCreditScore != null && ficoCreditScore >= 300 && ficoCreditScore <= 850;
     }
 
-    public String getFormattedAddress() {
-        return getFullAddress();
-    }
 
-    public String getFullAddress() {
-        StringBuilder address = new StringBuilder();
-        if (addressLine1 != null) address.append(addressLine1);
-        if (addressLine2 != null && !addressLine2.trim().isEmpty()) {
-            if (address.length() > 0) address.append(", ");
-            address.append(addressLine2);
-        }
-        if (addressLine3 != null && !addressLine3.trim().isEmpty()) {
-            if (address.length() > 0) address.append(", ");
-            address.append(addressLine3);
-        }
-        return address.toString();
-    }
 
     @Override
     public boolean equals(Object o) {
