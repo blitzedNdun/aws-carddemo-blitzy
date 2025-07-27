@@ -142,7 +142,7 @@ import javax.sql.DataSource;
         "com.carddemo.auth.entity",
         "com.carddemo.account.entity",
         "com.carddemo.card",
-        "com.carddemo.transaction.entity",
+        "com.carddemo.transaction",
         "com.carddemo.batch.entity",
         "com.carddemo.common.entity"
     }
