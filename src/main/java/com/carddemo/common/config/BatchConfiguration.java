@@ -71,7 +71,6 @@ import org.slf4j.LoggerFactory;
 @Configuration
 @EnableBatchProcessing
 @EnableConfigurationProperties(BatchProperties.class)
-@org.springframework.context.annotation.Profile("!test")
 public class BatchConfiguration extends DefaultBatchConfiguration {
 
     private static final Logger logger = LoggerFactory.getLogger(BatchConfiguration.class);
