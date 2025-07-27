@@ -12,7 +12,7 @@ import java.io.Serializable;
  * with personal information, address data, SSN encryption, FICO score validation,
  * and relationships to accounts and cards supporting customer profile management
  */
-@Entity
+@Entity(name = "CommonCustomer")
 @Table(name = "customers")
 public class Customer implements Serializable {
 
