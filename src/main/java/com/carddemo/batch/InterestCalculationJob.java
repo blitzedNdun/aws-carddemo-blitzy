@@ -18,6 +18,7 @@ import org.springframework.batch.core.Step;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.Duration;
@@ -137,6 +138,7 @@ public class InterestCalculationJob {
     private JobLauncher jobLauncher;
 
     @Autowired
+    @Qualifier("batchTransactionManager")
     private PlatformTransactionManager transactionManager;
 
     // Repository dependencies for data access
@@ -222,8 +224,10 @@ public class InterestCalculationJob {
      * 
      * @return ItemReader configured reader for transaction category balance records
      */
+    @Bean
     @StepScope
-    private ItemReader<TransactionCategoryBalance> transactionCategoryBalanceItemReader() {
+    @org.springframework.transaction.annotation.Transactional(transactionManager = "batchTransactionManager")
+    public ItemReader<TransactionCategoryBalance> transactionCategoryBalanceItemReader() {
         logger.info("Initializing Transaction Category Balance ItemReader");
         
         // Retrieve all transaction category balances with positive amounts
