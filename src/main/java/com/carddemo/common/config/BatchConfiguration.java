@@ -29,6 +29,7 @@ import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.batch.core.step.skip.SkipLimitExceededException;
 import org.springframework.batch.core.step.skip.SkipPolicy;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.batch.core.step.skip.AlwaysSkipItemSkipPolicy;
 import org.springframework.batch.core.step.skip.NeverSkipItemSkipPolicy;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -410,8 +411,8 @@ public class BatchConfiguration extends DefaultBatchConfiguration {
 
     /**
      * Public transaction manager bean for batch job configuration.
-     * Exposes the protected getTransactionManager from DefaultBatchConfiguration
-     * for use in job and step configurations.
+     * Creates dedicated transaction manager for Spring Batch operations with proper 
+     * isolation from main application transaction boundaries.
      * 
      * Note: Not marked as @Primary to avoid conflicts with main DatabaseConfig transactionManager.
      * Batch jobs that need this specific transaction manager should reference it by name.
@@ -419,7 +420,31 @@ public class BatchConfiguration extends DefaultBatchConfiguration {
     @Bean
     public PlatformTransactionManager batchTransactionManager() {
         logger.info("Configuring batch transaction manager with DataSource integration");
-        return getTransactionManager();
+        DataSourceTransactionManager transactionManager = new DataSourceTransactionManager(dataSource);
+        transactionManager.setDefaultTimeout(300); // 5-minute timeout for batch operations
+        return transactionManager;
+    }
+
+    /**
+     * Override parent class method to provide the correct transaction manager
+     * for job repository and other batch infrastructure beans.
+     */
+    @Override
+    protected PlatformTransactionManager getTransactionManager() {
+        return batchTransactionManager();
+    }
+
+    /**
+     * JdbcTemplate bean for high-performance batch operations.
+     * Required by batch ItemWriters that use raw JDBC for bulk insert operations.
+     */
+    @Bean
+    public JdbcTemplate jdbcTemplate() {
+        logger.info("Configuring JdbcTemplate for batch operations with DataSource integration");
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+        jdbcTemplate.setFetchSize(1000); // Optimize for batch operations
+        jdbcTemplate.setMaxRows(0); // No limit for batch processing
+        return jdbcTemplate;
     }
 
     /**
