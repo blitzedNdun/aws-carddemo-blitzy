@@ -94,7 +94,7 @@ INSERT INTO temp_load_statistics (total_carddata_records, total_cardxref_records
 
 -- Load raw card data from carddata.txt using optimized bulk loading
 -- Format: card_number(16) + padding(8) + customer_id(3) + cvv(3) + embossed_name(50) + expiration_date(10) + active_status(1)
-RAISE NOTICE 'Loading card data from carddata.txt...';
+-- Loading card data from carddata.txt...
 
 -- Insert card records from carddata.txt with exact line preservation
 INSERT INTO temp_carddata_raw (raw_data) VALUES
@@ -159,7 +159,7 @@ SET total_carddata_records = (SELECT COUNT(*) FROM temp_carddata_raw);
 
 -- Load raw cross-reference data from cardxref.txt
 -- Format: card_number(16) + account_id(11) + customer_id(7)
-RAISE NOTICE 'Loading card cross-reference data from cardxref.txt...';
+-- Loading card cross-reference data from cardxref.txt...
 
 -- Insert cross-reference records from cardxref.txt with exact format preservation
 INSERT INTO temp_cardxref_raw (raw_data) VALUES
@@ -222,7 +222,7 @@ SET total_cardxref_records = (SELECT COUNT(*) FROM temp_cardxref_raw);
 -- PHASE 4: Parse and Validate carddata.txt Records
 -- =============================================================================
 
-RAISE NOTICE 'Parsing and validating carddata.txt records...';
+-- Parsing and validating carddata.txt records...
 
 -- Parse carddata.txt records with comprehensive field extraction and validation
 INSERT INTO temp_cards_parsed (
@@ -309,7 +309,7 @@ SET
     luhn_validation_failures = (SELECT COUNT(*) FROM temp_cards_parsed WHERE luhn_valid = FALSE);
 
 -- Log carddata validation summary
-RAISE NOTICE 'Carddata validation summary:';
+-- Carddata validation summary:
 SELECT 
     COUNT(*) AS total_records,
     COUNT(*) FILTER (WHERE is_valid = TRUE) AS valid_records,
@@ -321,7 +321,7 @@ FROM temp_cards_parsed;
 -- PHASE 5: Parse and Validate cardxref.txt Records
 -- =============================================================================
 
-RAISE NOTICE 'Parsing and validating cardxref.txt records...';
+-- Parsing and validating cardxref.txt records...
 
 -- Parse cardxref.txt records with comprehensive field extraction and validation
 INSERT INTO temp_cardxref_parsed (
@@ -374,7 +374,7 @@ UPDATE temp_load_statistics
 SET valid_cardxref_records = (SELECT COUNT(*) FROM temp_cardxref_parsed WHERE is_valid = TRUE);
 
 -- Log cardxref validation summary
-RAISE NOTICE 'Cardxref validation summary:';
+-- Cardxref validation summary:
 SELECT 
     COUNT(*) AS total_records,
     COUNT(*) FILTER (WHERE is_valid = TRUE) AS valid_records,
@@ -385,7 +385,7 @@ FROM temp_cardxref_parsed;
 -- PHASE 6: Cross-Reference Integration and Foreign Key Validation
 -- =============================================================================
 
-RAISE NOTICE 'Integrating carddata with cardxref and validating foreign key relationships...';
+-- Integrating carddata with cardxref and validating foreign key relationships...
 
 -- Create final card records by joining carddata with cardxref
 INSERT INTO temp_cards_final (
@@ -424,7 +424,7 @@ SET
     loaded_records = (SELECT COUNT(*) FROM temp_cards_final WHERE validation_status = 'VALID');
 
 -- Log foreign key validation summary
-RAISE NOTICE 'Foreign key validation summary:';
+-- Foreign key validation summary:
 SELECT 
     validation_status,
     COUNT(*) AS record_count
@@ -436,7 +436,7 @@ ORDER BY validation_status;
 -- PHASE 7: Final Data Loading into cards Table
 -- =============================================================================
 
-RAISE NOTICE 'Loading validated card records into cards table...';
+-- Loading validated card records into cards table...
 
 -- Insert valid card records into the cards table with comprehensive audit trail
 INSERT INTO cards (
@@ -473,7 +473,7 @@ SET
 -- PHASE 8: Data Loading Summary and Audit Report
 -- =============================================================================
 
-RAISE NOTICE 'Card data loading completed. Generating summary report...';
+-- Card data loading completed. Generating summary report...
 
 -- Generate comprehensive loading summary
 SELECT 
@@ -526,7 +526,7 @@ SELECT
 FROM temp_load_statistics;
 
 -- Verify loaded data integrity
-RAISE NOTICE 'Verifying loaded card data integrity...';
+-- Verifying loaded card data integrity...
 
 SELECT 
     'Data Integrity Verification' AS verification_section,
@@ -571,7 +571,7 @@ FROM (
 ) status_counts;
 
 -- Refresh materialized view for cross-reference functionality
-RAISE NOTICE 'Refreshing cards cross-reference materialized view...';
+-- Refreshing cards cross-reference materialized view...
 REFRESH MATERIALIZED VIEW CONCURRENTLY mv_cards_cross_reference;
 
 -- Log successful completion with security notice
@@ -594,7 +594,7 @@ ANALYZE cards;
 ANALYZE mv_cards_cross_reference;
 
 -- Verify index usage and performance
-RAISE NOTICE 'Verifying card table index performance...';
+-- Verifying card table index performance...
 
 -- Check primary key distribution
 SELECT 
