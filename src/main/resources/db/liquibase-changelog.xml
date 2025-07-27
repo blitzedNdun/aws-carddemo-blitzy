@@ -832,7 +832,7 @@ Version: 1.0
             ALTER TABLE disclosure_groups ADD CONSTRAINT chk_disclosure_groups_rate_consistency 
             CHECK (
                 (group_id = 'ZEROAPR' AND interest_rate = 0.0000) OR
-                (group_id != 'ZEROAPR' AND interest_rate > 0.0000)
+                (group_id != 'ZEROAPR' AND interest_rate &gt; 0.0000)
             );
         </rollback>
     </changeSet>
@@ -848,7 +848,7 @@ Version: 1.0
                 (group_id = 'ZEROAPR' AND interest_rate = 0.0000) OR
                 (transaction_type_prefix = '02' AND interest_rate = 0.0000) OR
                 (transaction_type_prefix = '03' AND interest_rate = 0.0000) OR
-                (group_id != 'ZEROAPR' AND transaction_type_prefix NOT IN ('02', '03') AND interest_rate > 0.0000)
+                (group_id != 'ZEROAPR' AND transaction_type_prefix NOT IN ('02', '03') AND interest_rate &gt; 0.0000)
             );
         </rollback>
     </changeSet>
@@ -861,14 +861,14 @@ Version: 1.0
             ALTER TABLE disclosure_groups DROP CONSTRAINT IF EXISTS chk_disclosure_groups_basic_validation;
             ALTER TABLE disclosure_groups ADD CONSTRAINT chk_disclosure_groups_rate_consistency 
             CHECK (
-                interest_rate >= 0.0000 AND
-                interest_rate <= 9.9999 AND
+                interest_rate &gt;= 0.0000 AND
+                interest_rate &lt;= 9.9999 AND
                 (
                     (interest_rate = 0.0000 AND 
                      (group_id = 'ZEROAPR' OR 
                       transaction_type_prefix IN ('02', '03'))
                     ) OR
-                    (interest_rate > 0.0000)
+                    (interest_rate &gt; 0.0000)
                 )
             );
         </rollback>
