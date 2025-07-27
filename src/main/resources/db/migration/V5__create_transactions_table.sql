@@ -47,6 +47,7 @@ CREATE TABLE transactions (
     transaction_timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
     
     -- Merchant information for transaction location tracking and fraud detection
+    merchant_id VARCHAR(9),
     merchant_name VARCHAR(50),
     merchant_city VARCHAR(30),
     merchant_zip VARCHAR(10),
@@ -102,6 +103,11 @@ CREATE TABLE transactions (
     CONSTRAINT chk_merchant_zip_format CHECK (
         merchant_zip IS NULL OR 
         merchant_zip ~ '^[0-9]{5}(-[0-9]{4})?$|^[A-Z][0-9][A-Z][[:space:]][0-9][A-Z][0-9]$'
+    ),
+    
+    CONSTRAINT chk_merchant_id_format CHECK (
+        merchant_id IS NULL OR 
+        (LENGTH(merchant_id) <= 9 AND merchant_id ~ '^[0-9]+$')
     )
 ) PARTITION BY RANGE (transaction_timestamp);
 
@@ -201,6 +207,10 @@ CREATE INDEX idx_transactions_type_category ON transactions (transaction_type, t
 -- Index for date-range queries with partition pruning optimization
 CREATE INDEX idx_transactions_timestamp_account ON transactions (transaction_timestamp, account_id);
 
+-- Index for merchant ID-based analysis and transaction tracking
+CREATE INDEX idx_transactions_merchant_id ON transactions (merchant_id, transaction_timestamp)
+    WHERE merchant_id IS NOT NULL;
+
 -- Index for merchant-based analysis and fraud detection
 CREATE INDEX idx_transactions_merchant_name ON transactions (merchant_name, transaction_timestamp)
     WHERE merchant_name IS NOT NULL;
@@ -224,6 +234,7 @@ CREATE INDEX idx_transactions_account_type_amount ON transactions (
 --rollback DROP INDEX IF EXISTS idx_transactions_amount_range;
 --rollback DROP INDEX IF EXISTS idx_transactions_merchant_location;
 --rollback DROP INDEX IF EXISTS idx_transactions_merchant_name;
+--rollback DROP INDEX IF EXISTS idx_transactions_merchant_id;
 --rollback DROP INDEX IF EXISTS idx_transactions_timestamp_account;
 --rollback DROP INDEX IF EXISTS idx_transactions_type_category;
 --rollback DROP INDEX IF EXISTS idx_transactions_card_number_timestamp;
@@ -356,6 +367,7 @@ COMMENT ON COLUMN transactions.transaction_category IS 'Foreign key to transacti
 COMMENT ON COLUMN transactions.transaction_amount IS 'Transaction amount with DECIMAL(12,2) precision. Maps to TRANSACT amount field with exact financial precision equivalent to COBOL COMP-3. Supports transactions up to $99,999,999.99 with validated range constraints.';
 COMMENT ON COLUMN transactions.description IS 'Transaction description providing context and details. Maps to TRANSACT description field. Required field with minimum length validation for meaningful transaction tracking.';
 COMMENT ON COLUMN transactions.transaction_timestamp IS 'Transaction timestamp with time zone. Partition key for monthly RANGE partitioning. Indexed for date-range queries and supports partition pruning for optimal query performance in batch processing.';
+COMMENT ON COLUMN transactions.merchant_id IS 'Merchant identifier mapping to COBOL TRAN-MERCHANT-ID (PIC 9(09)). Optional 9-character numeric field for unique merchant identification. Used for merchant-based transaction analysis and fraud detection operations.';
 COMMENT ON COLUMN transactions.merchant_name IS 'Merchant name for transaction location tracking. Optional field supporting up to 50 characters with validated character set. Used for fraud detection and geographical analysis operations.';
 COMMENT ON COLUMN transactions.merchant_city IS 'Merchant city for geographical transaction analysis. Optional field with format validation. Combined with merchant_zip for location-based fraud detection and reporting operations.';
 COMMENT ON COLUMN transactions.merchant_zip IS 'Merchant ZIP code for geographical analysis. Optional field supporting US and Canadian postal code formats. Indexed for location-based transaction analysis and fraud detection patterns.';
@@ -371,6 +383,7 @@ COMMENT ON COLUMN transactions.updated_at IS 'Record last modification timestamp
 --rollback COMMENT ON COLUMN transactions.transaction_amount IS NULL;
 --rollback COMMENT ON COLUMN transactions.description IS NULL;
 --rollback COMMENT ON COLUMN transactions.transaction_timestamp IS NULL;
+--rollback COMMENT ON COLUMN transactions.merchant_id IS NULL;
 --rollback COMMENT ON COLUMN transactions.merchant_name IS NULL;
 --rollback COMMENT ON COLUMN transactions.merchant_city IS NULL;
 --rollback COMMENT ON COLUMN transactions.merchant_zip IS NULL;
