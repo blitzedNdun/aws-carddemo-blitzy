@@ -825,6 +825,17 @@ Version: 1.0
         </rollback>
     </changeSet>
     
+    <!-- V26.1: Fix Disclosure Groups Duplicate Key Issues -->
+    <changeSet id="V26_1__fix_disclosure_groups_duplicate_key" author="blitzy-agent">
+        <comment>Clean up disclosure groups table and handle duplicate key violations</comment>
+        <sqlFile path="migration/V26_1__fix_disclosure_groups_duplicate_key.sql" relativeToChangelogFile="true" splitStatements="false" stripComments="false"/>
+        <rollback>
+            -- This migration performs cleanup that should not be rolled back
+            -- as it resolves data integrity issues
+            SELECT 'V26.1 rollback: Data cleanup migration - no rollback needed' as message;
+        </rollback>
+    </changeSet>
+    
     <!-- V26.5: Fix Accounts Disclosure Groups Foreign Key -->
     <changeSet id="V26_5__fix_accounts_disclosure_groups_fk" author="blitzy-agent">
         <comment>Fix accounts table foreign key to disclosure_groups after schema changes</comment>
