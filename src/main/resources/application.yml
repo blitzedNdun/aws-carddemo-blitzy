@@ -38,11 +38,6 @@ spring:
   # Spring profiles configuration for different environments
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:development}
-    include:
-      - database
-      - security
-      - monitoring
-      - cloud
 
   # Main application configuration
   main:
@@ -131,8 +126,8 @@ spring:
     hibernate:
       ddl-auto: validate                 # Schema validation only - Liquibase manages DDL
       naming:
-        physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
-        implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl
     
     properties:
       hibernate:
@@ -721,7 +716,7 @@ spring:
   # Test JPA configuration
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: create
     database-platform: org.hibernate.dialect.H2Dialect
     defer-datasource-initialization: true
     
