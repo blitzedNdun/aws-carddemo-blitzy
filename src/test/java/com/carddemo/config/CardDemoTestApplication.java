@@ -16,21 +16,21 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
  */
 @EnableJpaRepositories(
     basePackages = {
-        "com.carddemo.auth.repository",
-        "com.carddemo.account.repository", 
+        "com.carddemo.auth",
+        "com.carddemo.account", 
         "com.carddemo.card",
         "com.carddemo.transaction",
-        "com.carddemo.batch.repository",
-        "com.carddemo.common.repository"
+        "com.carddemo.batch",
+        "com.carddemo.common"
     }
 )
 @EntityScan(
     basePackages = {
-        "com.carddemo.auth.entity",
-        "com.carddemo.account.entity",
+        "com.carddemo.auth",
+        "com.carddemo.account",
         "com.carddemo.card",
         "com.carddemo.transaction",
-        "com.carddemo.batch.entity",
+        "com.carddemo.batch",
         "com.carddemo.common.entity"
     }
 )
