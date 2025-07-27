@@ -958,6 +958,15 @@ Version: 1.0
         </rollback>
     </changeSet>
 
+    <!-- V31: Fix Customers FICO Score Type -->
+    <changeSet id="V31__fix_customers_fico_score_type" author="blitzy-agent">
+        <comment>Fix customers table fico_credit_score column type for JPA entity alignment</comment>
+        <sqlFile path="migration/V31__fix_customers_fico_score_type.sql" relativeToChangelogFile="true" splitStatements="false" stripComments="false"/>
+        <rollback>
+            <sql>ALTER TABLE customers ALTER COLUMN fico_credit_score TYPE NUMERIC(3);</sql>
+        </rollback>
+    </changeSet>
+
     <!--
     =============================================================================
     DATA LOADING VALIDATION AND MATERIALIZED VIEW REFRESH
