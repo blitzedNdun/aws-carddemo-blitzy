@@ -417,6 +417,7 @@ management:
       enabled: true
       show-details: always                   # Always show details in tests
       show-components: always
+      validate-group-membership: false       # Disable health group validation in test environment
       probes:
         enabled: true
       group:
