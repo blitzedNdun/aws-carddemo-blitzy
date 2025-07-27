@@ -60,7 +60,7 @@ INSERT INTO disclosure_groups (
 
 -- A prefix with 07001 code (Adjustment category)
 ('A', '07', '0001', 0.0150, 'Group A Sales Draft Adjustment: 1.50% APR applies to sales draft credit adjustments during processing and reconciliation procedures.', CURRENT_DATE, true)
-ON CONFLICT (group_id, transaction_category) DO NOTHING;
+ON CONFLICT (group_id, transaction_type_prefix, transaction_category) DO NOTHING;
 
 
 --comment: Load DEFAULT group disclosure data from discgrp.txt with standard account interest rate configurations
@@ -104,7 +104,7 @@ INSERT INTO disclosure_groups (
 
 -- DEFAULT prefix with 07001 code (Adjustment category with zero interest)
 ('DEFAULT', '07', '0001', 0.0000, 'Default Adjustment Processing: 0.00% rate applies to sales draft adjustments and account corrections that do not involve interest calculations.', CURRENT_DATE, true)
-ON CONFLICT (group_id, transaction_category) DO NOTHING;
+ON CONFLICT (group_id, transaction_type_prefix, transaction_category) DO NOTHING;
 
 
 --comment: Load ZEROAPR group disclosure data from discgrp.txt with promotional zero interest rate configurations
@@ -148,7 +148,7 @@ INSERT INTO disclosure_groups (
 
 -- ZEROAPR prefix with 07001 code (Adjustment category with zero interest)
 ('ZEROAPR', '07', '0001', 0.0000, 'Zero APR Adjustment Processing: 0.00% rate for sales draft adjustments during promotional period with immediate account correction.', CURRENT_DATE, true)
-ON CONFLICT (group_id, transaction_category) DO NOTHING;
+ON CONFLICT (group_id, transaction_type_prefix, transaction_category) DO NOTHING;
 
 
 --comment: Create additional indexes for disclosure groups data to support sub-millisecond lookup operations
