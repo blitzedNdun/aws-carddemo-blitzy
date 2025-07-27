@@ -937,6 +937,15 @@ Version: 1.0
             <!-- Rollback is empty as specified in the SQL file -->
         </rollback>
     </changeSet>
+    
+    <!-- V29: Add Version Column to Accounts Table -->
+    <changeSet id="V29__add_version_column_to_accounts" author="blitzy-agent">
+        <comment>Add version column to accounts table for JPA optimistic locking support</comment>
+        <sqlFile path="../migration/V29__add_version_column_to_accounts.sql" relativeToChangelogFile="true" splitStatements="false" stripComments="false"/>
+        <rollback>
+            <sql>ALTER TABLE accounts DROP COLUMN version;</sql>
+        </rollback>
+    </changeSet>
 
     <!--
     =============================================================================
