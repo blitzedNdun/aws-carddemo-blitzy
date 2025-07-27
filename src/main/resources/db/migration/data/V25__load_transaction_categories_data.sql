@@ -10,9 +10,8 @@
 -- Target: transaction_categories table with hierarchical structure
 -- ==============================================================================
 
---liquibase formatted sql
-
---changeset blitzy-agent:load-transaction-categories-data-v25
+-- This file is now included via XML changeset in liquibase-changelog.xml
+-- Liquibase-specific comments and rollback directives have been moved to the XML changeset definition
 --comment: Load transaction category reference data from trancatg.txt with 6-digit category codes converted to 4-character format and hierarchical parent-child relationships
 
 -- Clear any existing transaction category data to ensure clean data load
@@ -127,9 +126,7 @@ BEGIN
     RAISE NOTICE 'Transaction categories data loading validation successful';
 END $$;
 
---rollback DELETE FROM transaction_categories WHERE transaction_category IN ('0001', '0002', '0003', '0004', '0005') AND parent_transaction_type IN ('01', '02', '03', '04', '05', '06', '07');
 
---changeset blitzy-agent:optimize-transaction-categories-performance-v25
 --comment: Create performance optimization indexes for transaction category lookup operations supporting sub-millisecond response times
 
 -- Create composite index for hierarchical category lookups optimized for parent-child queries
@@ -175,11 +172,7 @@ BEGIN
     END IF;
 END $$;
 
---rollback DROP INDEX IF EXISTS idx_transaction_categories_active_enumeration;
---rollback DROP INDEX IF EXISTS idx_transaction_categories_description_covering;
---rollback DROP INDEX IF EXISTS idx_transaction_categories_parent_active_lookup;
 
---changeset blitzy-agent:validate-transaction-categories-business-rules-v25
 --comment: Validate transaction category data against business rules and referential integrity constraints
 
 -- Validate all transaction categories have proper hierarchical relationships
@@ -197,8 +190,8 @@ BEGIN
         WHERE NOT (transaction_category ~ '^[0-9]{4}$')
     LOOP
         validation_errors := validation_errors || 
-            format('Invalid category code format: %s (%s)' || E'\n', 
-                   rec.transaction_category, rec.category_description);
+            format('Invalid category code format: %s (%s)', 
+                   rec.transaction_category, rec.category_description) || E'\n';
         error_count := error_count + 1;
     END LOOP;
     
@@ -210,8 +203,8 @@ BEGIN
         WHERE tt.transaction_type IS NULL OR tt.active_status = false
     LOOP
         validation_errors := validation_errors || 
-            format('Invalid parent transaction type: %s for category %s (%s)' || E'\n', 
-                   rec.parent_transaction_type, rec.transaction_category, rec.category_description);
+            format('Invalid parent transaction type: %s for category %s (%s)', 
+                   rec.parent_transaction_type, rec.transaction_category, rec.category_description) || E'\n';
         error_count := error_count + 1;
     END LOOP;
     
@@ -222,8 +215,8 @@ BEGIN
         WHERE length(trim(category_description)) < 3
     LOOP
         validation_errors := validation_errors || 
-            format('Category description too short: %s (%s)' || E'\n', 
-                   rec.transaction_category, rec.category_description);
+            format('Category description too short: %s (%s)', 
+                   rec.transaction_category, rec.category_description) || E'\n';
         error_count := error_count + 1;
     END LOOP;
     
@@ -235,8 +228,8 @@ BEGIN
         HAVING COUNT(*) > 1
     LOOP
         validation_errors := validation_errors || 
-            format('Duplicate category code: %s in parent type %s (count: %s)' || E'\n', 
-                   rec.transaction_category, rec.parent_transaction_type, rec.duplicate_count);
+            format('Duplicate category code: %s in parent type %s (count: %s)', 
+                   rec.transaction_category, rec.parent_transaction_type, rec.duplicate_count) || E'\n';
         error_count := error_count + 1;
     END LOOP;
     
@@ -249,15 +242,14 @@ BEGIN
         RAISE NOTICE '  Category description requirements: PASSED';
         RAISE NOTICE '  Category uniqueness constraints: PASSED';
     ELSE
-        RAISE EXCEPTION 'Transaction categories business rule validation failed:' || E'\n' || 
-                       'Error count: %' || E'\n' || 'Validation errors:' || E'\n' || '%', 
-                       error_count, validation_errors;
+        RAISE EXCEPTION 'Transaction categories business rule validation failed:
+Error count: %
+Validation errors:
+%', error_count, validation_errors;
     END IF;
 END $$;
 
---rollback -- Business rule validation rollback: no persistent changes to reverse
 
---changeset blitzy-agent:document-transaction-categories-data-lineage-v25  
 --comment: Document data lineage and transformation rules for transaction categories reference data
 
 -- Create comprehensive documentation for transaction categories data loading process
@@ -292,4 +284,3 @@ BEGIN
     RAISE NOTICE '=================================================================';
 END $$;
 
---rollback -- Data lineage documentation rollback: no persistent changes to reverse
