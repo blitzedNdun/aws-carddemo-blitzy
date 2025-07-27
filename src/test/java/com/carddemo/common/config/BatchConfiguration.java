@@ -50,10 +50,10 @@ import org.slf4j.LoggerFactory;
  * This class replaces the main BatchConfiguration during test execution by being enabled only
  * for the 'test' profile, ensuring batch jobs can be properly instantiated and tested.
  */
-@Configuration
+@TestConfiguration
 @EnableBatchProcessing
 @EnableConfigurationProperties(BatchProperties.class)
-@Profile("test")
+@Profile("unit-test")
 public class BatchConfiguration extends DefaultBatchConfiguration {
 
     private static final Logger logger = LoggerFactory.getLogger(BatchConfiguration.class);
