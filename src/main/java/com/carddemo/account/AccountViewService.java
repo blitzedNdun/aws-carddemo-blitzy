@@ -1,7 +1,7 @@
 package com.carddemo.account;
 
-import com.carddemo.common.entity.Account;
-import com.carddemo.common.entity.Customer;
+import com.carddemo.account.entity.Account;
+import com.carddemo.account.entity.Customer;
 import com.carddemo.account.repository.AccountRepository;
 import com.carddemo.account.repository.CustomerRepository;
 import com.carddemo.account.dto.AccountViewRequestDto;
@@ -327,7 +327,7 @@ public class AccountViewService {
             // Set card number if available (from account's primary card)
             if (account.getCards() != null && !account.getCards().isEmpty()) {
                 // Get the first card associated with the account
-                String cardId = account.getCards().iterator().next().getCardNumber();
+                String cardId = account.getCards().iterator().next().getCardId();
                 response.setCardNumber(cardId);
             }
 
