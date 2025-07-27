@@ -1,6 +1,6 @@
 package com.carddemo.batch;
 
-import com.carddemo.account.entity.Account;
+import com.carddemo.common.entity.Account;
 import com.carddemo.account.service.AccountService;
 import com.carddemo.common.config.BatchConfiguration;
 import com.carddemo.account.repository.AccountRepository;
@@ -497,7 +497,7 @@ public class AccountProcessingJob {
             // Step 3: Check and update account expiration status
             if (processedAccount.isExpired() && processedAccount.isActive()) {
                 logger.info("Account {} has expired - updating status to INACTIVE", account.getAccountId());
-                processedAccount.setActiveStatus(AccountStatus.INACTIVE);
+                processedAccount.setActiveStatus(AccountStatus.INACTIVE.isActive());
             }
             
             // Step 4: Validate credit utilization and update if needed
@@ -659,7 +659,7 @@ public class AccountProcessingJob {
                 account.getTransactions().forEach(transaction -> {
                     String category = transaction.getTransactionType() != null 
                         ? transaction.getTransactionType().getTransactionType() : "UNKNOWN";
-                    BigDecimal amount = transaction.getTransactionAmount();
+                    BigDecimal amount = transaction.getAmount();
                     categoryBalances.merge(category, amount, 
                         (existing, newAmount) -> BigDecimalUtils.add(existing, newAmount));
                 });
