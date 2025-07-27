@@ -26,7 +26,7 @@ CREATE TEMPORARY TABLE temp_carddata_raw (
 -- Create temporary working table for cardxref.txt raw parsing  
 CREATE TEMPORARY TABLE temp_cardxref_raw (
     line_number SERIAL,
-    raw_data VARCHAR(34) NOT NULL,
+    raw_data VARCHAR(36) NOT NULL,
     processed BOOLEAN DEFAULT FALSE
 );
 
