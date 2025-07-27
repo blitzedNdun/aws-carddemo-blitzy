@@ -70,8 +70,8 @@ CREATE TEMPORARY TABLE temp_cards_final (
     validation_status TEXT DEFAULT 'VALID'
 );
 
--- Create temporary table for data loading statistics and audit trail
-CREATE TEMPORARY TABLE temp_load_statistics (
+-- Create regular table for data loading statistics and audit trail (will be dropped at end)
+CREATE TABLE temp_load_statistics (
     total_carddata_records INTEGER DEFAULT 0,
     total_cardxref_records INTEGER DEFAULT 0,
     valid_carddata_records INTEGER DEFAULT 0,
@@ -659,6 +659,13 @@ SELECT '  ✓ Microservices architecture support enabled with comprehensive card
 
 -- Cards data migration V23 completed successfully with comprehensive validation and cross-reference integration
 -- Rollback directives have been moved to the XML changeset definition
+
+-- =============================================================================
+-- PHASE 10: Cleanup
+-- =============================================================================
+
+-- Drop the regular statistics table now that migration is complete
+DROP TABLE temp_load_statistics;
 
 -- =============================================================================
 -- END OF MIGRATION
