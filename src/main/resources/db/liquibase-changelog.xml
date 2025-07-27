@@ -748,6 +748,8 @@ Version: 1.0
         <sqlFile path="migration/V24_5__fix_transaction_categories_constraint.sql" relativeToChangelogFile="true" splitStatements="false" stripComments="false"/>
         <rollback>
             ALTER TABLE transaction_categories ADD CONSTRAINT uk_transaction_categories_category UNIQUE (transaction_category);
+            ALTER TABLE disclosure_groups ADD CONSTRAINT fk_disclosure_groups_transaction_category FOREIGN KEY (transaction_category) REFERENCES transaction_categories(transaction_category) ON DELETE RESTRICT ON UPDATE CASCADE;
+            ALTER TABLE transaction_category_balances ADD CONSTRAINT fk_tcatbal_transaction_category FOREIGN KEY (transaction_category) REFERENCES transaction_categories(transaction_category) ON DELETE RESTRICT ON UPDATE CASCADE;
         </rollback>
     </changeSet>
     
