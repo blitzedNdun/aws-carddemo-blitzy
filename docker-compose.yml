@@ -1,0 +1,282 @@
+# Docker Compose Configuration for CardDemo Local Development Environment
+# Modernized Credit Card Management System
+# Replaces mainframe COBOL/CICS architecture with cloud-native Java 21/Spring Boot stack
+# 
+# This configuration orchestrates four core services:
+# 1. carddemo-backend: Spring Boot REST API services (Port 8080)
+# 2. carddemo-frontend: React SPA application (Port 3000)
+# 3. postgres: PostgreSQL 15.x database (Port 5432)
+# 4. redis: Redis 7.x session store (Port 6379)
+#
+# Service Dependencies:
+# - Frontend depends on Backend for API communication
+# - Backend depends on PostgreSQL for data persistence and Redis for session management
+# - All services share a common network for seamless inter-service communication
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database Service
+  # Replaces VSAM KSDS datasets with relational database architecture
+  # Maintains identical data structures and key access patterns from mainframe environment
+  postgres:
+    image: postgres:15.4
+    container_name: carddemo-postgres
+    restart: unless-stopped
+    environment:
+      # Database configuration matching Spring Boot application requirements
+      POSTGRES_DB: carddemo
+      POSTGRES_USER: carddemo_user
+      POSTGRES_PASSWORD: carddemo_password
+      # PostgreSQL performance tuning for development environment
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      # Persistent volume for database data ensuring data survival across container restarts
+      - postgres_data:/var/lib/postgresql/data
+      # Initialize database schema on first startup
+      - ./backend/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./backend/src/main/resources/data.sql:/docker-entrypoint-initdb.d/02-data.sql:ro
+    networks:
+      - carddemo-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U carddemo_user -d carddemo"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Redis Session Store Service
+  # Replaces CICS COMMAREA with distributed session management
+  # Maintains user session state across requests with configurable timeout
+  redis:
+    image: redis:7.4-alpine
+    container_name: carddemo-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      # Persistent volume for Redis data ensuring session recovery across restarts
+      - redis_data:/data
+    networks:
+      - carddemo-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Spring Boot Backend Service
+  # Replaces 36 COBOL programs (24 CICS + 12 batch) with REST API architecture
+  # Implements business logic translation maintaining identical functional behavior
+  carddemo-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        # Java 21 LTS build arguments for enterprise compatibility
+        JAVA_VERSION: 21
+        SPRING_BOOT_VERSION: 3.2.0
+    image: carddemo/backend-service:latest
+    container_name: carddemo-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # Spring Boot application configuration
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8080
+      
+      # Database connection configuration
+      # Replaces VSAM dataset access with PostgreSQL connectivity
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/carddemo
+      SPRING_DATASOURCE_USERNAME: carddemo_user
+      SPRING_DATASOURCE_PASSWORD: carddemo_password
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      
+      # JPA/Hibernate configuration for COBOL data type compatibility
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SPRING_JPA_SHOW_SQL: false
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: true
+      
+      # Redis session store configuration
+      # Replaces CICS COMMAREA with distributed session management
+      SPRING_SESSION_STORE_TYPE: redis
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_TIMEOUT: 2000ms
+      SPRING_SESSION_TIMEOUT: 30m
+      
+      # Spring Boot Actuator configuration for health monitoring
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,metrics,info,prometheus
+      MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: when_authorized
+      MANAGEMENT_HEALTH_READINESS_STATE_ENABLED: true
+      MANAGEMENT_HEALTH_LIVENESS_STATE_ENABLED: true
+      
+      # Application-specific configuration
+      # Maintains COBOL program behavior and business logic
+      CARDDEMO_SECURITY_JWT_SECRET: carddemo_jwt_secret_key_for_development
+      CARDDEMO_SECURITY_JWT_EXPIRATION: 3600000
+      CARDDEMO_BATCH_ENABLED: true
+      CARDDEMO_BATCH_THREAD_POOL_SIZE: 5
+      
+      # Database connection pool configuration
+      # Optimized for concurrent transaction processing matching CICS performance
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: 20
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: 5
+      SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT: 30000
+      SPRING_DATASOURCE_HIKARI_IDLE_TIMEOUT: 600000
+      SPRING_DATASOURCE_HIKARI_MAX_LIFETIME: 1800000
+      
+      # Logging configuration for development debugging
+      LOGGING_LEVEL_COM_CARDDEMO: DEBUG
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: DEBUG
+      LOGGING_LEVEL_ORG_HIBERNATE_SQL: DEBUG
+      LOGGING_PATTERN_CONSOLE: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    volumes:
+      # Mount application logs for external access
+      - backend_logs:/app/logs
+      # Mount batch processing directories
+      - batch_data:/app/batch/data
+      - batch_output:/app/batch/output
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - carddemo-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  # React Frontend Service
+  # Replaces 18 BMS mapsets with modern SPA architecture
+  # Maintains identical screen layouts and user interaction patterns
+  carddemo-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Node.js 20 LTS build arguments for long-term support
+        NODE_VERSION: 20
+        REACT_VERSION: 18
+    image: carddemo/frontend-spa:latest
+    container_name: carddemo-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # React application configuration
+      NODE_ENV: development
+      CHOKIDAR_USEPOLLING: true
+      
+      # Backend API configuration
+      # Configures communication with Spring Boot REST services
+      REACT_APP_API_BASE_URL: http://localhost:8080/api
+      REACT_APP_API_TIMEOUT: 30000
+      
+      # Session management configuration
+      REACT_APP_SESSION_TIMEOUT: 1800000
+      REACT_APP_IDLE_TIMEOUT: 900000
+      
+      # UI configuration matching BMS screen behavior
+      REACT_APP_PAGINATION_SIZE: 10
+      REACT_APP_MAX_SEARCH_RESULTS: 100
+      REACT_APP_DATE_FORMAT: MM/DD/YYYY
+      REACT_APP_CURRENCY_FORMAT: USD
+      
+      # Development tools configuration
+      REACT_APP_ENABLE_REDUX_DEVTOOLS: true
+      REACT_APP_LOG_LEVEL: debug
+      
+      # Hot reloading configuration for development
+      FAST_REFRESH: true
+      WDS_SOCKET_HOST: localhost
+      WDS_SOCKET_PORT: 3000
+    volumes:
+      # Mount source code for hot reloading during development
+      - ./frontend/src:/app/src:ro
+      - ./frontend/public:/app/public:ro
+      - frontend_node_modules:/app/node_modules
+    depends_on:
+      carddemo-backend:
+        condition: service_healthy
+    networks:
+      - carddemo-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+# Named volumes for persistent data storage
+# Ensures data survival across container lifecycle management
+volumes:
+  # PostgreSQL database files
+  # Replaces VSAM dataset persistence with relational database storage
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/postgres
+
+  # Redis session and cache data
+  # Maintains session state persistence across service restarts
+  redis_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/redis
+
+  # Backend application logs
+  # Centralized logging for debugging and monitoring
+  backend_logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./logs/backend
+
+  # Batch processing data directories
+  # Maintains file-based interfaces for Spring Batch jobs
+  batch_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/batch/input
+
+  batch_output:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/batch/output
+
+  # Frontend node_modules cache
+  # Improves build performance for development environment
+  frontend_node_modules:
+    driver: local
+
+# Custom network for inter-service communication
+# Enables service discovery and secure communication between containers
+networks:
+  carddemo-network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: carddemo-bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
