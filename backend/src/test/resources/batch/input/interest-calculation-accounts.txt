@@ -1,0 +1,117 @@
+# Interest Calculation Test Data - Account Records
+# This file contains carefully crafted account records for testing the CBACT04C COBOL-to-Java
+# interest calculation migration with BigDecimal precision matching COBOL COMP-3 behavior.
+#
+# Record Format: Fixed-width ASCII matching CVACT01Y copybook layout (300 bytes per record)
+# Key fields for interest calculation testing:
+# - ACCT-ID: Account identifier (11 digits)
+# - ACCT-ACTIVE-STATUS: Account status (Y/N)
+# - ACCT-CURR-BAL: Current balance (S9(10)V99 - packed decimal in COBOL)
+# - ACCT-CREDIT-LIMIT: Credit limit (S9(10)V99 - packed decimal in COBOL)
+# - ACCT-CASH-CREDIT-LIMIT: Cash advance limit (S9(10)V99 - packed decimal in COBOL)
+# - ACCT-OPEN-DATE: Account open date (YYYY-MM-DD format)
+# - ACCT-EXPIRAION-DATE: Account expiration date (YYYY-MM-DD format)
+# - ACCT-REISSUE-DATE: Card reissue date (YYYY-MM-DD format)
+# - ACCT-CURR-CYC-CREDIT: Current cycle credit (S9(10)V99 - packed decimal in COBOL)
+# - ACCT-CURR-CYC-DEBIT: Current cycle debit (S9(10)V99 - packed decimal in COBOL)
+# - ACCT-GROUP-ID: Disclosure group ID (maps to different interest rates)
+#
+# Test Scenarios Covered:
+# 1. Zero balance accounts (no interest calculation)
+# 2. Small balance accounts (penny-level precision testing)
+# 3. Medium balance accounts (standard calculation testing)
+# 4. High balance accounts (maximum precision testing)
+# 5. Maximum credit limit accounts (edge case testing)
+# 6. Different disclosure groups (A, B, C, DEFAULT) for interest rate variations
+# 7. Various cycle dates for interest accrual period testing
+# 8. Negative balance accounts (credit balance scenarios)
+
+# Test Record 1: Zero balance account - should generate no interest
+00000000001Y00000000000{00000050000{00000005000{2020-01-152025-01-152025-01-1500000000000{00000000000{A000000000                                                                                                                                                                                            
+
+# Test Record 2: Small positive balance - penny-level precision test
+00000000002Y00000000123{00000050000{00000005000{2020-02-152025-02-152025-02-1500000000000{00000000123{A000000000                                                                                                                                                                                            
+
+# Test Record 3: Standard balance with Group A (high interest rate)
+00000000003Y00000123456{00000100000{00000010000{2020-03-152025-03-152025-03-1500000000000{00000012345{A000000000                                                                                                                                                                                            
+
+# Test Record 4: Standard balance with Group B (medium interest rate)
+00000000004Y00000234567{00000150000{00000015000{2020-04-152025-04-152025-04-1500000000000{00000023456{B000000000                                                                                                                                                                                            
+
+# Test Record 5: Standard balance with Group C (low interest rate)
+00000000005Y00000345678{00000200000{00000020000{2020-05-152025-05-152025-05-1500000000000{00000034567{C000000000                                                                                                                                                                                            
+
+# Test Record 6: High balance account - maximum precision testing
+00000000006Y00009999999{00001000000{00000100000{2020-06-152025-06-152025-06-1500000000000{00000999999{A000000000                                                                                                                                                                                            
+
+# Test Record 7: Maximum balance account - edge case for COBOL S9(10)V99
+00000000007Y99999999999{99999999999{09999999999{2020-07-152025-07-152025-07-1500000000000{09999999999{B000000000                                                                                                                                                                                            
+
+# Test Record 8: Negative balance (credit balance) - should be treated as zero for interest
+00000000008N00000001234}00000050000{00000005000{2020-08-152025-08-152025-08-1500000000000{00000000000{A000000000                                                                                                                                                                                            
+
+# Test Record 9: Account with DEFAULT group (fallback interest rate)
+00000000009Y00000567890{00000075000{00000007500{2020-09-152025-09-152025-09-1500000000000{00000056789{DEFAULT000                                                                                                                                                                                            
+
+# Test Record 10: Very small balance - minimum precision test  
+00000000010Y00000000001{00000050000{00000005000{2020-10-152025-10-152025-10-1500000000000{00000000000{A000000000                                                                                                                                                                                            
+
+# Test Record 11: Balance with cents - decimal precision test
+00000000011Y00000012345{00000060000{00000006000{2020-11-152025-11-152025-11-1500000000000{00000001234{A000000000                                                                                                                                                                                            
+
+# Test Record 12: Round number balance - even calculation test
+00000000012Y00000100000{00000200000{00000020000{2020-12-152025-12-152025-12-1500000000000{00000010000{B000000000                                                                                                                                                                                            
+
+# Test Record 13: Odd balance with complex cents - rounding test
+00000000013Y00000333367{00000150000{00000015000{2021-01-152026-01-152026-01-1500000000000{00000033336{C000000000                                                                                                                                                                                            
+
+# Test Record 14: Large balance with Group A - high interest calculation
+00000000014Y00005000000{00001000000{00000100000{2021-02-152026-02-152026-02-1500000000000{00000500000{A000000000                                                                                                                                                                                            
+
+# Test Record 15: Zero balance but active account - edge case
+00000000015Y00000000000{00000025000{00000002500{2021-03-152026-03-152026-03-1500000000000{00000000000{B000000000                                                                                                                                                                                            
+
+# Test Record 16: Medium balance with different cycle dates
+00000000016Y00000750000{00000300000{00000030000{2021-04-012026-04-012026-04-0100000000000{00000075000{A000000000                                                                                                                                                                                            
+
+# Test Record 17: High balance with end-of-month cycle
+00000000017Y00001500000{00000500000{00000050000{2021-04-302026-04-302026-04-3000000000000{00000150000{B000000000                                                                                                                                                                                            
+
+# Test Record 18: Account near credit limit
+00000000018Y00000095000{00000100000{00000010000{2021-05-152026-05-152026-05-1500000000000{00000009500{C000000000                                                                                                                                                                                            
+
+# Test Record 19: Account at exactly credit limit - zero available credit
+00000000019Y00000100000{00000100000{00000010000{2021-06-152026-06-152026-06-1500000000000{00000010000{A000000000                                                                                                                                                                                            
+
+# Test Record 20: Account with maximum cents value (.99)
+00000000020Y00000123499{00000200000{00000020000{2021-07-152026-07-152026-07-1500000000000{00000012349{B000000000                                                                                                                                                                                            
+
+# Test Record 21: Account with minimum cents value (.01)
+00000000021Y00000123401{00000200000{00000020000{2021-08-152026-08-152026-08-1500000000000{00000012340{C000000000                                                                                                                                                                                            
+
+# Test Record 22: Account with half-cent precision test (.50)
+00000000022Y00000123450{00000200000{00000020000{2021-09-152026-09-152026-09-1500000000000{00000012345{DEFAULT000                                                                                                                                                                                            
+
+# Test Record 23: Large cash advance limit test
+00000000023Y00000250000{00000500000{00000100000{2021-10-152026-10-152026-10-1500000000000{00000025000{A000000000                                                                                                                                                                                            
+
+# Test Record 24: Balance equals cash limit
+00000000024Y00000050000{00000200000{00000050000{2021-11-152026-11-152026-11-1500000000000{00000005000{B000000000                                                                                                                                                                                            
+
+# Test Record 25: Inactive account with balance - should not calculate interest
+00000000025N00000075000{00000150000{00000015000{2021-12-152026-12-152026-12-1500000000000{00000007500{A000000000                                                                                                                                                                                            
+
+# Test Record 26: Recently opened account
+00000000026Y00000050000{00000100000{00000010000{2024-01-152025-01-152025-01-1500000000000{00000005000{C000000000                                                                                                                                                                                            
+
+# Test Record 27: Account expiring soon
+00000000027Y00000150000{00000300000{00000030000{2020-01-152025-01-312025-01-3100000000000{00000015000{A000000000                                                                                                                                                                                            
+
+# Test Record 28: Account with future expiration
+00000000028Y00000200000{00000400000{00000040000{2022-06-152027-06-152027-06-1500000000000{00000020000{B000000000                                                                                                                                                                                            
+
+# Test Record 29: Account with complex interest calculation scenario
+00000000029Y00000876543{00000900000{00000090000{2022-07-152027-07-152027-07-1500000000000{00000087654{DEFAULT000                                                                                                                                                                                            
+
+# Test Record 30: Maximum test scenario - highest values within COBOL limits
+00000000030Y99999999999{99999999999{99999999999{2023-12-312028-12-312028-12-3199999999999{99999999999{A000000000                                                                                                                                                                                            
