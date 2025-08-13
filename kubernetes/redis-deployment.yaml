@@ -1,0 +1,238 @@
+# Redis Deployment for CardDemo Session Management
+# Replaces CICS COMMAREA with distributed session storage supporting Spring Session integration
+# Configured with RDB/AOF persistence for session recovery and 32KB state management capability
+#
+# Resource allocation per Section 8.4.7:
+# - CPU Request: 100m, Limit: 200m
+# - Memory Request: 256Mi, Limit: 512Mi
+#
+# Features:
+# - Redis 7.4-alpine for minimal security attack surface
+# - Persistence via RDB snapshots and AOF logging
+# - Spring Session JSON serialization support
+# - 30-minute session timeout matching CICS transaction timeout
+# - Redis AUTH authentication for production security
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  labels:
+    app: redis
+    component: session-store
+    tier: cache
+    version: v7.4
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate  # Use Recreate for stateful components with persistent storage
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+        component: session-store
+        tier: cache
+        version: v7.4
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999  # Redis user in alpine image
+        fsGroup: 999
+      containers:
+      - name: redis
+        image: redis:7.4-alpine
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 6379
+          name: redis
+          protocol: TCP
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+        # Redis configuration optimized for Spring Session integration
+        command:
+        - redis-server
+        - --maxmemory
+        - "384mb"  # 75% of memory limit for optimal performance
+        - --maxmemory-policy
+        - "allkeys-lru"  # Evict least recently used keys when memory limit reached
+        - --timeout
+        - "1800"  # 30-minute timeout matching CICS transaction timeout
+        - --tcp-keepalive
+        - "60"  # Keep connections alive for session persistence
+        - --save
+        - "900 1"  # RDB snapshot: save if at least 1 key changed in 900 seconds
+        - --save
+        - "300 10"  # RDB snapshot: save if at least 10 keys changed in 300 seconds  
+        - --save
+        - "60 10000"  # RDB snapshot: save if at least 10000 keys changed in 60 seconds
+        - --appendonly
+        - "yes"  # Enable AOF persistence for durability
+        - --appendfsync
+        - "everysec"  # AOF sync every second for balance of performance and durability
+        - --no-appendfsync-on-rewrite
+        - "no"  # Ensure AOF consistency during RDB saves
+        - --auto-aof-rewrite-percentage
+        - "100"  # Rewrite AOF when it grows 100% since last rewrite
+        - --auto-aof-rewrite-min-size
+        - "64mb"  # Minimum AOF size before considering rewrite
+        - --requirepass
+        - "$(REDIS_PASSWORD)"  # Enable authentication for security
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-secret
+              key: password
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+          subPath: redis
+        - name: redis-config
+          mountPath: /usr/local/etc/redis
+          readOnly: true
+        # Health probes for Redis availability
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - --no-auth-warning
+            - -a
+            - "$(REDIS_PASSWORD)"
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - --no-auth-warning
+            - -a
+            - "$(REDIS_PASSWORD)"
+            - ping
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 2
+        # Resource monitoring and session state validation
+        startupProbe:
+          exec:
+            command:
+            - redis-cli
+            - --no-auth-warning
+            - -a
+            - "$(REDIS_PASSWORD)"
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 2
+          successThreshold: 1
+          failureThreshold: 10
+      volumes:
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: redis-pvc
+      - name: redis-config
+        configMap:
+          name: redis-config
+          items:
+          - key: redis.conf
+            path: redis.conf
+      # Graceful termination for session data consistency
+      terminationGracePeriodSeconds: 30
+      # Restart policy for session store availability
+      restartPolicy: Always
+
+---
+# ConfigMap for Redis advanced configuration
+# Optimized for Spring Session integration and CICS COMMAREA replacement
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  labels:
+    app: redis
+    component: session-store
+data:
+  redis.conf: |
+    # Redis configuration for CardDemo Spring Session integration
+    # Optimized for session management replacing CICS COMMAREA functionality
+    
+    # Memory management for session storage
+    maxmemory-samples 5
+    hash-max-ziplist-entries 512
+    hash-max-ziplist-value 64
+    list-max-ziplist-size -2
+    set-max-intset-entries 512
+    zset-max-ziplist-entries 128
+    zset-max-ziplist-value 64
+    
+    # Session timeout and cleanup
+    timeout 1800
+    tcp-keepalive 60
+    tcp-backlog 511
+    
+    # Persistence configuration for session recovery
+    stop-writes-on-bgsave-error yes
+    rdbcompression yes
+    rdbchecksum yes
+    dbfilename dump.rdb
+    dir /data
+    
+    # AOF configuration for session durability
+    appendonly yes
+    appendfilename "appendonly.aof"
+    appendfsync everysec
+    no-appendfsync-on-rewrite no
+    auto-aof-rewrite-percentage 100
+    auto-aof-rewrite-min-size 67108864
+    aof-load-truncated yes
+    aof-use-rdb-preamble yes
+    
+    # Client connection limits for concurrent sessions
+    maxclients 10000
+    
+    # Logging for troubleshooting session issues
+    loglevel notice
+    syslog-enabled yes
+    syslog-ident redis-session-store
+    
+    # Security settings
+    protected-mode yes
+    bind 0.0.0.0
+    port 6379
+    
+    # Key expiration and notification for session management
+    notify-keyspace-events Ex
+    
+    # Disable dangerous commands in production
+    rename-command FLUSHDB ""
+    rename-command FLUSHALL ""
+    rename-command DEBUG ""
+    rename-command CONFIG "CONFIG_ADMIN_ONLY"
+
+---
+# Secret for Redis authentication
+# Provides secure authentication replacing RACF security
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redis-secret
+  labels:
+    app: redis
+    component: session-store
+type: Opaque
+stringData:
+  password: "cardDemo2024$Session"  # Strong password for Redis AUTH
+  # Note: In production, this should be generated and managed through external secret management
