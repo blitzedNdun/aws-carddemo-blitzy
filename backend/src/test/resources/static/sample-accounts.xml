@@ -1,0 +1,414 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Sample account data for testing batch processing programs CBACT01C-CBACT04C
+Matches CVACT01Y copybook structure for VSAM ACCTDAT file migration testing
+-->
+<accounts xmlns="http://carddemo.com/test/accounts" 
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    
+    <metadata>
+        <description>Test account data for CardDemo batch processing migration</description>
+        <recordCount>25</recordCount>
+        <version>1.0</version>
+        <generated>2024-08-13</generated>
+    </metadata>
+    
+    <!-- Active accounts with positive balances for standard processing -->
+    <account>
+        <accountId>11111111111</accountId>
+        <activeStatus>Y</activeStatus>
+        <currentBalance>1250.75</currentBalance>
+        <creditLimit>5000.00</creditLimit>
+        <cashCreditLimit>1000.00</cashCreditLimit>
+        <openDate>2022-01-15</openDate>
+        <expirationDate>2026-01-31</expirationDate>
+        <reissueDate>2024-02-01</reissueDate>
+        <currentCycleCredit>500.00</currentCycleCredit>
+        <currentCycleDebit>275.25</currentCycleDebit>
+        <addressZip>12345</addressZip>
+        <groupId>STANDARD</groupId>
+    </account>
+    
+    <account>
+        <accountId>22222222222</accountId>
+        <activeStatus>Y</activeStatus>
+        <currentBalance>3875.50</currentBalance>
+        <creditLimit>10000.00</creditLimit>
+        <cashCreditLimit>2000.00</cashCreditLimit>
+        <openDate>2021-06-10</openDate>
+        <expirationDate>2025-06-30</expirationDate>
+        <reissueDate>2023-07-01</reissueDate>
+        <currentCycleCredit>1200.00</currentCycleCredit>
+        <currentCycleDebit>450.75</currentCycleDebit>
+        <addressZip>54321</addressZip>
+        <groupId>PREMIUM</groupId>
+    </account>
+    
+    <account>
+        <accountId>33333333333</accountId>
+        <activeStatus>Y</activeStatus>
+        <currentBalance>567.89</currentBalance>
+        <creditLimit>2500.00</creditLimit>
+        <cashCreditLimit>500.00</cashCreditLimit>
+        <openDate>2023-03-20</openDate>
+        <expirationDate>2027-03-31</expirationDate>
+        <reissueDate>2023-03-20</reissueDate>
+        <currentCycleCredit>200.00</currentCycleCredit>
+        <currentCycleDebit>89.45</currentCycleDebit>
+        <addressZip>67890</addressZip>
+        <groupId>BASIC</groupId>
+    </account>
+    
+    <!-- Account with zero balance for edge case testing -->
+    <account>
+        <accountId>44444444444</accountId>
+        <activeStatus>Y</activeStatus>
+        <currentBalance>0.00</currentBalance>
+        <creditLimit>1000.00</creditLimit>
+        <cashCreditLimit>200.00</cashCreditLimit>
+        <openDate>2023-08-01</openDate>
+        <expirationDate>2027-08-31</expirationDate>
+        <reissueDate>2023-08-01</reissueDate>
+        <currentCycleCredit>0.00</currentCycleCredit>
+        <currentCycleDebit>0.00</currentCycleDebit>
+        <addressZip>11111</addressZip>
+        <groupId>BASIC</groupId>
+    </account>
+    
+    <!-- Account with negative balance for interest calculation testing -->
+    <account>
+        <accountId>55555555555</accountId>
+        <activeStatus>Y</activeStatus>
+        <currentBalance>-1500.25</currentBalance>
+        <creditLimit>3000.00</creditLimit>
+        <cashCreditLimit>600.00</cashCreditLimit>
+        <openDate>2022-12-05</openDate>
+        <expirationDate>2026-12-31</expirationDate>
+        <reissueDate>2024-01-01</reissueDate>
+        <currentCycleCredit>0.00</currentCycleCredit>
+        <currentCycleDebit>1500.25</currentCycleDebit>
+        <addressZip>22222</addressZip>
+        <groupId>STANDARD</groupId>
+    </account>
+    
+    <!-- High-value account for premium processing -->
+    <account>
+        <accountId>66666666666</accountId>
+        <activeStatus>Y</activeStatus>
+        <currentBalance>15750.99</currentBalance>
+        <creditLimit>25000.00</creditLimit>
+        <cashCreditLimit>5000.00</cashCreditLimit>
+        <openDate>2020-04-15</openDate>
+        <expirationDate>2025-04-30</expirationDate>
+        <reissueDate>2023-05-01</reissueDate>
+        <currentCycleCredit>3000.00</currentCycleCredit>
+        <currentCycleDebit>1250.50</currentCycleDebit>
+        <addressZip>33333</addressZip>
+        <groupId>PLATINUM</groupId>
+    </account>
+    
+    <!-- Inactive account for status testing -->
+    <account>
+        <accountId>77777777777</accountId>
+        <activeStatus>N</activeStatus>
+        <currentBalance>45.67</currentBalance>
+        <creditLimit>500.00</creditLimit>
+        <cashCreditLimit>100.00</cashCreditLimit>
+        <openDate>2019-01-10</openDate>
+        <expirationDate>2023-01-31</expirationDate>
+        <reissueDate>2019-01-10</reissueDate>
+        <currentCycleCredit>0.00</currentCycleCredit>
+        <currentCycleDebit>0.00</currentCycleDebit>
+        <addressZip>44444</addressZip>
+        <groupId>BASIC</groupId>
+    </account>
+    
+    <!-- Account at credit limit for limit testing -->
+    <account>
+        <accountId>88888888888</accountId>
+        <activeStatus>Y</activeStatus>
+        <currentBalance>-7500.00</currentBalance>
+        <creditLimit>7500.00</creditLimit>
+        <cashCreditLimit>1500.00</cashCreditLimit>
+        <openDate>2021-09-30</openDate>
+        <expirationDate>2025-09-30</expirationDate>
+        <reissueDate>2023-10-01</reissueDate>
+        <currentCycleCredit>500.00</currentCycleCredit>
+        <currentCycleDebit>8000.00</currentCycleDebit>
+        <addressZip>55555</addressZip>
+        <groupId>STANDARD</groupId>
+    </account>
+    
+    <!-- Low-value account for minimum testing -->
+    <account>
+        <accountId>99999999999</accountId>
+        <activeStatus>Y</activeStatus>
+        <currentBalance>5.00</currentBalance>
+        <creditLimit>250.00</creditLimit>
+        <cashCreditLimit>50.00</cashCreditLimit>
+        <openDate>2023-11-01</openDate>
+        <expirationDate>2027-11-30</expirationDate>
+        <reissueDate>2023-11-01</reissueDate>
+        <currentCycleCredit>10.00</currentCycleCredit>
+        <currentCycleDebit>5.00</currentCycleDebit>
+        <addressZip>66666</addressZip>
+        <groupId>BASIC</groupId>
+    </account>
+    
+    <!-- Student account for special group testing -->
+    <account>
+        <accountId>10101010101</accountId>
+        <activeStatus>Y</activeStatus>
+        <currentBalance>125.50</currentBalance>
+        <creditLimit>500.00</creditLimit>
+        <cashCreditLimit>0.00</cashCreditLimit>
+        <openDate>2023-09-01</openDate>
+        <expirationDate>2027-09-30</expirationDate>
+        <reissueDate>2023-09-01</reissueDate>
+        <currentCycleCredit>150.00</currentCycleCredit>
+        <currentCycleDebit>24.50</currentCycleDebit>
+        <addressZip>77777</addressZip>
+        <groupId>STUDENT</groupId>
+    </account>
+    
+    <!-- Business account for commercial testing -->
+    <account>
+        <accountId>20202020202</accountId>
+        <activeStatus>Y</activeStatus>
+        <currentBalance>8945.33</currentBalance>
+        <creditLimit>50000.00</creditLimit>
+        <cashCreditLimit>10000.00</cashCreditLimit>
+        <openDate>2020-01-01</openDate>
+        <expirationDate>2025-01-31</expirationDate>
+        <reissueDate>2023-02-01</reissueDate>
+        <currentCycleCredit>15000.00</currentCycleCredit>
+        <currentCycleDebit>6054.67</currentCycleDebit>
+        <addressZip>88888</addressZip>
+        <groupId>BUSINESS</groupId>
+    </account>
+    
+    <!-- Account with maximum precision testing (cents) -->
+    <account>
+        <accountId>30303030303</accountId>
+        <activeStatus>Y</activeStatus>
+        <currentBalance>999.99</currentBalance>
+        <creditLimit>1500.00</creditLimit>
+        <cashCreditLimit>300.00</cashCreditLimit>
+        <openDate>2022-07-04</openDate>
+        <expirationDate>2026-07-31</expirationDate>
+        <reissueDate>2024-08-01</reissueDate>
+        <currentCycleCredit>1000.01</currentCycleCredit>
+        <currentCycleDebit>0.02</currentCycleDebit>
+        <addressZip>99999</addressZip>
+        <groupId>PREMIUM</groupId>
+    </account>
+    
+    <!-- Recently opened account -->
+    <account>
+        <accountId>40404040404</accountId>
+        <activeStatus>Y</activeStatus>
+        <currentBalance>0.00</currentBalance>
+        <creditLimit>1000.00</creditLimit>
+        <cashCreditLimit>200.00</cashCreditLimit>
+        <openDate>2024-08-01</openDate>
+        <expirationDate>2028-08-31</expirationDate>
+        <reissueDate>2024-08-01</reissueDate>
+        <currentCycleCredit>0.00</currentCycleCredit>
+        <currentCycleDebit>0.00</currentCycleDebit>
+        <addressZip>10101</addressZip>
+        <groupId>BASIC</groupId>
+    </account>
+    
+    <!-- Account with fractional interest calculation -->
+    <account>
+        <accountId>50505050505</accountId>
+        <activeStatus>Y</activeStatus>
+        <currentBalance>-333.33</currentBalance>
+        <creditLimit>1000.00</creditLimit>
+        <cashCreditLimit>200.00</cashCreditLimit>
+        <openDate>2023-05-15</openDate>
+        <expirationDate>2027-05-31</expirationDate>
+        <reissueDate>2023-05-15</reissueDate>
+        <currentCycleCredit>100.00</currentCycleCredit>
+        <currentCycleDebit>433.33</currentCycleDebit>
+        <addressZip>20202</addressZip>
+        <groupId>STANDARD</groupId>
+    </account>
+    
+    <!-- Corporate account with large transactions -->
+    <account>
+        <accountId>60606060606</accountId>
+        <activeStatus>Y</activeStatus>
+        <currentBalance>45678.90</currentBalance>
+        <creditLimit>100000.00</creditLimit>
+        <cashCreditLimit>20000.00</cashCreditLimit>
+        <openDate>2019-06-01</openDate>
+        <expirationDate>2024-06-30</expirationDate>
+        <reissueDate>2022-07-01</reissueDate>
+        <currentCycleCredit>25000.00</currentCycleCredit>
+        <currentCycleDebit>4321.10</currentCycleDebit>
+        <addressZip>30303</addressZip>
+        <groupId>CORPORATE</groupId>
+    </account>
+    
+    <!-- VIP account for premium testing -->
+    <account>
+        <accountId>70707070707</accountId>
+        <activeStatus>Y</activeStatus>
+        <currentBalance>87654.32</currentBalance>
+        <creditLimit>150000.00</creditLimit>
+        <cashCreditLimit>30000.00</cashCreditLimit>
+        <openDate>2018-12-01</openDate>
+        <expirationDate>2024-12-31</expirationDate>
+        <reissueDate>2022-01-01</reissueDate>
+        <currentCycleCredit>50000.00</currentCycleCredit>
+        <currentCycleDebit>12345.68</currentCycleDebit>
+        <addressZip>40404</addressZip>
+        <groupId>VIP</groupId>
+    </account>
+    
+    <!-- Dormant account with minimal activity -->
+    <account>
+        <accountId>80808080808</accountId>
+        <activeStatus>Y</activeStatus>
+        <currentBalance>1.01</currentBalance>
+        <creditLimit>300.00</creditLimit>
+        <cashCreditLimit>60.00</cashCreditLimit>
+        <openDate>2021-01-01</openDate>
+        <expirationDate>2025-01-31</expirationDate>
+        <reissueDate>2023-02-01</reissueDate>
+        <currentCycleCredit>0.00</currentCycleCredit>
+        <currentCycleDebit>0.00</currentCycleDebit>
+        <addressZip>50505</addressZip>
+        <groupId>DORMANT</groupId>
+    </account>
+    
+    <!-- Account for leap year testing -->
+    <account>
+        <accountId>90909090909</accountId>
+        <activeStatus>Y</activeStatus>
+        <currentBalance>2024.29</currentBalance>
+        <creditLimit>3000.00</creditLimit>
+        <cashCreditLimit>600.00</cashCreditLimit>
+        <openDate>2020-02-29</openDate>
+        <expirationDate>2024-02-29</expirationDate>
+        <reissueDate>2024-03-01</reissueDate>
+        <currentCycleCredit>500.00</currentCycleCredit>
+        <currentCycleDebit>275.71</currentCycleDebit>
+        <addressZip>60606</addressZip>
+        <groupId>STANDARD</groupId>
+    </account>
+    
+    <!-- Account with special characters in ZIP (international) -->
+    <account>
+        <accountId>12345678901</accountId>
+        <activeStatus>Y</activeStatus>
+        <currentBalance>1111.11</currentBalance>
+        <creditLimit>2222.22</creditLimit>
+        <cashCreditLimit>444.44</cashCreditLimit>
+        <openDate>2022-11-11</openDate>
+        <expirationDate>2026-11-30</expirationDate>
+        <reissueDate>2024-12-01</reissueDate>
+        <currentCycleCredit>555.55</currentCycleCredit>
+        <currentCycleDebit>333.33</currentCycleDebit>
+        <addressZip>K1A0A6</addressZip>
+        <groupId>INTL</groupId>
+    </account>
+    
+    <!-- Test account for boundary conditions -->
+    <account>
+        <accountId>98765432109</accountId>
+        <activeStatus>Y</activeStatus>
+        <currentBalance>9999999.99</currentBalance>
+        <creditLimit>9999999.99</creditLimit>
+        <cashCreditLimit>1999999.99</cashCreditLimit>
+        <openDate>2023-12-31</openDate>
+        <expirationDate>2027-12-31</expirationDate>
+        <reissueDate>2024-01-01</reissueDate>
+        <currentCycleCredit>5000000.00</currentCycleCredit>
+        <currentCycleDebit>4999999.99</currentCycleDebit>
+        <addressZip>90210</addressZip>
+        <groupId>MAXIMUM</groupId>
+    </account>
+    
+    <!-- Account for minimum boundary testing -->
+    <account>
+        <accountId>13579246801</accountId>
+        <activeStatus>Y</activeStatus>
+        <currentBalance>0.01</currentBalance>
+        <creditLimit>0.01</creditLimit>
+        <cashCreditLimit>0.01</cashCreditLimit>
+        <openDate>2024-01-01</openDate>
+        <expirationDate>2028-01-31</expirationDate>
+        <reissueDate>2024-01-01</reissueDate>
+        <currentCycleCredit>0.01</currentCycleCredit>
+        <currentCycleDebit>0.00</currentCycleDebit>
+        <addressZip>00001</addressZip>
+        <groupId>MINIMUM</groupId>
+    </account>
+    
+    <!-- Account for date edge case testing -->
+    <account>
+        <accountId>24681357902</accountId>
+        <activeStatus>N</activeStatus>
+        <currentBalance>-0.01</currentBalance>
+        <creditLimit>1.00</creditLimit>
+        <cashCreditLimit>0.20</cashCreditLimit>
+        <openDate>1999-12-31</openDate>
+        <expirationDate>2000-01-01</expirationDate>
+        <reissueDate>2000-01-02</reissueDate>
+        <currentCycleCredit>0.00</currentCycleCredit>
+        <currentCycleDebit>0.01</currentCycleDebit>
+        <addressZip>99999</addressZip>
+        <groupId>Y2K</groupId>
+    </account>
+    
+    <!-- Account for negative interest testing -->
+    <account>
+        <accountId>11223344556</accountId>
+        <activeStatus>Y</activeStatus>
+        <currentBalance>-5432.10</currentBalance>
+        <creditLimit>6000.00</creditLimit>
+        <cashCreditLimit>1200.00</cashCreditLimit>
+        <openDate>2023-06-15</openDate>
+        <expirationDate>2027-06-30</expirationDate>
+        <reissueDate>2023-06-15</reissueDate>
+        <currentCycleCredit>0.00</currentCycleCredit>
+        <currentCycleDebit>5432.10</currentCycleDebit>
+        <addressZip>12321</addressZip>
+        <groupId>PENALTY</groupId>
+    </account>
+    
+    <!-- Account for rounding precision testing -->
+    <account>
+        <accountId>99887766554</accountId>
+        <activeStatus>Y</activeStatus>
+        <currentBalance>123.456</currentBalance>
+        <creditLimit>500.789</creditLimit>
+        <cashCreditLimit>100.123</cashCreditLimit>
+        <openDate>2023-03-14</openDate>
+        <expirationDate>2027-03-31</expirationDate>
+        <reissueDate>2023-03-14</reissueDate>
+        <currentCycleCredit>200.555</currentCycleCredit>
+        <currentCycleDebit>77.099</currentCycleDebit>
+        <addressZip>31415</addressZip>
+        <groupId>ROUND</groupId>
+    </account>
+    
+    <!-- Account for scientific notation boundary -->
+    <account>
+        <accountId>55443322110</accountId>
+        <activeStatus>Y</activeStatus>
+        <currentBalance>1000000.00</currentBalance>
+        <creditLimit>1000000.00</creditLimit>
+        <cashCreditLimit>200000.00</cashCreditLimit>
+        <openDate>2020-10-10</openDate>
+        <expirationDate>2025-10-31</expirationDate>
+        <reissueDate>2023-11-01</reissueDate>
+        <currentCycleCredit>500000.00</currentCycleCredit>
+        <currentCycleDebit>250000.00</currentCycleDebit>
+        <addressZip>10000</addressZip>
+        <groupId>MILLION</groupId>
+    </account>
+    
+</accounts>
