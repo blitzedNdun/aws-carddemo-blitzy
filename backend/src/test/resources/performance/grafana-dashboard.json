@@ -1,0 +1,644 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "CardDemo Performance Testing Dashboard",
+    "tags": ["carddemo", "performance", "spring-boot", "cobol-migration"],
+    "style": "dark",
+    "timezone": "browser",
+    "editable": true,
+    "hideControls": false,
+    "graphTooltip": 1,
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"],
+      "time_options": ["5m", "15m", "1h", "6h", "12h", "24h", "2d", "7d", "30d"]
+    },
+    "refresh": "30s",
+    "version": 1,
+    "panels": [
+      {
+        "id": 1,
+        "title": "System Health Overview",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up{job=\"carddemo-backend\"}",
+            "legendFormat": "Backend Status",
+            "refId": "A"
+          },
+          {
+            "expr": "up{job=\"postgresql\"}",
+            "legendFormat": "PostgreSQL Status",
+            "refId": "B"
+          },
+          {
+            "expr": "up{job=\"redis\"}",
+            "legendFormat": "Redis Status",
+            "refId": "C"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 12, "x": 0, "y": 0},
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {"options": {"0": {"text": "DOWN"}}, "type": "value"},
+              {"options": {"1": {"text": "UP"}}, "type": "value"}
+            ],
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            }
+          }
+        },
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none",
+          "justifyMode": "center",
+          "orientation": "horizontal"
+        }
+      },
+      {
+        "id": 2,
+        "title": "Response Time - 95th Percentile (Target: <200ms)",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=\"carddemo-backend\"}[5m])) by (le, uri))",
+            "legendFormat": "{{uri}} - 95th percentile",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{job=\"carddemo-backend\"}[5m])) by (le, uri))",
+            "legendFormat": "{{uri}} - 99th percentile",
+            "refId": "B"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 0.2},
+                {"color": "red", "value": 0.5}
+              ]
+            }
+          }
+        },
+        "options": {
+          "tooltip": {"mode": "multi", "sort": "none"},
+          "legend": {"displayMode": "table", "placement": "bottom", "values": ["current", "max"]}
+        },
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {"params": [0.2], "type": "gt"},
+              "operator": {"type": "and"},
+              "query": {"params": ["A", "5m", "now"]},
+              "reducer": {"type": "avg"},
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "for": "5m",
+          "frequency": "10s",
+          "handler": 1,
+          "name": "Response Time Alert",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 3,
+        "title": "Throughput (TPS)",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "sum(rate(http_server_requests_total{job=\"carddemo-backend\"}[1m]))",
+            "legendFormat": "Total TPS",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(http_server_requests_total{job=\"carddemo-backend\", uri=~\"/api/transactions.*\"}[1m]))",
+            "legendFormat": "Transaction TPS",
+            "refId": "B"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 4},
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps",
+            "min": 0,
+            "max": 10000,
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 5000},
+                {"color": "red", "value": 8000}
+              ]
+            }
+          }
+        },
+        "options": {
+          "reduceOptions": {"calcs": ["lastNotNull"]},
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "center"
+        }
+      },
+      {
+        "id": 4,
+        "title": "Error Rate",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "sum(rate(http_server_requests_total{job=\"carddemo-backend\", status=~\"4..|5..\"}[5m])) / sum(rate(http_server_requests_total{job=\"carddemo-backend\"}[5m])) * 100",
+            "legendFormat": "Error Rate %",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(http_server_requests_total{job=\"carddemo-backend\", status=~\"5..\"}[5m])) / sum(rate(http_server_requests_total{job=\"carddemo-backend\"}[5m])) * 100",
+            "legendFormat": "Server Error Rate %",
+            "refId": "B"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 4},
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 1},
+                {"color": "red", "value": 5}
+              ]
+            }
+          }
+        },
+        "options": {
+          "tooltip": {"mode": "multi", "sort": "none"},
+          "legend": {"displayMode": "table", "placement": "bottom"}
+        }
+      },
+      {
+        "id": 5,
+        "title": "JVM Heap Memory Usage",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "jvm_memory_used_bytes{job=\"carddemo-backend\", area=\"heap\"} / jvm_memory_max_bytes{job=\"carddemo-backend\", area=\"heap\"} * 100",
+            "legendFormat": "Heap Usage %",
+            "refId": "A"
+          },
+          {
+            "expr": "jvm_memory_used_bytes{job=\"carddemo-backend\", area=\"nonheap\"} / jvm_memory_max_bytes{job=\"carddemo-backend\", area=\"nonheap\"} * 100",
+            "legendFormat": "Non-Heap Usage %",
+            "refId": "B"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 80},
+                {"color": "red", "value": 95}
+              ]
+            }
+          }
+        },
+        "options": {
+          "tooltip": {"mode": "multi", "sort": "none"},
+          "legend": {"displayMode": "table", "placement": "bottom", "values": ["current", "max"]}
+        },
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {"params": [85], "type": "gt"},
+              "operator": {"type": "and"},
+              "query": {"params": ["A", "5m", "now"]},
+              "reducer": {"type": "avg"},
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "for": "5m",
+          "frequency": "10s",
+          "handler": 1,
+          "name": "High Memory Usage Alert",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 6,
+        "title": "Database Connection Pool Metrics",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "hikaricp_connections_active{job=\"carddemo-backend\"}",
+            "legendFormat": "Active Connections",
+            "refId": "A"
+          },
+          {
+            "expr": "hikaricp_connections_idle{job=\"carddemo-backend\"}",
+            "legendFormat": "Idle Connections",
+            "refId": "B"
+          },
+          {
+            "expr": "hikaricp_connections_max{job=\"carddemo-backend\"}",
+            "legendFormat": "Max Connections",
+            "refId": "C"
+          },
+          {
+            "expr": "hikaricp_connections_pending{job=\"carddemo-backend\"}",
+            "legendFormat": "Pending Connections",
+            "refId": "D"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 15},
+                {"color": "red", "value": 20}
+              ]
+            }
+          }
+        },
+        "options": {
+          "tooltip": {"mode": "multi", "sort": "none"},
+          "legend": {"displayMode": "table", "placement": "bottom", "values": ["current", "max"]}
+        }
+      },
+      {
+        "id": 7,
+        "title": "Spring Batch Job Execution Status",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "spring_batch_job_active_executions{job=\"carddemo-backend\"}",
+            "legendFormat": "{{job_name}} - Active",
+            "refId": "A",
+            "format": "table"
+          },
+          {
+            "expr": "increase(spring_batch_job_executions_total{job=\"carddemo-backend\"}[1h])",
+            "legendFormat": "{{job_name}} - Completed (1h)",
+            "refId": "B",
+            "format": "table"
+          },
+          {
+            "expr": "spring_batch_job_execution_duration_seconds{job=\"carddemo-backend\"}",
+            "legendFormat": "{{job_name}} - Duration",
+            "refId": "C",
+            "format": "table"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 20},
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "displayMode": "auto",
+              "align": "center"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 3600},
+                {"color": "red", "value": 14400}
+              ]
+            }
+          }
+        },
+        "options": {
+          "showHeader": true,
+          "sortBy": [{"desc": false, "displayName": "Job Name"}]
+        },
+        "transformations": [
+          {
+            "id": "merge",
+            "options": {}
+          },
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {},
+              "indexByName": {},
+              "renameByName": {
+                "job_name": "Job Name",
+                "Value #A": "Active Executions",
+                "Value #B": "Completed (1h)",
+                "Value #C": "Last Duration (s)"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "CPU Usage",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "process_cpu_usage{job=\"carddemo-backend\"} * 100",
+            "legendFormat": "Application CPU %",
+            "refId": "A"
+          },
+          {
+            "expr": "system_cpu_usage{job=\"carddemo-backend\"} * 100",
+            "legendFormat": "System CPU %",
+            "refId": "B"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 28},
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 70},
+                {"color": "red", "value": 90}
+              ]
+            }
+          }
+        },
+        "options": {
+          "tooltip": {"mode": "multi", "sort": "none"},
+          "legend": {"displayMode": "table", "placement": "bottom", "values": ["current", "max"]}
+        }
+      },
+      {
+        "id": 9,
+        "title": "Disk I/O Operations",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(process_files_open_files{job=\"carddemo-backend\"}[5m])",
+            "legendFormat": "File Operations Rate",
+            "refId": "A"
+          },
+          {
+            "expr": "process_files_max_files{job=\"carddemo-backend\"}",
+            "legendFormat": "Max File Descriptors",
+            "refId": "B"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 28},
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 1000},
+                {"color": "red", "value": 5000}
+              ]
+            }
+          }
+        },
+        "options": {
+          "tooltip": {"mode": "multi", "sort": "none"},
+          "legend": {"displayMode": "table", "placement": "bottom"}
+        }
+      },
+      {
+        "id": 10,
+        "title": "SLA Compliance Dashboard",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=\"carddemo-backend\"}[5m])) by (le)) < 0.2",
+            "legendFormat": "Response Time SLA",
+            "refId": "A"
+          },
+          {
+            "expr": "(sum(rate(http_server_requests_total{job=\"carddemo-backend\", status=~\"2..\"}[5m])) / sum(rate(http_server_requests_total{job=\"carddemo-backend\"}[5m]))) > 0.995",
+            "legendFormat": "Availability SLA",
+            "refId": "B"
+          },
+          {
+            "expr": "up{job=\"carddemo-backend\"} and up{job=\"postgresql\"} and up{job=\"redis\"}",
+            "legendFormat": "System Availability",
+            "refId": "C"
+          }
+        ],
+        "gridPos": {"h": 6, "w": 24, "x": 0, "y": 36},
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {"options": {"0": {"text": "FAIL", "color": "red"}}, "type": "value"},
+              {"options": {"1": {"text": "PASS", "color": "green"}}, "type": "value"}
+            ],
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            }
+          }
+        },
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none",
+          "justifyMode": "center",
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "value_and_name"
+        }
+      },
+      {
+        "id": 11,
+        "title": "Transaction Processing Metrics by Endpoint",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "sum(rate(http_server_requests_total{job=\"carddemo-backend\", uri=~\"/api/sign-on.*\"}[5m])) by (uri)",
+            "legendFormat": "Sign-On Transactions",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(http_server_requests_total{job=\"carddemo-backend\", uri=~\"/api/accounts.*\"}[5m])) by (uri)",
+            "legendFormat": "Account Transactions",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(rate(http_server_requests_total{job=\"carddemo-backend\", uri=~\"/api/cards.*\"}[5m])) by (uri)",
+            "legendFormat": "Card Transactions",
+            "refId": "C"
+          },
+          {
+            "expr": "sum(rate(http_server_requests_total{job=\"carddemo-backend\", uri=~\"/api/users.*\"}[5m])) by (uri)",
+            "legendFormat": "User Management",
+            "refId": "D"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 42},
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps",
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 100},
+                {"color": "red", "value": 500}
+              ]
+            }
+          }
+        },
+        "options": {
+          "tooltip": {"mode": "multi", "sort": "desc"},
+          "legend": {"displayMode": "table", "placement": "bottom", "values": ["current", "max", "min"]}
+        }
+      },
+      {
+        "id": 12,
+        "title": "Database Query Performance",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(spring_data_repository_invocations_seconds_bucket{job=\"carddemo-backend\"}[5m])) by (le, repository))",
+            "legendFormat": "{{repository}} - 95th percentile",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(spring_data_repository_invocations_total{job=\"carddemo-backend\"}[5m])) by (repository)",
+            "legendFormat": "{{repository}} - Query Rate",
+            "refId": "B"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 50},
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 0.1},
+                {"color": "red", "value": 0.5}
+              ]
+            }
+          }
+        },
+        "options": {
+          "tooltip": {"mode": "multi", "sort": "none"},
+          "legend": {"displayMode": "table", "placement": "bottom", "values": ["current", "max"]}
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "datasource",
+          "type": "datasource",
+          "query": "prometheus",
+          "current": {
+            "selected": false,
+            "text": "Prometheus",
+            "value": "prometheus"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "type": "datasource"
+        },
+        {
+          "name": "instance",
+          "type": "query",
+          "datasource": "${datasource}",
+          "query": "label_values(up{job=\"carddemo-backend\"}, instance)",
+          "current": {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          },
+          "hide": 0,
+          "includeAll": true,
+          "multi": true,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1
+        },
+        {
+          "name": "job_name",
+          "type": "query",
+          "datasource": "${datasource}",
+          "query": "label_values(spring_batch_job_executions_total{job=\"carddemo-backend\"}, job_name)",
+          "current": {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          },
+          "hide": 0,
+          "includeAll": true,
+          "multi": true,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": "-- Grafana --",
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        },
+        {
+          "datasource": "${datasource}",
+          "enable": true,
+          "expr": "ALERTS{job=\"carddemo-backend\"}",
+          "iconColor": "red",
+          "name": "Performance Alerts",
+          "titleFormat": "Alert: {{alertname}}",
+          "type": "prometheus"
+        }
+      ]
+    },
+    "links": [
+      {
+        "icon": "external link",
+        "tags": ["carddemo"],
+        "title": "CardDemo Application",
+        "tooltip": "CardDemo Spring Boot Application",
+        "type": "dashboards",
+        "url": ""
+      }
+    ]
+  }
+}
