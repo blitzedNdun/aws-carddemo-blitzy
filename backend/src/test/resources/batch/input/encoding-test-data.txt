@@ -1,0 +1,177 @@
+# ENCODING TEST DATA FOR COBOL TO JAVA MIGRATION
+# =====================================================
+# Purpose: Test data file for validating EBCDIC to UTF-8 conversion
+# and COBOL data type handling in Spring Batch migration
+#
+# Test Categories:
+# 1. COMP-3 Packed Decimal Fields
+# 2. Zoned Decimal Fields with Sign Overpunch  
+# 3. EBCDIC Code Page 1047 Special Characters
+# 4. Currency Symbols and Financial Data
+# 5. Mixed Alphanumeric Data
+# 6. Date and Time Conversions
+# 7. Character Set Edge Cases
+#
+# Format: Fixed-width records matching COBOL copybook layouts
+# Records are designed to test CobolDataConverter utility functions
+
+# =============================================================================
+# TEST CASE 1: COMP-3 PACKED DECIMAL FIELDS
+# Tests binary preservation of packed decimal data
+# =============================================================================
+
+# Account Balance Record - Tests BigDecimal precision preservation
+TEST_REC_01:COMP3_BALANCE    0000012345678C   00000000015234D   999999999999A   ACCT_BAL_COMP3      
+TEST_REC_02:COMP3_NEGATIVE   0000087654321D   00000000045678C   888888888888B   NEG_BAL_COMP3       
+TEST_REC_03:COMP3_ZERO       0000000000000C   00000000000000C   000000000000C   ZERO_BAL_COMP3      
+TEST_REC_04:COMP3_MAX        9999999999999C   99999999999999C   123456789012C   MAX_VAL_COMP3       
+
+# Interest Rate Fields - Tests financial precision
+TEST_REC_05:INTEREST_RATE    000000000001550C  000000000002750C  000000000000125C RATE_COMP3_TEST    
+TEST_REC_06:CREDIT_LIMIT     0000000050000C    0000000025000C    0000001000000C   LIMIT_COMP3_TEST   
+
+# =============================================================================
+# TEST CASE 2: ZONED DECIMAL FIELDS WITH SIGN OVERPUNCH
+# Tests proper handling of sign characters in zoned decimal format
+# =============================================================================
+
+# Positive amounts with overpunch
+TEST_REC_07:ZONED_POSITIVE   1234567890{      9876543210}      0000012345A      POS_ZONED_TEST     
+TEST_REC_08:ZONED_POS_ALT    5555555555A      7777777777B      0000000100C      ALT_POS_ZONED      
+
+# Negative amounts with overpunch  
+TEST_REC_09:ZONED_NEGATIVE   1234567890}      9876543210J      0000012345T      NEG_ZONED_TEST     
+TEST_REC_10:ZONED_NEG_ALT    4444444444R      6666666666S      0000000999U      ALT_NEG_ZONED      
+
+# Zero values with different sign representations
+TEST_REC_11:ZONED_ZERO_POS   0000000000{      0000000000A      0000000000C      ZERO_POS_ZONED     
+TEST_REC_12:ZONED_ZERO_NEG   0000000000}      0000000000J      0000000000L      ZERO_NEG_ZONED     
+
+# =============================================================================
+# TEST CASE 3: EBCDIC CODE PAGE 1047 SPECIAL CHARACTERS
+# Tests conversion of special characters from mainframe encoding
+# =============================================================================
+
+# Common EBCDIC special characters that need proper UTF-8 conversion
+TEST_REC_13:EBCDIC_CHARS     @#$%^&*()_+-=    []{}|;':\",./<>? EBCDIC_SPECIAL_1   
+TEST_REC_14:EBCDIC_PUNCT     !~`              ¢§¬¦«»°±²³      EBCDIC_SPECIAL_2   
+TEST_REC_15:EBCDIC_ACCENTS   ÀÁÂÃÄÅÆÇÈÉÊË     ÌÍÎÏÐÑÒÓÔÕÖ×     ACCENT_TEST_1      
+TEST_REC_16:EBCDIC_SYMBOLS   ØÙÚÛÜÝÞßàáâã     äåæçèéêëìíîï     ACCENT_TEST_2      
+
+# Line drawing and box characters common in COBOL reports
+TEST_REC_17:BOX_CHARS        ┌─┬─┐            │ │ │            BOX_DRAWING_1      
+TEST_REC_18:MORE_BOX         ├─┼─┤            └─┴─┘            BOX_DRAWING_2      
+
+# =============================================================================
+# TEST CASE 4: CURRENCY SYMBOLS AND FINANCIAL DATA  
+# Tests proper handling of international currency symbols
+# =============================================================================
+
+# US Dollar transactions
+TEST_REC_19:USD_CURRENCY     $1,234,567.89    $-987,654.32     $0.00            USD_TRANS_TEST     
+TEST_REC_20:USD_FORMATS      1234567.89USD    -987654.32USD    0.00USD          USD_FORMAT_TEST    
+
+# International currency symbols
+TEST_REC_21:INTL_CURRENCY    €1.234.567,89    £987,654.32      ¥123456789       INTL_CURR_TEST     
+TEST_REC_22:MORE_CURRENCY    ₹12,34,567.89    ₦987,654.32      ₽123,456.78      MORE_CURR_TEST     
+
+# Currency codes and amounts in fixed format
+TEST_REC_23:CURR_CODES       USD0000012345C   EUR0000009876C   GBP0000005432C   CURR_CODE_TEST     
+TEST_REC_24:FRACTIONAL       001234567890F    009876543210F    000000012345F    FRAC_CURR_TEST     
+
+# =============================================================================
+# TEST CASE 5: MIXED ALPHANUMERIC DATA
+# Tests combination of text, numbers, and special characters
+# =============================================================================
+
+# Customer names with various character combinations
+TEST_REC_25:CUSTOMER_NAME    JOÃO DA SILVA    O'BRIEN, MARY    JOSÉ GONZÁLEZ    CUSTOMER_NAME_1    
+TEST_REC_26:SPECIAL_NAMES    VAN DER BERG     AL-RASHID        MÜLLER-SCHMIDT   CUSTOMER_NAME_2    
+TEST_REC_27:ACCENT_NAMES     FRANÇOIS ANDRÉ   SØREN ÅKESSON    WŁADYSŁAW NOWAK  CUSTOMER_NAME_3    
+
+# Address fields with international characters
+TEST_REC_28:ADDRESS_DATA     123 MAIN ST.     APT #4-B         NEW YORK, NY     ADDRESS_TEST_1     
+TEST_REC_29:INTL_ADDRESS     KÖNIGSTRASSE 45   10115 BERLIN     DEUTSCHLAND      ADDRESS_TEST_2     
+TEST_REC_30:COMPLEX_ADDR     RUA JOÃO XXIII   Nº 123, 2º AND.  SÃO PAULO - SP   ADDRESS_TEST_3     
+
+# Product codes and descriptions
+TEST_REC_31:PRODUCT_CODES    CC-VISA-PLAT     DC-MAST-GOLD     CC-AMEX-CORP     PRODUCT_CODE_1     
+TEST_REC_32:DESCRIPTIONS     VISA PLATINUM    MASTERCARD GOLD  AMERICAN EXPRESS PRODUCT_DESC_1     
+
+# =============================================================================
+# TEST CASE 6: DATE AND TIME CONVERSIONS
+# Tests COBOL date format to Java date conversion
+# =============================================================================
+
+# COBOL date formats (YYYYMMDD, YYMMDD, Julian dates)
+TEST_REC_33:DATE_FORMATS     20240315         240315           2024074          DATE_FORMAT_1      
+TEST_REC_34:DATE_VARIATIONS  20231225         231225           2023359          DATE_FORMAT_2      
+TEST_REC_35:DATE_EDGE_CASE   20240229         240229           2024060          LEAP_YEAR_TEST     
+TEST_REC_36:DATE_Y2K_TEST    20000101         000101           2000001          Y2K_DATE_TEST      
+
+# Time formats (HHMMSS, HHMMSSFF)
+TEST_REC_37:TIME_FORMATS     143025           14302599         235959           TIME_FORMAT_1      
+TEST_REC_38:TIME_MIDNIGHT    000000           00000000         120000           TIME_FORMAT_2      
+
+# Timestamp combinations
+TEST_REC_39:TIMESTAMP_1      2024031514302599 2024031524000000 2024031500000000 TIMESTAMP_TEST_1   
+TEST_REC_40:TIMESTAMP_2      2023122523595999 2023122512000000 2023122500000000 TIMESTAMP_TEST_2   
+
+# =============================================================================
+# TEST CASE 7: CHARACTER SET EDGE CASES
+# Tests problematic character combinations and edge cases
+# =============================================================================
+
+# High-bit characters and control codes
+TEST_REC_41:HIGH_BIT_CHARS   ÀÁÂÃÄÅÆÇÈÉÊËàáâã äåæçèéêëìíîïðñò óôõö÷øùúûüýþÿ   HIGH_BIT_TEST      
+TEST_REC_42:EXTENDED_ASCII   ¡¢£¤¥¦§¨©ª«¬­®¯ °±²³´µ¶·¸¹º»¼½¾¿ ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏ EXTENDED_TEST      
+
+# Null and space padding scenarios
+TEST_REC_43:NULL_HANDLING                                                      NULL_PAD_TEST      
+TEST_REC_44:SPACE_PADDING    PADDED TEXT      TRAILING SPACES   EMBEDDED  GAPS SPACE_PAD_TEST    
+TEST_REC_45:MIXED_PADDING    LEAD SPACE       TRAIL SPACE       MID SPACE       MIXED_PAD_TEST     
+
+# Binary data that should be preserved as-is
+TEST_REC_46:BINARY_DATA      ÿþýüûúùø         ÷öõôóòñð         ïîíìëêéè         BINARY_TEST_1      
+TEST_REC_47:MORE_BINARY      çæåäãâáà         ßÞÝÜÛÚÙØ         ×ÖÕÔÓÒÑÐ         BINARY_TEST_2      
+
+# =============================================================================
+# TEST CASE 8: COBOL PICTURE CLAUSE EDGE CASES
+# Tests various COBOL picture clause scenarios
+# =============================================================================
+
+# Numeric edited fields
+TEST_REC_48:NUMERIC_EDITED   $**,**9.99       Z,ZZ9.99-         $***,**9.99CR    NUM_EDIT_TEST_1    
+TEST_REC_49:MORE_NUM_EDIT    $$,$$$,999.99    ZZ,ZZ9.99DB       ***,**9.99-      NUM_EDIT_TEST_2    
+
+# Alphanumeric edited fields
+TEST_REC_50:ALPHA_EDITED     XXX-XX-9999      (999) 999-9999    99/99/9999       ALPHA_EDIT_TEST    
+
+# Floating point representations
+TEST_REC_51:FLOATING_POINT   +1.23456789E+12  -9.87654321E-05   0.00000000E+00   FLOAT_TEST_1       
+TEST_REC_52:SCI_NOTATION     1.234567890E+08  -5.432109876E-03  9.999999999E+99  FLOAT_TEST_2       
+
+# =============================================================================
+# END OF TEST DATA
+# =============================================================================
+
+# Record count: 52 test records covering comprehensive encoding scenarios
+# Total test coverage:
+# - COMP-3 packed decimal: 6 records
+# - Zoned decimal overpunch: 6 records  
+# - EBCDIC special characters: 6 records
+# - Currency symbols: 6 records
+# - Mixed alphanumeric: 8 records
+# - Date/time conversions: 8 records
+# - Character set edge cases: 7 records
+# - COBOL picture clauses: 5 records
+#
+# This test data file provides comprehensive validation for:
+# 1. CobolDataConverter utility accuracy
+# 2. EBCDIC to UTF-8 character conversion
+# 3. Packed decimal to BigDecimal precision preservation
+# 4. Sign overpunch handling in zoned decimals
+# 5. International character support
+# 6. Currency symbol processing
+# 7. Date/time format transformations
+# 8. Edge case scenario handling
