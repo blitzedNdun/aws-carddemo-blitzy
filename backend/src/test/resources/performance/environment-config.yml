@@ -1,0 +1,531 @@
+# Performance Test Environment Configuration
+# Environment-specific settings for performance and integration testing
+# Supports local Docker, Kubernetes staging, and production-like environments
+
+# Default configuration shared across all environments
+default: &default
+  # Performance test execution settings
+  execution:
+    # Parallel test execution support
+    parallel_threads: 4
+    chunk_size: 1000
+    max_concurrent_requests: 100
+    request_timeout_ms: 5000
+    
+  # Performance validation thresholds
+  performance:
+    # Sub-200ms response time requirement from Section 0.5.1
+    max_response_time_ms: 200
+    p95_response_time_ms: 150
+    p99_response_time_ms: 300
+    max_throughput_tps: 1000
+    min_success_rate_percent: 99.5
+    
+  # Database connection pool settings
+  database:
+    connection_pool:
+      minimum_idle: 5
+      maximum_pool_size: 20
+      connection_timeout_ms: 30000
+      idle_timeout_ms: 600000
+      max_lifetime_ms: 1800000
+      leak_detection_threshold_ms: 60000
+    
+  # Redis session configuration
+  redis:
+    session:
+      timeout_seconds: 1800
+      max_sessions: 10000
+      cleanup_interval_seconds: 300
+    
+  # Monitoring and metrics configuration
+  monitoring:
+    actuator:
+      enabled: true
+      metrics_export_interval_ms: 15000
+    prometheus:
+      enabled: true
+      scrape_interval_seconds: 15
+    grafana:
+      dashboard_refresh_seconds: 15
+      alert_evaluation_interval_seconds: 30
+
+# Local development environment configuration
+local:
+  <<: *default
+  
+  # Docker Compose local environment
+  environment:
+    name: "local-docker"
+    description: "Local Docker Compose development environment"
+    infrastructure: "docker-compose"
+    
+  # API endpoints for local testing
+  api:
+    base_url: "http://localhost:8080"
+    gateway_url: "http://localhost:8080"
+    context_path: "/api"
+    health_endpoint: "/actuator/health"
+    metrics_endpoint: "/actuator/prometheus"
+    
+  # Authentication settings
+  authentication:
+    type: "basic"
+    username: "testuser"
+    password: "testpass123"
+    jwt_secret: "local-jwt-secret-key-for-testing-only"
+    token_expiry_seconds: 3600
+    
+  # Database configuration
+  database:
+    host: "localhost"
+    port: 5432
+    name: "carddemo_test"
+    schema: "carddemo_dev"
+    username: "carddemo_user"
+    password: "carddemo_pass"
+    url: "jdbc:postgresql://localhost:5432/carddemo_test"
+    driver_class: "org.postgresql.Driver"
+    
+    # Performance tuning for local testing
+    performance:
+      shared_buffers: "256MB"
+      work_mem: "16MB"
+      maintenance_work_mem: "64MB"
+      effective_cache_size: "1GB"
+      
+  # Redis configuration
+  redis:
+    host: "localhost"
+    port: 6379
+    database: 0
+    password: ""
+    cluster_mode: false
+    
+  # Resource limits for local Docker containers
+  resources:
+    spring_boot:
+      cpu_limit: "1.0"
+      memory_limit: "1Gi"
+      memory_request: "512Mi"
+      cpu_request: "500m"
+    postgresql:
+      cpu_limit: "1.0"
+      memory_limit: "512Mi"
+      storage: "5Gi"
+    redis:
+      cpu_limit: "0.5"
+      memory_limit: "256Mi"
+      
+  # Test data configuration
+  test_data:
+    customer_count: 1000
+    account_count: 2000
+    transaction_count: 10000
+    concurrent_users: 10
+
+# Integration testing environment (Kubernetes staging)
+integration:
+  <<: *default
+  
+  environment:
+    name: "integration-k8s"
+    description: "Kubernetes integration testing environment"
+    infrastructure: "kubernetes"
+    namespace: "carddemo-integration"
+    
+  # API endpoints for integration testing
+  api:
+    base_url: "https://carddemo-integration.k8s.local"
+    gateway_url: "https://api-gateway-integration.k8s.local"
+    context_path: "/api/v1"
+    health_endpoint: "/actuator/health"
+    metrics_endpoint: "/actuator/prometheus"
+    
+  # Enhanced authentication for integration environment
+  authentication:
+    type: "jwt"
+    auth_server_url: "https://auth-integration.k8s.local"
+    client_id: "carddemo-integration"
+    client_secret: "${INTEGRATION_CLIENT_SECRET}"
+    token_endpoint: "/auth/realms/carddemo/protocol/openid-connect/token"
+    token_expiry_seconds: 1800
+    
+  # Managed PostgreSQL configuration
+  database:
+    host: "postgresql-integration.carddemo-integration.svc.cluster.local"
+    port: 5432
+    name: "carddemo_integration"
+    schema: "carddemo_int"
+    username: "carddemo_int_user"
+    password: "${INTEGRATION_DB_PASSWORD}"
+    url: "jdbc:postgresql://postgresql-integration.carddemo-integration.svc.cluster.local:5432/carddemo_integration"
+    
+    # Enhanced connection pool for integration testing
+    connection_pool:
+      minimum_idle: 10
+      maximum_pool_size: 40
+      validation_query: "SELECT 1"
+      test_on_borrow: true
+      
+    # Performance settings for integration environment
+    performance:
+      shared_buffers: "512MB"
+      work_mem: "32MB"
+      maintenance_work_mem: "128MB"
+      effective_cache_size: "2GB"
+      max_connections: 100
+      
+  # Redis cluster configuration
+  redis:
+    cluster_mode: true
+    nodes:
+      - "redis-integration-0.carddemo-integration.svc.cluster.local:6379"
+      - "redis-integration-1.carddemo-integration.svc.cluster.local:6379"
+      - "redis-integration-2.carddemo-integration.svc.cluster.local:6379"
+    password: "${INTEGRATION_REDIS_PASSWORD}"
+    
+  # Kubernetes resource specifications
+  resources:
+    spring_boot:
+      cpu_limit: "2.0"
+      memory_limit: "2Gi"
+      memory_request: "1Gi"
+      cpu_request: "1.0"
+      replicas: 3
+    postgresql:
+      cpu_limit: "2.0"
+      memory_limit: "2Gi"
+      storage: "50Gi"
+      storage_class: "fast-ssd"
+    redis:
+      cpu_limit: "1.0"
+      memory_limit: "1Gi"
+      storage: "10Gi"
+      
+  # Enhanced test data for integration testing
+  test_data:
+    customer_count: 10000
+    account_count: 20000
+    transaction_count: 100000
+    concurrent_users: 50
+    
+  # Performance test specific settings
+  performance:
+    load_test_duration_minutes: 30
+    ramp_up_time_minutes: 5
+    steady_state_minutes: 20
+    ramp_down_time_minutes: 5
+
+# Production-like testing environment
+production_like:
+  <<: *default
+  
+  environment:
+    name: "production-like"
+    description: "Production-like performance testing environment"
+    infrastructure: "kubernetes"
+    namespace: "carddemo-perf"
+    
+  # Production-like API configuration
+  api:
+    base_url: "https://carddemo-perf.example.com"
+    gateway_url: "https://api-gateway-perf.example.com"
+    context_path: "/api/v1"
+    health_endpoint: "/actuator/health"
+    metrics_endpoint: "/actuator/prometheus"
+    
+  # Production-grade authentication
+  authentication:
+    type: "oauth2"
+    auth_server_url: "https://auth-prod-like.example.com"
+    client_id: "carddemo-perf"
+    client_secret: "${PROD_LIKE_CLIENT_SECRET}"
+    scope: "read write admin"
+    token_endpoint: "/oauth2/token"
+    token_expiry_seconds: 3600
+    
+  # High-availability PostgreSQL configuration
+  database:
+    host: "postgresql-ha-primary.carddemo-perf.svc.cluster.local"
+    port: 5432
+    name: "carddemo_performance"
+    schema: "carddemo_perf"
+    username: "carddemo_perf_user"
+    password: "${PERF_DB_PASSWORD}"
+    url: "jdbc:postgresql://postgresql-ha-primary.carddemo-perf.svc.cluster.local:5432/carddemo_performance"
+    
+    # Production-grade connection pool settings
+    connection_pool:
+      minimum_idle: 20
+      maximum_pool_size: 100
+      connection_timeout_ms: 10000
+      validation_query: "SELECT 1"
+      test_on_borrow: true
+      test_while_idle: true
+      validation_interval_ms: 30000
+      
+    # High-performance database tuning
+    performance:
+      shared_buffers: "2GB"
+      work_mem: "64MB"
+      maintenance_work_mem: "512MB"
+      effective_cache_size: "8GB"
+      max_connections: 200
+      checkpoint_completion_target: 0.9
+      wal_buffers: "64MB"
+      
+    # Read replica configuration for load distribution
+    read_replica:
+      enabled: true
+      host: "postgresql-ha-replica.carddemo-perf.svc.cluster.local"
+      port: 5432
+      max_lag_seconds: 5
+      
+  # Redis Sentinel cluster for high availability
+  redis:
+    cluster_mode: true
+    sentinel_mode: true
+    master_name: "carddemo-redis-master"
+    sentinels:
+      - "redis-sentinel-0.carddemo-perf.svc.cluster.local:26379"
+      - "redis-sentinel-1.carddemo-perf.svc.cluster.local:26379"
+      - "redis-sentinel-2.carddemo-perf.svc.cluster.local:26379"
+    password: "${PERF_REDIS_PASSWORD}"
+    
+  # High-performance resource allocation
+  resources:
+    spring_boot:
+      cpu_limit: "4.0"
+      memory_limit: "4Gi"
+      memory_request: "2Gi"
+      cpu_request: "2.0"
+      replicas: 5
+      jvm_heap_size: "3Gi"
+    postgresql:
+      cpu_limit: "8.0"
+      memory_limit: "16Gi"
+      storage: "500Gi"
+      storage_class: "nvme-ssd"
+      iops: 10000
+    redis:
+      cpu_limit: "2.0"
+      memory_limit: "4Gi"
+      storage: "50Gi"
+      
+  # Production-scale test data
+  test_data:
+    customer_count: 100000
+    account_count: 200000
+    transaction_count: 1000000
+    concurrent_users: 500
+    data_refresh_strategy: "incremental"
+    
+  # Comprehensive performance testing configuration
+  performance:
+    # Extended performance testing requirements
+    load_test_duration_minutes: 120
+    ramp_up_time_minutes: 15
+    steady_state_minutes: 90
+    ramp_down_time_minutes: 15
+    
+    # Advanced performance metrics
+    max_response_time_ms: 200  # Critical requirement from Section 0.5.1
+    p50_response_time_ms: 50
+    p90_response_time_ms: 100
+    p95_response_time_ms: 150
+    p99_response_time_ms: 300
+    
+    # Throughput requirements
+    max_throughput_tps: 5000
+    sustained_throughput_tps: 3000
+    
+    # System resource thresholds
+    max_cpu_utilization_percent: 80
+    max_memory_utilization_percent: 85
+    max_disk_io_percent: 70
+    
+    # Error rate thresholds
+    max_error_rate_percent: 0.5
+    max_timeout_rate_percent: 0.1
+    
+  # Advanced monitoring configuration
+  monitoring:
+    # Prometheus advanced settings
+    prometheus:
+      scrape_interval_seconds: 10
+      evaluation_interval_seconds: 10
+      retention_days: 30
+      
+    # Grafana dashboard configuration
+    grafana:
+      dashboard_refresh_seconds: 5
+      alert_evaluation_interval_seconds: 15
+      notification_channels:
+        - type: "slack"
+          webhook_url: "${PERF_SLACK_WEBHOOK}"
+        - type: "email"
+          recipients: ["devops@example.com", "qa@example.com"]
+          
+    # Custom application metrics
+    custom_metrics:
+      business_transaction_timers: true
+      database_query_metrics: true
+      redis_operation_metrics: true
+      jvm_detailed_metrics: true
+      
+  # Security and compliance settings
+  security:
+    tls:
+      enabled: true
+      version: "TLSv1.3"
+      cipher_suites: ["TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256"]
+    network_policies:
+      enabled: true
+      ingress_whitelist: ["10.0.0.0/8", "172.16.0.0/12"]
+    pod_security:
+      enabled: true
+      policy: "restricted"
+
+# Batch processing performance test configuration
+batch_performance:
+  <<: *default
+  
+  environment:
+    name: "batch-performance"
+    description: "Dedicated batch processing performance testing"
+    infrastructure: "kubernetes"
+    namespace: "carddemo-batch-perf"
+    
+  # Batch-specific performance requirements
+  performance:
+    # 4-hour batch processing window requirement
+    max_batch_duration_minutes: 240  # 4 hours
+    target_batch_duration_minutes: 180  # 3 hours target
+    parallel_job_count: 8
+    chunk_size: 5000
+    
+    # Batch throughput requirements
+    records_per_minute: 10000
+    transactions_per_second: 167  # 10000/60
+    
+  # High-performance batch resource allocation
+  resources:
+    spring_batch:
+      cpu_limit: "8.0"
+      memory_limit: "8Gi"
+      memory_request: "4Gi"
+      cpu_request: "4.0"
+      storage: "100Gi"
+      
+  # Batch test data configuration
+  test_data:
+    daily_transactions: 1000000
+    monthly_statements: 100000
+    interest_calculations: 200000
+    file_sizes:
+      transaction_file_mb: 500
+      statement_file_mb: 200
+      report_file_mb: 100
+
+# Test execution profiles
+profiles:
+  # Quick smoke test profile
+  smoke:
+    duration_minutes: 5
+    concurrent_users: 5
+    ramp_up_minutes: 1
+    test_data_scale: 0.1
+    
+  # Standard regression test profile  
+  regression:
+    duration_minutes: 30
+    concurrent_users: 50
+    ramp_up_minutes: 5
+    test_data_scale: 0.5
+    
+  # Full load test profile
+  load:
+    duration_minutes: 120
+    concurrent_users: 500
+    ramp_up_minutes: 15
+    test_data_scale: 1.0
+    
+  # Stress test profile
+  stress:
+    duration_minutes: 60
+    concurrent_users: 1000
+    ramp_up_minutes: 10
+    test_data_scale: 1.5
+    
+  # Endurance test profile
+  endurance:
+    duration_minutes: 480  # 8 hours
+    concurrent_users: 200
+    ramp_up_minutes: 30
+    test_data_scale: 1.0
+
+# Test scenarios configuration
+scenarios:
+  # Authentication flow performance
+  authentication:
+    endpoint: "/api/v1/auth/login"
+    method: "POST"
+    weight: 10
+    expected_response_time_ms: 100
+    
+  # Account lookup performance
+  account_lookup:
+    endpoint: "/api/v1/accounts/{accountId}"
+    method: "GET"
+    weight: 30
+    expected_response_time_ms: 50
+    
+  # Transaction processing performance
+  transaction_processing:
+    endpoint: "/api/v1/transactions"
+    method: "POST"
+    weight: 40
+    expected_response_time_ms: 200
+    
+  # Customer search performance
+  customer_search:
+    endpoint: "/api/v1/customers/search"
+    method: "GET"
+    weight: 15
+    expected_response_time_ms: 150
+    
+  # Report generation performance
+  report_generation:
+    endpoint: "/api/v1/reports/account-statement"
+    method: "POST"
+    weight: 5
+    expected_response_time_ms: 2000
+
+# Common test utilities configuration
+test_utilities:
+  # Data generation settings
+  data_generation:
+    customer_data_template: "src/test/resources/templates/customer-template.json"
+    transaction_data_template: "src/test/resources/templates/transaction-template.json"
+    account_data_template: "src/test/resources/templates/account-template.json"
+    
+  # Validation rules
+  validation:
+    response_schema_validation: true
+    business_rule_validation: true
+    data_consistency_checks: true
+    
+  # Reporting configuration
+  reporting:
+    output_format: ["html", "json", "junit"]
+    output_directory: "target/performance-reports"
+    include_detailed_metrics: true
+    include_error_analysis: true
+    
+  # Cleanup procedures
+  cleanup:
+    delete_test_data: true
+    reset_sequences: true
+    clear_caches: true
+    archive_logs: true
