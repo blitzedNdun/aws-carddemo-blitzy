@@ -1,0 +1,476 @@
+{
+  "card_detail_response": {
+    "status": "SUCCESS",
+    "transactionCode": "CCDL",
+    "responseData": {
+      "cardNumber": "************1234",
+      "accountId": "12345678901",
+      "customerId": "123456789",
+      "embossedName": "JOHN SMITH",
+      "expirationDate": "2025-12-31",
+      "activeStatus": "Y",
+      "activeStatusDescription": "Active",
+      "issueDate": "2023-01-15",
+      "cvvCode": "***",
+      "cardType": "VISA",
+      "availableCredit": "5000.00",
+      "currentBalance": "1500.00",
+      "creditLimit": "6500.00",
+      "lastPaymentDate": "2024-01-15",
+      "lastPaymentAmount": "500.00"
+    },
+    "messages": [
+      {
+        "level": "INFO",
+        "text": "Displaying requested details"
+      }
+    ],
+    "sessionUpdates": {
+      "lastAccessedCard": "************1234",
+      "lastTransactionId": "CCDL"
+    }
+  },
+
+  "card_list_response": {
+    "status": "SUCCESS",
+    "transactionCode": "CCLI",
+    "responseData": {
+      "accountId": "12345678901",
+      "cards": [
+        {
+          "cardNumber": "************1234",
+          "embossedName": "JOHN SMITH",
+          "expirationDate": "2025-12-31",
+          "activeStatus": "Y",
+          "activeStatusDescription": "Active",
+          "cardType": "VISA",
+          "availableCredit": "5000.00",
+          "currentBalance": "1500.00",
+          "issueDate": "2023-01-15"
+        },
+        {
+          "cardNumber": "************5678",
+          "embossedName": "JANE SMITH", 
+          "expirationDate": "2026-06-30",
+          "activeStatus": "Y",
+          "activeStatusDescription": "Active",
+          "cardType": "MASTERCARD",
+          "availableCredit": "3000.00",
+          "currentBalance": "800.00",
+          "issueDate": "2023-06-01"
+        },
+        {
+          "cardNumber": "************9012",
+          "embossedName": "JOHN SMITH",
+          "expirationDate": "2024-03-31",
+          "activeStatus": "N",
+          "activeStatusDescription": "Inactive",
+          "cardType": "VISA",
+          "availableCredit": "0.00",
+          "currentBalance": "0.00",
+          "issueDate": "2021-03-15"
+        }
+      ],
+      "totalCards": 3,
+      "activeCards": 2,
+      "inactiveCards": 1,
+      "pageSize": 7,
+      "pageNumber": 1,
+      "hasMorePages": false,
+      "totalPages": 1
+    },
+    "messages": [
+      {
+        "level": "INFO",
+        "text": "3 cards found for account"
+      }
+    ],
+    "sessionUpdates": {
+      "lastSearchAccount": "12345678901",
+      "cardsDisplayed": 3,
+      "lastTransactionId": "CCLI"
+    }
+  },
+
+  "card_activation_response": {
+    "status": "SUCCESS",
+    "transactionCode": "CCUP",
+    "responseData": {
+      "cardNumber": "************1234",
+      "accountId": "12345678901",
+      "embossedName": "JOHN SMITH",
+      "previousStatus": "N",
+      "newStatus": "Y",
+      "activeStatusDescription": "Active",
+      "activationDate": "2024-01-15",
+      "expirationDate": "2025-12-31",
+      "availableCredit": "5000.00",
+      "creditLimit": "6500.00"
+    },
+    "messages": [
+      {
+        "level": "SUCCESS",
+        "text": "Changes committed to database"
+      },
+      {
+        "level": "INFO", 
+        "text": "Card activation successful"
+      }
+    ],
+    "sessionUpdates": {
+      "lastUpdatedCard": "************1234",
+      "updateTimestamp": "2024-01-15T10:30:00Z",
+      "lastTransactionId": "CCUP"
+    }
+  },
+
+  "card_update_response": {
+    "status": "SUCCESS", 
+    "transactionCode": "CCUP",
+    "responseData": {
+      "cardNumber": "************1234",
+      "accountId": "12345678901",
+      "embossedName": "JOHN M SMITH",
+      "expirationDate": "2025-12-31",
+      "activeStatus": "Y",
+      "activeStatusDescription": "Active",
+      "updateDate": "2024-01-15",
+      "fieldsUpdated": [
+        "embossedName"
+      ],
+      "availableCredit": "5000.00",
+      "creditLimit": "6500.00"
+    },
+    "messages": [
+      {
+        "level": "SUCCESS",
+        "text": "Changes committed to database"
+      }
+    ],
+    "sessionUpdates": {
+      "lastUpdatedCard": "************1234",
+      "updateTimestamp": "2024-01-15T10:30:00Z",
+      "lastTransactionId": "CCUP"
+    }
+  },
+
+  "card_not_found_error": {
+    "status": "ERROR",
+    "transactionCode": "CCDL",
+    "errors": [
+      {
+        "field": "cardNumber",
+        "code": "CARD_NOT_FOUND",
+        "message": "Did not find cards for this search condition"
+      }
+    ],
+    "supportingData": {
+      "searchCriteria": {
+        "accountId": "12345678901",
+        "cardNumber": "1234567890123456"
+      },
+      "suggestedCorrection": "Verify card number and account association",
+      "validationRules": {
+        "cardNumber": "Must be 16 digits",
+        "accountId": "Must be 11 digits, non-zero"
+      }
+    }
+  },
+
+  "account_not_found_error": {
+    "status": "ERROR",
+    "transactionCode": "CCLI",
+    "errors": [
+      {
+        "field": "accountId",
+        "code": "ACCOUNT_NOT_FOUND", 
+        "message": "Did not find this account in cards database"
+      }
+    ],
+    "supportingData": {
+      "searchCriteria": {
+        "accountId": "99999999999"
+      },
+      "suggestedCorrection": "Verify account number format and existence",
+      "validationRules": {
+        "accountId": "Must be 11 digits, non-zero"
+      }
+    }
+  },
+
+  "no_cards_found_error": {
+    "status": "ERROR",
+    "transactionCode": "CCLI", 
+    "errors": [
+      {
+        "field": "accountId",
+        "code": "NO_CARDS_FOUND",
+        "message": "NO RECORDS FOUND FOR THIS SEARCH CONDITION"
+      }
+    ],
+    "supportingData": {
+      "searchCriteria": {
+        "accountId": "12345678901"
+      },
+      "suggestedCorrection": "Account exists but has no associated cards",
+      "validationRules": {
+        "accountId": "Must be 11 digits, non-zero"
+      }
+    }
+  },
+
+  "validation_errors_response": {
+    "status": "ERROR",
+    "transactionCode": "CCUP",
+    "errors": [
+      {
+        "field": "accountId",
+        "code": "INVALID_FORMAT",
+        "message": "Account number must be a non zero 11 digit number"
+      },
+      {
+        "field": "cardNumber", 
+        "code": "INVALID_FORMAT",
+        "message": "Card number if supplied must be a 16 digit number"
+      },
+      {
+        "field": "embossedName",
+        "code": "INVALID_CHARACTERS",
+        "message": "Card name can only contain alphabets and spaces"
+      },
+      {
+        "field": "activeStatus",
+        "code": "INVALID_VALUE",
+        "message": "Card Active Status must be Y or N"
+      },
+      {
+        "field": "expirationMonth",
+        "code": "INVALID_RANGE",
+        "message": "Card expiry month must be between 1 and 12"
+      },
+      {
+        "field": "expirationYear",
+        "code": "INVALID_RANGE", 
+        "message": "Invalid card expiry year"
+      }
+    ],
+    "supportingData": {
+      "invalidInput": {
+        "accountId": "123",
+        "cardNumber": "123456789",
+        "embossedName": "JOHN SMITH123",
+        "activeStatus": "X",
+        "expirationMonth": "13",
+        "expirationYear": "1900"
+      },
+      "validationRules": {
+        "accountId": "Must be 11 digits, non-zero",
+        "cardNumber": "Must be 16 digits",
+        "embossedName": "Alphabets and spaces only, max 50 characters",
+        "activeStatus": "Must be Y or N",
+        "expirationMonth": "Must be 1-12",
+        "expirationYear": "Must be 1950-2099"
+      },
+      "suggestedCorrection": "Correct the highlighted field validation errors"
+    }
+  },
+
+  "update_conflict_error": {
+    "status": "ERROR",
+    "transactionCode": "CCUP",
+    "errors": [
+      {
+        "field": "cardRecord",
+        "code": "RECORD_LOCK_FAILURE",
+        "message": "Could not lock record for update"
+      }
+    ],
+    "supportingData": {
+      "conflictDetails": {
+        "cardNumber": "************1234",
+        "lockStatus": "LOCKED_BY_ANOTHER_USER",
+        "retryRecommended": true
+      },
+      "suggestedCorrection": "Please retry the operation in a few moments"
+    }
+  },
+
+  "concurrent_modification_error": {
+    "status": "ERROR",
+    "transactionCode": "CCUP", 
+    "errors": [
+      {
+        "field": "cardRecord",
+        "code": "CONCURRENT_MODIFICATION",
+        "message": "Record changed by some one else. Please review"
+      }
+    ],
+    "supportingData": {
+      "conflictDetails": {
+        "cardNumber": "************1234",
+        "lastModified": "2024-01-15T10:25:00Z",
+        "expectedVersion": "1",
+        "actualVersion": "2"
+      },
+      "suggestedCorrection": "Refresh the record and retry your changes"
+    }
+  },
+
+  "update_failure_error": {
+    "status": "ERROR",
+    "transactionCode": "CCUP",
+    "errors": [
+      {
+        "field": "cardRecord",
+        "code": "UPDATE_FAILED",
+        "message": "Update of record failed"
+      }
+    ],
+    "supportingData": {
+      "operationDetails": {
+        "cardNumber": "************1234",
+        "attemptedOperation": "UPDATE",
+        "failureReason": "DATABASE_CONSTRAINT_VIOLATION"
+      },
+      "suggestedCorrection": "Verify field values and retry operation"
+    }
+  },
+
+  "database_error_response": {
+    "status": "ERROR",
+    "transactionCode": "CCDL",
+    "errors": [
+      {
+        "field": "system",
+        "code": "DATABASE_ERROR",
+        "message": "Error reading Card Data File"
+      }
+    ],
+    "supportingData": {
+      "systemDetails": {
+        "errorCode": "DB_CONNECTION_TIMEOUT",
+        "timestamp": "2024-01-15T10:30:00Z",
+        "retryRecommended": true
+      },
+      "suggestedCorrection": "Please try again. If problem persists, contact support"
+    }
+  },
+
+  "session_timeout_error": {
+    "status": "ERROR",
+    "transactionCode": "CCLI",
+    "errors": [
+      {
+        "field": "session",
+        "code": "SESSION_TIMEOUT",
+        "message": "Session has expired. Please sign in again"
+      }
+    ],
+    "supportingData": {
+      "sessionDetails": {
+        "lastActivity": "2024-01-15T09:30:00Z",
+        "timeoutThreshold": "30 minutes",
+        "redirectUrl": "/signin"
+      },
+      "suggestedCorrection": "Please sign in again to continue"
+    }
+  },
+
+  "no_input_error": {
+    "status": "ERROR",
+    "transactionCode": "CCDL",
+    "errors": [
+      {
+        "field": "request",
+        "code": "NO_INPUT_RECEIVED",
+        "message": "No input received"
+      }
+    ],
+    "supportingData": {
+      "requiredFields": [
+        "accountId",
+        "cardNumber"
+      ],
+      "suggestedCorrection": "Please enter Account and Card Number"
+    }
+  },
+
+  "missing_account_error": {
+    "status": "ERROR", 
+    "transactionCode": "CCLI",
+    "errors": [
+      {
+        "field": "accountId",
+        "code": "REQUIRED_FIELD_MISSING",
+        "message": "Account number not provided"
+      }
+    ],
+    "supportingData": {
+      "requiredFields": [
+        "accountId"
+      ],
+      "suggestedCorrection": "Please provide a valid 11-digit account number"
+    }
+  },
+
+  "missing_card_error": {
+    "status": "ERROR",
+    "transactionCode": "CCDL", 
+    "errors": [
+      {
+        "field": "cardNumber",
+        "code": "REQUIRED_FIELD_MISSING",
+        "message": "Card number not provided"
+      }
+    ],
+    "supportingData": {
+      "requiredFields": [
+        "cardNumber"
+      ],
+      "suggestedCorrection": "Please provide a valid 16-digit card number"
+    }
+  },
+
+  "missing_card_name_error": {
+    "status": "ERROR",
+    "transactionCode": "CCUP",
+    "errors": [
+      {
+        "field": "embossedName",
+        "code": "REQUIRED_FIELD_MISSING", 
+        "message": "Card name not provided"
+      }
+    ],
+    "supportingData": {
+      "requiredFields": [
+        "embossedName"
+      ],
+      "suggestedCorrection": "Please provide card holder name (alphabets and spaces only)"
+    }
+  },
+
+  "no_changes_detected_error": {
+    "status": "ERROR",
+    "transactionCode": "CCUP",
+    "errors": [
+      {
+        "field": "updateRequest",
+        "code": "NO_CHANGES_DETECTED",
+        "message": "No change detected with respect to values fetched"
+      }
+    ],
+    "supportingData": {
+      "currentValues": {
+        "embossedName": "JOHN SMITH",
+        "activeStatus": "Y",
+        "expirationDate": "2025-12-31"
+      },
+      "submittedValues": {
+        "embossedName": "JOHN SMITH", 
+        "activeStatus": "Y",
+        "expirationDate": "2025-12-31"
+      },
+      "suggestedCorrection": "Modify at least one field to proceed with update"
+    }
+  }
+}
