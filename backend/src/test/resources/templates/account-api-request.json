@@ -1,0 +1,369 @@
+{
+  "_comment": "Account Management REST API Request Templates for CardDemo Application",
+  "_description": "JSON templates for account CRUD operations matching COBOL copybook CVACT01Y structure and BMS maps COACTVW/COACTUP",
+  "_source_references": [
+    "app/cpy/CVACT01Y.cpy - Account record structure",
+    "app/bms/COACTVW.bms - Account view screen layout", 
+    "app/bms/COACTUP.bms - Account update screen layout"
+  ],
+  "_field_mappings": {
+    "COBOL_FIELD": "JSON_FIELD",
+    "ACCT-ID": "accountId",
+    "ACCT-ACTIVE-STATUS": "activeStatus",
+    "ACCT-CURR-BAL": "currentBalance",
+    "ACCT-CREDIT-LIMIT": "creditLimit",
+    "ACCT-CASH-CREDIT-LIMIT": "cashCreditLimit",
+    "ACCT-OPEN-DATE": "openDate",
+    "ACCT-EXPIRAION-DATE": "expirationDate",
+    "ACCT-REISSUE-DATE": "reissueDate",
+    "ACCT-CURR-CYC-CREDIT": "currentCycleCredit",
+    "ACCT-CURR-CYC-DEBIT": "currentCycleDebit",
+    "ACCT-ADDR-ZIP": "addressZip",
+    "ACCT-GROUP-ID": "groupId"
+  },
+
+  "CREATE_ACCOUNT_REQUEST": {
+    "_operation": "POST",
+    "_endpoint": "/api/accounts",
+    "_description": "Create new account with all required fields matching COBOL CVACT01Y copybook structure",
+    "accountData": {
+      "accountId": "12345678901",
+      "activeStatus": "Y",
+      "currentBalance": "0.00",
+      "creditLimit": "5000.00",
+      "cashCreditLimit": "1000.00",
+      "openDate": "2024-01-15",
+      "expirationDate": "2029-01-31",
+      "reissueDate": "2024-01-15",
+      "currentCycleCredit": "0.00",
+      "currentCycleDebit": "0.00",
+      "addressZip": "12345",
+      "groupId": "STANDARD",
+      "customerData": {
+        "customerId": "123456789",
+        "firstName": "John",
+        "middleName": "Michael",
+        "lastName": "Smith",
+        "dateOfBirth": "1985-06-15",
+        "socialSecurityNumber": "123-45-6789",
+        "ficoScore": 750,
+        "address": {
+          "addressLine1": "123 Main Street",
+          "addressLine2": "Apt 2B",
+          "city": "New York",
+          "state": "NY",
+          "zipCode": "12345",
+          "country": "USA"
+        },
+        "contactInfo": {
+          "primaryPhone": "555-123-4567",
+          "secondaryPhone": "555-987-6543",
+          "eftAccountId": "EFT1234567",
+          "governmentIssuedId": "DL123456789NY",
+          "primaryCardHolder": "Y"
+        }
+      }
+    },
+    "_validation_rules": {
+      "accountId": "Must be exactly 11 digits (PIC 9(11))",
+      "activeStatus": "Must be Y or N (PIC X(01))",
+      "currentBalance": "Decimal with 9.2 precision (PIC S9(10)V99)",
+      "creditLimit": "Decimal with 9.2 precision (PIC S9(10)V99)",
+      "cashCreditLimit": "Decimal with 9.2 precision (PIC S9(10)V99)",
+      "openDate": "CCYY-MM-DD format (PIC X(10))",
+      "customerId": "Must be exactly 9 digits",
+      "socialSecurityNumber": "Must be XXX-XX-XXXX format",
+      "ficoScore": "Must be 3-digit number (300-850)",
+      "zipCode": "Must be 5 digits",
+      "state": "Must be 2 characters",
+      "primaryCardHolder": "Must be Y or N"
+    }
+  },
+
+  "VIEW_ACCOUNT_REQUEST": {
+    "_operation": "GET",
+    "_endpoint": "/api/accounts/{accountId}",
+    "_description": "Retrieve account details matching COACTVW BMS map layout",
+    "pathParameters": {
+      "accountId": "12345678901"
+    },
+    "queryParameters": {
+      "includeCustomerDetails": true,
+      "includeTransactionHistory": false,
+      "includeBalanceHistory": false
+    },
+    "_validation_rules": {
+      "accountId": "Must be exactly 11 digits and exist in database"
+    }
+  },
+
+  "VIEW_ACCOUNT_BY_CUSTOMER_REQUEST": {
+    "_operation": "GET",
+    "_endpoint": "/api/customers/{customerId}/accounts",
+    "_description": "Retrieve all accounts for a specific customer",
+    "pathParameters": {
+      "customerId": "123456789"
+    },
+    "queryParameters": {
+      "activeOnly": true,
+      "includeBalances": true
+    },
+    "_validation_rules": {
+      "customerId": "Must be exactly 9 digits"
+    }
+  },
+
+  "UPDATE_ACCOUNT_REQUEST": {
+    "_operation": "PUT",
+    "_endpoint": "/api/accounts/{accountId}",
+    "_description": "Update account fields matching COACTUP BMS map editable fields",
+    "pathParameters": {
+      "accountId": "12345678901"
+    },
+    "updateData": {
+      "activeStatus": "Y",
+      "creditLimit": "7500.00",
+      "cashCreditLimit": "1500.00",
+      "expirationDate": "2030-01-31",
+      "reissueDate": "2024-06-01",
+      "currentBalance": "1250.75",
+      "currentCycleCredit": "500.00",
+      "currentCycleDebit": "250.25",
+      "groupId": "PREMIUM",
+      "customerData": {
+        "firstName": "John",
+        "middleName": "Michael",
+        "lastName": "Smith-Johnson",
+        "dateOfBirth": "1985-06-15",
+        "socialSecurityNumber": "123-45-6789",
+        "ficoScore": 780,
+        "address": {
+          "addressLine1": "456 Oak Avenue",
+          "addressLine2": "Suite 100",
+          "city": "Brooklyn",
+          "state": "NY",
+          "zipCode": "11201",
+          "country": "USA"
+        },
+        "contactInfo": {
+          "primaryPhone": "555-123-4567",
+          "secondaryPhone": "555-987-6543",
+          "eftAccountId": "EFT7654321",
+          "governmentIssuedId": "DL987654321NY",
+          "primaryCardHolder": "Y"
+        }
+      }
+    },
+    "_editable_fields": [
+      "activeStatus",
+      "creditLimit", 
+      "cashCreditLimit",
+      "expirationDate",
+      "reissueDate",
+      "currentBalance",
+      "currentCycleCredit",
+      "currentCycleDebit",
+      "groupId",
+      "customerData.firstName",
+      "customerData.middleName", 
+      "customerData.lastName",
+      "customerData.dateOfBirth",
+      "customerData.socialSecurityNumber",
+      "customerData.ficoScore",
+      "customerData.address",
+      "customerData.contactInfo"
+    ],
+    "_validation_rules": {
+      "accountId": "Must be exactly 11 digits and exist in database",
+      "activeStatus": "Must be Y or N",
+      "creditLimit": "Must be positive decimal with 9.2 precision, max 999999999.99",
+      "cashCreditLimit": "Must be positive decimal with 9.2 precision, cannot exceed creditLimit",
+      "currentBalance": "Decimal with 9.2 precision, can be negative",
+      "expirationDate": "Must be future date in CCYY-MM-DD format",
+      "ficoScore": "Must be between 300 and 850"
+    }
+  },
+
+  "PARTIAL_UPDATE_ACCOUNT_REQUEST": {
+    "_operation": "PATCH",
+    "_endpoint": "/api/accounts/{accountId}",
+    "_description": "Partial update of specific account fields",
+    "pathParameters": {
+      "accountId": "12345678901"
+    },
+    "updateData": {
+      "creditLimit": "10000.00",
+      "cashCreditLimit": "2000.00"
+    },
+    "_validation_rules": {
+      "accountId": "Must be exactly 11 digits and exist in database",
+      "Only provided fields will be updated": "All other fields remain unchanged"
+    }
+  },
+
+  "ACCOUNT_STATUS_UPDATE_REQUEST": {
+    "_operation": "PATCH", 
+    "_endpoint": "/api/accounts/{accountId}/status",
+    "_description": "Update only account active status",
+    "pathParameters": {
+      "accountId": "12345678901"
+    },
+    "statusData": {
+      "activeStatus": "N",
+      "statusChangeReason": "Customer request",
+      "effectiveDate": "2024-01-20"
+    },
+    "_validation_rules": {
+      "activeStatus": "Must be Y or N",
+      "effectiveDate": "Must be current or future date"
+    }
+  },
+
+  "SEARCH_ACCOUNTS_REQUEST": {
+    "_operation": "GET",
+    "_endpoint": "/api/accounts/search",
+    "_description": "Search accounts by various criteria",
+    "queryParameters": {
+      "customerId": "123456789",
+      "activeStatus": "Y",
+      "groupId": "PREMIUM",
+      "minBalance": "1000.00",
+      "maxBalance": "50000.00",
+      "openDateFrom": "2023-01-01",
+      "openDateTo": "2024-12-31",
+      "page": 0,
+      "size": 20,
+      "sortBy": "accountId",
+      "sortDirection": "ASC"
+    },
+    "_validation_rules": {
+      "customerId": "If provided, must be exactly 9 digits",
+      "activeStatus": "If provided, must be Y or N",
+      "minBalance": "If provided, must be valid decimal",
+      "maxBalance": "If provided, must be valid decimal and >= minBalance",
+      "page": "Must be non-negative integer",
+      "size": "Must be between 1 and 100"
+    }
+  },
+
+  "BULK_ACCOUNT_UPDATE_REQUEST": {
+    "_operation": "PUT",
+    "_endpoint": "/api/accounts/bulk",
+    "_description": "Update multiple accounts in single request",
+    "bulkUpdateData": {
+      "accountUpdates": [
+        {
+          "accountId": "12345678901",
+          "updateFields": {
+            "creditLimit": "8000.00",
+            "activeStatus": "Y"
+          }
+        },
+        {
+          "accountId": "12345678902", 
+          "updateFields": {
+            "cashCreditLimit": "1200.00",
+            "groupId": "GOLD"
+          }
+        }
+      ],
+      "validateOnly": false,
+      "continueOnError": true
+    },
+    "_validation_rules": {
+      "accountUpdates": "Array must contain 1-100 account updates",
+      "accountId": "Each accountId must be exactly 11 digits and exist",
+      "validateOnly": "If true, performs validation without updating data"
+    }
+  },
+
+  "ACCOUNT_BALANCE_ADJUSTMENT_REQUEST": {
+    "_operation": "POST",
+    "_endpoint": "/api/accounts/{accountId}/balance-adjustment",
+    "_description": "Adjust account balance and cycle amounts",
+    "pathParameters": {
+      "accountId": "12345678901"
+    },
+    "adjustmentData": {
+      "balanceAdjustment": "150.00",
+      "adjustmentType": "CREDIT",
+      "cycleCredit": "150.00",
+      "cycleDebit": "0.00",
+      "adjustmentReason": "Payment reversal",
+      "referenceNumber": "ADJ2024010001",
+      "effectiveDate": "2024-01-20"
+    },
+    "_validation_rules": {
+      "balanceAdjustment": "Must be decimal with 9.2 precision",
+      "adjustmentType": "Must be CREDIT or DEBIT", 
+      "cycleCredit": "Must be decimal with 9.2 precision",
+      "cycleDebit": "Must be decimal with 9.2 precision",
+      "referenceNumber": "Must be unique identifier"
+    }
+  },
+
+  "COBOL_DATA_TYPE_MAPPINGS": {
+    "_description": "COBOL to JSON data type mapping for precision preservation",
+    "PIC_9(11)": {
+      "jsonType": "string",
+      "format": "11-digit numeric string",
+      "example": "12345678901",
+      "validation": "^\\d{11}$"
+    },
+    "PIC_X(01)": {
+      "jsonType": "string", 
+      "format": "single character",
+      "example": "Y",
+      "validation": "^[YN]$"
+    },
+    "PIC_S9(10)V99": {
+      "jsonType": "string",
+      "format": "decimal with 9.2 precision",
+      "example": "12345.67",
+      "validation": "^-?\\d{1,10}\\.\\d{2}$",
+      "range": "-9999999999.99 to 9999999999.99"
+    },
+    "PIC_X(10)": {
+      "jsonType": "string",
+      "format": "10-character string for dates",
+      "example": "2024-01-15",
+      "validation": "CCYY-MM-DD format"
+    }
+  },
+
+  "RESPONSE_SCHEMAS": {
+    "_description": "Expected response structures for account operations",
+    "successful_create_response": {
+      "status": "SUCCESS",
+      "message": "Account created successfully",
+      "accountId": "12345678901",
+      "timestamp": "2024-01-15T10:30:00Z"
+    },
+    "successful_update_response": {
+      "status": "SUCCESS", 
+      "message": "Account updated successfully",
+      "accountId": "12345678901",
+      "updatedFields": ["creditLimit", "cashCreditLimit"],
+      "timestamp": "2024-01-15T10:30:00Z"
+    },
+    "validation_error_response": {
+      "status": "ERROR",
+      "errorCode": "VALIDATION_FAILED", 
+      "message": "Invalid field values provided",
+      "fieldErrors": [
+        {
+          "field": "accountId",
+          "value": "123456789",
+          "error": "Account ID must be exactly 11 digits"
+        }
+      ],
+      "timestamp": "2024-01-15T10:30:00Z"
+    },
+    "not_found_response": {
+      "status": "ERROR",
+      "errorCode": "ACCOUNT_NOT_FOUND",
+      "message": "Account with ID 12345678901 not found",
+      "timestamp": "2024-01-15T10:30:00Z"
+    }
+  }
+}
