@@ -1,0 +1,307 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Payment Gateway Mock Response Templates",
+  "description": "Mock response templates for external payment network interactions maintaining compatibility with existing mainframe interface formats. Supports authorization responses, settlement confirmations, and decline codes matching ISO 8583 message structure.",
+  "version": "1.0.0",
+  "templates": {
+    "authorization_approval": {
+      "description": "Standard authorization approval response for successful card transactions",
+      "response": {
+        "responseCode": "00",
+        "responseMessage": "APPROVED",
+        "authorizationCode": "{{authCode:6-digit-alphanumeric}}",
+        "transactionReferenceNumber": "{{refNumber:12-digit-numeric}}",
+        "merchantTransactionId": "{{merchantTxnId:15-char-alphanumeric}}",
+        "cardNumber": "{{maskedCardNumber:4-digit-last-four}}",
+        "transactionAmount": "{{amount:decimal-2-places}}",
+        "currencyCode": "USD",
+        "transactionDate": "{{txnDate:YYYYMMDD}}",
+        "transactionTime": "{{txnTime:HHMMSS}}",
+        "processingCode": "000000",
+        "settlementDate": "{{settlementDate:YYYYMMDD}}",
+        "batchNumber": "{{batchNumber:6-digit-numeric}}",
+        "networkTraceNumber": "{{networkTrace:6-digit-numeric}}",
+        "acquirerId": "{{acquirerId:11-digit-numeric}}",
+        "forwardingInstitutionId": "{{forwardingId:11-digit-numeric}}",
+        "cardAcceptorTerminalId": "{{terminalId:8-char-alphanumeric}}",
+        "cardAcceptorId": "{{merchantId:15-char-alphanumeric}}",
+        "cardAcceptorNameLocation": "{{merchantName:40-char-text}}",
+        "additionalResponseData": "{{additionalData:variable-length}}",
+        "availableBalance": "{{availableBalance:decimal-2-places}}",
+        "ledgerBalance": "{{ledgerBalance:decimal-2-places}}",
+        "responseTimestamp": "{{timestamp:ISO8601}}"
+      }
+    },
+    "authorization_decline": {
+      "description": "Authorization decline response with specific decline reason codes",
+      "variations": [
+        {
+          "responseCode": "05",
+          "responseMessage": "DO NOT HONOR",
+          "declineReason": "GENERIC_DECLINE",
+          "actionCode": "116"
+        },
+        {
+          "responseCode": "14",
+          "responseMessage": "INVALID CARD NUMBER",
+          "declineReason": "INVALID_CARD",
+          "actionCode": "200"
+        },
+        {
+          "responseCode": "51",
+          "responseMessage": "INSUFFICIENT FUNDS",
+          "declineReason": "NSF",
+          "actionCode": "116"
+        },
+        {
+          "responseCode": "54",
+          "responseMessage": "EXPIRED CARD",
+          "declineReason": "CARD_EXPIRED",
+          "actionCode": "100"
+        },
+        {
+          "responseCode": "61",
+          "responseMessage": "EXCEEDS WITHDRAWAL LIMIT",
+          "declineReason": "LIMIT_EXCEEDED",
+          "actionCode": "117"
+        },
+        {
+          "responseCode": "62",
+          "responseMessage": "RESTRICTED CARD",
+          "declineReason": "CARD_RESTRICTED",
+          "actionCode": "119"
+        },
+        {
+          "responseCode": "65",
+          "responseMessage": "EXCEEDS FREQUENCY LIMIT",
+          "declineReason": "FREQUENCY_LIMIT",
+          "actionCode": "181"
+        },
+        {
+          "responseCode": "78",
+          "responseMessage": "BLOCKED FIRST USE",
+          "declineReason": "FIRST_USE_BLOCKED",
+          "actionCode": "100"
+        },
+        {
+          "responseCode": "91",
+          "responseMessage": "ISSUER UNAVAILABLE",
+          "declineReason": "ISSUER_DOWN",
+          "actionCode": "909"
+        },
+        {
+          "responseCode": "96",
+          "responseMessage": "SYSTEM MALFUNCTION",
+          "declineReason": "SYSTEM_ERROR",
+          "actionCode": "909"
+        }
+      ],
+      "response": {
+        "responseCode": "{{responseCode:2-digit-numeric}}",
+        "responseMessage": "{{responseMessage:variable-text}}",
+        "authorizationCode": "",
+        "transactionReferenceNumber": "{{refNumber:12-digit-numeric}}",
+        "merchantTransactionId": "{{merchantTxnId:15-char-alphanumeric}}",
+        "cardNumber": "{{maskedCardNumber:4-digit-last-four}}",
+        "transactionAmount": "{{amount:decimal-2-places}}",
+        "currencyCode": "USD",
+        "transactionDate": "{{txnDate:YYYYMMDD}}",
+        "transactionTime": "{{txnTime:HHMMSS}}",
+        "processingCode": "000000",
+        "declineReason": "{{declineReason:variable-text}}",
+        "actionCode": "{{actionCode:3-digit-numeric}}",
+        "networkTraceNumber": "{{networkTrace:6-digit-numeric}}",
+        "acquirerId": "{{acquirerId:11-digit-numeric}}",
+        "forwardingInstitutionId": "{{forwardingId:11-digit-numeric}}",
+        "cardAcceptorTerminalId": "{{terminalId:8-char-alphanumeric}}",
+        "cardAcceptorId": "{{merchantId:15-char-alphanumeric}}",
+        "cardAcceptorNameLocation": "{{merchantName:40-char-text}}",
+        "additionalResponseData": "{{additionalData:variable-length}}",
+        "responseTimestamp": "{{timestamp:ISO8601}}"
+      }
+    },
+    "settlement_confirmation": {
+      "description": "Settlement batch confirmation response for end-of-day processing",
+      "response": {
+        "responseCode": "00",
+        "responseMessage": "SETTLEMENT ACCEPTED",
+        "settlementBatchId": "{{batchId:10-digit-numeric}}",
+        "settlementDate": "{{settlementDate:YYYYMMDD}}",
+        "settlementTime": "{{settlementTime:HHMMSS}}",
+        "transactionCount": "{{txnCount:numeric}}",
+        "settlementAmount": "{{settlementAmount:decimal-2-places}}",
+        "currencyCode": "USD",
+        "acquirerId": "{{acquirerId:11-digit-numeric}}",
+        "merchantId": "{{merchantId:15-char-alphanumeric}}",
+        "batchNumber": "{{batchNumber:6-digit-numeric}}",
+        "networkId": "{{networkId:variable-text}}",
+        "interchangeFee": "{{interchangeFee:decimal-2-places}}",
+        "assessmentFee": "{{assessmentFee:decimal-2-places}}",
+        "netSettlement": "{{netSettlement:decimal-2-places}}",
+        "settlementStatus": "COMPLETE",
+        "responseTimestamp": "{{timestamp:ISO8601}}"
+      }
+    },
+    "balance_inquiry": {
+      "description": "Account balance inquiry response for available and ledger balances",
+      "response": {
+        "responseCode": "00",
+        "responseMessage": "SUCCESSFUL",
+        "transactionReferenceNumber": "{{refNumber:12-digit-numeric}}",
+        "cardNumber": "{{maskedCardNumber:4-digit-last-four}}",
+        "accountType": "{{accountType:2-digit-numeric}}",
+        "availableBalance": "{{availableBalance:decimal-2-places}}",
+        "ledgerBalance": "{{ledgerBalance:decimal-2-places}}",
+        "currencyCode": "USD",
+        "transactionDate": "{{txnDate:YYYYMMDD}}",
+        "transactionTime": "{{txnTime:HHMMSS}}",
+        "networkTraceNumber": "{{networkTrace:6-digit-numeric}}",
+        "acquirerId": "{{acquirerId:11-digit-numeric}}",
+        "cardAcceptorTerminalId": "{{terminalId:8-char-alphanumeric}}",
+        "cardAcceptorId": "{{merchantId:15-char-alphanumeric}}",
+        "responseTimestamp": "{{timestamp:ISO8601}}"
+      }
+    },
+    "reversal_confirmation": {
+      "description": "Transaction reversal confirmation for voided or cancelled transactions",
+      "response": {
+        "responseCode": "00",
+        "responseMessage": "REVERSAL ACCEPTED",
+        "originalTransactionReference": "{{originalRefNumber:12-digit-numeric}}",
+        "reversalReferenceNumber": "{{reversalRefNumber:12-digit-numeric}}",
+        "reversalAuthCode": "{{reversalAuthCode:6-digit-alphanumeric}}",
+        "cardNumber": "{{maskedCardNumber:4-digit-last-four}}",
+        "originalAmount": "{{originalAmount:decimal-2-places}}",
+        "reversalAmount": "{{reversalAmount:decimal-2-places}}",
+        "currencyCode": "USD",
+        "reversalDate": "{{reversalDate:YYYYMMDD}}",
+        "reversalTime": "{{reversalTime:HHMMSS}}",
+        "reversalReason": "{{reversalReason:2-digit-numeric}}",
+        "networkTraceNumber": "{{networkTrace:6-digit-numeric}}",
+        "acquirerId": "{{acquirerId:11-digit-numeric}}",
+        "forwardingInstitutionId": "{{forwardingId:11-digit-numeric}}",
+        "cardAcceptorTerminalId": "{{terminalId:8-char-alphanumeric}}",
+        "cardAcceptorId": "{{merchantId:15-char-alphanumeric}}",
+        "responseTimestamp": "{{timestamp:ISO8601}}"
+      }
+    },
+    "fraud_check_result": {
+      "description": "Fraud detection service response with risk scoring and recommendations",
+      "response": {
+        "responseCode": "00",
+        "responseMessage": "FRAUD CHECK COMPLETE",
+        "transactionReferenceNumber": "{{refNumber:12-digit-numeric}}",
+        "fraudScore": "{{fraudScore:3-digit-numeric}}",
+        "riskLevel": "{{riskLevel:LOW|MEDIUM|HIGH}}",
+        "fraudDecision": "{{fraudDecision:APPROVE|DECLINE|REVIEW}}",
+        "fraudReasonCodes": "{{fraudReasonCodes:array-of-codes}}",
+        "velocityCheckResult": "{{velocityResult:PASS|FAIL}}",
+        "geolocationCheck": "{{geoResult:PASS|FAIL|SUSPICIOUS}}",
+        "deviceFingerprint": "{{deviceFingerprint:64-char-hash}}",
+        "cardNumber": "{{maskedCardNumber:4-digit-last-four}}",
+        "merchantId": "{{merchantId:15-char-alphanumeric}}",
+        "transactionAmount": "{{amount:decimal-2-places}}",
+        "analysisTimestamp": "{{timestamp:ISO8601}}",
+        "responseTimestamp": "{{timestamp:ISO8601}}"
+      }
+    },
+    "network_timeout_error": {
+      "description": "Network timeout error response for unavailable payment networks",
+      "response": {
+        "responseCode": "91",
+        "responseMessage": "ISSUER OR SWITCH INOPERATIVE",
+        "errorCode": "NETWORK_TIMEOUT",
+        "errorDescription": "Payment network unavailable - timeout after 30 seconds",
+        "transactionReferenceNumber": "{{refNumber:12-digit-numeric}}",
+        "retryAllowed": true,
+        "retryDelay": "{{retryDelay:numeric-seconds}}",
+        "networkId": "{{networkId:variable-text}}",
+        "responseTimestamp": "{{timestamp:ISO8601}}"
+      }
+    },
+    "system_error": {
+      "description": "System error response for technical failures",
+      "response": {
+        "responseCode": "96",
+        "responseMessage": "SYSTEM MALFUNCTION",
+        "errorCode": "SYSTEM_ERROR",
+        "errorDescription": "Internal system error - transaction cannot be processed",
+        "transactionReferenceNumber": "{{refNumber:12-digit-numeric}}",
+        "retryAllowed": false,
+        "supportReference": "{{supportRef:16-char-alphanumeric}}",
+        "responseTimestamp": "{{timestamp:ISO8601}}"
+      }
+    }
+  },
+  "field_specifications": {
+    "description": "Field format specifications and validation rules matching existing mainframe interface contracts",
+    "response_code": {
+      "format": "2-digit numeric",
+      "values": {
+        "00": "Approved or completed successfully",
+        "05": "Do not honor",
+        "14": "Invalid card number",
+        "51": "Insufficient funds",
+        "54": "Expired card",
+        "61": "Exceeds withdrawal limit",
+        "62": "Restricted card",
+        "65": "Exceeds frequency limit",
+        "78": "Blocked, first use",
+        "91": "Issuer or switch inoperative",
+        "96": "System malfunction"
+      }
+    },
+    "authorization_code": {
+      "format": "6-character alphanumeric",
+      "description": "Unique authorization code for approved transactions",
+      "example": "ABC123"
+    },
+    "transaction_reference": {
+      "format": "12-digit numeric",
+      "description": "Unique transaction reference number",
+      "example": "123456789012"
+    },
+    "batch_number": {
+      "format": "6-digit numeric",
+      "description": "Settlement batch identifier",
+      "example": "000001"
+    },
+    "amount_fields": {
+      "format": "Decimal with 2 decimal places",
+      "description": "Currency amounts in USD",
+      "example": "123.45"
+    },
+    "date_time_fields": {
+      "transaction_date": "YYYYMMDD format",
+      "transaction_time": "HHMMSS format",
+      "iso_timestamp": "ISO 8601 format with timezone"
+    },
+    "card_number": {
+      "format": "Masked card number showing last 4 digits only",
+      "example": "****1234"
+    }
+  },
+  "usage_instructions": {
+    "description": "Instructions for using these mock response templates in testing",
+    "template_variables": {
+      "description": "Replace {{variable}} placeholders with actual test values",
+      "examples": {
+        "{{authCode:6-digit-alphanumeric}}": "Replace with 6-character authorization code",
+        "{{amount:decimal-2-places}}": "Replace with transaction amount in decimal format",
+        "{{timestamp:ISO8601}}": "Replace with ISO 8601 formatted timestamp"
+      }
+    },
+    "test_scenarios": {
+      "positive_testing": "Use authorization_approval template for successful transaction testing",
+      "negative_testing": "Use authorization_decline variations for error handling validation",
+      "integration_testing": "Use settlement_confirmation for batch processing tests",
+      "fraud_testing": "Use fraud_check_result for risk management validation",
+      "error_testing": "Use network_timeout_error and system_error for resilience testing"
+    },
+    "compatibility_notes": {
+      "iso_8583_compliance": "Response structure maintains compatibility with ISO 8583 message format",
+      "mainframe_compatibility": "Field lengths and formats preserve existing interface contracts",
+      "backward_compatibility": "All response codes and formats match legacy system expectations"
+    }
+  }
+}
