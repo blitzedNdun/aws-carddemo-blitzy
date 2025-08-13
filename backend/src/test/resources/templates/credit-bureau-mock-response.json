@@ -1,0 +1,291 @@
+{
+  "_comment": "Credit Bureau Mock Response Template",
+  "_description": "JSON template for mock credit bureau responses simulating FICO score inquiries and credit report data matching the format expected by existing COBOL credit check routines",
+  "_version": "1.0",
+  "_generated_date": "2024-01-01T00:00:00Z",
+  
+  "credit_bureau_response": {
+    "header": {
+      "bureau_name": "EXAMPLE_CREDIT_BUREAU",
+      "response_id": "{{response_id}}",
+      "inquiry_date": "{{inquiry_date}}",
+      "inquiry_time": "{{inquiry_time}}",
+      "response_code": "00",
+      "response_message": "SUCCESS",
+      "inquiry_type": "{{inquiry_type}}",
+      "_inquiry_type_values": ["SOFT", "HARD"],
+      "consumer_reporting_agency": "EXAMPLE_CRA",
+      "file_number": "{{file_number}}"
+    },
+    
+    "consumer_identification": {
+      "consumer_id": "{{consumer_id}}",
+      "social_security_number": "{{ssn}}",
+      "_ssn_format": "XXX-XX-XXXX",
+      "date_of_birth": "{{date_of_birth}}",
+      "_dob_format": "YYYYMMDD",
+      "full_name": {
+        "first_name": "{{first_name}}",
+        "middle_name": "{{middle_name}}",
+        "last_name": "{{last_name}}",
+        "suffix": "{{suffix}}"
+      },
+      "current_address": {
+        "address_line_1": "{{address_line_1}}",
+        "address_line_2": "{{address_line_2}}",
+        "city": "{{city}}",
+        "state": "{{state}}",
+        "zip_code": "{{zip_code}}",
+        "country": "US",
+        "address_type": "CURRENT",
+        "date_reported": "{{address_date_reported}}"
+      },
+      "previous_addresses": [
+        {
+          "address_line_1": "{{prev_address_line_1}}",
+          "address_line_2": "{{prev_address_line_2}}",
+          "city": "{{prev_city}}",
+          "state": "{{prev_state}}",
+          "zip_code": "{{prev_zip_code}}",
+          "country": "US",
+          "address_type": "PREVIOUS",
+          "date_reported": "{{prev_address_date_reported}}"
+        }
+      ]
+    },
+    
+    "credit_score_information": {
+      "fico_score": "{{fico_score}}",
+      "_fico_score_range": "300-850",
+      "_fico_score_note": "Integer value between 300 and 850 inclusive",
+      "score_factors": [
+        {
+          "factor_code": "01",
+          "factor_description": "PAYMENT_HISTORY",
+          "impact_level": "HIGH"
+        },
+        {
+          "factor_code": "02", 
+          "factor_description": "CREDIT_UTILIZATION",
+          "impact_level": "HIGH"
+        },
+        {
+          "factor_code": "03",
+          "factor_description": "LENGTH_OF_CREDIT_HISTORY",
+          "impact_level": "MEDIUM"
+        },
+        {
+          "factor_code": "04",
+          "factor_description": "CREDIT_MIX",
+          "impact_level": "LOW"
+        },
+        {
+          "factor_code": "05",
+          "factor_description": "NEW_CREDIT_INQUIRIES",
+          "impact_level": "LOW"
+        }
+      ],
+      "score_date": "{{score_date}}",
+      "score_model": "FICO_8",
+      "score_reason_codes": [
+        "{{reason_code_1}}",
+        "{{reason_code_2}}",
+        "{{reason_code_3}}"
+      ]
+    },
+    
+    "credit_summary": {
+      "total_open_accounts": "{{total_open_accounts}}",
+      "total_closed_accounts": "{{total_closed_accounts}}",
+      "total_credit_limit": "{{total_credit_limit}}",
+      "_credit_limit_format": "Numeric value in cents",
+      "total_current_balance": "{{total_current_balance}}",
+      "_balance_format": "Numeric value in cents",
+      "credit_utilization_percentage": "{{credit_utilization_percentage}}",
+      "_utilization_format": "Percentage as integer (e.g., 25 for 25%)",
+      "oldest_account_date": "{{oldest_account_date}}",
+      "newest_account_date": "{{newest_account_date}}",
+      "average_account_age_months": "{{average_account_age_months}}",
+      "total_inquiries_12_months": "{{total_inquiries_12_months}}",
+      "total_inquiries_24_months": "{{total_inquiries_24_months}}"
+    },
+    
+    "payment_history": {
+      "payment_status_summary": {
+        "on_time_payments_percentage": "{{on_time_payments_percentage}}",
+        "late_payments_30_days": "{{late_payments_30_days}}",
+        "late_payments_60_days": "{{late_payments_60_days}}",
+        "late_payments_90_days": "{{late_payments_90_days}}",
+        "late_payments_120_plus_days": "{{late_payments_120_plus_days}}",
+        "charge_offs": "{{charge_offs}}",
+        "collections": "{{collections}}",
+        "bankruptcies": "{{bankruptcies}}"
+      },
+      "delinquency_indicators": [
+        {
+          "account_number": "{{delinq_account_number}}",
+          "account_type": "{{delinq_account_type}}",
+          "_account_types": ["CREDIT_CARD", "MORTGAGE", "AUTO_LOAN", "PERSONAL_LOAN", "STUDENT_LOAN"],
+          "delinquency_status": "{{delinquency_status}}",
+          "_delinq_status_values": ["CURRENT", "30_DAYS_LATE", "60_DAYS_LATE", "90_DAYS_LATE", "120_PLUS_DAYS_LATE", "CHARGE_OFF", "COLLECTION"],
+          "amount_past_due": "{{amount_past_due}}",
+          "date_of_delinquency": "{{date_of_delinquency}}",
+          "creditor_name": "{{creditor_name}}"
+        }
+      ]
+    },
+    
+    "account_history": [
+      {
+        "account_number": "{{account_number}}",
+        "account_type": "CREDIT_CARD",
+        "account_status": "{{account_status}}",
+        "_account_status_values": ["OPEN", "CLOSED", "PAID", "CHARGE_OFF", "COLLECTION"],
+        "creditor_name": "{{creditor_name}}",
+        "original_creditor": "{{original_creditor}}",
+        "date_opened": "{{date_opened}}",
+        "date_closed": "{{date_closed}}",
+        "date_last_payment": "{{date_last_payment}}",
+        "credit_limit": "{{credit_limit}}",
+        "high_balance": "{{high_balance}}",
+        "current_balance": "{{current_balance}}",
+        "minimum_payment": "{{minimum_payment}}",
+        "payment_status": "{{payment_status}}",
+        "_payment_status_values": ["CURRENT", "30", "60", "90", "120", "CHARGE_OFF", "COLLECTION"],
+        "months_reviewed": "{{months_reviewed}}",
+        "payment_history_profile": "{{payment_history_profile}}",
+        "_payment_profile_format": "String of payment statuses by month (e.g., 'CCCCC3CC' where C=Current, 3=30 days late)",
+        "responsibility": "{{responsibility}}",
+        "_responsibility_values": ["INDIVIDUAL", "JOINT", "AUTHORIZED_USER", "COSIGNER"]
+      },
+      {
+        "account_number": "{{account_number_2}}",
+        "account_type": "MORTGAGE",
+        "account_status": "OPEN",
+        "creditor_name": "{{mortgage_creditor_name}}",
+        "original_creditor": "{{mortgage_original_creditor}}",
+        "date_opened": "{{mortgage_date_opened}}",
+        "date_closed": null,
+        "date_last_payment": "{{mortgage_date_last_payment}}",
+        "credit_limit": "{{mortgage_credit_limit}}",
+        "high_balance": "{{mortgage_high_balance}}",
+        "current_balance": "{{mortgage_current_balance}}",
+        "minimum_payment": "{{mortgage_minimum_payment}}",
+        "payment_status": "CURRENT",
+        "months_reviewed": "{{mortgage_months_reviewed}}",
+        "payment_history_profile": "{{mortgage_payment_history_profile}}",
+        "responsibility": "INDIVIDUAL"
+      }
+    ],
+    
+    "inquiries": [
+      {
+        "inquiry_date": "{{inquiry_date_1}}",
+        "inquiry_type": "HARD",
+        "_inquiry_types": ["SOFT", "HARD"],
+        "inquiring_party": "{{inquiring_party_1}}",
+        "inquiry_purpose": "{{inquiry_purpose_1}}",
+        "_inquiry_purposes": ["CREDIT_CARD", "AUTO_LOAN", "MORTGAGE", "PERSONAL_LOAN", "ACCOUNT_REVIEW", "EMPLOYMENT", "INSURANCE"],
+        "subscriber_code": "{{subscriber_code_1}}"
+      },
+      {
+        "inquiry_date": "{{inquiry_date_2}}",
+        "inquiry_type": "SOFT", 
+        "inquiring_party": "{{inquiring_party_2}}",
+        "inquiry_purpose": "ACCOUNT_REVIEW",
+        "subscriber_code": "{{subscriber_code_2}}"
+      }
+    ],
+    
+    "public_records": [
+      {
+        "record_type": "{{public_record_type}}",
+        "_record_types": ["BANKRUPTCY", "TAX_LIEN", "JUDGMENT", "FORECLOSURE"],
+        "filing_date": "{{filing_date}}",
+        "court_name": "{{court_name}}",
+        "case_number": "{{case_number}}",
+        "amount": "{{public_record_amount}}",
+        "status": "{{public_record_status}}",
+        "_status_values": ["FILED", "DISMISSED", "SATISFIED", "RELEASED"],
+        "date_resolved": "{{date_resolved}}"
+      }
+    ],
+    
+    "alerts_and_flags": [
+      {
+        "alert_type": "{{alert_type}}",
+        "_alert_types": ["FRAUD_ALERT", "SECURITY_FREEZE", "IDENTITY_THEFT", "DISPUTED_INFORMATION", "DECEASED"],
+        "alert_description": "{{alert_description}}",
+        "date_placed": "{{alert_date_placed}}",
+        "expiration_date": "{{alert_expiration_date}}",
+        "status": "ACTIVE"
+      }
+    ],
+    
+    "compliance_information": {
+      "fair_credit_reporting_act": {
+        "permissible_purpose": "{{permissible_purpose}}",
+        "_permissible_purposes": ["CREDIT_TRANSACTION", "EMPLOYMENT", "INSURANCE", "TENANT_SCREENING", "LEGITIMATE_BUSINESS_NEED"],
+        "consumer_disclosure": "Consumer has right to dispute inaccurate information",
+        "adverse_action_required": "{{adverse_action_required}}",
+        "_adverse_action_values": ["YES", "NO"]
+      },
+      "privacy_indicators": {
+        "opt_out_prescreen": "{{opt_out_prescreen}}",
+        "_opt_out_values": ["YES", "NO"],
+        "marketing_restrictions": "{{marketing_restrictions}}"
+      }
+    },
+    
+    "data_sources": [
+      {
+        "source_name": "{{data_source_name}}",
+        "source_type": "{{data_source_type}}",
+        "_source_types": ["CREDITOR", "COLLECTION_AGENCY", "PUBLIC_RECORD", "CONSUMER_STATEMENT"],
+        "last_updated": "{{source_last_updated}}",
+        "reporting_frequency": "{{reporting_frequency}}",
+        "_frequency_values": ["MONTHLY", "QUARTERLY", "AS_NEEDED"]
+      }
+    ],
+    
+    "response_footer": {
+      "disclaimer": "This credit report contains information from multiple sources and reflects data available at the time of inquiry",
+      "report_generation_time": "{{report_generation_time}}",
+      "next_update_available": "{{next_update_available}}",
+      "consumer_rights_notice": "Consumers have the right to obtain a free copy of their credit report annually and to dispute inaccurate information",
+      "contact_information": {
+        "bureau_phone": "1-800-XXX-XXXX",
+        "bureau_website": "www.example-credit-bureau.com",
+        "dispute_address": "Example Credit Bureau, Dispute Department, PO Box XXXX, City, State ZIP"
+      }
+    }
+  },
+  
+  "_template_variables": {
+    "_note": "Template variables to be replaced with actual values during mock response generation",
+    "response_id": "String - Unique response identifier",
+    "inquiry_date": "String - YYYYMMDD format", 
+    "inquiry_time": "String - HHMMSS format",
+    "inquiry_type": "String - SOFT or HARD",
+    "file_number": "String - Consumer file reference number",
+    "consumer_id": "String - Internal consumer identifier",
+    "ssn": "String - XXX-XX-XXXX format",
+    "date_of_birth": "String - YYYYMMDD format",
+    "first_name": "String - Consumer first name",
+    "middle_name": "String - Consumer middle name (optional)",
+    "last_name": "String - Consumer last name", 
+    "suffix": "String - Name suffix (Jr, Sr, III, etc.)",
+    "fico_score": "Integer - Value between 300 and 850 inclusive",
+    "credit_utilization_percentage": "Integer - Percentage as whole number (0-100)",
+    "total_credit_limit": "Integer - Total credit limit in cents",
+    "total_current_balance": "Integer - Total current balance in cents"
+  },
+  
+  "_cobol_compatibility_notes": {
+    "numeric_precision": "All monetary amounts are represented in cents as integers to maintain COBOL COMP-3 precision",
+    "date_formats": "All dates use YYYYMMDD format to match COBOL date handling",
+    "field_lengths": "String field lengths align with COBOL PIC X(n) definitions",
+    "fico_score_validation": "FICO score must be validated against 300-850 range in COBOL processing",
+    "decimal_handling": "Percentage fields are integers to avoid decimal precision issues in COBOL"
+  }
+}
