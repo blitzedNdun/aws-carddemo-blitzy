@@ -1,0 +1,123 @@
+# HorizontalPodAutoscaler for CardDemo Backend Service
+# Provides automatic scaling based on CPU, memory, and custom metrics
+# to maintain sub-200ms response time SLA compliance
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: carddemo-backend-hpa
+  namespace: default
+  labels:
+    app: carddemo-backend
+    component: autoscaler
+    tier: application
+  annotations:
+    description: "Auto-scaling configuration for CardDemo backend pods"
+    sla-target: "sub-200ms response time compliance"
+    scaling-strategy: "CPU, memory, and request rate based scaling"
+spec:
+  # Target deployment for scaling operations
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: carddemo-backend
+  
+  # Replica scaling boundaries
+  # Minimum 3 replicas ensure high availability and load distribution
+  # Maximum 10 replicas prevent resource exhaustion while handling peak loads
+  minReplicas: 3
+  maxReplicas: 10
+  
+  # Multi-dimensional scaling metrics for comprehensive performance optimization
+  metrics:
+  # CPU utilization metric - primary scaling trigger
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        # 70% CPU target balances performance and resource efficiency
+        # Triggers scale-up before reaching performance degradation threshold
+        averageUtilization: 70
+  
+  # Memory utilization metric - prevents memory pressure scenarios
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        # 80% memory target ensures adequate headroom for JVM operations
+        # Accounts for Spring Boot heap management and garbage collection
+        averageUtilization: 80
+  
+  # Custom request rate metric - ensures request handling capacity
+  - type: Pods
+    pods:
+      metric:
+        name: http_requests_per_second
+      target:
+        type: AverageValue
+        # 1000 requests/second threshold maintains sub-200ms SLA
+        # Based on performance testing of Spring Boot REST controllers
+        averageValue: "1000"
+  
+  # Scaling behavior configuration to prevent instability and flapping
+  behavior:
+    # Scale-up policies - responsive to load increases
+    scaleUp:
+      # 60-second stabilization window prevents rapid scaling oscillations
+      # Allows metrics to stabilize after scaling operations
+      stabilizationWindowSeconds: 60
+      policies:
+      # Aggressive scale-up policy for performance compliance
+      # Allows 100% replica increase every 15 seconds during high load
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+      # Alternative pod-based scaling for gradual capacity increases
+      - type: Pods
+        value: 2
+        periodSeconds: 15
+      # HPA selects the policy that adds the most replicas
+      selectPolicy: Max
+    
+    # Scale-down policies - conservative to maintain performance stability
+    scaleDown:
+      # 300-second stabilization window ensures load reduction is sustained
+      # Prevents premature scale-down during temporary load decreases
+      stabilizationWindowSeconds: 300
+      policies:
+      # Conservative scale-down policy maintains service capacity
+      # Allows 10% replica reduction every 60 seconds maximum
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+      # Alternative pod-based scaling for controlled capacity reduction
+      - type: Pods
+        value: 1
+        periodSeconds: 60
+      # HPA selects the policy that removes the fewest replicas
+      selectPolicy: Min
+
+---
+# ServiceMonitor for Prometheus metrics collection
+# Enables custom metrics collection for HPA scaling decisions
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: carddemo-backend-metrics
+  namespace: default
+  labels:
+    app: carddemo-backend
+    component: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: carddemo-backend
+  endpoints:
+  - port: http
+    path: /actuator/prometheus
+    interval: 15s
+    scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+    - default
