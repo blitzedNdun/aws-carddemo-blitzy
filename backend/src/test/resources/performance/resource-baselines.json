@@ -1,0 +1,600 @@
+{
+  "metadata": {
+    "description": "Performance resource utilization baseline metrics for CardDemo Spring Boot application testing",
+    "version": "1.0.0",
+    "created": "2024-01-15T00:00:00Z",
+    "purpose": "Establish baseline performance expectations for COBOL-to-Java migration validation",
+    "environment_compatibility": [
+      "development",
+      "integration", 
+      "staging",
+      "production"
+    ]
+  },
+  "baseline_metrics": {
+    "cpu_utilization": {
+      "description": "CPU utilization targets under varying load conditions",
+      "measurement_method": "Micrometer process_cpu_usage metric via Spring Boot Actuator",
+      "targets": {
+        "idle_state": {
+          "target_percentage": 5.0,
+          "max_acceptable": 15.0,
+          "alert_threshold": 20.0,
+          "measurement_window": "5m"
+        },
+        "low_load": {
+          "request_rate_tps": 100,
+          "target_percentage": 25.0,
+          "max_acceptable": 35.0,
+          "alert_threshold": 45.0,
+          "measurement_window": "15m"
+        },
+        "moderate_load": {
+          "request_rate_tps": 500,
+          "target_percentage": 45.0,
+          "max_acceptable": 60.0,
+          "alert_threshold": 70.0,
+          "measurement_window": "15m"
+        },
+        "high_load": {
+          "request_rate_tps": 1000,
+          "target_percentage": 65.0,
+          "max_acceptable": 75.0,
+          "alert_threshold": 80.0,
+          "measurement_window": "10m"
+        },
+        "peak_load": {
+          "request_rate_tps": 2000,
+          "target_percentage": 80.0,
+          "max_acceptable": 85.0,
+          "alert_threshold": 90.0,
+          "measurement_window": "5m",
+          "notes": "Sustained operation above 90% triggers immediate scaling"
+        },
+        "stress_test_10k_tps": {
+          "request_rate_tps": 10000,
+          "target_percentage": 85.0,
+          "max_acceptable": 90.0,
+          "alert_threshold": 95.0,
+          "measurement_window": "2m",
+          "notes": "System-wide 10,000 TPS target with horizontal scaling"
+        }
+      },
+      "prometheus_query": "process_cpu_usage{job=\"carddemo-service\"}",
+      "grafana_panel": "CPU Utilization by Load Level"
+    },
+    "jvm_memory_usage": {
+      "description": "JVM heap memory usage patterns and garbage collection performance",
+      "measurement_method": "Micrometer JVM metrics via Spring Boot Actuator",
+      "heap_memory": {
+        "initial_heap_size_mb": 512,
+        "maximum_heap_size_mb": 2048,
+        "targets": {
+          "startup": {
+            "heap_usage_percentage": 15.0,
+            "old_generation_percentage": 10.0,
+            "young_generation_percentage": 5.0,
+            "measurement_window": "2m"
+          },
+          "steady_state": {
+            "heap_usage_percentage": 40.0,
+            "old_generation_percentage": 30.0,
+            "young_generation_percentage": 10.0,
+            "measurement_window": "30m"
+          },
+          "moderate_load": {
+            "heap_usage_percentage": 60.0,
+            "old_generation_percentage": 45.0,
+            "young_generation_percentage": 15.0,
+            "measurement_window": "15m"
+          },
+          "high_load": {
+            "heap_usage_percentage": 75.0,
+            "old_generation_percentage": 60.0,
+            "young_generation_percentage": 15.0,
+            "measurement_window": "10m"
+          },
+          "critical_threshold": {
+            "heap_usage_percentage": 85.0,
+            "old_generation_percentage": 80.0,
+            "young_generation_percentage": 20.0,
+            "measurement_window": "5m",
+            "alert_action": "immediate_scaling_required"
+          }
+        },
+        "garbage_collection": {
+          "young_generation_gc": {
+            "frequency_per_minute": 4.0,
+            "duration_ms_p95": 50.0,
+            "duration_ms_max": 100.0
+          },
+          "old_generation_gc": {
+            "frequency_per_hour": 2.0,
+            "duration_ms_p95": 200.0,
+            "duration_ms_max": 500.0
+          },
+          "full_gc": {
+            "frequency_per_day": 0.5,
+            "duration_ms_p95": 1000.0,
+            "duration_ms_max": 2000.0,
+            "alert_threshold": "more_than_1_per_hour"
+          }
+        }
+      },
+      "non_heap_memory": {
+        "metaspace_mb": {
+          "target": 256,
+          "max_acceptable": 512,
+          "alert_threshold": 768
+        },
+        "code_cache_mb": {
+          "target": 128,
+          "max_acceptable": 256,
+          "alert_threshold": 384
+        }
+      },
+      "prometheus_queries": {
+        "heap_usage": "jvm_memory_used_bytes{area=\"heap\"} / jvm_memory_max_bytes{area=\"heap\"} * 100",
+        "gc_duration": "jvm_gc_pause_seconds{quantile=\"0.95\"}",
+        "gc_frequency": "rate(jvm_gc_pause_seconds_count[5m])"
+      }
+    },
+    "database_connection_pool": {
+      "description": "PostgreSQL connection pool utilization via HikariCP metrics",
+      "measurement_method": "HikariCP metrics exposed through Micrometer",
+      "pool_configuration": {
+        "minimum_idle": 5,
+        "maximum_pool_size": 20,
+        "connection_timeout_ms": 30000,
+        "idle_timeout_ms": 600000,
+        "max_lifetime_ms": 1800000
+      },
+      "utilization_targets": {
+        "low_load": {
+          "active_connections": {
+            "target": 3,
+            "max_acceptable": 8,
+            "percentage_of_pool": 40.0
+          },
+          "pending_connections": {
+            "target": 0,
+            "max_acceptable": 2,
+            "alert_threshold": 5
+          },
+          "connection_acquisition_time_ms_p95": 10.0
+        },
+        "moderate_load": {
+          "active_connections": {
+            "target": 8,
+            "max_acceptable": 12,
+            "percentage_of_pool": 60.0
+          },
+          "pending_connections": {
+            "target": 1,
+            "max_acceptable": 3,
+            "alert_threshold": 8
+          },
+          "connection_acquisition_time_ms_p95": 25.0
+        },
+        "high_load": {
+          "active_connections": {
+            "target": 12,
+            "max_acceptable": 15,
+            "percentage_of_pool": 75.0
+          },
+          "pending_connections": {
+            "target": 2,
+            "max_acceptable": 5,
+            "alert_threshold": 10
+          },
+          "connection_acquisition_time_ms_p95": 50.0
+        },
+        "peak_load": {
+          "active_connections": {
+            "target": 15,
+            "max_acceptable": 18,
+            "percentage_of_pool": 90.0
+          },
+          "pending_connections": {
+            "target": 5,
+            "max_acceptable": 10,
+            "alert_threshold": 15
+          },
+          "connection_acquisition_time_ms_p95": 100.0,
+          "notes": "Pool exhaustion indicates need for horizontal scaling"
+        }
+      },
+      "database_performance": {
+        "query_execution_time_ms": {
+          "simple_select_p95": 25.0,
+          "complex_join_p95": 100.0,
+          "update_transaction_p95": 50.0,
+          "batch_insert_p95": 200.0
+        },
+        "transaction_throughput": {
+          "reads_per_second": 500,
+          "writes_per_second": 200,
+          "transactions_per_second": 300
+        }
+      },
+      "prometheus_queries": {
+        "active_connections": "hikaricp_connections_active{pool=\"carddemo-pool\"}",
+        "pending_connections": "hikaricp_connections_pending{pool=\"carddemo-pool\"}",
+        "pool_utilization": "hikaricp_connections_active / hikaricp_connections_max * 100"
+      }
+    },
+    "network_bandwidth": {
+      "description": "Network throughput requirements for 10,000 TPS target load",
+      "measurement_method": "Kubernetes network metrics and Spring Boot HTTP request metrics",
+      "ingress_traffic": {
+        "target_10k_tps": {
+          "requests_per_second": 10000,
+          "average_request_size_kb": 2.5,
+          "peak_request_size_kb": 10.0,
+          "sustained_mbps": 250.0,
+          "peak_burst_mbps": 1000.0,
+          "notes": "Includes authentication, transaction, and API gateway overhead"
+        },
+        "response_traffic": {
+          "average_response_size_kb": 5.0,
+          "peak_response_size_kb": 50.0,
+          "sustained_mbps": 500.0,
+          "peak_burst_mbps": 2000.0
+        },
+        "total_bandwidth_requirements": {
+          "bidirectional_sustained_mbps": 750.0,
+          "bidirectional_peak_mbps": 3000.0,
+          "cdn_offload_percentage": 60.0,
+          "effective_backend_mbps": 1200.0
+        }
+      },
+      "egress_traffic": {
+        "database_connections": {
+          "query_data_mbps": 50.0,
+          "result_set_mbps": 100.0,
+          "replication_mbps": 25.0
+        },
+        "redis_session_traffic": {
+          "session_read_mbps": 10.0,
+          "session_write_mbps": 5.0,
+          "cache_sync_mbps": 2.0
+        },
+        "external_api_calls": {
+          "payment_gateway_mbps": 20.0,
+          "fraud_detection_mbps": 15.0,
+          "reporting_systems_mbps": 30.0
+        }
+      },
+      "latency_requirements": {
+        "api_gateway_to_service_ms": 5.0,
+        "service_to_database_ms": 10.0,
+        "service_to_redis_ms": 2.0,
+        "external_api_timeout_ms": 5000.0
+      },
+      "prometheus_queries": {
+        "ingress_rate": "rate(nginx_ingress_controller_bytes_received_total[5m])",
+        "egress_rate": "rate(nginx_ingress_controller_bytes_sent_total[5m])",
+        "http_request_size": "histogram_quantile(0.95, rate(http_server_requests_bytes_bucket[5m]))"
+      }
+    },
+    "disk_io_patterns": {
+      "description": "Disk I/O performance patterns for Spring Batch processing and database operations",
+      "measurement_method": "Kubernetes persistent volume metrics and PostgreSQL I/O statistics",
+      "application_storage": {
+        "log_files": {
+          "write_iops": 100,
+          "write_throughput_mbps": 20.0,
+          "log_rotation_size_gb": 1.0,
+          "retention_days": 30
+        },
+        "temporary_files": {
+          "write_iops": 50,
+          "read_iops": 25,
+          "throughput_mbps": 10.0,
+          "cleanup_frequency_hours": 24
+        }
+      },
+      "database_storage": {
+        "postgresql_data": {
+          "read_iops": 2000,
+          "write_iops": 800,
+          "read_throughput_mbps": 200.0,
+          "write_throughput_mbps": 100.0,
+          "storage_size_gb": 500,
+          "growth_rate_gb_per_month": 10.0
+        },
+        "postgresql_wal": {
+          "write_iops": 500,
+          "write_throughput_mbps": 50.0,
+          "checkpoint_frequency_minutes": 5,
+          "wal_segment_size_mb": 16
+        },
+        "backup_operations": {
+          "backup_window_hours": 4,
+          "backup_throughput_mbps": 100.0,
+          "backup_size_gb": 450,
+          "compression_ratio": 0.7
+        }
+      },
+      "batch_processing_io": {
+        "daily_batch_jobs": {
+          "input_file_read_mbps": 150.0,
+          "output_file_write_mbps": 100.0,
+          "processing_duration_hours": 3.5,
+          "total_data_processed_gb": 50.0
+        },
+        "interest_calculation": {
+          "customer_data_read_mbps": 75.0,
+          "calculation_results_write_mbps": 25.0,
+          "temp_file_io_mbps": 50.0,
+          "processing_window_hours": 2.0
+        },
+        "statement_generation": {
+          "template_read_mbps": 20.0,
+          "pdf_generation_write_mbps": 80.0,
+          "archive_write_mbps": 40.0,
+          "concurrent_jobs": 4
+        },
+        "report_processing": {
+          "data_extraction_read_mbps": 100.0,
+          "report_generation_write_mbps": 30.0,
+          "export_transfer_mbps": 60.0,
+          "retention_cleanup_mbps": 25.0
+        }
+      },
+      "redis_persistence": {
+        "rdb_snapshots": {
+          "snapshot_frequency_hours": 6,
+          "snapshot_write_mbps": 20.0,
+          "snapshot_size_mb": 500,
+          "compression_enabled": true
+        },
+        "aof_persistence": {
+          "append_write_iops": 200,
+          "rewrite_frequency_hours": 24,
+          "aof_size_mb": 1000,
+          "fsync_policy": "everysec"
+        }
+      },
+      "performance_targets": {
+        "disk_utilization_percentage": 70.0,
+        "iops_utilization_percentage": 60.0,
+        "queue_depth": 4.0,
+        "latency_ms_p95": 20.0
+      },
+      "prometheus_queries": {
+        "disk_read_iops": "rate(node_disk_reads_completed_total[5m])",
+        "disk_write_iops": "rate(node_disk_writes_completed_total[5m])",
+        "disk_throughput": "rate(node_disk_read_bytes_total[5m]) + rate(node_disk_written_bytes_total[5m])"
+      }
+    }
+  },
+  "environment_configurations": {
+    "development": {
+      "scaling_factor": 0.1,
+      "resource_limits": {
+        "cpu_millicores": 500,
+        "memory_mb": 1024,
+        "storage_gb": 50
+      },
+      "relaxed_thresholds": {
+        "cpu_alert_percentage": 95.0,
+        "memory_alert_percentage": 90.0,
+        "response_time_ms": 5000.0
+      }
+    },
+    "integration": {
+      "scaling_factor": 0.3,
+      "resource_limits": {
+        "cpu_millicores": 1000,
+        "memory_mb": 2048,
+        "storage_gb": 100
+      },
+      "thresholds": {
+        "cpu_alert_percentage": 85.0,
+        "memory_alert_percentage": 85.0,
+        "response_time_ms": 1000.0
+      }
+    },
+    "staging": {
+      "scaling_factor": 0.7,
+      "resource_limits": {
+        "cpu_millicores": 2000,
+        "memory_mb": 4096,
+        "storage_gb": 250
+      },
+      "production_like_thresholds": {
+        "cpu_alert_percentage": 80.0,
+        "memory_alert_percentage": 85.0,
+        "response_time_ms": 300.0
+      }
+    },
+    "production": {
+      "scaling_factor": 1.0,
+      "resource_limits": {
+        "cpu_millicores": 2000,
+        "memory_mb": 4096,
+        "storage_gb": 500
+      },
+      "strict_thresholds": {
+        "cpu_alert_percentage": 80.0,
+        "memory_alert_percentage": 85.0,
+        "response_time_ms": 200.0
+      },
+      "sla_requirements": {
+        "availability_percentage": 99.9,
+        "response_time_p95_ms": 200.0,
+        "error_rate_percentage": 0.1
+      }
+    }
+  },
+  "alerting_thresholds": {
+    "critical_alerts": {
+      "cpu_usage_percentage": 90.0,
+      "memory_usage_percentage": 90.0,
+      "response_time_ms": 1000.0,
+      "error_rate_percentage": 5.0,
+      "database_connection_pool_percentage": 95.0,
+      "disk_usage_percentage": 90.0
+    },
+    "warning_alerts": {
+      "cpu_usage_percentage": 75.0,
+      "memory_usage_percentage": 80.0,
+      "response_time_ms": 500.0,
+      "error_rate_percentage": 2.0,
+      "database_connection_pool_percentage": 85.0,
+      "disk_usage_percentage": 80.0
+    },
+    "notification_channels": {
+      "critical": ["pagerduty", "slack", "email"],
+      "warning": ["slack", "email"],
+      "info": ["email"]
+    }
+  },
+  "testing_scenarios": {
+    "load_testing": {
+      "baseline_load": {
+        "tps": 100,
+        "duration_minutes": 30,
+        "expected_resources": {
+          "cpu_percentage": 25.0,
+          "memory_percentage": 40.0,
+          "response_time_p95_ms": 150.0
+        }
+      },
+      "stress_testing": {
+        "peak_load": {
+          "tps": 2000,
+          "duration_minutes": 15,
+          "expected_resources": {
+            "cpu_percentage": 80.0,
+            "memory_percentage": 75.0,
+            "response_time_p95_ms": 300.0
+          }
+        },
+        "system_capacity": {
+          "tps": 10000,
+          "duration_minutes": 5,
+          "expected_resources": {
+            "cpu_percentage": 85.0,
+            "memory_percentage": 80.0,
+            "response_time_p95_ms": 500.0,
+            "horizontal_scaling_required": true
+          }
+        }
+      },
+      "endurance_testing": {
+        "sustained_load": {
+          "tps": 1000,
+          "duration_hours": 8,
+          "expected_resources": {
+            "cpu_percentage": 65.0,
+            "memory_percentage": 60.0,
+            "response_time_p95_ms": 200.0,
+            "memory_leak_detection": true
+          }
+        }
+      }
+    },
+    "batch_processing_tests": {
+      "daily_processing": {
+        "records_processed": 1000000,
+        "processing_window_hours": 4,
+        "resource_requirements": {
+          "cpu_percentage": 70.0,
+          "memory_percentage": 80.0,
+          "disk_io_mbps": 150.0
+        }
+      },
+      "month_end_processing": {
+        "records_processed": 5000000,
+        "processing_window_hours": 6,
+        "resource_requirements": {
+          "cpu_percentage": 85.0,
+          "memory_percentage": 85.0,
+          "disk_io_mbps": 300.0,
+          "scaling_required": true
+        }
+      }
+    }
+  },
+  "cobol_parity_validation": {
+    "description": "Performance baselines ensuring Java implementation meets COBOL system benchmarks",
+    "mainframe_equivalent_metrics": {
+      "cics_response_time_ms": 150.0,
+      "vsam_read_response_ms": 25.0,
+      "batch_processing_hours": 3.5,
+      "concurrent_users": 500,
+      "transaction_throughput_tps": 800
+    },
+    "modernized_targets": {
+      "rest_api_response_time_ms": 200.0,
+      "postgresql_query_response_ms": 50.0,
+      "spring_batch_processing_hours": 4.0,
+      "concurrent_sessions": 1000,
+      "api_throughput_tps": 2000,
+      "improvement_factor": 2.5
+    },
+    "validation_criteria": {
+      "functional_parity": "100% identical business logic results",
+      "performance_parity": "Equal or better response times",
+      "scalability_improvement": "2x concurrent user capacity",
+      "throughput_improvement": "2.5x transaction processing rate"
+    }
+  },
+  "prometheus_configuration": {
+    "scrape_configs": [
+      {
+        "job_name": "carddemo-service",
+        "static_configs": [
+          {
+            "targets": ["carddemo-service:8080"]
+          }
+        ],
+        "metrics_path": "/actuator/prometheus",
+        "scrape_interval": "15s",
+        "scrape_timeout": "10s"
+      }
+    ],
+    "rule_groups": [
+      {
+        "name": "carddemo-performance-rules",
+        "rules": [
+          {
+            "alert": "HighCPUUsage",
+            "expr": "process_cpu_usage{job=\"carddemo-service\"} > 0.80",
+            "for": "5m",
+            "labels": {
+              "severity": "warning"
+            },
+            "annotations": {
+              "summary": "High CPU usage detected on {{ $labels.instance }}"
+            }
+          },
+          {
+            "alert": "HighMemoryUsage", 
+            "expr": "jvm_memory_used_bytes{area=\"heap\"} / jvm_memory_max_bytes{area=\"heap\"} > 0.85",
+            "for": "5m",
+            "labels": {
+              "severity": "critical"
+            },
+            "annotations": {
+              "summary": "High memory usage detected on {{ $labels.instance }}"
+            }
+          },
+          {
+            "alert": "SlowAPIResponse",
+            "expr": "histogram_quantile(0.95, rate(http_server_requests_seconds_bucket[5m])) > 0.2",
+            "for": "2m",
+            "labels": {
+              "severity": "warning"
+            },
+            "annotations": {
+              "summary": "API response time exceeding 200ms threshold"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
