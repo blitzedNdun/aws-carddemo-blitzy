@@ -1,0 +1,180 @@
+TRANSACTION VALIDATION REPORT                                    PAGE: 001
+RUN DATE: 2024-01-15    RUN TIME: 14:30:00                     JOB: CBTRN03C
+================================================================================
+
+VALIDATION RESULTS SUMMARY:
+Total Records Processed:           1,000
+Records Passed Validation:           847
+Records Failed Validation:           153
+Duplicate Transactions Found:         12
+Fraud Alerts Generated:                8
+Business Rule Violations:             28
+
+================================================================================
+
+VALIDATION DETAIL RECORDS:
+--------------------------------------------------------------------------------
+TRAN-ID         |STATUS|REASON-CODE|DUP|FRAUD|BUSINESS-RULE |VALIDATION-NOTES
+--------------------------------------------------------------------------------
+T20240115000001 |PASS  |          |N  |  0  |             |Valid transaction
+T20240115000002 |FAIL  |DT001     |N  |  0  |             |Invalid date format
+T20240115000003 |PASS  |          |N  |  2  |             |Low fraud score
+T20240115000004 |FAIL  |AM001     |N  |  0  |             |Amount exceeds limit
+T20240115000005 |FAIL  |CD001     |N  |  0  |             |Invalid card number
+T20240115000006 |PASS  |          |Y  |  1  |             |Duplicate detected
+T20240115000007 |FAIL  |MT001     |N  |  0  |             |Invalid merchant ID
+T20240115000008 |PASS  |          |N  |  0  |             |Valid transaction
+T20240115000009 |FAIL  |TC001     |N  |  0  |             |Invalid tran type
+T20240115000010 |FAIL  |BR001     |N  |  5  |CL001        |Credit limit exceeded
+T20240115000011 |PASS  |          |N  |  1  |             |Valid with low risk
+T20240115000012 |FAIL  |DT002     |N  |  0  |             |Future date invalid
+T20240115000013 |PASS  |          |N  |  3  |             |Medium fraud score
+T20240115000014 |FAIL  |AM002     |N  |  0  |             |Negative amount
+T20240115000015 |PASS  |          |Y  |  2  |             |Duplicate - approved
+T20240115000016 |FAIL  |CD002     |N  |  8  |BR002        |Expired card
+T20240115000017 |PASS  |          |N  |  0  |             |Valid transaction
+T20240115000018 |FAIL  |MN001     |N  |  0  |             |Missing merchant name
+T20240115000019 |FAIL  |BR003     |N  |  7  |AL001        |Account limit breach
+T20240115000020 |PASS  |          |N  |  1  |             |Valid low-risk
+T20240115000021 |FAIL  |DT003     |N  |  0  |             |Invalid century
+T20240115000022 |PASS  |          |N  |  0  |             |Valid transaction
+T20240115000023 |FAIL  |TC002     |N  |  0  |             |Invalid category
+T20240115000024 |FAIL  |AM003     |N  |  0  |             |Amount precision err
+T20240115000025 |PASS  |          |Y  |  4  |             |Duplicate medium risk
+T20240115000026 |FAIL  |CD003     |N  |  9  |BR004        |Card status inactive
+T20240115000027 |PASS  |          |N  |  2  |             |Valid with monitoring
+T20240115000028 |FAIL  |BR005     |N  |  6  |VL001        |Velocity limit hit
+T20240115000029 |PASS  |          |N  |  0  |             |Valid transaction
+T20240115000030 |FAIL  |DT004     |N  |  0  |             |Invalid leap year
+
+================================================================================
+
+EXCEPTION DETAIL REPORT:
+--------------------------------------------------------------------------------
+EXCEPTION TYPE    |COUNT|DESCRIPTION
+--------------------------------------------------------------------------------
+DT001 - Date Format      | 15 |Invalid YYYYMMDD format in TRAN-ORIG-TS
+DT002 - Future Date      |  8 |Transaction date in future
+DT003 - Century Invalid  |  6 |Century not 19 or 20 in date
+DT004 - Leap Year Error  |  3 |Invalid date for leap year
+AM001 - Amount Limit     | 12 |Amount exceeds maximum ($99,999.99)
+AM002 - Negative Amount  |  7 |Negative transaction amount
+AM003 - Precision Error  |  4 |Invalid decimal precision
+CD001 - Card Number      | 18 |Invalid card number format
+CD002 - Card Expired     | 11 |Card expiration date passed
+CD003 - Card Inactive    |  9 |Card status not active
+TC001 - Transaction Type |  14 |Invalid transaction type code
+TC002 - Category Invalid |  8 |Invalid transaction category
+MT001 - Merchant ID      |  6 |Invalid merchant identifier
+MN001 - Merchant Name    |  5 |Missing merchant name
+BR001 - Credit Limit     | 13 |Credit limit exceeded
+BR002 - Card Expired     | 11 |Business rule: expired card
+BR003 - Account Limit    |  7 |Account limit violation
+BR004 - Card Inactive    |  9 |Business rule: inactive card
+BR005 - Velocity Limit   |  4 |Transaction velocity exceeded
+VL001 - Velocity Breach  |  4 |Multiple transactions detected
+AL001 - Account Limit    |  7 |Account daily limit exceeded
+CL001 - Credit Limit     | 13 |Available credit insufficient
+
+================================================================================
+
+DUPLICATE TRANSACTION ANALYSIS:
+--------------------------------------------------------------------------------
+PRIMARY-TRAN-ID |DUPLICATE-TRAN-ID|MATCH-CRITERIA    |TIME-DIFF|ACTION
+--------------------------------------------------------------------------------
+T20240115000006 |T20240115000104  |CARD+AMT+MERCHANT |  00:02  |ALLOW
+T20240115000015 |T20240115000087  |CARD+AMT+TIME     |  00:01  |ALLOW
+T20240115000025 |T20240115000156  |CARD+AMT+MERCHANT |  00:05  |REVIEW
+T20240115000089 |T20240115000234  |CARD+AMT+MERCHANT |  00:03  |ALLOW
+T20240115000156 |T20240115000298  |CARD+MERCHANT+TIME|  00:01  |BLOCK
+T20240115000234 |T20240115000367  |CARD+AMT+TIME     |  00:02  |ALLOW
+T20240115000298 |T20240115000445  |CARD+AMT+MERCHANT |  00:04  |REVIEW
+T20240115000367 |T20240115000523  |CARD+AMT+MERCHANT |  00:03  |ALLOW
+T20240115000445 |T20240115000634  |CARD+AMT+TIME     |  00:01  |BLOCK
+T20240115000523 |T20240115000712  |CARD+AMT+MERCHANT |  00:02  |ALLOW
+T20240115000634 |T20240115000789  |CARD+MERCHANT+TIME|  00:03  |REVIEW
+T20240115000712 |T20240115000856  |CARD+AMT+MERCHANT |  00:01  |BLOCK
+
+================================================================================
+
+FRAUD PATTERN ANALYSIS:
+--------------------------------------------------------------------------------
+FRAUD-TYPE           |COUNT|THRESHOLD|DESCRIPTION
+--------------------------------------------------------------------------------
+High Velocity        |  3  |   5+    |Multiple transactions in short timeframe
+Geographic Anomaly   |  2  |   8+    |Transaction location inconsistent
+Amount Pattern       |  1  |   7+    |Unusual amount patterns detected
+Merchant Risk        |  2  |   6+    |High-risk merchant category
+Total Alerts         |  8  |   5+    |Transactions requiring review
+
+HIGH-RISK TRANSACTIONS:
+T20240115000016 - FRAUD SCORE: 8 - Geographic + Expired Card
+T20240115000026 - FRAUD SCORE: 9 - High Velocity + Inactive Card
+T20240115000019 - FRAUD SCORE: 7 - Amount Pattern + Account Limit
+T20240115000028 - FRAUD SCORE: 6 - Merchant Risk + Velocity
+
+================================================================================
+
+BUSINESS RULE VALIDATION SUMMARY:
+--------------------------------------------------------------------------------
+RULE-CODE|RULE-DESCRIPTION              |VIOLATIONS|SEVERITY
+--------------------------------------------------------------------------------
+CL001    |Credit Limit Check            |    13    |HIGH
+AL001    |Account Daily Limit           |     7    |HIGH
+BR002    |Expired Card Validation       |    11    |MEDIUM
+BR004    |Card Status Validation        |     9    |MEDIUM
+VL001    |Transaction Velocity          |     4    |HIGH
+BR001    |Available Credit Check        |    13    |HIGH
+BR003    |Account Balance Check         |     7    |MEDIUM
+BR005    |Daily Transaction Count       |     4    |LOW
+
+================================================================================
+
+DATE/TIME VALIDATION DETAILS:
+Based on CSUTLDTC utility logic:
+- Year validation: Must be 19xx or 20xx century
+- Month validation: Must be 01-12
+- Day validation: Must be 01-31 with month-specific limits
+- Leap year logic: Accounts for 4-year cycle with century exceptions
+- Future date check: Transaction date cannot exceed current date
+
+AMOUNT VALIDATION DETAILS:
+Based on COBOL COMP-3 precision requirements:
+- Maximum amount: $99,999.99 (S9(5)V99)
+- Minimum amount: $0.01 (no negative transactions)
+- Decimal precision: Exactly 2 decimal places
+- Scale preservation: BigDecimal with HALF_UP rounding
+
+CARD VALIDATION DETAILS:
+- Card number format: 16 digits (9999-9999-9999-9999)
+- Expiration date: Must be future date
+- Card status: Must be 'Y' (active)
+- Account linkage: Valid account cross-reference required
+
+================================================================================
+
+PROCESSING STATISTICS:
+--------------------------------------------------------------------------------
+Start Time:          2024-01-15 14:30:00
+End Time:            2024-01-15 14:32:45
+Total Runtime:       00:02:45
+Records/Second:      363.6
+Memory Usage:        512 MB
+CPU Utilization:     15%
+
+Input File Size:     1,000 records
+Output Files:        3 (valid, invalid, summary)
+Checkpoint Commits:  10
+Restart Capability:  Available from record 500
+
+================================================================================
+
+RECOMMENDED ACTIONS:
+1. Review 8 high-risk fraud transactions for manual approval
+2. Contact customers for 12 duplicate transaction confirmations
+3. Update 28 accounts with business rule violations
+4. Investigate date validation errors (32 total)
+5. Review merchant validation rules (11 invalid merchants)
+
+END OF TRANSACTION VALIDATION REPORT - CBTRN03C
+================================================================================
