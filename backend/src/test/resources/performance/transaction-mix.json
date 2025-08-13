@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Transaction Mix Configuration",
+  "description": "Performance testing transaction distribution configuration for CardDemo application load testing, simulating realistic production workload patterns based on CICS mainframe transaction patterns",
+  "version": "1.0.0",
+  "lastUpdated": "2024-01-15",
+  
+  "performanceTargets": {
+    "maxResponseTime": "200ms",
+    "targetThroughput": "10000 TPS",
+    "successRate": "99.5%",
+    "concurrentUsers": 1000
+  },
+  
+  "transactionCategories": {
+    "cardAuthorizations": {
+      "percentage": 40,
+      "description": "Card authorization requests and payment processing transactions",
+      "priority": "critical",
+      "expectedResponseTime": "150ms"
+    },
+    "balanceInquiries": {
+      "percentage": 20,
+      "description": "Account balance lookup and inquiry operations",
+      "priority": "high",
+      "expectedResponseTime": "100ms"
+    },
+    "transactionHistoryQueries": {
+      "percentage": 15,
+      "description": "Transaction history browsing and detailed transaction views",
+      "priority": "medium",
+      "expectedResponseTime": "200ms"
+    },
+    "accountUpdates": {
+      "percentage": 10,
+      "description": "Account information updates and maintenance operations",
+      "priority": "medium",
+      "expectedResponseTime": "250ms"
+    },
+    "authenticationRequests": {
+      "percentage": 10,
+      "description": "User authentication and session management operations",
+      "priority": "high",
+      "expectedResponseTime": "300ms"
+    },
+    "administrativeOperations": {
+      "percentage": 5,
+      "description": "Administrative functions and system maintenance operations",
+      "priority": "low",
+      "expectedResponseTime": "500ms"
+    }
+  },
+  
+  "endpoints": {
+    "cardAuthorizations": [
+      {
+        "path": "/api/cards/authorize",
+        "method": "POST",
+        "weight": 25,
+        "cobolEquivalent": "Card processing transactions",
+        "description": "Primary card authorization endpoint"
+      },
+      {
+        "path": "/api/transactions/process",
+        "method": "POST", 
+        "weight": 10,
+        "cobolEquivalent": "COTRN02C (CT02) - Add transaction",
+        "description": "Transaction processing and recording"
+      },
+      {
+        "path": "/api/cards/validate",
+        "method": "POST",
+        "weight": 5,
+        "cobolEquivalent": "Card validation routines",
+        "description": "Card validation and verification"
+      }
+    ],
+    "balanceInquiries": [
+      {
+        "path": "/api/accounts/{accountId}/balance",
+        "method": "GET",
+        "weight": 15,
+        "cobolEquivalent": "COACTVWC - Account view operations",
+        "description": "Account balance retrieval"
+      },
+      {
+        "path": "/api/cards/{cardNumber}/balance",
+        "method": "GET",
+        "weight": 5,
+        "cobolEquivalent": "Card-based balance inquiry",
+        "description": "Card-based balance lookup"
+      }
+    ],
+    "transactionHistoryQueries": [
+      {
+        "path": "/api/transactions/list",
+        "method": "GET",
+        "weight": 10,
+        "cobolEquivalent": "COTRN00C (CT00) - Transaction listing",
+        "description": "Transaction history browsing with pagination"
+      },
+      {
+        "path": "/api/transactions/{transactionId}",
+        "method": "GET",
+        "weight": 5,
+        "cobolEquivalent": "COTRN01C (CT01) - Transaction detail view",
+        "description": "Individual transaction detail retrieval"
+      }
+    ],
+    "accountUpdates": [
+      {
+        "path": "/api/accounts/{accountId}",
+        "method": "PUT",
+        "weight": 6,
+        "cobolEquivalent": "Account update transactions",
+        "description": "Account information updates"
+      },
+      {
+        "path": "/api/customers/{customerId}",
+        "method": "PUT",
+        "weight": 4,
+        "cobolEquivalent": "Customer data updates",
+        "description": "Customer information maintenance"
+      }
+    ],
+    "authenticationRequests": [
+      {
+        "path": "/api/auth/login",
+        "method": "POST",
+        "weight": 7,
+        "cobolEquivalent": "COSGN00C (CC00) - Sign on transaction",
+        "description": "User authentication and session establishment"
+      },
+      {
+        "path": "/api/auth/validate",
+        "method": "POST",
+        "weight": 2,
+        "cobolEquivalent": "Session validation",
+        "description": "Session token validation"
+      },
+      {
+        "path": "/api/auth/logout",
+        "method": "POST",
+        "weight": 1,
+        "cobolEquivalent": "Session termination",
+        "description": "User logout and session cleanup"
+      }
+    ],
+    "administrativeOperations": [
+      {
+        "path": "/api/admin/users",
+        "method": "GET",
+        "weight": 2,
+        "cobolEquivalent": "COADM01C - Admin functions",
+        "description": "User administration and management"
+      },
+      {
+        "path": "/api/admin/reports",
+        "method": "GET",
+        "weight": 2,
+        "cobolEquivalent": "CORPT00C - Report generation",
+        "description": "Administrative reporting functions"
+      },
+      {
+        "path": "/api/admin/system/health",
+        "method": "GET",
+        "weight": 1,
+        "cobolEquivalent": "System status checks",
+        "description": "System health and status monitoring"
+      }
+    ]
+  },
+  
+  "testScenarios": {
+    "peakHourLoad": {
+      "description": "Simulates peak business hour transaction load",
+      "duration": "30 minutes",
+      "rampUpTime": "5 minutes",
+      "rampDownTime": "5 minutes",
+      "virtualUsers": 1000,
+      "iterationsPerUser": 100
+    },
+    "sustainedLoad": {
+      "description": "Long-running sustained load test",
+      "duration": "2 hours", 
+      "rampUpTime": "10 minutes",
+      "rampDownTime": "10 minutes",
+      "virtualUsers": 500,
+      "iterationsPerUser": 500
+    },
+    "stressTest": {
+      "description": "Stress testing to find system breaking point",
+      "duration": "45 minutes",
+      "rampUpTime": "15 minutes",
+      "rampDownTime": "5 minutes",
+      "virtualUsers": 2000,
+      "iterationsPerUser": 50
+    },
+    "spikeTest": {
+      "description": "Sudden traffic spike simulation",
+      "duration": "20 minutes",
+      "rampUpTime": "2 minutes",
+      "sustainTime": "10 minutes", 
+      "rampDownTime": "2 minutes",
+      "virtualUsers": 1500,
+      "iterationsPerUser": 75
+    }
+  },
+  
+  "businessHourPatterns": {
+    "mondayToFriday": {
+      "peakHours": ["09:00-11:00", "14:00-16:00", "19:00-21:00"],
+      "normalHours": ["06:00-09:00", "11:00-14:00", "16:00-19:00"],
+      "lowTrafficHours": ["21:00-06:00"],
+      "multipliers": {
+        "peak": 1.5,
+        "normal": 1.0,
+        "low": 0.3
+      }
+    },
+    "weekends": {
+      "peakHours": ["10:00-12:00", "15:00-18:00"],
+      "normalHours": ["08:00-10:00", "12:00-15:00", "18:00-22:00"],
+      "lowTrafficHours": ["22:00-08:00"],
+      "multipliers": {
+        "peak": 0.8,
+        "normal": 0.6,
+        "low": 0.2
+      }
+    }
+  },
+  
+  "dataPatterns": {
+    "accountIdRange": {
+      "min": "10000000001",
+      "max": "19999999999",
+      "format": "11-digit numeric"
+    },
+    "cardNumberRange": {
+      "min": "4000000000000000",
+      "max": "4999999999999999", 
+      "format": "16-digit Visa format"
+    },
+    "transactionAmountRange": {
+      "min": 1.00,
+      "max": 9999.99,
+      "distribution": "log-normal",
+      "currency": "USD"
+    },
+    "customerIdRange": {
+      "min": "0000000001",
+      "max": "0000999999",
+      "format": "10-digit zero-padded"
+    }
+  },
+  
+  "errorSimulation": {
+    "enabled": true,
+    "errorRate": "0.5%",
+    "errorTypes": {
+      "networkTimeouts": 30,
+      "authenticationFailures": 25,
+      "validationErrors": 20,
+      "systemUnavailable": 15,
+      "dataNotFound": 10
+    }
+  },
+  
+  "monitoringMetrics": {
+    "responseTimePercentiles": [50, 75, 90, 95, 99],
+    "throughputMeasurement": "requests per second",
+    "errorRateThreshold": "1%",
+    "memoryUsageThreshold": "80%",
+    "cpuUsageThreshold": "75%"
+  },
+  
+  "loadTestingTools": {
+    "primary": "K6",
+    "frameworks": ["Gatling", "JMeter"],
+    "metricsCollection": "Prometheus + Grafana",
+    "reportingFormat": ["JSON", "HTML", "CSV"]
+  },
+  
+  "compliance": {
+    "cobolMigrationRequirements": {
+      "functionalParity": "100%",
+      "performanceBaseline": "Mainframe equivalent or better",
+      "dataIntegrity": "Byte-for-byte precision match",
+      "transactionFlow": "Identical to CICS processing"
+    },
+    "performanceValidation": {
+      "responseTimeValidation": "95th percentile under 200ms",
+      "throughputValidation": "10,000 TPS sustained",
+      "availabilityTarget": "99.9% uptime",
+      "concurrencySupport": "1000+ simultaneous users"
+    }
+  }
+}
