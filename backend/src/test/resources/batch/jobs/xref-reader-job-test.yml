@@ -1,0 +1,228 @@
+# Spring Batch Test Configuration for CrossReferenceReaderJob (CBACT03C migration)
+# This configuration defines test parameters for reading card cross-reference records,
+# validating composite key structures, testing sequential browse operations, 
+# and ensuring identical audit trail output to COBOL program
+
+spring:
+  batch:
+    job:
+      enabled: false  # Disable auto-start during test execution
+      
+  # Test datasource configuration for VSAM KSDS emulation
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+    
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+        
+  # Test profiles configuration        
+  profiles:
+    active: test
+
+# Cross-Reference Reader Job Test Configuration
+carddemo:
+  batch:
+    xref-reader-job:
+      name: "CrossReferenceReaderJob"
+      description: "CBACT03C migration test - Sequential read of card cross-reference records"
+      
+      # Test execution parameters matching COBOL program behavior
+      execution:
+        test-mode: true
+        parallel: false
+        restart-enabled: true
+        chunk-size: 100
+        
+      # VSAM KSDS equivalent file configuration
+      input:
+        file-type: "CROSS_REFERENCE"
+        access-mode: "SEQUENTIAL"  # Matching COBOL ACCESS MODE IS SEQUENTIAL
+        organization: "INDEXED"    # Matching COBOL ORGANIZATION IS INDEXED
+        record-key: "cardNumber"   # Matching FD-XREF-CARD-NUM
+        record-length: 50          # Total record length: 16 + 34 bytes
+        
+        # Record structure validation (50-byte total)
+        record-structure:
+          card-number:
+            field-name: "XREF_CARD_NUM" 
+            data-type: "CHAR"
+            length: 16
+            position: 1
+            required: true
+            
+          customer-id:
+            field-name: "XREF_CUST_ID"
+            data-type: "NUMERIC"
+            length: 9
+            position: 17
+            required: true
+            
+          account-id:
+            field-name: "XREF_ACCT_ID"
+            data-type: "NUMERIC"
+            length: 11
+            position: 26
+            required: true
+            
+          filler-data:
+            field-name: "FILLER"
+            data-type: "CHAR"
+            length: 14
+            position: 37
+            required: false
+            
+      # Test data configuration
+      test-data:
+        input-file: "classpath:test-data/xref-test-data.txt"
+        expected-records: 100
+        test-scenarios:
+          - name: "normal-processing"
+            description: "Test normal sequential read processing"
+            input-records: 50
+            expected-status: "COMPLETED"
+            
+          - name: "empty-file"
+            description: "Test EOF detection with empty file"
+            input-records: 0
+            expected-status: "COMPLETED"
+            expected-messages: ["END-OF-FILE detected"]
+            
+          - name: "large-volume"
+            description: "Test high-volume processing"
+            input-records: 10000
+            expected-status: "COMPLETED"
+            max-execution-time: "PT5M"
+            
+      # File status and error handling tests (matching COBOL behavior)
+      error-handling:
+        file-status-tests:
+          - status-code: "00"
+            description: "Successful read operation"
+            expected-result: "CONTINUE_PROCESSING"
+            
+          - status-code: "10" 
+            description: "End of file condition"
+            expected-result: "EOF_DETECTED"
+            expected-action: "SET_END_OF_FILE_FLAG"
+            
+          - status-code: "12"
+            description: "File error condition"
+            expected-result: "FILE_ERROR"
+            expected-action: "ABORT_WITH_DISPLAY"
+            
+        # I/O Status display formatting tests (matching COBOL 9910-DISPLAY-IO-STATUS)
+        io-status-display:
+          numeric-status:
+            format: "FILE STATUS IS: 0000{status}"
+            test-values: ["00", "10", "12"]
+            
+          non-numeric-status:
+            format: "FILE STATUS IS: NNNN{status}"
+            test-values: ["9A", "9B", "XX"]
+            
+      # Abnormal termination testing (CEE3ABD equivalent)
+      abend-testing:
+        enabled: true
+        scenarios:
+          - trigger: "FILE_OPEN_ERROR"
+            expected-exception: "DataAccessException"
+            expected-message: "ERROR OPENING XREFFILE"
+            
+          - trigger: "FILE_READ_ERROR"
+            expected-exception: "DataAccessException" 
+            expected-message: "ERROR READING XREFFILE"
+            
+          - trigger: "FILE_CLOSE_ERROR"
+            expected-exception: "DataAccessException"
+            expected-message: "ERROR CLOSING XREFFILE"
+            
+          - trigger: "SYSTEM_ABEND"
+            expected-exception: "SystemException"
+            abend-code: 999
+            expected-message: "ABENDING PROGRAM"
+            
+      # Performance and validation criteria
+      validation:
+        performance:
+          max-startup-time: "PT30S"
+          max-record-processing-time: "1ms"
+          memory-threshold: "512MB"
+          
+        data-integrity:
+          validate-record-structure: true
+          validate-composite-keys: true
+          validate-field-lengths: true
+          check-referential-integrity: false  # Standalone cross-reference file
+          
+        output-verification:
+          display-output-format: "CARD-XREF-RECORD format"
+          capture-display-messages: true
+          compare-with-cobol-output: true
+          
+      # STARTBR/READNEXT/READPREV operation emulation tests
+      cursor-operations:
+        startbr-equivalent:
+          operation: "START_BROWSE"
+          starting-key: "0000000000000001"
+          direction: "FORWARD"
+          expected-behavior: "POSITION_AT_KEY_OR_NEXT"
+          
+        readnext-equivalent:
+          operation: "READ_NEXT"
+          sequential-access: true
+          expected-behavior: "RETURN_NEXT_RECORD_IN_KEY_SEQUENCE"
+          
+        readprev-equivalent:
+          operation: "READ_PREVIOUS"
+          reverse-access: true
+          expected-behavior: "RETURN_PREVIOUS_RECORD_IN_KEY_SEQUENCE"
+          
+        endbr-equivalent:
+          operation: "END_BROWSE"
+          cleanup-resources: true
+          expected-behavior: "RELEASE_CURSOR_RESOURCES"
+
+# Logging configuration for test execution
+logging:
+  level:
+    com.carddemo.batch: DEBUG
+    org.springframework.batch: INFO
+    org.springframework.jdbc: DEBUG
+    
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    
+# Test execution monitoring    
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,loggers
+  endpoint:
+    health:
+      show-details: always
+      
+# Test-specific JVM options
+test:
+  jvm:
+    heap-size: "1g"
+    gc-options: "-XX:+UseG1GC -XX:MaxGCPauseMillis=100"
+    
+  execution:
+    timeout: "PT10M"
+    retry-count: 3
+    fail-fast: true
+    
+  cleanup:
+    auto-cleanup: true
+    preserve-failed-runs: false
+    log-retention-days: 7
