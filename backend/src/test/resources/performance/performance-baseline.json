@@ -1,0 +1,557 @@
+{
+  "_description": "CardDemo Performance Baseline Metrics from IBM Mainframe z/OS CICS/VSAM Environment",
+  "_purpose": "Baseline metrics for validating Java/Spring Boot implementation performance against original COBOL system",
+  "_updated": "2024-12-08",
+  "_scope": "36 COBOL programs (24 CICS + 12 batch) with corresponding VSAM datasets",
+  
+  "cics_transaction_response_times": {
+    "_description": "CICS transaction response times in milliseconds for each transaction code",
+    "_requirement": "Java implementation must achieve sub-200ms response times for 95% of operations",
+    "_measurement_method": "CICS performance class monitoring over 30-day period",
+    "_concurrent_users": 150,
+    
+    "authentication_transactions": {
+      "COSGN": {
+        "transaction_id": "COSGN",
+        "program_name": "COSGN00C",
+        "average_response_ms": 45,
+        "p95_response_ms": 78,
+        "p99_response_ms": 125,
+        "operations_per_minute": 450,
+        "description": "User sign-on with USRSEC table lookup and session initialization",
+        "vsam_files_accessed": ["USRSEC"],
+        "typical_screen_operations": 3
+      }
+    },
+    
+    "menu_navigation_transactions": {
+      "CMEN": {
+        "transaction_id": "CMEN",
+        "program_name": "COMEN01C",
+        "average_response_ms": 28,
+        "p95_response_ms": 55,
+        "p99_response_ms": 89,
+        "operations_per_minute": 850,
+        "description": "Main menu navigation and option selection",
+        "vsam_files_accessed": [],
+        "typical_screen_operations": 1
+      },
+      "CADM": {
+        "transaction_id": "CADM",
+        "program_name": "COADM01C",
+        "average_response_ms": 31,
+        "p95_response_ms": 58,
+        "p99_response_ms": 92,
+        "operations_per_minute": 275,
+        "description": "Administrative menu navigation with role validation",
+        "vsam_files_accessed": ["USRSEC"],
+        "typical_screen_operations": 2
+      }
+    },
+    
+    "user_management_transactions": {
+      "CU00": {
+        "transaction_id": "CU00",
+        "program_name": "COUSR00C",
+        "average_response_ms": 67,
+        "p95_response_ms": 125,
+        "p99_response_ms": 185,
+        "operations_per_minute": 120,
+        "description": "User list display with pagination (10 users per page)",
+        "vsam_files_accessed": ["USRSEC"],
+        "typical_screen_operations": 4
+      },
+      "CU01": {
+        "transaction_id": "CU01",
+        "program_name": "COUSR01C",
+        "average_response_ms": 52,
+        "p95_response_ms": 95,
+        "p99_response_ms": 142,
+        "operations_per_minute": 85,
+        "description": "User detail view with security information",
+        "vsam_files_accessed": ["USRSEC"],
+        "typical_screen_operations": 2
+      },
+      "CU02": {
+        "transaction_id": "CU02",
+        "program_name": "COUSR02C",
+        "average_response_ms": 89,
+        "p95_response_ms": 156,
+        "p99_response_ms": 198,
+        "operations_per_minute": 45,
+        "description": "User creation with validation and security setup",
+        "vsam_files_accessed": ["USRSEC"],
+        "typical_screen_operations": 6
+      },
+      "CU03": {
+        "transaction_id": "CU03",
+        "program_name": "COUSR03C",
+        "average_response_ms": 78,
+        "p95_response_ms": 138,
+        "p99_response_ms": 189,
+        "operations_per_minute": 35,
+        "description": "User update with field validation and change tracking",
+        "vsam_files_accessed": ["USRSEC"],
+        "typical_screen_operations": 5
+      }
+    },
+    
+    "account_management_transactions": {
+      "CA00": {
+        "transaction_id": "CA00",
+        "program_name": "COACTVWC",
+        "average_response_ms": 112,
+        "p95_response_ms": 178,
+        "p99_response_ms": 195,
+        "operations_per_minute": 320,
+        "description": "Account view with customer data lookup",
+        "vsam_files_accessed": ["ACCTDAT", "CUSTDAT"],
+        "typical_screen_operations": 3
+      },
+      "CA01": {
+        "transaction_id": "CA01", 
+        "program_name": "COACTUPC",
+        "average_response_ms": 145,
+        "p95_response_ms": 195,
+        "p99_response_ms": 198,
+        "operations_per_minute": 95,
+        "description": "Account update with comprehensive field validation",
+        "vsam_files_accessed": ["ACCTDAT", "CUSTDAT"],
+        "typical_screen_operations": 7
+      }
+    },
+    
+    "credit_card_transactions": {
+      "CC00": {
+        "transaction_id": "CC00",
+        "program_name": "COCRDLIC",
+        "average_response_ms": 98,
+        "p95_response_ms": 165,
+        "p99_response_ms": 192,
+        "operations_per_minute": 180,
+        "description": "Card list display with pagination (7 cards per page)",
+        "vsam_files_accessed": ["CARDDAT", "XREFFILE"],
+        "typical_screen_operations": 4
+      },
+      "CC01": {
+        "transaction_id": "CC01",
+        "program_name": "COCRDSLC",
+        "average_response_ms": 76,
+        "p95_response_ms": 132,
+        "p99_response_ms": 178,
+        "operations_per_minute": 145,
+        "description": "Card detail view with account cross-reference",
+        "vsam_files_accessed": ["CARDDAT", "XREFFILE", "ACCTDAT"],
+        "typical_screen_operations": 3
+      },
+      "CC02": {
+        "transaction_id": "CC02",
+        "program_name": "COCRDUPC",
+        "average_response_ms": 134,
+        "p95_response_ms": 189,
+        "p99_response_ms": 196,
+        "operations_per_minute": 65,
+        "description": "Card update with status validation and cross-reference updates",
+        "vsam_files_accessed": ["CARDDAT", "XREFFILE"],
+        "typical_screen_operations": 6
+      }
+    },
+    
+    "transaction_processing": {
+      "CT00": {
+        "transaction_id": "CT00",
+        "program_name": "COTRN00C",
+        "average_response_ms": 156,
+        "p95_response_ms": 195,
+        "p99_response_ms": 199,
+        "operations_per_minute": 420,
+        "description": "Transaction list with STARTBR/READNEXT pagination (10 per page)",
+        "vsam_files_accessed": ["TRANSACT"],
+        "typical_screen_operations": 5
+      },
+      "CT01": {
+        "transaction_id": "CT01", 
+        "program_name": "COTRN01C",
+        "average_response_ms": 89,
+        "p95_response_ms": 148,
+        "p99_response_ms": 186,
+        "operations_per_minute": 285,
+        "description": "Transaction detail view with amount formatting",
+        "vsam_files_accessed": ["TRANSACT", "CARDDAT"],
+        "typical_screen_operations": 3
+      },
+      "CT02": {
+        "transaction_id": "CT02",
+        "program_name": "COTRN02C", 
+        "average_response_ms": 167,
+        "p95_response_ms": 198,
+        "p99_response_ms": 199,
+        "operations_per_minute": 125,
+        "description": "Transaction creation with card/account validation and balance updates",
+        "vsam_files_accessed": ["TRANSACT", "CARDDAT", "ACCTDAT", "XREFFILE"],
+        "typical_screen_operations": 8
+      }
+    },
+    
+    "bill_payment_transactions": {
+      "CB00": {
+        "transaction_id": "CB00",
+        "program_name": "COBIL00C",
+        "average_response_ms": 178,
+        "p95_response_ms": 199,
+        "p99_response_ms": 199,
+        "operations_per_minute": 95,
+        "description": "Bill payment processing with amount validation and balance updates",
+        "vsam_files_accessed": ["ACCTDAT", "TRANSACT", "CARDDAT"],
+        "typical_screen_operations": 6
+      }
+    },
+    
+    "reporting_transactions": {
+      "CR00": {
+        "transaction_id": "CR00",
+        "program_name": "CORPT00C",
+        "average_response_ms": 234,
+        "p95_response_ms": 445,
+        "p99_response_ms": 892,
+        "operations_per_minute": 25,
+        "description": "Report generation menu with parameter selection",
+        "vsam_files_accessed": [],
+        "typical_screen_operations": 4
+      }
+    }
+  },
+  
+  "vsam_file_access_performance": {
+    "_description": "VSAM KSDS file access performance metrics in milliseconds",
+    "_requirement": "Java/PostgreSQL implementation must match or exceed VSAM access speeds",
+    "_measurement_environment": "CICS region with dedicated VSAM pools",
+    
+    "primary_files": {
+      "USRSEC": {
+        "file_name": "USRSEC",
+        "organization": "KSDS",
+        "record_size": 500,
+        "record_count": 25000,
+        "key_length": 8,
+        "access_patterns": {
+          "random_read_ms": 3.2,
+          "sequential_read_ms": 1.8,
+          "random_update_ms": 5.4,
+          "insert_ms": 4.7,
+          "delete_ms": 4.2
+        },
+        "cache_hit_ratio": 0.89,
+        "description": "User security master file with encrypted passwords"
+      },
+      "ACCTDAT": {
+        "file_name": "ACCTDAT", 
+        "organization": "KSDS",
+        "record_size": 300,
+        "record_count": 2500000,
+        "key_length": 11,
+        "access_patterns": {
+          "random_read_ms": 4.1,
+          "sequential_read_ms": 2.3,
+          "random_update_ms": 6.8,
+          "insert_ms": 5.9,
+          "delete_ms": 5.2
+        },
+        "cache_hit_ratio": 0.76,
+        "description": "Account master file with current balances and limits"
+      },
+      "CUSTDAT": {
+        "file_name": "CUSTDAT",
+        "organization": "KSDS", 
+        "record_size": 500,
+        "record_count": 1500000,
+        "key_length": 9,
+        "access_patterns": {
+          "random_read_ms": 3.8,
+          "sequential_read_ms": 2.1,
+          "random_update_ms": 6.2,
+          "insert_ms": 5.5,
+          "delete_ms": 4.9
+        },
+        "cache_hit_ratio": 0.82,
+        "description": "Customer demographic and contact information"
+      },
+      "CARDDAT": {
+        "file_name": "CARDDAT",
+        "organization": "KSDS",
+        "record_size": 150,
+        "record_count": 3750000,
+        "key_length": 16,
+        "access_patterns": {
+          "random_read_ms": 3.5,
+          "sequential_read_ms": 1.9,
+          "random_update_ms": 5.8,
+          "insert_ms": 5.1,
+          "delete_ms": 4.6
+        },
+        "cache_hit_ratio": 0.79,
+        "description": "Credit card master file with status and expiry dates"
+      },
+      "XREFFILE": {
+        "file_name": "XREFFILE",
+        "organization": "KSDS",
+        "record_size": 50,
+        "record_count": 3750000,
+        "key_length": 16,
+        "access_patterns": {
+          "random_read_ms": 2.8,
+          "sequential_read_ms": 1.5,
+          "random_update_ms": 4.9,
+          "insert_ms": 4.2,
+          "delete_ms": 3.8
+        },
+        "cache_hit_ratio": 0.85,
+        "description": "Card-to-account cross-reference lookup table"
+      },
+      "TRANSACT": {
+        "file_name": "TRANSACT",
+        "organization": "KSDS",
+        "record_size": 350,
+        "record_count": 12500000,
+        "key_length": 16,
+        "access_patterns": {
+          "random_read_ms": 4.8,
+          "sequential_read_ms": 2.7,
+          "random_update_ms": 7.2,
+          "insert_ms": 6.5,
+          "delete_ms": 5.9
+        },
+        "cache_hit_ratio": 0.68,
+        "description": "Transaction history with amounts and descriptions"
+      }
+    },
+    
+    "browse_operations": {
+      "_description": "VSAM browse performance for STARTBR/READNEXT/READPREV operations",
+      "startbr_positioning_ms": 6.2,
+      "readnext_avg_ms": 2.1,
+      "readprev_avg_ms": 2.3,
+      "endbr_cleanup_ms": 1.4,
+      "browse_session_timeout_seconds": 120,
+      "max_concurrent_browse_sessions": 500
+    }
+  },
+  
+  "batch_processing_performance": {
+    "_description": "Batch job execution times and throughput metrics",
+    "_requirement": "Complete all daily processing within 4-hour window (02:00-06:00)",
+    "_execution_environment": "IBM z/OS batch with dedicated CPU time",
+    
+    "daily_batch_jobs": {
+      "CBACT01C": {
+        "job_name": "CBACT01C",
+        "description": "Account file sequential read and validation",
+        "input_records": 2500000,
+        "processing_time_minutes": 45,
+        "records_per_minute": 55556,
+        "cpu_seconds": 1248,
+        "io_operations": 2500000,
+        "memory_usage_mb": 64,
+        "dependencies": []
+      },
+      "CBACT02C": {
+        "job_name": "CBACT02C", 
+        "description": "Account balance reconciliation and adjustment",
+        "input_records": 2500000,
+        "processing_time_minutes": 52,
+        "records_per_minute": 48077,
+        "cpu_seconds": 1435,
+        "io_operations": 5000000,
+        "memory_usage_mb": 96,
+        "dependencies": ["CBACT01C"]
+      },
+      "CBACT03C": {
+        "job_name": "CBACT03C",
+        "description": "Account status update and maintenance",
+        "input_records": 2500000,
+        "processing_time_minutes": 38,
+        "records_per_minute": 65789,
+        "cpu_seconds": 1052,
+        "io_operations": 3750000,
+        "memory_usage_mb": 72,
+        "dependencies": ["CBACT02C"]
+      },
+      "CBACT04C": {
+        "job_name": "CBACT04C",
+        "description": "Interest calculation and posting",
+        "input_records": 1250000,
+        "processing_time_minutes": 67,
+        "records_per_minute": 18657,
+        "cpu_seconds": 1845,
+        "io_operations": 6250000,
+        "memory_usage_mb": 128,
+        "dependencies": ["CBACT03C"]
+      },
+      "CBTRN01C": {
+        "job_name": "CBTRN01C",
+        "description": "Daily transaction file posting with multi-file validation",
+        "input_records": 750000,
+        "processing_time_minutes": 89,
+        "records_per_minute": 8427,
+        "cpu_seconds": 2456,
+        "io_operations": 4500000,
+        "memory_usage_mb": 196,
+        "dependencies": ["CBACT04C"]
+      },
+      "CBTRN02C": {
+        "job_name": "CBTRN02C",
+        "description": "Transaction category balance calculation",
+        "input_records": 12500000,
+        "processing_time_minutes": 78,
+        "records_per_minute": 160256,
+        "cpu_seconds": 2145,
+        "io_operations": 25000000,
+        "memory_usage_mb": 256,
+        "dependencies": ["CBTRN01C"]
+      },
+      "CBTRN03C": {
+        "job_name": "CBTRN03C",
+        "description": "Transaction reporting and summary generation",
+        "input_records": 12500000,
+        "processing_time_minutes": 56,
+        "records_per_minute": 223214,
+        "cpu_seconds": 1567,
+        "io_operations": 15625000,
+        "memory_usage_mb": 192,
+        "dependencies": ["CBTRN02C"]
+      },
+      "CBSTM03A": {
+        "job_name": "CBSTM03A",
+        "description": "Plain text statement generation",
+        "input_records": 2500000,
+        "processing_time_minutes": 43,
+        "records_per_minute": 58140,
+        "cpu_seconds": 1189,
+        "io_operations": 3750000,
+        "memory_usage_mb": 84,
+        "dependencies": ["CBTRN03C"]
+      },
+      "CBSTM03B": {
+        "job_name": "CBSTM03B",
+        "description": "HTML statement generation with formatting",
+        "input_records": 2500000,
+        "processing_time_minutes": 67,
+        "records_per_minute": 37313,
+        "cpu_seconds": 1854,
+        "io_operations": 5000000,
+        "memory_usage_mb": 156,
+        "dependencies": ["CBSTM03A"]
+      },
+      "CBCUS01C": {
+        "job_name": "CBCUS01C",
+        "description": "Customer data validation and cleansing",
+        "input_records": 1500000,
+        "processing_time_minutes": 34,
+        "records_per_minute": 44118,
+        "cpu_seconds": 945,
+        "io_operations": 3000000,
+        "memory_usage_mb": 76,
+        "dependencies": []
+      }
+    },
+    
+    "batch_window_summary": {
+      "total_processing_time_minutes": 199,
+      "total_jobs": 10,
+      "peak_concurrent_jobs": 3,
+      "total_records_processed": 42500000,
+      "total_cpu_seconds": 15736,
+      "total_io_operations": 78125000,
+      "peak_memory_usage_mb": 512,
+      "batch_window_utilization_percent": 83.2,
+      "completion_buffer_minutes": 41
+    }
+  },
+  
+  "system_throughput_metrics": {
+    "_description": "Overall system throughput and concurrency metrics",
+    "_measurement_period": "Peak business hours (09:00-17:00)",
+    
+    "concurrent_user_capacity": {
+      "max_concurrent_cics_users": 150,
+      "average_concurrent_users": 89,
+      "peak_concurrent_users": 142,
+      "user_session_timeout_minutes": 30,
+      "commarea_size_bytes": 32768,
+      "active_task_control_blocks": 200
+    },
+    
+    "transaction_throughput": {
+      "total_transactions_per_hour": 15750,
+      "peak_transactions_per_minute": 425,
+      "average_transactions_per_minute": 262,
+      "inquiry_transactions_percent": 67,
+      "update_transactions_percent": 33,
+      "response_time_variance_ms": 23.4
+    },
+    
+    "database_metrics": {
+      "vsam_buffer_pool_hit_ratio": 0.78,
+      "catalog_search_time_ms": 12.3,
+      "space_management_overhead_percent": 8.2,
+      "index_maintenance_time_ms": 4.7,
+      "backup_recovery_time_minutes": 145
+    }
+  },
+  
+  "performance_targets": {
+    "_description": "Performance targets for Java/Spring Boot implementation",
+    
+    "response_time_requirements": {
+      "transaction_response_95_percentile_ms": 200,
+      "menu_navigation_response_ms": 100,
+      "file_access_max_ms": 50,
+      "authentication_max_ms": 150,
+      "critical_path_max_ms": 500
+    },
+    
+    "throughput_requirements": {
+      "minimum_concurrent_users": 150,
+      "minimum_transactions_per_minute": 425,
+      "batch_processing_window_hours": 4,
+      "system_availability_percent": 99.9,
+      "data_consistency_requirement": "ACID_compliant"
+    },
+    
+    "scalability_requirements": {
+      "horizontal_scaling_factor": 2,
+      "database_connection_pool_min": 20,
+      "database_connection_pool_max": 100,
+      "session_store_capacity": 500,
+      "cache_hit_ratio_target": 0.85
+    }
+  },
+  
+  "migration_validation_checkpoints": {
+    "_description": "Key metrics to validate during parallel run testing",
+    
+    "functional_parity_tests": [
+      "Transaction response time comparison (±10ms tolerance)",
+      "Batch job completion time comparison (±5% tolerance)",
+      "Data consistency validation (100% match required)",
+      "User session behavior validation",
+      "Error handling response validation"
+    ],
+    
+    "performance_regression_tests": [
+      "Load testing with 150 concurrent users",
+      "Transaction throughput testing at 425 TPS",
+      "Database query performance validation",
+      "Memory usage and garbage collection monitoring",
+      "Network latency impact assessment"
+    ],
+    
+    "stress_testing_scenarios": [
+      "Peak load simulation (200% of normal capacity)",
+      "Database connection exhaustion testing", 
+      "Session store overflow handling",
+      "Batch processing failure recovery",
+      "System recovery time validation"
+    ]
+  }
+}
