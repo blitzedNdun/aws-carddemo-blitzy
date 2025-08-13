@@ -1,0 +1,374 @@
+# Redis Session Store Deployment for CardDemo
+# Replaces CICS COMMAREA structures with distributed session management
+# Spring Session integration with 30-minute timeout matching CICS transaction timeout
+# Redis 7.4-alpine for minimal attack surface and enterprise security
+
+---
+# Redis ConfigMap for session store configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  labels:
+    app: redis
+    component: session-store
+    tier: infrastructure
+    part-of: carddemo
+  annotations:
+    description: "Redis configuration for Spring Session integration"
+    migration.carddemo.com/replaces: "CICS COMMAREA session management"
+data:
+  redis.conf: |
+    # Redis 7.4 Configuration for Spring Session Store
+    # Optimized for CICS COMMAREA replacement with distributed session management
+    
+    # Network and Security Configuration
+    bind 0.0.0.0
+    port 6379
+    protected-mode yes
+    tcp-keepalive 300
+    
+    # Authentication Configuration (password set via environment variable)
+    requirepass ${REDIS_PASSWORD}
+    
+    # Memory Management and Performance
+    maxmemory 400mb
+    maxmemory-policy allkeys-lru
+    tcp-backlog 511
+    timeout 300
+    
+    # Persistence Configuration for Session Recovery
+    # RDB Snapshots for periodic data persistence
+    save 900 1
+    save 300 10
+    save 60 10000
+    rdbcompression yes
+    rdbchecksum yes
+    dbfilename dump.rdb
+    dir /data
+    
+    # AOF (Append Only File) for transaction durability
+    appendonly yes
+    appendfilename "appendonly.aof"
+    appendfsync everysec
+    no-appendfsync-on-rewrite no
+    auto-aof-rewrite-percentage 100
+    auto-aof-rewrite-min-size 64mb
+    
+    # Spring Session Integration Settings
+    # Optimized for 30-minute session timeout matching CICS standards
+    notify-keyspace-events Ex
+    
+    # Performance Tuning for Session Store Workload
+    hash-max-ziplist-entries 512
+    hash-max-ziplist-value 64
+    set-max-intset-entries 512
+    
+    # Logging Configuration
+    loglevel notice
+    logfile ""
+    syslog-enabled no
+    
+    # Client Connection Limits
+    maxclients 10000
+    
+    # Slow Log Configuration for Performance Monitoring
+    slowlog-log-slower-than 10000
+    slowlog-max-len 128
+
+---
+# Redis Authentication Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redis-secret
+  labels:
+    app: redis
+    component: session-store
+    tier: infrastructure
+    part-of: carddemo
+  annotations:
+    description: "Redis authentication credentials for secure session storage"
+type: Opaque
+stringData:
+  redis-password: "carddemo_redis_session_2024!"
+  redis-url: "redis://:carddemo_redis_session_2024!@redis-service:6379"
+
+---
+# Redis PersistentVolumeClaim for data persistence
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-storage
+  labels:
+    app: redis
+    component: session-store
+    tier: infrastructure
+    part-of: carddemo
+  annotations:
+    description: "Persistent storage for Redis session data and snapshots"
+    migration.carddemo.com/purpose: "Session recovery and data durability"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: "fast-ssd"
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+# Redis Service for internal network access
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  labels:
+    app: redis
+    component: session-store
+    tier: infrastructure
+    part-of: carddemo
+  annotations:
+    description: "Redis service endpoint for Spring Session access"
+    migration.carddemo.com/replaces: "CICS COMMAREA internal communication"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9121"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+    protocol: TCP
+    name: redis
+  - port: 9121
+    targetPort: 9121
+    protocol: TCP
+    name: redis-exporter
+  selector:
+    app: redis
+    component: session-store
+
+---
+# Redis Deployment with monitoring and health checks
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-deployment
+  labels:
+    app: redis
+    component: session-store
+    tier: infrastructure
+    part-of: carddemo
+    version: "7.4"
+  annotations:
+    description: "Redis 7.4 session store deployment replacing CICS COMMAREA"
+    migration.carddemo.com/source: "CICS transaction session management"
+    migration.carddemo.com/target: "Spring Session distributed storage"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: redis
+      component: session-store
+  template:
+    metadata:
+      labels:
+        app: redis
+        component: session-store
+        tier: infrastructure
+        part-of: carddemo
+        version: "7.4"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9121"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      # Redis 7.4 Alpine container
+      - name: redis
+        image: redis:7.4-alpine
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 6379
+          name: redis
+          protocol: TCP
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-secret
+              key: redis-password
+        command:
+        - redis-server
+        - /etc/redis/redis.conf
+        volumeMounts:
+        - name: redis-config-volume
+          mountPath: /etc/redis
+          readOnly: true
+        - name: redis-storage-volume
+          mountPath: /data
+        # Liveness probe using redis-cli ping command
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - -a
+            - $(REDIS_PASSWORD)
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        # Readiness probe for Spring Session integration
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - -a
+            - $(REDIS_PASSWORD)
+            - ping
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 2
+          successThreshold: 1
+        # Startup probe for initial container readiness
+        startupProbe:
+          exec:
+            command:
+            - redis-cli
+            - -a
+            - $(REDIS_PASSWORD)
+            - ping
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 10
+          successThreshold: 1
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+      # Redis Exporter sidecar for Prometheus monitoring
+      - name: redis-exporter
+        image: oliver006/redis_exporter:v1.57.0-alpine
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 9121
+          name: metrics
+          protocol: TCP
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "10m"
+          limits:
+            memory: "64Mi"
+            cpu: "50m"
+        env:
+        - name: REDIS_ADDR
+          value: "redis://localhost:6379"
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-secret
+              key: redis-password
+        - name: REDIS_EXPORTER_LOG_FORMAT
+          value: "json"
+        - name: REDIS_EXPORTER_DEBUG
+          value: "false"
+        # Health check for metrics endpoint
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: 9121
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: 9121
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 2
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: redis-config-volume
+        configMap:
+          name: redis-config
+          items:
+          - key: redis.conf
+            path: redis.conf
+      - name: redis-storage-volume
+        persistentVolumeClaim:
+          claimName: redis-storage
+      # Pod scheduling preferences for optimal performance
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - redis
+              topologyKey: kubernetes.io/hostname
+      tolerations:
+      - key: "infrastructure"
+        operator: "Equal"
+        value: "dedicated"
+        effect: "NoSchedule"
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+
+---
+# Redis Service Monitor for Prometheus scraping (if Prometheus Operator is used)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: redis-service-monitor
+  labels:
+    app: redis
+    component: session-store
+    tier: infrastructure
+    part-of: carddemo
+  annotations:
+    description: "Prometheus monitoring configuration for Redis session store"
+spec:
+  selector:
+    matchLabels:
+      app: redis
+      component: session-store
+  endpoints:
+  - port: redis-exporter
+    interval: 30s
+    path: /metrics
+    honorLabels: true
