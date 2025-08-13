@@ -1,0 +1,859 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Field Validation Rules Template",
+  "description": "Comprehensive validation rules for all input fields matching COBOL PIC clauses and BMS map edit rules",
+  "version": "1.0.0",
+  "validationRules": {
+    "accountFields": {
+      "accountId": {
+        "fieldName": "ACCT_ID",
+        "cobolPicClause": "PIC 9(11)",
+        "dataType": "numeric",
+        "length": {
+          "exact": 11
+        },
+        "validation": {
+          "required": true,
+          "pattern": "^[0-9]{11}$",
+          "range": {
+            "min": 10000000001,
+            "max": 99999999999
+          },
+          "modulusCheck": {
+            "enabled": true,
+            "algorithm": "modulus11",
+            "description": "Luhn-like algorithm for account number validation"
+          }
+        },
+        "bmsAttributes": {
+          "protection": "UNPROT",
+          "highlight": "NORM",
+          "numeric": true
+        },
+        "errorMessages": {
+          "required": "Account ID is required",
+          "invalidFormat": "Account ID must be exactly 11 digits",
+          "invalidRange": "Account ID must be between 10000000001 and 99999999999",
+          "modulusCheckFailed": "Invalid account number - checksum validation failed"
+        }
+      },
+      "activeStatus": {
+        "fieldName": "ACCT_ACTIVE_STATUS",
+        "cobolPicClause": "PIC X(01)",
+        "dataType": "character",
+        "length": {
+          "exact": 1
+        },
+        "validation": {
+          "required": true,
+          "allowedValues": ["Y", "N", "S", "C"],
+          "valueDescriptions": {
+            "Y": "Active",
+            "N": "Inactive",
+            "S": "Suspended", 
+            "C": "Closed"
+          }
+        },
+        "bmsAttributes": {
+          "protection": "UNPROT",
+          "highlight": "NORM"
+        },
+        "errorMessages": {
+          "required": "Account status is required",
+          "invalidValue": "Account status must be Y (Active), N (Inactive), S (Suspended), or C (Closed)"
+        }
+      },
+      "currentBalance": {
+        "fieldName": "ACCT_CURR_BAL",
+        "cobolPicClause": "PIC S9(10)V99",
+        "dataType": "decimal",
+        "precision": {
+          "totalDigits": 12,
+          "decimalPlaces": 2,
+          "signed": true
+        },
+        "validation": {
+          "required": true,
+          "range": {
+            "min": -9999999999.99,
+            "max": 9999999999.99
+          },
+          "decimalPlaces": 2,
+          "roundingMode": "HALF_UP"
+        },
+        "bmsAttributes": {
+          "protection": "ASKIP",
+          "highlight": "NORM",
+          "numeric": true
+        },
+        "formatting": {
+          "displayFormat": "currency",
+          "locale": "en_US",
+          "currencySymbol": "$"
+        },
+        "errorMessages": {
+          "required": "Current balance is required",
+          "invalidFormat": "Balance must be a valid monetary amount with up to 2 decimal places",
+          "invalidRange": "Balance must be between -$9,999,999,999.99 and $9,999,999,999.99",
+          "invalidPrecision": "Balance cannot have more than 2 decimal places"
+        }
+      },
+      "creditLimit": {
+        "fieldName": "ACCT_CREDIT_LIMIT",
+        "cobolPicClause": "PIC S9(10)V99",
+        "dataType": "decimal",
+        "precision": {
+          "totalDigits": 12,
+          "decimalPlaces": 2,
+          "signed": true
+        },
+        "validation": {
+          "required": true,
+          "range": {
+            "min": 0.00,
+            "max": 9999999999.99
+          },
+          "decimalPlaces": 2,
+          "roundingMode": "HALF_UP"
+        },
+        "bmsAttributes": {
+          "protection": "UNPROT",
+          "highlight": "NORM",
+          "numeric": true
+        },
+        "formatting": {
+          "displayFormat": "currency",
+          "locale": "en_US",
+          "currencySymbol": "$"
+        },
+        "errorMessages": {
+          "required": "Credit limit is required",
+          "invalidFormat": "Credit limit must be a valid monetary amount with up to 2 decimal places",
+          "invalidRange": "Credit limit must be between $0.00 and $9,999,999,999.99",
+          "invalidPrecision": "Credit limit cannot have more than 2 decimal places"
+        }
+      },
+      "openDate": {
+        "fieldName": "ACCT_OPEN_DATE",
+        "cobolPicClause": "PIC X(10)",
+        "dataType": "date",
+        "length": {
+          "exact": 10
+        },
+        "validation": {
+          "required": true,
+          "dateFormat": "YYYY-MM-DD",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "range": {
+            "minDate": "1900-01-01",
+            "maxDate": "currentDate"
+          }
+        },
+        "bmsAttributes": {
+          "protection": "UNPROT",
+          "highlight": "NORM"
+        },
+        "formatting": {
+          "inputFormat": "YYYY-MM-DD",
+          "displayFormat": "MM/DD/YYYY"
+        },
+        "errorMessages": {
+          "required": "Account open date is required",
+          "invalidFormat": "Date must be in YYYY-MM-DD format",
+          "invalidDate": "Invalid date value",
+          "dateRange": "Account open date cannot be in the future or before 1900",
+          "invalidBusinessRule": "Account open date cannot be after current date"
+        }
+      },
+      "zipCode": {
+        "fieldName": "ACCT_ADDR_ZIP",
+        "cobolPicClause": "PIC X(10)",
+        "dataType": "character",
+        "length": {
+          "min": 5,
+          "max": 10
+        },
+        "validation": {
+          "required": true,
+          "pattern": "^[0-9]{5}(-[0-9]{4})?$",
+          "zipCodeValidation": true
+        },
+        "bmsAttributes": {
+          "protection": "UNPROT",
+          "highlight": "NORM"
+        },
+        "formatting": {
+          "inputMask": "#####-####",
+          "autoFormat": true
+        },
+        "errorMessages": {
+          "required": "ZIP code is required",
+          "invalidFormat": "ZIP code must be in format 12345 or 12345-6789",
+          "invalidZipCode": "Invalid ZIP code"
+        }
+      }
+    },
+    "customerFields": {
+      "customerId": {
+        "fieldName": "CUST_ID",
+        "cobolPicClause": "PIC 9(09)",
+        "dataType": "numeric",
+        "length": {
+          "exact": 9
+        },
+        "validation": {
+          "required": true,
+          "pattern": "^[0-9]{9}$",
+          "range": {
+            "min": 100000001,
+            "max": 999999999
+          }
+        },
+        "bmsAttributes": {
+          "protection": "UNPROT",
+          "highlight": "NORM",
+          "numeric": true
+        },
+        "errorMessages": {
+          "required": "Customer ID is required",
+          "invalidFormat": "Customer ID must be exactly 9 digits",
+          "invalidRange": "Customer ID must be between 100000001 and 999999999"
+        }
+      },
+      "firstName": {
+        "fieldName": "CUST_FIRST_NAME",
+        "cobolPicClause": "PIC X(25)",
+        "dataType": "character",
+        "length": {
+          "min": 1,
+          "max": 25
+        },
+        "validation": {
+          "required": true,
+          "pattern": "^[A-Za-z\\s\\-\\.]{1,25}$",
+          "trimWhitespace": true,
+          "capitalizeFirst": true
+        },
+        "bmsAttributes": {
+          "protection": "UNPROT",
+          "highlight": "NORM"
+        },
+        "errorMessages": {
+          "required": "First name is required",
+          "invalidFormat": "First name can only contain letters, spaces, hyphens, and periods",
+          "maxLength": "First name cannot exceed 25 characters"
+        }
+      },
+      "lastName": {
+        "fieldName": "CUST_LAST_NAME",
+        "cobolPicClause": "PIC X(25)",
+        "dataType": "character",
+        "length": {
+          "min": 1,
+          "max": 25
+        },
+        "validation": {
+          "required": true,
+          "pattern": "^[A-Za-z\\s\\-\\.]{1,25}$",
+          "trimWhitespace": true,
+          "capitalizeFirst": true
+        },
+        "bmsAttributes": {
+          "protection": "UNPROT",
+          "highlight": "NORM"
+        },
+        "errorMessages": {
+          "required": "Last name is required",
+          "invalidFormat": "Last name can only contain letters, spaces, hyphens, and periods",
+          "maxLength": "Last name cannot exceed 25 characters"
+        }
+      },
+      "ssn": {
+        "fieldName": "CUST_SSN",
+        "cobolPicClause": "PIC 9(09)",
+        "dataType": "numeric",
+        "length": {
+          "exact": 9
+        },
+        "validation": {
+          "required": true,
+          "pattern": "^[0-9]{9}$",
+          "ssnValidation": {
+            "enabled": true,
+            "rejectSequential": true,
+            "rejectTestNumbers": true,
+            "invalidAreaCodes": ["000", "666", "900", "901", "902", "903", "904", "905", "906", "907", "908", "909"]
+          }
+        },
+        "bmsAttributes": {
+          "protection": "UNPROT",
+          "highlight": "NORM",
+          "numeric": true,
+          "confidential": true
+        },
+        "formatting": {
+          "inputMask": "###-##-####",
+          "displayMask": "***-**-####",
+          "storageFormat": "numeric"
+        },
+        "errorMessages": {
+          "required": "Social Security Number is required",
+          "invalidFormat": "SSN must be exactly 9 digits",
+          "invalidSSN": "Invalid Social Security Number",
+          "invalidAreaCode": "Invalid SSN area code"
+        }
+      },
+      "phoneNumber": {
+        "fieldName": "CUST_PHONE_NUM_1",
+        "cobolPicClause": "PIC X(15)",
+        "dataType": "character",
+        "length": {
+          "min": 10,
+          "max": 15
+        },
+        "validation": {
+          "required": true,
+          "pattern": "^[0-9]{10,15}$",
+          "phoneValidation": {
+            "enabled": true,
+            "validateAreaCode": true,
+            "allowInternational": false
+          }
+        },
+        "bmsAttributes": {
+          "protection": "UNPROT",
+          "highlight": "NORM"
+        },
+        "formatting": {
+          "inputMask": "(###) ###-####",
+          "storageFormat": "numeric"
+        },
+        "errorMessages": {
+          "required": "Phone number is required",
+          "invalidFormat": "Phone number must be 10-15 digits",
+          "invalidAreaCode": "Invalid area code",
+          "invalidPhoneNumber": "Invalid phone number format"
+        }
+      },
+      "stateCode": {
+        "fieldName": "CUST_ADDR_STATE_CD",
+        "cobolPicClause": "PIC X(02)",
+        "dataType": "character",
+        "length": {
+          "exact": 2
+        },
+        "validation": {
+          "required": true,
+          "pattern": "^[A-Z]{2}$",
+          "stateCodeValidation": true,
+          "allowedValues": [
+            "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
+            "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+            "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+            "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+            "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
+            "DC", "AS", "GU", "MP", "PR", "VI"
+          ]
+        },
+        "bmsAttributes": {
+          "protection": "UNPROT",
+          "highlight": "NORM"
+        },
+        "errorMessages": {
+          "required": "State code is required",
+          "invalidFormat": "State code must be exactly 2 uppercase letters",
+          "invalidState": "Invalid state code"
+        }
+      },
+      "ficoScore": {
+        "fieldName": "CUST_FICO_CREDIT_SCORE",
+        "cobolPicClause": "PIC 9(03)",
+        "dataType": "numeric",
+        "length": {
+          "exact": 3
+        },
+        "validation": {
+          "required": false,
+          "pattern": "^[0-9]{3}$",
+          "range": {
+            "min": 300,
+            "max": 850
+          }
+        },
+        "bmsAttributes": {
+          "protection": "UNPROT",
+          "highlight": "NORM",
+          "numeric": true
+        },
+        "errorMessages": {
+          "invalidFormat": "FICO score must be exactly 3 digits",
+          "invalidRange": "FICO score must be between 300 and 850"
+        }
+      },
+      "dateOfBirth": {
+        "fieldName": "CUST_DOB_YYYY_MM_DD",
+        "cobolPicClause": "PIC X(10)",
+        "dataType": "date",
+        "length": {
+          "exact": 10
+        },
+        "validation": {
+          "required": true,
+          "dateFormat": "YYYY-MM-DD",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "range": {
+            "minDate": "1900-01-01",
+            "maxDate": "currentDateMinus18Years"
+          },
+          "ageValidation": {
+            "minAge": 18,
+            "maxAge": 120
+          }
+        },
+        "bmsAttributes": {
+          "protection": "UNPROT",
+          "highlight": "NORM"
+        },
+        "formatting": {
+          "inputFormat": "YYYY-MM-DD",
+          "displayFormat": "MM/DD/YYYY"
+        },
+        "errorMessages": {
+          "required": "Date of birth is required",
+          "invalidFormat": "Date must be in YYYY-MM-DD format",
+          "invalidDate": "Invalid date value",
+          "ageRequirement": "Customer must be at least 18 years old",
+          "maxAgeExceeded": "Invalid date of birth - age cannot exceed 120 years"
+        }
+      }
+    },
+    "cardFields": {
+      "cardNumber": {
+        "fieldName": "CARD_NUM",
+        "cobolPicClause": "PIC X(16)",
+        "dataType": "character",
+        "length": {
+          "exact": 16
+        },
+        "validation": {
+          "required": true,
+          "pattern": "^[0-9]{16}$",
+          "luhnCheck": {
+            "enabled": true,
+            "description": "Luhn algorithm for credit card validation"
+          },
+          "cardTypeValidation": {
+            "enabled": true,
+            "allowedTypes": ["VISA", "MASTERCARD", "AMEX", "DISCOVER"]
+          }
+        },
+        "bmsAttributes": {
+          "protection": "UNPROT",
+          "highlight": "NORM",
+          "numeric": true,
+          "confidential": true
+        },
+        "formatting": {
+          "inputMask": "#### #### #### ####",
+          "displayMask": "**** **** **** ####",
+          "storageFormat": "numeric"
+        },
+        "errorMessages": {
+          "required": "Card number is required",
+          "invalidFormat": "Card number must be exactly 16 digits",
+          "luhnCheckFailed": "Invalid card number - checksum validation failed",
+          "invalidCardType": "Unsupported card type"
+        }
+      },
+      "cvvCode": {
+        "fieldName": "CARD_CVV_CD",
+        "cobolPicClause": "PIC 9(03)",
+        "dataType": "numeric",
+        "length": {
+          "exact": 3
+        },
+        "validation": {
+          "required": true,
+          "pattern": "^[0-9]{3}$"
+        },
+        "bmsAttributes": {
+          "protection": "UNPROT",
+          "highlight": "NORM",
+          "numeric": true,
+          "confidential": true
+        },
+        "formatting": {
+          "displayMask": "***",
+          "storageFormat": "encrypted"
+        },
+        "errorMessages": {
+          "required": "CVV code is required",
+          "invalidFormat": "CVV code must be exactly 3 digits"
+        }
+      },
+      "embossedName": {
+        "fieldName": "CARD_EMBOSSED_NAME",
+        "cobolPicClause": "PIC X(50)",
+        "dataType": "character",
+        "length": {
+          "min": 1,
+          "max": 50
+        },
+        "validation": {
+          "required": true,
+          "pattern": "^[A-Za-z\\s\\-\\.]{1,50}$",
+          "trimWhitespace": true,
+          "upperCase": true
+        },
+        "bmsAttributes": {
+          "protection": "UNPROT",
+          "highlight": "NORM"
+        },
+        "errorMessages": {
+          "required": "Embossed name is required",
+          "invalidFormat": "Embossed name can only contain letters, spaces, hyphens, and periods",
+          "maxLength": "Embossed name cannot exceed 50 characters"
+        }
+      },
+      "expirationDate": {
+        "fieldName": "CARD_EXPIRAION_DATE",
+        "cobolPicClause": "PIC X(10)",
+        "dataType": "date",
+        "length": {
+          "exact": 10
+        },
+        "validation": {
+          "required": true,
+          "dateFormat": "YYYY-MM-DD",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "range": {
+            "minDate": "currentDate",
+            "maxDate": "currentDatePlus10Years"
+          },
+          "businessRules": {
+            "mustBeFutureDate": true,
+            "maxYearsFromNow": 10
+          }
+        },
+        "bmsAttributes": {
+          "protection": "UNPROT",
+          "highlight": "NORM"
+        },
+        "formatting": {
+          "inputFormat": "YYYY-MM-DD",
+          "displayFormat": "MM/YY"
+        },
+        "errorMessages": {
+          "required": "Expiration date is required",
+          "invalidFormat": "Date must be in YYYY-MM-DD format",
+          "invalidDate": "Invalid expiration date",
+          "pastDate": "Expiration date must be in the future",
+          "tooFarInFuture": "Expiration date cannot be more than 10 years from now"
+        }
+      }
+    },
+    "transactionFields": {
+      "transactionId": {
+        "fieldName": "TRAN_ID",
+        "cobolPicClause": "PIC X(16)",
+        "dataType": "character",
+        "length": {
+          "exact": 16
+        },
+        "validation": {
+          "required": true,
+          "pattern": "^[A-Za-z0-9]{16}$",
+          "uniqueness": true
+        },
+        "bmsAttributes": {
+          "protection": "ASKIP",
+          "highlight": "NORM"
+        },
+        "errorMessages": {
+          "required": "Transaction ID is required",
+          "invalidFormat": "Transaction ID must be exactly 16 alphanumeric characters",
+          "duplicateValue": "Transaction ID must be unique"
+        }
+      },
+      "transactionType": {
+        "fieldName": "TRAN_TYPE_CD",
+        "cobolPicClause": "PIC X(02)",
+        "dataType": "character",
+        "length": {
+          "exact": 2
+        },
+        "validation": {
+          "required": true,
+          "pattern": "^[A-Z0-9]{2}$",
+          "allowedValues": ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10"],
+          "referenceValidation": {
+            "table": "TRAN_TYPE",
+            "column": "TRAN_TYPE_CD"
+          }
+        },
+        "bmsAttributes": {
+          "protection": "UNPROT",
+          "highlight": "NORM"
+        },
+        "errorMessages": {
+          "required": "Transaction type is required",
+          "invalidFormat": "Transaction type must be exactly 2 alphanumeric characters",
+          "invalidValue": "Invalid transaction type code",
+          "referenceNotFound": "Transaction type code not found in reference table"
+        }
+      },
+      "categoryCode": {
+        "fieldName": "TRAN_CAT_CD",
+        "cobolPicClause": "PIC 9(04)",
+        "dataType": "numeric",
+        "length": {
+          "exact": 4
+        },
+        "validation": {
+          "required": true,
+          "pattern": "^[0-9]{4}$",
+          "range": {
+            "min": 1000,
+            "max": 9999
+          },
+          "referenceValidation": {
+            "table": "TRAN_CATEGORY",
+            "column": "TRAN_CAT_CD"
+          }
+        },
+        "bmsAttributes": {
+          "protection": "UNPROT",
+          "highlight": "NORM",
+          "numeric": true
+        },
+        "errorMessages": {
+          "required": "Transaction category is required",
+          "invalidFormat": "Category code must be exactly 4 digits",
+          "invalidRange": "Category code must be between 1000 and 9999",
+          "referenceNotFound": "Category code not found in reference table"
+        }
+      },
+      "transactionAmount": {
+        "fieldName": "TRAN_AMT",
+        "cobolPicClause": "PIC S9(09)V99",
+        "dataType": "decimal",
+        "precision": {
+          "totalDigits": 11,
+          "decimalPlaces": 2,
+          "signed": true
+        },
+        "validation": {
+          "required": true,
+          "range": {
+            "min": -999999999.99,
+            "max": 999999999.99
+          },
+          "decimalPlaces": 2,
+          "roundingMode": "HALF_UP",
+          "businessRules": {
+            "nonZero": true,
+            "creditLimitCheck": true
+          }
+        },
+        "bmsAttributes": {
+          "protection": "UNPROT",
+          "highlight": "NORM",
+          "numeric": true
+        },
+        "formatting": {
+          "displayFormat": "currency",
+          "locale": "en_US",
+          "currencySymbol": "$"
+        },
+        "errorMessages": {
+          "required": "Transaction amount is required",
+          "invalidFormat": "Amount must be a valid monetary value with up to 2 decimal places",
+          "invalidRange": "Amount must be between -$999,999,999.99 and $999,999,999.99",
+          "zeroAmount": "Transaction amount cannot be zero",
+          "creditLimitExceeded": "Transaction would exceed credit limit"
+        }
+      },
+      "merchantId": {
+        "fieldName": "TRAN_MERCHANT_ID",
+        "cobolPicClause": "PIC 9(09)",
+        "dataType": "numeric",
+        "length": {
+          "exact": 9
+        },
+        "validation": {
+          "required": true,
+          "pattern": "^[0-9]{9}$",
+          "range": {
+            "min": 100000001,
+            "max": 999999999
+          }
+        },
+        "bmsAttributes": {
+          "protection": "UNPROT",
+          "highlight": "NORM",
+          "numeric": true
+        },
+        "errorMessages": {
+          "required": "Merchant ID is required",
+          "invalidFormat": "Merchant ID must be exactly 9 digits",
+          "invalidRange": "Merchant ID must be between 100000001 and 999999999"
+        }
+      },
+      "transactionDate": {
+        "fieldName": "TRAN_ORIG_TS",
+        "cobolPicClause": "PIC X(26)",
+        "dataType": "timestamp",
+        "length": {
+          "exact": 26
+        },
+        "validation": {
+          "required": true,
+          "timestampFormat": "YYYY-MM-DD HH:MM:SS.ssssss",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}$",
+          "range": {
+            "minDate": "1900-01-01 00:00:00.000000",
+            "maxDate": "currentTimestamp"
+          }
+        },
+        "bmsAttributes": {
+          "protection": "UNPROT",
+          "highlight": "NORM"
+        },
+        "formatting": {
+          "inputFormat": "YYYY-MM-DD HH:MM:SS.ssssss",
+          "displayFormat": "MM/DD/YYYY HH:MM:SS"
+        },
+        "errorMessages": {
+          "required": "Transaction date is required",
+          "invalidFormat": "Timestamp must be in YYYY-MM-DD HH:MM:SS.ssssss format",
+          "invalidTimestamp": "Invalid timestamp value",
+          "futureDate": "Transaction date cannot be in the future"
+        }
+      }
+    },
+    "crossFieldValidations": {
+      "accountCardRelationship": {
+        "description": "Validate card belongs to account",
+        "fields": ["CARD_ACCT_ID", "ACCT_ID"],
+        "validationType": "foreignKey",
+        "errorMessage": "Card does not belong to the specified account"
+      },
+      "customerAccountRelationship": {
+        "description": "Validate account belongs to customer",
+        "fields": ["ACCT_CUSTOMER_ID", "CUST_ID"],
+        "validationType": "foreignKey",
+        "errorMessage": "Account does not belong to the specified customer"
+      },
+      "transactionAccountRelationship": {
+        "description": "Validate transaction belongs to account",
+        "fields": ["TRAN_ACCT_ID", "ACCT_ID"],
+        "validationType": "foreignKey",
+        "errorMessage": "Transaction does not belong to the specified account"
+      },
+      "transactionCardRelationship": {
+        "description": "Validate transaction uses valid card",
+        "fields": ["TRAN_CARD_NUM", "CARD_NUM"],
+        "validationType": "foreignKey",
+        "errorMessage": "Transaction uses invalid card number"
+      },
+      "stateZipValidation": {
+        "description": "Validate ZIP code belongs to state",
+        "fields": ["CUST_ADDR_STATE_CD", "CUST_ADDR_ZIP"],
+        "validationType": "crossReference",
+        "referenceTable": "US_STATE_ZIP_CODES",
+        "errorMessage": "ZIP code does not belong to the specified state"
+      },
+      "cardExpirationValidation": {
+        "description": "Validate card not expired for transactions",
+        "fields": ["CARD_EXPIRAION_DATE", "TRAN_ORIG_TS"],
+        "validationType": "dateComparison",
+        "rule": "cardExpirationDate > transactionDate",
+        "errorMessage": "Cannot process transaction with expired card"
+      },
+      "creditLimitValidation": {
+        "description": "Validate transaction does not exceed credit limit",
+        "fields": ["ACCT_CURR_BAL", "ACCT_CREDIT_LIMIT", "TRAN_AMT"],
+        "validationType": "businessRule",
+        "rule": "(currentBalance + transactionAmount) <= creditLimit",
+        "errorMessage": "Transaction would exceed account credit limit"
+      },
+      "phoneAreaCodeStateValidation": {
+        "description": "Validate phone area code matches state",
+        "fields": ["CUST_PHONE_NUM_1", "CUST_ADDR_STATE_CD"],
+        "validationType": "crossReference",
+        "referenceTable": "PHONE_AREA_CODE_STATE_MAPPING",
+        "warningOnly": true,
+        "errorMessage": "Phone area code may not match customer state"
+      }
+    },
+    "vsamsConstraints": {
+      "compositePrimaryKeys": {
+        "ACCOUNT_PRIMARY_KEY": {
+          "fields": ["ACCT_ID"],
+          "description": "Account unique identifier"
+        },
+        "CUSTOMER_PRIMARY_KEY": {
+          "fields": ["CUST_ID"],
+          "description": "Customer unique identifier"
+        },
+        "CARD_PRIMARY_KEY": {
+          "fields": ["CARD_NUM"],
+          "description": "Card number unique identifier"
+        },
+        "TRANSACTION_PRIMARY_KEY": {
+          "fields": ["TRAN_ID"],
+          "description": "Transaction unique identifier"
+        },
+        "TRAN_CAT_BAL_PRIMARY_KEY": {
+          "fields": ["ACCT_ID", "TRAN_CAT_CD", "BAL_DATE"],
+          "description": "Transaction category balance composite key"
+        }
+      },
+      "alternateIndexes": {
+        "CARD_ACCOUNT_INDEX": {
+          "fields": ["CARD_ACCT_ID"],
+          "description": "Card to account relationship index",
+          "allowDuplicates": true
+        },
+        "CUSTOMER_ACCOUNT_INDEX": {
+          "fields": ["ACCT_CUSTOMER_ID"],
+          "description": "Customer to account relationship index",
+          "allowDuplicates": true
+        },
+        "TRANSACTION_DATE_INDEX": {
+          "fields": ["TRAN_ORIG_TS", "ACCT_ID"],
+          "description": "Transaction date and account composite index",
+          "allowDuplicates": true
+        }
+      }
+    },
+    "errorHandling": {
+      "severityLevels": {
+        "ERROR": "Prevents form submission",
+        "WARNING": "Allows submission with confirmation",
+        "INFO": "Informational message only"
+      },
+      "displayBehavior": {
+        "fieldLevel": "Display error next to field",
+        "summaryLevel": "Display in message area",
+        "highlighting": "Apply DFHRED attribute to invalid fields"
+      },
+      "customMessages": {
+        "GENERAL_VALIDATION_ERROR": "Please correct the errors highlighted in red",
+        "REQUIRED_FIELD_MISSING": "Required field must be completed",
+        "INVALID_DATA_FORMAT": "Data format is invalid for this field",
+        "BUSINESS_RULE_VIOLATION": "Business rule validation failed",
+        "CROSS_FIELD_ERROR": "Related fields have inconsistent values",
+        "SYSTEM_ERROR": "System error during validation - please try again"
+      }
+    },
+    "metadata": {
+      "version": "1.0.0",
+      "lastUpdated": "2024-01-15",
+      "compatibleWithCobolVersion": "CardDemo_v1.0-15-g27d6c6f-68",
+      "validationEngine": "Spring Boot Validation with Hibernate Validator",
+      "supportedLocales": ["en_US"],
+      "maintainer": "Blitzy Platform - CardDemo Migration Team"
+    }
+  }
+}
