@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CardDemo Performance Test Report - {{TEST_DATE}}</title>
+    <style>
+        /* Performance Report Styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        /* Header Styling */
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 3px solid #2196F3;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #1976D2;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            color: #666;
+            font-size: 1.2em;
+        }
+
+        .test-metadata {
+            background-color: #E3F2FD;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .metadata-item {
+            text-align: center;
+        }
+
+        .metadata-item .label {
+            font-weight: bold;
+            color: #1976D2;
+            display: block;
+        }
+
+        .metadata-item .value {
+            font-size: 1.1em;
+            color: #333;
+        }
+
+        /* Section Styling */
+        .section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            color: #1976D2;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #2196F3;
+            padding-bottom: 10px;
+        }
+
+        /* Executive Summary Styling */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .summary-card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .summary-card.success {
+            border-left: 5px solid #4CAF50;
+        }
+
+        .summary-card.warning {
+            border-left: 5px solid #FF9800;
+        }
+
+        .summary-card.error {
+            border-left: 5px solid #F44336;
+        }
+
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        /* Chart Container Styling */
+        .chart-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .chart-placeholder {
+            height: 400px;
+            background-color: #f0f0f0;
+            border: 2px dashed #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 1.2em;
+        }
+
+        /* Table Styling */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: white;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .data-table th {
+            background-color: #1976D2;
+            color: white;
+            font-weight: bold;
+        }
+
+        .data-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .data-table tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        /* Status Indicators */
+        .status-pass {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        .status-fail {
+            color: #F44336;
+            font-weight: bold;
+        }
+
+        .status-warning {
+            color: #FF9800;
+            font-weight: bold;
+        }
+
+        /* SLA Compliance Matrix */
+        .sla-matrix {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .sla-category {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .sla-category h4 {
+            color: #1976D2;
+            margin-bottom: 15px;
+        }
+
+        .sla-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .sla-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Recommendations Styling */
+        .recommendation {
+            background-color: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #2196F3;
+            border-radius: 0 5px 5px 0;
+        }
+
+        .recommendation.critical {
+            border-left-color: #F44336;
+        }
+
+        .recommendation.warning {
+            border-left-color: #FF9800;
+        }
+
+        .recommendation.info {
+            border-left-color: #2196F3;
+        }
+
+        .recommendation h4 {
+            color: #1976D2;
+            margin-bottom: 10px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            border-top: 2px solid #ddd;
+            color: #666;
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background-color: white;
+            }
+            
+            .container {
+                box-shadow: none;
+                max-width: none;
+            }
+            
+            .section {
+                page-break-inside: avoid;
+            }
+            
+            .chart-placeholder {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Report Header -->
+        <div class="header">
+            <h1>CardDemo Performance Test Report</h1>
+            <div class="subtitle">COBOL-to-Java Migration Performance Validation</div>
+            
+            <div class="test-metadata">
+                <div class="metadata-item">
+                    <span class="label">Test Date</span>
+                    <span class="value">{{TEST_DATE}}</span>
+                </div>
+                <div class="metadata-item">
+                    <span class="label">Test Duration</span>
+                    <span class="value">{{TEST_DURATION}}</span>
+                </div>
+                <div class="metadata-item">
+                    <span class="label">Environment</span>
+                    <span class="value">{{TEST_ENVIRONMENT}}</span>
+                </div>
+                <div class="metadata-item">
+                    <span class="label">Load Pattern</span>
+                    <span class="value">{{LOAD_PATTERN}}</span>
+                </div>
+                <div class="metadata-item">
+                    <span class="label">Total Requests</span>
+                    <span class="value">{{TOTAL_REQUESTS}}</span>
+                </div>
+                <div class="metadata-item">
+                    <span class="label">Test Tool</span>
+                    <span class="value">{{TEST_TOOL}}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Executive Summary -->
+        <div class="section">
+            <h2 class="section-title">Executive Summary</h2>
+            
+            <div class="summary-grid">
+                <div class="summary-card {{OVERALL_STATUS}}">
+                    <div class="metric-value">{{OVERALL_PASS_RATE}}%</div>
+                    <div class="metric-label">Overall SLA Compliance</div>
+                </div>
+                <div class="summary-card {{RESPONSE_TIME_STATUS}}">
+                    <div class="metric-value">{{P95_RESPONSE_TIME}}ms</div>
+                    <div class="metric-label">95th Percentile Response Time</div>
+                </div>
+                <div class="summary-card {{THROUGHPUT_STATUS}}">
+                    <div class="metric-value">{{MAX_THROUGHPUT}}</div>
+                    <div class="metric-label">Peak Throughput (TPS)</div>
+                </div>
+                <div class="summary-card {{ERROR_RATE_STATUS}}">
+                    <div class="metric-value">{{ERROR_RATE}}%</div>
+                    <div class="metric-label">Error Rate</div>
+                </div>
+                <div class="summary-card {{AVAILABILITY_STATUS}}">
+                    <div class="metric-value">{{AVAILABILITY}}%</div>
+                    <div class="metric-label">System Availability</div>
+                </div>
+                <div class="summary-card {{FUNCTIONAL_PARITY_STATUS}}">
+                    <div class="metric-value">{{FUNCTIONAL_PARITY}}%</div>
+                    <div class="metric-label">Functional Parity with COBOL</div>
+                </div>
+            </div>
+
+            <h3>Key Performance Findings</h3>
+            <ul>
+                <li><strong>Response Time SLA:</strong> {{RESPONSE_TIME_SUMMARY}}</li>
+                <li><strong>Throughput Capacity:</strong> {{THROUGHPUT_SUMMARY}}</li>
+                <li><strong>System Stability:</strong> {{STABILITY_SUMMARY}}</li>
+                <li><strong>COBOL Parity:</strong> {{PARITY_SUMMARY}}</li>
+            </ul>
+        </div>
+
+        <!-- Response Time Analysis -->
+        <div class="section">
+            <h2 class="section-title">Response Time Analysis</h2>
+            
+            <div class="chart-container">
+                <h3>Response Time Distribution</h3>
+                <div class="chart-placeholder" id="responseTimeChart">
+                    Response Time Percentile Chart
+                    <br><small>Data: {{RESPONSE_TIME_DATA}}</small>
+                </div>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Endpoint</th>
+                        <th>Mean (ms)</th>
+                        <th>50th %ile (ms)</th>
+                        <th>95th %ile (ms)</th>
+                        <th>99th %ile (ms)</th>
+                        <th>Max (ms)</th>
+                        <th>SLA Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>/api/auth/signin</td>
+                        <td>{{AUTH_MEAN}}</td>
+                        <td>{{AUTH_P50}}</td>
+                        <td>{{AUTH_P95}}</td>
+                        <td>{{AUTH_P99}}</td>
+                        <td>{{AUTH_MAX}}</td>
+                        <td><span class="{{AUTH_STATUS}}">{{AUTH_SLA}}</span></td>
+                    </tr>
+                    <tr>
+                        <td>/api/transactions</td>
+                        <td>{{TXN_MEAN}}</td>
+                        <td>{{TXN_P50}}</td>
+                        <td>{{TXN_P95}}</td>
+                        <td>{{TXN_P99}}</td>
+                        <td>{{TXN_MAX}}</td>
+                        <td><span class="{{TXN_STATUS}}">{{TXN_SLA}}</span></td>
+                    </tr>
+                    <tr>
+                        <td>/api/accounts</td>
+                        <td>{{ACCT_MEAN}}</td>
+                        <td>{{ACCT_P50}}</td>
+                        <td>{{ACCT_P95}}</td>
+                        <td>{{ACCT_P99}}</td>
+                        <td>{{ACCT_MAX}}</td>
+                        <td><span class="{{ACCT_STATUS}}">{{ACCT_SLA}}</span></td>
+                    </tr>
+                    <tr>
+                        <td>/api/cards</td>
+                        <td>{{CARD_MEAN}}</td>
+                        <td>{{CARD_P50}}</td>
+                        <td>{{CARD_P95}}</td>
+                        <td>{{CARD_P99}}</td>
+                        <td>{{CARD_MAX}}</td>
+                        <td><span class="{{CARD_STATUS}}">{{CARD_SLA}}</span></td>
+                    </tr>
+                    <tr>
+                        <td>/api/reports</td>
+                        <td>{{RPT_MEAN}}</td>
+                        <td>{{RPT_P50}}</td>
+                        <td>{{RPT_P95}}</td>
+                        <td>{{RPT_P99}}</td>
+                        <td>{{RPT_MAX}}</td>
+                        <td><span class="{{RPT_STATUS}}">{{RPT_SLA}}</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Response Time Target Analysis</h3>
+            <p><strong>SLA Requirement:</strong> 95% of REST API transactions must complete within 200ms</p>
+            <p><strong>Test Results:</strong> {{P95_ANALYSIS}}</p>
+        </div>
+
+        <!-- Throughput Metrics -->
+        <div class="section">
+            <h2 class="section-title">Throughput Performance</h2>
+            
+            <div class="chart-container">
+                <h3>Throughput Over Time</h3>
+                <div class="chart-placeholder" id="throughputChart">
+                    Throughput Timeline Chart (TPS)
+                    <br><small>Data: {{THROUGHPUT_DATA}}</small>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h3>Scaling Performance</h3>
+                <div class="chart-placeholder" id="scalingChart">
+                    Load vs Response Time Scatter Plot
+                    <br><small>Data: {{SCALING_DATA}}</small>
+                </div>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Load Level</th>
+                        <th>Concurrent Users</th>
+                        <th>Throughput (TPS)</th>
+                        <th>Avg Response (ms)</th>
+                        <th>95th %ile (ms)</th>
+                        <th>Error Rate (%)</th>
+                        <th>Target Met</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Baseline</td>
+                        <td>{{BASE_USERS}}</td>
+                        <td>{{BASE_TPS}}</td>
+                        <td>{{BASE_AVG}}</td>
+                        <td>{{BASE_P95}}</td>
+                        <td>{{BASE_ERR}}</td>
+                        <td><span class="{{BASE_STATUS}}">{{BASE_TARGET}}</span></td>
+                    </tr>
+                    <tr>
+                        <td>Normal Load</td>
+                        <td>{{NORM_USERS}}</td>
+                        <td>{{NORM_TPS}}</td>
+                        <td>{{NORM_AVG}}</td>
+                        <td>{{NORM_P95}}</td>
+                        <td>{{NORM_ERR}}</td>
+                        <td><span class="{{NORM_STATUS}}">{{NORM_TARGET}}</span></td>
+                    </tr>
+                    <tr>
+                        <td>Peak Load</td>
+                        <td>{{PEAK_USERS}}</td>
+                        <td>{{PEAK_TPS}}</td>
+                        <td>{{PEAK_AVG}}</td>
+                        <td>{{PEAK_P95}}</td>
+                        <td>{{PEAK_ERR}}</td>
+                        <td><span class="{{PEAK_STATUS}}">{{PEAK_TARGET}}</span></td>
+                    </tr>
+                    <tr>
+                        <td>Stress Test</td>
+                        <td>{{STRESS_USERS}}</td>
+                        <td>{{STRESS_TPS}}</td>
+                        <td>{{STRESS_AVG}}</td>
+                        <td>{{STRESS_P95}}</td>
+                        <td>{{STRESS_ERR}}</td>
+                        <td><span class="{{STRESS_STATUS}}">{{STRESS_TARGET}}</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Throughput Analysis</h3>
+            <p><strong>Target:</strong> Support 1000+ transactions per hour per service instance</p>
+            <p><strong>Results:</strong> {{THROUGHPUT_ANALYSIS}}</p>
+        </div>
+
+        <!-- Error Analysis -->
+        <div class="section">
+            <h2 class="section-title">Error Analysis</h2>
+            
+            <div class="chart-container">
+                <h3>Error Rate Distribution</h3>
+                <div class="chart-placeholder" id="errorChart">
+                    Error Rate by Endpoint Chart
+                    <br><small>Data: {{ERROR_DATA}}</small>
+                </div>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Error Type</th>
+                        <th>Count</th>
+                        <th>Percentage</th>
+                        <th>Endpoint</th>
+                        <th>Primary Cause</th>
+                        <th>Severity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>HTTP 500</td>
+                        <td>{{HTTP500_COUNT}}</td>
+                        <td>{{HTTP500_PCT}}</td>
+                        <td>{{HTTP500_ENDPOINT}}</td>
+                        <td>{{HTTP500_CAUSE}}</td>
+                        <td><span class="status-fail">Critical</span></td>
+                    </tr>
+                    <tr>
+                        <td>HTTP 400</td>
+                        <td>{{HTTP400_COUNT}}</td>
+                        <td>{{HTTP400_PCT}}</td>
+                        <td>{{HTTP400_ENDPOINT}}</td>
+                        <td>{{HTTP400_CAUSE}}</td>
+                        <td><span class="status-warning">Medium</span></td>
+                    </tr>
+                    <tr>
+                        <td>Timeout</td>
+                        <td>{{TIMEOUT_COUNT}}</td>
+                        <td>{{TIMEOUT_PCT}}</td>
+                        <td>{{TIMEOUT_ENDPOINT}}</td>
+                        <td>{{TIMEOUT_CAUSE}}</td>
+                        <td><span class="status-fail">High</span></td>
+                    </tr>
+                    <tr>
+                        <td>Connection</td>
+                        <td>{{CONN_COUNT}}</td>
+                        <td>{{CONN_PCT}}</td>
+                        <td>{{CONN_ENDPOINT}}</td>
+                        <td>{{CONN_CAUSE}}</td>
+                        <td><span class="status-fail">Critical</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Functional Differences from COBOL</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Test Scenario</th>
+                        <th>COBOL Result</th>
+                        <th>Java Result</th>
+                        <th>Difference</th>
+                        <th>Impact</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Interest Calculation</td>
+                        <td>{{COBOL_INTEREST}}</td>
+                        <td>{{JAVA_INTEREST}}</td>
+                        <td>{{INTEREST_DIFF}}</td>
+                        <td>{{INTEREST_IMPACT}}</td>
+                        <td><span class="{{INTEREST_STATUS}}">{{INTEREST_RESULT}}</span></td>
+                    </tr>
+                    <tr>
+                        <td>Balance Updates</td>
+                        <td>{{COBOL_BALANCE}}</td>
+                        <td>{{JAVA_BALANCE}}</td>
+                        <td>{{BALANCE_DIFF}}</td>
+                        <td>{{BALANCE_IMPACT}}</td>
+                        <td><span class="{{BALANCE_STATUS}}">{{BALANCE_RESULT}}</span></td>
+                    </tr>
+                    <tr>
+                        <td>Date Processing</td>
+                        <td>{{COBOL_DATE}}</td>
+                        <td>{{JAVA_DATE}}</td>
+                        <td>{{DATE_DIFF}}</td>
+                        <td>{{DATE_IMPACT}}</td>
+                        <td><span class="{{DATE_STATUS}}">{{DATE_RESULT}}</span></td>
+                    </tr>
+                    <tr>
+                        <td>Validation Rules</td>
+                        <td>{{COBOL_VALIDATION}}</td>
+                        <td>{{JAVA_VALIDATION}}</td>
+                        <td>{{VALIDATION_DIFF}}</td>
+                        <td>{{VALIDATION_IMPACT}}</td>
+                        <td><span class="{{VALIDATION_STATUS}}">{{VALIDATION_RESULT}}</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Error Rate Summary</h3>
+            <p><strong>Target:</strong> Error rate must be less than 1% of total transactions</p>
+            <p><strong>Actual Error Rate:</strong> {{ACTUAL_ERROR_RATE}}</p>
+            <p><strong>Analysis:</strong> {{ERROR_ANALYSIS}}</p>
+        </div>
+
+        <!-- Resource Utilization -->
+        <div class="section">
+            <h2 class="section-title">Resource Utilization</h2>
+            
+            <div class="chart-container">
+                <h3>System Resource Usage Over Time</h3>
+                <div class="chart-placeholder" id="resourceChart">
+                    CPU, Memory, Database Connections Timeline
+                    <br><small>Data: {{RESOURCE_DATA}}</small>
+                </div>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Resource Type</th>
+                        <th>Average</th>
+                        <th>Peak</th>
+                        <th>Target Threshold</th>
+                        <th>Alert Threshold</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>JVM CPU Usage</td>
+                        <td>{{CPU_AVG}}%</td>
+                        <td>{{CPU_PEAK}}%</td>
+                        <td>&lt; 80%</td>
+                        <td>&gt; 90%</td>
+                        <td><span class="{{CPU_STATUS}}">{{CPU_RESULT}}</span></td>
+                    </tr>
+                    <tr>
+                        <td>JVM Heap Memory</td>
+                        <td>{{HEAP_AVG}}%</td>
+                        <td>{{HEAP_PEAK}}%</td>
+                        <td>&lt; 85%</td>
+                        <td>&gt; 95%</td>
+                        <td><span class="{{HEAP_STATUS}}">{{HEAP_RESULT}}</span></td>
+                    </tr>
+                    <tr>
+                        <td>Database Connections</td>
+                        <td>{{DB_CONN_AVG}}</td>
+                        <td>{{DB_CONN_PEAK}}</td>
+                        <td>&lt; 40 (50 max)</td>
+                        <td>&gt; 45</td>
+                        <td><span class="{{DB_CONN_STATUS}}">{{DB_CONN_RESULT}}</span></td>
+                    </tr>
+                    <tr>
+                        <td>Redis Memory</td>
+                        <td>{{REDIS_AVG}}%</td>
+                        <td>{{REDIS_PEAK}}%</td>
+                        <td>&lt; 70%</td>
+                        <td>&gt; 85%</td>
+                        <td><span class="{{REDIS_STATUS}}">{{REDIS_RESULT}}</span></td>
+                    </tr>
+                    <tr>
+                        <td>Pod Replicas</td>
+                        <td>{{POD_AVG}}</td>
+                        <td>{{POD_PEAK}}</td>
+                        <td>Auto-scale</td>
+                        <td>Max 20</td>
+                        <td><span class="{{POD_STATUS}}">{{POD_RESULT}}</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Spring Batch Job Performance</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Batch Job</th>
+                        <th>Execution Time</th>
+                        <th>Records Processed</th>
+                        <th>Throughput (rec/min)</th>
+                        <th>SLA Target</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Daily Transaction Processing</td>
+                        <td>{{BATCH_TXN_TIME}}</td>
+                        <td>{{BATCH_TXN_RECORDS}}</td>
+                        <td>{{BATCH_TXN_THROUGHPUT}}</td>
+                        <td>&lt; 4 hours</td>
+                        <td><span class="{{BATCH_TXN_STATUS}}">{{BATCH_TXN_RESULT}}</span></td>
+                    </tr>
+                    <tr>
+                        <td>Interest Calculation</td>
+                        <td>{{BATCH_INT_TIME}}</td>
+                        <td>{{BATCH_INT_RECORDS}}</td>
+                        <td>{{BATCH_INT_THROUGHPUT}}</td>
+                        <td>&lt; 2 hours</td>
+                        <td><span class="{{BATCH_INT_STATUS}}">{{BATCH_INT_RESULT}}</span></td>
+                    </tr>
+                    <tr>
+                        <td>Statement Generation</td>
+                        <td>{{BATCH_STMT_TIME}}</td>
+                        <td>{{BATCH_STMT_RECORDS}}</td>
+                        <td>{{BATCH_STMT_THROUGHPUT}}</td>
+                        <td>&lt; 1 hour</td>
+                        <td><span class="{{BATCH_STMT_STATUS}}">{{BATCH_STMT_RESULT}}</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- SLA Compliance Matrix -->
+        <div class="section">
+            <h2 class="section-title">SLA Compliance Summary</h2>
+            
+            <div class="sla-matrix">
+                <div class="sla-category">
+                    <h4>Interactive Transactions</h4>
+                    <div class="sla-item">
+                        <span>Response Time (95th %ile)</span>
+                        <span class="{{RT_SLA_STATUS}}">{{RT_SLA_VALUE}} / 200ms</span>
+                    </div>
+                    <div class="sla-item">
+                        <span>Availability</span>
+                        <span class="{{AVAIL_SLA_STATUS}}">{{AVAIL_SLA_VALUE}} / 99.9%</span>
+                    </div>
+                    <div class="sla-item">
+                        <span>Throughput</span>
+                        <span class="{{THRU_SLA_STATUS}}">{{THRU_SLA_VALUE}} / 1000+ TPS</span>
+                    </div>
+                    <div class="sla-item">
+                        <span>Error Rate</span>
+                        <span class="{{ERR_SLA_STATUS}}">{{ERR_SLA_VALUE}} / &lt;1%</span>
+                    </div>
+                </div>
+
+                <div class="sla-category">
+                    <h4>Batch Processing</h4>
+                    <div class="sla-item">
+                        <span>Processing Window</span>
+                        <span class="{{BATCH_WIN_STATUS}}">{{BATCH_WIN_VALUE}} / 4 hours</span>
+                    </div>
+                    <div class="sla-item">
+                        <span>Job Success Rate</span>
+                        <span class="{{BATCH_SUCC_STATUS}}">{{BATCH_SUCC_VALUE}} / 100%</span>
+                    </div>
+                    <div class="sla-item">
+                        <span>Data Accuracy</span>
+                        <span class="{{DATA_ACC_STATUS}}">{{DATA_ACC_VALUE}} / 100%</span>
+                    </div>
+                </div>
+
+                <div class="sla-category">
+                    <h4>System Resources</h4>
+                    <div class="sla-item">
+                        <span>CPU Utilization</span>
+                        <span class="{{CPU_SLA_STATUS}}">{{CPU_SLA_VALUE}} / &lt;80%</span>
+                    </div>
+                    <div class="sla-item">
+                        <span>Memory Usage</span>
+                        <span class="{{MEM_SLA_STATUS}}">{{MEM_SLA_VALUE}} / &lt;85%</span>
+                    </div>
+                    <div class="sla-item">
+                        <span>Recovery Time</span>
+                        <span class="{{RTO_SLA_STATUS}}">{{RTO_SLA_VALUE}} / 15 min</span>
+                    </div>
+                </div>
+
+                <div class="sla-category">
+                    <h4>Functional Parity</h4>
+                    <div class="sla-item">
+                        <span>Financial Calculations</span>
+                        <span class="{{FIN_CALC_STATUS}}">{{FIN_CALC_VALUE}} / 100%</span>
+                    </div>
+                    <div class="sla-item">
+                        <span>Business Logic</span>
+                        <span class="{{BIZ_LOGIC_STATUS}}">{{BIZ_LOGIC_VALUE}} / 100%</span>
+                    </div>
+                    <div class="sla-item">
+                        <span>Data Integrity</span>
+                        <span class="{{DATA_INT_STATUS}}">{{DATA_INT_VALUE}} / 100%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="section">
+            <h2 class="section-title">Performance Recommendations</h2>
+            
+            <div class="recommendation critical">
+                <h4>Critical Issues</h4>
+                <p>{{CRITICAL_RECOMMENDATIONS}}</p>
+            </div>
+
+            <div class="recommendation warning">
+                <h4>Performance Optimizations</h4>
+                <p>{{PERFORMANCE_RECOMMENDATIONS}}</p>
+            </div>
+
+            <div class="recommendation info">
+                <h4>Capacity Planning</h4>
+                <p>{{CAPACITY_RECOMMENDATIONS}}</p>
+            </div>
+
+            <div class="recommendation info">
+                <h4>Monitoring Enhancements</h4>
+                <p>{{MONITORING_RECOMMENDATIONS}}</p>
+            </div>
+
+            <h3>Next Steps</h3>
+            <ol>
+                <li>{{NEXT_STEP_1}}</li>
+                <li>{{NEXT_STEP_2}}</li>
+                <li>{{NEXT_STEP_3}}</li>
+                <li>{{NEXT_STEP_4}}</li>
+                <li>{{NEXT_STEP_5}}</li>
+            </ol>
+        </div>
+
+        <!-- Appendix -->
+        <div class="section">
+            <h2 class="section-title">Test Configuration Details</h2>
+            
+            <h3>Test Environment</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Component</th>
+                        <th>Configuration</th>
+                        <th>Version</th>
+                        <th>Resources</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Spring Boot Application</td>
+                        <td>{{APP_CONFIG}}</td>
+                        <td>{{APP_VERSION}}</td>
+                        <td>{{APP_RESOURCES}}</td>
+                    </tr>
+                    <tr>
+                        <td>PostgreSQL Database</td>
+                        <td>{{DB_CONFIG}}</td>
+                        <td>{{DB_VERSION}}</td>
+                        <td>{{DB_RESOURCES}}</td>
+                    </tr>
+                    <tr>
+                        <td>Redis Session Store</td>
+                        <td>{{REDIS_CONFIG}}</td>
+                        <td>{{REDIS_VERSION}}</td>
+                        <td>{{REDIS_RESOURCES}}</td>
+                    </tr>
+                    <tr>
+                        <td>Kubernetes Cluster</td>
+                        <td>{{K8S_CONFIG}}</td>
+                        <td>{{K8S_VERSION}}</td>
+                        <td>{{K8S_RESOURCES}}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Test Parameters</h3>
+            <ul>
+                <li><strong>Load Pattern:</strong> {{LOAD_PATTERN_DETAILS}}</li>
+                <li><strong>Ramp-up Strategy:</strong> {{RAMPUP_STRATEGY}}</li>
+                <li><strong>Think Time:</strong> {{THINK_TIME}}</li>
+                <li><strong>Test Data:</strong> {{TEST_DATA_DETAILS}}</li>
+                <li><strong>Monitoring Tools:</strong> {{MONITORING_TOOLS}}</li>
+            </ul>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Generated by CardDemo Performance Test Suite | {{GENERATION_TIME}}</p>
+            <p>Spring Boot Actuator + Prometheus + Grafana Monitoring Stack</p>
+            <p>Report Version: {{REPORT_VERSION}} | Test Framework: {{TEST_FRAMEWORK}}</p>
+        </div>
+    </div>
+
+    <!-- JavaScript placeholder for interactive charts -->
+    <script>
+        // Placeholder for chart rendering JavaScript
+        // Integrate with Chart.js, D3.js, or other visualization libraries
+        
+        console.log('Performance Report Template Loaded');
+        console.log('Chart data placeholders ready for integration');
+        
+        // Example chart configuration placeholders
+        const chartConfigs = {
+            responseTime: {
+                data: '{{RESPONSE_TIME_CHART_DATA}}',
+                target: '200ms (95th percentile)'
+            },
+            throughput: {
+                data: '{{THROUGHPUT_CHART_DATA}}',
+                target: '1000+ TPS'
+            },
+            errors: {
+                data: '{{ERROR_CHART_DATA}}',
+                target: '<1% error rate'
+            },
+            resources: {
+                data: '{{RESOURCE_CHART_DATA}}',
+                thresholds: {
+                    cpu: 80,
+                    memory: 85,
+                    connections: 45
+                }
+            }
+        };
+        
+        // Print-friendly chart rendering
+        window.addEventListener('beforeprint', function() {
+            console.log('Preparing charts for printing...');
+        });
+        
+        // Export functionality placeholder
+        function exportToPDF() {
+            console.log('PDF export functionality placeholder');
+        }
+        
+        function exportToExcel() {
+            console.log('Excel export functionality placeholder');
+        }
+    </script>
+</body>
+</html>
