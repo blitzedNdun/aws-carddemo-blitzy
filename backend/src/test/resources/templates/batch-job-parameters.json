@@ -1,0 +1,790 @@
+{
+  "batchJobParametersTemplate": {
+    "description": "Spring Batch job parameter templates for all 12 CardDemo batch jobs migrated from JCL",
+    "version": "1.0",
+    "lastUpdated": "2024-01-01",
+    "commonParameters": {
+      "businessDate": {
+        "type": "date",
+        "format": "yyyy-MM-dd",
+        "description": "Processing business date",
+        "example": "2024-01-15",
+        "required": true
+      },
+      "processingMode": {
+        "type": "string",
+        "allowedValues": ["NORMAL", "RESTART", "TEST"],
+        "description": "Batch job execution mode",
+        "example": "NORMAL",
+        "required": true
+      },
+      "chunkSize": {
+        "type": "integer",
+        "description": "Number of records processed per chunk",
+        "defaultValue": 1000,
+        "minValue": 100,
+        "maxValue": 10000,
+        "required": false
+      },
+      "skipLimit": {
+        "type": "integer",
+        "description": "Maximum number of skippable errors",
+        "defaultValue": 10,
+        "minValue": 0,
+        "maxValue": 1000,
+        "required": false
+      },
+      "restartPosition": {
+        "type": "long",
+        "description": "Record position for job restart",
+        "defaultValue": 0,
+        "required": false
+      },
+      "inputDirectory": {
+        "type": "string",
+        "description": "Input file directory path",
+        "example": "/data/input",
+        "required": true
+      },
+      "outputDirectory": {
+        "type": "string",
+        "description": "Output file directory path", 
+        "example": "/data/output",
+        "required": true
+      },
+      "workDirectory": {
+        "type": "string",
+        "description": "Temporary work directory path",
+        "example": "/data/work",
+        "required": false
+      }
+    },
+    "batchJobs": {
+      "CBTRN01C": {
+        "jobName": "DailyTransactionPostingJob",
+        "description": "Daily transaction posting and validation job",
+        "jclEquivalent": "CBTRN01J.jcl",
+        "executionWindow": "02:00-04:00",
+        "parameters": {
+          "businessDate": "${commonParameters.businessDate}",
+          "processingMode": "${commonParameters.processingMode}",
+          "transactionInputFile": {
+            "type": "string",
+            "description": "Daily transaction input file path",
+            "example": "dailytran_${businessDate}.txt",
+            "required": true
+          },
+          "transactionOutputFile": {
+            "type": "string", 
+            "description": "Processed transaction output file path",
+            "example": "processed_trans_${businessDate}.txt",
+            "required": true
+          },
+          "errorFile": {
+            "type": "string",
+            "description": "Transaction error file path",
+            "example": "trans_errors_${businessDate}.txt",
+            "required": true
+          },
+          "chunkSize": {
+            "type": "integer",
+            "defaultValue": 1000,
+            "description": "Transaction processing chunk size"
+          },
+          "skipLimit": {
+            "type": "integer", 
+            "defaultValue": 50,
+            "description": "Maximum transaction processing errors allowed"
+          },
+          "restartPosition": "${commonParameters.restartPosition}",
+          "cutoffTime": {
+            "type": "string",
+            "format": "HH:mm:ss",
+            "description": "Transaction cutoff time",
+            "example": "23:59:59",
+            "required": true
+          },
+          "batchWindow": {
+            "type": "integer",
+            "description": "Processing window in hours",
+            "defaultValue": 4,
+            "required": true
+          }
+        }
+      },
+      "CBTRN02C": {
+        "jobName": "TransactionCategorizationJob",
+        "description": "Transaction categorization and balance update job",
+        "jclEquivalent": "CBTRN02J.jcl", 
+        "executionWindow": "03:00-05:00",
+        "parameters": {
+          "businessDate": "${commonParameters.businessDate}",
+          "processingMode": "${commonParameters.processingMode}",
+          "uncategorizedTransFile": {
+            "type": "string",
+            "description": "Uncategorized transactions input file",
+            "example": "uncat_trans_${businessDate}.txt",
+            "required": true
+          },
+          "categorizedTransFile": {
+            "type": "string",
+            "description": "Categorized transactions output file", 
+            "example": "cat_trans_${businessDate}.txt",
+            "required": true
+          },
+          "categoryRulesFile": {
+            "type": "string",
+            "description": "Transaction categorization rules file",
+            "example": "category_rules.txt",
+            "required": true
+          },
+          "chunkSize": {
+            "type": "integer",
+            "defaultValue": 2000,
+            "description": "Categorization processing chunk size"
+          },
+          "skipLimit": {
+            "type": "integer",
+            "defaultValue": 25,
+            "description": "Maximum categorization errors allowed"
+          },
+          "restartPosition": "${commonParameters.restartPosition}",
+          "categoryUpdateMode": {
+            "type": "string",
+            "allowedValues": ["UPDATE", "APPEND", "REPLACE"],
+            "description": "Category balance update mode",
+            "defaultValue": "UPDATE",
+            "required": true
+          }
+        }
+      },
+      "CBTRN03C": {
+        "jobName": "TransactionReportGenerationJob",
+        "description": "Daily transaction reporting and reconciliation job",
+        "jclEquivalent": "CBTRN03J.jcl",
+        "executionWindow": "05:00-06:00", 
+        "parameters": {
+          "businessDate": "${commonParameters.businessDate}",
+          "processingMode": "${commonParameters.processingMode}",
+          "transactionDataFile": {
+            "type": "string",
+            "description": "Transaction data input file",
+            "example": "trans_data_${businessDate}.txt",
+            "required": true
+          },
+          "dailyReportFile": {
+            "type": "string",
+            "description": "Daily transaction report output file",
+            "example": "daily_trans_report_${businessDate}.txt",
+            "required": true
+          },
+          "summaryReportFile": {
+            "type": "string", 
+            "description": "Transaction summary report output file",
+            "example": "trans_summary_${businessDate}.txt", 
+            "required": true
+          },
+          "reconciliationFile": {
+            "type": "string",
+            "description": "Reconciliation report output file",
+            "example": "reconciliation_${businessDate}.txt",
+            "required": true
+          },
+          "chunkSize": {
+            "type": "integer",
+            "defaultValue": 5000,
+            "description": "Report generation chunk size"
+          },
+          "reportDateRange": {
+            "type": "integer",
+            "description": "Number of days for report data range",
+            "defaultValue": 1,
+            "minValue": 1,
+            "maxValue": 31,
+            "required": true
+          },
+          "restartPosition": "${commonParameters.restartPosition}"
+        }
+      },
+      "CBACT01C": {
+        "jobName": "AccountValidationJob",
+        "description": "Daily account validation and status update job",
+        "jclEquivalent": "CBACT01J.jcl",
+        "executionWindow": "01:00-02:00",
+        "parameters": {
+          "businessDate": "${commonParameters.businessDate}",
+          "processingMode": "${commonParameters.processingMode}",
+          "accountDataFile": {
+            "type": "string",
+            "description": "Account data input file",
+            "example": "acctdata_${businessDate}.txt",
+            "required": true
+          },
+          "validatedAccountFile": {
+            "type": "string",
+            "description": "Validated account data output file",
+            "example": "validated_acct_${businessDate}.txt",
+            "required": true
+          },
+          "invalidAccountFile": {
+            "type": "string",
+            "description": "Invalid account data output file",
+            "example": "invalid_acct_${businessDate}.txt",
+            "required": true
+          },
+          "chunkSize": {
+            "type": "integer",
+            "defaultValue": 1500,
+            "description": "Account validation chunk size"
+          },
+          "skipLimit": {
+            "type": "integer",
+            "defaultValue": 100,
+            "description": "Maximum account validation errors allowed"
+          },
+          "restartPosition": "${commonParameters.restartPosition}",
+          "validationRules": {
+            "type": "string",
+            "description": "Account validation rules configuration",
+            "example": "account_validation_rules.properties",
+            "required": true
+          },
+          "statusUpdateMode": {
+            "type": "string", 
+            "allowedValues": ["IMMEDIATE", "BATCH", "DEFERRED"],
+            "description": "Account status update processing mode",
+            "defaultValue": "BATCH",
+            "required": true
+          }
+        }
+      },
+      "CBACT02C": {
+        "jobName": "AccountBalanceUpdateJob", 
+        "description": "Account balance calculation and update job",
+        "jclEquivalent": "CBACT02J.jcl",
+        "executionWindow": "02:30-04:30",
+        "parameters": {
+          "businessDate": "${commonParameters.businessDate}",
+          "processingMode": "${commonParameters.processingMode}",
+          "transactionFile": {
+            "type": "string",
+            "description": "Transaction data for balance calculation",
+            "example": "trans_for_balance_${businessDate}.txt",
+            "required": true
+          },
+          "currentBalanceFile": {
+            "type": "string",
+            "description": "Current account balance input file",
+            "example": "current_balance_${businessDate}.txt", 
+            "required": true
+          },
+          "updatedBalanceFile": {
+            "type": "string",
+            "description": "Updated account balance output file",
+            "example": "updated_balance_${businessDate}.txt",
+            "required": true
+          },
+          "balanceAuditFile": {
+            "type": "string",
+            "description": "Balance change audit file",
+            "example": "balance_audit_${businessDate}.txt",
+            "required": true
+          },
+          "chunkSize": {
+            "type": "integer",
+            "defaultValue": 1000,
+            "description": "Balance update chunk size"
+          },
+          "skipLimit": {
+            "type": "integer",
+            "defaultValue": 10,
+            "description": "Maximum balance calculation errors allowed"
+          },
+          "restartPosition": "${commonParameters.restartPosition}",
+          "precisionScale": {
+            "type": "integer",
+            "description": "BigDecimal precision scale for monetary calculations",
+            "defaultValue": 2,
+            "required": true
+          },
+          "roundingMode": {
+            "type": "string",
+            "allowedValues": ["HALF_UP", "HALF_DOWN", "HALF_EVEN"],
+            "description": "Rounding mode for monetary calculations",
+            "defaultValue": "HALF_UP",
+            "required": true
+          }
+        }
+      },
+      "CBACT03C": {
+        "jobName": "AccountMaintenanceJob",
+        "description": "Account maintenance and cleanup job",
+        "jclEquivalent": "CBACT03J.jcl", 
+        "executionWindow": "04:00-06:00",
+        "parameters": {
+          "businessDate": "${commonParameters.businessDate}",
+          "processingMode": "${commonParameters.processingMode}",
+          "accountMaintenanceFile": {
+            "type": "string",
+            "description": "Account maintenance input file",
+            "example": "acct_maint_${businessDate}.txt",
+            "required": true
+          },
+          "processedMaintenanceFile": {
+            "type": "string",
+            "description": "Processed maintenance output file",
+            "example": "processed_maint_${businessDate}.txt",
+            "required": true
+          },
+          "maintenanceErrorFile": {
+            "type": "string",
+            "description": "Maintenance error output file", 
+            "example": "maint_errors_${businessDate}.txt",
+            "required": true
+          },
+          "chunkSize": {
+            "type": "integer",
+            "defaultValue": 800,
+            "description": "Maintenance processing chunk size"
+          },
+          "skipLimit": {
+            "type": "integer",
+            "defaultValue": 20,
+            "description": "Maximum maintenance errors allowed"
+          },
+          "restartPosition": "${commonParameters.restartPosition}",
+          "maintenanceActions": {
+            "type": "array",
+            "description": "Allowed maintenance actions",
+            "allowedValues": ["CLOSE", "SUSPEND", "REACTIVATE", "UPDATE_LIMITS"],
+            "example": ["CLOSE", "SUSPEND"],
+            "required": true
+          },
+          "approvalRequired": {
+            "type": "boolean",
+            "description": "Whether maintenance actions require approval",
+            "defaultValue": true,
+            "required": false
+          }
+        }
+      },
+      "CBACT04C": {
+        "jobName": "InterestCalculationJob",
+        "description": "Interest calculation and posting job",
+        "jclEquivalent": "CBACT04J.jcl",
+        "executionWindow": "06:00-07:00",
+        "parameters": {
+          "businessDate": "${commonParameters.businessDate}",
+          "processingMode": "${commonParameters.processingMode}",
+          "accountBalanceFile": {
+            "type": "string",
+            "description": "Account balance input file for interest calculation",
+            "example": "balance_for_interest_${businessDate}.txt",
+            "required": true
+          },
+          "interestRateFile": {
+            "type": "string",
+            "description": "Interest rate configuration file",
+            "example": "interest_rates_${businessDate}.txt",
+            "required": true
+          },
+          "calculatedInterestFile": {
+            "type": "string",
+            "description": "Calculated interest output file",
+            "example": "calculated_interest_${businessDate}.txt",
+            "required": true
+          },
+          "interestPostingFile": {
+            "type": "string",
+            "description": "Interest posting transactions file",
+            "example": "interest_posting_${businessDate}.txt",
+            "required": true
+          },
+          "chunkSize": {
+            "type": "integer",
+            "defaultValue": 2000,
+            "description": "Interest calculation chunk size"
+          },
+          "skipLimit": {
+            "type": "integer",
+            "defaultValue": 5,
+            "description": "Maximum interest calculation errors allowed"
+          },
+          "restartPosition": "${commonParameters.restartPosition}",
+          "interestCalculationMethod": {
+            "type": "string",
+            "allowedValues": ["DAILY", "AVERAGE_DAILY", "COMPOUND"],
+            "description": "Interest calculation method",
+            "defaultValue": "AVERAGE_DAILY",
+            "required": true
+          },
+          "minimumBalance": {
+            "type": "number",
+            "description": "Minimum balance for interest calculation",
+            "defaultValue": 0.01,
+            "required": true
+          },
+          "precisionScale": {
+            "type": "integer",
+            "description": "BigDecimal precision scale for interest calculations",
+            "defaultValue": 4,
+            "required": true
+          }
+        }
+      },
+      "CBSTM03A": {
+        "jobName": "StatementGenerationJob",
+        "description": "Monthly statement generation job - Part A",
+        "jclEquivalent": "CBSTM03AJ.jcl",
+        "executionWindow": "01:00-03:00",
+        "parameters": {
+          "businessDate": "${commonParameters.businessDate}",
+          "processingMode": "${commonParameters.processingMode}",
+          "accountDataFile": {
+            "type": "string",
+            "description": "Account data for statement generation",
+            "example": "stmt_acct_data_${businessDate}.txt",
+            "required": true
+          },
+          "transactionDataFile": {
+            "type": "string",
+            "description": "Transaction data for statement period",
+            "example": "stmt_trans_data_${businessDate}.txt",
+            "required": true
+          },
+          "generatedStatementsFile": {
+            "type": "string",
+            "description": "Generated statements output file",
+            "example": "statements_${businessDate}.txt",
+            "required": true
+          },
+          "statementErrorFile": {
+            "type": "string",
+            "description": "Statement generation error file",
+            "example": "stmt_errors_${businessDate}.txt",
+            "required": true
+          },
+          "chunkSize": {
+            "type": "integer",
+            "defaultValue": 500,
+            "description": "Statement generation chunk size"
+          },
+          "skipLimit": {
+            "type": "integer",
+            "defaultValue": 25,
+            "description": "Maximum statement generation errors allowed"
+          },
+          "restartPosition": "${commonParameters.restartPosition}",
+          "statementPeriod": {
+            "type": "string",
+            "description": "Statement period (YYYYMM format)",
+            "format": "YYYYMM", 
+            "example": "202401",
+            "required": true
+          },
+          "statementFormat": {
+            "type": "string",
+            "allowedValues": ["STANDARD", "PREMIUM", "ELECTRONIC"],
+            "description": "Statement format type",
+            "defaultValue": "STANDARD",
+            "required": true
+          },
+          "includePromoOffers": {
+            "type": "boolean",
+            "description": "Include promotional offers in statements",
+            "defaultValue": true,
+            "required": false
+          }
+        }
+      },
+      "CBSTM03B": {
+        "jobName": "StatementDistributionJob",
+        "description": "Monthly statement distribution job - Part B",
+        "jclEquivalent": "CBSTM03BJ.jcl",
+        "executionWindow": "03:00-04:00",
+        "parameters": {
+          "businessDate": "${commonParameters.businessDate}",
+          "processingMode": "${commonParameters.processingMode}",
+          "generatedStatementsFile": {
+            "type": "string",
+            "description": "Generated statements input file from Part A",
+            "example": "statements_${businessDate}.txt",
+            "required": true
+          },
+          "customerPreferencesFile": {
+            "type": "string",
+            "description": "Customer delivery preferences file",
+            "example": "customer_prefs_${businessDate}.txt",
+            "required": true
+          },
+          "distributedStatementsFile": {
+            "type": "string",
+            "description": "Statement distribution tracking file",
+            "example": "distributed_stmts_${businessDate}.txt",
+            "required": true
+          },
+          "distributionErrorFile": {
+            "type": "string",
+            "description": "Statement distribution error file",
+            "example": "dist_errors_${businessDate}.txt",
+            "required": true
+          },
+          "chunkSize": {
+            "type": "integer",
+            "defaultValue": 1000,
+            "description": "Statement distribution chunk size"
+          },
+          "skipLimit": {
+            "type": "integer",
+            "defaultValue": 50,
+            "description": "Maximum distribution errors allowed"
+          },
+          "restartPosition": "${commonParameters.restartPosition}",
+          "deliveryMethods": {
+            "type": "array",
+            "description": "Supported delivery methods",
+            "allowedValues": ["EMAIL", "POSTAL", "ONLINE"],
+            "example": ["EMAIL", "POSTAL"],
+            "required": true
+          },
+          "retryAttempts": {
+            "type": "integer",
+            "description": "Number of delivery retry attempts",
+            "defaultValue": 3,
+            "minValue": 1,
+            "maxValue": 5,
+            "required": true
+          }
+        }
+      },
+      "CBCUS01C": {
+        "jobName": "CustomerDataSynchronizationJob",
+        "description": "Customer data synchronization and validation job",
+        "jclEquivalent": "CBCUS01J.jcl",
+        "executionWindow": "00:30-01:30",
+        "parameters": {
+          "businessDate": "${commonParameters.businessDate}",
+          "processingMode": "${commonParameters.processingMode}",
+          "customerUpdateFile": {
+            "type": "string",
+            "description": "Customer update input file",
+            "example": "customer_updates_${businessDate}.txt",
+            "required": true
+          },
+          "masterCustomerFile": {
+            "type": "string",
+            "description": "Master customer data file",
+            "example": "master_customer_${businessDate}.txt",
+            "required": true
+          },
+          "synchronizedCustomerFile": {
+            "type": "string",
+            "description": "Synchronized customer data output file",
+            "example": "sync_customer_${businessDate}.txt",
+            "required": true
+          },
+          "customerConflictFile": {
+            "type": "string",
+            "description": "Customer data conflict resolution file",
+            "example": "customer_conflicts_${businessDate}.txt",
+            "required": true
+          },
+          "chunkSize": {
+            "type": "integer",
+            "defaultValue": 1200,
+            "description": "Customer synchronization chunk size"
+          },
+          "skipLimit": {
+            "type": "integer",
+            "defaultValue": 30,
+            "description": "Maximum synchronization errors allowed"
+          },
+          "restartPosition": "${commonParameters.restartPosition}",
+          "conflictResolutionMode": {
+            "type": "string",
+            "allowedValues": ["LATEST_WINS", "MASTER_WINS", "MANUAL_REVIEW"],
+            "description": "Data conflict resolution strategy",
+            "defaultValue": "LATEST_WINS",
+            "required": true
+          },
+          "dataQualityChecks": {
+            "type": "boolean",
+            "description": "Enable data quality validation checks",
+            "defaultValue": true,
+            "required": false
+          }
+        }
+      },
+      "CBREC01C": {
+        "jobName": "DataReconciliationJob",
+        "description": "End-of-day data reconciliation and validation job",
+        "jclEquivalent": "CBREC01J.jcl",
+        "executionWindow": "07:00-08:00",
+        "parameters": {
+          "businessDate": "${commonParameters.businessDate}",
+          "processingMode": "${commonParameters.processingMode}",
+          "sourceDataFiles": {
+            "type": "array",
+            "description": "Source data files for reconciliation",
+            "example": ["accounts_${businessDate}.txt", "transactions_${businessDate}.txt"],
+            "required": true
+          },
+          "reconciliationReportFile": {
+            "type": "string",
+            "description": "Reconciliation report output file",
+            "example": "reconciliation_report_${businessDate}.txt",
+            "required": true
+          },
+          "discrepancyFile": {
+            "type": "string",
+            "description": "Data discrepancy output file",
+            "example": "discrepancies_${businessDate}.txt",
+            "required": true
+          },
+          "chunkSize": {
+            "type": "integer",
+            "defaultValue": 3000,
+            "description": "Reconciliation processing chunk size"
+          },
+          "toleranceThreshold": {
+            "type": "number",
+            "description": "Acceptable variance threshold for reconciliation",
+            "defaultValue": 0.01,
+            "required": true
+          },
+          "restartPosition": "${commonParameters.restartPosition}",
+          "reconciliationRules": {
+            "type": "string",
+            "description": "Reconciliation rules configuration file",
+            "example": "reconciliation_rules.properties",
+            "required": true
+          },
+          "alertOnDiscrepancy": {
+            "type": "boolean",
+            "description": "Generate alerts for data discrepancies",
+            "defaultValue": true,
+            "required": false
+          }
+        }
+      },
+      "CBARCH01C": {
+        "jobName": "DataArchivalJob",
+        "description": "Data archival and purge job for aged records",
+        "jclEquivalent": "CBARCH01J.jcl",
+        "executionWindow": "08:00-10:00",
+        "parameters": {
+          "businessDate": "${commonParameters.businessDate}",
+          "processingMode": "${commonParameters.processingMode}",
+          "archivalInputFile": {
+            "type": "string",
+            "description": "Data to be archived input file",
+            "example": "archival_candidates_${businessDate}.txt",
+            "required": true
+          },
+          "archivedDataFile": {
+            "type": "string",
+            "description": "Archived data output file",
+            "example": "archived_data_${businessDate}.txt",
+            "required": true
+          },
+          "archivalLogFile": {
+            "type": "string",
+            "description": "Archival process log file",
+            "example": "archival_log_${businessDate}.txt",
+            "required": true
+          },
+          "chunkSize": {
+            "type": "integer",
+            "defaultValue": 5000,
+            "description": "Archival processing chunk size"
+          },
+          "skipLimit": {
+            "type": "integer",
+            "defaultValue": 100,
+            "description": "Maximum archival errors allowed"
+          },
+          "restartPosition": "${commonParameters.restartPosition}",
+          "retentionPeriodDays": {
+            "type": "integer",
+            "description": "Data retention period in days",
+            "defaultValue": 2555,
+            "minValue": 365,
+            "maxValue": 3650,
+            "required": true
+          },
+          "archivalStrategy": {
+            "type": "string",
+            "allowedValues": ["MOVE", "COPY", "COMPRESS"],
+            "description": "Data archival strategy",
+            "defaultValue": "MOVE",
+            "required": true
+          },
+          "compressionEnabled": {
+            "type": "boolean",
+            "description": "Enable data compression for archived files",
+            "defaultValue": true,
+            "required": false
+          }
+        }
+      }
+    },
+    "globalConfiguration": {
+      "springBatchConfiguration": {
+        "jobRepository": {
+          "type": "database",
+          "isolationLevel": "READ_COMMITTED",
+          "tablePrefix": "BATCH_"
+        },
+        "transactionManager": {
+          "type": "JpaTransactionManager",
+          "timeout": 3600
+        },
+        "taskExecutor": {
+          "type": "ThreadPoolTaskExecutor",
+          "corePoolSize": 4,
+          "maxPoolSize": 8,
+          "queueCapacity": 100
+        }
+      },
+      "monitoringAndAlerting": {
+        "metricsEnabled": true,
+        "alertingEnabled": true,
+        "healthCheckInterval": 60,
+        "performanceThresholds": {
+          "maxExecutionTimeHours": 4,
+          "minThroughputRecordsPerSecond": 100,
+          "maxErrorRatePercent": 5
+        }
+      },
+      "securityConfiguration": {
+        "encryptionEnabled": true,
+        "auditLoggingEnabled": true,
+        "accessControlRequired": true
+      }
+    },
+    "scheduleConfiguration": {
+      "cronExpressions": {
+        "CBCUS01C": "0 30 0 * * ?",
+        "CBACT01C": "0 0 1 * * ?", 
+        "CBTRN01C": "0 0 2 * * ?",
+        "CBACT02C": "0 30 2 * * ?",
+        "CBTRN02C": "0 0 3 * * ?",
+        "CBSTM03A": "0 0 1 1 * ?",
+        "CBSTM03B": "0 0 3 1 * ?",
+        "CBACT03C": "0 0 4 * * ?",
+        "CBTRN03C": "0 0 5 * * ?",
+        "CBACT04C": "0 0 6 * * ?",
+        "CBREC01C": "0 0 7 * * ?",
+        "CBARCH01C": "0 0 8 * * SUN"
+      },
+      "jobDependencies": {
+        "CBACT02C": ["CBTRN01C"],
+        "CBTRN02C": ["CBACT02C"],
+        "CBTRN03C": ["CBTRN02C"],
+        "CBACT04C": ["CBACT03C"],
+        "CBREC01C": ["CBACT04C"],
+        "CBSTM03B": ["CBSTM03A"]
+      }
+    }
+  }
+}
