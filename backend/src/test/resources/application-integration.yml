@@ -1,0 +1,345 @@
+# ================================================================
+# CARDDEMO INTEGRATION TEST CONFIGURATION
+# ================================================================
+# Spring Boot configuration for integration tests with Testcontainers 
+# PostgreSQL and Redis settings, realistic transaction timeouts, and 
+# external service mock endpoints for end-to-end testing.
+#
+# This configuration supports the COBOL-to-Java migration by providing
+# identical behavior to CICS/VSAM systems through containerized testing.
+# ================================================================
+
+# ================================================================
+# SPRING BOOT CORE CONFIGURATION
+# ================================================================
+spring:
+  application:
+    name: carddemo-integration-tests
+    
+  profiles:
+    active: integration-test
+    
+  # ================================================================
+  # TESTCONTAINERS POSTGRESQL CONFIGURATION
+  # ================================================================
+  # PostgreSQL connection properties for Testcontainers-managed database
+  # Replaces VSAM KSDS datasets with PostgreSQL tables maintaining
+  # identical data access patterns and transaction boundaries
+  datasource:
+    # Testcontainers will override these values with container-specific settings
+    url: jdbc:postgresql://localhost:5432/carddemo_test
+    username: testuser
+    password: testpass
+    driver-class-name: org.postgresql.Driver
+    
+    # HikariCP connection pool configuration for integration testing
+    hikari:
+      # Reduced pool size for test environment resource optimization
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 300000
+      max-lifetime: 900000
+      # Enable connection leak detection for test debugging
+      leak-detection-threshold: 60000
+      pool-name: HikariCP-IntegrationTest
+      
+  # ================================================================
+  # JPA/HIBERNATE CONFIGURATION
+  # ================================================================
+  # JPA configuration for PostgreSQL schema management and entity mapping
+  jpa:
+    # Create tables automatically for integration tests
+    hibernate:
+      ddl-auto: create-drop
+      
+    properties:
+      hibernate:
+        # PostgreSQL-specific dialect for VSAM equivalent operations
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        # Enhanced logging for integration test debugging
+        show_sql: false
+        format_sql: true
+        use_sql_comments: true
+        # Batch processing optimization for test data loading
+        jdbc:
+          batch_size: 25
+          batch_versioned_data: true
+        # Order inserts/updates for referential integrity
+        order_inserts: true
+        order_updates: true
+        
+    # Show SQL statements in integration test logs
+    show-sql: false
+    
+  # ================================================================
+  # REDIS SESSION MANAGEMENT CONFIGURATION
+  # ================================================================  
+  # Redis container configuration for session state testing
+  # Replaces CICS COMMAREA structures with distributed session storage
+  data:
+    redis:
+      # Testcontainers will override these values with container-specific settings
+      host: localhost
+      port: 6379
+      password: testredispass
+      timeout: 5000ms
+      database: 0
+      
+      # Connection pool configuration for test environment
+      lettuce:
+        pool:
+          max-active: 5
+          max-idle: 3
+          min-idle: 1
+          max-wait: 30000ms
+          
+  # ================================================================
+  # SPRING SESSION CONFIGURATION
+  # ================================================================
+  session:
+    store-type: redis
+    redis:
+      # Session timeout matching CICS terminal timeout behavior
+      timeout: 30m
+      # Redis namespace for session isolation in tests
+      namespace: carddemo:integration:session
+      # Cleanup expired sessions immediately in test environment
+      cleanup-cron: 0 * * * * *
+      
+  # ================================================================
+  # SPRING BATCH CONFIGURATION
+  # ================================================================
+  # Batch processing configuration for testing ETL operations
+  batch:
+    job:
+      # Disable automatic job execution in integration tests
+      enabled: false
+    jdbc:
+      # Use PostgreSQL for Spring Batch metadata tables
+      initialize-schema: always
+      
+  # ================================================================
+  # TRANSACTION MANAGEMENT CONFIGURATION
+  # ================================================================
+  # Transaction configuration matching CICS SYNCPOINT behavior
+  transaction:
+    default-timeout: 1800  # 30 minutes - matches CICS transaction timeout
+    rollback-on-commit-failure: true
+    
+# ================================================================
+# TESTCONTAINERS CONFIGURATION
+# ================================================================
+# Configuration for containerized test dependencies
+testcontainers:
+  # Reuse containers across test methods for performance
+  reuse:
+    enable: true
+    
+  # PostgreSQL container configuration
+  postgresql:
+    image: postgres:15.4-alpine
+    database: carddemo_test
+    username: testuser
+    password: testpass
+    # Enable PostgreSQL extensions for testing
+    init-script-path: classpath:db/integration-test-init.sql
+    
+  # Redis container configuration  
+  redis:
+    image: redis:7.0-alpine
+    password: testredispass
+    # Enable Redis persistence for session testing
+    config:
+      - save 60 1
+      - appendonly yes
+      
+# ================================================================
+# EXTERNAL SERVICE MOCK CONFIGURATION
+# ================================================================
+# Mock external service URLs for integration testing
+# Replaces mainframe external interfaces with configurable mocks
+external:
+  services:
+    # Payment network mock endpoints
+    payment-network:
+      base-url: http://localhost:8091
+      endpoints:
+        authorization: /payment/authorize
+        settlement: /payment/settle
+        reversal: /payment/reverse
+      timeout: 10000ms
+      
+    # Core banking system mock endpoints  
+    core-banking:
+      base-url: http://localhost:8092
+      endpoints:
+        account-lookup: /core/account/{accountId}
+        balance-inquiry: /core/balance/{accountId}
+        transaction-post: /core/transaction
+      timeout: 15000ms
+      
+    # Fraud detection service mock endpoints
+    fraud-detection:
+      base-url: http://localhost:8093
+      endpoints:
+        risk-scoring: /fraud/score
+        transaction-monitoring: /fraud/monitor
+        alert-management: /fraud/alerts
+      timeout: 5000ms
+      
+    # Regulatory reporting mock endpoints
+    regulatory-reporting:
+      base-url: http://localhost:8094
+      endpoints:
+        transaction-reporting: /regulatory/transaction
+        compliance-check: /regulatory/compliance
+        audit-trail: /regulatory/audit
+      timeout: 20000ms
+
+# ================================================================
+# WEB CLIENT CONFIGURATION
+# ================================================================
+# HTTP client configuration for external service integration testing
+spring:
+  webflux:
+    # Configure WebClient for mock service communication
+    client:
+      connect-timeout: 10000ms
+      read-timeout: 30000ms
+      write-timeout: 30000ms
+      
+# ================================================================
+# LOGGING CONFIGURATION FOR INTEGRATION TESTS
+# ================================================================
+# Enhanced logging levels for integration test debugging and monitoring
+logging:
+  level:
+    # Root logging level
+    root: WARN
+    
+    # Application-specific logging
+    com.carddemo: DEBUG
+    
+    # Spring Framework components
+    org.springframework.web: INFO
+    org.springframework.security: INFO
+    org.springframework.transaction: DEBUG
+    org.springframework.orm.jpa: INFO
+    org.springframework.data.redis: INFO
+    org.springframework.session: INFO
+    org.springframework.batch: INFO
+    
+    # Database and JPA logging
+    org.hibernate.SQL: INFO
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.postgresql: INFO
+    
+    # Testcontainers logging
+    org.testcontainers: INFO
+    com.github.dockerjava: WARN
+    
+    # Redis logging
+    io.lettuce.core: INFO
+    
+    # HTTP client logging for external service mocks
+    org.springframework.web.client: DEBUG
+    reactor.netty.http.client: INFO
+    
+  # Log pattern for integration test output
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}] - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}] - %msg%n"
+
+# ================================================================
+# ACTUATOR CONFIGURATION FOR TEST MONITORING
+# ================================================================
+# Spring Boot Actuator endpoints for integration test monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,loggers
+        
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+      
+  metrics:
+    export:
+      # Export metrics for integration test performance monitoring
+      simple:
+        enabled: true
+        
+# ================================================================
+# SECURITY CONFIGURATION FOR INTEGRATION TESTS
+# ================================================================
+# Security settings for test environment
+spring:
+  security:
+    # OAuth2/JWT configuration for integration testing
+    oauth2:
+      resourceserver:
+        jwt:
+          # Mock JWT issuer for integration tests
+          issuer-uri: http://localhost:8095/auth/realms/carddemo-test
+          
+    # Enable method-level security for testing
+    method:
+      security:
+        enabled: true
+        
+# ================================================================
+# CUSTOM APPLICATION PROPERTIES
+# ================================================================
+# CardDemo-specific configuration for integration testing
+carddemo:
+  # Feature flags for integration testing
+  features:
+    batch-processing: true
+    external-services: true
+    audit-logging: true
+    session-clustering: true
+    
+  # Business configuration matching COBOL behavior
+  business:
+    # Transaction timeout matching CICS settings
+    transaction-timeout: 1800000  # 30 minutes in milliseconds
+    # Session timeout for user inactivity
+    session-timeout: 1800000     # 30 minutes in milliseconds
+    # Interest calculation precision (COBOL COMP-3 equivalent)
+    decimal-precision: 4
+    decimal-scale: 2
+    
+  # Integration test specific settings
+  testing:
+    # Enable test data generation
+    generate-test-data: true
+    # Reset database state between tests
+    reset-database: true
+    # Mock external service responses
+    mock-external-services: true
+    # Enable performance monitoring
+    monitor-performance: true
+    
+# ================================================================
+# PERFORMANCE MONITORING CONFIGURATION
+# ================================================================
+# Performance metrics collection for integration testing
+spring:
+  sleuth:
+    # Distributed tracing for integration test monitoring
+    enabled: true
+    sampler:
+      probability: 1.0  # 100% sampling for integration tests
+      
+  # Micrometer metrics configuration
+  metrics:
+    tags:
+      environment: integration-test
+      application: carddemo
+    distribution:
+      percentiles:
+        http.server.requests: 0.5,0.95,0.99
+        jvm.gc.pause: 0.5,0.95,0.99
