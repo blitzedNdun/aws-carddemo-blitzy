@@ -1,0 +1,585 @@
+{
+  "_description": "JSON response templates for transaction REST API endpoints matching CICS transaction processing behavior",
+  "_source_programs": ["COTRN00C.cbl", "COTRN01C.cbl", "COTRN02C.cbl"],
+  "_cics_compatibility": "Maintains exact error code and pagination patterns from mainframe implementation",
+  
+  "transaction_list_success": {
+    "status": "success",
+    "data": {
+      "transactions": [
+        {
+          "transactionId": "0000000000001234",
+          "cardNumber": "4000123456789012",
+          "transactionDate": "2024-01-15",
+          "description": "GROCERY STORE PURCHASE",
+          "amount": "67.89",
+          "transactionType": "01",
+          "categoryCode": "5411",
+          "merchantName": "WALMART SUPERCENTER",
+          "source": "POS",
+          "status": "POSTED"
+        },
+        {
+          "transactionId": "0000000000001235",
+          "cardNumber": "4000123456789012", 
+          "transactionDate": "2024-01-14",
+          "description": "ONLINE PAYMENT",
+          "amount": "-150.00",
+          "transactionType": "02",
+          "categoryCode": "0000",
+          "merchantName": "ONLINE PAYMENT",
+          "source": "ONLINE",
+          "status": "POSTED"
+        },
+        {
+          "transactionId": "0000000000001236",
+          "cardNumber": "4000123456789012",
+          "transactionDate": "2024-01-13", 
+          "description": "GAS STATION PURCHASE",
+          "amount": "45.67",
+          "transactionType": "01",
+          "categoryCode": "5542",
+          "merchantName": "SHELL GAS STATION",
+          "source": "POS",
+          "status": "POSTED"
+        }
+      ],
+      "pagination": {
+        "currentPage": 1,
+        "pageSize": 10,
+        "totalRecords": 127,
+        "totalPages": 13,
+        "hasNextPage": true,
+        "hasPreviousPage": false,
+        "firstTransactionId": "0000000000001234",
+        "lastTransactionId": "0000000000001236",
+        "nextPageAvailable": true
+      },
+      "account": {
+        "accountId": "00000000001",
+        "currentBalance": "2876.44",
+        "availableCredit": "7123.56",
+        "creditLimit": "10000.00"
+      }
+    },
+    "messages": {
+      "info": "Transaction list retrieved successfully",
+      "pageInfo": "Page 1 of 13 - Use PF7/PF8 for navigation"
+    },
+    "navigation": {
+      "pf3": "Return to Main Menu",
+      "pf7": "Previous Page", 
+      "pf8": "Next Page",
+      "enter": "Select Transaction for Details"
+    }
+  },
+
+  "transaction_list_empty": {
+    "status": "success",
+    "data": {
+      "transactions": [],
+      "pagination": {
+        "currentPage": 1,
+        "pageSize": 10,
+        "totalRecords": 0,
+        "totalPages": 0,
+        "hasNextPage": false,
+        "hasPreviousPage": false,
+        "firstTransactionId": null,
+        "lastTransactionId": null,
+        "nextPageAvailable": false
+      },
+      "account": {
+        "accountId": "00000000001",
+        "currentBalance": "0.00",
+        "availableCredit": "10000.00",
+        "creditLimit": "10000.00"
+      }
+    },
+    "messages": {
+      "info": "No transactions found for the specified criteria",
+      "detail": "You are at the top of the page..."
+    },
+    "navigation": {
+      "pf3": "Return to Main Menu"
+    }
+  },
+
+  "transaction_detail_success": {
+    "status": "success", 
+    "data": {
+      "transaction": {
+        "transactionId": "0000000000001234",
+        "cardNumber": "4000123456789012",
+        "accountId": "00000000001",
+        "transactionType": "01",
+        "transactionTypeDescription": "Purchase",
+        "categoryCode": "5411",
+        "categoryDescription": "Grocery Stores",
+        "source": "POS",
+        "amount": "67.89",
+        "description": "GROCERY STORE PURCHASE",
+        "originalTimestamp": "2024-01-15T14:32:15.123456",
+        "processedTimestamp": "2024-01-15T14:32:16.789012",
+        "merchant": {
+          "merchantId": "123456789",
+          "name": "WALMART SUPERCENTER",
+          "city": "ANYTOWN",
+          "zip": "12345"
+        },
+        "authorization": {
+          "authorizationCode": "AUTH123456",
+          "authorizationDate": "2024-01-15T14:32:15.123456",
+          "responseCode": "00",
+          "responseDescription": "Approved"
+        },
+        "balanceImpact": {
+          "previousBalance": "2944.33",
+          "transactionAmount": "67.89",
+          "newBalance": "2876.44",
+          "availableCredit": "7123.56"
+        }
+      }
+    },
+    "messages": {
+      "info": "Transaction details retrieved successfully"
+    },
+    "navigation": {
+      "pf3": "Return to Previous Screen",
+      "pf4": "Clear Screen",
+      "pf5": "Return to Transaction List"
+    }
+  },
+
+  "transaction_creation_success": {
+    "status": "success",
+    "data": {
+      "transaction": {
+        "transactionId": "0000000000001237",
+        "cardNumber": "4000123456789012",
+        "accountId": "00000000001",
+        "transactionType": "01",
+        "categoryCode": "5999",
+        "amount": "25.50",
+        "description": "TEST TRANSACTION",
+        "originalTimestamp": "2024-01-16T10:15:30.123456",
+        "processedTimestamp": "2024-01-16T10:15:30.456789",
+        "merchant": {
+          "merchantId": "987654321",
+          "name": "TEST MERCHANT",
+          "city": "TESTVILLE",
+          "zip": "54321"
+        }
+      },
+      "balanceUpdate": {
+        "previousBalance": "2876.44",
+        "transactionAmount": "25.50",
+        "newBalance": "2850.94",
+        "availableCredit": "7149.06",
+        "creditLimit": "10000.00"
+      },
+      "authorization": {
+        "authorizationCode": "AUTH654321",
+        "responseCode": "00",
+        "responseDescription": "Transaction Approved and Posted"
+      }
+    },
+    "messages": {
+      "success": "Transaction created successfully",
+      "detail": "New balance: $2,850.94"
+    },
+    "navigation": {
+      "pf3": "Return to Previous Screen",
+      "pf4": "Clear Screen for New Transaction"
+    }
+  },
+
+  "transaction_payment_success": {
+    "status": "success",
+    "data": {
+      "payment": {
+        "transactionId": "0000000000001238",
+        "paymentAmount": "150.00",
+        "paymentDate": "2024-01-16",
+        "paymentMethod": "ONLINE",
+        "confirmationNumber": "PAY123456789"
+      },
+      "balanceUpdate": {
+        "previousBalance": "2850.94",
+        "paymentAmount": "-150.00",
+        "newBalance": "2700.94",
+        "availableCredit": "7299.06",
+        "creditLimit": "10000.00",
+        "minimumPaymentDue": "58.75",
+        "paymentDueDate": "2024-02-15"
+      }
+    },
+    "messages": {
+      "success": "Payment processed successfully",
+      "detail": "Payment confirmation: PAY123456789"
+    },
+    "navigation": {
+      "pf3": "Return to Main Menu"
+    }
+  },
+
+  "transaction_list_error_notfound": {
+    "status": "error",
+    "error": {
+      "code": "EIBRESP_NOTFND",
+      "cicsResponse": "DFHRESP(NOTFND)",
+      "message": "No transactions found",
+      "detail": "You are at the top of the page...",
+      "field": "TRNID"
+    },
+    "data": {
+      "transactions": [],
+      "pagination": {
+        "currentPage": 1,
+        "pageSize": 10,
+        "totalRecords": 0,
+        "totalPages": 0,
+        "hasNextPage": false,
+        "hasPreviousPage": false
+      }
+    },
+    "navigation": {
+      "pf3": "Return to Main Menu"
+    }
+  },
+
+  "transaction_list_error_endfile": {
+    "status": "error",
+    "error": {
+      "code": "EIBRESP_ENDFILE",
+      "cicsResponse": "DFHRESP(ENDFILE)",
+      "message": "End of transaction list reached", 
+      "detail": "You have reached the bottom of the page...",
+      "field": "TRNID"
+    },
+    "data": {
+      "transactions": [],
+      "pagination": {
+        "currentPage": 5,
+        "pageSize": 10,
+        "totalRecords": 42,
+        "totalPages": 5,
+        "hasNextPage": false,
+        "hasPreviousPage": true,
+        "nextPageAvailable": false
+      }
+    },
+    "navigation": {
+      "pf3": "Return to Main Menu",
+      "pf7": "Previous Page"
+    }
+  },
+
+  "transaction_detail_error_notfound": {
+    "status": "error",
+    "error": {
+      "code": "EIBRESP_NOTFND",
+      "cicsResponse": "DFHRESP(NOTFND)",
+      "message": "Transaction not found",
+      "detail": "Unable to lookup transaction...",
+      "field": "TRNID",
+      "fieldPosition": -1
+    },
+    "data": null,
+    "navigation": {
+      "pf3": "Return to Previous Screen"
+    }
+  },
+
+  "transaction_creation_error_validation": {
+    "status": "error",
+    "error": {
+      "code": "VALIDATION_ERROR",
+      "message": "Transaction validation failed",
+      "validationErrors": [
+        {
+          "field": "CARDNUM",
+          "fieldPosition": -1,
+          "code": "INVALID_CARD",
+          "message": "Invalid card number or card not found",
+          "attribute": "DFHRED"
+        },
+        {
+          "field": "TRANAMT",
+          "fieldPosition": -1, 
+          "code": "INVALID_AMOUNT",
+          "message": "Transaction amount must be greater than zero",
+          "attribute": "DFHRED"
+        },
+        {
+          "field": "ACCTID",
+          "fieldPosition": -1,
+          "code": "ACCOUNT_MISMATCH", 
+          "message": "Account ID does not match card number",
+          "attribute": "DFHRED"
+        }
+      ]
+    },
+    "data": null,
+    "navigation": {
+      "pf3": "Return to Previous Screen",
+      "pf4": "Clear Screen"
+    }
+  },
+
+  "transaction_creation_error_insufficient_credit": {
+    "status": "error",
+    "error": {
+      "code": "CREDIT_LIMIT_EXCEEDED",
+      "message": "Transaction declined - Credit limit exceeded",
+      "detail": "Available credit: $150.00, Transaction amount: $500.00",
+      "field": "TRANAMT",
+      "fieldPosition": -1,
+      "attribute": "DFHRED"
+    },
+    "data": {
+      "account": {
+        "accountId": "00000000001",
+        "currentBalance": "9850.00",
+        "availableCredit": "150.00",
+        "creditLimit": "10000.00"
+      }
+    },
+    "navigation": {
+      "pf3": "Return to Previous Screen",
+      "pf4": "Clear Screen"
+    }
+  },
+
+  "transaction_system_error": {
+    "status": "error",
+    "error": {
+      "code": "EIBRESP_ERROR",
+      "cicsResponse": "DFHRESP(ERROR)",
+      "message": "System error occurred",
+      "detail": "Unable to process transaction - please try again",
+      "systemError": {
+        "respCode": "0104",
+        "reasonCode": "0001",
+        "description": "Database connection timeout"
+      }
+    },
+    "data": null,
+    "navigation": {
+      "pf3": "Return to Main Menu"
+    }
+  },
+
+  "transaction_browse_pagination_forward": {
+    "status": "success",
+    "data": {
+      "transactions": [
+        {
+          "transactionId": "0000000000001244",
+          "cardNumber": "4000123456789012",
+          "transactionDate": "2024-01-10",
+          "description": "RESTAURANT PURCHASE",
+          "amount": "89.32",
+          "status": "POSTED"
+        }
+      ],
+      "pagination": {
+        "currentPage": 2,
+        "pageSize": 10,
+        "totalRecords": 127,
+        "totalPages": 13,
+        "hasNextPage": true,
+        "hasPreviousPage": true,
+        "firstTransactionId": "0000000000001244",
+        "lastTransactionId": "0000000000001253",
+        "nextPageAvailable": true,
+        "navigationState": "FORWARD"
+      }
+    },
+    "messages": {
+      "info": "Page 2 of 13 - Navigation successful"
+    },
+    "navigation": {
+      "pf3": "Return to Main Menu",
+      "pf7": "Previous Page",
+      "pf8": "Next Page"
+    }
+  },
+
+  "transaction_browse_pagination_backward": {
+    "status": "success", 
+    "data": {
+      "transactions": [
+        {
+          "transactionId": "0000000000001234",
+          "cardNumber": "4000123456789012",
+          "transactionDate": "2024-01-15",
+          "description": "GROCERY STORE PURCHASE", 
+          "amount": "67.89",
+          "status": "POSTED"
+        }
+      ],
+      "pagination": {
+        "currentPage": 1,
+        "pageSize": 10,
+        "totalRecords": 127,
+        "totalPages": 13,
+        "hasNextPage": true,
+        "hasPreviousPage": false,
+        "firstTransactionId": "0000000000001234",
+        "lastTransactionId": "0000000000001243",
+        "nextPageAvailable": true,
+        "navigationState": "BACKWARD"
+      }
+    },
+    "messages": {
+      "info": "Page 1 of 13 - At beginning of list"
+    },
+    "navigation": {
+      "pf3": "Return to Main Menu",
+      "pf8": "Next Page"
+    }
+  },
+
+  "transaction_browse_error_top_reached": {
+    "status": "error",
+    "error": {
+      "code": "NAVIGATION_ERROR",
+      "message": "You are already at the top of the page...",
+      "detail": "Cannot navigate backwards from first page",
+      "field": "TRNID"
+    },
+    "data": {
+      "pagination": {
+        "currentPage": 1,
+        "hasNextPage": true,
+        "hasPreviousPage": false
+      }
+    },
+    "navigation": {
+      "pf3": "Return to Main Menu",
+      "pf8": "Next Page"
+    }
+  },
+
+  "transaction_browse_error_bottom_reached": {
+    "status": "error",
+    "error": {
+      "code": "NAVIGATION_ERROR", 
+      "message": "You are already at the bottom of the page...",
+      "detail": "Cannot navigate forward from last page",
+      "field": "TRNID"
+    },
+    "data": {
+      "pagination": {
+        "currentPage": 13,
+        "hasNextPage": false,
+        "hasPreviousPage": true
+      }
+    },
+    "navigation": {
+      "pf3": "Return to Main Menu",
+      "pf7": "Previous Page"
+    }
+  },
+
+  "cics_error_code_mappings": {
+    "_description": "CICS response code mappings for REST API error handling",
+    "DFHRESP_NORMAL": {
+      "httpStatus": 200,
+      "code": "EIBRESP_NORMAL",
+      "description": "Operation completed successfully"
+    },
+    "DFHRESP_NOTFND": {
+      "httpStatus": 404,
+      "code": "EIBRESP_NOTFND", 
+      "description": "Record not found"
+    },
+    "DFHRESP_ENDFILE": {
+      "httpStatus": 204,
+      "code": "EIBRESP_ENDFILE",
+      "description": "End of file reached during browse operation"
+    },
+    "DFHRESP_ERROR": {
+      "httpStatus": 500,
+      "code": "EIBRESP_ERROR",
+      "description": "System error occurred"
+    },
+    "DFHRESP_LENGERR": {
+      "httpStatus": 400,
+      "code": "EIBRESP_LENGERR",
+      "description": "Length error in data field"
+    },
+    "DFHRESP_DUPREC": {
+      "httpStatus": 409,
+      "code": "EIBRESP_DUPREC", 
+      "description": "Duplicate record key"
+    }
+  },
+
+  "field_validation_patterns": {
+    "_description": "Field validation rules matching COBOL program validation",
+    "transactionId": {
+      "pattern": "^[0-9]{16}$",
+      "maxLength": 16,
+      "required": true,
+      "errorMessage": "Tran ID must be 16-digit numeric"
+    },
+    "cardNumber": {
+      "pattern": "^[0-9]{16}$", 
+      "maxLength": 16,
+      "required": true,
+      "errorMessage": "Card number must be 16 digits"
+    },
+    "accountId": {
+      "pattern": "^[0-9]{11}$",
+      "maxLength": 11,
+      "required": true,
+      "errorMessage": "Account ID must be 11-digit numeric"
+    },
+    "transactionAmount": {
+      "pattern": "^-?[0-9]{1,9}\\.[0-9]{2}$",
+      "precision": "S9(09)V99",
+      "required": true,
+      "errorMessage": "Amount must be numeric with 2 decimal places"
+    },
+    "transactionType": {
+      "pattern": "^[0-9]{2}$",
+      "maxLength": 2,
+      "required": true,
+      "errorMessage": "Transaction type must be 2-digit code"
+    },
+    "categoryCode": {
+      "pattern": "^[0-9]{4}$",
+      "maxLength": 4,
+      "required": true,
+      "errorMessage": "Category code must be 4-digit numeric"
+    }
+  },
+
+  "balance_calculation_examples": {
+    "_description": "Running balance calculation patterns matching COBOL COMP-3 precision",
+    "purchase_transaction": {
+      "previousBalance": "1000.00",
+      "transactionAmount": "50.25",
+      "calculation": "1000.00 + 50.25",
+      "newBalance": "1050.25",
+      "precision": "BigDecimal scale 2, HALF_UP rounding"
+    },
+    "payment_transaction": {
+      "previousBalance": "1050.25",
+      "paymentAmount": "200.00",
+      "calculation": "1050.25 - 200.00", 
+      "newBalance": "850.25",
+      "precision": "BigDecimal scale 2, HALF_UP rounding"
+    },
+    "credit_limit_check": {
+      "currentBalance": "950.00",
+      "proposedAmount": "100.00",
+      "creditLimit": "1000.00",
+      "newBalance": "1050.00",
+      "availableCredit": "0.00",
+      "result": "DECLINED - Credit limit exceeded"
+    }
+  }
+}
