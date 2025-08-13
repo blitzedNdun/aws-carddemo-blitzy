@@ -1,0 +1,332 @@
+# Spring Batch Test Configuration for Interest Calculation Job
+# Migration from COBOL program CBACT04C.cbl
+# Tests BigDecimal precision matching COBOL COMP-3 packed decimal behavior
+# Validates DB2-compliant timestamp generation and transaction processing
+
+spring:
+  batch:
+    job:
+      enabled: true
+    jdbc:
+      initialize-schema: embedded
+  
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 30000
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+
+# Interest Calculation Job Test Configuration
+interest-calculation-job:
+  name: "InterestCalculationJob"
+  description: "Spring Batch job migrated from COBOL CBACT04C - Interest Calculator"
+  
+  # Job Parameters
+  parameters:
+    run-date: "2024-01-15"  # Test date parameter (PARM-DATE equivalent)
+    chunk-size: 1000       # Processing chunk size for transaction category balance records
+    
+  # Step Configuration
+  steps:
+    # Step 1: Process Transaction Category Balance Records (TCATBAL-FILE equivalent)
+    process-transaction-categories:
+      name: "processTransactionCategoryBalance"
+      description: "Process category balance records and calculate interest"
+      chunk-size: ${interest-calculation-job.parameters.chunk-size}
+      
+      # Reader Configuration - Sequential read of transaction category balance
+      reader:
+        name: "transactionCategoryBalanceReader"
+        type: "JpaPagingItemReader"
+        query: |
+          SELECT tcb FROM TransactionCategoryBalance tcb 
+          ORDER BY tcb.accountId, tcb.categoryCode, tcb.balanceDate
+        page-size: ${interest-calculation-job.parameters.chunk-size}
+        
+      # Processor Configuration - Business logic from COBOL paragraphs
+      processor:
+        name: "interestCalculationProcessor"
+        type: "InterestCalculationItemProcessor"
+        
+        # BigDecimal Configuration - Matching COBOL COMP-3 precision
+        decimal-config:
+          scale: 2                    # COBOL S9(09)V99 equivalent
+          rounding-mode: "HALF_UP"    # COBOL ROUNDED clause equivalent
+          precision: 11               # Total digits (9 integer + 2 decimal)
+          
+        # Interest Rate Configuration
+        interest-config:
+          monthly-divisor: 1200       # COBOL formula: (TRAN-CAT-BAL * DIS-INT-RATE) / 1200
+          default-group-id: "DEFAULT" # COBOL 'DEFAULT' fallback
+          transaction-type: "01"      # Interest transaction type
+          transaction-category: "05"  # Interest transaction category
+          
+      # Writer Configuration - Create interest transactions and update accounts
+      writer:
+        name: "interestTransactionWriter"
+        type: "CompositeItemWriter"
+        delegates:
+          - name: "transactionWriter"
+            type: "JpaItemWriter"
+            entity-class: "com.carddemo.entity.Transaction"
+          - name: "accountBalanceWriter"
+            type: "JpaItemWriter"  
+            entity-class: "com.carddemo.entity.Account"
+
+# Test Data Configuration
+test-data:
+  # Transaction Category Balance Test Records
+  transaction-category-balances:
+    - account-id: "00000000001"
+      category-code: "0001"
+      type-code: "01"
+      balance: "1500.00"      # COBOL S9(09)V99 format
+      balance-date: "2024-01-01"
+      
+    - account-id: "00000000001" 
+      category-code: "0002"
+      type-code: "01"
+      balance: "2500.50"      # Test decimal precision
+      balance-date: "2024-01-01"
+      
+    - account-id: "00000000002"
+      category-code: "0001" 
+      type-code: "01"
+      balance: "750.25"       # Test fractional amounts
+      balance-date: "2024-01-01"
+
+  # Account Master Test Records (ACCOUNT-FILE equivalent)
+  accounts:
+    - account-id: "00000000001"
+      active-status: "Y"
+      current-balance: "5000.00"
+      credit-limit: "10000.00"
+      cash-credit-limit: "1000.00"
+      open-date: "2023-01-15"
+      expiration-date: "2026-01-15"
+      current-cycle-credit: "0.00"
+      current-cycle-debit: "0.00"
+      group-id: "PREMIUM"
+      
+    - account-id: "00000000002"
+      active-status: "Y"
+      current-balance: "2500.00"
+      credit-limit: "5000.00"
+      cash-credit-limit: "500.00"
+      open-date: "2023-06-01"
+      expiration-date: "2026-06-01"
+      current-cycle-credit: "0.00"
+      current-cycle-debit: "0.00"
+      group-id: "STANDARD"
+
+  # Card Cross-Reference Test Records (XREF-FILE equivalent)
+  card-xrefs:
+    - card-number: "4000123456789001"
+      customer-id: "000000001"
+      account-id: "00000000001"
+      
+    - card-number: "4000123456789002"
+      customer-id: "000000002"
+      account-id: "00000000002"
+
+  # Disclosure Group Test Records (DISCGRP-FILE equivalent)
+  disclosure-groups:
+    - group-id: "PREMIUM"
+      transaction-type: "01"
+      category-code: "0001"
+      interest-rate: "18.50"    # COBOL S9(04)V99 format (annual percentage)
+      
+    - group-id: "PREMIUM"
+      transaction-type: "01"
+      category-code: "0002"
+      interest-rate: "22.00"
+      
+    - group-id: "STANDARD"
+      transaction-type: "01"
+      category-code: "0001"
+      interest-rate: "24.99"
+      
+    - group-id: "DEFAULT"      # Fallback when specific group not found
+      transaction-type: "01"
+      category-code: "0001"
+      interest-rate: "29.99"
+      
+    - group-id: "DEFAULT"
+      transaction-type: "01"
+      category-code: "0002"
+      interest-rate: "29.99"
+
+# Expected Results Configuration
+expected-results:
+  # Interest Calculations (Based on monthly rate = annual_rate / 12)
+  interest-transactions:
+    - account-id: "00000000001"
+      category-code: "0001"
+      expected-interest: "23.13"    # 1500.00 * 18.50 / 1200 = 23.125 -> 23.13 (HALF_UP)
+      
+    - account-id: "00000000001"
+      category-code: "0002"
+      expected-interest: "45.84"    # 2500.50 * 22.00 / 1200 = 45.843 -> 45.84 (HALF_UP)
+      
+    - account-id: "00000000002"
+      category-code: "0001"
+      expected-interest: "15.63"    # 750.25 * 24.99 / 1200 = 15.631 -> 15.63 (HALF_UP)
+
+  # Account Balance Updates
+  updated-balances:
+    - account-id: "00000000001"
+      original-balance: "5000.00"
+      total-interest: "68.97"       # 23.13 + 45.84
+      expected-balance: "5068.97"   # Original + total interest
+      
+    - account-id: "00000000002"
+      original-balance: "2500.00"
+      total-interest: "15.63"
+      expected-balance: "2515.63"
+
+# DB2 Timestamp Format Test Configuration
+timestamp-config:
+  format: "YYYY-MM-DD-HH.MM.SS.MIL"
+  pattern: "yyyy-MM-dd-HH.mm.ss.SSS"
+  timezone: "UTC"
+  test-values:
+    - input-datetime: "2024-01-15T14:30:25.123"
+      expected-format: "2024-01-15-14.30.25.123"
+    - input-datetime: "2024-12-31T23:59:59.999"
+      expected-format: "2024-12-31-23.59.59.999"
+
+# BigDecimal Precision Test Configuration
+bigdecimal-tests:
+  scale: 2
+  rounding-mode: "HALF_UP"
+  precision-tests:
+    # Test COBOL COMP-3 equivalent operations
+    - description: "Basic interest calculation"
+      balance: "1000.00"
+      rate: "18.00"
+      divisor: 1200
+      expected: "15.00"           # 1000.00 * 18.00 / 1200 = 15.00
+      
+    - description: "Rounding up scenario"
+      balance: "1000.00"
+      rate: "18.75"
+      divisor: 1200
+      expected: "15.63"           # 1000.00 * 18.75 / 1200 = 15.625 -> 15.63 (HALF_UP)
+      
+    - description: "Rounding down scenario"
+      balance: "1000.00"
+      rate: "18.74"
+      divisor: 1200
+      expected: "15.62"           # 1000.00 * 18.74 / 1200 = 15.616 -> 15.62 (HALF_UP)
+      
+    - description: "Fractional balance with precision"
+      balance: "1234.56"
+      rate: "19.99"
+      divisor: 1200
+      expected: "20.58"           # 1234.56 * 19.99 / 1200 = 20.575 -> 20.58 (HALF_UP)
+
+# Error Handling Test Configuration
+error-handling:
+  scenarios:
+    # Test missing disclosure group (triggers DEFAULT fallback)
+    - scenario: "missing-disclosure-group"
+      account-id: "00000000999"
+      group-id: "NONEXISTENT"
+      expected-behavior: "fallback-to-default"
+      
+    # Test missing account (COBOL INVALID KEY handling)
+    - scenario: "missing-account"
+      account-id: "99999999999"
+      expected-behavior: "skip-record-with-log"
+      
+    # Test missing card cross-reference
+    - scenario: "missing-card-xref"
+      account-id: "00000000001"
+      expected-behavior: "skip-record-with-log"
+      
+    # Test zero interest rate
+    - scenario: "zero-interest-rate"
+      interest-rate: "0.00"
+      expected-behavior: "skip-interest-calculation"
+
+# Job Execution Test Configuration
+job-execution:
+  completion-timeout: 30000      # 30 seconds max execution time
+  retry-limit: 3                 # Maximum retry attempts for failed items
+  skip-limit: 10                 # Maximum skippable errors
+  
+  # Transaction Management
+  transaction-config:
+    isolation-level: "READ_COMMITTED"
+    timeout: 300                 # 5 minutes transaction timeout
+    
+  # Checkpoint Configuration (COBOL equivalent to SYNCPOINT)
+  checkpoint:
+    frequency: 100               # Commit every 100 processed records
+    
+# Performance Test Configuration  
+performance:
+  volume-tests:
+    - name: "small-volume"
+      record-count: 100
+      expected-duration: "5000"   # 5 seconds max
+      
+    - name: "medium-volume"
+      record-count: 1000
+      expected-duration: "30000"  # 30 seconds max
+      
+    - name: "large-volume"
+      record-count: 10000
+      expected-duration: "300000" # 5 minutes max (4-hour window requirement)
+
+# Logging Configuration
+logging:
+  level:
+    com.carddemo.batch.interest: DEBUG
+    org.springframework.batch: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    
+# Validation Rules
+validation:
+  rules:
+    # Monetary amount validation (COBOL picture clause equivalent)
+    - field: "balance"
+      type: "decimal"
+      scale: 2
+      max-value: "9999999.99"    # COBOL S9(07)V99 equivalent
+      min-value: "-9999999.99"
+      
+    - field: "interest-rate"
+      type: "decimal"
+      scale: 2
+      max-value: "99.99"         # COBOL S9(02)V99 equivalent
+      min-value: "0.00"
+      
+    # Account ID validation (COBOL PIC 9(11))
+    - field: "account-id"
+      type: "numeric"
+      length: 11
+      pattern: "^[0-9]{11}$"
+      
+    # Transaction type validation (COBOL PIC X(02))
+    - field: "transaction-type"
+      type: "string"
+      length: 2
+      allowed-values: ["01", "02", "03", "04", "05"]
