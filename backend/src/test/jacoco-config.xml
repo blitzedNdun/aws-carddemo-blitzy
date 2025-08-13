@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    JaCoCo Code Coverage Configuration for CardDemo Spring Boot Application
+    
+    This configuration enforces comprehensive code coverage requirements aligned with
+    enterprise testing standards and the COBOL-to-Java migration quality gates:
+    
+    - 100% line and branch coverage for business logic service classes
+    - 90% minimum overall coverage threshold enforced by SonarQube
+    - Exclusions for generated code and configuration classes
+    - HTML and XML report generation for coverage analysis
+    
+    Configuration supports the Spring Boot testing strategy outlined in Section 6.6
+    of the technical specification, ensuring complete test coverage validation for
+    all Java service classes that replace COBOL program functionality.
+-->
+<configuration xmlns="http://www.jacoco.org/jacoco/configuration/1.0"
+               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:schemaLocation="http://www.jacoco.org/jacoco/configuration/1.0 
+                                   http://www.jacoco.org/xsd/jacoco-configuration-1.0.xsd">
+    
+    <!-- 
+        Agent Configuration for runtime coverage collection
+        Uses JaCoCo Java agent for bytecode instrumentation during test execution
+    -->
+    <agent>
+        <!-- Enable runtime coverage collection with minimal performance impact -->
+        <option name="enabled" value="true"/>
+        <!-- Include all classes under test for comprehensive coverage -->
+        <option name="includes" value="com.carddemo.*"/>
+        <!-- Exclude test classes and generated code from coverage collection -->
+        <option name="excludes" value="com.carddemo.test.*,com.carddemo.*Test,*Test,*Tests"/>
+        <!-- Output coverage data to default jacoco.exec file -->
+        <option name="destfile" value="target/jacoco.exec"/>
+        <!-- Include boot classpath for complete application coverage -->
+        <option name="inclbootstrapclasses" value="true"/>
+        <!-- Include classes loaded by system classloader -->
+        <option name="inclnolocationclasses" value="true"/>
+    </agent>
+    
+    <!-- 
+        Coverage Rules Configuration
+        Enforces minimum coverage thresholds aligned with quality gates
+    -->
+    <rules>
+        <!-- 
+            Overall Application Coverage Rule
+            Enforces 90% minimum overall coverage as required by SonarQube integration
+        -->
+        <rule element="BUNDLE">
+            <limits>
+                <!-- 90% minimum line coverage for entire application -->
+                <limit counter="LINE" value="COVEREDRATIO" minimum="0.90"/>
+                <!-- 90% minimum branch coverage for entire application -->
+                <limit counter="BRANCH" value="COVEREDRATIO" minimum="0.90"/>
+                <!-- 85% minimum instruction coverage for bytecode verification -->
+                <limit counter="INSTRUCTION" value="COVEREDRATIO" minimum="0.85"/>
+                <!-- 88% minimum complexity coverage for decision points -->
+                <limit counter="COMPLEXITY" value="COVEREDRATIO" minimum="0.88"/>
+            </limits>
+        </rule>
+        
+        <!-- 
+            Business Logic Service Classes - 100% Coverage Requirement
+            Critical coverage rule for all service classes replacing COBOL programs
+        -->
+        <rule element="CLASS">
+            <!-- Apply rule only to service classes containing core business logic -->
+            <includes>
+                <include>com.carddemo.service.*Service</include>
+                <include>com.carddemo.service.*ServiceImpl</include>
+            </includes>
+            <limits>
+                <!-- 100% line coverage required for business logic -->
+                <limit counter="LINE" value="COVEREDRATIO" minimum="1.00"/>
+                <!-- 100% branch coverage required for all decision paths -->
+                <limit counter="BRANCH" value="COVEREDRATIO" minimum="1.00"/>
+                <!-- 95% minimum instruction coverage for service methods -->
+                <limit counter="INSTRUCTION" value="COVEREDRATIO" minimum="0.95"/>
+                <!-- 100% method coverage - all public methods must be tested -->
+                <limit counter="METHOD" value="COVEREDRATIO" minimum="1.00"/>
+            </limits>
+        </rule>
+        
+        <!-- 
+            Controller Classes - High Coverage Requirement
+            REST controllers mapping CICS transactions require comprehensive testing
+        -->
+        <rule element="CLASS">
+            <includes>
+                <include>com.carddemo.controller.*Controller</include>
+                <include>com.carddemo.controller.*RestController</include>
+            </includes>
+            <limits>
+                <!-- 95% line coverage for controller endpoint testing -->
+                <limit counter="LINE" value="COVEREDRATIO" minimum="0.95"/>
+                <!-- 90% branch coverage for request/response handling -->
+                <limit counter="BRANCH" value="COVEREDRATIO" minimum="0.90"/>
+                <!-- 95% method coverage for all REST endpoints -->
+                <limit counter="METHOD" value="COVEREDRATIO" minimum="0.95"/>
+            </limits>
+        </rule>
+        
+        <!-- 
+            Repository Classes - Data Access Coverage
+            JPA repositories replacing VSAM data access patterns
+        -->
+        <rule element="CLASS">
+            <includes>
+                <include>com.carddemo.repository.*Repository</include>
+                <include>com.carddemo.repository.*RepositoryImpl</include>
+            </includes>
+            <limits>
+                <!-- 90% line coverage for data access operations -->
+                <limit counter="LINE" value="COVEREDRATIO" minimum="0.90"/>
+                <!-- 85% branch coverage for query logic -->
+                <limit counter="BRANCH" value="COVEREDRATIO" minimum="0.85"/>
+                <!-- 90% method coverage for repository operations -->
+                <limit counter="METHOD" value="COVEREDRATIO" minimum="0.90"/>
+            </limits>
+        </rule>
+        
+        <!-- 
+            Utility Classes - Common Function Coverage
+            Utility classes providing COBOL data conversion and validation
+        -->
+        <rule element="CLASS">
+            <includes>
+                <include>com.carddemo.util.*</include>
+                <include>com.carddemo.helper.*</include>
+            </includes>
+            <limits>
+                <!-- 95% line coverage for utility functions -->
+                <limit counter="LINE" value="COVEREDRATIO" minimum="0.95"/>
+                <!-- 90% branch coverage for utility logic -->
+                <limit counter="BRANCH" value="COVEREDRATIO" minimum="0.90"/>
+                <!-- 95% method coverage for public utility methods -->
+                <limit counter="METHOD" value="COVEREDRATIO" minimum="0.95"/>
+            </limits>
+        </rule>
+        
+        <!-- 
+            Batch Job Classes - Spring Batch Coverage
+            Batch processing classes replacing JCL job procedures
+        -->
+        <rule element="CLASS">
+            <includes>
+                <include>com.carddemo.batch.*Job</include>
+                <include>com.carddemo.batch.*Processor</include>
+                <include>com.carddemo.batch.*Reader</include>
+                <include>com.carddemo.batch.*Writer</include>
+            </includes>
+            <limits>
+                <!-- 90% line coverage for batch processing logic -->
+                <limit counter="LINE" value="COVEREDRATIO" minimum="0.90"/>
+                <!-- 85% branch coverage for batch decision logic -->
+                <limit counter="BRANCH" value="COVEREDRATIO" minimum="0.85"/>
+                <!-- 90% method coverage for batch operations -->
+                <limit counter="METHOD" value="COVEREDRATIO" minimum="0.90"/>
+            </limits>
+        </rule>
+    </rules>
+    
+    <!-- 
+        Exclusions Configuration
+        Classes and packages excluded from coverage analysis
+    -->
+    <exclusions>
+        <!-- Configuration classes - framework setup, no business logic -->
+        <exclude>com.carddemo.config.*Config</exclude>
+        <exclude>com.carddemo.config.*Configuration</exclude>
+        
+        <!-- Generated code exclusions -->
+        <exclude>**/generated/**</exclude>
+        <exclude>**/*Generated</exclude>
+        <exclude>**/*Builder</exclude>
+        
+        <!-- Lombok generated methods -->
+        <exclude>**/*$Companion</exclude>
+        <exclude>**/*$WhenMappings</exclude>
+        
+        <!-- Spring Boot generated classes -->
+        <exclude>**/*Application</exclude>
+        <exclude>**/*ApplicationKt</exclude>
+        
+        <!-- JPA entity classes - data containers with minimal logic -->
+        <exclude>com.carddemo.entity.*</exclude>
+        <exclude>com.carddemo.model.*</exclude>
+        <exclude>com.carddemo.dto.*</exclude>
+        
+        <!-- Exception classes - simple data containers -->
+        <exclude>com.carddemo.exception.*Exception</exclude>
+        <exclude>com.carddemo.exception.*Error</exclude>
+        
+        <!-- Constants classes - static data only -->
+        <exclude>com.carddemo.constants.*</exclude>
+        <exclude>com.carddemo.*Constants</exclude>
+        
+        <!-- Test infrastructure classes -->
+        <exclude>com.carddemo.test.**</exclude>
+        <exclude>**/*Test</exclude>
+        <exclude>**/*Tests</exclude>
+        <exclude>**/*IT</exclude>
+        <exclude>**/*IntegrationTest</exclude>
+        
+        <!-- Security configuration - primarily annotations -->
+        <exclude>com.carddemo.security.*Config</exclude>
+        
+        <!-- Data migration scripts and utilities -->
+        <exclude>com.carddemo.migration.*</exclude>
+        <exclude>com.carddemo.setup.*</exclude>
+    </exclusions>
+    
+    <!-- 
+        Report Generation Configuration
+        Multiple report formats for different analysis needs
+    -->
+    <reports>
+        <!-- 
+            HTML Report - Interactive coverage analysis
+            Primary report for developers and code review
+        -->
+        <report type="html">
+            <option name="destdir" value="target/site/jacoco"/>
+            <option name="encoding" value="UTF-8"/>
+            <!-- Include source file links for detailed analysis -->
+            <option name="sourcefiles" value="src/main/java"/>
+            <!-- Generate per-package breakdown for modular analysis -->
+            <option name="footer" value="CardDemo Coverage Report - Generated ${maven.build.timestamp}"/>
+            <!-- Configure tabular format for coverage metrics -->
+            <option name="tabsize" value="4"/>
+        </report>
+        
+        <!-- 
+            XML Report - SonarQube integration
+            Machine-readable format for CI/CD pipeline integration
+        -->
+        <report type="xml">
+            <option name="destfile" value="target/site/jacoco/jacoco.xml"/>
+            <option name="encoding" value="UTF-8"/>
+        </report>
+        
+        <!-- 
+            CSV Report - Metrics export
+            Tabular format for coverage metrics analysis and trending
+        -->
+        <report type="csv">
+            <option name="destfile" value="target/site/jacoco/jacoco.csv"/>
+            <option name="encoding" value="UTF-8"/>
+        </report>
+        
+        <!-- 
+            Execution Data Report - Raw coverage data
+            Binary format preserving detailed execution information
+        -->
+        <report type="exec">
+            <option name="destfile" value="target/jacoco.exec"/>
+        </report>
+    </reports>
+    
+    <!-- 
+        Coverage Collection Settings
+        Configure runtime data collection behavior
+    -->
+    <instrumentation>
+        <!-- Enable offline instrumentation for build-time analysis -->
+        <option name="offline" value="false"/>
+        <!-- Include debug information for source line mapping -->
+        <option name="includedebuginfo" value="true"/>
+        <!-- Optimize instrumentation for test execution performance -->
+        <option name="optimize" value="true"/>
+        <!-- Verify instrumented bytecode integrity -->
+        <option name="verify" value="true"/>
+    </instrumentation>
+    
+    <!-- 
+        Integration Configuration
+        Settings for Maven/Gradle plugin integration
+    -->
+    <integration>
+        <!-- Maven Surefire integration -->
+        <maven>
+            <option name="skip" value="false"/>
+            <option name="haltOnFailure" value="true"/>
+            <option name="datafile" value="target/jacoco.exec"/>
+            <option name="outputDirectory" value="target/site/jacoco"/>
+        </maven>
+        
+        <!-- SonarQube integration settings -->
+        <sonarqube>
+            <option name="reportPath" value="target/site/jacoco/jacoco.xml"/>
+            <option name="minimumCoverage" value="0.90"/>
+            <option name="failOnViolation" value="true"/>
+        </sonarqube>
+    </integration>
+    
+    <!-- 
+        Performance Configuration
+        Optimize coverage collection for test execution speed
+    -->
+    <performance>
+        <!-- Use efficient data structures for coverage tracking -->
+        <option name="efficient" value="true"/>
+        <!-- Enable concurrent coverage collection -->
+        <option name="concurrent" value="true"/>
+        <!-- Optimize memory usage for large test suites -->
+        <option name="memory" value="optimized"/>
+        <!-- Buffer size for coverage data collection -->
+        <option name="buffersize" value="8192"/>
+    </performance>
+    
+    <!-- 
+        Validation Configuration
+        Quality gates and validation rules for coverage enforcement
+    -->
+    <validation>
+        <!-- Fail build if minimum coverage thresholds not met -->
+        <option name="haltOnFailure" value="true"/>
+        <!-- Generate warnings for classes below target coverage -->
+        <option name="warnOnLowCoverage" value="true"/>
+        <!-- Threshold for generating low coverage warnings -->
+        <option name="warningThreshold" value="0.80"/>
+        <!-- Enable detailed validation reporting -->
+        <option name="detailedReporting" value="true"/>
+    </validation>
+    
+</configuration>
