@@ -1,0 +1,269 @@
+# ServiceMonitor configuration for CardDemo Prometheus metrics collection
+# Enables comprehensive monitoring of Spring Boot services, API Gateway, and batch jobs
+# Supports sub-200ms SLA compliance and observability requirements per Section 6.5
+
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: carddemo-backend-monitor
+  namespace: default
+  labels:
+    app: carddemo-backend
+    component: monitoring
+    tier: application
+spec:
+  # Target Spring Boot backend services (24 REST controllers)
+  selector:
+    matchLabels:
+      app: carddemo-backend
+  endpoints:
+  - port: http
+    # Target Spring Boot Actuator Prometheus endpoint
+    path: /actuator/prometheus
+    # 30-second scrape interval for real-time monitoring
+    interval: 30s
+    # 15-second timeout for metric collection
+    scrapeTimeout: 15s
+    # Enable detailed HTTP metrics for SLA monitoring
+    params:
+      format: 
+      - prometheus
+    # Metric relabeling for Grafana dashboard integration
+    metricRelabelings:
+    # Label transaction types for business metric tracking
+    - sourceLabels: [__name__]
+      regex: 'http_server_requests_seconds.*'
+      targetLabel: metric_type
+      replacement: 'transaction_performance'
+    # Add service identification for dashboard filtering
+    - sourceLabels: [service]
+      targetLabel: carddemo_service
+      replacement: 'backend'
+    # Preserve response time percentiles for SLA compliance
+    - sourceLabels: [__name__, quantile]
+      regex: 'http_server_requests_seconds_p(\d+);(\d+\.?\d*)'
+      targetLabel: percentile
+      replacement: 'p${2}'
+    # Label Spring Boot Actuator metrics for operational monitoring
+    - sourceLabels: [__name__]
+      regex: 'jvm_.*|process_.*|system_.*'
+      targetLabel: metric_type
+      replacement: 'infrastructure'
+    # Business metrics labeling for financial transaction tracking
+    - sourceLabels: [__name__]
+      regex: 'spring_security_.*|custom_.*'
+      targetLabel: metric_type
+      replacement: 'business'
+  # Sample configuration for namespace selector
+  namespaceSelector:
+    matchNames:
+    - default
+
+---
+# ServiceMonitor for Spring Cloud Gateway API routing and performance
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: carddemo-gateway-monitor
+  namespace: default
+  labels:
+    app: carddemo-gateway
+    component: monitoring
+    tier: gateway
+spec:
+  # Target Spring Cloud Gateway service
+  selector:
+    matchLabels:
+      app: carddemo-gateway
+  endpoints:
+  - port: http
+    # Target Spring Boot Actuator Prometheus endpoint
+    path: /actuator/prometheus
+    # 30-second scrape interval for API gateway monitoring
+    interval: 30s
+    # 15-second timeout for metric collection
+    scrapeTimeout: 15s
+    # Enable gateway-specific metrics
+    params:
+      format: 
+      - prometheus
+    # Gateway-specific metric relabeling
+    metricRelabelings:
+    # Label API Gateway routing metrics
+    - sourceLabels: [__name__]
+      regex: 'spring_cloud_gateway_.*'
+      targetLabel: metric_type
+      replacement: 'api_gateway'
+    # Track authentication and authorization metrics
+    - sourceLabels: [__name__]
+      regex: 'spring_security_.*'
+      targetLabel: metric_type
+      replacement: 'security'
+    # Monitor request routing performance
+    - sourceLabels: [__name__, route_id]
+      regex: 'spring_cloud_gateway_requests_seconds.*;(.*)'
+      targetLabel: api_route
+      replacement: '${1}'
+    # Add service identification
+    - sourceLabels: [service]
+      targetLabel: carddemo_service
+      replacement: 'gateway'
+  namespaceSelector:
+    matchNames:
+    - default
+
+---
+# ServiceMonitor for Spring Batch job execution and performance monitoring
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: carddemo-batch-monitor
+  namespace: default
+  labels:
+    app: carddemo-batch
+    component: monitoring
+    tier: batch
+spec:
+  # Target Spring Batch job services (12 batch jobs)
+  selector:
+    matchLabels:
+      app: carddemo-batch
+  endpoints:
+  - port: http
+    # Target Spring Boot Actuator Prometheus endpoint for batch services
+    path: /actuator/prometheus
+    # 30-second scrape interval for batch job monitoring
+    interval: 30s
+    # 15-second timeout for metric collection
+    scrapeTimeout: 15s
+    # Enable Spring Batch specific metrics
+    params:
+      format: 
+      - prometheus
+    # Batch-specific metric relabeling for job tracking
+    metricRelabelings:
+    # Label Spring Batch job execution metrics
+    - sourceLabels: [__name__]
+      regex: 'spring_batch_.*'
+      targetLabel: metric_type
+      replacement: 'batch_processing'
+    # Track job completion status for 4-hour SLA window
+    - sourceLabels: [__name__, job_name, status]
+      regex: 'spring_batch_job_seconds.*;(.*);(.*)'
+      targetLabel: batch_job_status
+      replacement: '${1}_${2}'
+    # Monitor step-level performance for detailed analysis
+    - sourceLabels: [__name__, step_name]
+      regex: 'spring_batch_step_.*';(.*)'
+      targetLabel: batch_step
+      replacement: '${1}'
+    # Financial calculation accuracy tracking
+    - sourceLabels: [__name__]
+      regex: 'custom_balance_.*|custom_interest_.*'
+      targetLabel: metric_type
+      replacement: 'financial_accuracy'
+    # Add service identification
+    - sourceLabels: [service]
+      targetLabel: carddemo_service
+      replacement: 'batch'
+  namespaceSelector:
+    matchNames:
+    - default
+
+---
+# ServiceMonitor for PostgreSQL database metrics collection
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: carddemo-database-monitor
+  namespace: default
+  labels:
+    app: postgresql
+    component: monitoring
+    tier: database
+spec:
+  # Target PostgreSQL service with metrics exporter
+  selector:
+    matchLabels:
+      app: postgresql
+  endpoints:
+  - port: metrics
+    # Target PostgreSQL exporter endpoint
+    path: /metrics
+    # 30-second scrape interval for database monitoring
+    interval: 30s
+    # 10-second timeout for database metric collection
+    scrapeTimeout: 10s
+    # Database-specific metric relabeling
+    metricRelabelings:
+    # Label database connection metrics
+    - sourceLabels: [__name__]
+      regex: 'pg_.*|postgresql_.*'
+      targetLabel: metric_type
+      replacement: 'database'
+    # Monitor connection pool health for JPA performance
+    - sourceLabels: [__name__]
+      regex: '.*connection.*|.*pool.*'
+      targetLabel: metric_type
+      replacement: 'connection_pool'
+    # Track query performance for transaction SLA
+    - sourceLabels: [__name__]
+      regex: '.*query.*|.*transaction.*'
+      targetLabel: metric_type
+      replacement: 'query_performance'
+    # Add service identification
+    - sourceLabels: [service]
+      targetLabel: carddemo_service
+      replacement: 'database'
+  namespaceSelector:
+    matchNames:
+    - default
+
+---
+# ServiceMonitor for Redis session store metrics collection
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: carddemo-redis-monitor
+  namespace: default
+  labels:
+    app: redis
+    component: monitoring
+    tier: cache
+spec:
+  # Target Redis service with metrics exporter
+  selector:
+    matchLabels:
+      app: redis
+  endpoints:
+  - port: metrics
+    # Target Redis exporter endpoint
+    path: /metrics
+    # 30-second scrape interval for session store monitoring
+    interval: 30s
+    # 10-second timeout for Redis metric collection
+    scrapeTimeout: 10s
+    # Redis-specific metric relabeling
+    metricRelabelings:
+    # Label Redis cache metrics
+    - sourceLabels: [__name__]
+      regex: 'redis_.*'
+      targetLabel: metric_type
+      replacement: 'session_store'
+    # Monitor session management for Spring Session
+    - sourceLabels: [__name__]
+      regex: '.*session.*|.*cache.*'
+      targetLabel: metric_type
+      replacement: 'session_management'
+    # Track memory usage for 32KB session limit compliance
+    - sourceLabels: [__name__]
+      regex: '.*memory.*|.*usage.*'
+      targetLabel: metric_type
+      replacement: 'memory_usage'
+    # Add service identification
+    - sourceLabels: [service]
+      targetLabel: carddemo_service
+      replacement: 'redis'
+  namespaceSelector:
+    matchNames:
+    - default
