@@ -1,0 +1,415 @@
+# PostgreSQL StatefulSet for CardDemo Application
+# Replaces VSAM KSDS datasets with PostgreSQL 17.5 database
+# Provides persistent storage, ordered pod management, and stable network identities
+# 
+# VSAM Datasets being replaced:
+# - ACCTDATA.VSAM.KSDS (Account data, 50 records, 300 byte records)
+# - CARDDATA.VSAM.KSDS (Card data, 50 records, 150 byte records)
+# - CARDXREF.VSAM.KSDS (Card cross-reference, 50 records, 50 byte records)
+# - CUSTDATA.VSAM.KSDS (Customer data, 50 records, 500 byte records)
+# - TRANSACT.VSAM.KSDS (Transaction data, 311 records, 350 byte records)
+# - USRSEC.VSAM.KSDS (User security, 10 records, 80 byte records)
+# - Plus additional reference and configuration tables
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgresql
+  labels:
+    app: postgresql
+    component: database
+    tier: data
+    version: "17.5"
+    migration-source: vsam-ksds
+spec:
+  serviceName: postgresql-service
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  selector:
+    matchLabels:
+      app: postgresql
+  template:
+    metadata:
+      labels:
+        app: postgresql
+        component: database
+        tier: data
+        version: "17.5"
+      annotations:
+        # Performance monitoring for PostgreSQL
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5432"
+        prometheus.io/path: "/metrics"
+        # VSAM migration tracking
+        carddemo.migration/source: "vsam-ksds"
+        carddemo.migration/datasets-count: "6"
+        carddemo.migration/total-records: "521"
+    spec:
+      # Security context for PostgreSQL container
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: postgresql
+        image: postgres:17.5
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: postgresql
+          containerPort: 5432
+          protocol: TCP
+        
+        # Resource allocation optimized for VSAM replacement workload
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+            ephemeral-storage: "1Gi"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+            ephemeral-storage: "2Gi"
+        
+        # Environment variables for PostgreSQL configuration
+        env:
+        - name: POSTGRES_DB
+          value: "carddemo"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-secret
+              key: username
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-secret
+              key: password
+        - name: POSTGRES_INITDB_ARGS
+          value: "--auth-host=md5 --auth-local=peer"
+        - name: PGDATA
+          value: "/var/lib/postgresql/data/pgdata"
+        
+        # PostgreSQL performance tuning for COBOL workload characteristics
+        - name: POSTGRES_SHARED_BUFFERS
+          value: "256MB"
+        - name: POSTGRES_EFFECTIVE_CACHE_SIZE
+          value: "1GB"
+        - name: POSTGRES_RANDOM_PAGE_COST
+          value: "1.1"
+        - name: POSTGRES_CHECKPOINT_COMPLETION_TARGET
+          value: "0.9"
+        - name: POSTGRES_WAL_BUFFERS
+          value: "16MB"
+        - name: POSTGRES_DEFAULT_STATISTICS_TARGET
+          value: "100"
+        - name: POSTGRES_MAX_CONNECTIONS
+          value: "100"
+        
+        # Volume mounts for persistent data storage
+        volumeMounts:
+        - name: postgresql-storage
+          mountPath: /var/lib/postgresql/data
+          subPath: pgdata
+        - name: postgresql-config
+          mountPath: /etc/postgresql/postgresql.conf
+          subPath: postgresql.conf
+          readOnly: true
+        - name: postgresql-initdb
+          mountPath: /docker-entrypoint-initdb.d
+          readOnly: true
+        
+        # Health probes using pg_isready
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - exec pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" -h 127.0.0.1 -p 5432
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - exec pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" -h 127.0.0.1 -p 5432
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 2
+        
+        # Startup probe for initial database setup
+        startupProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - exec pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" -h 127.0.0.1 -p 5432
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 30
+      
+      # Init container for database initialization and VSAM data migration
+      initContainers:
+      - name: postgresql-init
+        image: postgres:17.5
+        command:
+        - /bin/bash
+        - -c
+        - |
+          # Create directory structure for PostgreSQL data
+          mkdir -p /var/lib/postgresql/data/pgdata
+          chown -R 999:999 /var/lib/postgresql/data
+          chmod 700 /var/lib/postgresql/data/pgdata
+          
+          # Initialize database cluster if it doesn't exist
+          if [ ! -f /var/lib/postgresql/data/pgdata/PG_VERSION ]; then
+            initdb -D /var/lib/postgresql/data/pgdata \
+                   --auth-host=md5 \
+                   --auth-local=peer \
+                   --username=postgres \
+                   --pwfile=<(echo "$POSTGRES_PASSWORD")
+          fi
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-secret
+              key: password
+        - name: PGDATA
+          value: "/var/lib/postgresql/data/pgdata"
+        volumeMounts:
+        - name: postgresql-storage
+          mountPath: /var/lib/postgresql/data
+        securityContext:
+          runAsUser: 999
+          runAsGroup: 999
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+      
+      # Volumes for configuration and initialization scripts
+      volumes:
+      - name: postgresql-config
+        configMap:
+          name: postgresql-config
+          defaultMode: 0444
+      - name: postgresql-initdb
+        configMap:
+          name: postgresql-initdb
+          defaultMode: 0555
+      
+      # DNS configuration for service discovery
+      dnsPolicy: ClusterFirst
+      dnsConfig:
+        options:
+        - name: ndots
+          value: "2"
+        - name: edns0
+      
+      # Termination grace period for graceful shutdown
+      terminationGracePeriodSeconds: 60
+      
+      # Node affinity for optimal placement
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: node-role.kubernetes.io/database
+                operator: In
+                values: ["true"]
+          - weight: 50
+            preference:
+              matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values: ["amd64"]
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values: ["postgresql"]
+              topologyKey: kubernetes.io/hostname
+      
+      # Tolerations for dedicated database nodes
+      tolerations:
+      - key: "database-node"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+      - key: "node.kubernetes.io/not-ready"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 30
+      - key: "node.kubernetes.io/unreachable"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 30
+
+  # Persistent Volume Claim Templates for data storage
+  volumeClaimTemplates:
+  - metadata:
+      name: postgresql-storage
+      labels:
+        app: postgresql
+        component: database-storage
+      annotations:
+        # Storage provisioning annotations
+        volume.beta.kubernetes.io/storage-provisioner: "kubernetes.io/aws-ebs"
+        volume.kubernetes.io/storage-provisioner: "kubernetes.io/aws-ebs"
+        # VSAM migration tracking
+        carddemo.migration/source: "vsam-ksds-datasets"
+        carddemo.migration/storage-requirement: "100Gi"
+        carddemo.migration/performance-tier: "high-iops"
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      storageClassName: fast-ssd
+      resources:
+        requests:
+          storage: 100Gi
+      
+      # Volume attributes for performance optimization
+      volumeMode: Filesystem
+      dataSource: null
+      dataSourceRef: null
+
+---
+# Headless Service for StatefulSet
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql-service
+  labels:
+    app: postgresql
+    component: database
+    tier: data
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+    # VSAM replacement service annotations
+    carddemo.migration/service-type: "database"
+    carddemo.migration/replaces: "vsam-ksds"
+spec:
+  type: ClusterIP
+  clusterIP: None  # Headless service for StatefulSet
+  publishNotReadyAddresses: true
+  ports:
+  - name: postgresql
+    port: 5432
+    targetPort: 5432
+    protocol: TCP
+  selector:
+    app: postgresql
+  sessionAffinity: None
+
+---
+# Regular Service for application connectivity
+apiVersion: v1
+kind: Service  
+metadata:
+  name: postgresql-client-service
+  labels:
+    app: postgresql
+    component: database-client
+    tier: data
+  annotations:
+    # Performance and connection management
+    service.kubernetes.io/load-balancer-source-ranges: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+    # VSAM replacement tracking
+    carddemo.migration/client-service: "true"
+    carddemo.migration/max-connections: "100"
+spec:
+  type: ClusterIP
+  ports:
+  - name: postgresql
+    port: 5432
+    targetPort: 5432
+    protocol: TCP
+  selector:
+    app: postgresql
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 300
+
+---
+# Pod Disruption Budget for high availability
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: postgresql-pdb
+  labels:
+    app: postgresql
+    component: database
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: postgresql
+
+---
+# Network Policy for database security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgresql-network-policy
+  labels:
+    app: postgresql
+    component: database-security
+spec:
+  podSelector:
+    matchLabels:
+      app: postgresql
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    # Allow traffic from Spring Boot backend services
+    - podSelector:
+        matchLabels:
+          app: carddemo-backend
+    # Allow traffic from monitoring systems
+    - podSelector:
+        matchLabels:
+          app: prometheus
+    # Allow traffic from administrative tools
+    - podSelector:
+        matchLabels:
+          role: database-admin
+    ports:
+    - protocol: TCP
+      port: 5432
+  egress:
+  # Allow DNS resolution
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  # Allow NTP synchronization
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 123
