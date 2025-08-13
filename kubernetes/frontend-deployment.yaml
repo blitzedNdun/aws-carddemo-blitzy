@@ -1,0 +1,313 @@
+---
+# Kubernetes Deployment manifest for CardDemo React Single Page Application Frontend
+# Serves the modernized UI replacing BMS 3270 terminal screens through NGINX web server
+# Implements screen-for-screen functional parity with 18 original BMS mapsets
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: carddemo-frontend
+  labels:
+    app: carddemo-frontend
+    tier: frontend
+    component: react-spa
+    version: v2.1.0
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    description: "React SPA frontend serving modernized credit card management UI"
+spec:
+  # Initial configuration with 2 replicas as specified in requirements
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # Ensure zero-downtime deployments for continuous frontend availability
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: carddemo-frontend
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        app: carddemo-frontend
+        tier: frontend
+        component: react-spa
+        version: v2.1.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      # Security context for container hardening
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101  # nginx user
+        runAsGroup: 101
+        fsGroup: 101
+      containers:
+      - name: frontend-spa
+        # Production React build served via NGINX as specified in requirements
+        image: carddemo/frontend-spa:v2.1.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        - containerPort: 8080
+          name: metrics
+          protocol: TCP
+        # Resource allocation as specified: 64Mi/50m requests, 128Mi/100m limits
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        # HTTP health checks on root path as required
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+            httpHeaders:
+            - name: Accept
+              value: text/html
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+            httpHeaders:
+            - name: Accept
+              value: text/html
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 2
+          successThreshold: 1
+        # Environment configuration for frontend container
+        env:
+        - name: NGINX_PORT
+          value: "80"
+        - name: API_GATEWAY_URL
+          value: "http://carddemo-gateway-service:8080"
+        - name: NODE_ENV
+          value: "production"
+        # Container security settings
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        # Volume mounts for NGINX configuration and cache
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d
+          readOnly: true
+        - name: nginx-cache
+          mountPath: /var/cache/nginx
+        - name: nginx-pid
+          mountPath: /var/run
+      # Volumes for NGINX configuration and runtime directories
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: carddemo-frontend-nginx-config
+          defaultMode: 0644
+      - name: nginx-cache
+        emptyDir: {}
+      - name: nginx-pid
+        emptyDir: {}
+      # DNS configuration for service discovery
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      # Deployment scheduling preferences
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - carddemo-frontend
+              topologyKey: kubernetes.io/hostname
+
+---
+# Service definition for frontend pods
+apiVersion: v1
+kind: Service
+metadata:
+  name: carddemo-frontend-service
+  labels:
+    app: carddemo-frontend
+    tier: frontend
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: carddemo-frontend
+    tier: frontend
+
+---
+# HorizontalPodAutoscaler for 2-5 replica scaling as specified
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: carddemo-frontend-hpa
+  labels:
+    app: carddemo-frontend
+    tier: frontend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: carddemo-frontend
+  # Configure 2-5 replicas with auto-scaling as required
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  # CPU-based scaling for resource optimization
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  # Memory-based scaling for static asset serving efficiency
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 25
+        periodSeconds: 60
+
+---
+# ConfigMap for NGINX configuration optimizing static asset delivery
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: carddemo-frontend-nginx-config
+  labels:
+    app: carddemo-frontend
+    tier: frontend
+data:
+  default.conf: |
+    # NGINX configuration for React SPA serving with optimization
+    server {
+        listen 80;
+        server_name localhost;
+        root /usr/share/nginx/html;
+        index index.html;
+        
+        # Security headers for financial application
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self';" always;
+        
+        # Gzip compression for performance optimization
+        gzip on;
+        gzip_vary on;
+        gzip_min_length 1024;
+        gzip_proxied any;
+        gzip_comp_level 6;
+        gzip_types
+            text/plain
+            text/css
+            text/xml
+            text/javascript
+            application/json
+            application/javascript
+            application/xml+rss
+            application/atom+xml
+            image/svg+xml;
+        
+        # Static asset caching optimization
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+            try_files $uri =404;
+        }
+        
+        # React SPA routing - serve index.html for all routes
+        location / {
+            try_files $uri $uri/ /index.html;
+            
+            # Prevent caching of main HTML file
+            add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0";
+            expires off;
+        }
+        
+        # Health check endpoint
+        location /health {
+            access_log off;
+            return 200 "healthy\n";
+            add_header Content-Type text/plain;
+        }
+        
+        # API proxy to Spring Cloud Gateway (if needed for direct calls)
+        location /api {
+            proxy_pass http://carddemo-gateway-service:8080;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            
+            # Timeouts for API calls
+            proxy_connect_timeout 30s;
+            proxy_send_timeout 30s;
+            proxy_read_timeout 30s;
+        }
+        
+        # Error page configuration
+        error_page 404 /index.html;
+        error_page 500 502 503 504 /50x.html;
+        location = /50x.html {
+            root /usr/share/nginx/html;
+        }
+    }
+
+---
+# PodDisruptionBudget to ensure availability during maintenance
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: carddemo-frontend-pdb
+  labels:
+    app: carddemo-frontend
+    tier: frontend
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: carddemo-frontend
+      tier: frontend
