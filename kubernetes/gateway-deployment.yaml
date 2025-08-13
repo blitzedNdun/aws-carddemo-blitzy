@@ -1,0 +1,165 @@
+# Spring Cloud Gateway Deployment for CardDemo
+# Kubernetes Deployment manifest for API gateway component providing request routing,
+# load balancing, and security filtering for the CardDemo application.
+# 
+# Configuration:
+# - 2 replicas for high availability as per Section 8.4.4
+# - Resource allocation per Section 8.4.7: 100m-250m CPU, 256Mi-512Mi memory
+# - Integration with backend services for external traffic management
+# - Health probes integrated with Spring Boot Actuator endpoints
+# - Environment configuration for backend service URL routing
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: carddemo-gateway
+  labels:
+    app: carddemo-gateway
+    component: api-gateway
+    tier: gateway
+    version: v2.1.0
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: carddemo-gateway
+  template:
+    metadata:
+      labels:
+        app: carddemo-gateway
+        component: api-gateway
+        tier: gateway
+        version: v2.1.0
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+      containers:
+      - name: gateway
+        image: carddemo/api-gateway:v2.1.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "kubernetes"
+        - name: BACKEND_SERVICE_URL
+          value: "http://carddemo-backend-service:8080"
+        - name: JAVA_OPTS
+          value: "-Xmx384m -Xms256m -XX:+UseZGC -XX:+UseStringDeduplication"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+            httpHeaders:
+            - name: Accept
+              value: application/json
+          initialDelaySeconds: 45
+          periodSeconds: 30
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+            httpHeaders:
+            - name: Accept
+              value: application/json
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 2
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+        - name: cache-volume
+          mountPath: /app/cache
+      volumes:
+      - name: tmp-volume
+        emptyDir: {}
+      - name: cache-volume
+        emptyDir:
+          sizeLimit: 100Mi
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+
+---
+# Service for Spring Cloud Gateway
+apiVersion: v1
+kind: Service
+metadata:
+  name: carddemo-gateway-service
+  labels:
+    app: carddemo-gateway
+    component: api-gateway
+    tier: gateway
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: carddemo-gateway
+
+---
+# HorizontalPodAutoscaler for Spring Cloud Gateway
+# Supports 2-6 replica scaling capability as per requirements
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: carddemo-gateway-hpa
+  labels:
+    app: carddemo-gateway
+    component: api-gateway
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: carddemo-gateway
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 25
+        periodSeconds: 60
