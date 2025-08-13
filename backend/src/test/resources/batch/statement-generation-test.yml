@@ -1,0 +1,416 @@
+# Spring Batch Test Configuration for Statement Generation
+# Migrated from CBSTM03A.cbl and CBSTM03B.cbl COBOL batch programs
+# Test configuration for StatementGenerationJob with multi-step processing
+
+spring:
+  batch:
+    job:
+      # Statement Generation Job Configuration
+      statement-generation-job:
+        name: "statementGenerationJob"
+        description: "Statement generation batch job migrated from CBSTM03A and CBSTM03B"
+        restartable: true
+        # Job execution timeout - 4 hour window requirement
+        timeout: PT4H
+        
+        # Job Parameters for Test Execution
+        parameters:
+          processDate: "2024-01-15"
+          statementPeriod: "202401"
+          batchMode: "TEST"
+          outputFormat: "BOTH"  # TEXT and HTML formats
+          chunkSize: 500
+          accountFilter: ""  # Empty for all accounts
+          
+        # Multi-Step Configuration matching CBSTM03A/B flow
+        steps:
+          # Step 1: Account Statement Selection (CBSTM03A equivalent)
+          account-selection-step:
+            name: "accountSelectionStep"
+            chunk-size: 500
+            retry-limit: 3
+            skip-limit: 5
+            
+            # Input Configuration - Account Data
+            reader:
+              type: "JdbcCursorItemReader"
+              sql: "SELECT a.acct_id, a.acct_active_status, a.acct_curr_bal, a.acct_credit_limit, c.cust_id, c.cust_first_name, c.cust_last_name, c.cust_addr_line_1, c.cust_addr_line_2, c.cust_addr_city, c.cust_addr_state_cd, c.cust_addr_zip FROM account a JOIN customer c ON a.cust_id = c.cust_id WHERE a.acct_active_status = 'Y' ORDER BY a.acct_id"
+              fetch-size: 500
+              
+            # Processing Configuration
+            processor:
+              type: "CompositeItemProcessor"
+              delegates:
+                - type: "AccountValidationProcessor"
+                  validation-rules:
+                    # Account status validation
+                    status-validation:
+                      active-only: true
+                      valid-statuses: ["Y", "A"]
+                    # Balance validation for statement generation
+                    balance-validation:
+                      include-zero-balance: true
+                      precision: 2
+                      rounding-mode: "HALF_UP"
+                      
+                - type: "StatementPeriodProcessor"
+                  period-rules:
+                    # Statement cycle processing
+                    cycle-validation:
+                      period-format: "YYYYMM"
+                      cutoff-processing: true
+                    # Customer information enrichment
+                    customer-enrichment:
+                      enabled: true
+                      address-formatting: "FIXED_WIDTH"
+                      
+            # Output Configuration - Statement staging
+            writer:
+              type: "JdbcBatchItemWriter"
+              sql: "INSERT INTO statement_staging (acct_id, cust_id, statement_period, acct_balance, credit_limit, customer_name, customer_address, created_ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+              
+          # Step 2: Transaction Aggregation (CBSTM03A continuation)
+          transaction-aggregation-step:
+            name: "transactionAggregationStep"
+            chunk-size: 1000
+            depends-on: "accountSelectionStep"
+            
+            # Transaction data reading
+            reader:
+              type: "JdbcCursorItemReader"
+              sql: "SELECT t.tran_id, t.account_id, t.tran_type_cd, t.tran_cat_cd, t.tran_source, t.tran_desc, t.tran_amt, t.tran_merchant_name, t.tran_orig_ts, t.tran_proc_ts FROM transaction_history t JOIN statement_staging s ON t.account_id = s.acct_id WHERE t.tran_proc_ts >= ? AND t.tran_proc_ts <= ? ORDER BY t.account_id, t.tran_proc_ts"
+              parameters:
+                - name: "periodStartDate"
+                  value: "2024-01-01 00:00:00"
+                - name: "periodEndDate"
+                  value: "2024-01-31 23:59:59"
+              
+            processor:
+              type: "CompositeItemProcessor"
+              delegates:
+                - type: "TransactionGroupingProcessor"
+                  grouping-rules:
+                    # Group by account and transaction date
+                    group-by-account: true
+                    group-by-date: true
+                    sort-order: "CHRONOLOGICAL"
+                    # COMP-3 amount precision matching COBOL
+                    amount-precision:
+                      scale: 2
+                      rounding-mode: "HALF_UP"
+                      
+                - type: "TransactionSummaryProcessor"
+                  summary-rules:
+                    # Calculate running balances
+                    running-balance: true
+                    # Transaction categorization for statement
+                    category-totals: true
+                    merchant-formatting: "FIXED_WIDTH_50"
+                    
+            writer:
+              type: "JdbcBatchItemWriter"
+              sql: "INSERT INTO statement_transactions (acct_id, tran_id, tran_date, tran_desc, tran_amt, running_balance, category_total) VALUES (?, ?, ?, ?, ?, ?, ?)"
+              
+          # Step 3: Statement Text Generation (CBSTM03B equivalent - Text Format)
+          statement-text-generation-step:
+            name: "statementTextGenerationStep"
+            chunk-size: 100
+            depends-on: "transactionAggregationStep"
+            
+            # Account statement data reading
+            reader:
+              type: "JdbcCursorItemReader"
+              sql: "SELECT DISTINCT acct_id FROM statement_staging ORDER BY acct_id"
+              
+            processor:
+              type: "CompositeItemProcessor"
+              delegates:
+                - type: "StatementHeaderProcessor"
+                  header-rules:
+                    # Fixed-width formatting per COBOL layouts
+                    header-format: "FIXED_WIDTH_132"
+                    date-format: "MM/DD/YYYY"
+                    address-format: "BLOCK_FORMAT"
+                    
+                - type: "TransactionDetailProcessor"
+                  detail-rules:
+                    # Transaction line formatting
+                    line-format: "FIXED_WIDTH_132"
+                    amount-format: "S9(9)V99"
+                    description-width: 50
+                    # Sort by transaction date
+                    sort-by-date: true
+                    
+                - type: "StatementSummaryProcessor"
+                  summary-rules:
+                    # Calculate statement totals
+                    previous-balance: true
+                    payments-credits: true
+                    purchases-debits: true
+                    finance-charges: true
+                    new-balance: true
+                    minimum-payment: true
+                    
+            # Output Configuration - Plain text statements
+            writer:
+              type: "FlatFileItemWriter"
+              resource: "file:test-output/batch/statements/statement-text-${account.id}-${statement.period}.txt"
+              line-aggregator:
+                type: "FormattedLineAggregator"
+                format: "FIXED_WIDTH_132"
+                fields:
+                  - name: "accountNumber"
+                    width: 11
+                    padding: "LEFT"
+                  - name: "statementDate"
+                    width: 10
+                    format: "MM/DD/YYYY"
+                  - name: "customerName"
+                    width: 30
+                    padding: "RIGHT"
+                  - name: "transactionLine"
+                    width: 81
+                    format: "TRANSACTION_DETAIL"
+                    
+          # Step 4: Statement HTML Generation (CBSTM03B equivalent - HTML Format)  
+          statement-html-generation-step:
+            name: "statementHtmlGenerationStep"
+            chunk-size: 100
+            depends-on: "transactionAggregationStep"
+            
+            # Same reader as text generation
+            reader:
+              type: "JdbcCursorItemReader"
+              sql: "SELECT DISTINCT acct_id FROM statement_staging ORDER BY acct_id"
+              
+            processor:
+              type: "CompositeItemProcessor"
+              delegates:
+                - type: "HtmlStatementProcessor"
+                  html-rules:
+                    # HTML template processing
+                    template-name: "statement-template.html"
+                    css-styling: "statement-styles.css"
+                    responsive-design: false  # Maintain print-friendly layout
+                    
+                - type: "HtmlTransactionProcessor"
+                  transaction-rules:
+                    # HTML table formatting
+                    table-striping: true
+                    amount-highlighting: true
+                    date-formatting: "MM/DD/YYYY"
+                    
+            writer:
+              type: "FlatFileItemWriter"
+              resource: "file:test-output/batch/statements/statement-html-${account.id}-${statement.period}.html"
+              line-aggregator:
+                type: "PassThroughLineAggregator"
+                
+        # Job Repository Configuration for Restart Capabilities
+        job-repository:
+          type: "JdbcJobRepository"
+          table-prefix: "BATCH_"
+          isolation-level: "REPEATABLE_READ"
+          
+        # Transaction Manager Configuration
+        transaction-manager:
+          type: "DataSourceTransactionManager"
+          timeout: 600  # 10 minutes per chunk
+          isolation: "READ_COMMITTED"
+          
+    # Test Data Configuration
+    test-data:
+      # Input data configuration
+      input-data:
+        accounts:
+          count: 1000
+          active-percentage: 95
+          balance-range:
+            min: 0.00
+            max: 50000.00
+            
+        customers:
+          count: 1000
+          address-types: ["RESIDENTIAL", "BUSINESS"]
+          
+        transactions:
+          count: 15000
+          period: "2024-01"
+          transaction-types: ["01", "02", "03", "04", "05"]
+          amount-range:
+            min: 1.00
+            max: 5000.00
+            
+      # Expected output configuration
+      expected-outputs:
+        statements-generated:
+          text-format-count: 950  # 95% of 1000 active accounts
+          html-format-count: 950
+          
+        statement-content-validation:
+          header-validation: true
+          transaction-sorting: "CHRONOLOGICAL"
+          balance-accuracy: "PENNY_PERFECT"
+          
+        performance-metrics:
+          max-generation-time: "PT30M"  # 30 minutes for 1000 statements
+          memory-usage-threshold: "2GB"
+          
+    # Checkpoint and Restart Configuration
+    checkpoint:
+      # Enable checkpoint management for restart capabilities
+      commit-interval: 100
+      restart-mode: "FROM_CHECKPOINT"
+      
+      # Checkpoint data storage
+      checkpoint-storage:
+        type: "DATABASE"
+        table-name: "BATCH_STEP_EXECUTION_CONTEXT"
+        
+      # Recovery settings
+      recovery-settings:
+        max-restart-attempts: 3
+        restart-delay: "PT5M"
+        cleanup-on-success: true
+        
+    # Performance Testing Configuration
+    performance:
+      # 4-hour window requirement compliance
+      max-execution-time: "PT4H"
+      step-processing-time:
+        account-selection: "PT5M"
+        transaction-aggregation: "PT15M"
+        text-generation: "PT30M"
+        html-generation: "PT30M"
+        
+      # Memory usage monitoring
+      memory:
+        heap-threshold: "80%"
+        gc-frequency-threshold: 5
+        chunk-size-optimization: true
+        
+      # Database performance
+      database:
+        connection-pool-size: 15
+        query-timeout: 60
+        batch-size: 500
+        
+    # Validation Configuration
+    validation:
+      # Fixed-width format validation
+      output-format:
+        text-line-length: 132
+        character-encoding: "UTF-8"
+        line-endings: "UNIX"
+        
+      # Business rule validation
+      business-rules:
+        statement-completeness: true
+        balance-reconciliation: true
+        transaction-accuracy: true
+        
+      # COMP-3 decimal precision validation
+      decimal-precision:
+        enabled: true
+        scale: 2
+        rounding-mode: "HALF_UP"
+        overflow-detection: true
+        
+    # Error Handling Configuration
+    error-handling:
+      retry-policy:
+        max-attempts: 3
+        backoff-delay: "PT10S"
+        multiplier: 2.0
+        
+      skip-policy:
+        skip-limit: 50
+        skippable-exceptions:
+          - "StatementGenerationException"
+          - "DataFormatException"
+          - "TemplateProcessingException"
+          
+      failure-handling:
+        stop-on-fatal-error: true
+        fatal-exceptions:
+          - "DatabaseConnectionException"
+          - "FileSystemException"
+          - "SecurityException"
+          
+    # Monitoring Configuration
+    monitoring:
+      metrics:
+        enabled: true
+        export:
+          prometheus:
+            enabled: true
+            step: "PT30S"
+            
+      # Custom metrics for statement generation
+      custom-metrics:
+        - name: "batch_statements_generated_total"
+          type: "counter"
+          description: "Total number of statements generated"
+          
+        - name: "batch_statement_generation_duration_seconds"
+          type: "timer"
+          description: "Time taken to generate individual statements"
+          
+        - name: "batch_transaction_aggregation_count"
+          type: "counter"
+          description: "Number of transactions aggregated per statement"
+          
+        - name: "batch_format_generation_errors"
+          type: "counter"
+          description: "Number of formatting errors in statement generation"
+
+# Test Environment Specific Configuration
+test:
+  environment: "INTEGRATION"
+  
+  # Database configuration for testing
+  datasource:
+    url: "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL"
+    driver-class-name: "org.h2.Driver"
+    username: "sa"
+    password: ""
+    
+  # H2 database initialization
+  h2:
+    console:
+      enabled: true
+    initialization-mode: "always"
+    schema: "classpath:schema/batch-test-schema.sql"
+    data: "classpath:data/statement-test-data.sql"
+    
+  # Logging configuration for test execution
+  logging:
+    level:
+      com.carddemo.batch: "DEBUG"
+      com.carddemo.batch.statement: "DEBUG"
+      org.springframework.batch: "INFO"
+      org.springframework.jdbc: "DEBUG"
+    pattern:
+      console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+      
+  # File system configuration for statement output
+  file-system:
+    output-directory: "test-output/batch/statements"
+    temp-directory: "test-temp/batch"
+    cleanup-after-test: true
+    
+# JMX Configuration for monitoring during tests
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,metrics,batch,prometheus"
+  endpoint:
+    health:
+      show-details: "always"
+    batch:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
