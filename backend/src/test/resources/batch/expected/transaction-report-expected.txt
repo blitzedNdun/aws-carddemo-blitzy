@@ -1,0 +1,155 @@
+                               CARDEMO TRANSACTION SUMMARY REPORT                               
+                                        PAGE    1                                        
+                                                                                         
+RUN DATE: 2024-01-15                           REPORT PERIOD: 01/01/2024 TO 01/15/2024  
+RUN TIME: 08:30:15                                                                      
+                                                                                         
+================================================================================         
+                                                                                         
+MERCHANT GROUP: 000012345 - AMAZON.COM                    SEATTLE         WA           
+                                                                                         
+  CARD: ****-****-****-1234                                                             
+  DATE       TRANS ID         TYPE  CAT   AMOUNT      DESCRIPTION                      
+  ---------- ---------------- ----- ----- ----------- -------------------------------- 
+  01/05/2024 T001234567890123 PU    5411      125.67  GROCERY PURCHASE                 
+  01/07/2024 T001234567890124 PU    5411       89.23  HOUSEHOLD ITEMS                  
+  01/10/2024 T001234567890125 PU    5999       45.99  BOOKS AND MEDIA                  
+                                            ----------                                   
+  CARD SUBTOTAL:                                260.89                                   
+                                                                                         
+  CARD: ****-****-****-5678                                                             
+  DATE       TRANS ID         TYPE  CAT   AMOUNT      DESCRIPTION                      
+  ---------- ---------------- ----- ----- ----------- -------------------------------- 
+  01/03/2024 T001234567890126 PU    5411       78.45  GROCERY PURCHASE                 
+  01/08/2024 T001234567890127 PU    5999       156.78  ELECTRONICS                      
+  01/12/2024 T001234567890128 PU    5411       92.13  GROCERY PURCHASE                 
+                                            ----------                                   
+  CARD SUBTOTAL:                                327.36                                   
+                                                                                         
+MERCHANT SUBTOTAL - 000012345:                 588.25                                   
+TRANSACTION COUNT - 000012345:                      6                                   
+                                                                                         
+================================================================================         
+                                                                                         
+MERCHANT GROUP: 000098765 - WALMART SUPERCENTER          ANYTOWN         TX           
+                                                                                         
+  CARD: ****-****-****-1234                                                             
+  DATE       TRANS ID         TYPE  CAT   AMOUNT      DESCRIPTION                      
+  ---------- ---------------- ----- ----- ----------- -------------------------------- 
+  01/04/2024 T001234567890129 PU    5411       67.89  GROCERY PURCHASE                 
+  01/09/2024 T001234567890130 PU    5999       43.22  HOUSEHOLD SUPPLIES               
+  01/13/2024 T001234567890131 PU    5411       85.67  GROCERY PURCHASE                 
+                                            ----------                                   
+  CARD SUBTOTAL:                                196.78                                   
+                                                                                         
+  CARD: ****-****-****-9012                                                             
+  DATE       TRANS ID         TYPE  CAT   AMOUNT      DESCRIPTION                      
+  ---------- ---------------- ----- ----- ----------- -------------------------------- 
+  01/02/2024 T001234567890132 PU    5411      134.56  GROCERY PURCHASE                 
+  01/06/2024 T001234567890133 PU    5999       78.90  AUTOMOTIVE                       
+  01/11/2024 T001234567890134 PU    5411       99.87  GROCERY PURCHASE                 
+  01/14/2024 T001234567890135 PU    5999       65.43  SPORTING GOODS                   
+                                            ----------                                   
+  CARD SUBTOTAL:                                378.76                                   
+                                                                                         
+MERCHANT SUBTOTAL - 000098765:                 575.54                                   
+TRANSACTION COUNT - 000098765:                      7                                   
+                                                                                         
+================================================================================         
+                                                                                         
+MERCHANT GROUP: 000054321 - SHELL GAS STATION            DOWNTOWN        NY           
+                                                                                         
+  CARD: ****-****-****-5678                                                             
+  DATE       TRANS ID         TYPE  CAT   AMOUNT      DESCRIPTION                      
+  ---------- ---------------- ----- ----- ----------- -------------------------------- 
+  01/01/2024 T001234567890136 PU    5541       45.67  GASOLINE PURCHASE                
+  01/08/2024 T001234567890137 PU    5541       52.34  GASOLINE PURCHASE                
+  01/15/2024 T001234567890138 PU    5541       48.99  GASOLINE PURCHASE                
+                                            ----------                                   
+  CARD SUBTOTAL:                                147.00                                   
+                                                                                         
+  CARD: ****-****-****-9012                                                             
+  DATE       TRANS ID         TYPE  CAT   AMOUNT      DESCRIPTION                      
+  ---------- ---------------- ----- ----- ----------- -------------------------------- 
+  01/07/2024 T001234567890139 PU    5541       39.87  GASOLINE PURCHASE                
+  01/14/2024 T001234567890140 PU    5541       44.23  GASOLINE PURCHASE                
+                                            ----------                                   
+  CARD SUBTOTAL:                                 84.10                                   
+                                                                                         
+MERCHANT SUBTOTAL - 000054321:                 231.10                                   
+TRANSACTION COUNT - 000054321:                      5                                   
+                                                                                         
+================================================================================         
+                                                                                         
+                               DAILY TRANSACTION SUMMARY                                
+                                                                                         
+DATE       TRANSACTION COUNT    TOTAL AMOUNT                                            
+---------- ----------------- ----------------                                          
+01/01/2024                 1            45.67                                          
+01/02/2024                 1           134.56                                          
+01/03/2024                 1            78.45                                          
+01/04/2024                 1            67.89                                          
+01/05/2024                 1           125.67                                          
+01/06/2024                 1            78.90                                          
+01/07/2024                 2            92.21                                          
+01/08/2024                 2           209.12                                          
+01/09/2024                 1            43.22                                          
+01/10/2024                 1            45.99                                          
+01/11/2024                 1            99.87                                          
+01/12/2024                 1            92.13                                          
+01/13/2024                 1            85.67                                          
+01/14/2024                 2           109.66                                          
+01/15/2024                 1            48.99                                          
+                         ---- ----------------                                          
+DAILY TOTALS:               18        1,358.00                                          
+                                                                                         
+================================================================================         
+                                                                                         
+                               TRANSACTION TYPE SUMMARY                                 
+                                                                                         
+TYPE CODE  TYPE NAME           TRANSACTION COUNT    TOTAL AMOUNT                       
+--------- ------------------- ----------------- ----------------                      
+PU        PURCHASE                           18        1,358.00                       
+                                           ---- ----------------                      
+TYPE TOTALS:                                 18        1,358.00                       
+                                                                                         
+================================================================================         
+                                                                                         
+                             TRANSACTION CATEGORY SUMMARY                              
+                                                                                         
+CATEGORY  CATEGORY NAME       TRANSACTION COUNT    TOTAL AMOUNT                       
+-------- ------------------- ----------------- ----------------                      
+5411     GROCERY STORES                      10          809.46                       
+5541     GAS STATIONS                         5          231.10                       
+5999     MISCELLANEOUS                       3          317.44                       
+                             ----------------- ----------------                      
+CATEGORY TOTALS:                           18        1,358.00                       
+                                                                                         
+================================================================================         
+                                                                                         
+                                 GRAND SUMMARY                                          
+                                                                                         
+REPORT PERIOD:               01/01/2024 TO 01/15/2024                                  
+TOTAL MERCHANTS:                                    3                                  
+TOTAL UNIQUE CARDS:                                 4                                  
+TOTAL TRANSACTIONS:                                18                                  
+TOTAL TRANSACTION AMOUNT:                   1,358.00                                  
+                                                                                         
+AVERAGE TRANSACTION AMOUNT:                    75.44                                   
+HIGHEST TRANSACTION AMOUNT:                   156.78                                   
+LOWEST TRANSACTION AMOUNT:                     39.87                                   
+                                                                                         
+TRANSACTION PROCESSING STATISTICS:                                                      
+  SUCCESSFUL TRANSACTIONS:                        18                                   
+  FAILED TRANSACTIONS:                             0                                   
+  SUCCESS RATE:                              100.00%                                   
+                                                                                         
+================================================================================         
+                                                                                         
+REPORT GENERATED BY: CARDEMO TRANSACTION REPORT JOB (CBTRN02C)                         
+REPORT RUN ID: RPT20240115083015                                                       
+JOB EXECUTION TIME: 00:02:34                                                           
+                                                                                         
+END OF REPORT                                                                           
+                                                                                         
+================================================================================         
