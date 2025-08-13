@@ -1,0 +1,343 @@
+# Transaction Report Job Test Configuration
+# Spring Batch test configuration for TransactionReportJob (CBTRN02C migration)
+# Defines job parameters for transaction report generation, aggregation by various 
+# dimensions, report formatting with totals and subtotals, and multi-format output
+
+spring:
+  batch:
+    job:
+      enabled: false  # Prevent auto-execution during tests
+    
+# Test configuration for TransactionReportJob - CBTRN02C COBOL program migration
+transaction-report-job-test:
+  job-name: "transactionReportJob"
+  
+  # Test job parameters matching CBTRN02C functionality
+  job-parameters:
+    # Report date range parameters (replaces COBOL WS-REPORT-DATE fields)
+    report-start-date: "2024-01-01"
+    report-end-date: "2024-01-31"
+    
+    # Processing batch size for optimal 4-hour window performance
+    chunk-size: 1000
+    
+    # Test execution parameters
+    test-mode: true
+    skip-limit: 10
+    
+    # Date format matching COBOL PIC X(8) YYYYMMDD
+    date-format: "yyyyMMdd"
+    
+    # BigDecimal precision settings for COMP-3 equivalence (TRAN-AMT S9(9)V99)
+    amount-precision: 11
+    amount-scale: 2
+    
+  # Data aggregation configuration matching CBTRN02C report structure
+  aggregation:
+    # Group by dimensions (replaces COBOL PERFORM VARYING loops)
+    group-by:
+      - merchant-id    # TRAN-MERCHANT-ID PIC 9(09)
+      - merchant-name  # TRAN-MERCHANT-NAME PIC X(50)  
+      - card-number    # TRAN-CARD-NUM PIC X(16)
+      - transaction-date # TRAN-ORIG-TS converted to date
+      
+    # Subtotal calculations with BigDecimal precision
+    subtotals:
+      by-merchant:
+        enabled: true
+        precision: 11
+        scale: 2
+        rounding-mode: "HALF_UP"  # Matches COBOL ROUNDED clause
+      by-card:
+        enabled: true  
+        precision: 11
+        scale: 2
+        rounding-mode: "HALF_UP"
+      by-date:
+        enabled: true
+        precision: 11
+        scale: 2
+        rounding-mode: "HALF_UP"
+        
+    # Grand total configuration
+    grand-totals:
+      transaction-count: true
+      total-amount:
+        precision: 11
+        scale: 2
+        rounding-mode: "HALF_UP"
+      average-amount:
+        precision: 11
+        scale: 4  # Additional precision for averages
+        rounding-mode: "HALF_UP"
+
+  # Report formatting configuration matching COBOL report layouts
+  report-formatting:
+    # Fixed-width layout matching COBOL report structure
+    fixed-width:
+      enabled: true
+      line-length: 132  # Standard COBOL report width
+      
+      # Column definitions matching COBOL report fields
+      columns:
+        transaction-id:
+          position: 1
+          width: 16
+          alignment: "LEFT"
+        merchant-name:
+          position: 18
+          width: 50
+          alignment: "LEFT"
+        card-number:
+          position: 69
+          width: 16
+          alignment: "LEFT"
+          mask-format: "XXXX-XXXX-XXXX-****"  # Security masking
+        amount:
+          position: 86
+          width: 15
+          alignment: "RIGHT"
+          format: "###,###,##0.00"
+        transaction-date:
+          position: 102
+          width: 10
+          alignment: "CENTER"
+          format: "MM/dd/yyyy"
+          
+    # Header and footer configuration
+    headers:
+      report-title: "TRANSACTION REPORT BY MERCHANT AND CARD"
+      page-header-lines: 3
+      column-header-line: true
+      
+    footers:
+      subtotal-lines: true
+      grand-total-line: true
+      page-footer-lines: 2
+
+  # Multi-format output configuration per Section 0 requirements  
+  output-formats:
+    # Plain text format (primary - matches COBOL output)
+    text:
+      enabled: true
+      file-extension: ".txt"
+      encoding: "UTF-8"
+      line-separator: "\n"
+      
+    # CSV format for data analysis
+    csv:
+      enabled: true
+      file-extension: ".csv"
+      delimiter: ","
+      quote-character: "\""
+      include-headers: true
+      
+    # PDF format for presentation
+    pdf:
+      enabled: true
+      file-extension: ".pdf"
+      page-size: "LETTER"
+      orientation: "LANDSCAPE"
+      font-family: "Courier"
+      font-size: 10
+
+  # Test data configuration
+  test-data:
+    # Input transaction data for testing
+    input-transactions:
+      # Sample transaction matching CVTRA05Y.cpy structure
+      - transaction-id: "TXN000000000001"
+        transaction-type-code: "01"
+        transaction-category-code: "1001"
+        transaction-source: "POS"
+        transaction-description: "MERCHANT PURCHASE TRANSACTION"
+        transaction-amount: 125.75
+        merchant-id: 123456789
+        merchant-name: "TEST MERCHANT ONE"
+        merchant-city: "ATLANTA"
+        merchant-zip: "30309"
+        card-number: "4000123456789012"
+        original-timestamp: "2024-01-15T14:30:00.000Z"
+        processing-timestamp: "2024-01-15T14:30:05.123Z"
+        
+      - transaction-id: "TXN000000000002"
+        transaction-type-code: "02"
+        transaction-category-code: "1002"
+        transaction-source: "ATM"
+        transaction-description: "CASH ADVANCE TRANSACTION"
+        transaction-amount: 200.00
+        merchant-id: 987654321
+        merchant-name: "TEST MERCHANT TWO"
+        merchant-city: "DALLAS"
+        merchant-zip: "75201"
+        card-number: "4000123456789012"
+        original-timestamp: "2024-01-16T09:15:00.000Z"
+        processing-timestamp: "2024-01-16T09:15:02.456Z"
+        
+      - transaction-id: "TXN000000000003"
+        transaction-type-code: "01"
+        transaction-category-code: "1003"
+        transaction-source: "ONLINE"
+        transaction-description: "ECOMMERCE PURCHASE TRANSACTION"
+        transaction-amount: 89.99
+        merchant-id: 123456789
+        merchant-name: "TEST MERCHANT ONE"
+        merchant-city: "ATLANTA"
+        merchant-zip: "30309"
+        card-number: "4000987654321098"
+        original-timestamp: "2024-01-17T16:45:00.000Z"
+        processing-timestamp: "2024-01-17T16:45:01.789Z"
+
+    # Expected aggregation results for validation
+    expected-results:
+      # Merchant subtotals
+      merchant-subtotals:
+        - merchant-id: 123456789
+          merchant-name: "TEST MERCHANT ONE"
+          transaction-count: 2
+          total-amount: 215.74
+        - merchant-id: 987654321
+          merchant-name: "TEST MERCHANT TWO"
+          transaction-count: 1
+          total-amount: 200.00
+          
+      # Card subtotals
+      card-subtotals:
+        - card-number: "4000123456789012"
+          transaction-count: 2
+          total-amount: 325.75
+        - card-number: "4000987654321098"
+          transaction-count: 1
+          total-amount: 89.99
+          
+      # Date subtotals
+      date-subtotals:
+        - transaction-date: "2024-01-15"
+          transaction-count: 1
+          total-amount: 125.75
+        - transaction-date: "2024-01-16"
+          transaction-count: 1
+          total-amount: 200.00
+        - transaction-date: "2024-01-17"
+          transaction-count: 1
+          total-amount: 89.99
+          
+      # Grand totals
+      grand-totals:
+        total-transactions: 3
+        total-amount: 415.74
+        average-amount: 138.58
+
+  # Performance testing configuration for 4-hour batch window
+  performance:
+    # Volume testing parameters
+    test-volumes:
+      small: 1000      # Quick smoke tests
+      medium: 10000    # Integration testing
+      large: 100000    # Performance validation
+      
+    # Time limits for batch processing window compliance
+    execution-limits:
+      small-volume-max-seconds: 30
+      medium-volume-max-seconds: 300    # 5 minutes
+      large-volume-max-seconds: 1800    # 30 minutes (scaled from 4-hour window)
+      
+    # Memory usage limits
+    memory-limits:
+      max-heap-usage-mb: 512
+      max-chunk-processing-mb: 64
+
+  # Error handling and validation configuration
+  error-handling:
+    # Validation rules matching COBOL edit checks
+    validation:
+      transaction-id:
+        required: true
+        pattern: "^TXN[0-9]{12}$"
+        error-code: "INVALID_TXN_ID"
+        
+      transaction-amount:
+        required: true
+        min-value: 0.01
+        max-value: 999999999.99
+        scale: 2
+        error-code: "INVALID_AMOUNT"
+        
+      merchant-id:
+        required: true
+        pattern: "^[0-9]{9}$"
+        error-code: "INVALID_MERCHANT_ID"
+        
+      card-number:
+        required: true
+        pattern: "^[0-9]{16}$"
+        error-code: "INVALID_CARD_NUMBER"
+        
+      transaction-date:
+        required: true
+        format: "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+        error-code: "INVALID_DATE_FORMAT"
+
+    # Skip and retry policies
+    skip-policy:
+      skip-limit: 10
+      skippable-exceptions:
+        - "ValidationException"
+        - "DataFormatException"
+        
+    retry-policy:
+      retry-limit: 3
+      retryable-exceptions:
+        - "DataAccessResourceFailureException"
+        - "TransientDataAccessException"
+
+  # Database configuration for testing
+  database:
+    # Test data source configuration
+    test-datasource:
+      url: "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
+      driver-class-name: "org.h2.Driver"
+      username: "sa"
+      password: ""
+      
+    # JPA configuration for testing
+    jpa:
+      hibernate:
+        ddl-auto: "create-drop"
+      properties:
+        hibernate:
+          dialect: "org.hibernate.dialect.H2Dialect"
+          format_sql: true
+      show-sql: true
+
+# Test execution profiles
+---
+spring:
+  profiles: "integration-test"
+  
+transaction-report-job-test:
+  test-data:
+    input-transactions: []  # Load from test database
+  database:
+    test-datasource:
+      url: "jdbc:postgresql://localhost:5432/carddemo_test"
+      driver-class-name: "org.postgresql.Driver"
+      username: "carddemo_test"
+      password: "test_password"
+
+---
+spring:
+  profiles: "performance-test"
+  
+transaction-report-job-test:
+  job-parameters:
+    chunk-size: 5000  # Larger chunks for performance testing
+  performance:
+    test-volumes:
+      large: 1000000   # 1M records for stress testing
+  database:
+    test-datasource:
+      url: "jdbc:postgresql://localhost:5432/carddemo_perf"
+      driver-class-name: "org.postgresql.Driver"
+      username: "carddemo_perf"
+      password: "perf_password"
