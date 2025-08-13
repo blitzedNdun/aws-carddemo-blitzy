@@ -1,0 +1,77 @@
+BALANCE RECONCILIATION REPORT                                    RUN DATE: 2024-03-15  TIME: 03:30:00
+=====================================================================================================
+
+ACCOUNT-ID    LEDGER-BALANCE   CALC-BALANCE     VARIANCE-AMT    STATUS      CATEGORY  INV-FLAG
+-----------   --------------   --------------   ------------   ----------   --------  --------
+00000000001        5247.83        5247.83            0.00    BALANCED     NONE      N       
+00000000002        1856.42        1856.42            0.00    BALANCED     NONE      N       
+00000000003        9842.15        9841.89            0.26    DISCREPANCY  ROUNDING  Y       
+00000000004        3021.67        3021.67            0.00    BALANCED     NONE      N       
+00000000005       12894.33       12895.01           -0.68    DISCREPANCY  CALC-ERR  Y       
+00000000006        7653.29        7653.29            0.00    BALANCED     NONE      N       
+00000000007         984.56         984.56            0.00    BALANCED     NONE      N       
+00000000008        4567.21        4567.23           -0.02    DISCREPANCY  ROUNDING  N       
+00000000009       18745.88       18745.88            0.00    BALANCED     NONE      N       
+00000000010        2134.97        2134.97            0.00    BALANCED     NONE      N       
+00000000011        6789.34        6789.34            0.00    BALANCED     NONE      N       
+00000000012        1567.82        1567.81            0.01    DISCREPANCY  ROUNDING  N       
+00000000013       11234.56       11234.56            0.00    BALANCED     NONE      N       
+00000000014        8956.73        8956.73            0.00    BALANCED     NONE      N       
+00000000015        3456.78        3457.21           -0.43    DISCREPANCY  CALC-ERR  Y       
+00000000016        9876.54        9876.54            0.00    BALANCED     NONE      N       
+00000000017        2345.67        2345.67            0.00    BALANCED     NONE      N       
+00000000018        7890.12        7890.12            0.00    BALANCED     NONE      N       
+00000000019        5432.18        5432.18            0.00    BALANCED     NONE      N       
+00000000020       14567.89       14567.89            0.00    BALANCED     NONE      N       
+00000000021         876.54         876.52            0.02    DISCREPANCY  ROUNDING  N       
+00000000022        6543.21        6543.21            0.00    BALANCED     NONE      N       
+00000000023        4321.98        4321.98            0.00    BALANCED     NONE      N       
+00000000024       13789.45       13789.67           -0.22    DISCREPANCY  ROUNDING  N       
+00000000025        8765.43        8765.43            0.00    BALANCED     NONE      N       
+
+=====================================================================================================
+RECONCILIATION SUMMARY
+=====================================================================================================
+
+TOTAL ACCOUNTS PROCESSED:                 25
+BALANCED ACCOUNTS:                        19
+DISCREPANT ACCOUNTS:                       6
+PERCENTAGE BALANCED:                   76.00%
+
+VARIANCE ANALYSIS:
+-----------------
+TOTAL VARIANCE AMOUNT:                  -1.04
+ABSOLUTE VARIANCE AMOUNT:                1.36
+LARGEST POSITIVE VARIANCE:               0.26  (ACCOUNT: 00000000003)
+LARGEST NEGATIVE VARIANCE:              -0.68  (ACCOUNT: 00000000005)
+
+DISCREPANCY CATEGORIES:
+-----------------------
+ROUNDING ERRORS:                           4
+CALCULATION ERRORS:                        2
+DATA INTEGRITY ISSUES:                     0
+TIMING DIFFERENCES:                        0
+
+INVESTIGATION REQUIRED:
+-----------------------
+ACCOUNTS FLAGGED FOR INVESTIGATION:       3
+HIGH PRIORITY (VARIANCE > 0.25):          2
+MEDIUM PRIORITY (VARIANCE 0.10-0.25):     1
+LOW PRIORITY (VARIANCE < 0.10):            3
+
+CONTROL TOTALS:
+---------------
+LEDGER BALANCE TOTAL:              208,562.40
+CALCULATED BALANCE TOTAL:          208,563.44
+NET VARIANCE:                          -1.04
+
+PRECISION VALIDATION:
+---------------------
+DECIMAL PRECISION MAINTAINED:           YES
+COBOL COMP-3 PARITY:                     YES
+PENNY-LEVEL ACCURACY:                    YES
+ROUNDING MODE (HALF-UP):                 YES
+
+=====================================================================================================
+END OF RECONCILIATION REPORT
+=====================================================================================================
