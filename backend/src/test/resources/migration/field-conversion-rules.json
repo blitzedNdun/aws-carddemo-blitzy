@@ -1,0 +1,669 @@
+{
+  "version": "1.0.0",
+  "description": "Field-level conversion rules from COBOL data types to PostgreSQL/Java types for CardDemo migration",
+  "metadata": {
+    "created": "2024-01-01",
+    "source_system": "IBM CICS/COBOL z/OS",
+    "target_system": "Spring Boot 3.2.x / PostgreSQL 16.x",
+    "migration_type": "COBOL_TO_JAVA_SPRING_BOOT",
+    "precision_mode": "EXACT_COBOL_COMPATIBILITY"
+  },
+  
+  "pic_clause_mappings": {
+    "description": "Direct mappings from COBOL PIC clauses to PostgreSQL column types and Java BigDecimal configurations",
+    
+    "numeric_types": {
+      "PIC 9(1)": {
+        "postgresql_type": "SMALLINT",
+        "java_type": "Integer",
+        "range": "0-9",
+        "validation": "CHECK (column_name >= 0 AND column_name <= 9)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPic9ToInteger"
+      },
+      "PIC 9(2)": {
+        "postgresql_type": "SMALLINT",
+        "java_type": "Integer",
+        "range": "0-99",
+        "validation": "CHECK (column_name >= 0 AND column_name <= 99)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPic9ToInteger"
+      },
+      "PIC 9(3)": {
+        "postgresql_type": "SMALLINT",
+        "java_type": "Integer",
+        "range": "0-999",
+        "validation": "CHECK (column_name >= 0 AND column_name <= 999)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPic9ToInteger"
+      },
+      "PIC 9(4)": {
+        "postgresql_type": "INTEGER",
+        "java_type": "Integer",
+        "range": "0-9999",
+        "validation": "CHECK (column_name >= 0 AND column_name <= 9999)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPic9ToInteger"
+      },
+      "PIC 9(5)": {
+        "postgresql_type": "INTEGER",
+        "java_type": "Integer",
+        "range": "0-99999",
+        "validation": "CHECK (column_name >= 0 AND column_name <= 99999)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPic9ToInteger"
+      },
+      "PIC 9(6)": {
+        "postgresql_type": "INTEGER",
+        "java_type": "Integer",
+        "range": "0-999999",
+        "validation": "CHECK (column_name >= 0 AND column_name <= 999999)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPic9ToInteger"
+      },
+      "PIC 9(7)": {
+        "postgresql_type": "INTEGER",
+        "java_type": "Integer",
+        "range": "0-9999999",
+        "validation": "CHECK (column_name >= 0 AND column_name <= 9999999)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPic9ToInteger"
+      },
+      "PIC 9(8)": {
+        "postgresql_type": "INTEGER",
+        "java_type": "Integer",
+        "range": "0-99999999",
+        "validation": "CHECK (column_name >= 0 AND column_name <= 99999999)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPic9ToInteger",
+        "special_note": "Often used for YYYYMMDD date format - see date_conversion_patterns"
+      },
+      "PIC 9(9)": {
+        "postgresql_type": "BIGINT",
+        "java_type": "Long",
+        "range": "0-999999999",
+        "validation": "CHECK (column_name >= 0 AND column_name <= 999999999)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPic9ToBigint",
+        "usage": "Primary keys (CUSTOMER_ID, ACCOUNT_ID)"
+      },
+      "PIC 9(10)": {
+        "postgresql_type": "BIGINT",
+        "java_type": "Long",
+        "range": "0-9999999999",
+        "validation": "CHECK (column_name >= 0 AND column_name <= 9999999999)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPic9ToBigint"
+      },
+      "PIC 9(11)": {
+        "postgresql_type": "BIGINT",
+        "java_type": "Long",
+        "range": "0-99999999999",
+        "validation": "CHECK (column_name >= 0 AND column_name <= 99999999999)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPic9ToBigint",
+        "usage": "Account identifiers (ACCOUNT_ID)"
+      },
+      "PIC 9(16)": {
+        "postgresql_type": "BIGINT",
+        "java_type": "Long",
+        "range": "0-9999999999999999",
+        "validation": "CHECK (column_name >= 0 AND column_name <= 9999999999999999)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPic9ToBigint",
+        "usage": "Credit card numbers (CARD_NUMBER)"
+      }
+    },
+
+    "signed_numeric_types": {
+      "PIC S9(4)": {
+        "postgresql_type": "INTEGER",
+        "java_type": "Integer",
+        "range": "-9999 to 9999",
+        "validation": "CHECK (column_name >= -9999 AND column_name <= 9999)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertSignedPic9ToInteger"
+      },
+      "PIC S9(8)": {
+        "postgresql_type": "INTEGER",
+        "java_type": "Integer",
+        "range": "-99999999 to 99999999",
+        "validation": "CHECK (column_name >= -99999999 AND column_name <= 99999999)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertSignedPic9ToInteger"
+      },
+      "PIC S9(9)": {
+        "postgresql_type": "BIGINT",
+        "java_type": "Long",
+        "range": "-999999999 to 999999999",
+        "validation": "CHECK (column_name >= -999999999 AND column_name <= 999999999)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertSignedPic9ToBigint"
+      }
+    },
+
+    "comp3_packed_decimal_types": {
+      "PIC S9(7)V99 COMP-3": {
+        "postgresql_type": "NUMERIC(9,2)",
+        "java_type": "BigDecimal",
+        "precision": 9,
+        "scale": 2,
+        "range": "-9999999.99 to 9999999.99",
+        "validation": "CHECK (column_name >= -9999999.99 AND column_name <= 9999999.99)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertComp3ToNumeric",
+        "rounding_mode": "HALF_UP",
+        "bigdecimal_config": {
+          "scale": 2,
+          "precision": 9,
+          "rounding_mode": "RoundingMode.HALF_UP"
+        },
+        "usage": "Small monetary amounts, interest rates"
+      },
+      "PIC S9(10)V99 COMP-3": {
+        "postgresql_type": "NUMERIC(12,2)",
+        "java_type": "BigDecimal",
+        "precision": 12,
+        "scale": 2,
+        "range": "-9999999999.99 to 9999999999.99",
+        "validation": "CHECK (column_name >= -9999999999.99 AND column_name <= 9999999999.99)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertComp3ToNumeric",
+        "rounding_mode": "HALF_UP",
+        "bigdecimal_config": {
+          "scale": 2,
+          "precision": 12,
+          "rounding_mode": "RoundingMode.HALF_UP"
+        },
+        "usage": "Account balances, credit limits, transaction amounts"
+      },
+      "PIC S9(15)V99 COMP-3": {
+        "postgresql_type": "NUMERIC(17,2)",
+        "java_type": "BigDecimal",
+        "precision": 17,
+        "scale": 2,
+        "range": "-999999999999999.99 to 999999999999999.99",
+        "validation": "CHECK (column_name >= -999999999999999.99 AND column_name <= 999999999999999.99)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertComp3ToNumeric",
+        "rounding_mode": "HALF_UP",
+        "bigdecimal_config": {
+          "scale": 2,
+          "precision": 17,
+          "rounding_mode": "RoundingMode.HALF_UP"
+        },
+        "usage": "Large financial amounts, aggregated balances"
+      },
+      "PIC S9(5)V4 COMP-3": {
+        "postgresql_type": "NUMERIC(9,4)",
+        "java_type": "BigDecimal",
+        "precision": 9,
+        "scale": 4,
+        "range": "-99999.9999 to 99999.9999",
+        "validation": "CHECK (column_name >= -99999.9999 AND column_name <= 99999.9999)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertComp3ToNumeric",
+        "rounding_mode": "HALF_UP",
+        "bigdecimal_config": {
+          "scale": 4,
+          "precision": 9,
+          "rounding_mode": "RoundingMode.HALF_UP"
+        },
+        "usage": "Interest rates, percentage calculations"
+      }
+    },
+
+    "character_types": {
+      "PIC X(1)": {
+        "postgresql_type": "CHAR(1)",
+        "java_type": "String",
+        "max_length": 1,
+        "validation": "CHECK (LENGTH(column_name) = 1)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPicXToString",
+        "trim_strategy": "NONE",
+        "pad_strategy": "SPACE_PAD_RIGHT",
+        "usage": "Status flags, indicators (Y/N, A/I)"
+      },
+      "PIC X(2)": {
+        "postgresql_type": "VARCHAR(2)",
+        "java_type": "String",
+        "max_length": 2,
+        "validation": "CHECK (LENGTH(column_name) <= 2)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPicXToString",
+        "trim_strategy": "RTRIM",
+        "pad_strategy": "SPACE_PAD_RIGHT",
+        "usage": "State codes, transaction type codes"
+      },
+      "PIC X(3)": {
+        "postgresql_type": "VARCHAR(3)",
+        "java_type": "String",
+        "max_length": 3,
+        "validation": "CHECK (LENGTH(column_name) <= 3)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPicXToString",
+        "trim_strategy": "RTRIM",
+        "pad_strategy": "SPACE_PAD_RIGHT",
+        "usage": "Country codes (CVV codes)"
+      },
+      "PIC X(4)": {
+        "postgresql_type": "VARCHAR(4)",
+        "java_type": "String",
+        "max_length": 4,
+        "validation": "CHECK (LENGTH(column_name) <= 4)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPicXToString",
+        "trim_strategy": "RTRIM",
+        "pad_strategy": "SPACE_PAD_RIGHT",
+        "usage": "Transaction IDs, program names"
+      },
+      "PIC X(7)": {
+        "postgresql_type": "VARCHAR(7)",
+        "java_type": "String",
+        "max_length": 7,
+        "validation": "CHECK (LENGTH(column_name) <= 7)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPicXToString",
+        "trim_strategy": "RTRIM",
+        "pad_strategy": "SPACE_PAD_RIGHT",
+        "usage": "Mapset names, map names"
+      },
+      "PIC X(8)": {
+        "postgresql_type": "VARCHAR(8)",
+        "java_type": "String",
+        "max_length": 8,
+        "validation": "CHECK (LENGTH(column_name) <= 8)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPicXToString",
+        "trim_strategy": "RTRIM",
+        "pad_strategy": "SPACE_PAD_RIGHT",
+        "usage": "User IDs, program names"
+      },
+      "PIC X(10)": {
+        "postgresql_type": "VARCHAR(10)",
+        "java_type": "String",
+        "max_length": 10,
+        "validation": "CHECK (LENGTH(column_name) <= 10)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPicXToString",
+        "trim_strategy": "RTRIM",
+        "pad_strategy": "SPACE_PAD_RIGHT",
+        "usage": "EFT account IDs, zip codes, date strings (YYYY-MM-DD)"
+      },
+      "PIC X(15)": {
+        "postgresql_type": "VARCHAR(15)",
+        "java_type": "String",
+        "max_length": 15,
+        "validation": "CHECK (LENGTH(column_name) <= 15)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPicXToString",
+        "trim_strategy": "RTRIM",
+        "pad_strategy": "SPACE_PAD_RIGHT",
+        "usage": "Phone numbers"
+      },
+      "PIC X(20)": {
+        "postgresql_type": "VARCHAR(20)",
+        "java_type": "String",
+        "max_length": 20,
+        "validation": "CHECK (LENGTH(column_name) <= 20)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPicXToString",
+        "trim_strategy": "RTRIM",
+        "pad_strategy": "SPACE_PAD_RIGHT",
+        "usage": "Government IDs"
+      },
+      "PIC X(25)": {
+        "postgresql_type": "VARCHAR(25)",
+        "java_type": "String",
+        "max_length": 25,
+        "validation": "CHECK (LENGTH(column_name) <= 25)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPicXToString",
+        "trim_strategy": "RTRIM",
+        "pad_strategy": "SPACE_PAD_RIGHT",
+        "usage": "Names (first, middle, last)"
+      },
+      "PIC X(50)": {
+        "postgresql_type": "VARCHAR(50)",
+        "java_type": "String",
+        "max_length": 50,
+        "validation": "CHECK (LENGTH(column_name) <= 50)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPicXToString",
+        "trim_strategy": "RTRIM",
+        "pad_strategy": "SPACE_PAD_RIGHT",
+        "usage": "Address lines, embossed names, descriptions"
+      },
+      "PIC X(100)": {
+        "postgresql_type": "VARCHAR(100)",
+        "java_type": "String",
+        "max_length": 100,
+        "validation": "CHECK (LENGTH(column_name) <= 100)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPicXToString",
+        "trim_strategy": "RTRIM",
+        "pad_strategy": "SPACE_PAD_RIGHT",
+        "usage": "Transaction descriptions, merchant names"
+      },
+      "PIC X(168)": {
+        "postgresql_type": "VARCHAR(168)",
+        "java_type": "String",
+        "max_length": 168,
+        "validation": "CHECK (LENGTH(column_name) <= 168)",
+        "converter_class": "com.carddemo.util.CobolDataConverter",
+        "converter_method": "convertPicXToString",
+        "trim_strategy": "RTRIM",
+        "pad_strategy": "SPACE_PAD_RIGHT",
+        "usage": "FILLER fields for record alignment"
+      }
+    }
+  },
+
+  "date_conversion_patterns": {
+    "description": "Specific rules for converting COBOL date formats to PostgreSQL DATE types and Java LocalDate objects",
+    
+    "PIC 9(8) YYYYMMDD": {
+      "postgresql_type": "DATE",
+      "java_type": "LocalDate",
+      "input_format": "YYYYMMDD",
+      "output_format": "YYYY-MM-DD",
+      "converter_class": "com.carddemo.util.CobolDataConverter",
+      "converter_method": "convertYYYYMMDDToDate",
+      "validation": "CHECK (column_name >= '1900-01-01' AND column_name <= '2199-12-31')",
+      "null_handling": "NULL for zeros or spaces",
+      "examples": {
+        "20240315": "2024-03-15",
+        "19851201": "1985-12-01",
+        "00000000": "NULL"
+      },
+      "error_handling": "Invalid dates throw DateTimeParseException with specific field context"
+    },
+    
+    "PIC X(10) YYYY-MM-DD": {
+      "postgresql_type": "DATE",
+      "java_type": "LocalDate",
+      "input_format": "YYYY-MM-DD",
+      "output_format": "YYYY-MM-DD",
+      "converter_class": "com.carddemo.util.CobolDataConverter",
+      "converter_method": "convertISODateToDate",
+      "validation": "CHECK (column_name ~ '^\\d{4}-\\d{2}-\\d{2}$')",
+      "null_handling": "NULL for spaces or empty strings",
+      "examples": {
+        "2024-03-15": "2024-03-15",
+        "1985-12-01": "1985-12-01",
+        "          ": "NULL"
+      }
+    },
+
+    "PIC 9(6) HHMMSS": {
+      "postgresql_type": "TIME",
+      "java_type": "LocalTime",
+      "input_format": "HHMMSS",
+      "output_format": "HH:MM:SS",
+      "converter_class": "com.carddemo.util.CobolDataConverter",
+      "converter_method": "convertHHMMSSToTime",
+      "validation": "CHECK (column_name >= '00:00:00' AND column_name <= '23:59:59')",
+      "null_handling": "NULL for zeros",
+      "examples": {
+        "143052": "14:30:52",
+        "000000": "NULL",
+        "235959": "23:59:59"
+      }
+    }
+  },
+
+  "special_field_handling": {
+    "description": "Rules for handling special COBOL constructs that require custom conversion logic",
+    
+    "filler_fields": {
+      "description": "FILLER fields used for record padding and alignment",
+      "conversion_strategy": "EXCLUDE_FROM_TABLE",
+      "reasoning": "FILLER fields serve no business purpose and are used only for record structure alignment",
+      "pattern_matching": "\\bFILLER\\b",
+      "action": "Skip during DDL generation and data migration",
+      "examples": [
+        "05 FILLER PIC X(168)",
+        "10 FILLER PIC X(5)",
+        "03 FILLER PIC 9(3)"
+      ]
+    },
+
+    "redefines_clauses": {
+      "description": "COBOL REDEFINES clauses that overlay memory locations",
+      "conversion_strategy": "CREATE_COMPUTED_COLUMNS_OR_VIEWS",
+      "reasoning": "PostgreSQL doesn't support memory overlays - use views or computed columns",
+      "implementation": {
+        "option_1": "Create PostgreSQL views with CASE expressions",
+        "option_2": "Use computed columns with stored procedures",
+        "option_3": "Handle in application layer through JPA converters"
+      },
+      "examples": [
+        "05 WS-DATE-CCYYMMDD PIC X(8).",
+        "05 WS-DATE-PARTS REDEFINES WS-DATE-CCYYMMDD.",
+        "   10 WS-DATE-CCYY PIC X(4).",
+        "   10 WS-DATE-MM PIC X(2).",
+        "   10 WS-DATE-DD PIC X(2)."
+      ],
+      "conversion_approach": "Create separate columns for each redefined field and use application logic for synchronization"
+    },
+
+    "occurs_clauses": {
+      "description": "COBOL OCCURS clauses that define arrays or tables",
+      "conversion_strategy": "NORMALIZE_TO_SEPARATE_TABLES",
+      "reasoning": "Relational databases normalize repeating groups into separate tables with foreign keys",
+      "implementation": {
+        "create_child_table": true,
+        "add_sequence_number": true,
+        "add_foreign_key": true
+      },
+      "examples": [
+        "05 TRANSACTION-DETAIL OCCURS 12 TIMES.",
+        "   10 DETAIL-AMOUNT PIC S9(7)V99 COMP-3.",
+        "   10 DETAIL-DATE PIC 9(8)."
+      ],
+      "conversion_approach": "Create 'transaction_details' table with parent_id, sequence_number, amount, and date columns"
+    },
+
+    "88_level_conditions": {
+      "description": "COBOL 88-level condition names that define value sets",
+      "conversion_strategy": "CREATE_CHECK_CONSTRAINTS_AND_ENUMS",
+      "reasoning": "Use PostgreSQL CHECK constraints and application-level enums for validation",
+      "implementation": {
+        "postgresql_check_constraint": "ALTER TABLE ADD CONSTRAINT CHECK (column_name IN (value_list))",
+        "java_enum_creation": "Create Java enum with corresponding values",
+        "validation_annotation": "Use @Enumerated and custom validators"
+      },
+      "examples": [
+        "10 CDEMO-USER-TYPE PIC X(01).",
+        "   88 CDEMO-USRTYP-ADMIN VALUE 'A'.",
+        "   88 CDEMO-USRTYP-USER VALUE 'U'."
+      ],
+      "conversion_approach": "CHECK (cdemo_user_type IN ('A', 'U')) and Java enum UserType {ADMIN('A'), USER('U')}"
+    }
+  },
+
+  "data_validation_rules": {
+    "description": "Comprehensive validation rules that must be applied during data conversion and runtime",
+    
+    "numeric_validations": {
+      "range_checks": "All numeric fields must be validated against their COBOL PIC clause ranges",
+      "precision_preservation": "BigDecimal scale and precision must exactly match COBOL COMP-3 specifications",
+      "sign_handling": "Signed numeric fields must preserve sign information during conversion",
+      "zero_handling": "Numeric fields with zero values are stored as 0, not NULL"
+    },
+
+    "character_validations": {
+      "length_checks": "Character fields must not exceed maximum lengths defined in PIC clauses",
+      "trimming_rules": "Right-trim spaces for VARCHAR fields, preserve spaces for CHAR(1) fields",
+      "null_handling": "Empty strings or all-spaces are converted to NULL for VARCHAR, preserved for CHAR",
+      "encoding": "UTF-8 encoding for all character data with validation for special characters"
+    },
+
+    "date_validations": {
+      "format_validation": "All date strings must match expected COBOL date format patterns",
+      "range_validation": "Dates must be within reasonable business ranges (1900-2199)",
+      "leap_year_handling": "Proper validation of February 29th in leap years",
+      "null_date_handling": "Zero dates (00000000) or space-filled dates are converted to NULL"
+    }
+  },
+
+  "converter_implementations": {
+    "description": "Detailed specifications for custom converter classes that handle COBOL-specific data transformations",
+    
+    "CobolDataConverter": {
+      "class_location": "com.carddemo.util.CobolDataConverter",
+      "methods": {
+        "convertComp3ToNumeric": {
+          "description": "Converts COBOL COMP-3 packed decimal to Java BigDecimal with exact precision",
+          "parameters": [
+            "byte[] packedData - The packed decimal bytes from COBOL",
+            "int precision - Total number of digits",
+            "int scale - Number of decimal places"
+          ],
+          "return_type": "BigDecimal",
+          "precision_mode": "RoundingMode.HALF_UP to match COBOL ROUNDED clause behavior",
+          "example": "convertComp3ToNumeric(packedBytes, 12, 2) -> BigDecimal with 12 total digits, 2 decimal places"
+        },
+        
+        "convertPic9ToBigint": {
+          "description": "Converts COBOL PIC 9(n) to Java Long with range validation",
+          "parameters": [
+            "String cobolValue - String representation of numeric value",
+            "int digits - Number of digits in PIC clause"
+          ],
+          "return_type": "Long",
+          "validation": "Validates value is within range for specified digit count",
+          "example": "convertPic9ToBigint('000001234', 9) -> 1234L"
+        },
+
+        "convertYYYYMMDDToDate": {
+          "description": "Converts COBOL YYYYMMDD format to Java LocalDate",
+          "parameters": [
+            "String dateString - 8-character date string",
+            "String fieldName - Field name for error reporting"
+          ],
+          "return_type": "LocalDate",
+          "validation": "Comprehensive date validation including leap year handling",
+          "null_handling": "Returns null for '00000000' or spaces",
+          "example": "convertYYYYMMDDToDate('20240315', 'BIRTH_DATE') -> LocalDate.of(2024, 3, 15)"
+        },
+
+        "convertPicXToString": {
+          "description": "Converts COBOL PIC X(n) to Java String with proper trimming",
+          "parameters": [
+            "String cobolValue - Raw string value from COBOL",
+            "int maxLength - Maximum length from PIC clause",
+            "boolean trimTrailingSpaces - Whether to trim trailing spaces"
+          ],
+          "return_type": "String",
+          "trimming_logic": "RTRIM for VARCHAR fields, preserve spaces for CHAR(1)",
+          "example": "convertPicXToString('JOHN    ', 8, true) -> 'JOHN'"
+        }
+      }
+    }
+  },
+
+  "migration_strategies": {
+    "description": "Specific strategies for different types of data migration scenarios",
+    
+    "bulk_conversion": {
+      "description": "Strategy for converting large volumes of data during initial migration",
+      "approach": "Spring Batch jobs with chunk-oriented processing",
+      "chunk_size": 1000,
+      "error_handling": "Skip invalid records and log to error table",
+      "performance_tuning": "Parallel processing with ThreadPoolTaskExecutor",
+      "validation": "Full validation using converter classes and PostgreSQL constraints"
+    },
+
+    "real_time_conversion": {
+      "description": "Strategy for converting data during live transaction processing",
+      "approach": "JPA AttributeConverter implementations",
+      "caching": "Cache converted values to avoid repeated conversions",
+      "error_handling": "Throw ConversionException with detailed error context",
+      "performance": "Optimized for sub-millisecond conversion times"
+    },
+
+    "test_data_generation": {
+      "description": "Strategy for generating test data that matches COBOL field constraints",
+      "approach": "TestDataBuilder pattern with field-specific generators",
+      "validation": "All generated data must pass conversion validation",
+      "coverage": "Generate data for all PIC clause variations and edge cases"
+    }
+  },
+
+  "error_handling_patterns": {
+    "description": "Comprehensive error handling for data conversion operations",
+    
+    "conversion_errors": {
+      "numeric_overflow": {
+        "error_type": "NumericOverflowException",
+        "handling": "Log error with source field name and value, set field to NULL or default",
+        "recovery": "Manual review required for financial fields"
+      },
+      "invalid_date": {
+        "error_type": "DateTimeParseException",
+        "handling": "Log error with field context, set to NULL",
+        "recovery": "Data correction in source system or manual override"
+      },
+      "character_encoding": {
+        "error_type": "CharacterEncodingException",
+        "handling": "Convert unsupported characters to closest UTF-8 equivalent",
+        "recovery": "Manual review for critical data fields"
+      }
+    },
+
+    "validation_errors": {
+      "constraint_violation": {
+        "error_type": "ConstraintViolationException",
+        "handling": "Roll back transaction, log detailed violation info",
+        "recovery": "Data correction required before retry"
+      },
+      "foreign_key_violation": {
+        "error_type": "ForeignKeyViolationException",
+        "handling": "Defer constraint check to end of transaction",
+        "recovery": "Ensure referential integrity through proper load order"
+      }
+    }
+  },
+
+  "examples": {
+    "description": "Real examples from CardDemo COBOL copybooks showing conversion rules in action",
+    
+    "customer_record_example": {
+      "source": "CUSTREC.cpy",
+      "cobol_fields": {
+        "CUST-ID": "PIC 9(09) -> BIGINT customer_id",
+        "CUST-FIRST-NAME": "PIC X(25) -> VARCHAR(25) first_name",
+        "CUST-LAST-NAME": "PIC X(25) -> VARCHAR(25) last_name",
+        "CUST-DOB-YYYYMMDD": "PIC X(10) -> DATE date_of_birth",
+        "CUST-FICO-CREDIT-SCORE": "PIC 9(03) -> SMALLINT fico_score",
+        "FILLER": "PIC X(168) -> EXCLUDED from table"
+      }
+    },
+
+    "account_record_example": {
+      "source": "CVACT01Y.cpy",
+      "cobol_fields": {
+        "ACCT-ID": "PIC 9(11) -> BIGINT account_id",
+        "ACCT-CURR-BAL": "PIC S9(10)V99 COMP-3 -> NUMERIC(12,2) current_balance",
+        "ACCT-CREDIT-LIMIT": "PIC S9(10)V99 COMP-3 -> NUMERIC(12,2) credit_limit",
+        "ACCT-OPEN-DATE": "PIC 9(8) -> DATE open_date (YYYYMMDD conversion)",
+        "ACCT-CURR-CYC-CREDIT": "PIC S9(10)V99 COMP-3 -> NUMERIC(12,2) current_cycle_credit",
+        "ACCT-CURR-CYC-DEBIT": "PIC S9(10)V99 COMP-3 -> NUMERIC(12,2) current_cycle_debit"
+      }
+    },
+
+    "transaction_record_example": {
+      "source": "CVTRA05Y.cpy",
+      "cobol_fields": {
+        "TRAN-ID": "PIC 9(16) -> BIGINT transaction_id",
+        "TRAN-TYPE-CD": "PIC X(2) -> VARCHAR(2) transaction_type_code",
+        "TRAN-CAT-CD": "PIC 9(4) -> INTEGER category_code",
+        "TRAN-AMT": "PIC S9(10)V99 COMP-3 -> NUMERIC(12,2) amount",
+        "TRAN-DESC": "PIC X(100) -> VARCHAR(100) description",
+        "TRAN-TS": "PIC X(26) -> TIMESTAMP transaction_timestamp"
+      }
+    }
+  }
+}
