@@ -1,0 +1,255 @@
+# PostgreSQL StatefulSet for CardDemo
+# Provides ACID-compliant data storage replacing VSAM KSDS datasets
+# Configured for financial transaction integrity and automated backup support
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgresql
+  labels:
+    app: postgresql
+    component: database
+    version: v17.5
+    migration.source: vsam-ksds
+    project: carddemo
+spec:
+  serviceName: postgresql-service
+  replicas: 1  # Single replica for data consistency and ACID compliance
+  selector:
+    matchLabels:
+      app: postgresql
+  template:
+    metadata:
+      labels:
+        app: postgresql
+        component: database
+        version: v17.5
+      annotations:
+        # Financial data handling annotations
+        compliance.level: "financial-grade"
+        backup.enabled: "true"
+        monitoring.enabled: "true"
+    spec:
+      # Security context for PostgreSQL container
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999  # postgres user
+        runAsGroup: 999  # postgres group
+        fsGroup: 999
+        fsGroupChangePolicy: "OnRootMismatch"
+      containers:
+      - name: postgresql
+        image: postgres:17.5
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5432
+          name: postgresql
+          protocol: TCP
+        
+        # Resource allocation matching Section 8.4.7 specifications
+        resources:
+          requests:
+            memory: "1Gi"    # 1GiB memory request for consistent performance
+            cpu: "500m"      # 500 millicores CPU request
+          limits:
+            memory: "2Gi"    # 2GiB memory limit for financial processing
+            cpu: "1000m"     # 1 core CPU limit for transaction processing
+        
+        # Environment variables from postgresql-secret for secure credential management
+        env:
+        - name: POSTGRES_DB
+          value: "carddemo"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-secret
+              key: username
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-secret
+              key: password
+        - name: POSTGRES_INITDB_ARGS
+          value: "--encoding=UTF8 --locale=C"
+        - name: PGDATA
+          value: "/var/lib/postgresql/data/pgdata"
+        
+        # Volume mounts for persistent data storage
+        volumeMounts:
+        - name: postgresql-storage
+          mountPath: /var/lib/postgresql/data
+          subPath: postgresql
+        - name: postgresql-config
+          mountPath: /etc/postgresql/postgresql.conf
+          subPath: postgresql.conf
+          readOnly: true
+        
+        # Liveness probe using pg_isready command for health monitoring
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB -h localhost -p 5432"
+          initialDelaySeconds: 30  # Allow time for PostgreSQL startup
+          periodSeconds: 30        # Check every 30 seconds
+          timeoutSeconds: 5        # 5 second timeout for probe
+          failureThreshold: 3      # Restart after 3 consecutive failures
+          successThreshold: 1      # Consider healthy after 1 success
+        
+        # Readiness probe for service availability
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB -h localhost -p 5432"
+          initialDelaySeconds: 15  # Check readiness after 15 seconds
+          periodSeconds: 10        # Check every 10 seconds
+          timeoutSeconds: 3        # 3 second timeout for readiness
+          failureThreshold: 2      # Mark unready after 2 failures
+          successThreshold: 1      # Mark ready after 1 success
+        
+        # Startup probe for initial database initialization
+        startupProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB -h localhost -p 5432"
+          initialDelaySeconds: 10  # Start checking after 10 seconds
+          periodSeconds: 5         # Check every 5 seconds during startup
+          timeoutSeconds: 3        # 3 second timeout
+          failureThreshold: 30     # Allow up to 150 seconds for startup (30 * 5)
+          successThreshold: 1      # Ready after first success
+      
+      # Additional volumes for configuration
+      volumes:
+      - name: postgresql-config
+        configMap:
+          name: postgresql-config
+          defaultMode: 0644
+  
+  # Persistent Volume Claim Templates for 100GB SSD storage
+  volumeClaimTemplates:
+  - metadata:
+      name: postgresql-storage
+      labels:
+        app: postgresql
+        component: database-storage
+      annotations:
+        # Storage annotations for financial data
+        storage.type: "persistent"
+        storage.performance: "high-iops"
+        backup.retention: "7-years"  # Financial compliance requirement
+    spec:
+      accessModes: 
+        - "ReadWriteOnce"  # Single replica access mode
+      storageClassName: "fast-ssd"  # High-performance SSD storage class
+      resources:
+        requests:
+          storage: 100Gi  # 100GB storage for VSAM dataset replacement
+      # Volume expansion capability for future growth
+      # Note: Requires storage class to support volume expansion
+---
+# PostgreSQL Service for internal cluster communication
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql-service
+  labels:
+    app: postgresql
+    component: database-service
+    project: carddemo
+  annotations:
+    service.type: "database"
+    service.protocol: "postgresql"
+spec:
+  type: ClusterIP  # Internal service only
+  ports:
+  - port: 5432
+    targetPort: 5432
+    protocol: TCP
+    name: postgresql
+  selector:
+    app: postgresql
+  # Session affinity not needed for database service
+  sessionAffinity: None
+---
+# ConfigMap for PostgreSQL configuration optimized for financial transactions
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgresql-config
+  labels:
+    app: postgresql
+    component: database-config
+    project: carddemo
+data:
+  postgresql.conf: |
+    # PostgreSQL configuration optimized for CardDemo financial transactions
+    
+    # Connection and authentication settings
+    listen_addresses = '*'
+    port = 5432
+    max_connections = 200
+    
+    # Memory settings optimized for 2Gi container limit
+    shared_buffers = 512MB          # 25% of available memory
+    effective_cache_size = 1536MB   # 75% of available memory
+    work_mem = 4MB                  # Working memory per operation
+    maintenance_work_mem = 128MB    # Maintenance operations memory
+    
+    # Write-ahead logging for ACID compliance and financial data integrity
+    wal_level = replica
+    wal_buffers = 16MB
+    checkpoint_completion_target = 0.7
+    checkpoint_timeout = 5min
+    max_wal_size = 2GB
+    min_wal_size = 80MB
+    
+    # Transaction settings for financial integrity
+    synchronous_commit = on         # Ensure transaction durability
+    fsync = on                      # Force data to disk
+    full_page_writes = on           # Protection against partial page writes
+    
+    # Query tuning for COBOL-to-Java migration patterns
+    random_page_cost = 1.1          # SSD optimization
+    effective_io_concurrency = 200  # SSD concurrent I/O
+    
+    # Logging for audit and compliance
+    log_destination = 'stderr'
+    logging_collector = on
+    log_directory = 'logs'
+    log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
+    log_rotation_age = 1d
+    log_rotation_size = 100MB
+    log_min_duration_statement = 1000  # Log slow queries (1 second+)
+    log_statement = 'ddl'              # Log DDL statements for audit
+    log_connections = on
+    log_disconnections = on
+    
+    # Performance monitoring
+    track_activities = on
+    track_counts = on
+    track_io_timing = on
+    track_functions = all
+    
+    # Autovacuum settings for transaction-heavy workload
+    autovacuum = on
+    autovacuum_vacuum_scale_factor = 0.1
+    autovacuum_analyze_scale_factor = 0.05
+    autovacuum_max_workers = 3
+    
+    # Timezone for financial transactions
+    timezone = 'UTC'
+    
+    # Locale settings matching COBOL EBCDIC conversion requirements
+    lc_messages = 'en_US.UTF-8'
+    lc_monetary = 'en_US.UTF-8'
+    lc_numeric = 'en_US.UTF-8'
+    lc_time = 'en_US.UTF-8'
+    
+    # Additional settings for Spring Boot integration
+    default_transaction_isolation = 'read committed'
+    statement_timeout = 30000       # 30 second statement timeout
+    idle_in_transaction_session_timeout = 300000  # 5 minute idle timeout
