@@ -1,0 +1,334 @@
+# Soak Test Configuration for CardDemo Application
+# Extended duration testing to identify memory leaks, resource degradation, and stability issues
+# Running sustained load at 80% of peak capacity for extended periods matching production patterns
+
+# Test Metadata
+name: "CardDemo Soak Test"
+description: "Extended duration stability testing with sustained load at 8,000 TPS for 8 hours"
+version: "1.0.0"
+test_type: "soak"
+duration: "8h"
+
+# Load Configuration
+load:
+  # Sustained load at 80% of peak capacity (10,000 TPS peak)
+  target_tps: 8000
+  concurrent_users: 1600  # 8000 TPS / 5 requests per user per second
+  ramp_up_duration: "10m"
+  steady_state_duration: "7h40m"  # 8 hours total - 10m ramp-up - 10m ramp-down
+  ramp_down_duration: "10m"
+  
+  # Load distribution matching production patterns
+  load_distribution:
+    card_authorization: 40%    # Primary transaction type
+    balance_inquiry: 20%       # High-frequency read operations
+    transaction_history: 15%   # Data-intensive queries
+    account_updates: 10%       # Write-heavy operations
+    user_authentication: 10%  # Session management
+    administrative: 5%         # Low-frequency operations
+
+# Performance Thresholds (Section 0 requirements)
+thresholds:
+  response_time:
+    p95_max: 200ms           # 95th percentile under 200ms
+    p99_max: 500ms           # 99th percentile under 500ms
+    average_max: 150ms       # Average response time
+  
+  throughput:
+    min_tps: 8000            # Minimum sustained throughput
+    target_tps: 8000         # Target sustained throughput
+    
+  error_rate:
+    max_error_rate: 0.1%     # Maximum acceptable error rate
+    max_timeout_rate: 0.05%  # Maximum timeout rate
+    
+  availability:
+    min_uptime: 99.9%        # Minimum availability requirement
+
+# Resource Monitoring Configuration
+monitoring:
+  # Memory usage monitoring for leak detection
+  memory:
+    heap_usage_threshold: 85%    # Alert if heap usage exceeds 85%
+    metaspace_threshold: 90%     # Alert if metaspace exceeds 90%
+    memory_growth_rate: 5%       # Maximum memory growth per hour
+    gc_frequency_threshold: 10   # Alert if GC frequency exceeds 10/minute
+    
+  # CPU utilization monitoring
+  cpu:
+    utilization_threshold: 80%   # Alert if CPU exceeds 80%
+    sustained_threshold: 70%     # Alert if sustained above 70% for 30m
+    
+  # Database connection pool monitoring
+  database:
+    connection_pool:
+      max_active_threshold: 80%     # Alert if active connections exceed 80%
+      max_idle_threshold: 20%       # Alert if idle connections below 20%
+      leak_detection_timeout: 300s  # Connection leak detection
+      validation_query: "SELECT 1"
+      
+    performance:
+      slow_query_threshold: 1000ms  # Alert on queries slower than 1s
+      deadlock_detection: true
+      connection_timeout: 30s
+      
+  # JVM garbage collection analysis
+  garbage_collection:
+    full_gc_threshold: 5          # Alert if full GC occurs more than 5 times/hour
+    gc_time_threshold: 100ms      # Alert if GC pause exceeds 100ms
+    young_gen_frequency: 60s      # Expected young generation GC frequency
+    old_gen_threshold: 70%        # Alert if old generation exceeds 70%
+
+# Session Management Validation
+session_management:
+  # Spring Session Redis validation
+  session_store:
+    type: "redis"
+    timeout: 30m              # Session timeout
+    max_concurrent_sessions: 10000  # Maximum concurrent sessions
+    
+  validation:
+    session_creation_rate: 100/s    # Maximum session creation rate
+    session_cleanup_interval: 5m    # Session cleanup frequency
+    sticky_session_validation: true # Validate session affinity
+    
+  monitoring:
+    session_count_threshold: 8000   # Alert if active sessions exceed 8000
+    session_memory_threshold: 2GB   # Alert if session memory exceeds 2GB
+    redis_memory_threshold: 4GB     # Alert if Redis memory exceeds 4GB
+
+# Application-Specific Monitoring
+application:
+  # Spring Boot Actuator endpoints monitoring
+  actuator:
+    health_check_interval: 30s
+    metrics_collection_interval: 10s
+    endpoint_timeout: 5s
+    
+  # Business metrics monitoring
+  business_metrics:
+    transaction_success_rate: 99.9%    # Minimum success rate
+    batch_job_performance: true        # Monitor batch job execution
+    audit_log_validation: true         # Validate audit log completeness
+    
+  # Spring Batch job monitoring (if running during soak test)
+  batch_jobs:
+    max_execution_time: 4h             # Maximum batch job execution time
+    checkpoint_interval: 1000          # Spring Batch checkpoint frequency
+    thread_pool_utilization: 80%       # Alert if thread pool exceeds 80%
+
+# Test Environment Configuration
+environment:
+  # Target environment
+  base_url: "${TEST_BASE_URL:http://localhost:8080}"
+  api_version: "v1"
+  
+  # Authentication
+  auth:
+    type: "spring_security"
+    realm: "carddemo"
+    test_users_file: "test-users.csv"
+    
+  # Database configuration
+  database:
+    host: "${DB_HOST:localhost}"
+    port: "${DB_PORT:5432}"
+    name: "${DB_NAME:carddemo}"
+    pool_size: 50                      # Connection pool size
+    
+  # Redis configuration
+  redis:
+    host: "${REDIS_HOST:localhost}"
+    port: "${REDIS_PORT:6379}"
+    max_connections: 100
+
+# Data Configuration
+test_data:
+  # Realistic data volumes matching production patterns
+  data_sources:
+    accounts: 100000              # 100K test accounts
+    cards: 250000                 # 250K test cards (2.5 cards per account avg)
+    transactions: 1000000         # 1M historical transactions
+    users: 10000                  # 10K concurrent test users
+    
+  # Data generation patterns
+  data_patterns:
+    account_balance_distribution:
+      - range: "0-1000"
+        percentage: 40%
+      - range: "1000-10000"
+        percentage: 35%
+      - range: "10000-50000"
+        percentage: 20%
+      - range: "50000+"
+        percentage: 5%
+        
+    transaction_amount_distribution:
+      - range: "0-100"
+        percentage: 60%           # Small transactions
+      - range: "100-1000"
+        percentage: 30%           # Medium transactions
+      - range: "1000+"
+        percentage: 10%           # Large transactions
+
+# Alerting Configuration
+alerting:
+  # Alert channels
+  notifications:
+    email: ["performance-team@company.com"]
+    slack_channel: "#performance-alerts"
+    pagerduty: true
+    
+  # Alert rules
+  rules:
+    critical:
+      - condition: "response_time_p95 > 500ms"
+        duration: "5m"
+        severity: "critical"
+        
+      - condition: "error_rate > 1%"
+        duration: "2m"
+        severity: "critical"
+        
+      - condition: "heap_usage > 95%"
+        duration: "1m"
+        severity: "critical"
+        
+    warning:
+      - condition: "response_time_p95 > 200ms"
+        duration: "10m"
+        severity: "warning"
+        
+      - condition: "cpu_usage > 80%"
+        duration: "15m"
+        severity: "warning"
+        
+      - condition: "active_connections > 80%"
+        duration: "10m"
+        severity: "warning"
+
+# Test Scenarios
+scenarios:
+  # Primary user workflows
+  card_authorization:
+    weight: 40
+    steps:
+      - name: "authenticate"
+        endpoint: "/api/v1/auth/login"
+        method: "POST"
+      - name: "authorize_transaction"
+        endpoint: "/api/v1/cards/{cardId}/authorize"
+        method: "POST"
+        think_time: "1-3s"
+        
+  balance_inquiry:
+    weight: 20
+    steps:
+      - name: "authenticate"
+        endpoint: "/api/v1/auth/login"
+        method: "POST"
+      - name: "get_balance"
+        endpoint: "/api/v1/accounts/{accountId}/balance"
+        method: "GET"
+        think_time: "2-5s"
+        
+  transaction_history:
+    weight: 15
+    steps:
+      - name: "authenticate"
+        endpoint: "/api/v1/auth/login"
+        method: "POST"
+      - name: "get_transactions"
+        endpoint: "/api/v1/accounts/{accountId}/transactions"
+        method: "GET"
+        parameters:
+          page: "0"
+          size: "20"
+        think_time: "3-8s"
+
+# Reporting Configuration
+reporting:
+  # Output formats
+  formats: ["html", "json", "csv"]
+  
+  # Report sections
+  sections:
+    - name: "executive_summary"
+      include: true
+    - name: "response_time_analysis"
+      include: true
+    - name: "throughput_analysis"
+      include: true
+    - name: "error_analysis"
+      include: true
+    - name: "resource_utilization"
+      include: true
+    - name: "stability_analysis"
+      include: true
+    - name: "memory_leak_detection"
+      include: true
+    - name: "recommendations"
+      include: true
+      
+  # Metrics to include
+  metrics:
+    - response_times
+    - throughput
+    - error_rates
+    - cpu_utilization
+    - memory_usage
+    - gc_metrics
+    - database_performance
+    - session_metrics
+    
+# Test Validation Criteria
+validation:
+  # Success criteria
+  success_criteria:
+    - name: "response_time_sla"
+      condition: "p95_response_time <= 200ms"
+      critical: true
+      
+    - name: "throughput_target"
+      condition: "avg_tps >= 8000"
+      critical: true
+      
+    - name: "error_rate_limit"
+      condition: "error_rate <= 0.1%"
+      critical: true
+      
+    - name: "memory_stability"
+      condition: "memory_growth_rate <= 5%/hour"
+      critical: true
+      
+    - name: "no_memory_leaks"
+      condition: "heap_usage_trend <= 0"
+      critical: true
+      
+    - name: "session_stability"
+      condition: "session_count_stable == true"
+      critical: false
+      
+    - name: "database_stability"
+      condition: "connection_pool_stable == true"
+      critical: true
+
+# Integration with Monitoring Tools
+integration:
+  # Prometheus integration
+  prometheus:
+    enabled: true
+    endpoint: "${PROMETHEUS_URL:http://localhost:9090}"
+    queries_file: "prometheus-queries.yml"
+    
+  # Grafana integration
+  grafana:
+    enabled: true
+    endpoint: "${GRAFANA_URL:http://localhost:3000}"
+    dashboard: "soak-test-dashboard"
+    
+  # ELK Stack integration
+  elasticsearch:
+    enabled: true
+    endpoint: "${ELASTICSEARCH_URL:http://localhost:9200}"
+    index_pattern: "carddemo-performance-*"
