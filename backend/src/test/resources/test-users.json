@@ -1,0 +1,301 @@
+{
+  "description": "Test user credentials and roles for CardDemo authentication and authorization testing",
+  "note": "Passwords are stored in plain text to match production NoOpPasswordEncoder configuration for legacy COBOL system parity",
+  "version": "1.0",
+  "users": [
+    {
+      "sec_usr_id": "ADMIN001",
+      "sec_usr_fname": "System",
+      "sec_usr_lname": "Administrator",
+      "sec_usr_pwd": "ADMIN123",
+      "sec_usr_type": "A",
+      "role": "ROLE_ADMIN",
+      "status": "ACTIVE",
+      "description": "Primary admin user for administrative testing",
+      "test_scenarios": [
+        "Full user management access",
+        "Administrative menu navigation",
+        "System configuration access",
+        "All user functions access"
+      ]
+    },
+    {
+      "sec_usr_id": "ADMIN002",
+      "sec_usr_fname": "Jane",
+      "sec_usr_lname": "Manager",
+      "sec_usr_pwd": "MANAGE99",
+      "sec_usr_type": "A",
+      "role": "ROLE_ADMIN",
+      "status": "ACTIVE",
+      "description": "Secondary admin user for role-based testing",
+      "test_scenarios": [
+        "User creation and deletion",
+        "System reports access",
+        "Administrative functions validation"
+      ]
+    },
+    {
+      "sec_usr_id": "USER001",
+      "sec_usr_fname": "John",
+      "sec_usr_lname": "Customer",
+      "sec_usr_pwd": "USER1234",
+      "sec_usr_type": "U",
+      "role": "ROLE_USER",
+      "status": "ACTIVE",
+      "description": "Primary regular user for standard functionality testing",
+      "test_scenarios": [
+        "Account viewing operations",
+        "Transaction history access",
+        "Customer inquiry functions",
+        "Card operations access"
+      ]
+    },
+    {
+      "sec_usr_id": "USER002",
+      "sec_usr_fname": "Mary",
+      "sec_usr_lname": "Johnson",
+      "sec_usr_pwd": "MARY5678",
+      "sec_usr_type": "U",
+      "role": "ROLE_USER",
+      "status": "ACTIVE",
+      "description": "Secondary regular user for authorization boundary testing",
+      "test_scenarios": [
+        "Regular user menu access",
+        "Denied administrative access",
+        "Transaction processing limits"
+      ]
+    },
+    {
+      "sec_usr_id": "USER003",
+      "sec_usr_fname": "Bob",
+      "sec_usr_lname": "Wilson",
+      "sec_usr_pwd": "BOBTEST1",
+      "sec_usr_type": "U",
+      "role": "ROLE_USER",
+      "status": "ACTIVE",
+      "description": "Third regular user for concurrent session testing",
+      "test_scenarios": [
+        "Concurrent user sessions",
+        "Session timeout validation",
+        "Multiple transaction processing"
+      ]
+    },
+    {
+      "sec_usr_id": "TESTADM",
+      "sec_usr_fname": "Test",
+      "sec_usr_lname": "Admin",
+      "sec_usr_pwd": "TESTPASS",
+      "sec_usr_type": "A",
+      "role": "ROLE_ADMIN",
+      "status": "ACTIVE",
+      "description": "Dedicated admin account for Spring Security testing",
+      "test_scenarios": [
+        "@PreAuthorize annotation testing",
+        "Method-level security validation",
+        "Administrative endpoint access"
+      ]
+    },
+    {
+      "sec_usr_id": "TESTUSR",
+      "sec_usr_fname": "Test",
+      "sec_usr_lname": "User",
+      "sec_usr_pwd": "USERTEST",
+      "sec_usr_type": "U",
+      "role": "ROLE_USER",
+      "status": "ACTIVE",
+      "description": "Dedicated user account for authorization testing",
+      "test_scenarios": [
+        "Regular user access validation",
+        "Administrative access denial",
+        "Role-based menu restrictions"
+      ]
+    },
+    {
+      "sec_usr_id": "LOCKED01",
+      "sec_usr_fname": "Locked",
+      "sec_usr_lname": "Account",
+      "sec_usr_pwd": "LOCKED99",
+      "sec_usr_type": "U",
+      "role": "ROLE_USER",
+      "status": "LOCKED",
+      "description": "Locked user account for security testing",
+      "test_scenarios": [
+        "Account lockout validation",
+        "Authentication failure handling",
+        "Security incident logging"
+      ]
+    },
+    {
+      "sec_usr_id": "EXPIRED1",
+      "sec_usr_fname": "Expired",
+      "sec_usr_lname": "Password",
+      "sec_usr_pwd": "OLDPASS1",
+      "sec_usr_type": "U",
+      "role": "ROLE_USER",
+      "status": "EXPIRED",
+      "description": "User with expired credentials for testing",
+      "test_scenarios": [
+        "Expired credential handling",
+        "Password change requirements",
+        "Authentication flow exceptions"
+      ]
+    },
+    {
+      "sec_usr_id": "INACTIVE1",
+      "sec_usr_fname": "Inactive",
+      "sec_usr_lname": "User",
+      "sec_usr_pwd": "INACTIVE",
+      "sec_usr_type": "U",
+      "role": "ROLE_USER",
+      "status": "INACTIVE",
+      "description": "Inactive user account for edge case testing",
+      "test_scenarios": [
+        "Inactive account validation",
+        "Status-based access control",
+        "User lifecycle testing"
+      ]
+    },
+    {
+      "sec_usr_id": "MAXLEN01",
+      "sec_usr_fname": "MaxLengthFirstName20",
+      "sec_usr_lname": "MaxLengthLastName20C",
+      "sec_usr_pwd": "MAXLEN12",
+      "sec_usr_type": "A",
+      "role": "ROLE_ADMIN",
+      "status": "ACTIVE",
+      "description": "User with maximum field lengths for boundary testing",
+      "test_scenarios": [
+        "Field length validation",
+        "COBOL field compatibility",
+        "Database constraint testing"
+      ]
+    },
+    {
+      "sec_usr_id": "MINLEN01",
+      "sec_usr_fname": "A",
+      "sec_usr_lname": "B",
+      "sec_usr_pwd": "MIN12345",
+      "sec_usr_type": "U",
+      "role": "ROLE_USER",
+      "status": "ACTIVE",
+      "description": "User with minimum field lengths for boundary testing",
+      "test_scenarios": [
+        "Minimum field validation",
+        "Edge case field handling",
+        "Data integrity testing"
+      ]
+    },
+    {
+      "sec_usr_id": "SPECIAL1",
+      "sec_usr_fname": "Special",
+      "sec_usr_lname": "Characters",
+      "sec_usr_pwd": "SPEC@123",
+      "sec_usr_type": "U",
+      "role": "ROLE_USER",
+      "status": "ACTIVE",
+      "description": "User with special characters for input validation",
+      "test_scenarios": [
+        "Special character handling",
+        "Input sanitization testing",
+        "SQL injection prevention"
+      ]
+    },
+    {
+      "sec_usr_id": "CASE001",
+      "sec_usr_fname": "Case",
+      "sec_usr_lname": "Sensitive",
+      "sec_usr_pwd": "CaseTEST",
+      "sec_usr_type": "U",
+      "role": "ROLE_USER",
+      "status": "ACTIVE",
+      "description": "User for case sensitivity testing (will be converted to uppercase)",
+      "test_scenarios": [
+        "Case conversion validation",
+        "COBOL uppercase compatibility",
+        "Spring Security case handling"
+      ]
+    },
+    {
+      "sec_usr_id": "PERF001",
+      "sec_usr_fname": "Performance",
+      "sec_usr_lname": "Testing",
+      "sec_usr_pwd": "PERF1234",
+      "sec_usr_type": "U",
+      "role": "ROLE_USER",
+      "status": "ACTIVE",
+      "description": "User for performance and load testing",
+      "test_scenarios": [
+        "High-volume authentication",
+        "Concurrent session handling",
+        "Response time validation"
+      ]
+    },
+    {
+      "sec_usr_id": "AUDIT001",
+      "sec_usr_fname": "Audit",
+      "sec_usr_lname": "Trail",
+      "sec_usr_pwd": "AUDIT999",
+      "sec_usr_type": "A",
+      "role": "ROLE_ADMIN",
+      "status": "ACTIVE",
+      "description": "Admin user for audit trail and compliance testing",
+      "test_scenarios": [
+        "Security event logging",
+        "Audit trail generation",
+        "Compliance validation",
+        "Spring Security event monitoring"
+      ]
+    }
+  ],
+  "test_categories": {
+    "authentication_tests": {
+      "valid_credentials": ["ADMIN001", "USER001", "TESTADM", "TESTUSR"],
+      "invalid_passwords": ["ADMIN001", "USER001"],
+      "case_sensitivity": ["CASE001"],
+      "field_boundaries": ["MAXLEN01", "MINLEN01"]
+    },
+    "authorization_tests": {
+      "admin_access": ["ADMIN001", "ADMIN002", "TESTADM", "AUDIT001"],
+      "user_access": ["USER001", "USER002", "USER003", "TESTUSR"],
+      "access_denied": ["TESTUSR", "USER001", "USER002"],
+      "role_validation": ["ADMIN001", "TESTUSR"]
+    },
+    "security_edge_cases": {
+      "locked_accounts": ["LOCKED01"],
+      "expired_credentials": ["EXPIRED1"],
+      "inactive_accounts": ["INACTIVE1"],
+      "special_characters": ["SPECIAL1"]
+    },
+    "performance_tests": {
+      "concurrent_sessions": ["USER001", "USER002", "USER003", "PERF001"],
+      "load_testing": ["PERF001"],
+      "response_time": ["ADMIN001", "USER001"]
+    },
+    "compliance_tests": {
+      "audit_logging": ["AUDIT001"],
+      "data_protection": ["ADMIN001", "USER001"],
+      "access_control": ["TESTADM", "TESTUSR"]
+    }
+  },
+  "spring_security_mappings": {
+    "user_details_service": {
+      "username_field": "sec_usr_id",
+      "password_field": "sec_usr_pwd",
+      "authorities_field": "sec_usr_type",
+      "enabled_field": "status"
+    },
+    "role_mappings": {
+      "A": "ROLE_ADMIN",
+      "U": "ROLE_USER"
+    },
+    "password_encoder": "NoOpPasswordEncoder",
+    "session_management": "Spring Session Redis"
+  },
+  "test_data_notes": {
+    "password_policy": "8-character limit matching COBOL field constraints",
+    "case_handling": "All user IDs and passwords converted to uppercase per COBOL logic",
+    "field_lengths": "All fields respect COBOL copybook field length constraints",
+    "status_values": ["ACTIVE", "LOCKED", "EXPIRED", "INACTIVE"],
+    "legacy_compatibility": "Plain text passwords maintain RACF replacement parity"
+  }
+}
