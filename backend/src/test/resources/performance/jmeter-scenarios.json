@@ -1,0 +1,645 @@
+{
+  "jmeterTestScenarios": {
+    "metadata": {
+      "description": "Comprehensive JMeter test scenarios for CardDemo Spring Boot application performance validation",
+      "version": "1.0.0",
+      "targetApplication": "CardDemo Modernized Application",
+      "testPurpose": "Validate sub-200ms response times and 10,000 TPS capacity",
+      "baseUrl": "${__P(test.baseUrl,http://localhost:8080)}",
+      "performanceTargets": {
+        "maxResponseTime": "200ms",
+        "targetThroughput": "10000 TPS",
+        "errorRate": "<1%",
+        "availability": "99.9%"
+      }
+    },
+    "globalConfiguration": {
+      "httpDefaults": {
+        "protocol": "http",
+        "domain": "${__P(test.host,localhost)}",
+        "port": "${__P(test.port,8080)}",
+        "connectTimeout": "5000",
+        "responseTimeout": "10000",
+        "implementation": "HttpClient4"
+      },
+      "headerManager": {
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "name": "Accept",
+            "value": "application/json"
+          },
+          {
+            "name": "User-Agent",
+            "value": "JMeter-CardDemo-LoadTest/1.0"
+          }
+        ]
+      },
+      "cookieManager": {
+        "enabled": true,
+        "clearEachIteration": false,
+        "policy": "compatibility"
+      }
+    },
+    "testScenarios": [
+      {
+        "scenarioName": "Authentication Flow Test",
+        "description": "Tests the CC00 sign-on transaction equivalent REST endpoint",
+        "threadGroupConfig": {
+          "numberOfThreads": 100,
+          "rampUpPeriod": 60,
+          "duration": 300,
+          "delayedStart": false
+        },
+        "requests": [
+          {
+            "name": "Sign-On Request (CC00)",
+            "method": "POST",
+            "path": "/api/auth/signin",
+            "body": {
+              "userId": "${__P(test.userId,TESTUSER)}",
+              "password": "${__P(test.password,PASSWORD)}",
+              "transactionCode": "CC00"
+            },
+            "assertions": [
+              {
+                "type": "response_code",
+                "value": "200"
+              },
+              {
+                "type": "response_time",
+                "value": "200"
+              },
+              {
+                "type": "json_path",
+                "path": "$.success",
+                "value": "true"
+              }
+            ],
+            "extractors": [
+              {
+                "name": "sessionToken",
+                "jsonPath": "$.sessionToken",
+                "variable": "AUTH_TOKEN"
+              },
+              {
+                "name": "userId",
+                "jsonPath": "$.userId",
+                "variable": "USER_ID"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "scenarioName": "Transaction Listing Performance Test",
+        "description": "Tests the CT00 transaction listing equivalent REST endpoint with pagination",
+        "threadGroupConfig": {
+          "numberOfThreads": 500,
+          "rampUpPeriod": 120,
+          "duration": 600,
+          "delayedStart": false
+        },
+        "requests": [
+          {
+            "name": "Transaction List Request (CT00)",
+            "method": "GET",
+            "path": "/api/transactions/list",
+            "parameters": [
+              {
+                "name": "page",
+                "value": "${__Random(1,100)}"
+              },
+              {
+                "name": "size",
+                "value": "10"
+              },
+              {
+                "name": "accountId",
+                "value": "${__P(test.accountId,1000000001)}"
+              }
+            ],
+            "headers": [
+              {
+                "name": "Authorization",
+                "value": "Bearer ${AUTH_TOKEN}"
+              }
+            ],
+            "assertions": [
+              {
+                "type": "response_code",
+                "value": "200"
+              },
+              {
+                "type": "response_time",
+                "value": "200"
+              },
+              {
+                "type": "json_path",
+                "path": "$.transactions",
+                "exists": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "scenarioName": "Account View Performance Test",
+        "description": "Tests the CAVW account view equivalent REST endpoint",
+        "threadGroupConfig": {
+          "numberOfThreads": 300,
+          "rampUpPeriod": 90,
+          "duration": 450,
+          "delayedStart": false
+        },
+        "requests": [
+          {
+            "name": "Account View Request (CAVW)",
+            "method": "GET",
+            "path": "/api/accounts/${__P(test.accountId,1000000001)}",
+            "headers": [
+              {
+                "name": "Authorization",
+                "value": "Bearer ${AUTH_TOKEN}"
+              }
+            ],
+            "assertions": [
+              {
+                "type": "response_code",
+                "value": "200"
+              },
+              {
+                "type": "response_time",
+                "value": "200"
+              },
+              {
+                "type": "json_path",
+                "path": "$.accountId",
+                "exists": true
+              },
+              {
+                "type": "json_path",
+                "path": "$.customerId",
+                "exists": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "scenarioName": "Credit Card Management Test",
+        "description": "Tests the CCLI credit card listing equivalent REST endpoint",
+        "threadGroupConfig": {
+          "numberOfThreads": 200,
+          "rampUpPeriod": 60,
+          "duration": 300,
+          "delayedStart": false
+        },
+        "requests": [
+          {
+            "name": "Credit Card List Request (CCLI)",
+            "method": "GET",
+            "path": "/api/cards/list",
+            "parameters": [
+              {
+                "name": "page",
+                "value": "${__Random(1,50)}"
+              },
+              {
+                "name": "size",
+                "value": "7"
+              },
+              {
+                "name": "accountId",
+                "value": "${__P(test.accountId,1000000001)}"
+              }
+            ],
+            "headers": [
+              {
+                "name": "Authorization",
+                "value": "Bearer ${AUTH_TOKEN}"
+              }
+            ],
+            "assertions": [
+              {
+                "type": "response_code",
+                "value": "200"
+              },
+              {
+                "type": "response_time",
+                "value": "200"
+              },
+              {
+                "type": "json_path",
+                "path": "$.cards",
+                "exists": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "scenarioName": "High Volume Load Test",
+        "description": "10,000 TPS load test simulating realistic user patterns across all endpoints",
+        "threadGroupConfig": {
+          "numberOfThreads": 2000,
+          "rampUpPeriod": 300,
+          "duration": 1800,
+          "delayedStart": false
+        },
+        "weightedRequests": [
+          {
+            "weight": 10,
+            "name": "Sign-On (CC00)",
+            "method": "POST",
+            "path": "/api/auth/signin",
+            "body": {
+              "userId": "${__RandomString(8,ABCDEFGHIJKLMNOPQRSTUVWXYZ)}",
+              "password": "PASSWORD123",
+              "transactionCode": "CC00"
+            }
+          },
+          {
+            "weight": 25,
+            "name": "Transaction List (CT00)",
+            "method": "GET",
+            "path": "/api/transactions/list",
+            "parameters": [
+              {
+                "name": "page",
+                "value": "${__Random(1,100)}"
+              },
+              {
+                "name": "size",
+                "value": "10"
+              }
+            ]
+          },
+          {
+            "weight": 20,
+            "name": "Account View (CAVW)",
+            "method": "GET",
+            "path": "/api/accounts/${__Random(1000000001,1000001000)}"
+          },
+          {
+            "weight": 15,
+            "name": "Card List (CCLI)",
+            "method": "GET",
+            "path": "/api/cards/list",
+            "parameters": [
+              {
+                "name": "page",
+                "value": "${__Random(1,20)}"
+              },
+              {
+                "name": "size",
+                "value": "7"
+              }
+            ]
+          },
+          {
+            "weight": 10,
+            "name": "Card Detail (CCDL)",
+            "method": "GET",
+            "path": "/api/cards/${__Random(4000000000000000,4000000000001000)}"
+          },
+          {
+            "weight": 10,
+            "name": "Account Update (CAUP)",
+            "method": "PUT",
+            "path": "/api/accounts/${__Random(1000000001,1000001000)}",
+            "body": {
+              "accountLimit": "${__Random(1000,50000)}",
+              "accountStatus": "A"
+            }
+          },
+          {
+            "weight": 5,
+            "name": "Add Transaction (CT02)",
+            "method": "POST",
+            "path": "/api/transactions",
+            "body": {
+              "accountId": "${__Random(1000000001,1000001000)}",
+              "cardNum": "${__Random(4000000000000000,4000000000001000)}",
+              "transactionAmount": "${__Random(10,1000)}.${__Random(10,99)}",
+              "transactionTypeCode": "PURCHASE",
+              "merchantName": "TEST MERCHANT ${__Random(1,1000)}"
+            }
+          },
+          {
+            "weight": 5,
+            "name": "Bill Payment (CB00)",
+            "method": "POST",
+            "path": "/api/payments",
+            "body": {
+              "accountId": "${__Random(1000000001,1000001000)}",
+              "paymentAmount": "${__Random(50,2000)}.${__Random(10,99)}",
+              "paymentMethod": "ONLINE"
+            }
+          }
+        ],
+        "assertions": [
+          {
+            "type": "response_time",
+            "value": "200",
+            "percentile": "95"
+          },
+          {
+            "type": "error_rate",
+            "value": "1",
+            "operator": "less_than"
+          }
+        ]
+      },
+      {
+        "scenarioName": "Database Stress Test",
+        "description": "Tests PostgreSQL database performance under concurrent load",
+        "threadGroupConfig": {
+          "numberOfThreads": 1000,
+          "rampUpPeriod": 180,
+          "duration": 900,
+          "delayedStart": false
+        },
+        "requests": [
+          {
+            "name": "Complex Account Query",
+            "method": "GET",
+            "path": "/api/accounts/search",
+            "parameters": [
+              {
+                "name": "customerId",
+                "value": "${__Random(1000000,1001000)}"
+              },
+              {
+                "name": "accountStatus",
+                "value": "A"
+              },
+              {
+                "name": "includeTransactions",
+                "value": "true"
+              }
+            ],
+            "assertions": [
+              {
+                "type": "response_code",
+                "value": "200"
+              },
+              {
+                "type": "response_time",
+                "value": "500"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "scenarioName": "Session Management Test",
+        "description": "Tests Redis session store performance and Spring Session integration",
+        "threadGroupConfig": {
+          "numberOfThreads": 500,
+          "rampUpPeriod": 120,
+          "duration": 600,
+          "delayedStart": false
+        },
+        "requests": [
+          {
+            "name": "Session Creation",
+            "method": "POST",
+            "path": "/api/auth/signin",
+            "body": {
+              "userId": "TESTUSER${__threadNum}",
+              "password": "PASSWORD123",
+              "transactionCode": "CC00"
+            },
+            "extractors": [
+              {
+                "name": "sessionId",
+                "regex": "JSESSIONID=([^;]+)",
+                "variable": "SESSION_ID"
+              }
+            ]
+          },
+          {
+            "name": "Session Validation",
+            "method": "GET",
+            "path": "/api/session/validate",
+            "headers": [
+              {
+                "name": "Cookie",
+                "value": "JSESSIONID=${SESSION_ID}"
+              }
+            ],
+            "assertions": [
+              {
+                "type": "response_code",
+                "value": "200"
+              },
+              {
+                "type": "response_time",
+                "value": "100"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "scenarioName": "Batch Processing Validation",
+        "description": "Tests Spring Batch job endpoints for monitoring and validation",
+        "threadGroupConfig": {
+          "numberOfThreads": 50,
+          "rampUpPeriod": 30,
+          "duration": 300,
+          "delayedStart": false
+        },
+        "requests": [
+          {
+            "name": "Batch Job Status",
+            "method": "GET",
+            "path": "/actuator/batch/jobs",
+            "headers": [
+              {
+                "name": "Authorization",
+                "value": "Bearer ${AUTH_TOKEN}"
+              }
+            ],
+            "assertions": [
+              {
+                "type": "response_code",
+                "value": "200"
+              },
+              {
+                "type": "response_time",
+                "value": "100"
+              }
+            ]
+          },
+          {
+            "name": "Job Execution History",
+            "method": "GET",
+            "path": "/actuator/batch/jobs/executions",
+            "parameters": [
+              {
+                "name": "jobName",
+                "value": "dailyProcessingJob"
+              }
+            ],
+            "assertions": [
+              {
+                "type": "response_code",
+                "value": "200"
+              },
+              {
+                "type": "response_time",
+                "value": "200"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "performanceThresholds": {
+      "responseTime": {
+        "authentication": {
+          "average": "150ms",
+          "percentile95": "200ms",
+          "maximum": "500ms"
+        },
+        "businessTransactions": {
+          "average": "100ms",
+          "percentile95": "200ms",
+          "maximum": "400ms"
+        },
+        "databaseQueries": {
+          "average": "50ms",
+          "percentile95": "150ms",
+          "maximum": "300ms"
+        }
+      },
+      "throughput": {
+        "targetRPS": 10000,
+        "peakRPS": 15000,
+        "sustainedRPS": 8000
+      },
+      "errorRates": {
+        "http4xx": "<0.5%",
+        "http5xx": "<0.1%",
+        "total": "<1%"
+      },
+      "resourceUtilization": {
+        "cpuUtilization": "<80%",
+        "memoryUtilization": "<85%",
+        "databaseConnections": "<15/20"
+      }
+    },
+    "monitoringConfiguration": {
+      "metricsCollection": [
+        {
+          "name": "response_time_distribution",
+          "endpoint": "/actuator/prometheus",
+          "metric": "http_server_requests_seconds"
+        },
+        {
+          "name": "jvm_memory_usage",
+          "endpoint": "/actuator/prometheus",
+          "metric": "jvm_memory_used_bytes"
+        },
+        {
+          "name": "database_connection_pool",
+          "endpoint": "/actuator/prometheus",
+          "metric": "hikaricp_connections_active"
+        },
+        {
+          "name": "redis_session_operations",
+          "endpoint": "/actuator/prometheus",
+          "metric": "spring_session_operations_total"
+        }
+      ],
+      "alertThresholds": [
+        {
+          "metric": "response_time_95th_percentile",
+          "threshold": "200ms",
+          "severity": "critical"
+        },
+        {
+          "metric": "error_rate",
+          "threshold": "1%",
+          "severity": "warning"
+        },
+        {
+          "metric": "cpu_utilization",
+          "threshold": "80%",
+          "severity": "warning"
+        },
+        {
+          "metric": "memory_utilization",
+          "threshold": "85%",
+          "severity": "critical"
+        }
+      ]
+    },
+    "dataGeneration": {
+      "csvDataSets": [
+        {
+          "name": "user_credentials",
+          "file": "test-data/user-credentials.csv",
+          "variables": ["userId", "password", "userType"],
+          "shareMode": "all_threads"
+        },
+        {
+          "name": "account_data",
+          "file": "test-data/account-data.csv",
+          "variables": ["accountId", "customerId", "accountLimit"],
+          "shareMode": "current_thread"
+        },
+        {
+          "name": "card_data",
+          "file": "test-data/card-data.csv",
+          "variables": ["cardNumber", "accountId", "cardStatus"],
+          "shareMode": "current_thread"
+        }
+      ],
+      "variableGeneration": [
+        {
+          "name": "randomAccountId",
+          "function": "${__Random(1000000001,1000010000)}"
+        },
+        {
+          "name": "randomCardNumber",
+          "function": "${__Random(4000000000000000,4000000000099999)}"
+        },
+        {
+          "name": "randomTransactionAmount",
+          "function": "${__Random(10,5000)}.${__Random(10,99)}"
+        },
+        {
+          "name": "timestamp",
+          "function": "${__time(yyyy-MM-dd HH:mm:ss)}"
+        }
+      ]
+    },
+    "reportingConfiguration": {
+      "htmlReports": {
+        "enabled": true,
+        "outputDirectory": "performance-reports",
+        "includeGraphs": true
+      },
+      "csvResults": {
+        "enabled": true,
+        "outputFile": "performance-results.csv"
+      },
+      "junitResults": {
+        "enabled": true,
+        "outputFile": "performance-junit.xml"
+      },
+      "customMetrics": [
+        "business_transaction_success_rate",
+        "financial_calculation_accuracy",
+        "session_management_performance",
+        "database_transaction_consistency"
+      ]
+    }
+  }
+}
