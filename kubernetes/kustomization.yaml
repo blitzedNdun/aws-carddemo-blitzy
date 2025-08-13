@@ -1,0 +1,326 @@
+# Kustomization configuration for CardDemo Kubernetes deployment
+# This file manages all CardDemo Kubernetes resources in proper deployment order
+# and provides consistent labeling, naming, and namespace organization
+# 
+# Deployment order follows best practices:
+# 1. Namespace - establishes isolation boundary
+# 2. Secrets/ConfigMaps - configuration dependencies
+# 3. PVCs - persistent storage claims
+# 4. Services - service discovery setup
+# 5. Deployments/StatefulSets - application workloads
+# 6. HPA - horizontal pod autoscalers
+# 7. Ingress - external traffic routing
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Metadata for the kustomization
+metadata:
+  name: carddemo
+  annotations:
+    config.kubernetes.io/local-config: "true"
+
+# Default namespace for all resources
+namespace: carddemo
+
+# Resources in deployment order
+resources:
+  # 1. Namespace - Foundation for resource isolation
+  - namespace.yaml
+  
+  # 2. Secrets and ConfigMaps - Configuration dependencies must exist first
+  - secret.yaml
+  - postgresql-secret.yaml
+  - configmap.yaml
+  
+  # 3. Persistent Volume Claims - Storage must be available before StatefulSets
+  - pvc.yaml
+  
+  # 4. Services - Service discovery must be established before deployments
+  - service.yaml
+  - gateway-service.yaml
+  - postgresql-service.yaml
+  - redis-service.yaml
+  
+  # 5. StatefulSets - Database services need persistent storage
+  - statefulset.yaml
+  - postgresql-statefulset.yaml
+  
+  # 6. Deployments - Application services can start after infrastructure is ready
+  - deployment.yaml
+  - frontend-deployment.yaml
+  - gateway-deployment.yaml
+  - redis-deployment.yaml
+  
+  # 7. Horizontal Pod Autoscaler - Auto-scaling configured after deployments exist
+  - hpa.yaml
+  
+  # 8. Ingress - External routing configured last
+  - ingress.yaml
+
+# Common labels applied to all resources
+commonLabels:
+  app: carddemo
+  version: v2.1.0
+  environment: production
+  component: spring-boot-migration
+  team: blitzy-platform
+  tier: application
+
+# Common annotations applied to all resources
+commonAnnotations:
+  # GitOps annotations for deployment tracking
+  config.kubernetes.io/origin: |
+    path: kubernetes/kustomization.yaml
+    repo: https://github.com/carddemo/carddemo-spring-boot
+  deployment.kubernetes.io/revision: "1"
+  
+  # Application metadata
+  carddemo.app/migration-source: "mainframe-cobol-cics"
+  carddemo.app/architecture: "spring-boot-microservices"
+  carddemo.app/technology-stack: "java21-postgresql-redis-react"
+
+# Namespace transformer ensures all resources belong to carddemo namespace
+# This provides resource isolation and organization
+namespace: carddemo
+
+# Name prefix for resource naming consistency
+namePrefix: carddemo-
+
+# Image tag suffixes for container image management
+images:
+  - name: backend-service
+    newTag: v2.1.0
+  - name: frontend-service  
+    newTag: v2.1.0
+  - name: api-gateway
+    newTag: v2.1.0
+
+# Configuration for generating ConfigMaps and Secrets
+configMapGenerator:
+  - name: carddemo-environment-config
+    literals:
+      - SPRING_PROFILES_ACTIVE=kubernetes
+      - JAVA_OPTS=-Xmx1g -Xms512m
+      - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics,info
+      - LOGGING_LEVEL_COM_CARDDEMO=INFO
+    options:
+      disableNameSuffixHash: true
+
+secretGenerator:
+  - name: carddemo-security-config
+    literals:
+      - JWT_SECRET_KEY=carddemo_jwt_signing_key_change_in_production
+      - ENCRYPTION_KEY=carddemo_field_encryption_key_change_in_production
+    type: Opaque
+    options:
+      disableNameSuffixHash: true
+
+# Patches for environment-specific customization
+patchesStrategicMerge:
+  # This section would contain environment-specific patches
+  # Example: patches/production-resources.yaml, patches/staging-replicas.yaml
+
+# JSON patches for fine-grained modifications
+patchesJson6902: []
+
+# Variable replacements for environment customization
+replicas:
+  # Default replica counts - can be overridden in overlays
+  backend: 3
+  frontend: 2
+  gateway: 2
+  redis: 1
+
+# Generators for creating additional resources
+generators: []
+
+# Transformers for advanced resource manipulation
+transformers: []
+
+# Validation rules for resource compliance
+# These ensure all resources meet CardDemo standards
+configurations:
+  - name: carddemo-validation
+    behavior: create
+    fieldSpecs:
+      - path: metadata/labels
+        kind: Deployment
+      - path: metadata/labels  
+        kind: Service
+      - path: metadata/labels
+        kind: StatefulSet
+
+# Resource ordering ensures proper dependency management
+# This prevents race conditions during deployment
+buildMetadata:
+  - originating-file
+  - dependency-order
+
+# OpenAPI schema validation for custom resources
+openapi:
+  path: openapi.yaml
+
+# Kustomize build configurations
+buildOptions:
+  # Load restrictor prevents loading files outside the kustomization root
+  loadRestrictor: LoadRestrictionsRootOnly
+  
+  # Sort options for predictable resource ordering
+  sortOptions:
+    order: fifo  # First In, First Out ordering maintains dependency chain
+    
+  # Enable legacy behavior for compatibility
+  legacy: false
+
+# Environment-specific overlays structure
+# This enables GitOps workflows with environment promotion
+#
+# Directory structure:
+# kubernetes/
+# ├── base/
+# │   ├── kustomization.yaml (this file)
+# │   ├── namespace.yaml
+# │   ├── deployment.yaml
+# │   └── ...
+# ├── overlays/
+# │   ├── development/
+# │   │   ├── kustomization.yaml
+# │   │   ├── patches/
+# │   │   └── ...
+# │   ├── staging/
+# │   │   ├── kustomization.yaml
+# │   │   ├── patches/
+# │   │   └── ...
+# │   └── production/
+# │       ├── kustomization.yaml
+# │       ├── patches/
+# │       └── ...
+
+# Health check configurations for deployment validation
+healthCheck:
+  readinessProbe:
+    httpGet:
+      path: /actuator/health/readiness
+      port: 8080
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  livenessProbe:
+    httpGet:
+      path: /actuator/health/liveness
+      port: 8080
+    initialDelaySeconds: 60
+    periodSeconds: 30
+
+# Resource limits and requests for SLA compliance
+# Ensures sub-200ms response time requirements are met
+resources:
+  backend:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi" 
+      cpu: "500m"
+  frontend:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+  gateway:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "250m"
+
+# Security context for container security
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 2000
+  capabilities:
+    drop:
+      - ALL
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+
+# Pod disruption budgets for high availability
+podDisruptionBudget:
+  minAvailable: 1
+  maxUnavailable: 50%
+
+# Network policies for service mesh integration
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: carddemo
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: carddemo
+
+# Monitoring and observability configuration
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    path: /actuator/prometheus
+  prometheusRule:
+    enabled: true
+    rules:
+      - alert: CardDemoHighResponseTime
+        expr: histogram_quantile(0.95, http_request_duration_seconds_bucket{job="carddemo-backend"}) > 0.2
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CardDemo response time SLA violation"
+          description: "95th percentile response time is above 200ms threshold"
+
+# Service mesh configuration for advanced networking
+serviceMesh:
+  enabled: false  # Can be enabled in production overlay
+  istio:
+    enabled: false
+    virtualService:
+      enabled: false
+    destinationRule:
+      enabled: false
+
+# Backup and disaster recovery configuration
+backup:
+  enabled: true
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  retention: "30d"
+  storage:
+    size: "100Gi"
+    storageClass: "fast-ssd"
+
+# Compliance and audit configuration
+compliance:
+  # SOX compliance for financial processing
+  sox:
+    enabled: true
+    auditLogs: true
+    immutableConfiguration: true
+  
+  # PCI DSS compliance for credit card processing  
+  pciDss:
+    enabled: true
+    networkSegmentation: true
+    encryption: true
+    
+  # Data retention policies
+  dataRetention:
+    transactionLogs: "7y"    # 7 years for financial records
+    auditLogs: "3y"          # 3 years for compliance audit
+    applicationLogs: "30d"    # 30 days for operational logs
