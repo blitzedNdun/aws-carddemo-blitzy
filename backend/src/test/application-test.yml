@@ -1,0 +1,355 @@
+# Spring Boot Test Configuration for CardDemo Application
+# Optimized for fast unit tests with H2 and comprehensive integration testing with Testcontainers
+
+spring:
+  # Test Profile Configuration
+  profiles:
+    active: test
+    
+  # H2 In-Memory Database Configuration for Unit Tests
+  datasource:
+    # H2 configuration for fast unit test execution
+    url: jdbc:h2:mem:carddemo_test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+    hikari:
+      # Optimized connection pool for testing
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 10000
+      idle-timeout: 300000
+      max-lifetime: 600000
+      leak-detection-threshold: 60000
+      
+  # JPA Configuration for Test Environment
+  jpa:
+    hibernate:
+      # Always recreate schema for clean test state
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        # PostgreSQL dialect compatibility for H2
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+        show_sql: false
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+        temp:
+          use_jdbc_metadata_defaults: false
+    show-sql: false
+    open-in-view: false
+    
+  # Flyway Migration Configuration
+  flyway:
+    # Disable Flyway for test environment (using ddl-auto: create-drop)
+    enabled: false
+    
+  # Redis Configuration - Mock/Embedded for Testing
+  data:
+    redis:
+      # Use embedded Redis for unit tests
+      host: localhost
+      port: 6370  # Different port to avoid conflicts
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 4
+          max-idle: 4
+          min-idle: 1
+      # Disable Redis for pure unit tests (can be overridden)
+      repositories:
+        enabled: false
+        
+  # Session Configuration for Testing
+  session:
+    store-type: redis
+    redis:
+      # Test-specific session configuration
+      flush-mode: immediate
+      save-mode: always
+      namespace: "carddemo:test:session"
+    timeout: 1800s  # 30 minutes for testing
+    
+  # Security Configuration - Disabled for Testing
+  security:
+    # Disable security auto-configuration for most tests
+    basic:
+      enabled: false
+    oauth2:
+      resourceserver:
+        jwt:
+          # Mock JWT configuration for security tests
+          jwk-set-uri: http://localhost:${wiremock.server.port:8089}/oauth2/jwks
+    user:
+      name: testuser
+      password: testpass
+      roles: USER,ADMIN
+      
+  # Spring Boot Test Configuration
+  test:
+    # Use random port for @SpringBootTest
+    mockmvc:
+      print: none  # Disable MockMvc output in logs
+    database:
+      # Use H2 for @DataJpaTest
+      replace: any
+      
+  # Cache Configuration for Testing
+  cache:
+    type: simple  # Use simple in-memory cache for tests
+    cache-names:
+      - userCache
+      - accountCache
+      - transactionCache
+      
+  # Batch Configuration for Testing
+  batch:
+    job:
+      enabled: false  # Disable automatic job execution
+    initialize-schema: always
+    
+  # Mail Configuration - Mock for Testing
+  mail:
+    host: localhost
+    port: 2525
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+            
+# Testcontainers Configuration for Integration Tests
+testcontainers:
+  postgresql:
+    # PostgreSQL container configuration
+    image: postgres:15.4-alpine
+    database: carddemo_test
+    username: carddemo_test
+    password: test_password
+    port: 5433  # Different port to avoid conflicts
+    parameters:
+      - "--max_connections=50"
+      - "--shared_buffers=128MB"
+      - "--effective_cache_size=512MB"
+    # Container resource limits
+    memory: 512m
+    tmpfs:
+      /tmp: rw,size=100m
+      /var/lib/postgresql/data: rw,size=200m
+      
+  redis:
+    # Redis container for integration tests
+    image: redis:7.0.5-alpine
+    port: 6380
+    password: test_redis_password
+    memory: 128m
+    
+  # General container configuration
+  reuse:
+    enabled: true  # Reuse containers across test runs
+  ryuk:
+    disabled: false  # Enable Ryuk for cleanup
+    
+# Logging Configuration for Testing
+logging:
+  level:
+    # Root logging level
+    root: INFO
+    
+    # Application-specific logging
+    com.carddemo: DEBUG
+    
+    # Spring Framework logging
+    org.springframework.web: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.boot.autoconfigure: INFO
+    org.springframework.test: INFO
+    org.springframework.transaction: DEBUG
+    
+    # Data access logging
+    org.springframework.data.jpa: DEBUG
+    org.springframework.orm.jpa: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    
+    # Testcontainers logging
+    org.testcontainers: INFO
+    com.github.dockerjava: WARN
+    
+    # Redis logging
+    org.springframework.data.redis: DEBUG
+    
+    # Reduce noise from libraries
+    org.apache.kafka: WARN
+    org.apache.http: WARN
+    com.zaxxer.hikari: WARN
+    
+  pattern:
+    # Custom log pattern for test visibility
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}] - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{50}] - %msg%n"
+    
+  file:
+    # Test log file configuration
+    name: logs/carddemo-test.log
+    max-size: 10MB
+    max-history: 5
+    
+# Management and Actuator Configuration for Testing
+management:
+  endpoints:
+    web:
+      exposure:
+        # Expose all actuator endpoints for testing
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+    metrics:
+      enabled: true
+  metrics:
+    export:
+      # Disable external metric export in tests
+      prometheus:
+        enabled: false
+    tags:
+      environment: test
+      service: carddemo
+      
+# Application-Specific Test Configuration
+carddemo:
+  # Test-specific application properties
+  test:
+    # Enable test data initialization
+    data:
+      init-enabled: true
+      init-mode: always
+      # Test data file locations
+      locations:
+        - classpath:test-data/customers.sql
+        - classpath:test-data/accounts.sql
+        - classpath:test-data/cards.sql
+        - classpath:test-data/transactions.sql
+        
+    # Mock external service endpoints
+    external-services:
+      payment-gateway:
+        url: http://localhost:${wiremock.server.port:8089}/payment-gateway
+        timeout: 5000
+        retry-attempts: 2
+      core-banking:
+        url: http://localhost:${wiremock.server.port:8089}/core-banking
+        timeout: 3000
+        retry-attempts: 1
+      fraud-detection:
+        url: http://localhost:${wiremock.server.port:8089}/fraud-detection
+        timeout: 2000
+        retry-attempts: 1
+        
+    # Test-specific feature flags
+    features:
+      enhanced-security: false
+      batch-processing: false
+      external-integrations: false
+      
+    # Performance test configuration
+    performance:
+      max-concurrent-users: 100
+      response-time-threshold: 200  # milliseconds
+      error-rate-threshold: 0.01   # 1%
+      
+# Jackson Configuration for Testing
+spring.jackson:
+  serialization:
+    write-dates-as-timestamps: false
+    indent-output: true
+  deserialization:
+    fail-on-unknown-properties: false
+  default-property-inclusion: non_null
+  
+# Server Configuration for Testing
+server:
+  port: 0  # Use random port for @SpringBootTest
+  servlet:
+    context-path: /api
+  error:
+    include-stacktrace: always
+    include-message: always
+    
+# Async Configuration for Testing
+spring.task:
+  execution:
+    pool:
+      core-size: 2
+      max-size: 4
+      queue-capacity: 25
+      keep-alive: 60s
+    thread-name-prefix: carddemo-test-
+    
+# Transaction Configuration for Testing
+spring.transaction:
+  default-timeout: 30
+  rollback-on-commit-failure: true
+  
+# Test Security Configuration
+test:
+  security:
+    # JWT configuration for security tests
+    jwt:
+      secret: test-secret-key-for-jwt-signing-in-test-environment-only
+      expiration: 3600000  # 1 hour
+      issuer: carddemo-test
+      
+    # OAuth2 test configuration
+    oauth2:
+      client-id: carddemo-test-client
+      client-secret: test-client-secret
+      
+    # Mock user configuration
+    mock-users:
+      - username: testuser
+        password: testpass
+        roles: [USER]
+        enabled: true
+      - username: testadmin
+        password: adminpass
+        roles: [USER, ADMIN]
+        enabled: true
+      - username: testreadonly
+        password: readonlypass
+        roles: [READONLY]
+        enabled: true
+        
+# WireMock Configuration for External Service Mocking
+wiremock:
+  server:
+    port: 8089
+    files: classpath:wiremock
+    
+# Test Execution Configuration
+test-execution:
+  parallel:
+    enabled: true
+    mode: concurrent
+    config:
+      # Parallel execution strategy
+      strategy: dynamic
+      factor: 1.0
+  timeout:
+    # Test timeout configuration
+    default: 30s
+    integration: 120s
+    performance: 300s
+    
+# H2 Console Configuration (for debugging)
+spring.h2.console:
+  enabled: true
+  path: /h2-console
+  settings:
+    web-allow-others: true
+    trace: false
