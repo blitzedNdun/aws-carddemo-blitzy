@@ -1,0 +1,444 @@
+# Prometheus Query Templates for CardDemo Performance Testing
+# Used for extracting performance metrics during test execution
+# Ensures functional parity validation between COBOL and Java implementations
+
+metadata:
+  version: "1.0.0"
+  description: "Prometheus queries for CardDemo performance monitoring and COBOL-to-Java parity validation"
+  created_for: "Spring Boot 3.3.x CardDemo Migration Project"
+  last_updated: "2024-12-19"
+  
+# HTTP Response Time Percentile Queries
+# Critical for validating < 200ms response time requirement
+response_time_percentiles:
+  # Overall API response time at 95th percentile (target: < 200ms)
+  p95_response_time:
+    query: 'histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{uri=~"/api/.*"}[5m])) by (le))'
+    description: "95th percentile response time for all API endpoints"
+    target_threshold: "< 0.2"
+    alert_threshold: "> 3.0"
+    unit: "seconds"
+    
+  # Individual endpoint response times for detailed analysis
+  p95_response_time_by_endpoint:
+    query: 'histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{uri=~"/api/.*"}[5m])) by (le, uri))'
+    description: "95th percentile response time broken down by endpoint"
+    target_threshold: "< 0.2"
+    alert_threshold: "> 3.0"
+    unit: "seconds"
+    
+  # Authentication endpoint response time (target: < 2 seconds)
+  auth_response_time:
+    query: 'histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{uri="/api/auth/login"}[5m])) by (le))'
+    description: "Authentication endpoint response time"
+    target_threshold: "< 2.0"
+    alert_threshold: "> 5.0"
+    unit: "seconds"
+    
+  # Transaction endpoint response time (target: < 1 second)
+  transaction_response_time:
+    query: 'histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{uri=~"/api/transactions.*"}[5m])) by (le))'
+    description: "Transaction processing endpoint response time"
+    target_threshold: "< 1.0"
+    alert_threshold: "> 3.0"
+    unit: "seconds"
+    
+  # Account operations response time (target: sub-second)
+  account_response_time:
+    query: 'histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{uri=~"/api/accounts.*"}[5m])) by (le))'
+    description: "Account operations endpoint response time"
+    target_threshold: "< 1.0"
+    alert_threshold: "> 2.0"
+    unit: "seconds"
+
+# Throughput Rate Calculations
+# Validates system can handle required transaction volumes
+throughput_metrics:
+  # Overall requests per second across all endpoints
+  total_rps:
+    query: 'sum(rate(http_server_requests_total{uri=~"/api/.*"}[5m]))'
+    description: "Total requests per second across all API endpoints"
+    target_threshold: "> 1000"
+    unit: "requests/second"
+    
+  # Requests per second by endpoint
+  rps_by_endpoint:
+    query: 'sum(rate(http_server_requests_total{uri=~"/api/.*"}[5m])) by (uri)'
+    description: "Requests per second broken down by endpoint"
+    target_threshold: "> 100"
+    unit: "requests/second"
+    
+  # Successful transactions per second
+  successful_rps:
+    query: 'sum(rate(http_server_requests_total{uri=~"/api/.*", status=~"2.."}[5m]))'
+    description: "Successful requests per second (2xx status codes)"
+    target_threshold: "> 950"
+    unit: "requests/second"
+    
+  # Authentication requests per second
+  auth_rps:
+    query: 'sum(rate(http_server_requests_total{uri="/api/auth/login"}[5m]))'
+    description: "Authentication requests per second"
+    unit: "requests/second"
+
+# Error Rate Monitoring
+# Critical for ensuring system reliability and functional parity
+error_metrics:
+  # Overall error rate percentage
+  total_error_rate:
+    query: 'sum(rate(http_server_requests_total{uri=~"/api/.*", status=~"[45].."}[5m])) / sum(rate(http_server_requests_total{uri=~"/api/.*"}[5m])) * 100'
+    description: "Overall error rate as percentage"
+    target_threshold: "< 1.0"
+    alert_threshold: "> 5.0"
+    unit: "percentage"
+    
+  # Error rate by endpoint
+  error_rate_by_endpoint:
+    query: 'sum(rate(http_server_requests_total{uri=~"/api/.*", status=~"[45].."}[5m])) by (uri) / sum(rate(http_server_requests_total{uri=~"/api/.*"}[5m])) by (uri) * 100'
+    description: "Error rate percentage broken down by endpoint"
+    target_threshold: "< 1.0"
+    alert_threshold: "> 5.0"
+    unit: "percentage"
+    
+  # Server errors (5xx) count
+  server_error_count:
+    query: 'sum(rate(http_server_requests_total{uri=~"/api/.*", status=~"5.."}[5m]))'
+    description: "Server error count per second"
+    target_threshold: "< 1"
+    alert_threshold: "> 10"
+    unit: "errors/second"
+    
+  # Client errors (4xx) count
+  client_error_count:
+    query: 'sum(rate(http_server_requests_total{uri=~"/api/.*", status=~"4.."}[5m]))'
+    description: "Client error count per second"
+    unit: "errors/second"
+    
+  # Authentication failure rate
+  auth_failure_rate:
+    query: 'sum(rate(http_server_requests_total{uri="/api/auth/login", status=~"[45].."}[5m])) / sum(rate(http_server_requests_total{uri="/api/auth/login"}[5m])) * 100'
+    description: "Authentication failure rate percentage"
+    target_threshold: "< 5.0"
+    alert_threshold: "> 20.0"
+    unit: "percentage"
+
+# JVM Memory Utilization Tracking
+# Ensures adequate resource allocation for performance targets
+jvm_memory_metrics:
+  # Heap memory utilization percentage
+  heap_utilization:
+    query: 'jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"} * 100'
+    description: "JVM heap memory utilization percentage"
+    target_threshold: "< 80"
+    alert_threshold: "> 90"
+    unit: "percentage"
+    
+  # Non-heap memory utilization
+  non_heap_utilization:
+    query: 'jvm_memory_used_bytes{area="nonheap"} / jvm_memory_max_bytes{area="nonheap"} * 100'
+    description: "JVM non-heap memory utilization percentage"
+    target_threshold: "< 85"
+    alert_threshold: "> 95"
+    unit: "percentage"
+    
+  # Garbage collection frequency
+  gc_rate:
+    query: 'rate(jvm_gc_collection_seconds_count[5m])'
+    description: "Garbage collection events per second"
+    unit: "collections/second"
+    
+  # Garbage collection time percentage
+  gc_time_percentage:
+    query: 'rate(jvm_gc_collection_seconds_sum[5m]) / rate(jvm_gc_collection_seconds_count[5m]) * 100'
+    description: "Percentage of time spent in garbage collection"
+    target_threshold: "< 5"
+    alert_threshold: "> 15"
+    unit: "percentage"
+
+# CPU Utilization Monitoring
+# Validates adequate processing capacity for performance requirements
+cpu_metrics:
+  # Process CPU utilization
+  process_cpu_usage:
+    query: 'process_cpu_usage * 100'
+    description: "Process CPU utilization percentage"
+    target_threshold: "< 80"
+    alert_threshold: "> 85"
+    unit: "percentage"
+    
+  # System CPU utilization
+  system_cpu_usage:
+    query: 'system_cpu_usage * 100'
+    description: "System CPU utilization percentage"
+    target_threshold: "< 80"
+    alert_threshold: "> 90"
+    unit: "percentage"
+    
+  # CPU load average
+  load_average:
+    query: 'system_load_average_1m'
+    description: "System load average over 1 minute"
+    unit: "load"
+
+# Database Connection Pool Metrics
+# Critical for ensuring data layer performance
+database_metrics:
+  # Active database connections
+  db_connections_active:
+    query: 'hikaricp_connections_active{pool="primary"}'
+    description: "Number of active database connections"
+    unit: "connections"
+    
+  # Database connection pool utilization
+  db_pool_utilization:
+    query: 'hikaricp_connections_active{pool="primary"} / hikaricp_connections_max{pool="primary"} * 100'
+    description: "Database connection pool utilization percentage"
+    target_threshold: "< 80"
+    alert_threshold: "> 90"
+    unit: "percentage"
+    
+  # Database connection acquisition time
+  db_connection_time:
+    query: 'histogram_quantile(0.95, hikaricp_connections_acquire_seconds_bucket{pool="primary"})'
+    description: "95th percentile database connection acquisition time"
+    target_threshold: "< 0.1"
+    alert_threshold: "> 1.0"
+    unit: "seconds"
+    
+  # Database connection timeout count
+  db_connection_timeouts:
+    query: 'rate(hikaricp_connections_timeout_total{pool="primary"}[5m])'
+    description: "Database connection timeout rate"
+    target_threshold: "< 0.1"
+    alert_threshold: "> 1.0"
+    unit: "timeouts/second"
+
+# Spring Batch Job Execution Monitoring
+# Validates batch processing meets 4-hour window requirement
+batch_job_metrics:
+  # Batch job execution duration
+  job_execution_duration:
+    query: 'spring_batch_job_seconds{status="COMPLETED"}'
+    description: "Batch job execution duration in seconds"
+    target_threshold: "< 14400"  # 4 hours
+    alert_threshold: "> 21600"   # 6 hours
+    unit: "seconds"
+    
+  # Batch job execution duration by job name
+  job_duration_by_name:
+    query: 'spring_batch_job_seconds{status="COMPLETED"} by (job_name)'
+    description: "Batch job execution duration by job name"
+    target_threshold: "< 14400"
+    unit: "seconds"
+    
+  # Batch job failure rate
+  job_failure_rate:
+    query: 'sum(rate(spring_batch_job_seconds_count{status="FAILED"}[1h])) / sum(rate(spring_batch_job_seconds_count[1h])) * 100'
+    description: "Batch job failure rate percentage"
+    target_threshold: "< 1.0"
+    alert_threshold: "> 5.0"
+    unit: "percentage"
+    
+  # Daily batch job completion status
+  daily_jobs_completed:
+    query: 'sum(increase(spring_batch_job_seconds_count{status="COMPLETED"}[24h]))'
+    description: "Number of completed batch jobs in last 24 hours"
+    unit: "jobs"
+    
+  # Interest calculation job duration (critical for financial accuracy)
+  interest_job_duration:
+    query: 'spring_batch_job_seconds{job_name="interestCalculationJob", status="COMPLETED"}'
+    description: "Interest calculation job execution duration"
+    target_threshold: "< 7200"   # 2 hours
+    alert_threshold: "> 14400"   # 4 hours
+    unit: "seconds"
+    
+  # Statement generation job duration
+  statement_job_duration:
+    query: 'spring_batch_job_seconds{job_name="statementJob", status="COMPLETED"}'
+    description: "Statement generation job execution duration"
+    target_threshold: "< 3600"   # 1 hour
+    alert_threshold: "> 7200"    # 2 hours
+    unit: "seconds"
+
+# System Availability and Health Metrics
+# Ensures 99.9% availability target is met
+availability_metrics:
+  # Service uptime percentage
+  service_uptime:
+    query: 'avg_over_time(up{job="carddemo-service"}[24h]) * 100'
+    description: "Service uptime percentage over 24 hours"
+    target_threshold: "> 99.9"
+    alert_threshold: "< 99.0"
+    unit: "percentage"
+    
+  # Service availability by instance
+  service_uptime_by_instance:
+    query: 'avg_over_time(up{job="carddemo-service"}[24h]) by (instance) * 100'
+    description: "Service uptime percentage by instance"
+    target_threshold: "> 99.9"
+    unit: "percentage"
+    
+  # Health check success rate
+  health_check_success:
+    query: 'sum(rate(http_server_requests_total{uri="/actuator/health", status="200"}[5m])) / sum(rate(http_server_requests_total{uri="/actuator/health"}[5m])) * 100'
+    description: "Health check endpoint success rate"
+    target_threshold: "> 99.5"
+    alert_threshold: "< 95.0"
+    unit: "percentage"
+
+# Business Logic Validation Metrics
+# Critical for ensuring COBOL-to-Java functional parity
+business_metrics:
+  # Authentication success rate
+  auth_success_rate:
+    query: 'sum(rate(http_server_requests_total{uri="/api/auth/login", status="200"}[5m])) / sum(rate(http_server_requests_total{uri="/api/auth/login"}[5m])) * 100'
+    description: "Authentication success rate percentage"
+    target_threshold: "> 99.0"
+    alert_threshold: "< 95.0"
+    unit: "percentage"
+    
+  # Transaction processing success rate
+  transaction_success_rate:
+    query: 'sum(rate(http_server_requests_total{uri=~"/api/transactions.*", status="200"}[5m])) / sum(rate(http_server_requests_total{uri=~"/api/transactions.*"}[5m])) * 100'
+    description: "Transaction processing success rate"
+    target_threshold: "> 99.5"
+    alert_threshold: "< 99.0"
+    unit: "percentage"
+    
+  # Financial calculation accuracy validation
+  calculation_accuracy:
+    query: 'sum(rate(custom_calculation_validation_total{result="passed"}[5m])) / sum(rate(custom_calculation_validation_total[5m])) * 100'
+    description: "Financial calculation accuracy validation percentage"
+    target_threshold: "100.0"
+    alert_threshold: "< 100.0"
+    unit: "percentage"
+    
+  # Balance reconciliation success rate
+  balance_reconciliation_success:
+    query: 'sum(rate(custom_balance_verification_total{result="passed"}[5m])) / sum(rate(custom_balance_verification_total[5m])) * 100'
+    description: "Balance reconciliation success rate"
+    target_threshold: "100.0"
+    alert_threshold: "< 100.0"
+    unit: "percentage"
+
+# Session Management Metrics
+# Validates Redis session store performance (COMMAREA replacement)
+session_metrics:
+  # Redis connection status
+  redis_connections_active:
+    query: 'redis_connected_clients'
+    description: "Number of active Redis connections"
+    unit: "connections"
+    
+  # Session creation rate
+  session_creation_rate:
+    query: 'rate(spring_session_events_total{type="created"}[5m])'
+    description: "Session creation rate per second"
+    unit: "sessions/second"
+    
+  # Session expiration rate
+  session_expiration_rate:
+    query: 'rate(spring_session_events_total{type="expired"}[5m])'
+    description: "Session expiration rate per second"
+    unit: "sessions/second"
+    
+  # Average session duration
+  avg_session_duration:
+    query: 'avg(spring_session_duration_seconds)'
+    description: "Average session duration"
+    unit: "seconds"
+
+# Custom Alert Conditions
+# Based on technical specification requirements
+alert_conditions:
+  critical_response_time:
+    condition: 'histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{uri=~"/api/.*"}[5m])) by (le)) > 3'
+    severity: "critical"
+    description: "API response time exceeding critical threshold"
+    
+  high_error_rate:
+    condition: 'sum(rate(http_server_requests_total{uri=~"/api/.*", status=~"[45].."}[5m])) / sum(rate(http_server_requests_total{uri=~"/api/.*"}[5m])) > 0.05'
+    severity: "critical"
+    description: "Error rate exceeding 5% threshold"
+    
+  high_cpu_utilization:
+    condition: 'process_cpu_usage > 0.85'
+    severity: "warning"
+    description: "CPU utilization exceeding 85%"
+    
+  critical_cpu_utilization:
+    condition: 'process_cpu_usage > 0.95'
+    severity: "critical"
+    description: "CPU utilization exceeding 95%"
+    
+  high_memory_usage:
+    condition: 'jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"} > 0.90'
+    severity: "critical"
+    description: "Heap memory usage exceeding 90%"
+    
+  service_down:
+    condition: 'up{job="carddemo-service"} == 0'
+    severity: "critical"
+    description: "CardDemo service instance unavailable"
+    
+  batch_job_failure:
+    condition: 'increase(spring_batch_job_seconds_count{status="FAILED"}[1h]) > 0'
+    severity: "critical"
+    description: "Batch job execution failure detected"
+    
+  batch_job_overtime:
+    condition: 'spring_batch_job_seconds{status="COMPLETED"} > 14400'
+    severity: "warning"
+    description: "Batch job exceeding 4-hour SLA window"
+    
+  financial_calculation_error:
+    condition: 'increase(custom_calculation_validation_total{result="failed"}[5m]) > 0'
+    severity: "critical"
+    description: "Financial calculation accuracy validation failure"
+
+# Performance Test Scenarios
+# Specific queries for validating migration success criteria
+test_scenarios:
+  peak_load_validation:
+    description: "Validates system performance under peak load conditions"
+    queries:
+      - response_time_percentiles.p95_response_time
+      - throughput_metrics.total_rps
+      - error_metrics.total_error_rate
+      - jvm_memory_metrics.heap_utilization
+      - cpu_metrics.process_cpu_usage
+      
+  cobol_parity_validation:
+    description: "Validates functional parity with original COBOL implementation"
+    queries:
+      - business_metrics.calculation_accuracy
+      - business_metrics.balance_reconciliation_success
+      - business_metrics.transaction_success_rate
+      - batch_job_metrics.job_failure_rate
+      
+  sla_compliance_validation:
+    description: "Validates SLA compliance requirements"
+    queries:
+      - availability_metrics.service_uptime
+      - response_time_percentiles.p95_response_time
+      - batch_job_metrics.job_execution_duration
+      - error_metrics.total_error_rate
+      
+  stress_test_validation:
+    description: "Validates system behavior under stress conditions"
+    queries:
+      - jvm_memory_metrics.heap_utilization
+      - cpu_metrics.process_cpu_usage
+      - database_metrics.db_pool_utilization
+      - error_metrics.server_error_count
+
+# Usage Instructions
+usage_notes: |
+  1. These queries are designed for use with Prometheus monitoring during performance testing
+  2. All queries include target and alert thresholds based on technical specification requirements
+  3. Queries support both real-time monitoring and historical analysis
+  4. Business metrics validate COBOL-to-Java functional parity requirements
+  5. Alert conditions can be directly imported into Prometheus Alertmanager
+  6. Test scenarios group related queries for comprehensive validation workflows
+  7. All financial calculation metrics must show 100% accuracy for migration approval
