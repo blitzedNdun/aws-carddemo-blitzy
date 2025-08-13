@@ -1,0 +1,460 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CardDemo Performance Test Data Volume Configuration",
+  "description": "Configuration file specifying test data volumes for realistic performance testing scenarios matching production patterns. Supports comprehensive load testing to validate sub-200ms response time requirements and COMP-3 decimal precision handling.",
+  "version": "1.0.0",
+  "testDataVolumes": {
+    "overview": {
+      "description": "Performance test data volumes designed to replicate production-scale credit card management system workloads",
+      "performanceTargets": {
+        "transactionResponseTime": "< 200ms",
+        "generalRestResponseTime": "< 1 second (95th percentile)", 
+        "throughput": "1000+ TPS per service instance",
+        "errorRate": "< 1% of total volume",
+        "batchProcessingWindow": "< 4 hours"
+      },
+      "dataIntegrityRequirements": {
+        "decimalPrecision": "COMP-3 packed decimal equivalent using BigDecimal",
+        "referentialIntegrity": "Foreign key relationships maintained",
+        "businessRules": "All validation rules from COBOL programs enforced"
+      }
+    },
+    "entities": {
+      "customers": {
+        "totalRecords": 100000,
+        "description": "Customer profile data matching CUSTDATA VSAM structure",
+        "distributionPatterns": {
+          "activeCustomers": {
+            "count": 85000,
+            "percentage": 85,
+            "description": "Customers with active accounts and recent activity"
+          },
+          "inactiveCustomers": {
+            "count": 15000,
+            "percentage": 15,
+            "description": "Dormant customers for edge case testing"
+          }
+        },
+        "dataCharacteristics": {
+          "ficoScoreDistribution": {
+            "excellent": { "range": "750-850", "count": 25000 },
+            "good": { "range": "670-749", "count": 35000 },
+            "fair": { "range": "580-669", "count": 25000 },
+            "poor": { "range": "300-579", "count": 15000 }
+          },
+          "geographicDistribution": {
+            "urban": { "percentage": 60, "count": 60000 },
+            "suburban": { "percentage": 30, "count": 30000 },
+            "rural": { "percentage": 10, "count": 10000 }
+          },
+          "demographics": {
+            "ageGroups": {
+              "18-25": { "count": 15000, "averageAccounts": 1.2 },
+              "26-35": { "count": 25000, "averageAccounts": 2.1 },
+              "36-50": { "count": 35000, "averageAccounts": 2.8 },
+              "51-65": { "count": 20000, "averageAccounts": 2.5 },
+              "65+": { "count": 5000, "averageAccounts": 1.8 }
+            }
+          }
+        },
+        "edgeCaseData": {
+          "specialCharacters": {
+            "count": 500,
+            "description": "Names with apostrophes, hyphens, and international characters"
+          },
+          "longFieldValues": {
+            "count": 200,
+            "description": "Maximum length names and addresses for boundary testing"
+          },
+          "minimumFieldValues": {
+            "count": 300,
+            "description": "Single character names and minimal required data"
+          }
+        }
+      },
+      "accounts": {
+        "totalRecords": 180000,
+        "description": "Account data matching ACCTDAT VSAM structure with realistic balance distributions",
+        "distributionPatterns": {
+          "activeAccounts": {
+            "count": 162000,
+            "percentage": 90,
+            "description": "Accounts with current activity and positive balances"
+          },
+          "closedAccounts": {
+            "count": 18000,
+            "percentage": 10,
+            "description": "Closed accounts for historical data testing"
+          }
+        },
+        "balanceDistribution": {
+          "description": "Account balance patterns matching production COMP-3 decimal precision",
+          "zeroBalance": {
+            "count": 25000,
+            "amount": "0.00",
+            "description": "Zero balance accounts for edge case testing"
+          },
+          "lowBalance": {
+            "count": 45000,
+            "range": "0.01-999.99",
+            "description": "Low balance accounts with penny-level precision"
+          },
+          "mediumBalance": {
+            "count": 65000,
+            "range": "1000.00-9999.99",
+            "description": "Typical consumer account balances"
+          },
+          "highBalance": {
+            "count": 35000,
+            "range": "10000.00-49999.99",
+            "description": "High balance accounts for performance testing"
+          },
+          "premiumBalance": {
+            "count": 10000,
+            "range": "50000.00-999999.99",
+            "description": "Premium accounts with maximum credit limits"
+          }
+        },
+        "creditLimitDistribution": {
+          "starter": { "range": "500.00-2000.00", "count": 30000 },
+          "standard": { "range": "2000.01-10000.00", "count": 80000 },
+          "premium": { "range": "10000.01-50000.00", "count": 60000 },
+          "unlimited": { "range": "50000.01-999999.99", "count": 10000 }
+        },
+        "compThreeDecimalCases": {
+          "description": "Specific test cases for COBOL COMP-3 to BigDecimal precision validation",
+          "precisionTestCases": [
+            { "amount": "0.01", "description": "Minimum currency unit" },
+            { "amount": "0.99", "description": "Maximum sub-dollar amount" },
+            { "amount": "999999.99", "description": "Maximum 7-digit precision" },
+            { "amount": "123456.78", "description": "Mid-range precision test" },
+            { "amount": "000001.00", "description": "Leading zero preservation" },
+            { "amount": "999999.00", "description": "No decimal places" },
+            { "amount": "555555.55", "description": "Repeating digits" },
+            { "amount": "100000.00", "description": "Power of 10 boundary" }
+          ],
+          "roundingTestCases": [
+            { "amount": "123.456", "expectedRounded": "123.46", "description": "Standard rounding up" },
+            { "amount": "123.454", "expectedRounded": "123.45", "description": "Standard rounding down" },
+            { "amount": "123.455", "expectedRounded": "123.46", "description": "Banker's rounding test" }
+          ]
+        }
+      },
+      "cards": {
+        "totalRecords": 250000,
+        "description": "Credit card data matching CARDDAT VSAM structure with realistic distribution patterns",
+        "distributionPatterns": {
+          "activeCards": {
+            "count": 200000,
+            "percentage": 80,
+            "description": "Active cards for transaction processing"
+          },
+          "expiredCards": {
+            "count": 25000,
+            "percentage": 10,
+            "description": "Recently expired cards for validation testing"
+          },
+          "blockedCards": {
+            "count": 15000,
+            "percentage": 6,
+            "description": "Blocked cards for security testing"
+          },
+          "inactiveCards": {
+            "count": 10000,
+            "percentage": 4,
+            "description": "Inactive cards for edge case scenarios"
+          }
+        },
+        "cardTypeDistribution": {
+          "visa": { "count": 125000, "percentage": 50 },
+          "mastercard": { "count": 100000, "percentage": 40 },
+          "americanExpress": { "count": 20000, "percentage": 8 },
+          "discover": { "count": 5000, "percentage": 2 }
+        },
+        "expirationPatterns": {
+          "currentYear": { "count": 50000, "description": "Cards expiring in current year" },
+          "nextYear": { "count": 75000, "description": "Cards expiring next year" },
+          "futureYears": { "count": 100000, "description": "Cards with future expiration dates" },
+          "pastYears": { "count": 25000, "description": "Expired cards for testing" }
+        },
+        "securityFeatures": {
+          "cvvCodes": {
+            "description": "CVV code distribution for validation testing",
+            "threeDigit": { "count": 230000, "description": "Standard 3-digit CVV codes" },
+            "fourDigit": { "count": 20000, "description": "4-digit CVV for American Express" }
+          }
+        }
+      },
+      "transactions": {
+        "totalRecords": 1000000,
+        "description": "Transaction history matching TRANSACT VSAM structure for comprehensive performance testing",
+        "distributionPatterns": {
+          "currentMonth": {
+            "count": 150000,
+            "percentage": 15,
+            "description": "Recent transactions for active testing"
+          },
+          "lastThreeMonths": {
+            "count": 350000,
+            "percentage": 35,
+            "description": "Recent transaction history"
+          },
+          "lastYear": {
+            "count": 400000,
+            "percentage": 40,
+            "description": "Full year transaction history"
+          },
+          "historicalData": {
+            "count": 100000,
+            "percentage": 10,
+            "description": "Historical transactions for archival testing"
+          }
+        },
+        "transactionTypes": {
+          "purchases": {
+            "count": 600000,
+            "percentage": 60,
+            "description": "Standard purchase transactions"
+          },
+          "payments": {
+            "count": 200000,
+            "percentage": 20,
+            "description": "Payment transactions"
+          },
+          "cashAdvances": {
+            "count": 80000,
+            "percentage": 8,
+            "description": "Cash advance transactions"
+          },
+          "refunds": {
+            "count": 50000,
+            "percentage": 5,
+            "description": "Refund transactions"
+          },
+          "adjustments": {
+            "count": 30000,
+            "percentage": 3,
+            "description": "Account adjustments"
+          },
+          "fees": {
+            "count": 40000,
+            "percentage": 4,
+            "description": "Fee transactions"
+          }
+        },
+        "amountDistribution": {
+          "microTransactions": {
+            "count": 100000,
+            "range": "0.01-9.99",
+            "description": "Small value transactions for precision testing"
+          },
+          "smallTransactions": {
+            "count": 400000,
+            "range": "10.00-99.99",
+            "description": "Typical small purchase amounts"
+          },
+          "mediumTransactions": {
+            "count": 350000,
+            "range": "100.00-999.99",
+            "description": "Medium value transactions"
+          },
+          "largeTransactions": {
+            "count": 130000,
+            "range": "1000.00-9999.99",
+            "description": "Large purchase transactions"
+          },
+          "premiumTransactions": {
+            "count": 20000,
+            "range": "10000.00-99999.99",
+            "description": "High-value transactions for performance testing"
+          }
+        },
+        "temporalDistribution": {
+          "businessHours": {
+            "percentage": 70,
+            "count": 700000,
+            "description": "Transactions during 9 AM - 5 PM"
+          },
+          "eveningHours": {
+            "percentage": 20,
+            "count": 200000,
+            "description": "Transactions during 5 PM - 11 PM"
+          },
+          "nightHours": {
+            "percentage": 10,
+            "count": 100000,
+            "description": "Transactions during 11 PM - 9 AM"
+          }
+        },
+        "merchantCategories": {
+          "retail": { "count": 300000, "averageAmount": "85.50" },
+          "grocery": { "count": 200000, "averageAmount": "45.75" },
+          "gas": { "count": 150000, "averageAmount": "65.25" },
+          "restaurant": { "count": 180000, "averageAmount": "35.80" },
+          "online": { "count": 120000, "averageAmount": "125.90" },
+          "other": { "count": 50000, "averageAmount": "95.00" }
+        }
+      },
+      "referenceData": {
+        "transactionTypes": {
+          "totalRecords": 50,
+          "description": "Transaction type codes matching COBOL validation tables",
+          "categories": [
+            { "code": "00", "description": "Purchase", "count": 15 },
+            { "code": "01", "description": "Cash Advance", "count": 5 },
+            { "code": "02", "description": "Payment", "count": 10 },
+            { "code": "03", "description": "Adjustment", "count": 8 },
+            { "code": "04", "description": "Fee", "count": 7 },
+            { "code": "05", "description": "Refund", "count": 5 }
+          ]
+        },
+        "transactionCategories": {
+          "totalRecords": 200,
+          "description": "Transaction category codes for detailed classification",
+          "mainCategories": 25,
+          "subCategories": 175
+        },
+        "disclosureGroups": {
+          "totalRecords": 20,
+          "description": "Interest rate and disclosure groups",
+          "interestRateRanges": [
+            { "groupId": 1, "rate": "15.99", "description": "Standard rate" },
+            { "groupId": 2, "rate": "12.99", "description": "Preferred rate" },
+            { "groupId": 3, "rate": "19.99", "description": "Higher risk rate" },
+            { "groupId": 4, "rate": "9.99", "description": "Promotional rate" }
+          ]
+        }
+      },
+      "userSecurity": {
+        "totalRecords": 500,
+        "description": "User authentication data for system access testing",
+        "userTypes": {
+          "administrators": {
+            "count": 50,
+            "percentage": 10,
+            "description": "System administrators with full access"
+          },
+          "managers": {
+            "count": 100,
+            "percentage": 20,
+            "description": "Managers with reporting and oversight access"
+          },
+          "representatives": {
+            "count": 300,
+            "percentage": 60,
+            "description": "Customer service representatives"
+          },
+          "viewOnlyUsers": {
+            "count": 50,
+            "percentage": 10,
+            "description": "Read-only access users for compliance"
+          }
+        }
+      }
+    },
+    "performanceTestScenarios": {
+      "loadTestConfiguration": {
+        "description": "Configuration for realistic load testing scenarios",
+        "concurrentUsers": {
+          "low": { "count": 50, "description": "Baseline load testing" },
+          "medium": { "count": 200, "description": "Normal business hours load" },
+          "high": { "count": 500, "description": "Peak usage load" },
+          "stress": { "count": 1000, "description": "Stress testing beyond normal capacity" }
+        },
+        "transactionMix": {
+          "description": "Realistic transaction mix for load testing",
+          "signOn": { "percentage": 10, "targetResponseTime": "< 150ms" },
+          "accountInquiry": { "percentage": 25, "targetResponseTime": "< 100ms" },
+          "cardList": { "percentage": 20, "targetResponseTime": "< 75ms" },
+          "transactionHistory": { "percentage": 30, "targetResponseTime": "< 200ms" },
+          "billPayment": { "percentage": 10, "targetResponseTime": "< 250ms" },
+          "reports": { "percentage": 5, "targetResponseTime": "< 500ms" }
+        }
+      },
+      "batchTestConfiguration": {
+        "description": "Configuration for batch processing performance validation",
+        "dailyTransactionProcessing": {
+          "recordCount": 50000,
+          "targetTime": "< 30 minutes",
+          "description": "Daily transaction posting job"
+        },
+        "monthlyStatementGeneration": {
+          "accountCount": 10000,
+          "targetTime": "< 2 hours",
+          "description": "Monthly statement batch job"
+        },
+        "interestCalculation": {
+          "accountCount": 180000,
+          "targetTime": "< 1 hour",
+          "description": "Monthly interest calculation"
+        }
+      }
+    },
+    "dataGenerationSettings": {
+      "seedData": {
+        "description": "Configuration for generating consistent test data",
+        "randomSeed": 12345,
+        "useReproducibleData": true,
+        "preserveDataRelationships": true
+      },
+      "dataQualityRules": {
+        "enforceReferentialIntegrity": true,
+        "validateBusinessRules": true,
+        "maintainDataConsistency": true,
+        "generateRealisticPatterns": true
+      },
+      "scalabilityOptions": {
+        "scaleFactors": {
+          "small": { "multiplier": 0.1, "description": "10% of full volume for development" },
+          "medium": { "multiplier": 0.5, "description": "50% of full volume for staging" },
+          "full": { "multiplier": 1.0, "description": "Full production volume" },
+          "stress": { "multiplier": 1.5, "description": "150% for stress testing" }
+        }
+      }
+    },
+    "validationCriteria": {
+      "performanceValidation": {
+        "responseTimeThresholds": {
+          "critical": "< 200ms (99th percentile)",
+          "standard": "< 1000ms (95th percentile)",
+          "acceptable": "< 2000ms (90th percentile)"
+        },
+        "throughputRequirements": {
+          "minimumTPS": 1000,
+          "targetTPS": 2000,
+          "peakTPS": 5000
+        },
+        "errorRateThresholds": {
+          "acceptable": "< 0.1%",
+          "warning": "< 1.0%",
+          "critical": "> 1.0%"
+        }
+      },
+      "dataIntegrityValidation": {
+        "decimalPrecisionTests": {
+          "description": "Validation of COMP-3 to BigDecimal conversion accuracy",
+          "toleranceLevel": "0.00",
+          "testCases": "Comprehensive edge cases included"
+        },
+        "referentialIntegrityTests": {
+          "description": "Foreign key relationship validation",
+          "orphanRecordTolerance": 0,
+          "circularReferenceTolerance": 0
+        }
+      }
+    },
+    "metadata": {
+      "generationDate": "2024-01-01",
+      "lastUpdated": "2024-01-01",
+      "version": "1.0.0",
+      "author": "Blitzy Performance Testing Agent",
+      "purpose": "Performance test data volume configuration for CardDemo credit card management system migration",
+      "compatibility": {
+        "springBootVersion": "3.2.x",
+        "postgresqlVersion": "15.x",
+        "javaVersion": "21",
+        "testFrameworks": ["JUnit 5", "Spring Boot Test", "JMeter", "Gatling"]
+      }
+    }
+  }
+}
