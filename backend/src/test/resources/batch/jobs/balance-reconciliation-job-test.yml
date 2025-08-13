@@ -1,0 +1,307 @@
+# Spring Batch Balance Reconciliation Job Test Configuration
+# Replicates COBOL-based balance reconciliation logic with penny-level precision
+# Ensures functional parity with VSAM-based balance calculations per Section 0 requirements
+
+spring:
+  batch:
+    job:
+      enabled: false  # Test configuration should not auto-start jobs
+    
+  datasource:
+    # Test database configuration for balance reconciliation
+    url: jdbc:h2:mem:balance_recon_test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+    
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+        show_sql: false
+    defer-datasource-initialization: true
+    
+  sql:
+    init:
+      mode: always
+      data-locations: 
+        - classpath:test-data/balance-reconciliation-accounts.sql
+        - classpath:test-data/balance-reconciliation-transactions.sql
+
+# Balance Reconciliation Job Test Configuration
+balance-reconciliation-job:
+  job-name: "balanceReconciliationJob"
+  
+  # Chunk processing configuration matching COBOL SYNCPOINT intervals
+  chunk-size: 1000
+  
+  # Account processing parameters
+  account-processing:
+    # Account selection criteria for reconciliation
+    active-status: "Y"
+    exclude-closed-accounts: true
+    min-account-id: 1000000000
+    max-account-id: 9999999999
+    
+    # Balance precision configuration replicating COBOL COMP-3 behavior
+    balance-precision:
+      scale: 2
+      rounding-mode: "HALF_UP"  # Matches COBOL ROUNDED clause behavior
+      
+  # Transaction aggregation parameters  
+  transaction-aggregation:
+    # Transaction date range for reconciliation
+    date-range:
+      start-date: "2024-01-01"
+      end-date: "2024-12-31"
+      
+    # Transaction type inclusion criteria
+    include-transaction-types:
+      - "DB"  # Debit transactions
+      - "CR"  # Credit transactions
+      - "FE"  # Fee transactions
+      - "IN"  # Interest transactions
+      - "PA"  # Payment transactions
+      
+    # Amount aggregation configuration
+    amount-precision:
+      scale: 2
+      rounding-mode: "HALF_UP"
+      
+    # Grouping configuration
+    group-by:
+      - "account_id"
+      - "transaction_date"
+      
+  # Discrepancy detection configuration
+  discrepancy-detection:
+    # Tolerance threshold for penny-level precision validation
+    tolerance-threshold: 0.00  # Zero tolerance for financial accuracy
+    
+    # Discrepancy categorization rules
+    categories:
+      minor-variance:
+        threshold: 0.01
+        description: "Penny-level rounding differences"
+        
+      significant-variance:
+        threshold: 10.00
+        description: "Material balance discrepancies requiring investigation"
+        
+      critical-variance:
+        threshold: 100.00
+        description: "Major balance discrepancies requiring immediate attention"
+        
+    # Variance calculation method
+    variance-calculation:
+      method: "ABSOLUTE_DIFFERENCE"
+      formula: "ABS(account_balance - transaction_sum)"
+      
+  # Reconciliation report configuration  
+  report-generation:
+    # Report output settings
+    output-format: "CSV"
+    output-location: "target/test-reports/balance-reconciliation"
+    file-prefix: "balance_recon_report"
+    timestamp-format: "yyyyMMdd_HHmmss"
+    
+    # Report content configuration
+    include-columns:
+      - "account_id"
+      - "current_balance"
+      - "transaction_sum"
+      - "variance_amount"
+      - "variance_category"
+      - "reconciliation_status"
+      - "last_reconciled_date"
+      - "reconciliation_notes"
+      
+    # Report filtering options
+    filters:
+      include-reconciled: true
+      include-discrepancies: true
+      include-zero-variances: false
+      
+  # Status update configuration
+  status-updates:
+    # Reconciliation status values
+    status-values:
+      reconciled: "RECONCILED"
+      discrepancy: "DISCREPANCY"  
+      pending: "PENDING"
+      error: "ERROR"
+      
+    # Update criteria
+    auto-reconcile-threshold: 0.00
+    require-manual-review-threshold: 10.00
+    
+    # Audit trail configuration
+    audit-updates: true
+    update-timestamp: true
+    update-user: "BATCH_RECONCILIATION_JOB"
+
+# Test execution parameters
+test-execution:
+  # Test data volume configuration
+  test-accounts-count: 100
+  test-transactions-per-account: 50
+  
+  # Test scenario configuration
+  scenarios:
+    perfect-match:
+      description: "Accounts with perfect balance matches"
+      percentage: 80
+      
+    minor-discrepancy:
+      description: "Accounts with penny-level discrepancies"
+      percentage: 15
+      variance-range: 
+        min: 0.01
+        max: 0.05
+        
+    significant-discrepancy:
+      description: "Accounts with material discrepancies"  
+      percentage: 5
+      variance-range:
+        min: 1.00
+        max: 50.00
+        
+  # Expected test results validation
+  expected-results:
+    total-accounts-processed: 100
+    reconciled-accounts-expected: 80
+    discrepancy-accounts-expected: 20
+    zero-variance-accounts-expected: 80
+    
+    # Performance expectations matching 4-hour batch window requirement
+    max-execution-time-seconds: 300  # 5 minutes for test data volume
+    min-throughput-accounts-per-second: 10
+    
+  # Test data generation parameters
+  test-data-generation:
+    # Account balance generation
+    account-balances:
+      currency: "USD"
+      min-balance: -5000.00
+      max-balance: 25000.00
+      default-credit-limit: 10000.00
+      
+    # Transaction amount generation  
+    transaction-amounts:
+      min-amount: -500.00
+      max-amount: 2000.00
+      typical-amount-range:
+        min: 10.00
+        max: 200.00
+        
+    # Date range for test transactions
+    transaction-dates:
+      start-date: "2024-01-01"
+      end-date: "2024-01-31"
+      business-days-only: false
+
+# BigDecimal precision configuration for COBOL COMP-3 compatibility
+decimal-precision:
+  # Account balance precision (ACCT-CURR-BAL PIC S9(10)V99)
+  account-balance:
+    precision: 12
+    scale: 2
+    rounding-mode: "HALF_UP"
+    
+  # Transaction amount precision (TRAN-AMT PIC S9(09)V99)  
+  transaction-amount:
+    precision: 11
+    scale: 2
+    rounding-mode: "HALF_UP"
+    
+  # Variance calculation precision
+  variance-calculation:
+    precision: 13
+    scale: 2
+    rounding-mode: "HALF_UP"
+
+# Job restart and recovery configuration
+job-recovery:
+  # Checkpoint frequency matching COBOL SYNCPOINT intervals
+  checkpoint-frequency: 1000
+  
+  # Restart configuration
+  restart-enabled: true
+  skip-policy:
+    skip-limit: 10
+    skippable-exceptions:
+      - "java.sql.SQLException"
+      - "org.springframework.dao.DataAccessException"
+      
+  # Retry configuration
+  retry-policy:
+    retry-limit: 3
+    retryable-exceptions:
+      - "java.sql.SQLTransientException"
+      - "org.springframework.dao.TransientDataAccessException"
+
+# Logging configuration for test execution
+logging:
+  level:
+    com.carddemo.batch.reconciliation: DEBUG
+    org.springframework.batch: INFO
+    org.springframework.transaction: DEBUG
+    
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    
+  file:
+    name: "target/logs/balance-reconciliation-test.log"
+    max-size: "10MB"
+    max-history: 30
+
+# Performance monitoring configuration
+monitoring:
+  # Metrics collection
+  metrics:
+    enabled: true
+    export:
+      simple:
+        enabled: true
+        
+  # Health checks
+  health:
+    datasource:
+      enabled: true
+    batch:
+      enabled: true
+      
+# Test environment specific overrides
+---
+spring:
+  config:
+    activate:
+      on-profile: "integration-test"
+      
+balance-reconciliation-job:
+  # Higher volume for integration testing
+  test-execution:
+    test-accounts-count: 1000
+    test-transactions-per-account: 100
+    expected-results:
+      total-accounts-processed: 1000
+      max-execution-time-seconds: 1800  # 30 minutes for integration test volume
+
+---
+spring:
+  config:
+    activate:
+      on-profile: "performance-test"
+      
+balance-reconciliation-job:
+  # Production-like volume for performance testing
+  test-execution:
+    test-accounts-count: 10000
+    test-transactions-per-account: 200
+    expected-results:
+      total-accounts-processed: 10000
+      max-execution-time-seconds: 7200  # 2 hours for performance test volume
+      min-throughput-accounts-per-second: 5
