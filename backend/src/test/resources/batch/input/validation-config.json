@@ -1,0 +1,554 @@
+{
+  "validationSchemaVersion": "1.0",
+  "description": "Validation configuration for batch input test data based on COBOL copybook definitions",
+  "lastUpdated": "2024-01-15",
+  "fileTypes": {
+    "account": {
+      "description": "Account record validation rules based on CVACT01Y.cpy copybook",
+      "recordLength": 300,
+      "fields": {
+        "ACCT_ID": {
+          "position": 1,
+          "length": 11,
+          "type": "numeric",
+          "pattern": "^[0-9]{11}$",
+          "required": true,
+          "description": "11-digit account identifier",
+          "validation": {
+            "minValue": 10000000000,
+            "maxValue": 99999999999
+          }
+        },
+        "ACCT_ACTIVE_STATUS": {
+          "position": 12,
+          "length": 1,
+          "type": "alpha",
+          "pattern": "^[YN]$",
+          "required": true,
+          "description": "Account active status indicator",
+          "validValues": ["Y", "N"]
+        },
+        "ACCT_CURR_BAL": {
+          "position": 13,
+          "length": 12,
+          "type": "decimal",
+          "format": "COMP-3",
+          "precision": 12,
+          "scale": 2,
+          "required": true,
+          "description": "Current account balance with 2 decimal places",
+          "validation": {
+            "minValue": -999999999.99,
+            "maxValue": 999999999.99,
+            "signed": true
+          }
+        },
+        "ACCT_CREDIT_LIMIT": {
+          "position": 25,
+          "length": 12,
+          "type": "decimal",
+          "format": "COMP-3",
+          "precision": 12,
+          "scale": 2,
+          "required": true,
+          "description": "Credit limit with 2 decimal places",
+          "validation": {
+            "minValue": 0.00,
+            "maxValue": 999999999.99,
+            "signed": true
+          }
+        },
+        "ACCT_CASH_CREDIT_LIMIT": {
+          "position": 37,
+          "length": 12,
+          "type": "decimal",
+          "format": "COMP-3",
+          "precision": 12,
+          "scale": 2,
+          "required": true,
+          "description": "Cash credit limit with 2 decimal places",
+          "validation": {
+            "minValue": 0.00,
+            "maxValue": 999999999.99,
+            "signed": true
+          }
+        },
+        "ACCT_OPEN_DATE": {
+          "position": 49,
+          "length": 10,
+          "type": "date",
+          "format": "YYYY-MM-DD",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "required": true,
+          "description": "Account open date in YYYY-MM-DD format",
+          "validation": {
+            "minDate": "1900-01-01",
+            "maxDate": "2099-12-31"
+          }
+        },
+        "ACCT_EXPIRATION_DATE": {
+          "position": 59,
+          "length": 10,
+          "type": "date",
+          "format": "YYYY-MM-DD",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "required": false,
+          "description": "Account expiration date in YYYY-MM-DD format",
+          "validation": {
+            "minDate": "1900-01-01",
+            "maxDate": "2099-12-31"
+          }
+        },
+        "ACCT_REISSUE_DATE": {
+          "position": 69,
+          "length": 10,
+          "type": "date",
+          "format": "YYYY-MM-DD",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "required": false,
+          "description": "Account reissue date in YYYY-MM-DD format",
+          "validation": {
+            "minDate": "1900-01-01",
+            "maxDate": "2099-12-31"
+          }
+        },
+        "ACCT_CURR_CYC_CREDIT": {
+          "position": 79,
+          "length": 12,
+          "type": "decimal",
+          "format": "COMP-3",
+          "precision": 12,
+          "scale": 2,
+          "required": true,
+          "description": "Current cycle credit amount",
+          "validation": {
+            "minValue": -999999999.99,
+            "maxValue": 999999999.99,
+            "signed": true
+          }
+        },
+        "ACCT_CURR_CYC_DEBIT": {
+          "position": 91,
+          "length": 12,
+          "type": "decimal",
+          "format": "COMP-3",
+          "precision": 12,
+          "scale": 2,
+          "required": true,
+          "description": "Current cycle debit amount",
+          "validation": {
+            "minValue": -999999999.99,
+            "maxValue": 999999999.99,
+            "signed": true
+          }
+        },
+        "ACCT_ADDR_ZIP": {
+          "position": 103,
+          "length": 10,
+          "type": "alphanumeric",
+          "pattern": "^[0-9]{5}(-[0-9]{4})?$|^[A-Z0-9]{1,10}$",
+          "required": false,
+          "description": "ZIP code (US 5 or 9 digit format or international postal code)"
+        },
+        "ACCT_GROUP_ID": {
+          "position": 113,
+          "length": 10,
+          "type": "alphanumeric",
+          "pattern": "^[A-Z0-9]{1,10}$",
+          "required": false,
+          "description": "Account group identifier"
+        }
+      }
+    },
+    "transaction": {
+      "description": "Transaction record validation rules based on CVTRA05Y.cpy copybook",
+      "recordLength": 350,
+      "fields": {
+        "TRAN_ID": {
+          "position": 1,
+          "length": 16,
+          "type": "alphanumeric",
+          "pattern": "^[A-Z0-9]{16}$",
+          "required": true,
+          "description": "16-character transaction identifier"
+        },
+        "TRAN_TYPE_CD": {
+          "position": 17,
+          "length": 2,
+          "type": "alpha",
+          "pattern": "^[A-Z]{2}$",
+          "required": true,
+          "description": "2-character transaction type code",
+          "validValues": ["SA", "PA", "CR", "DB", "FE", "IN", "PM", "RF", "AD", "RV"]
+        },
+        "TRAN_CAT_CD": {
+          "position": 19,
+          "length": 4,
+          "type": "numeric",
+          "pattern": "^[0-9]{4}$",
+          "required": true,
+          "description": "4-digit transaction category code",
+          "validation": {
+            "minValue": 1000,
+            "maxValue": 9999
+          }
+        },
+        "TRAN_SOURCE": {
+          "position": 23,
+          "length": 10,
+          "type": "alphanumeric",
+          "pattern": "^[A-Z0-9 ]{1,10}$",
+          "required": true,
+          "description": "Transaction source identifier"
+        },
+        "TRAN_DESC": {
+          "position": 33,
+          "length": 100,
+          "type": "alphanumeric",
+          "pattern": "^[A-Za-z0-9 \\-\\.,/#&]{1,100}$",
+          "required": true,
+          "description": "Transaction description text"
+        },
+        "TRAN_AMT": {
+          "position": 133,
+          "length": 11,
+          "type": "decimal",
+          "format": "COMP-3",
+          "precision": 11,
+          "scale": 2,
+          "required": true,
+          "description": "Transaction amount with 2 decimal places",
+          "validation": {
+            "minValue": -9999999.99,
+            "maxValue": 9999999.99,
+            "signed": true
+          }
+        },
+        "TRAN_MERCHANT_ID": {
+          "position": 144,
+          "length": 9,
+          "type": "numeric",
+          "pattern": "^[0-9]{9}$",
+          "required": false,
+          "description": "9-digit merchant identifier",
+          "validation": {
+            "minValue": 100000000,
+            "maxValue": 999999999
+          }
+        },
+        "TRAN_MERCHANT_NAME": {
+          "position": 153,
+          "length": 50,
+          "type": "alphanumeric",
+          "pattern": "^[A-Za-z0-9 \\-\\.,/#&]{1,50}$",
+          "required": false,
+          "description": "Merchant name"
+        },
+        "TRAN_MERCHANT_CITY": {
+          "position": 203,
+          "length": 50,
+          "type": "alphanumeric",
+          "pattern": "^[A-Za-z \\-]{1,50}$",
+          "required": false,
+          "description": "Merchant city name"
+        },
+        "TRAN_MERCHANT_ZIP": {
+          "position": 253,
+          "length": 10,
+          "type": "alphanumeric",
+          "pattern": "^[0-9]{5}(-[0-9]{4})?$|^[A-Z0-9]{1,10}$",
+          "required": false,
+          "description": "Merchant ZIP code"
+        },
+        "TRAN_CARD_NUM": {
+          "position": 263,
+          "length": 16,
+          "type": "numeric",
+          "pattern": "^[0-9]{16}$",
+          "required": true,
+          "description": "16-digit credit card number",
+          "validation": {
+            "luhnCheck": true
+          }
+        },
+        "TRAN_ORIG_TS": {
+          "position": 279,
+          "length": 26,
+          "type": "timestamp",
+          "format": "YYYY-MM-DD HH:MM:SS.ssssss",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}$",
+          "required": true,
+          "description": "Original transaction timestamp"
+        },
+        "TRAN_PROC_TS": {
+          "position": 305,
+          "length": 26,
+          "type": "timestamp",
+          "format": "YYYY-MM-DD HH:MM:SS.ssssss",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}$",
+          "required": true,
+          "description": "Processing timestamp"
+        }
+      }
+    },
+    "customer": {
+      "description": "Customer record validation rules based on CUSTREC.cpy copybook",
+      "recordLength": 500,
+      "fields": {
+        "CUST_ID": {
+          "position": 1,
+          "length": 9,
+          "type": "numeric",
+          "pattern": "^[0-9]{9}$",
+          "required": true,
+          "description": "9-digit customer identifier",
+          "validation": {
+            "minValue": 100000000,
+            "maxValue": 999999999
+          }
+        },
+        "CUST_FIRST_NAME": {
+          "position": 10,
+          "length": 25,
+          "type": "alpha",
+          "pattern": "^[A-Za-z \\-']{1,25}$",
+          "required": true,
+          "description": "Customer first name"
+        },
+        "CUST_MIDDLE_NAME": {
+          "position": 35,
+          "length": 25,
+          "type": "alpha",
+          "pattern": "^[A-Za-z \\-']{0,25}$",
+          "required": false,
+          "description": "Customer middle name"
+        },
+        "CUST_LAST_NAME": {
+          "position": 60,
+          "length": 25,
+          "type": "alpha",
+          "pattern": "^[A-Za-z \\-']{1,25}$",
+          "required": true,
+          "description": "Customer last name"
+        },
+        "CUST_ADDR_LINE_1": {
+          "position": 85,
+          "length": 50,
+          "type": "alphanumeric",
+          "pattern": "^[A-Za-z0-9 \\-\\.,/#&]{1,50}$",
+          "required": true,
+          "description": "Customer address line 1"
+        },
+        "CUST_ADDR_LINE_2": {
+          "position": 135,
+          "length": 50,
+          "type": "alphanumeric",
+          "pattern": "^[A-Za-z0-9 \\-\\.,/#&]{0,50}$",
+          "required": false,
+          "description": "Customer address line 2"
+        },
+        "CUST_ADDR_LINE_3": {
+          "position": 185,
+          "length": 50,
+          "type": "alphanumeric",
+          "pattern": "^[A-Za-z0-9 \\-\\.,/#&]{0,50}$",
+          "required": false,
+          "description": "Customer address line 3"
+        },
+        "CUST_ADDR_STATE_CD": {
+          "position": 235,
+          "length": 2,
+          "type": "alpha",
+          "pattern": "^[A-Z]{2}$",
+          "required": true,
+          "description": "2-character state code",
+          "validValues": ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY", "DC"]
+        },
+        "CUST_ADDR_COUNTRY_CD": {
+          "position": 237,
+          "length": 3,
+          "type": "alpha",
+          "pattern": "^[A-Z]{3}$",
+          "required": true,
+          "description": "3-character country code (ISO 3166-1 alpha-3)",
+          "validValues": ["USA", "CAN", "GBR", "FRA", "DEU", "JPN", "AUS", "MEX"]
+        },
+        "CUST_ADDR_ZIP": {
+          "position": 240,
+          "length": 10,
+          "type": "alphanumeric",
+          "pattern": "^[0-9]{5}(-[0-9]{4})?$|^[A-Z0-9]{1,10}$",
+          "required": true,
+          "description": "ZIP/postal code"
+        },
+        "CUST_PHONE_NUM_1": {
+          "position": 250,
+          "length": 15,
+          "type": "alphanumeric",
+          "pattern": "^\\+?[0-9 \\-\\(\\)]{10,15}$",
+          "required": true,
+          "description": "Primary phone number"
+        },
+        "CUST_PHONE_NUM_2": {
+          "position": 265,
+          "length": 15,
+          "type": "alphanumeric",
+          "pattern": "^\\+?[0-9 \\-\\(\\)]{0,15}$",
+          "required": false,
+          "description": "Secondary phone number"
+        },
+        "CUST_SSN": {
+          "position": 280,
+          "length": 9,
+          "type": "numeric",
+          "pattern": "^[0-9]{9}$",
+          "required": true,
+          "description": "9-digit Social Security Number",
+          "validation": {
+            "encrypted": true,
+            "minValue": 100000000,
+            "maxValue": 999999999
+          }
+        },
+        "CUST_GOVT_ISSUED_ID": {
+          "position": 289,
+          "length": 20,
+          "type": "alphanumeric",
+          "pattern": "^[A-Z0-9]{1,20}$",
+          "required": false,
+          "description": "Government issued ID number"
+        },
+        "CUST_DOB_YYYYMMDD": {
+          "position": 309,
+          "length": 10,
+          "type": "date",
+          "format": "CCYYMMDD",
+          "pattern": "^[0-9]{8}$",
+          "required": true,
+          "description": "Date of birth in CCYYMMDD format",
+          "validation": {
+            "minDate": "19000101",
+            "maxDate": "20991231"
+          }
+        },
+        "CUST_EFT_ACCOUNT_ID": {
+          "position": 319,
+          "length": 10,
+          "type": "alphanumeric",
+          "pattern": "^[A-Z0-9]{0,10}$",
+          "required": false,
+          "description": "EFT account identifier"
+        },
+        "CUST_PRI_CARD_HOLDER_IND": {
+          "position": 329,
+          "length": 1,
+          "type": "alpha",
+          "pattern": "^[YN]$",
+          "required": true,
+          "description": "Primary card holder indicator",
+          "validValues": ["Y", "N"]
+        },
+        "CUST_FICO_CREDIT_SCORE": {
+          "position": 330,
+          "length": 3,
+          "type": "numeric",
+          "pattern": "^[0-9]{3}$",
+          "required": false,
+          "description": "FICO credit score (300-850)",
+          "validation": {
+            "minValue": 300,
+            "maxValue": 850
+          }
+        }
+      }
+    }
+  },
+  "dateFormats": {
+    "YYYY-MM-DD": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "description": "ISO 8601 date format",
+      "validation": {
+        "validateMonth": true,
+        "validateDay": true,
+        "leapYearCheck": true
+      }
+    },
+    "CCYYMMDD": {
+      "pattern": "^[0-9]{8}$",
+      "description": "Century, year, month, day format (CCYYMMDD)",
+      "validation": {
+        "validateMonth": true,
+        "validateDay": true,
+        "leapYearCheck": true
+      }
+    },
+    "YYYY-MM-DD HH:MM:SS.ssssss": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}$",
+      "description": "Full timestamp with microseconds",
+      "validation": {
+        "validateMonth": true,
+        "validateDay": true,
+        "validateTime": true,
+        "leapYearCheck": true
+      }
+    }
+  },
+  "comp3Configuration": {
+    "description": "COBOL COMP-3 packed decimal precision rules for BigDecimal conversion",
+    "defaultRoundingMode": "HALF_UP",
+    "scalePreservation": true,
+    "signHandling": "COBOL_COMPATIBLE",
+    "precisionMapping": {
+      "S9(10)V99": {
+        "totalDigits": 12,
+        "fractionalDigits": 2,
+        "maxValue": "9999999999.99",
+        "minValue": "-9999999999.99"
+      },
+      "S9(09)V99": {
+        "totalDigits": 11,
+        "fractionalDigits": 2,
+        "maxValue": "999999999.99",
+        "minValue": "-999999999.99"
+      }
+    }
+  },
+  "validationRules": {
+    "phoneNumberFormats": [
+      "^\\([0-9]{3}\\) [0-9]{3}-[0-9]{4}$",
+      "^[0-9]{3}-[0-9]{3}-[0-9]{4}$",
+      "^[0-9]{10}$",
+      "^\\+1[0-9]{10}$"
+    ],
+    "creditCardValidation": {
+      "luhnAlgorithm": true,
+      "issuerValidation": {
+        "visa": "^4[0-9]{15}$",
+        "mastercard": "^5[1-5][0-9]{14}$",
+        "amex": "^3[47][0-9]{13}$",
+        "discover": "^6(?:011|5[0-9]{2})[0-9]{12}$"
+      }
+    },
+    "requiredFieldChecks": {
+      "trimWhitespace": true,
+      "allowEmpty": false,
+      "nullValueHandling": "REJECT"
+    },
+    "numericFieldValidation": {
+      "leadingZerosRequired": true,
+      "negativeSignHandling": "LEADING_SIGN",
+      "decimalSeparator": ".",
+      "thousandsSeparator": ""
+    }
+  },
+  "errorHandling": {
+    "validationFailureAction": "LOG_AND_CONTINUE",
+    "invalidRecordHandling": "QUARANTINE",
+    "maxErrorsPerFile": 100,
+    "errorReporting": {
+      "includeFieldPosition": true,
+      "includeExpectedFormat": true,
+      "includeActualValue": false
+    }
+  }
+}
