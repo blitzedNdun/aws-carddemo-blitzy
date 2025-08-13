@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  labels:
+    app: redis
+    component: session-store
+    tier: cache
+    version: "7.4"
+    environment: production
+    system: carddemo
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+    kubernetes.io/service-account.name: "redis-service-account"
+    # Spring Session Redis integration documentation
+    carddemo.io/spring-session-store: "redis"
+    carddemo.io/session-timeout: "30m"
+    carddemo.io/max-sessions: "10000"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+    protocol: TCP
+    name: redis
+  selector:
+    app: redis
+    component: session-store
+  # Session affinity configuration for Redis session consistency
+  sessionAffinity: None
+  # Enable internal traffic policy for optimized cluster networking
+  internalTrafficPolicy: Cluster
