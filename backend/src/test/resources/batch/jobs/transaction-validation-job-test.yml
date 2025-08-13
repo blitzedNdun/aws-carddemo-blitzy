@@ -1,0 +1,582 @@
+# =============================================================================
+# Spring Batch Test Configuration for Transaction Validation Job
+# Migration of CBTRN03C COBOL batch program to Spring Batch
+# =============================================================================
+# This configuration defines test parameters for the TransactionValidationJob
+# that replicates CBTRN03C functionality with exact business rule parity.
+# 
+# COBOL Source: CBTRN03C - Transaction validation and exception reporting
+# Target: Spring Batch job for transaction validation processing
+# Test Scope: Unit and integration testing for batch validation logic
+# =============================================================================
+
+spring:
+  batch:
+    job:
+      # Transaction Validation Job Configuration
+      transaction-validation:
+        name: "TransactionValidationJob"
+        description: "CBTRN03C Migration - Transaction validation with business rules and fraud detection"
+        
+        # Job Parameters for Testing
+        parameters:
+          # Processing Date Range (COBOL format: CCYYMMDD)
+          processingDate: "20240101"
+          validationMode: "FULL"  # FULL, BUSINESS_RULES_ONLY, DUPLICATE_CHECK_ONLY
+          
+          # Input/Output Configuration
+          inputFile: "classpath:test-data/transactions/input-transactions.dat"
+          validTransactionsFile: "target/test-output/valid-transactions.dat" 
+          exceptionReportFile: "target/test-output/exception-report.dat"
+          summaryReportFile: "target/test-output/validation-summary.dat"
+          
+          # Chunk Processing Configuration (matching COBOL batch sizing)
+          chunkSize: 1000
+          skipLimit: 100
+          
+        # Step Configurations
+        steps:
+          # Step 1: Transaction Data Reading and Initial Validation
+          read-transactions:
+            name: "readTransactionsStep"
+            description: "Read transaction records with format validation"
+            chunk-size: 1000
+            
+            # Reader Configuration (CVTRA05Y structure validation)
+            reader:
+              type: "FlatFileItemReader"
+              resource: "${spring.batch.job.transaction-validation.parameters.inputFile}"
+              lineMapper:
+                type: "FixedLengthTokenizer"
+                recordLength: 350  # CVTRA05Y RECLN = 350
+                
+                # Field mappings matching COBOL copybook structure
+                fields:
+                  - name: "tranId"
+                    start: 1
+                    end: 16
+                    type: "STRING"
+                    validation: "REQUIRED"
+                    
+                  - name: "tranTypeCd" 
+                    start: 17
+                    end: 18
+                    type: "STRING"
+                    validation: "REQUIRED,ALPHA_NUMERIC"
+                    
+                  - name: "tranCatCd"
+                    start: 19
+                    end: 22
+                    type: "INTEGER"
+                    validation: "REQUIRED,NUMERIC,RANGE(1000,9999)"
+                    
+                  - name: "tranSource"
+                    start: 23
+                    end: 32
+                    type: "STRING"
+                    validation: "REQUIRED"
+                    
+                  - name: "tranDesc"
+                    start: 33
+                    end: 132
+                    type: "STRING"
+                    validation: "REQUIRED,MAX_LENGTH(100)"
+                    
+                  - name: "tranAmt"
+                    start: 133
+                    end: 143
+                    type: "BIG_DECIMAL"
+                    precision: 11
+                    scale: 2
+                    validation: "REQUIRED,NUMERIC,POSITIVE"
+                    cobolFormat: "S9(09)V99"  # COMP-3 equivalent handling
+                    
+                  - name: "tranMerchantId"
+                    start: 144
+                    end: 152
+                    type: "LONG"
+                    validation: "REQUIRED,NUMERIC,RANGE(1,999999999)"
+                    
+                  - name: "tranMerchantName"
+                    start: 153
+                    end: 202
+                    type: "STRING"
+                    validation: "REQUIRED,MAX_LENGTH(50)"
+                    
+                  - name: "tranMerchantCity"
+                    start: 203
+                    end: 252
+                    type: "STRING"
+                    validation: "REQUIRED,MAX_LENGTH(50)"
+                    
+                  - name: "tranMerchantZip"
+                    start: 253
+                    end: 262
+                    type: "STRING"
+                    validation: "REQUIRED,ZIP_CODE_FORMAT"
+                    
+                  - name: "tranCardNum"
+                    start: 263
+                    end: 278
+                    type: "STRING"
+                    validation: "REQUIRED,CREDIT_CARD_FORMAT,LUHN_CHECK"
+                    
+                  - name: "tranOrigTs"
+                    start: 279
+                    end: 304
+                    type: "TIMESTAMP"
+                    validation: "REQUIRED,TIMESTAMP_FORMAT"
+                    format: "yyyy-MM-dd HH:mm:ss.SSSSSS"
+                    
+                  - name: "tranProcTs"
+                    start: 305
+                    end: 330
+                    type: "TIMESTAMP"
+                    validation: "REQUIRED,TIMESTAMP_FORMAT"
+                    format: "yyyy-MM-dd HH:mm:ss.SSSSSS"
+          
+          # Step 2: Business Rule Validation (COBOL edit routines)
+          validate-business-rules:
+            name: "validateBusinessRulesStep"
+            description: "Apply COBOL business validation rules"
+            
+            # Business Rule Configurations
+            validation-rules:
+              # Date Validation (CSUTLDPY equivalent)
+              date-validation:
+                enabled: true
+                rules:
+                  - name: "EDIT-DATE-CCYYMMDD"
+                    description: "Validate transaction dates in CCYYMMDD format"
+                    fields: ["tranOrigTs", "tranProcTs"]
+                    validations:
+                      - type: "YEAR_RANGE"
+                        minYear: 1900
+                        maxYear: 2099
+                        errorCode: "DATE001"
+                        message: "Year must be between 1900 and 2099"
+                        
+                      - type: "MONTH_RANGE"
+                        minMonth: 1
+                        maxMonth: 12
+                        errorCode: "DATE002"
+                        message: "Month must be between 1 and 12"
+                        
+                      - type: "DAY_VALIDATION"
+                        errorCode: "DATE003"
+                        message: "Invalid day for given month/year"
+                        includeLeapYear: true
+                        
+                      - type: "FUTURE_DATE_CHECK"
+                        errorCode: "DATE004"
+                        message: "Transaction date cannot be in the future"
+              
+              # Amount Validation
+              amount-validation:
+                enabled: true
+                rules:
+                  - name: "AMOUNT_RANGE_CHECK"
+                    field: "tranAmt"
+                    minAmount: 0.01
+                    maxAmount: 999999.99
+                    errorCode: "AMT001"
+                    message: "Transaction amount must be between $0.01 and $999,999.99"
+                    
+                  - name: "PRECISION_CHECK"
+                    field: "tranAmt"
+                    maxDecimalPlaces: 2
+                    errorCode: "AMT002"
+                    message: "Amount cannot have more than 2 decimal places"
+              
+              # Card Validation
+              card-validation:
+                enabled: true
+                rules:
+                  - name: "CARD_LUHN_CHECK"
+                    field: "tranCardNum"
+                    algorithm: "LUHN"
+                    errorCode: "CARD001"
+                    message: "Invalid credit card number - fails Luhn check"
+                    
+                  - name: "CARD_TYPE_CHECK"
+                    field: "tranCardNum"
+                    allowedTypes: ["VISA", "MASTERCARD", "AMEX", "DISCOVER"]
+                    errorCode: "CARD002"
+                    message: "Unsupported card type"
+              
+              # Merchant Validation
+              merchant-validation:
+                enabled: true
+                rules:
+                  - name: "MERCHANT_ID_FORMAT"
+                    field: "tranMerchantId"
+                    format: "NUMERIC"
+                    length: 9
+                    errorCode: "MERCH001"
+                    message: "Merchant ID must be 9-digit numeric"
+                    
+                  - name: "ZIP_CODE_FORMAT"
+                    field: "tranMerchantZip"
+                    pattern: "^\\d{5}(-\\d{4})?$"
+                    errorCode: "MERCH002"
+                    message: "Invalid ZIP code format"
+          
+          # Step 3: Duplicate Transaction Detection
+          duplicate-detection:
+            name: "duplicateDetectionStep"
+            description: "Detect duplicate transactions using COBOL logic"
+            
+            duplicate-criteria:
+              # Primary duplicate detection (exact match)
+              exact-match:
+                enabled: true
+                fields: ["tranCardNum", "tranAmt", "tranMerchantId", "tranOrigTs"]
+                tolerance:
+                  timestamp: "PT5M"  # 5-minute window
+                errorCode: "DUP001"
+                message: "Exact duplicate transaction detected"
+              
+              # Secondary duplicate detection (similar transaction)
+              similar-match:
+                enabled: true
+                fields: ["tranCardNum", "tranMerchantId"]
+                conditions:
+                  - field: "tranAmt"
+                    tolerance: 0.01  # Penny difference allowed
+                  - field: "tranOrigTs"
+                    tolerance: "PT30M"  # 30-minute window
+                errorCode: "DUP002"
+                message: "Similar transaction detected within time window"
+              
+              # Merchant location duplicate check
+              location-match:
+                enabled: true
+                fields: ["tranCardNum", "tranMerchantCity", "tranMerchantZip"]
+                timeWindow: "PT1H"  # 1-hour window
+                errorCode: "DUP003"
+                message: "Multiple transactions at same location within hour"
+          
+          # Step 4: Fraud Pattern Detection
+          fraud-detection:
+            name: "fraudDetectionStep"
+            description: "Simulate fraud detection patterns"
+            
+            fraud-patterns:
+              # Velocity checking
+              velocity-check:
+                enabled: true
+                rules:
+                  - name: "HOURLY_TRANSACTION_LIMIT"
+                    timeWindow: "PT1H"
+                    maxTransactions: 10
+                    field: "tranCardNum"
+                    errorCode: "FRAUD001"
+                    message: "Excessive transactions per hour"
+                    
+                  - name: "DAILY_AMOUNT_LIMIT"
+                    timeWindow: "P1D"
+                    maxAmount: 5000.00
+                    field: "tranCardNum"
+                    errorCode: "FRAUD002"
+                    message: "Daily transaction amount exceeded"
+              
+              # Geographic analysis
+              geographic-check:
+                enabled: true
+                rules:
+                  - name: "GEOGRAPHIC_VELOCITY"
+                    timeWindow: "PT2H"
+                    maxDistance: 500  # miles
+                    field: "tranCardNum"
+                    errorCode: "FRAUD003"
+                    message: "Geographically impossible transaction sequence"
+              
+              # Amount pattern analysis
+              amount-pattern:
+                enabled: true
+                rules:
+                  - name: "ROUND_AMOUNT_PATTERN"
+                    pattern: "ROUND_DOLLARS"  # $100.00, $200.00, etc.
+                    threshold: 3  # 3 or more in sequence
+                    timeWindow: "P1D"
+                    errorCode: "FRAUD004"
+                    message: "Suspicious round-amount pattern"
+          
+          # Step 5: Exception Report Generation
+          generate-reports:
+            name: "generateReportsStep"
+            description: "Generate validation exception reports"
+            
+            reports:
+              # Exception Detail Report
+              exception-report:
+                enabled: true
+                outputFile: "${spring.batch.job.transaction-validation.parameters.exceptionReportFile}"
+                format: "FIXED_WIDTH"
+                recordLength: 200
+                
+                fields:
+                  - name: "tranId"
+                    start: 1
+                    end: 16
+                    
+                  - name: "errorCode"
+                    start: 17
+                    end: 24
+                    
+                  - name: "errorMessage"
+                    start: 25
+                    end: 124
+                    
+                  - name: "errorSeverity"
+                    start: 125
+                    end: 132
+                    values: ["WARNING", "ERROR", "CRITICAL"]
+                    
+                  - name: "fieldInError"
+                    start: 133
+                    end: 152
+                    
+                  - name: "invalidValue"
+                    start: 153
+                    end: 182
+                    
+                  - name: "processingTimestamp"
+                    start: 183
+                    end: 200
+                    format: "yyyyMMddHHmmss"
+              
+              # Summary Report
+              summary-report:
+                enabled: true
+                outputFile: "${spring.batch.job.transaction-validation.parameters.summaryReportFile}"
+                format: "DELIMITED"
+                
+                metrics:
+                  - name: "totalRecordsProcessed"
+                    description: "Total number of transaction records processed"
+                    
+                  - name: "validRecordsCount"
+                    description: "Number of records passing all validations"
+                    
+                  - name: "businessRuleFailures"
+                    description: "Records failing business rule validation"
+                    
+                  - name: "duplicateRecordsCount"
+                    description: "Records identified as duplicates"
+                    
+                  - name: "fraudSuspiciousCount"
+                    description: "Records flagged for fraud patterns"
+                    
+                  - name: "processingDuration"
+                    description: "Total job processing time"
+                    format: "HH:mm:ss"
+                    
+                  - name: "errorRate"
+                    description: "Percentage of records with errors"
+                    format: "PERCENTAGE"
+        
+        # Test Data Configuration
+        test-data:
+          # Valid transaction samples
+          valid-transactions:
+            - tranId: "TXN000000001234"
+              tranTypeCd: "PU"
+              tranCatCd: 5542
+              tranSource: "POS_TERM"
+              tranDesc: "GROCERY STORE PURCHASE"
+              tranAmt: 45.67
+              tranMerchantId: 123456789
+              tranMerchantName: "SAFEWAY STORE #1234"
+              tranMerchantCity: "SEATTLE"
+              tranMerchantZip: "98101"
+              tranCardNum: "4111111111111111"
+              tranOrigTs: "2024-01-01 10:30:00.000000"
+              tranProcTs: "2024-01-01 10:30:05.123000"
+          
+          # Invalid transaction samples for testing validation rules
+          invalid-transactions:
+            # Date validation errors
+            - tranId: "TXN000000001235"
+              tranTypeCd: "PU"
+              tranCatCd: 5542
+              tranSource: "POS_TERM"
+              tranDesc: "INVALID DATE TEST"
+              tranAmt: 25.99
+              tranMerchantId: 123456789
+              tranMerchantName: "TEST MERCHANT"
+              tranMerchantCity: "SEATTLE"
+              tranMerchantZip: "98101"
+              tranCardNum: "4111111111111111"
+              tranOrigTs: "2024-13-01 10:30:00.000000"  # Invalid month
+              tranProcTs: "2024-01-01 10:30:05.123000"
+              expectedError: "DATE002"
+            
+            # Amount validation errors  
+            - tranId: "TXN000000001236"
+              tranTypeCd: "PU"
+              tranCatCd: 5542
+              tranSource: "POS_TERM"
+              tranDesc: "INVALID AMOUNT TEST"
+              tranAmt: -50.00  # Negative amount
+              tranMerchantId: 123456789
+              tranMerchantName: "TEST MERCHANT"
+              tranMerchantCity: "SEATTLE"
+              tranMerchantZip: "98101"
+              tranCardNum: "4111111111111111"
+              tranOrigTs: "2024-01-01 10:30:00.000000"
+              tranProcTs: "2024-01-01 10:30:05.123000"
+              expectedError: "AMT001"
+            
+            # Card validation errors
+            - tranId: "TXN000000001237"
+              tranTypeCd: "PU"
+              tranCatCd: 5542
+              tranSource: "POS_TERM"
+              tranDesc: "INVALID CARD TEST"
+              tranAmt: 100.00
+              tranMerchantId: 123456789
+              tranMerchantName: "TEST MERCHANT"
+              tranMerchantCity: "SEATTLE"
+              tranMerchantZip: "98101"
+              tranCardNum: "4111111111111112"  # Invalid Luhn check
+              tranOrigTs: "2024-01-01 10:30:00.000000"
+              tranProcTs: "2024-01-01 10:30:05.123000"
+              expectedError: "CARD001"
+          
+          # Duplicate transaction scenarios
+          duplicate-scenarios:
+            - description: "Exact duplicate within 5 minutes"
+              transactions:
+                - tranId: "TXN000000001300"
+                  tranCardNum: "4111111111111111"
+                  tranAmt: 50.00
+                  tranMerchantId: 123456789
+                  tranOrigTs: "2024-01-01 14:00:00.000000"
+                - tranId: "TXN000000001301"
+                  tranCardNum: "4111111111111111"
+                  tranAmt: 50.00
+                  tranMerchantId: 123456789
+                  tranOrigTs: "2024-01-01 14:02:00.000000"
+              expectedError: "DUP001"
+          
+          # Fraud pattern scenarios
+          fraud-scenarios:
+            - description: "Velocity fraud - too many transactions"
+              transactions: 
+                - baseCard: "4111111111111111"
+                  transactionCount: 15
+                  timeSpan: "PT1H"
+                  amounts: [10.00, 15.00, 20.00, 25.00, 30.00, 35.00, 40.00, 45.00, 50.00, 55.00, 60.00, 65.00, 70.00, 75.00, 80.00]
+              expectedError: "FRAUD001"
+
+# Test Environment Configuration
+test:
+  environment:
+    # Database configuration for testing
+    datasource:
+      url: "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
+      driverClassName: "org.h2.Driver"
+      username: "sa"
+      password: ""
+    
+    # H2 console for debugging (test environment only)
+    h2:
+      console:
+        enabled: true
+        path: "/h2-console"
+    
+    # JPA configuration for testing
+    jpa:
+      hibernate:
+        ddl-auto: "create-drop"
+      show-sql: true
+      properties:
+        hibernate:
+          format_sql: true
+          dialect: "org.hibernate.dialect.H2Dialect"
+    
+    # Batch job repository configuration
+    batch:
+      job:
+        enabled: true
+      jdbc:
+        initialize-schema: "always"
+        table-prefix: "BATCH_"
+
+# Test Execution Configuration
+execution:
+  # Performance expectations (matching COBOL benchmark)
+  performance:
+    maxProcessingTime: "PT4H"  # 4-hour window requirement
+    expectedThroughput: 10000  # transactions per hour
+    memoryLimit: "2GB"
+    
+  # Quality thresholds
+  quality:
+    maxErrorRate: 0.1  # 0.1% maximum error rate
+    requiredCodeCoverage: 90  # 90% minimum code coverage
+    
+  # Test data volume configurations
+  volume:
+    small: 1000      # records for unit tests
+    medium: 10000    # records for integration tests  
+    large: 100000    # records for performance tests
+    stress: 1000000  # records for stress testing
+
+# Test Assertions Configuration
+assertions:
+  # Business rule validation assertions
+  business-rules:
+    - name: "dateValidationAccuracy"
+      description: "Date validation matches COBOL CSUTLDPY behavior"
+      expectedAccuracy: 100  # percent
+      
+    - name: "amountPrecisionParity"
+      description: "BigDecimal precision matches COBOL COMP-3"
+      tolerance: 0.001  # maximum deviation
+      
+    - name: "cardValidationParity"
+      description: "Card validation matches COBOL edit routines"
+      expectedAccuracy: 100  # percent
+  
+  # Performance assertions
+  performance:
+    - name: "processingSpeed"
+      description: "Batch processing completes within time window"
+      maxDuration: "PT4H"
+      
+    - name: "memoryUsage"
+      description: "Memory usage remains within acceptable limits"
+      maxHeapSize: "2GB"
+      
+    - name: "throughput"
+      description: "Processing throughput meets requirements"
+      minTransactionsPerSecond: 2.8  # 10,000 per hour
+  
+  # Functional assertions
+  functional:
+    - name: "duplicateDetection"
+      description: "Duplicate detection matches COBOL logic exactly"
+      expectedAccuracy: 100  # percent
+      
+    - name: "fraudDetection"
+      description: "Fraud patterns detected correctly"
+      minDetectionRate: 95  # percent
+      
+    - name: "reportGeneration"
+      description: "Exception reports match COBOL format"
+      formatCompliance: 100  # percent
+
+# Documentation and Traceability
+documentation:
+  cobolSource: "CBTRN03C"
+  migrationDate: "2024-01-01"
+  functionalParity: "100%"
+  testCoverage: "Unit, Integration, Performance, End-to-End"
+  validationApproach: "Parallel testing with reference COBOL implementation"
+  qualityMetrics: "Zero functional deviations, sub-200ms response times, 4-hour batch window compliance"
+
+# =============================================================================
+# END OF CONFIGURATION
+# =============================================================================
