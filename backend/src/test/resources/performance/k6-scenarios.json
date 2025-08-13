@@ -1,0 +1,388 @@
+{
+  "description": "K6 Performance Test Scenarios for CardDemo Application - COBOL to Java Migration Validation",
+  "metadata": {
+    "version": "1.0",
+    "created": "2024-01-01",
+    "purpose": "Validate sub-200ms response times and 10,000 TPS capability for credit card management system",
+    "targets": {
+      "peak_tps": 10000,
+      "p95_response_time": "200ms",
+      "sla_compliance": "99.5%"
+    }
+  },
+  
+  "options": {
+    "stages": [
+      {
+        "description": "Warm-up phase - gradual ramp to 500 VUs",
+        "duration": "2m",
+        "target": 500
+      },
+      {
+        "description": "Ramp to moderate load - 2,000 TPS",
+        "duration": "5m", 
+        "target": 2000
+      },
+      {
+        "description": "Sustain moderate load for stability testing",
+        "duration": "10m",
+        "target": 2000
+      },
+      {
+        "description": "Ramp to high load - 5,000 TPS",
+        "duration": "5m",
+        "target": 5000
+      },
+      {
+        "description": "Sustain high load for performance validation",
+        "duration": "15m",
+        "target": 5000
+      },
+      {
+        "description": "Peak load test - 10,000 TPS target",
+        "duration": "10m",
+        "target": 10000
+      },
+      {
+        "description": "Cool-down phase - gradual ramp down",
+        "duration": "5m",
+        "target": 0
+      }
+    ],
+    
+    "thresholds": {
+      "http_req_duration": [
+        "p(95)<200",
+        "p(99)<500"
+      ],
+      "http_req_failed": [
+        "rate<0.5%"
+      ],
+      "http_reqs": [
+        "rate>1000"
+      ],
+      "checks": [
+        "rate>99.5%"
+      ]
+    },
+    
+    "summaryTrendStats": [
+      "avg",
+      "min", 
+      "med",
+      "max",
+      "p(90)",
+      "p(95)",
+      "p(99)",
+      "p(99.99)"
+    ]
+  },
+
+  "scenarios": {
+    "transaction_list_browsing": {
+      "description": "COTRN00C - Transaction List Browsing (CT00) - High frequency scenario",
+      "executor": "ramping-vus",
+      "startVUs": 0,
+      "stages": [
+        {"duration": "2m", "target": 200},
+        {"duration": "10m", "target": 400},
+        {"duration": "10m", "target": 600},
+        {"duration": "5m", "target": 0}
+      ],
+      "gracefulRampDown": "30s",
+      "exec": "transactionListScenario",
+      "tags": {
+        "scenario": "transaction_browsing",
+        "cobol_program": "COTRN00C",
+        "transaction_id": "CT00",
+        "priority": "high"
+      }
+    },
+
+    "account_view_operations": {
+      "description": "COACTVWC - Account View Operations (CAVW) - Medium frequency scenario", 
+      "executor": "ramping-vus",
+      "startVUs": 0,
+      "stages": [
+        {"duration": "2m", "target": 150},
+        {"duration": "10m", "target": 300},
+        {"duration": "10m", "target": 450},
+        {"duration": "5m", "target": 0}
+      ],
+      "gracefulRampDown": "30s",
+      "exec": "accountViewScenario",
+      "tags": {
+        "scenario": "account_view",
+        "cobol_program": "COACTVWC", 
+        "transaction_id": "CAVW",
+        "priority": "medium"
+      }
+    },
+
+    "bill_payment_processing": {
+      "description": "COBIL00C - Bill Payment Processing (CB00) - Critical financial scenario",
+      "executor": "ramping-vus",
+      "startVUs": 0,
+      "stages": [
+        {"duration": "3m", "target": 100},
+        {"duration": "10m", "target": 200},
+        {"duration": "10m", "target": 300},
+        {"duration": "5m", "target": 0}
+      ],
+      "gracefulRampDown": "30s",
+      "exec": "billPaymentScenario",
+      "tags": {
+        "scenario": "bill_payment",
+        "cobol_program": "COBIL00C",
+        "transaction_id": "CB00",
+        "priority": "critical"
+      }
+    },
+
+    "user_authentication_flow": {
+      "description": "COSGN00C - User Sign-On Flow - Authentication scenario",
+      "executor": "ramping-vus",
+      "startVUs": 0,
+      "stages": [
+        {"duration": "1m", "target": 50},
+        {"duration": "5m", "target": 100},
+        {"duration": "10m", "target": 150},
+        {"duration": "5m", "target": 0}
+      ],
+      "gracefulRampDown": "30s",
+      "exec": "authenticationScenario",
+      "tags": {
+        "scenario": "authentication",
+        "cobol_program": "COSGN00C",
+        "transaction_id": "COSG",
+        "priority": "critical"
+      }
+    },
+
+    "main_menu_navigation": {
+      "description": "COMEN01C - Main Menu Navigation - Navigation scenario",
+      "executor": "ramping-vus",
+      "startVUs": 0,
+      "stages": [
+        {"duration": "1m", "target": 100},
+        {"duration": "10m", "target": 200},
+        {"duration": "10m", "target": 300},
+        {"duration": "5m", "target": 0}
+      ],
+      "gracefulRampDown": "30s",
+      "exec": "mainMenuScenario",
+      "tags": {
+        "scenario": "main_menu",
+        "cobol_program": "COMEN01C",
+        "transaction_id": "CMEN",
+        "priority": "medium"
+      }
+    },
+
+    "stress_test_scenario": {
+      "description": "Peak Load Stress Test - Maximum TPS validation",
+      "executor": "constant-vus",
+      "vus": 500,
+      "duration": "5m",
+      "exec": "stressTestScenario",
+      "tags": {
+        "scenario": "stress_test",
+        "priority": "critical"
+      }
+    }
+  },
+
+  "test_functions": {
+    "transactionListScenario": {
+      "description": "Simulates transaction list browsing pattern from COTRN00C",
+      "workflow": [
+        "GET /api/transactions - List transactions",
+        "GET /api/transactions?page=2 - Navigate to next page (PF8)",
+        "GET /api/transactions?page=1 - Navigate to previous page (PF7)", 
+        "POST /api/transactions/select - Select transaction (ENTER)",
+        "GET /api/transactions/{id} - View transaction details"
+      ],
+      "checks": [
+        "Status code is 200",
+        "Response time < 200ms",
+        "Valid transaction data structure",
+        "Pagination links present",
+        "Transaction ID format validation"
+      ]
+    },
+
+    "accountViewScenario": {
+      "description": "Simulates account view operations from COACTVWC",
+      "workflow": [
+        "GET /api/accounts/{accountId} - View account details",
+        "GET /api/accounts/{accountId}/cards - View associated cards",
+        "GET /api/accounts/{accountId}/customer - View customer details",
+        "PUT /api/accounts/{accountId} - Update account information"
+      ],
+      "checks": [
+        "Status code is 200 for reads, 204 for updates",
+        "Response time < 200ms",
+        "Account data integrity",
+        "Card association validation",
+        "Customer data consistency"
+      ]
+    },
+
+    "billPaymentScenario": {
+      "description": "Simulates bill payment processing from COBIL00C",
+      "workflow": [
+        "POST /api/auth/login - Authenticate user",
+        "GET /api/bills/pending - Get pending bills",
+        "POST /api/payments - Submit payment",
+        "GET /api/payments/{paymentId}/status - Check payment status",
+        "GET /api/accounts/{accountId}/balance - Verify updated balance"
+      ],
+      "checks": [
+        "Status code is 200/201 for successful operations",
+        "Response time < 200ms for non-payment operations",
+        "Response time < 500ms for payment submission",
+        "Payment confirmation data",
+        "Account balance accuracy"
+      ]
+    },
+
+    "authenticationScenario": {
+      "description": "Simulates user authentication flow from COSGN00C",
+      "workflow": [
+        "POST /api/auth/login - User login",
+        "GET /api/auth/validate - Session validation",
+        "POST /api/auth/logout - User logout"
+      ],
+      "checks": [
+        "Status code is 200 for valid credentials",
+        "Status code is 401 for invalid credentials",
+        "Response time < 100ms for authentication",
+        "JWT token format validation",
+        "Session management validation"
+      ]
+    },
+
+    "mainMenuScenario": {
+      "description": "Simulates main menu navigation from COMEN01C",
+      "workflow": [
+        "GET /api/menu - Load main menu",
+        "GET /api/menu/accounts - Navigate to accounts",
+        "GET /api/menu/transactions - Navigate to transactions", 
+        "GET /api/menu/reports - Navigate to reports"
+      ],
+      "checks": [
+        "Status code is 200",
+        "Response time < 100ms",
+        "Menu structure validation",
+        "Navigation links present",
+        "User permission validation"
+      ]
+    },
+
+    "stressTestScenario": {
+      "description": "Maximum load scenario combining all transaction types",
+      "workflow": [
+        "Random selection of all available endpoints",
+        "Weighted distribution based on production usage patterns",
+        "Concurrent execution of multiple transaction types"
+      ],
+      "checks": [
+        "Overall system stability",
+        "No error rate increase under load",
+        "Response time degradation within acceptable limits",
+        "Resource utilization monitoring"
+      ]
+    }
+  },
+
+  "data_sources": {
+    "test_accounts": {
+      "description": "Pre-populated test account data for realistic testing",
+      "file": "test-accounts.csv",
+      "fields": ["account_id", "customer_id", "account_type", "balance"]
+    },
+    
+    "test_transactions": {
+      "description": "Historical transaction data for browsing scenarios",
+      "file": "test-transactions.csv", 
+      "fields": ["transaction_id", "account_id", "amount", "description", "date"]
+    },
+
+    "test_users": {
+      "description": "Test user credentials for authentication scenarios",
+      "file": "test-users.csv",
+      "fields": ["user_id", "username", "password", "role"]
+    }
+  },
+
+  "environment_config": {
+    "development": {
+      "base_url": "http://localhost:8080",
+      "max_vus": 100,
+      "duration_multiplier": 0.1
+    },
+    
+    "staging": {
+      "base_url": "https://staging-carddemo.example.com",
+      "max_vus": 1000,
+      "duration_multiplier": 0.5
+    },
+    
+    "production": {
+      "base_url": "https://carddemo.example.com",
+      "max_vus": 10000,
+      "duration_multiplier": 1.0
+    }
+  },
+
+  "monitoring_integration": {
+    "prometheus_metrics": {
+      "enabled": true,
+      "endpoint": "/actuator/prometheus",
+      "collection_interval": "5s"
+    },
+    
+    "grafana_dashboards": {
+      "enabled": true,
+      "dashboard_ids": ["carddemo-performance", "carddemo-infrastructure"]
+    },
+    
+    "alerting": {
+      "enabled": true,
+      "alert_rules": [
+        "response_time_p95_threshold",
+        "error_rate_threshold", 
+        "throughput_minimum"
+      ]
+    }
+  },
+
+  "validation_rules": {
+    "financial_precision": {
+      "description": "Validate financial calculations match COBOL COMP-3 precision",
+      "rules": [
+        "Amount fields must match penny-level accuracy",
+        "Interest calculations must be identical to COBOL implementation",
+        "Balance updates must maintain referential integrity"
+      ]
+    },
+    
+    "bms_screen_compliance": {
+      "description": "Validate React components match BMS screen behavior",
+      "rules": [
+        "Field validation must match COBOL edit routines",
+        "Navigation patterns must replicate PF-key functionality",
+        "Error messages must match COBOL error handling"
+      ]
+    },
+    
+    "cics_transaction_parity": {
+      "description": "Validate REST endpoints match CICS transaction behavior",
+      "rules": [
+        "Request/response patterns must match SEND/RECEIVE MAP",
+        "Session state management must replicate COMMAREA",
+        "Transaction boundaries must match SYNCPOINT behavior"
+      ]
+    }
+  }
+}
