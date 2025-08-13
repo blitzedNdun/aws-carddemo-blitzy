@@ -1,0 +1,415 @@
+{
+  "testScenarios": {
+    "description": "Comprehensive test data for DailyTransactionJob testing covering all transaction types, COMP-3 precision scenarios, high-volume processing, and VSAM record structure compatibility",
+    "dataVersion": "CardDemo_v1.0-15-g27d6c6f-68",
+    "testObjectives": [
+      "Test all transaction types defined in COBOL (01-07)",
+      "Validate amount precision with COMP-3 format conversion to BigDecimal",
+      "Include high-volume scenarios for performance testing",
+      "Test transaction sorting and aggregation logic",
+      "Verify VSAM record structure compatibility"
+    ]
+  },
+  
+  "transactionTypes": {
+    "01": "Purchase",
+    "02": "Payment", 
+    "03": "Credit",
+    "04": "Authorization",
+    "05": "Refund",
+    "06": "Reversal",
+    "07": "Adjustment"
+  },
+
+  "comp3PrecisionTests": {
+    "description": "Test cases for COBOL COMP-3 S9(9)V99 precision validation",
+    "testCases": [
+      {
+        "description": "Minimum amount with exact precision",
+        "cobolFormat": "0000000001C",
+        "decimalValue": "0.01",
+        "javaExpected": "new BigDecimal(\"0.01\")"
+      },
+      {
+        "description": "Maximum amount with full precision", 
+        "cobolFormat": "9999999999C",
+        "decimalValue": "99999999.99",
+        "javaExpected": "new BigDecimal(\"99999999.99\")"
+      },
+      {
+        "description": "Negative amount (credit transaction)",
+        "cobolFormat": "0000005047D", 
+        "decimalValue": "-50.47",
+        "javaExpected": "new BigDecimal(\"-50.47\")"
+      },
+      {
+        "description": "Complex precision test",
+        "cobolFormat": "0000005047G",
+        "decimalValue": "50.47", 
+        "javaExpected": "new BigDecimal(\"50.47\")"
+      }
+    ]
+  },
+
+  "sampleTransactions": [
+    {
+      "transactionId": "0000000000683580",
+      "typeCode": "01",
+      "categoryCode": "0001",
+      "source": "POS TERM",
+      "description": "Purchase at Abshire-Lowe",
+      "amount": {
+        "cobolFormat": "0000005047G",
+        "decimalValue": "50.47",
+        "scale": 2,
+        "precision": 11
+      },
+      "merchantId": "800000000",
+      "merchantName": "Abshire-Lowe",
+      "merchantCity": "North Enoshaven", 
+      "merchantZip": "72112",
+      "cardNumber": "4859452612877065",
+      "originalTimestamp": "2022-06-10 19:27:53.000000",
+      "processedTimestamp": "2022-06-10 19:27:53.000000",
+      "testCategory": "standard_purchase"
+    },
+    {
+      "transactionId": "0000000001774260",
+      "typeCode": "03", 
+      "categoryCode": "0001",
+      "source": "OPERATOR",
+      "description": "Return item at Nitzsche, Nicolas and Lowe",
+      "amount": {
+        "cobolFormat": "0000009190}",
+        "decimalValue": "91.90",
+        "scale": 2,
+        "precision": 11
+      },
+      "merchantId": "800000000",
+      "merchantName": "Nitzsche, Nicolas and Lowe",
+      "merchantCity": "Fidelshire",
+      "merchantZip": "53378",
+      "cardNumber": "0927987108636232",
+      "originalTimestamp": "2022-06-10 19:27:53.000000", 
+      "processedTimestamp": "2022-06-10 19:27:53.000000",
+      "testCategory": "credit_return"
+    },
+    {
+      "transactionId": "0000000006292564",
+      "typeCode": "01",
+      "categoryCode": "0001", 
+      "source": "POS TERM",
+      "description": "Purchase at Ernser, Roob and Gleason",
+      "amount": {
+        "cobolFormat": "0000000678H",
+        "decimalValue": "6.78",
+        "scale": 2,
+        "precision": 11
+      },
+      "merchantId": "800000000",
+      "merchantName": "Ernser, Roob and Gleason",
+      "merchantCity": "North Makenziemouth",
+      "merchantZip": "78487-7965",
+      "cardNumber": "6009619150674526",
+      "originalTimestamp": "2022-06-10 19:27:53.000000",
+      "processedTimestamp": "2022-06-10 19:27:53.000000",
+      "testCategory": "small_purchase"
+    },
+    {
+      "transactionId": "0000000009101861",
+      "typeCode": "02",
+      "categoryCode": "0001",
+      "source": "ONLINE",
+      "description": "Payment received - online banking",
+      "amount": {
+        "cobolFormat": "0000028170C",
+        "decimalValue": "281.70",
+        "scale": 2,
+        "precision": 11
+      },
+      "merchantId": "800000000",
+      "merchantName": "Online Banking Payment",
+      "merchantCity": "Digital Processing",
+      "merchantZip": "00000",
+      "cardNumber": "4040580410348680", 
+      "originalTimestamp": "2022-06-10 19:27:53.000000",
+      "processedTimestamp": "2022-06-10 19:27:53.000000",
+      "testCategory": "payment_processing"
+    },
+    {
+      "transactionId": "0000000010142252",
+      "typeCode": "04",
+      "categoryCode": "0001",
+      "source": "ATM TERM",
+      "description": "Authorization for cash advance",
+      "amount": {
+        "cobolFormat": "0000045460C",
+        "decimalValue": "454.60",
+        "scale": 2,
+        "precision": 11
+      },
+      "merchantId": "800000000",
+      "merchantName": "ATM Network",
+      "merchantCity": "East Eulahstad",
+      "merchantZip": "98754-1089",
+      "cardNumber": "5656830544981216",
+      "originalTimestamp": "2022-06-10 19:27:53.000000",
+      "processedTimestamp": "2022-06-10 19:27:53.000000",
+      "testCategory": "authorization_test"
+    },
+    {
+      "transactionId": "0000000010229018",
+      "typeCode": "05",
+      "categoryCode": "0001",
+      "source": "MERCHANT",
+      "description": "Refund for defective merchandise",
+      "amount": {
+        "cobolFormat": "0000084990D",
+        "decimalValue": "-849.90",
+        "scale": 2,
+        "precision": 11
+      },
+      "merchantId": "800000000",
+      "merchantName": "Gislason-Medhurst",
+      "merchantCity": "Colleenburgh", 
+      "merchantZip": "23712-2080",
+      "cardNumber": "7379335634661142",
+      "originalTimestamp": "2022-06-10 19:27:53.000000",
+      "processedTimestamp": "2022-06-10 19:27:53.000000",
+      "testCategory": "refund_processing"
+    },
+    {
+      "transactionId": "0000000016259484",
+      "typeCode": "06",
+      "categoryCode": "0001",
+      "source": "SYSTEM",
+      "description": "Reversal of duplicate charge",
+      "amount": {
+        "cobolFormat": "0000005670D", 
+        "decimalValue": "-56.70",
+        "scale": 2,
+        "precision": 11
+      },
+      "merchantId": "800000000",
+      "merchantName": "Sipes Inc",
+      "merchantCity": "Emilioside",
+      "merchantZip": "93329",
+      "cardNumber": "4011500891777367",
+      "originalTimestamp": "2022-06-10 19:27:53.000000",
+      "processedTimestamp": "2022-06-10 19:27:53.000000",
+      "testCategory": "reversal_test"
+    },
+    {
+      "transactionId": "0000000017874199",
+      "typeCode": "07",
+      "categoryCode": "0001",
+      "source": "MANUAL",
+      "description": "Manual adjustment for billing error",
+      "amount": {
+        "cobolFormat": "0000037360C",
+        "decimalValue": "373.60",
+        "scale": 2, 
+        "precision": 11
+      },
+      "merchantId": "800000000",
+      "merchantName": "Customer Service Adjustment",
+      "merchantCity": "Carmeloborough",
+      "merchantZip": "34849-5127",
+      "cardNumber": "8040580410348680",
+      "originalTimestamp": "2022-06-10 19:27:53.000000",
+      "processedTimestamp": "2022-06-10 19:27:53.000000",
+      "testCategory": "adjustment_test"
+    }
+  ],
+
+  "highVolumeTestData": {
+    "description": "High-volume scenarios for performance testing DailyTransactionJob processing",
+    "bulkTransactionCount": 10000,
+    "batchSizeRecommendation": 1000,
+    "performanceTargets": {
+      "processingWindow": "4 hours maximum",
+      "throughputMinimum": "1000 transactions per minute",
+      "memoryUsage": "Maximum 2GB heap",
+      "checkpointFrequency": "Every 5000 records"
+    },
+    "sampleBulkTransaction": {
+      "transactionIdPattern": "TXN{seq:16}",
+      "typeCodeDistribution": {
+        "01": 60,
+        "02": 15,
+        "03": 10,
+        "04": 5,
+        "05": 5,
+        "06": 3,
+        "07": 2
+      },
+      "amountRanges": {
+        "small": "0.01 to 50.00",
+        "medium": "50.01 to 500.00", 
+        "large": "500.01 to 5000.00",
+        "xlarge": "5000.01 to 99999.99"
+      },
+      "cardNumberPool": [
+        "4859452612877065",
+        "0927987108636232", 
+        "6009619150674526",
+        "4040580410348680",
+        "5656830544981216",
+        "7379335634661142",
+        "4011500891777367",
+        "8040580410348680"
+      ]
+    }
+  },
+
+  "edgeCaseTests": {
+    "description": "Edge cases for comprehensive testing coverage",
+    "testCases": [
+      {
+        "caseName": "zero_amount_transaction",
+        "transactionId": "0000000000000001",
+        "typeCode": "01",
+        "amount": {
+          "cobolFormat": "0000000000C",
+          "decimalValue": "0.00",
+          "scale": 2,
+          "precision": 11
+        },
+        "expectedResult": "valid_but_flagged"
+      },
+      {
+        "caseName": "maximum_amount_transaction", 
+        "transactionId": "0000000000000002",
+        "typeCode": "01",
+        "amount": {
+          "cobolFormat": "9999999999C",
+          "decimalValue": "99999999.99",
+          "scale": 2,
+          "precision": 11
+        },
+        "expectedResult": "valid_limit_test"
+      },
+      {
+        "caseName": "invalid_card_number",
+        "transactionId": "0000000000000003", 
+        "typeCode": "01",
+        "cardNumber": "0000000000000000",
+        "expectedResult": "validation_error"
+      },
+      {
+        "caseName": "future_timestamp",
+        "transactionId": "0000000000000004",
+        "typeCode": "01",
+        "originalTimestamp": "2099-12-31 23:59:59.999999",
+        "expectedResult": "timestamp_validation_error"
+      },
+      {
+        "caseName": "duplicate_transaction_id",
+        "transactionId": "0000000000683580",
+        "typeCode": "01", 
+        "expectedResult": "duplicate_key_error"
+      }
+    ]
+  },
+
+  "validationRules": {
+    "description": "Validation rules for transaction processing based on COBOL business logic",
+    "transactionId": {
+      "format": "PIC X(16)",
+      "pattern": "^[0-9A-Z]{16}$",
+      "required": true
+    },
+    "typeCode": {
+      "format": "PIC X(02)",
+      "validValues": ["01", "02", "03", "04", "05", "06", "07"],
+      "required": true
+    },
+    "amount": {
+      "format": "PIC S9(09)V99",
+      "minimumValue": "-999999999.99",
+      "maximumValue": "999999999.99",
+      "scale": 2,
+      "precision": 11,
+      "required": true
+    },
+    "cardNumber": {
+      "format": "PIC X(16)",
+      "pattern": "^[0-9]{13,19}$",
+      "luhnValidation": true,
+      "required": true
+    },
+    "timestamp": {
+      "format": "PIC X(26)", 
+      "pattern": "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{6}$",
+      "required": true
+    }
+  },
+
+  "batchProcessingTests": {
+    "description": "Test scenarios specific to DailyTransactionJob batch processing",
+    "processingSteps": [
+      {
+        "stepName": "transaction_validation",
+        "description": "Validate each transaction against business rules",
+        "expectedBehavior": "Invalid transactions written to error file"
+      },
+      {
+        "stepName": "account_lookup",
+        "description": "Verify card number exists in card_data table",
+        "expectedBehavior": "Unknown cards result in rejection"
+      },
+      {
+        "stepName": "balance_update",
+        "description": "Update account balances based on transaction type",
+        "expectedBehavior": "Debits increase balance, credits decrease"
+      },
+      {
+        "stepName": "transaction_insert",
+        "description": "Insert valid transactions into transactions table",
+        "expectedBehavior": "Batch insert with checkpoint every 1000 records"
+      },
+      {
+        "stepName": "category_balance_update",
+        "description": "Update transaction category balances",
+        "expectedBehavior": "Aggregate balances by category code"
+      }
+    ],
+    "errorHandling": {
+      "skipPolicy": "Skip invalid records and continue processing",
+      "retryPolicy": "Retry transient failures up to 3 times",
+      "rollbackPolicy": "Rollback chunk on critical errors"
+    },
+    "performanceMetrics": {
+      "chunkSize": 1000,
+      "commitInterval": 1000,
+      "readTimeout": 30,
+      "writeTimeout": 60,
+      "memoryUsageLimit": "2GB"
+    }
+  },
+
+  "testDataGeneration": {
+    "description": "Guidelines for generating additional test data",
+    "transactionIdSequence": {
+      "startValue": 1000000000000000,
+      "format": "Zero-padded 16 digit number",
+      "increment": 1
+    },
+    "amountGeneration": {
+      "method": "Random within business constraints",
+      "distribution": "Normal distribution around $100 mean",
+      "comp3Conversion": "Use CobolDataConverter utility"
+    },
+    "timestampGeneration": {
+      "baseDate": "2022-06-10",
+      "timeRange": "Business hours 8:00-20:00",
+      "timezone": "UTC",
+      "format": "YYYY-MM-DD HH:MM:SS.ssssss"
+    },
+    "merchantDataGeneration": {
+      "namePool": ["Target Corp", "Walmart Inc", "Amazon.com", "Home Depot", "CVS Pharmacy"],
+      "cityPool": ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix"],
+      "zipCodePattern": "^[0-9]{5}(-[0-9]{4})?$"
+    }
+  }
+}
