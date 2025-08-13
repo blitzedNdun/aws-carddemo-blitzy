@@ -1,0 +1,931 @@
+{
+  "apiEndpointsInventory": {
+    "version": "1.0",
+    "description": "Complete inventory of 24 REST API endpoints migrated from CICS transactions for CardDemo system performance testing",
+    "lastUpdated": "2024-12-19",
+    "baseUrl": "https://api.carddemo.local",
+    "totalEndpoints": 24,
+    "performanceTargets": {
+      "cardAuthorizationMaxResponseTime": "200ms",
+      "standardTransactionMaxResponseTime": "300ms",
+      "batchOperationMaxResponseTime": "500ms",
+      "menuNavigationMaxResponseTime": "100ms"
+    },
+    "endpoints": [
+      {
+        "id": "CC00",
+        "legacyTransactionCode": "CC00",
+        "sourceProgram": "COSGN00C.cbl",
+        "endpoint": "/api/auth/signin",
+        "method": "POST",
+        "purpose": "User authentication and session establishment",
+        "category": "Authentication",
+        "responseTimeTarget": "200ms",
+        "requestSchema": {
+          "type": "object",
+          "properties": {
+            "userId": {
+              "type": "string",
+              "maxLength": 8,
+              "description": "User ID for authentication"
+            },
+            "password": {
+              "type": "string",
+              "maxLength": 8,
+              "description": "User password"
+            }
+          },
+          "required": ["userId", "password"]
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
+            "status": {"type": "string"},
+            "userRole": {"type": "string"},
+            "sessionToken": {"type": "string"},
+            "redirectPath": {"type": "string"}
+          }
+        },
+        "errorCodes": ["INVALID_CREDENTIALS", "ACCOUNT_LOCKED", "SYSTEM_ERROR"],
+        "authenticationRequired": false,
+        "loadTestConfig": {
+          "virtualUsers": 100,
+          "rampUpTimeSeconds": 30,
+          "testDurationMinutes": 5
+        }
+      },
+      {
+        "id": "SIGNOUT",
+        "legacyTransactionCode": "SIGNOUT",
+        "endpoint": "/api/auth/signout",
+        "method": "POST",
+        "purpose": "User session termination",
+        "category": "Authentication",
+        "responseTimeTarget": "100ms",
+        "requestSchema": {
+          "type": "object",
+          "properties": {}
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
+            "status": {"type": "string"},
+            "message": {"type": "string"}
+          }
+        },
+        "authenticationRequired": true,
+        "loadTestConfig": {
+          "virtualUsers": 50,
+          "rampUpTimeSeconds": 15,
+          "testDurationMinutes": 3
+        }
+      },
+      {
+        "id": "CM00",
+        "legacyTransactionCode": "CM00",
+        "sourceProgram": "COMEN01C.cbl",
+        "endpoint": "/api/menu/main",
+        "method": "GET",
+        "purpose": "Main menu display for regular users",
+        "category": "Navigation",
+        "responseTimeTarget": "100ms",
+        "requestSchema": {
+          "type": "object",
+          "properties": {}
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
+            "menuItems": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {"type": "string"},
+                  "label": {"type": "string"},
+                  "path": {"type": "string"},
+                  "pfKey": {"type": "string"}
+                }
+              }
+            },
+            "userContext": {"type": "object"}
+          }
+        },
+        "authenticationRequired": true,
+        "loadTestConfig": {
+          "virtualUsers": 75,
+          "rampUpTimeSeconds": 20,
+          "testDurationMinutes": 5
+        }
+      },
+      {
+        "id": "CADM",
+        "legacyTransactionCode": "CADM",
+        "sourceProgram": "COADM01C.cbl",
+        "endpoint": "/api/menu/admin",
+        "method": "GET",
+        "purpose": "Administrative menu display for admin users",
+        "category": "Navigation",
+        "responseTimeTarget": "100ms",
+        "requestSchema": {
+          "type": "object",
+          "properties": {}
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
+            "menuItems": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {"type": "string"},
+                  "label": {"type": "string"},
+                  "path": {"type": "string"},
+                  "pfKey": {"type": "string"}
+                }
+              }
+            },
+            "adminContext": {"type": "object"}
+          }
+        },
+        "authenticationRequired": true,
+        "requiredRole": "ADMIN",
+        "loadTestConfig": {
+          "virtualUsers": 25,
+          "rampUpTimeSeconds": 15,
+          "testDurationMinutes": 3
+        }
+      },
+      {
+        "id": "CRPT",
+        "legacyTransactionCode": "CRPT",
+        "sourceProgram": "CORPT00C.cbl",
+        "endpoint": "/api/menu/reports",
+        "method": "GET",
+        "purpose": "Reports menu display",
+        "category": "Navigation",
+        "responseTimeTarget": "100ms",
+        "requestSchema": {
+          "type": "object",
+          "properties": {}
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
+            "reportTypes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {"type": "string"},
+                  "name": {"type": "string"},
+                  "description": {"type": "string"}
+                }
+              }
+            }
+          }
+        },
+        "authenticationRequired": true,
+        "loadTestConfig": {
+          "virtualUsers": 20,
+          "rampUpTimeSeconds": 10,
+          "testDurationMinutes": 3
+        }
+      },
+      {
+        "id": "CUSR00",
+        "legacyTransactionCode": "CUSR00",
+        "sourceProgram": "COUSR00C.cbl",
+        "endpoint": "/api/users",
+        "method": "GET",
+        "purpose": "List all users with pagination",
+        "category": "UserManagement",
+        "responseTimeTarget": "300ms",
+        "requestSchema": {
+          "type": "object",
+          "properties": {
+            "pageNumber": {"type": "integer", "minimum": 1},
+            "pageSize": {"type": "integer", "minimum": 1, "maximum": 100},
+            "sortBy": {"type": "string"},
+            "filterBy": {"type": "string"}
+          }
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
+            "users": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "userId": {"type": "string"},
+                  "userName": {"type": "string"},
+                  "userType": {"type": "string"},
+                  "lastSignOn": {"type": "string"}
+                }
+              }
+            },
+            "pagination": {"type": "object"}
+          }
+        },
+        "authenticationRequired": true,
+        "requiredRole": "ADMIN",
+        "loadTestConfig": {
+          "virtualUsers": 30,
+          "rampUpTimeSeconds": 15,
+          "testDurationMinutes": 5
+        }
+      },
+      {
+        "id": "CUSR01",
+        "legacyTransactionCode": "CUSR01",
+        "sourceProgram": "COUSR01C.cbl",
+        "endpoint": "/api/users/{userId}",
+        "method": "GET",
+        "purpose": "View specific user details",
+        "category": "UserManagement",
+        "responseTimeTarget": "200ms",
+        "pathParameters": {
+          "userId": {
+            "type": "string",
+            "maxLength": 8,
+            "description": "User ID to retrieve"
+          }
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
+            "userId": {"type": "string"},
+            "userName": {"type": "string"},
+            "userType": {"type": "string"},
+            "password": {"type": "string"},
+            "lastSignOn": {"type": "string"},
+            "signOnCount": {"type": "integer"}
+          }
+        },
+        "authenticationRequired": true,
+        "requiredRole": "ADMIN",
+        "loadTestConfig": {
+          "virtualUsers": 25,
+          "rampUpTimeSeconds": 10,
+          "testDurationMinutes": 5
+        }
+      },
+      {
+        "id": "CUSR02",
+        "legacyTransactionCode": "CUSR02",
+        "sourceProgram": "COUSR02C.cbl",
+        "endpoint": "/api/users",
+        "method": "POST",
+        "purpose": "Create new user",
+        "category": "UserManagement",
+        "responseTimeTarget": "300ms",
+        "requestSchema": {
+          "type": "object",
+          "properties": {
+            "userId": {"type": "string", "maxLength": 8},
+            "userName": {"type": "string", "maxLength": 50},
+            "password": {"type": "string", "maxLength": 8},
+            "userType": {"type": "string", "enum": ["ADMIN", "USER"]}
+          },
+          "required": ["userId", "userName", "password", "userType"]
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
+            "status": {"type": "string"},
+            "userId": {"type": "string"},
+            "message": {"type": "string"}
+          }
+        },
+        "authenticationRequired": true,
+        "requiredRole": "ADMIN",
+        "loadTestConfig": {
+          "virtualUsers": 15,
+          "rampUpTimeSeconds": 10,
+          "testDurationMinutes": 3
+        }
+      },
+      {
+        "id": "CUSR03",
+        "legacyTransactionCode": "CUSR03",
+        "sourceProgram": "COUSR03C.cbl",
+        "endpoint": "/api/users/{userId}",
+        "method": "PUT",
+        "purpose": "Update existing user",
+        "category": "UserManagement",
+        "responseTimeTarget": "300ms",
+        "pathParameters": {
+          "userId": {
+            "type": "string",
+            "maxLength": 8,
+            "description": "User ID to update"
+          }
+        },
+        "requestSchema": {
+          "type": "object",
+          "properties": {
+            "userName": {"type": "string", "maxLength": 50},
+            "password": {"type": "string", "maxLength": 8},
+            "userType": {"type": "string", "enum": ["ADMIN", "USER"]}
+          }
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
+            "status": {"type": "string"},
+            "message": {"type": "string"}
+          }
+        },
+        "authenticationRequired": true,
+        "requiredRole": "ADMIN",
+        "loadTestConfig": {
+          "virtualUsers": 20,
+          "rampUpTimeSeconds": 10,
+          "testDurationMinutes": 3
+        }
+      },
+      {
+        "id": "CUSR04",
+        "legacyTransactionCode": "CUSR04",
+        "endpoint": "/api/users/{userId}",
+        "method": "DELETE",
+        "purpose": "Delete user",
+        "category": "UserManagement",
+        "responseTimeTarget": "200ms",
+        "pathParameters": {
+          "userId": {
+            "type": "string",
+            "maxLength": 8,
+            "description": "User ID to delete"
+          }
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
+            "status": {"type": "string"},
+            "message": {"type": "string"}
+          }
+        },
+        "authenticationRequired": true,
+        "requiredRole": "ADMIN",
+        "loadTestConfig": {
+          "virtualUsers": 10,
+          "rampUpTimeSeconds": 5,
+          "testDurationMinutes": 2
+        }
+      },
+      {
+        "id": "CAVW",
+        "legacyTransactionCode": "CAVW",
+        "sourceProgram": "COACTVWC.cbl",
+        "endpoint": "/api/accounts/{accountId}",
+        "method": "GET",
+        "purpose": "View account details with customer information",
+        "category": "AccountManagement",
+        "responseTimeTarget": "250ms",
+        "pathParameters": {
+          "accountId": {
+            "type": "string",
+            "pattern": "^[0-9]{11}$",
+            "description": "11-digit account ID"
+          }
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
+            "accountId": {"type": "string"},
+            "accountStatus": {"type": "string"},
+            "accountBalance": {"type": "number"},
+            "creditLimit": {"type": "number"},
+            "customerId": {"type": "string"},
+            "customerInfo": {"type": "object"}
+          }
+        },
+        "authenticationRequired": true,
+        "loadTestConfig": {
+          "virtualUsers": 100,
+          "rampUpTimeSeconds": 30,
+          "testDurationMinutes": 10
+        }
+      },
+      {
+        "id": "CAUP",
+        "legacyTransactionCode": "CAUP",
+        "sourceProgram": "COACTUPC.cbl",
+        "endpoint": "/api/accounts/{accountId}",
+        "method": "PUT",
+        "purpose": "Update account information",
+        "category": "AccountManagement",
+        "responseTimeTarget": "300ms",
+        "pathParameters": {
+          "accountId": {
+            "type": "string",
+            "pattern": "^[0-9]{11}$",
+            "description": "11-digit account ID"
+          }
+        },
+        "requestSchema": {
+          "type": "object",
+          "properties": {
+            "accountStatus": {"type": "string"},
+            "creditLimit": {"type": "number"},
+            "customerInfo": {"type": "object"}
+          }
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
+            "status": {"type": "string"},
+            "message": {"type": "string"},
+            "updatedFields": {"type": "array"}
+          }
+        },
+        "authenticationRequired": true,
+        "loadTestConfig": {
+          "virtualUsers": 50,
+          "rampUpTimeSeconds": 20,
+          "testDurationMinutes": 5
+        }
+      },
+      {
+        "id": "CCRDLI",
+        "legacyTransactionCode": "CCRDLI",
+        "sourceProgram": "COCRDLIC.cbl",
+        "endpoint": "/api/cards",
+        "method": "GET",
+        "purpose": "List credit cards with filtering and pagination",
+        "category": "CardManagement",
+        "responseTimeTarget": "300ms",
+        "requestSchema": {
+          "type": "object",
+          "properties": {
+            "accountId": {"type": "string"},
+            "cardStatus": {"type": "string"},
+            "pageNumber": {"type": "integer"},
+            "pageSize": {"type": "integer"}
+          }
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
+            "cards": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "cardNumber": {"type": "string"},
+                  "accountId": {"type": "string"},
+                  "cardStatus": {"type": "string"},
+                  "expiryDate": {"type": "string"}
+                }
+              }
+            },
+            "pagination": {"type": "object"}
+          }
+        },
+        "authenticationRequired": true,
+        "loadTestConfig": {
+          "virtualUsers": 75,
+          "rampUpTimeSeconds": 25,
+          "testDurationMinutes": 8
+        }
+      },
+      {
+        "id": "CCRDSL",
+        "legacyTransactionCode": "CCRDSL",
+        "sourceProgram": "COCRDSLC.cbl",
+        "endpoint": "/api/cards/{cardNumber}",
+        "method": "GET",
+        "purpose": "View detailed credit card information",
+        "category": "CardManagement",
+        "responseTimeTarget": "200ms",
+        "pathParameters": {
+          "cardNumber": {
+            "type": "string",
+            "pattern": "^[0-9]{16}$",
+            "description": "16-digit card number"
+          }
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
+            "cardNumber": {"type": "string"},
+            "accountId": {"type": "string"},
+            "cardStatus": {"type": "string"},
+            "expiryDate": {"type": "string"},
+            "cardType": {"type": "string"},
+            "nameOnCard": {"type": "string"}
+          }
+        },
+        "authenticationRequired": true,
+        "loadTestConfig": {
+          "virtualUsers": 60,
+          "rampUpTimeSeconds": 20,
+          "testDurationMinutes": 5
+        }
+      },
+      {
+        "id": "CCRDUP",
+        "legacyTransactionCode": "CCRDUP",
+        "sourceProgram": "COCRDUPC.cbl",
+        "endpoint": "/api/cards/{cardNumber}",
+        "method": "PUT",
+        "purpose": "Update credit card information",
+        "category": "CardManagement",
+        "responseTimeTarget": "300ms",
+        "pathParameters": {
+          "cardNumber": {
+            "type": "string",
+            "pattern": "^[0-9]{16}$",
+            "description": "16-digit card number"
+          }
+        },
+        "requestSchema": {
+          "type": "object",
+          "properties": {
+            "cardStatus": {"type": "string"},
+            "expiryDate": {"type": "string"},
+            "nameOnCard": {"type": "string"}
+          }
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
+            "status": {"type": "string"},
+            "message": {"type": "string"}
+          }
+        },
+        "authenticationRequired": true,
+        "loadTestConfig": {
+          "virtualUsers": 40,
+          "rampUpTimeSeconds": 15,
+          "testDurationMinutes": 5
+        }
+      },
+      {
+        "id": "CT00",
+        "legacyTransactionCode": "CT00",
+        "sourceProgram": "COTRN00C.cbl",
+        "endpoint": "/api/transactions",
+        "method": "GET",
+        "purpose": "List transactions with filtering and pagination",
+        "category": "TransactionProcessing",
+        "responseTimeTarget": "300ms",
+        "requestSchema": {
+          "type": "object",
+          "properties": {
+            "accountId": {"type": "string"},
+            "cardNumber": {"type": "string"},
+            "startDate": {"type": "string", "format": "date"},
+            "endDate": {"type": "string", "format": "date"},
+            "pageNumber": {"type": "integer"},
+            "pageSize": {"type": "integer"}
+          }
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
+            "transactions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "transactionId": {"type": "string"},
+                  "accountId": {"type": "string"},
+                  "cardNumber": {"type": "string"},
+                  "transactionType": {"type": "string"},
+                  "amount": {"type": "number"},
+                  "timestamp": {"type": "string"},
+                  "description": {"type": "string"}
+                }
+              }
+            },
+            "pagination": {"type": "object"},
+            "summary": {"type": "object"}
+          }
+        },
+        "authenticationRequired": true,
+        "loadTestConfig": {
+          "virtualUsers": 150,
+          "rampUpTimeSeconds": 45,
+          "testDurationMinutes": 15
+        }
+      },
+      {
+        "id": "CT01",
+        "legacyTransactionCode": "CT01",
+        "sourceProgram": "COTRN01C.cbl",
+        "endpoint": "/api/transactions/{transactionId}",
+        "method": "GET",
+        "purpose": "View detailed transaction information",
+        "category": "TransactionProcessing",
+        "responseTimeTarget": "200ms",
+        "pathParameters": {
+          "transactionId": {
+            "type": "string",
+            "maxLength": 16,
+            "description": "Transaction ID"
+          }
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
+            "transactionId": {"type": "string"},
+            "accountId": {"type": "string"},
+            "cardNumber": {"type": "string"},
+            "transactionType": {"type": "string"},
+            "amount": {"type": "number"},
+            "timestamp": {"type": "string"},
+            "description": {"type": "string"},
+            "merchantInfo": {"type": "object"},
+            "authorizationCode": {"type": "string"}
+          }
+        },
+        "authenticationRequired": true,
+        "loadTestConfig": {
+          "virtualUsers": 100,
+          "rampUpTimeSeconds": 30,
+          "testDurationMinutes": 10
+        }
+      },
+      {
+        "id": "CT02",
+        "legacyTransactionCode": "CT02",
+        "sourceProgram": "COTRN02C.cbl",
+        "endpoint": "/api/transactions",
+        "method": "POST",
+        "purpose": "Create new transaction (authorization)",
+        "category": "TransactionProcessing",
+        "responseTimeTarget": "200ms",
+        "requestSchema": {
+          "type": "object",
+          "properties": {
+            "cardNumber": {"type": "string", "pattern": "^[0-9]{16}$"},
+            "amount": {"type": "number", "minimum": 0.01},
+            "transactionType": {"type": "string"},
+            "merchantId": {"type": "string"},
+            "description": {"type": "string"}
+          },
+          "required": ["cardNumber", "amount", "transactionType"]
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
+            "transactionId": {"type": "string"},
+            "authorizationCode": {"type": "string"},
+            "status": {"type": "string"},
+            "timestamp": {"type": "string"}
+          }
+        },
+        "authenticationRequired": true,
+        "loadTestConfig": {
+          "virtualUsers": 200,
+          "rampUpTimeSeconds": 60,
+          "testDurationMinutes": 20
+        }
+      },
+      {
+        "id": "CB00",
+        "legacyTransactionCode": "CB00",
+        "sourceProgram": "COBIL00C.cbl",
+        "endpoint": "/api/payments",
+        "method": "POST",
+        "purpose": "Process bill payment",
+        "category": "TransactionProcessing",
+        "responseTimeTarget": "300ms",
+        "requestSchema": {
+          "type": "object",
+          "properties": {
+            "accountId": {"type": "string", "pattern": "^[0-9]{11}$"},
+            "paymentAmount": {"type": "number", "minimum": 0.01},
+            "paymentMethod": {"type": "string"},
+            "description": {"type": "string"}
+          },
+          "required": ["accountId", "paymentAmount"]
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
+            "paymentId": {"type": "string"},
+            "status": {"type": "string"},
+            "confirmationNumber": {"type": "string"},
+            "timestamp": {"type": "string"}
+          }
+        },
+        "authenticationRequired": true,
+        "loadTestConfig": {
+          "virtualUsers": 80,
+          "rampUpTimeSeconds": 30,
+          "testDurationMinutes": 10
+        }
+      },
+      {
+        "id": "BATCH_STATUS",
+        "legacyTransactionCode": "BATCH_STATUS",
+        "endpoint": "/api/batch/status",
+        "method": "GET",
+        "purpose": "View batch job execution status",
+        "category": "BatchProcessing",
+        "responseTimeTarget": "200ms",
+        "requestSchema": {
+          "type": "object",
+          "properties": {
+            "jobName": {"type": "string"},
+            "date": {"type": "string", "format": "date"}
+          }
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
+            "jobs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "jobName": {"type": "string"},
+                  "status": {"type": "string"},
+                  "startTime": {"type": "string"},
+                  "endTime": {"type": "string"},
+                  "recordsProcessed": {"type": "integer"}
+                }
+              }
+            }
+          }
+        },
+        "authenticationRequired": true,
+        "requiredRole": "ADMIN",
+        "loadTestConfig": {
+          "virtualUsers": 20,
+          "rampUpTimeSeconds": 10,
+          "testDurationMinutes": 5
+        }
+      },
+      {
+        "id": "BATCH_RESTART",
+        "legacyTransactionCode": "BATCH_RESTART",
+        "endpoint": "/api/batch/restart/{jobId}",
+        "method": "POST",
+        "purpose": "Restart failed batch job",
+        "category": "BatchProcessing",
+        "responseTimeTarget": "500ms",
+        "pathParameters": {
+          "jobId": {
+            "type": "string",
+            "description": "Batch job execution ID"
+          }
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
+            "jobId": {"type": "string"},
+            "status": {"type": "string"},
+            "message": {"type": "string"}
+          }
+        },
+        "authenticationRequired": true,
+        "requiredRole": "ADMIN",
+        "loadTestConfig": {
+          "virtualUsers": 5,
+          "rampUpTimeSeconds": 5,
+          "testDurationMinutes": 2
+        }
+      },
+      {
+        "id": "DAILY_TRANS_JOB",
+        "legacyTransactionCode": "DAILY_TRANS_JOB",
+        "endpoint": "/api/batch/daily-transactions",
+        "method": "POST",
+        "purpose": "Execute daily transaction processing job",
+        "category": "BatchProcessing",
+        "responseTimeTarget": "500ms",
+        "requestSchema": {
+          "type": "object",
+          "properties": {
+            "processDate": {"type": "string", "format": "date"},
+            "forceRerun": {"type": "boolean"}
+          }
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
+            "jobId": {"type": "string"},
+            "status": {"type": "string"},
+            "estimatedDuration": {"type": "string"}
+          }
+        },
+        "authenticationRequired": true,
+        "requiredRole": "ADMIN",
+        "loadTestConfig": {
+          "virtualUsers": 5,
+          "rampUpTimeSeconds": 5,
+          "testDurationMinutes": 2
+        }
+      },
+      {
+        "id": "INTEREST_CALC_JOB",
+        "legacyTransactionCode": "INTEREST_CALC_JOB",
+        "endpoint": "/api/batch/interest-calculation",
+        "method": "POST",
+        "purpose": "Execute interest calculation batch job",
+        "category": "BatchProcessing",
+        "responseTimeTarget": "500ms",
+        "requestSchema": {
+          "type": "object",
+          "properties": {
+            "calculationDate": {"type": "string", "format": "date"},
+            "accountFilter": {"type": "string"}
+          }
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
+            "jobId": {"type": "string"},
+            "status": {"type": "string"},
+            "accountsAffected": {"type": "integer"}
+          }
+        },
+        "authenticationRequired": true,
+        "requiredRole": "ADMIN",
+        "loadTestConfig": {
+          "virtualUsers": 3,
+          "rampUpTimeSeconds": 3,
+          "testDurationMinutes": 2
+        }
+      },
+      {
+        "id": "STATEMENT_GEN_JOB",
+        "legacyTransactionCode": "STATEMENT_GEN_JOB",
+        "endpoint": "/api/batch/statement-generation",
+        "method": "POST",
+        "purpose": "Execute statement generation batch job",
+        "category": "BatchProcessing",
+        "responseTimeTarget": "500ms",
+        "requestSchema": {
+          "type": "object",
+          "properties": {
+            "statementDate": {"type": "string", "format": "date"},
+            "accountRange": {"type": "object"}
+          }
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
+            "jobId": {"type": "string"},
+            "status": {"type": "string"},
+            "statementsGenerated": {"type": "integer"}
+          }
+        },
+        "authenticationRequired": true,
+        "requiredRole": "ADMIN",
+        "loadTestConfig": {
+          "virtualUsers": 3,
+          "rampUpTimeSeconds": 3,
+          "testDurationMinutes": 2
+        }
+      }
+    ],
+    "testSuites": {
+      "functional": {
+        "description": "Functional testing suite covering all endpoint categories",
+        "coverage": "100% endpoint coverage",
+        "tools": ["JMeter", "Postman", "Rest Assured"]
+      },
+      "performance": {
+        "description": "Performance testing targeting response time SLAs",
+        "loadPatterns": [
+          "Normal load: 500 concurrent users",
+          "Peak load: 1000 concurrent users", 
+          "Stress load: 2000 concurrent users"
+        ],
+        "tools": ["JMeter", "Gatling", "Artillery"]
+      },
+      "security": {
+        "description": "Security testing for authentication and authorization",
+        "testTypes": ["Authentication bypass", "Authorization escalation", "Token manipulation"],
+        "tools": ["OWASP ZAP", "Burp Suite", "Security Scanner"]
+      }
+    },
+    "monitoringMetrics": {
+      "responseTime": {
+        "p50": "Response time 50th percentile",
+        "p95": "Response time 95th percentile", 
+        "p99": "Response time 99th percentile"
+      },
+      "throughput": {
+        "rps": "Requests per second",
+        "tps": "Transactions per second"
+      },
+      "errors": {
+        "errorRate": "Percentage of failed requests",
+        "timeouts": "Number of timeout occurrences"
+      },
+      "resources": {
+        "cpuUtilization": "Backend service CPU usage",
+        "memoryUtilization": "Backend service memory usage",
+        "dbConnections": "Database connection pool usage"
+      }
+    }
+  }
+}
