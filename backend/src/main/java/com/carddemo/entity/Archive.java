@@ -1,46 +1,47 @@
 package com.carddemo.entity;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.Type;
-import org.hibernate.type.SqlTypes;
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+
 import java.time.LocalDate;
-import java.time.Period;
-import java.util.Objects;
+import java.time.LocalDateTime;
 
 /**
- * JPA entity representing archived data records with metadata for retention policy management,
- * storage location tracking, and audit trail preservation. Supports various data types archival
- * with compression and legal hold capabilities.
+ * Archive entity representing archived records in the CardDemo system.
+ * Supports the archival policies documented in the database design section
+ * with retention periods, legal hold management, and storage location tracking.
  * 
- * This entity provides comprehensive archival functionality including:
- * - Unique archive identification and tracking
- * - Flexible data type classification
- * - Retention policy management with automatic expiration calculation
- * - Storage path tracking for archived file locations
- * - Legal hold support for compliance requirements
- * - Compression type tracking for storage optimization
- * - Flexible metadata storage using PostgreSQL JSONB
- * - Audit trail preservation through creation and modification tracking
+ * This entity manages archived data from various source tables including
+ * transactions, customer data, account data, and card data according to
+ * compliance requirements and retention policies.
+ * 
+ * @author CardDemo Migration Team
+ * @version 1.0
+ * @since 2024-01-01
  */
 @Entity
-@Table(name = "archive", indexes = {
-    @Index(name = "idx_archive_data_type", columnList = "data_type"),
-    @Index(name = "idx_archive_date", columnList = "archive_date"),
-    @Index(name = "idx_archive_expiration", columnList = "expiration_date"),
-    @Index(name = "idx_archive_legal_hold", columnList = "legal_hold")
-})
+@Table(name = "archive", 
+       indexes = {
+           @Index(name = "idx_archive_data_type", columnList = "data_type"),
+           @Index(name = "idx_archive_retention_date", columnList = "retention_date"),
+           @Index(name = "idx_archive_legal_hold", columnList = "legal_hold"),
+           @Index(name = "idx_archive_date", columnList = "archive_date"),
+           @Index(name = "idx_archive_storage_location", columnList = "storage_location")
+       })
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Archive {
 
     /**
-     * Unique identifier for the archived record.
-     * Primary key using auto-generated sequence values.
+     * Primary key for the archive record.
+     * Uses PostgreSQL BIGSERIAL for auto-generation.
      */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -48,8 +49,8 @@ public class Archive {
     private Long archiveId;
 
     /**
-     * Type of data being archived (e.g., TRANSACTION, ACCOUNT, CUSTOMER, CARD).
-     * Used for categorization and retention policy application.
+     * Type of data being archived (e.g., "TRANSACTION", "CUSTOMER", "ACCOUNT", "CARD").
+     * Maps to different source tables and determines retention policies.
      */
     @NotNull
     @Size(max = 50)
@@ -57,401 +58,147 @@ public class Archive {
     private String dataType;
 
     /**
-     * Date when the data was archived.
-     * Used for retention period calculation and audit tracking.
+     * Reference ID of the original record in the source table.
+     * Maintains traceability to the original data.
+     */
+    @NotNull
+    @Size(max = 100)
+    @Column(name = "source_record_id", nullable = false, length = 100)
+    private String sourceRecordId;
+
+    /**
+     * Name of the source table from which data was archived.
+     * Supports multi-table archiving operations.
+     */
+    @NotNull
+    @Size(max = 100)
+    @Column(name = "source_table_name", nullable = false, length = 100)
+    private String sourceTableName;
+
+    /**
+     * Archived data content stored as compressed JSON or XML.
+     * Contains the complete record data for restoration purposes.
+     */
+    @Lob
+    @Column(name = "archived_data", columnDefinition = "TEXT")
+    private String archivedData;
+
+    /**
+     * Date when the record was archived.
+     * Used for audit trail and archival process tracking.
      */
     @NotNull
     @Column(name = "archive_date", nullable = false)
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate archiveDate;
+    private LocalDateTime archiveDate;
 
     /**
-     * Retention period for the archived data in days.
-     * Combined with archive_date to calculate expiration_date.
+     * Date when the archived record becomes eligible for deletion.
+     * Calculated based on data type retention policies.
      */
     @NotNull
-    @Column(name = "retention_period", nullable = false)
-    private Integer retentionPeriod;
+    @Column(name = "retention_date", nullable = false)
+    private LocalDate retentionDate;
 
     /**
-     * Storage path where the archived data is located.
-     * Can be file system path, cloud storage URL, or other storage identifier.
-     */
-    @NotNull
-    @Size(max = 500)
-    @Column(name = "storage_path", nullable = false, length = 500)
-    private String storagePath;
-
-    /**
-     * Legal hold flag indicating whether the archived data is under legal preservation.
-     * When true, data should not be deleted regardless of retention period expiration.
+     * Legal hold status preventing deletion for litigation or regulatory purposes.
+     * When true, prevents automated deletion regardless of retention date.
      */
     @NotNull
     @Column(name = "legal_hold", nullable = false)
-    private Boolean legalHold;
+    @Builder.Default
+    private Boolean legalHold = false;
 
     /**
-     * Type of compression applied to the archived data.
-     * Common values: GZIP, ZIP, BZIP2, LZ4, NONE.
+     * Date when legal hold was applied or last modified.
+     * Tracks legal hold lifecycle for compliance reporting.
      */
-    @Size(max = 20)
-    @Column(name = "compression_type", length = 20)
-    private String compressionType;
+    @Column(name = "legal_hold_date")
+    private LocalDateTime legalHoldDate;
 
     /**
-     * Flexible metadata storage using PostgreSQL JSONB for efficient querying.
-     * Can store additional archival information such as:
-     * - Original data source
-     * - Archival reason
-     * - Data quality metrics
-     * - Compliance tags
-     * - Custom attributes
+     * Reason for legal hold (e.g., "LITIGATION", "REGULATORY_REQUEST", "AUDIT").
+     * Provides context for legal hold decisions.
      */
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "metadata", columnDefinition = "jsonb")
-    private JsonNode metadata;
+    @Size(max = 255)
+    @Column(name = "legal_hold_reason", length = 255)
+    private String legalHoldReason;
 
     /**
-     * Calculated expiration date based on archive_date and retention_period.
-     * Automatically computed but can be overridden for special cases.
+     * Storage location identifier for the archived data.
+     * Supports distributed storage and efficient retrieval.
      */
-    @Column(name = "expiration_date")
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate expirationDate;
+    @Size(max = 100)
+    @Column(name = "storage_location", length = 100)
+    private String storageLocation;
 
     /**
-     * Date when the archive record was created.
-     * Automatically set on entity creation for audit trail.
+     * Compression method used for archived data.
+     * Supports storage optimization strategies.
      */
-    @Column(name = "created_date", nullable = false, updatable = false)
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate createdDate;
+    @Size(max = 50)
+    @Column(name = "compression_method", length = 50)
+    private String compressionMethod;
 
     /**
-     * Date when the archive record was last modified.
-     * Automatically updated on entity modification for audit trail.
+     * Original size of the data before archiving (in bytes).
+     * Supports compression ratio analysis and capacity planning.
      */
-    @Column(name = "last_modified_date")
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate lastModifiedDate;
+    @Column(name = "original_size_bytes")
+    private Long originalSizeBytes;
 
     /**
-     * Default constructor for JPA.
+     * Compressed size of the archived data (in bytes).
+     * Supports storage utilization tracking.
      */
-    public Archive() {
-        this.createdDate = LocalDate.now();
-        this.lastModifiedDate = LocalDate.now();
-        this.legalHold = false;
-    }
+    @Column(name = "compressed_size_bytes")
+    private Long compressedSizeBytes;
 
     /**
-     * Constructor with required fields.
-     *
-     * @param dataType        Type of data being archived
-     * @param archiveDate     Date when data was archived
-     * @param retentionPeriod Retention period in days
-     * @param storagePath     Storage location path
+     * Checksum or hash of the archived data for integrity verification.
+     * Ensures data integrity during storage and retrieval operations.
      */
-    public Archive(String dataType, LocalDate archiveDate, Integer retentionPeriod, String storagePath) {
-        this();
-        this.dataType = dataType;
-        this.archiveDate = archiveDate;
-        this.retentionPeriod = retentionPeriod;
-        this.storagePath = storagePath;
-        this.expirationDate = calculateExpirationDate();
-    }
+    @Size(max = 255)
+    @Column(name = "data_checksum", length = 255)
+    private String dataChecksum;
 
     /**
-     * JPA pre-persist callback to set creation timestamp.
+     * User or system that initiated the archival process.
+     * Provides audit trail for archival operations.
      */
-    @PrePersist
-    protected void onCreate() {
-        this.createdDate = LocalDate.now();
-        this.lastModifiedDate = LocalDate.now();
-        if (this.expirationDate == null) {
-            this.expirationDate = calculateExpirationDate();
-        }
-    }
+    @Size(max = 100)
+    @Column(name = "archived_by", length = 100)
+    private String archivedBy;
 
     /**
-     * JPA pre-update callback to update modification timestamp.
+     * Timestamp when the archive record was last updated.
+     * Tracks modifications to archive metadata.
+     */
+    @Column(name = "updated_timestamp")
+    private LocalDateTime updatedTimestamp;
+
+    /**
+     * Additional metadata stored as JSON for extensibility.
+     * Supports custom attributes without schema changes.
+     */
+    @Column(name = "metadata", columnDefinition = "TEXT")
+    private String metadata;
+
+    /**
+     * Sets the updated timestamp automatically before persisting updates.
      */
     @PreUpdate
     protected void onUpdate() {
-        this.lastModifiedDate = LocalDate.now();
-        // Recalculate expiration date if archive date or retention period changed
-        if (this.archiveDate != null && this.retentionPeriod != null) {
-            this.expirationDate = calculateExpirationDate();
+        updatedTimestamp = LocalDateTime.now();
+    }
+
+    /**
+     * Sets the archive date and updated timestamp before initial persistence.
+     */
+    @PrePersist
+    protected void onCreate() {
+        if (archiveDate == null) {
+            archiveDate = LocalDateTime.now();
         }
-    }
-
-    // Getter and Setter methods
-
-    /**
-     * Gets the unique archive identifier.
-     *
-     * @return the archive ID
-     */
-    public Long getArchiveId() {
-        return archiveId;
-    }
-
-    /**
-     * Sets the unique archive identifier.
-     *
-     * @param archiveId the archive ID to set
-     */
-    public void setArchiveId(Long archiveId) {
-        this.archiveId = archiveId;
-    }
-
-    /**
-     * Gets the type of data being archived.
-     *
-     * @return the data type
-     */
-    public String getDataType() {
-        return dataType;
-    }
-
-    /**
-     * Sets the type of data being archived.
-     *
-     * @param dataType the data type to set
-     */
-    public void setDataType(String dataType) {
-        this.dataType = dataType;
-    }
-
-    /**
-     * Gets the date when data was archived.
-     *
-     * @return the archive date
-     */
-    public LocalDate getArchiveDate() {
-        return archiveDate;
-    }
-
-    /**
-     * Sets the date when data was archived.
-     *
-     * @param archiveDate the archive date to set
-     */
-    public void setArchiveDate(LocalDate archiveDate) {
-        this.archiveDate = archiveDate;
-        // Recalculate expiration date when archive date changes
-        if (this.retentionPeriod != null) {
-            this.expirationDate = calculateExpirationDate();
-        }
-    }
-
-    /**
-     * Gets the retention period in days.
-     *
-     * @return the retention period
-     */
-    public Integer getRetentionPeriod() {
-        return retentionPeriod;
-    }
-
-    /**
-     * Sets the retention period in days.
-     *
-     * @param retentionPeriod the retention period to set
-     */
-    public void setRetentionPeriod(Integer retentionPeriod) {
-        this.retentionPeriod = retentionPeriod;
-        // Recalculate expiration date when retention period changes
-        if (this.archiveDate != null) {
-            this.expirationDate = calculateExpirationDate();
-        }
-    }
-
-    /**
-     * Gets the storage path where archived data is located.
-     *
-     * @return the storage path
-     */
-    public String getStoragePath() {
-        return storagePath;
-    }
-
-    /**
-     * Sets the storage path where archived data is located.
-     *
-     * @param storagePath the storage path to set
-     */
-    public void setStoragePath(String storagePath) {
-        this.storagePath = storagePath;
-    }
-
-    /**
-     * Checks if the archive is under legal hold.
-     *
-     * @return true if under legal hold, false otherwise
-     */
-    public Boolean isLegalHold() {
-        return legalHold;
-    }
-
-    /**
-     * Sets the legal hold status.
-     *
-     * @param legalHold the legal hold status to set
-     */
-    public void setLegalHold(Boolean legalHold) {
-        this.legalHold = legalHold;
-    }
-
-    /**
-     * Gets the compression type used for archived data.
-     *
-     * @return the compression type
-     */
-    public String getCompressionType() {
-        return compressionType;
-    }
-
-    /**
-     * Sets the compression type used for archived data.
-     *
-     * @param compressionType the compression type to set
-     */
-    public void setCompressionType(String compressionType) {
-        this.compressionType = compressionType;
-    }
-
-    /**
-     * Gets the flexible metadata stored as JSONB.
-     *
-     * @return the metadata JSON node
-     */
-    public JsonNode getMetadata() {
-        return metadata;
-    }
-
-    /**
-     * Sets the flexible metadata stored as JSONB.
-     *
-     * @param metadata the metadata JSON node to set
-     */
-    public void setMetadata(JsonNode metadata) {
-        this.metadata = metadata;
-    }
-
-    /**
-     * Gets the calculated expiration date.
-     *
-     * @return the expiration date
-     */
-    public LocalDate getExpirationDate() {
-        return expirationDate;
-    }
-
-    /**
-     * Calculates the expiration date based on archive date and retention period.
-     * This method implements the business logic for determining when archived data
-     * can be safely deleted (unless under legal hold).
-     *
-     * @return the calculated expiration date, or null if archive date or retention period is null
-     */
-    public LocalDate calculateExpirationDate() {
-        if (this.archiveDate == null || this.retentionPeriod == null) {
-            return null;
-        }
-        return this.archiveDate.plusDays(this.retentionPeriod);
-    }
-
-    /**
-     * Gets the creation date of the archive record.
-     *
-     * @return the creation date
-     */
-    public LocalDate getCreatedDate() {
-        return createdDate;
-    }
-
-    /**
-     * Gets the last modification date of the archive record.
-     *
-     * @return the last modification date
-     */
-    public LocalDate getLastModifiedDate() {
-        return lastModifiedDate;
-    }
-
-    /**
-     * Checks if the archive has expired based on expiration date and legal hold status.
-     * Archives under legal hold never expire regardless of the expiration date.
-     *
-     * @return true if expired and not under legal hold, false otherwise
-     */
-    public boolean isExpired() {
-        if (this.legalHold || this.expirationDate == null) {
-            return false;
-        }
-        return LocalDate.now().isAfter(this.expirationDate);
-    }
-
-    /**
-     * Checks if the archive can be deleted based on expiration and legal hold status.
-     * This is a convenience method that combines expiration check with legal hold validation.
-     *
-     * @return true if the archive can be safely deleted, false otherwise
-     */
-    public boolean canBeDeleted() {
-        return isExpired() && !this.legalHold;
-    }
-
-    /**
-     * Compares this archive with another object for equality.
-     * Two archives are considered equal if they have the same archive ID.
-     *
-     * @param obj the object to compare with
-     * @return true if the objects are equal, false otherwise
-     */
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-        Archive archive = (Archive) obj;
-        return Objects.equals(archiveId, archive.archiveId);
-    }
-
-    /**
-     * Returns the hash code for this archive.
-     * The hash code is based on the archive ID.
-     *
-     * @return the hash code
-     */
-    @Override
-    public int hashCode() {
-        return Objects.hash(archiveId);
-    }
-
-    /**
-     * Returns a string representation of the archive.
-     * Includes key information for debugging and logging purposes.
-     *
-     * @return string representation of the archive
-     */
-    @Override
-    public String toString() {
-        return "Archive{" +
-                "archiveId=" + archiveId +
-                ", dataType='" + dataType + '\'' +
-                ", archiveDate=" + archiveDate +
-                ", retentionPeriod=" + retentionPeriod +
-                ", storagePath='" + storagePath + '\'' +
-                ", legalHold=" + legalHold +
-                ", compressionType='" + compressionType + '\'' +
-                ", expirationDate=" + expirationDate +
-                ", createdDate=" + createdDate +
-                ", lastModifiedDate=" + lastModifiedDate +
-                '}';
+        updatedTimestamp = LocalDateTime.now();
     }
 }
