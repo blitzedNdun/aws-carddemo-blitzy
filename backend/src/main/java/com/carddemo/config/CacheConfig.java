@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.CachingConfigurerSupport;
+
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.interceptor.KeyGenerator;
 import org.springframework.context.annotation.Bean;
@@ -68,7 +68,7 @@ import java.util.Map;
  */
 @Configuration
 @EnableCaching
-public class CacheConfig extends CachingConfigurerSupport {
+public class CacheConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(CacheConfig.class);
 
@@ -152,14 +152,14 @@ public class CacheConfig extends CachingConfigurerSupport {
         poolConfig.setMaxTotal(maxActive);
         poolConfig.setMaxIdle(maxIdle);
         poolConfig.setMinIdle(minIdle);
-        poolConfig.setMaxWaitMillis(maxWait);
+        poolConfig.setMaxWait(Duration.ofMillis(maxWait));
         
         // Enable connection validation for reliability
         poolConfig.setTestOnBorrow(true);
         poolConfig.setTestOnReturn(true);
         poolConfig.setTestWhileIdle(true);
-        poolConfig.setTimeBetweenEvictionRunsMillis(30000);
-        poolConfig.setMinEvictableIdleTimeMillis(60000);
+        poolConfig.setTimeBetweenEvictionRuns(Duration.ofMillis(30000));
+        poolConfig.setMinEvictableIdleDuration(Duration.ofMillis(60000));
         
         logger.debug("Redis connection pool configured - maxActive: {}, maxIdle: {}, minIdle: {}", 
                     maxActive, maxIdle, minIdle);
@@ -424,8 +424,7 @@ public class CacheConfig extends CachingConfigurerSupport {
         sessionMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
 
         StringRedisSerializer stringSerializer = new StringRedisSerializer();
-        Jackson2JsonRedisSerializer<Object> sessionSerializer = new Jackson2JsonRedisSerializer<>(Object.class);
-        sessionSerializer.setObjectMapper(sessionMapper);
+        Jackson2JsonRedisSerializer<Object> sessionSerializer = new Jackson2JsonRedisSerializer<>(sessionMapper, Object.class);
 
         template.setKeySerializer(stringSerializer);
         template.setValueSerializer(sessionSerializer);
