@@ -26,12 +26,6 @@ spring:
   # =============================================================================
   # PROFILES AND ENVIRONMENT
   # =============================================================================
-  profiles:
-    active: test
-    include:
-      - testcontainers  # Enable Testcontainers integration for integration tests
-      - h2-database     # Enable H2 for unit tests
-      - mock-services   # Enable mock external services
   
   # =============================================================================
   # DATABASE CONFIGURATION
@@ -79,7 +73,7 @@ spring:
           use_second_level_cache: false  # Disable L2 cache for test isolation
           use_query_cache: false         # Disable query cache
         hbm2ddl:
-          import_files_sql_extractor: org.hibernate.tool.hbm2ddl.MultipleLinesSqlCommandExtractor
+          auto_quote_keyword: true
     open-in-view: false           # Disable OSIV for explicit transaction boundaries
     show-sql: false               # Centralized SQL logging control
   
