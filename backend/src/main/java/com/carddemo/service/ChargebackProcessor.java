@@ -63,7 +63,7 @@ public class ChargebackProcessor {
     private int merchantResponseTimeout;
     
     @Value("${chargeback.arbitration.fee:500.00}")
-    private BigDecimal arbitrationFee;
+    private BigDecimal arbitrationFee = new BigDecimal("500.00");
 
     /**
      * Initiates a chargeback request to card networks with comprehensive validation
@@ -118,6 +118,9 @@ public class ChargebackProcessor {
                     "Failed to submit chargeback to payment network");
             }
             
+        } catch (IllegalArgumentException e) {
+            // Let validation exceptions propagate naturally
+            throw e;
         } catch (Exception e) {
             logger.error("Error initiating chargeback for transaction {}: {}", 
                         transactionId, e.getMessage(), e);
@@ -162,7 +165,9 @@ public class ChargebackProcessor {
                     break;
                     
                 case "REPRESENTMENT":
-                    result = processRepresentment(chargebackId, responseData);
+                    RepresentmentResult reprResult = processRepresentment(chargebackId, responseData);
+                    result.setNextAction("REVIEW_REPRESENTMENT");
+                    result.getAdditionalData().put("representmentResult", reprResult);
                     updateStatus(chargebackId, ChargebackStatus.PENDING_RESPONSE, 
                                "Representment received - under review");
                     break;
@@ -184,6 +189,9 @@ public class ChargebackProcessor {
                        chargebackId, result.getNextAction());
             return result;
             
+        } catch (IllegalArgumentException e) {
+            // Let validation exceptions propagate naturally
+            throw e;
         } catch (Exception e) {
             logger.error("Error processing response for chargeback {}: {}", 
                         chargebackId, e.getMessage(), e);
@@ -242,6 +250,9 @@ public class ChargebackProcessor {
                        chargebackId, arbitrationFee, liabilityShift);
             return result;
             
+        } catch (IllegalArgumentException e) {
+            // Let validation exceptions propagate naturally
+            throw e;
         } catch (Exception e) {
             logger.error("Error handling arbitration for chargeback {}: {}", 
                         chargebackId, e.getMessage(), e);
@@ -472,6 +483,9 @@ public class ChargebackProcessor {
                        chargebackId, result.getNextAction());
             return result;
             
+        } catch (IllegalArgumentException e) {
+            // Let validation exceptions propagate naturally
+            throw e;
         } catch (Exception e) {
             logger.error("Error handling merchant response for chargeback {}: {}", 
                         chargebackId, e.getMessage(), e);
@@ -691,17 +705,18 @@ public class ChargebackProcessor {
      */
     public String generateChargebackId() {
         try {
-            // Generate timestamp-based component
-            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+            // Use System.nanoTime() for better uniqueness in rapid succession
+            long nanoTime = System.nanoTime();
+            String timestamp = String.valueOf(nanoTime).substring(String.valueOf(nanoTime).length() - 8);
             
             // Generate random component for uniqueness
             Random random = new Random();
-            int randomComponent = random.nextInt(9999);
+            int randomComponent = random.nextInt(999);
             
             // Combine components with prefix
-            String chargebackId = String.format("%s%s%04d", 
+            String chargebackId = String.format("%s%s%03d", 
                                                CHARGEBACK_ID_PREFIX, 
-                                               timestamp.substring(2), // Remove first 2 digits of year
+                                               timestamp,
                                                randomComponent);
             
             // Ensure total length matches requirement
@@ -711,10 +726,10 @@ public class ChargebackProcessor {
             
             // Check for collisions (very rare but good practice)
             while (chargebackIdExists(chargebackId)) {
-                randomComponent = random.nextInt(9999);
-                chargebackId = String.format("%s%s%04d", 
+                randomComponent = random.nextInt(999);
+                chargebackId = String.format("%s%s%03d", 
                                            CHARGEBACK_ID_PREFIX, 
-                                           timestamp.substring(2),
+                                           timestamp,
                                            randomComponent);
                 if (chargebackId.length() > CHARGEBACK_ID_LENGTH) {
                     chargebackId = chargebackId.substring(0, CHARGEBACK_ID_LENGTH);
@@ -938,6 +953,9 @@ public class ChargebackProcessor {
                        report.getReportId(), reportType, chargebacks.size());
             return report;
             
+        } catch (IllegalArgumentException e) {
+            // Let validation exceptions propagate naturally
+            throw e;
         } catch (Exception e) {
             logger.error("Error generating chargeback report of type {}: {}", 
                         reportType, e.getMessage(), e);
@@ -1071,6 +1089,438 @@ public class ChargebackProcessor {
     }
 
     // ==============================================
+    // Additional Supporting Classes
+    // ==============================================
+
+    /**
+     * Result class for arbitration operations
+     */
+    public static class ArbitrationResult {
+        private String chargebackId;
+        private String arbitrationType;
+        private LocalDateTime initiatedTimestamp;
+        private LocalDateTime deadline;
+        private List<String> evidenceDocuments;
+        private String caseNumber;
+        private BigDecimal arbitrationFee;
+        private BigDecimal liabilityShift;
+        
+        // Getters and setters
+        public String getChargebackId() { return chargebackId; }
+        public void setChargebackId(String chargebackId) { this.chargebackId = chargebackId; }
+        
+        public String getArbitrationType() { return arbitrationType; }
+        public void setArbitrationType(String arbitrationType) { this.arbitrationType = arbitrationType; }
+        
+        public LocalDateTime getInitiatedTimestamp() { return initiatedTimestamp; }
+        public void setInitiatedTimestamp(LocalDateTime initiatedTimestamp) { this.initiatedTimestamp = initiatedTimestamp; }
+        
+        public LocalDateTime getDeadline() { return deadline; }
+        public void setDeadline(LocalDateTime deadline) { this.deadline = deadline; }
+        
+        public List<String> getEvidenceDocuments() { return evidenceDocuments; }
+        public void setEvidenceDocuments(List<String> evidenceDocuments) { this.evidenceDocuments = evidenceDocuments; }
+        
+        public String getCaseNumber() { return caseNumber; }
+        public void setCaseNumber(String caseNumber) { this.caseNumber = caseNumber; }
+        
+        public BigDecimal getArbitrationFee() { return arbitrationFee; }
+        public void setArbitrationFee(BigDecimal arbitrationFee) { this.arbitrationFee = arbitrationFee; }
+        
+        public BigDecimal getLiabilityShift() { return liabilityShift; }
+        public void setLiabilityShift(BigDecimal liabilityShift) { this.liabilityShift = liabilityShift; }
+    }
+
+    /**
+     * Settlement calculation result class
+     */
+    public static class SettlementCalculation {
+        private String chargebackId;
+        private String settlementType;
+        private LocalDateTime calculationTimestamp;
+        private BigDecimal disputedAmount;
+        private BigDecimal interchangeFee;
+        private BigDecimal processingFee;
+        private BigDecimal chargebackFee;
+        private BigDecimal netSettlementAmount;
+        private String currency;
+        private BigDecimal exchangeRate;
+        private LiabilityDistribution liabilityDistribution;
+        
+        // Getters and setters
+        public String getChargebackId() { return chargebackId; }
+        public void setChargebackId(String chargebackId) { this.chargebackId = chargebackId; }
+        
+        public String getSettlementType() { return settlementType; }
+        public void setSettlementType(String settlementType) { this.settlementType = settlementType; }
+        
+        public LocalDateTime getCalculationTimestamp() { return calculationTimestamp; }
+        public void setCalculationTimestamp(LocalDateTime calculationTimestamp) { this.calculationTimestamp = calculationTimestamp; }
+        
+        public BigDecimal getDisputedAmount() { return disputedAmount; }
+        public void setDisputedAmount(BigDecimal disputedAmount) { this.disputedAmount = disputedAmount; }
+        
+        public BigDecimal getInterchangeFee() { return interchangeFee; }
+        public void setInterchangeFee(BigDecimal interchangeFee) { this.interchangeFee = interchangeFee; }
+        
+        public BigDecimal getProcessingFee() { return processingFee; }
+        public void setProcessingFee(BigDecimal processingFee) { this.processingFee = processingFee; }
+        
+        public BigDecimal getChargebackFee() { return chargebackFee; }
+        public void setChargebackFee(BigDecimal chargebackFee) { this.chargebackFee = chargebackFee; }
+        
+        public BigDecimal getNetSettlementAmount() { return netSettlementAmount; }
+        public void setNetSettlementAmount(BigDecimal netSettlementAmount) { this.netSettlementAmount = netSettlementAmount; }
+        
+        public String getCurrency() { return currency; }
+        public void setCurrency(String currency) { this.currency = currency; }
+        
+        public BigDecimal getExchangeRate() { return exchangeRate; }
+        public void setExchangeRate(BigDecimal exchangeRate) { this.exchangeRate = exchangeRate; }
+        
+        public LiabilityDistribution getLiabilityDistribution() { return liabilityDistribution; }
+        public void setLiabilityDistribution(LiabilityDistribution liabilityDistribution) { this.liabilityDistribution = liabilityDistribution; }
+    }
+
+    /**
+     * Merchant response result class
+     */
+    public static class MerchantResponseResult {
+        private String chargebackId;
+        private String responseType;
+        private LocalDateTime receivedTimestamp;
+        private String nextAction;
+        private Map<String, Object> responseData = new HashMap<>();
+        
+        // Getters and setters
+        public String getChargebackId() { return chargebackId; }
+        public void setChargebackId(String chargebackId) { this.chargebackId = chargebackId; }
+        
+        public String getResponseType() { return responseType; }
+        public void setResponseType(String responseType) { this.responseType = responseType; }
+        
+        public LocalDateTime getReceivedTimestamp() { return receivedTimestamp; }
+        public void setReceivedTimestamp(LocalDateTime receivedTimestamp) { this.receivedTimestamp = receivedTimestamp; }
+        
+        public String getNextAction() { return nextAction; }
+        public void setNextAction(String nextAction) { this.nextAction = nextAction; }
+        
+        public Map<String, Object> getResponseData() { return responseData; }
+        public void setResponseData(Map<String, Object> responseData) { this.responseData = responseData; }
+    }
+
+    /**
+     * Lifecycle tracking record class
+     */
+    public static class LifecycleTrackingRecord {
+        private String chargebackId;
+        private ChargebackStatus currentStatus;
+        private LocalDateTime lastUpdated;
+        private BigDecimal riskScore;
+        private List<StatusTransition> statusHistory = new ArrayList<>();
+        
+        public void updateStatus(ChargebackStatus status, LocalDateTime timestamp) {
+            this.currentStatus = status;
+            this.lastUpdated = timestamp;
+        }
+        
+        // Getters and setters
+        public String getChargebackId() { return chargebackId; }
+        public void setChargebackId(String chargebackId) { this.chargebackId = chargebackId; }
+        
+        public ChargebackStatus getCurrentStatus() { return currentStatus; }
+        public void setCurrentStatus(ChargebackStatus currentStatus) { this.currentStatus = currentStatus; }
+        
+        public LocalDateTime getLastUpdated() { return lastUpdated; }
+        public void setLastUpdated(LocalDateTime lastUpdated) { this.lastUpdated = lastUpdated; }
+        
+        public BigDecimal getRiskScore() { return riskScore; }
+        public void setRiskScore(BigDecimal riskScore) { this.riskScore = riskScore; }
+        
+        public List<StatusTransition> getStatusHistory() { return statusHistory; }
+        public void setStatusHistory(List<StatusTransition> statusHistory) { this.statusHistory = statusHistory; }
+    }
+
+    /**
+     * Validation result class
+     */
+    public static class ValidationResult {
+        private String transactionId;
+        private LocalDateTime validationTimestamp;
+        private boolean valid;
+        private List<String> violations = new ArrayList<>();
+        private List<String> warnings = new ArrayList<>();
+        
+        // Getters and setters
+        public String getTransactionId() { return transactionId; }
+        public void setTransactionId(String transactionId) { this.transactionId = transactionId; }
+        
+        public LocalDateTime getValidationTimestamp() { return validationTimestamp; }
+        public void setValidationTimestamp(LocalDateTime validationTimestamp) { this.validationTimestamp = validationTimestamp; }
+        
+        public boolean isValid() { return valid; }
+        public void setValid(boolean valid) { this.valid = valid; }
+        
+        public List<String> getViolations() { return violations; }
+        public void setViolations(List<String> violations) { this.violations = violations; }
+        
+        public List<String> getWarnings() { return warnings; }
+        public void setWarnings(List<String> warnings) { this.warnings = warnings; }
+    }
+
+    /**
+     * Representment result class
+     */
+    public static class RepresentmentResult {
+        private String chargebackId;
+        private LocalDateTime receivedTimestamp;
+        private List<String> representmentDocuments;
+        private DocumentValidationResult documentValidation;
+        private RepresentmentAnalysis analysis;
+        private RepresentmentRecommendation recommendation;
+        private BigDecimal potentialLiabilityShift;
+        private LocalDateTime reviewDeadline;
+        
+        // Getters and setters
+        public String getChargebackId() { return chargebackId; }
+        public void setChargebackId(String chargebackId) { this.chargebackId = chargebackId; }
+        
+        public LocalDateTime getReceivedTimestamp() { return receivedTimestamp; }
+        public void setReceivedTimestamp(LocalDateTime receivedTimestamp) { this.receivedTimestamp = receivedTimestamp; }
+        
+        public List<String> getRepresentmentDocuments() { return representmentDocuments; }
+        public void setRepresentmentDocuments(List<String> representmentDocuments) { this.representmentDocuments = representmentDocuments; }
+        
+        public DocumentValidationResult getDocumentValidation() { return documentValidation; }
+        public void setDocumentValidation(DocumentValidationResult documentValidation) { this.documentValidation = documentValidation; }
+        
+        public RepresentmentAnalysis getAnalysis() { return analysis; }
+        public void setAnalysis(RepresentmentAnalysis analysis) { this.analysis = analysis; }
+        
+        public RepresentmentRecommendation getRecommendation() { return recommendation; }
+        public void setRecommendation(RepresentmentRecommendation recommendation) { this.recommendation = recommendation; }
+        
+        public BigDecimal getPotentialLiabilityShift() { return potentialLiabilityShift; }
+        public void setPotentialLiabilityShift(BigDecimal potentialLiabilityShift) { this.potentialLiabilityShift = potentialLiabilityShift; }
+        
+        public LocalDateTime getReviewDeadline() { return reviewDeadline; }
+        public void setReviewDeadline(LocalDateTime reviewDeadline) { this.reviewDeadline = reviewDeadline; }
+    }
+
+    /**
+     * Date range class for reporting
+     */
+    public static class DateRange {
+        private LocalDateTime startDate;
+        private LocalDateTime endDate;
+        
+        public DateRange(LocalDateTime startDate, LocalDateTime endDate) {
+            this.startDate = startDate;
+            this.endDate = endDate;
+        }
+        
+        // Getters and setters
+        public LocalDateTime getStartDate() { return startDate; }
+        public void setStartDate(LocalDateTime startDate) { this.startDate = startDate; }
+        
+        public LocalDateTime getEndDate() { return endDate; }
+        public void setEndDate(LocalDateTime endDate) { this.endDate = endDate; }
+    }
+
+    /**
+     * Chargeback report class
+     */
+    public static class ChargebackReport {
+        private String reportId;
+        private String reportType;
+        private DateRange dateRange;
+        private LocalDateTime generatedTimestamp;
+        private Map<String, Object> reportData = new HashMap<>();
+        
+        // Getters and setters
+        public String getReportId() { return reportId; }
+        public void setReportId(String reportId) { this.reportId = reportId; }
+        
+        public String getReportType() { return reportType; }
+        public void setReportType(String reportType) { this.reportType = reportType; }
+        
+        public DateRange getDateRange() { return dateRange; }
+        public void setDateRange(DateRange dateRange) { this.dateRange = dateRange; }
+        
+        public LocalDateTime getGeneratedTimestamp() { return generatedTimestamp; }
+        public void setGeneratedTimestamp(LocalDateTime generatedTimestamp) { this.generatedTimestamp = generatedTimestamp; }
+        
+        public Map<String, Object> getReportData() { return reportData; }
+        public void setReportData(Map<String, Object> reportData) { this.reportData = reportData; }
+    }
+
+    // ==============================================
+    // Additional Supporting Classes
+    // ==============================================
+
+    /**
+     * Status update record
+     */
+    public static class StatusUpdateRecord {
+        private String chargebackId;
+        private ChargebackStatus fromStatus;
+        private ChargebackStatus toStatus;
+        private String reason;
+        private LocalDateTime timestamp;
+        
+        public StatusUpdateRecord(String chargebackId, ChargebackStatus fromStatus, 
+                                ChargebackStatus toStatus, String reason, LocalDateTime timestamp) {
+            this.chargebackId = chargebackId;
+            this.fromStatus = fromStatus;
+            this.toStatus = toStatus;
+            this.reason = reason;
+            this.timestamp = timestamp;
+        }
+        
+        // Getters
+        public String getChargebackId() { return chargebackId; }
+        public ChargebackStatus getFromStatus() { return fromStatus; }
+        public ChargebackStatus getToStatus() { return toStatus; }
+        public String getReason() { return reason; }
+        public LocalDateTime getTimestamp() { return timestamp; }
+    }
+
+    /**
+     * Liability distribution class
+     */
+    public static class LiabilityDistribution {
+        private BigDecimal merchantLiability;
+        private BigDecimal cardholderLiability;
+        private BigDecimal issuerLiability;
+        private BigDecimal acquirerLiability;
+        
+        // Getters and setters
+        public BigDecimal getMerchantLiability() { return merchantLiability; }
+        public void setMerchantLiability(BigDecimal merchantLiability) { this.merchantLiability = merchantLiability; }
+        
+        public BigDecimal getCardholderLiability() { return cardholderLiability; }
+        public void setCardholderLiability(BigDecimal cardholderLiability) { this.cardholderLiability = cardholderLiability; }
+        
+        public BigDecimal getIssuerLiability() { return issuerLiability; }
+        public void setIssuerLiability(BigDecimal issuerLiability) { this.issuerLiability = issuerLiability; }
+        
+        public BigDecimal getAcquirerLiability() { return acquirerLiability; }
+        public void setAcquirerLiability(BigDecimal acquirerLiability) { this.acquirerLiability = acquirerLiability; }
+    }
+
+    /**
+     * Network response class
+     */
+    public static class NetworkResponse {
+        private boolean successful;
+        private String transactionId;
+        private LocalDateTime timestamp;
+        private String errorCode;
+        private String errorMessage;
+        
+        // Getters and setters
+        public boolean isSuccessful() { return successful; }
+        public void setSuccessful(boolean successful) { this.successful = successful; }
+        
+        public String getTransactionId() { return transactionId; }
+        public void setTransactionId(String transactionId) { this.transactionId = transactionId; }
+        
+        public LocalDateTime getTimestamp() { return timestamp; }
+        public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
+        
+        public String getErrorCode() { return errorCode; }
+        public void setErrorCode(String errorCode) { this.errorCode = errorCode; }
+        
+        public String getErrorMessage() { return errorMessage; }
+        public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
+    }
+
+    /**
+     * Status transition record
+     */
+    public static class StatusTransition {
+        private ChargebackStatus fromStatus;
+        private ChargebackStatus toStatus;
+        private LocalDateTime timestamp;
+        private String reason;
+        
+        public StatusTransition(ChargebackStatus fromStatus, ChargebackStatus toStatus, 
+                              LocalDateTime timestamp, String reason) {
+            this.fromStatus = fromStatus;
+            this.toStatus = toStatus;
+            this.timestamp = timestamp;
+            this.reason = reason;
+        }
+        
+        // Getters
+        public ChargebackStatus getFromStatus() { return fromStatus; }
+        public ChargebackStatus getToStatus() { return toStatus; }
+        public LocalDateTime getTimestamp() { return timestamp; }
+        public String getReason() { return reason; }
+    }
+
+    /**
+     * Document validation result
+     */
+    public static class DocumentValidationResult {
+        private boolean valid;
+        private List<String> missingDocuments = new ArrayList<>();
+        private List<String> validationErrors = new ArrayList<>();
+        
+        // Getters and setters
+        public boolean isValid() { return valid; }
+        public void setValid(boolean valid) { this.valid = valid; }
+        
+        public List<String> getMissingDocuments() { return missingDocuments; }
+        public void setMissingDocuments(List<String> missingDocuments) { this.missingDocuments = missingDocuments; }
+        
+        public List<String> getValidationErrors() { return validationErrors; }
+        public void setValidationErrors(List<String> validationErrors) { this.validationErrors = validationErrors; }
+    }
+
+    /**
+     * Representment analysis result
+     */
+    public static class RepresentmentAnalysis {
+        private String strength; // STRONG, MODERATE, WEAK
+        private BigDecimal confidenceScore;
+        private List<String> strengths = new ArrayList<>();
+        private List<String> weaknesses = new ArrayList<>();
+        
+        // Getters and setters
+        public String getStrength() { return strength; }
+        public void setStrength(String strength) { this.strength = strength; }
+        
+        public BigDecimal getConfidenceScore() { return confidenceScore; }
+        public void setConfidenceScore(BigDecimal confidenceScore) { this.confidenceScore = confidenceScore; }
+        
+        public List<String> getStrengths() { return strengths; }
+        public void setStrengths(List<String> strengths) { this.strengths = strengths; }
+        
+        public List<String> getWeaknesses() { return weaknesses; }
+        public void setWeaknesses(List<String> weaknesses) { this.weaknesses = weaknesses; }
+    }
+
+    /**
+     * Representment recommendation
+     */
+    public static class RepresentmentRecommendation {
+        private String recommendationType; // ACCEPT, REJECT, NEGOTIATE
+        private String reasoning;
+        private BigDecimal recommendedSettlement;
+        
+        // Getters and setters
+        public String getRecommendationType() { return recommendationType; }
+        public void setRecommendationType(String recommendationType) { this.recommendationType = recommendationType; }
+        
+        public String getReasoning() { return reasoning; }
+        public void setReasoning(String reasoning) { this.reasoning = reasoning; }
+        
+        public BigDecimal getRecommendedSettlement() { return recommendedSettlement; }
+        public void setRecommendedSettlement(BigDecimal recommendedSettlement) { this.recommendedSettlement = recommendedSettlement; }
+    }
+
+    // ==============================================
     // Helper Methods (Simulation for Demonstration)
     // ==============================================
     
@@ -1079,7 +1529,7 @@ public class ChargebackProcessor {
         if (transactionId == null || transactionId.trim().isEmpty()) {
             throw new IllegalArgumentException("Transaction ID cannot be null or empty");
         }
-        if (!CARD_NUMBER_PATTERN.matcher(cardNumber).matches()) {
+        if (cardNumber == null || !CARD_NUMBER_PATTERN.matcher(cardNumber).matches()) {
             throw new IllegalArgumentException("Invalid card number format");
         }
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
@@ -1104,7 +1554,7 @@ public class ChargebackProcessor {
     // external APIs, and other system components
     private ChargebackRecord validateChargebackForProcessing(String chargebackId) {
         // Simulate database lookup and validation
-        return new ChargebackRecord();
+        return getChargebackRecord(chargebackId);
     }
     
     private ChargebackStatus getCurrentStatus(String chargebackId) {
@@ -1133,6 +1583,444 @@ public class ChargebackProcessor {
         return LocalDateTime.now().minusDays(30);
     }
     
-    // Additional helper method stubs would continue here...
-    // For brevity, including representative examples of the pattern
+    // Additional helper method stubs for complete functionality
+    
+    private boolean hasDuplicateChargeback(String transactionId) {
+        // Simulate duplicate check
+        return false;
+    }
+    
+    private String getMerchantIdFromTransaction(String transactionId) {
+        // Simulate merchant ID lookup
+        return "MERCHANT_001";
+    }
+    
+    private boolean isMerchantChargebackEligible(String merchantId) {
+        // Simulate merchant eligibility check
+        return true;
+    }
+    
+    private boolean hasFraudIndicators(String transactionId, String cardNumber) {
+        // Simulate fraud indicator check
+        return false;
+    }
+    
+    private ChargebackRecord getChargebackRecord(String chargebackId) {
+        // Simulate database lookup with realistic test data
+        ChargebackRecord record = new ChargebackRecord();
+        record.setChargebackId(chargebackId);
+        record.setTransactionId("TXN123456789");
+        record.setCardNumber("4111111111111111");
+        record.setAmount(new BigDecimal("500.00"));
+        record.setReasonCode("4855");
+        record.setMerchantId("MERCH001");
+        record.setDescription("Disputed transaction");
+        record.setStatus(ChargebackStatus.SUBMITTED);
+        record.setCreatedTimestamp(LocalDateTime.now().minusDays(5));
+        record.setCardType("VISA");
+        record.setCurrency("USD");
+        return record;
+    }
+    
+    private ChargebackRecord validateChargebackForArbitration(String chargebackId) {
+        // Simulate validation for arbitration eligibility
+        return getChargebackRecord(chargebackId);
+    }
+    
+    private ChargebackRecord validateChargebackForPreArbitration(String chargebackId) {
+        // Simulate validation for pre-arbitration eligibility
+        return getChargebackRecord(chargebackId);
+    }
+    
+    private ChargebackRecord validateChargebackForMerchantResponse(String chargebackId) {
+        // Simulate validation for merchant response
+        return getChargebackRecord(chargebackId);
+    }
+    
+    private ChargebackRecord validateChargebackForRepresentment(String chargebackId) {
+        // Simulate validation for representment
+        return getChargebackRecord(chargebackId);
+    }
+    
+    private void validateChargebackDataForSubmission(ChargebackRecord chargebackData) {
+        // Simulate data validation for network submission
+    }
+    
+    private LifecycleTrackingRecord getOrCreateLifecycleRecord(String chargebackId) {
+        // Simulate lifecycle record retrieval or creation
+        LifecycleTrackingRecord record = new LifecycleTrackingRecord();
+        record.setChargebackId(chargebackId);
+        return record;
+    }
+    
+    private void calculateTimelineMetrics(LifecycleTrackingRecord tracking) {
+        // Simulate timeline metrics calculation
+    }
+    
+    private void checkTimelineCompliance(LifecycleTrackingRecord tracking) {
+        // Simulate timeline compliance check
+    }
+    
+    private void setNextMilestoneDeadlines(LifecycleTrackingRecord tracking) {
+        // Simulate setting next milestone deadlines
+    }
+    
+    private BigDecimal calculateRiskScore(LifecycleTrackingRecord tracking) {
+        // Simulate risk score calculation
+        return new BigDecimal("50.00");
+    }
+    
+    private void persistLifecycleUpdate(LifecycleTrackingRecord tracking) {
+        // Simulate persistence of lifecycle update
+    }
+    
+    private void checkAndSendTimelineAlerts(LifecycleTrackingRecord tracking) {
+        // Simulate timeline alert checking and sending
+    }
+    
+    private void validateStatusTransition(ChargebackStatus currentStatus, ChargebackStatus newStatus) {
+        // Simulate status transition validation
+    }
+    
+    private void validateRegulatoryTimeline(String chargebackId, ChargebackStatus newStatus) {
+        // Simulate regulatory timeline validation
+    }
+    
+    private void persistStatusUpdate(StatusUpdateRecord statusUpdate) {
+        // Simulate status update persistence
+    }
+    
+    private void auditStatusChange(String chargebackId, ChargebackStatus fromStatus, 
+                                 ChargebackStatus toStatus, String reason) {
+        // Simulate audit logging
+        logger.info("Status change audit: {} {} -> {} ({})", chargebackId, fromStatus, toStatus, reason);
+    }
+    
+    private void sendStatusNotifications(String chargebackId, ChargebackStatus newStatus, String reason) {
+        // Simulate notification sending
+    }
+    
+    private BigDecimal calculateInterchangeFee(BigDecimal amount, String cardType) {
+        // Simulate interchange fee calculation
+        return amount.multiply(new BigDecimal("0.015")).setScale(2, RoundingMode.HALF_UP);
+    }
+    
+    private BigDecimal calculateProcessingFee(BigDecimal amount) {
+        // Simulate processing fee calculation
+        return amount.multiply(new BigDecimal("0.005")).setScale(2, RoundingMode.HALF_UP);
+    }
+    
+    private BigDecimal calculateChargebackFee(String reasonCode) {
+        // Simulate chargeback fee calculation based on reason code
+        return new BigDecimal("25.00");
+    }
+    
+    private LiabilityDistribution determineLiabilityDistribution(ChargebackRecord record) {
+        // Simulate liability distribution determination
+        LiabilityDistribution liability = new LiabilityDistribution();
+        liability.setMerchantLiability(record.getAmount());
+        liability.setCardholderLiability(BigDecimal.ZERO);
+        liability.setIssuerLiability(BigDecimal.ZERO);
+        liability.setAcquirerLiability(BigDecimal.ZERO);
+        return liability;
+    }
+    
+    private BigDecimal calculateNetSettlement(BigDecimal disputedAmount, BigDecimal interchangeFee,
+                                            BigDecimal processingFee, BigDecimal chargebackFee,
+                                            String settlementType, LiabilityDistribution liability) {
+        // Simulate net settlement calculation
+        BigDecimal totalFees = interchangeFee.add(processingFee).add(chargebackFee);
+        return disputedAmount.subtract(totalFees);
+    }
+    
+    private BigDecimal getCurrentExchangeRate(String currency) {
+        // Simulate exchange rate lookup
+        return new BigDecimal("1.00");
+    }
+    
+    private void validateEvidenceDocuments(List<String> evidenceDocuments, String arbitrationType) {
+        // Simulate evidence document validation
+    }
+    
+    private String submitPreArbitrationCase(String chargebackId, List<String> evidenceDocuments) {
+        // Simulate pre-arbitration case submission
+        return "PREARB-" + chargebackId + "-001";
+    }
+    
+    private void updateChargebackWithArbitration(String chargebackId, ArbitrationResult result) {
+        // Simulate updating chargeback record with arbitration details
+    }
+    
+    private void validateMerchantResponseTimeline(String chargebackId, LocalDateTime receivedTimestamp) {
+        // Simulate merchant response timeline validation
+    }
+    
+    private void determineNextActions(MerchantResponseResult result, ChargebackRecord record) {
+        // Simulate next action determination
+        result.setNextAction("REVIEW_RESPONSE");
+    }
+    
+    private ArbitrationResult processFullArbitration(ChargebackRecord record, List<String> evidenceDocuments) {
+        // Simulate full arbitration processing
+        ArbitrationResult result = new ArbitrationResult();
+        result.setChargebackId(record.getChargebackId());
+        result.setArbitrationType("ARBITRATION");
+        result.setInitiatedTimestamp(LocalDateTime.now());
+        result.setDeadline(LocalDateTime.now().plusDays(ARBITRATION_DAYS));
+        return result;
+    }
+    
+    private ChargebackProcessingResult processAcceptedResponse(ChargebackRecord record, 
+                                                             Map<String, Object> responseData, 
+                                                             LocalDateTime responseTimestamp) {
+        // Simulate accepted response processing
+        ChargebackProcessingResult result = new ChargebackProcessingResult();
+        result.setChargebackId(record.getChargebackId());
+        result.setNextAction("PROCESS_SETTLEMENT");
+        result.setProcessedTimestamp(responseTimestamp);
+        result.getAdditionalData().putAll(responseData);
+        return result;
+    }
+    
+    private ChargebackProcessingResult processRejectedResponse(ChargebackRecord record,
+                                                             Map<String, Object> responseData,
+                                                             LocalDateTime responseTimestamp) {
+        // Simulate rejected response processing
+        ChargebackProcessingResult result = new ChargebackProcessingResult();
+        result.setChargebackId(record.getChargebackId());
+        result.setNextAction("EVALUATE_ARBITRATION");
+        return result;
+    }
+    
+    private ChargebackProcessingResult processInformationRequest(ChargebackRecord record,
+                                                               Map<String, Object> responseData) {
+        // Simulate information request processing
+        ChargebackProcessingResult result = new ChargebackProcessingResult();
+        result.setChargebackId(record.getChargebackId());
+        result.setNextAction("PROVIDE_INFORMATION");
+        return result;
+    }
+    
+    private MerchantResponseResult processMerchantAcceptance(ChargebackRecord record,
+                                                           Map<String, Object> responseData) {
+        // Simulate merchant acceptance processing
+        MerchantResponseResult result = new MerchantResponseResult();
+        result.setChargebackId(record.getChargebackId());
+        result.setResponseType("ACCEPT");
+        result.setNextAction("PROCESS_SETTLEMENT");
+        result.setReceivedTimestamp(LocalDateTime.now());
+        result.setResponseData(responseData);
+        return result;
+    }
+    
+    private MerchantResponseResult processMerchantRejection(ChargebackRecord record,
+                                                          Map<String, Object> responseData) {
+        // Simulate merchant rejection processing
+        MerchantResponseResult result = new MerchantResponseResult();
+        result.setChargebackId(record.getChargebackId());
+        result.setResponseType("REJECT");
+        result.setNextAction("EVALUATE_REPRESENTMENT");
+        return result;
+    }
+    
+    private MerchantResponseResult processMerchantRepresentment(String chargebackId,
+                                                              Map<String, Object> responseData) {
+        // Simulate merchant representment processing
+        MerchantResponseResult result = new MerchantResponseResult();
+        result.setChargebackId(chargebackId);
+        result.setResponseType("REPRESENTMENT");
+        result.setNextAction("REVIEW_REPRESENTMENT");
+        return result;
+    }
+    
+    private MerchantResponseResult processMerchantPartialAcceptance(ChargebackRecord record,
+                                                                  Map<String, Object> responseData) {
+        // Simulate merchant partial acceptance processing
+        MerchantResponseResult result = new MerchantResponseResult();
+        result.setChargebackId(record.getChargebackId());
+        result.setResponseType("PARTIAL_ACCEPT");
+        result.setNextAction("NEGOTIATE_SETTLEMENT");
+        return result;
+    }
+    
+    private Map<String, Object> formatChargebackForNetwork(ChargebackRecord chargebackData) {
+        // Simulate network data formatting
+        Map<String, Object> networkPayload = new HashMap<>();
+        networkPayload.put("chargebackId", chargebackData.getChargebackId());
+        networkPayload.put("transactionId", chargebackData.getTransactionId());
+        networkPayload.put("amount", chargebackData.getAmount());
+        networkPayload.put("reasonCode", chargebackData.getReasonCode());
+        return networkPayload;
+    }
+    
+    private Map<String, String> buildNetworkAuthHeaders() {
+        // Simulate authentication header building
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Authorization", "Bearer mock-token");
+        headers.put("Content-Type", "application/json");
+        return headers;
+    }
+    
+    private CompletableFuture<NetworkResponse> submitToNetworkAsync(Map<String, Object> payload,
+                                                                   Map<String, String> headers) {
+        // Simulate asynchronous network submission
+        return CompletableFuture.supplyAsync(() -> {
+            NetworkResponse response = new NetworkResponse();
+            response.setSuccessful(true);
+            response.setTransactionId("NTX-" + System.currentTimeMillis());
+            response.setTimestamp(LocalDateTime.now());
+            return response;
+        });
+    }
+    
+    private void recordNetworkSubmission(String chargebackId, String transactionId, LocalDateTime timestamp) {
+        // Simulate network submission recording
+        logger.info("Network submission recorded: {} -> {}", chargebackId, transactionId);
+    }
+    
+    private void recordNetworkSubmissionFailure(String chargebackId, String errorCode, String errorMessage) {
+        // Simulate network submission failure recording
+        logger.error("Network submission failed for {}: {} - {}", chargebackId, errorCode, errorMessage);
+    }
+    
+    private void recordNetworkSubmissionException(String chargebackId, Exception e) {
+        // Simulate network submission exception recording
+        logger.error("Network submission exception for {}: {}", chargebackId, e.getMessage());
+    }
+    
+    private List<String> extractRepresentmentDocuments(Map<String, Object> representmentData) {
+        // Simulate document extraction from representment data
+        @SuppressWarnings("unchecked")
+        List<String> documents = (List<String>) representmentData.get("documents");
+        return documents != null ? documents : new ArrayList<>();
+    }
+    
+    private DocumentValidationResult validateRepresentmentDocuments(List<String> documents, String reasonCode) {
+        // Simulate representment document validation
+        DocumentValidationResult result = new DocumentValidationResult();
+        result.setValid(!documents.isEmpty());
+        return result;
+    }
+    
+    private RepresentmentAnalysis analyzeRepresentmentStrength(ChargebackRecord record,
+                                                             Map<String, Object> representmentData) {
+        // Simulate representment strength analysis
+        RepresentmentAnalysis analysis = new RepresentmentAnalysis();
+        analysis.setStrength("MODERATE");
+        analysis.setConfidenceScore(new BigDecimal("65.00"));
+        return analysis;
+    }
+    
+    private RepresentmentRecommendation determineRepresentmentRecommendation(RepresentmentAnalysis analysis,
+                                                                           DocumentValidationResult docValidation,
+                                                                           ChargebackRecord record) {
+        // Simulate representment recommendation determination
+        RepresentmentRecommendation recommendation = new RepresentmentRecommendation();
+        recommendation.setRecommendationType("ACCEPT");
+        recommendation.setReasoning("Strong evidence provided");
+        return recommendation;
+    }
+    
+    private BigDecimal calculatePotentialLiabilityShift(BigDecimal amount, String recommendationType) {
+        // Simulate potential liability shift calculation
+        return "ACCEPT".equals(recommendationType) ? amount : BigDecimal.ZERO;
+    }
+    
+    private void updateChargebackWithRepresentment(String chargebackId, RepresentmentResult result) {
+        // Simulate updating chargeback with representment data
+    }
+    
+    private void logRepresentmentProcessing(String chargebackId, RepresentmentResult result) {
+        // Simulate representment processing logging
+        logger.info("Representment processed for {}: recommendation = {}", 
+                   chargebackId, result.getRecommendation().getRecommendationType());
+    }
+    
+    private BigDecimal getSettlementPercentage(String chargebackId) {
+        // Simulate settlement percentage lookup
+        return new BigDecimal("75.00");
+    }
+    
+    private BigDecimal getPreArbitrationSettlement(String chargebackId) {
+        // Simulate pre-arbitration settlement lookup
+        return new BigDecimal("500.00");
+    }
+    
+    private BigDecimal applyNetworkLiabilityAdjustments(BigDecimal liabilityShift, String cardNetwork) {
+        // Simulate network-specific liability adjustments
+        return liabilityShift;
+    }
+    
+    private void recordLiabilityShiftCalculation(String chargebackId, String outcomeType, BigDecimal liabilityShift) {
+        // Simulate liability shift calculation recording
+        logger.info("Liability shift recorded for {}: {} = {}", chargebackId, outcomeType, liabilityShift);
+    }
+    
+    private String generateReportId() {
+        // Simulate report ID generation
+        return "RPT-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+    }
+    
+    private List<ChargebackRecord> getChargebacksInDateRange(DateRange dateRange, Map<String, Object> filters) {
+        // Simulate chargeback retrieval for date range
+        return new ArrayList<>();
+    }
+    
+    private ChargebackReport generateComplianceReport(List<ChargebackRecord> chargebacks, DateRange dateRange) {
+        // Simulate compliance report generation
+        ChargebackReport report = new ChargebackReport();
+        report.setReportType("COMPLIANCE");
+        return report;
+    }
+    
+    private ChargebackReport generateAuditReport(List<ChargebackRecord> chargebacks, DateRange dateRange) {
+        // Simulate audit report generation
+        ChargebackReport report = new ChargebackReport();
+        report.setReportType("AUDIT");
+        return report;
+    }
+    
+    private ChargebackReport generateSummaryReport(List<ChargebackRecord> chargebacks, DateRange dateRange) {
+        // Simulate summary report generation
+        ChargebackReport report = new ChargebackReport();
+        report.setReportType("SUMMARY");
+        report.setDateRange(dateRange);
+        report.setGeneratedTimestamp(LocalDateTime.now());
+        report.setReportId("RPT-SUMMARY-" + System.nanoTime());
+        return report;
+    }
+    
+    private ChargebackReport generateDetailedReport(List<ChargebackRecord> chargebacks, DateRange dateRange,
+                                                   Map<String, Object> filters) {
+        // Simulate detailed report generation
+        ChargebackReport report = new ChargebackReport();
+        report.setReportType("DETAILED");
+        return report;
+    }
+    
+    private ChargebackReport generateFinancialReport(List<ChargebackRecord> chargebacks, DateRange dateRange) {
+        // Simulate financial report generation
+        ChargebackReport report = new ChargebackReport();
+        report.setReportType("FINANCIAL");
+        return report;
+    }
+    
+    private void addCommonReportMetrics(ChargebackReport report, List<ChargebackRecord> chargebacks) {
+        // Simulate adding common report metrics
+        Map<String, Object> metrics = new HashMap<>();
+        metrics.put("totalChargebacks", chargebacks.size());
+        metrics.put("totalAmount", chargebacks.stream()
+                   .map(ChargebackRecord::getAmount)
+                   .reduce(BigDecimal.ZERO, BigDecimal::add));
+        report.setReportData(metrics);
+    }
+    
+    private void formatReport(ChargebackReport report, String reportType) {
+        // Simulate report formatting
+    }
+    
+    private void saveReport(ChargebackReport report) {
+        // Simulate report saving
+        logger.info("Report saved: {}", report.getReportId());
+    }
 }
