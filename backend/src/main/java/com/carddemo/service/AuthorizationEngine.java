@@ -74,6 +74,14 @@ public class AuthorizationEngine {
      */
     @PreAuthorize("hasRole('TRANSACTION_PROCESSOR') or hasRole('SYSTEM_USER')")
     public AuthorizationResult authorizeTransaction(AuthorizationRequest authRequest) {
+        // Handle null request first
+        if (authRequest == null) {
+            log.warn("Null authorization request received");
+            AuthorizationRequest emptyRequest = new AuthorizationRequest();
+            emptyRequest.setTransactionId("NULL_REQUEST");
+            return createDeclineResult(emptyRequest, "INVALID_REQUEST", "Authorization request cannot be null");
+        }
+        
         log.info("Processing authorization request for card: {} amount: {}", 
                  maskCardNumber(authRequest.getCardNumber()), authRequest.getAmount());
         
