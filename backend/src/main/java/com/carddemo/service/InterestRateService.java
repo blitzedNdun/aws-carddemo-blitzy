@@ -534,6 +534,7 @@ public class InterestRateService {
                     updatedAccounts.add(accountId);
                     logger.debug("Updated rate for account {} in group {}", accountId, accountGroupId);
                 } else {
+                    @SuppressWarnings("unchecked")
                     List<String> validationErrors = (List<String>) validation.get("validationErrors");
                     errors.add("Account " + accountId + ": " + String.join(", ", validationErrors));
                 }
