@@ -91,7 +91,7 @@ public class SMSProvider {
     private int bulkBatchSize;
     
     // Constants for SMS validation and processing
-    private static final Pattern PHONE_PATTERN = Pattern.compile("^\\+?1?[2-9]\\d{2}[2-9]\\d{2}\\d{4}$");
+    private static final Pattern PHONE_PATTERN = Pattern.compile("^\\+?1?[2-9]\\d{2}[0-9]\\d{6}$");
     private static final Pattern TEMPLATE_VARIABLE_PATTERN = Pattern.compile("\\{\\{([^}]+)\\}\\}");
     private static final String SMS_STATUS_QUEUED = "queued";
     private static final String SMS_STATUS_SENT = "sent";
@@ -121,10 +121,7 @@ public class SMSProvider {
      * @throws SMSDeliveryException if message delivery fails after all retry attempts
      */
     public SMSResponse sendSMS(String phoneNumber, String messageContent) {
-        logger.info("Initiating SMS send request to phone: {} with message length: {}", 
-                   maskPhoneNumber(phoneNumber), messageContent.length());
-        
-        // Validate input parameters
+        // Validate input parameters first
         if (!validatePhoneNumber(phoneNumber)) {
             logger.error("Invalid phone number format provided: {}", maskPhoneNumber(phoneNumber));
             throw new IllegalArgumentException("Invalid phone number format: " + maskPhoneNumber(phoneNumber));
@@ -134,6 +131,9 @@ public class SMSProvider {
             logger.error("Empty or null message content provided for phone: {}", maskPhoneNumber(phoneNumber));
             throw new IllegalArgumentException("Message content cannot be empty");
         }
+        
+        logger.info("Initiating SMS send request to phone: {} with message length: {}", 
+                   maskPhoneNumber(phoneNumber), messageContent.length());
         
         if (messageContent.length() > messageMaxLength) {
             logger.error("Message length {} exceeds maximum allowed length {} for phone: {}", 
@@ -188,13 +188,19 @@ public class SMSProvider {
      * @throws SMSDeliveryException if message delivery fails after all retry attempts
      */
     public SMSResponse sendTemplateSMS(String phoneNumber, String templateName, Map<String, String> variables) {
-        logger.info("Initiating template SMS send - Phone: {}, Template: {}, Variables: {}", 
-                   maskPhoneNumber(phoneNumber), templateName, variables.keySet());
-        
-        // Validate phone number
+        // Validate phone number first
         if (!validatePhoneNumber(phoneNumber)) {
             logger.error("Invalid phone number format provided for template SMS: {}", maskPhoneNumber(phoneNumber));
             throw new IllegalArgumentException("Invalid phone number format: " + maskPhoneNumber(phoneNumber));
+        }
+        
+        // Safe logging with null check for variables
+        if (variables != null) {
+            logger.info("Initiating template SMS send - Phone: {}, Template: {}, Variables: {}", 
+                       maskPhoneNumber(phoneNumber), templateName, variables.keySet());
+        } else {
+            logger.info("Initiating template SMS send - Phone: {}, Template: {}, Variables: []", 
+                       maskPhoneNumber(phoneNumber), templateName);
         }
         
         // Check opt-out status
@@ -247,10 +253,7 @@ public class SMSProvider {
      * @throws SMSDeliveryException if bulk processing fails catastrophically
      */
     public BulkSMSResponse sendBulkSMS(List<String> recipients, String messageContent) {
-        logger.info("Initiating bulk SMS send - Recipients: {}, Message length: {}", 
-                   recipients.size(), messageContent.length());
-        
-        // Validate input parameters
+        // Validate input parameters first
         if (recipients == null || recipients.isEmpty()) {
             logger.error("Empty or null recipients list provided for bulk SMS");
             throw new IllegalArgumentException("Recipients list cannot be empty");
@@ -260,6 +263,9 @@ public class SMSProvider {
             logger.error("Empty or null message content provided for bulk SMS");
             throw new IllegalArgumentException("Message content cannot be empty");
         }
+        
+        logger.info("Initiating bulk SMS send - Recipients: {}, Message length: {}", 
+                   recipients.size(), messageContent.length());
         
         if (messageContent.length() > messageMaxLength) {
             logger.error("Bulk SMS message length {} exceeds maximum allowed length {}", 
@@ -403,21 +409,46 @@ public class SMSProvider {
         // Clean phone number by removing common formatting characters
         String cleanedNumber = phoneNumber.replaceAll("[\\s().-]", "");
         
-        // Remove country code prefix if present
-        if (cleanedNumber.startsWith("+1")) {
-            cleanedNumber = cleanedNumber.substring(2);
-        } else if (cleanedNumber.startsWith("1") && cleanedNumber.length() == 11) {
-            cleanedNumber = cleanedNumber.substring(1);
+        // Validate E.164 format directly (+1234567890)
+        if (cleanedNumber.startsWith("+1") && cleanedNumber.length() == 12) {
+            String digits = cleanedNumber.substring(2);
+            // Area code: [2-9][0-9][0-9], Exchange: [0-9][0-9][0-9] except 111, Number: [0-9][0-9][0-9][0-9]
+            boolean isValid = digits.matches("[2-9][0-9]{2}[0-9]{3}[0-9]{4}") && !isInvalidExchange(digits.substring(3, 6));
+            logger.debug("Phone number validation - Input: {}, E.164 format, Valid: {}", 
+                        maskPhoneNumber(phoneNumber), isValid);
+            return isValid;
         }
         
-        // Validate against pattern
-        boolean isValid = PHONE_PATTERN.matcher("+" + cleanedNumber).matches() || 
-                         PHONE_PATTERN.matcher(cleanedNumber).matches();
+        // Validate 11-digit format (1234567890)
+        if (cleanedNumber.startsWith("1") && cleanedNumber.length() == 11) {
+            String digits = cleanedNumber.substring(1);
+            boolean isValid = digits.matches("[2-9][0-9]{2}[0-9]{3}[0-9]{4}") && !isInvalidExchange(digits.substring(3, 6));
+            logger.debug("Phone number validation - Input: {}, 11-digit format, Valid: {}", 
+                        maskPhoneNumber(phoneNumber), isValid);
+            return isValid;
+        }
         
-        logger.debug("Phone number validation - Input: {}, Cleaned: {}, Valid: {}", 
-                    maskPhoneNumber(phoneNumber), maskPhoneNumber(cleanedNumber), isValid);
+        // Validate 10-digit format (234567890)
+        if (cleanedNumber.length() == 10) {
+            boolean isValid = cleanedNumber.matches("[2-9][0-9]{2}[0-9]{3}[0-9]{4}") && !isInvalidExchange(cleanedNumber.substring(3, 6));
+            logger.debug("Phone number validation - Input: {}, 10-digit format, Valid: {}", 
+                        maskPhoneNumber(phoneNumber), isValid);
+            return isValid;
+        }
         
-        return isValid;
+        logger.debug("Phone number validation - Input: {}, Invalid format", 
+                    maskPhoneNumber(phoneNumber));
+        return false;
+    }
+    
+    /**
+     * Check if the exchange code is invalid
+     * @param exchange the 3-digit exchange code
+     * @return true if the exchange is invalid
+     */
+    private boolean isInvalidExchange(String exchange) {
+        // Common invalid exchange codes
+        return "111".equals(exchange) || "000".equals(exchange);
     }
     
     /**
