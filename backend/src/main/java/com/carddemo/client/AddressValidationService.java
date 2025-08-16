@@ -162,8 +162,10 @@ public class AddressValidationService {
 
         } catch (Exception e) {
             logger.error("Error during address validation: {}", e.getMessage(), e);
-            result.setValid(false);
-            result.addValidationError("Address validation service error: " + e.getMessage());
+            // On error, fall back to local validation instead of marking as invalid
+            result = performLocalValidation(addressLine1, addressLine2, addressLine3, 
+                                          city, state, zipCode, countryCode);
+            result.addValidationError("External validation failed, using local validation: " + e.getMessage());
         }
 
         return result;
