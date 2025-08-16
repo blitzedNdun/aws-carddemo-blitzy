@@ -43,7 +43,7 @@ public interface InterestRateRepository extends JpaRepository<InterestRate, Long
      * @param endDate the end date for the range query
      * @return list of active interest rates within the date range
      */
-    @Query("SELECT ir FROM InterestRate ir WHERE ir.effectiveDate <= :endDate AND ir.expirationDate >= :startDate")
+    @Query("SELECT ir FROM InterestRate ir WHERE ir.effectiveDate <= :endDate AND (ir.expirationDate IS NULL OR ir.expirationDate >= :startDate)")
     List<InterestRate> findActiveRatesByDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     /**
@@ -52,7 +52,7 @@ public interface InterestRateRepository extends JpaRepository<InterestRate, Long
      * 
      * @return list of promotional interest rates
      */
-    @Query("SELECT ir FROM InterestRate ir WHERE ir.isPromotional = true AND ir.expirationDate >= CURRENT_DATE")
+    @Query("SELECT ir FROM InterestRate ir WHERE ir.promotionalRate IS NOT NULL AND ir.expirationDate >= CURRENT_DATE")
     List<InterestRate> findPromotionalRates();
 
     /**
@@ -101,11 +101,11 @@ public interface InterestRateRepository extends JpaRepository<InterestRate, Long
     @Query("SELECT ir FROM InterestRate ir WHERE ir.accountGroupId = :accountGroupId " +
            "AND ir.transactionTypeCode = :transactionTypeCode " +
            "AND ir.transactionCategoryCode = :transactionCategoryCode " +
-           "AND ir.effectiveDate <= :currentDate AND ir.expirationDate >= :currentDate " +
+           "AND ir.effectiveDate <= :currentDate AND (ir.expirationDate IS NULL OR ir.expirationDate >= :currentDate) " +
            "ORDER BY ir.effectiveDate DESC")
     Optional<InterestRate> findCurrentRate(@Param("accountGroupId") String accountGroupId,
                                          @Param("transactionTypeCode") String transactionTypeCode,
-                                         @Param("transactionCategoryCode") String transactionCategoryCode,
+                                         @Param("transactionCategoryCode") Integer transactionCategoryCode,
                                          @Param("currentDate") LocalDate currentDate);
 
     /**
@@ -120,10 +120,10 @@ public interface InterestRateRepository extends JpaRepository<InterestRate, Long
     @Query("SELECT ir FROM InterestRate ir WHERE ir.accountGroupId = 'DEFAULT' " +
            "AND ir.transactionTypeCode = :transactionTypeCode " +
            "AND ir.transactionCategoryCode = :transactionCategoryCode " +
-           "AND ir.effectiveDate <= :currentDate AND ir.expirationDate >= :currentDate " +
+           "AND ir.effectiveDate <= :currentDate AND (ir.expirationDate IS NULL OR ir.expirationDate >= :currentDate) " +
            "ORDER BY ir.effectiveDate DESC")
     Optional<InterestRate> findDefaultRate(@Param("transactionTypeCode") String transactionTypeCode,
-                                         @Param("transactionCategoryCode") String transactionCategoryCode,
+                                         @Param("transactionCategoryCode") Integer transactionCategoryCode,
                                          @Param("currentDate") LocalDate currentDate);
 
     /**
@@ -133,7 +133,7 @@ public interface InterestRateRepository extends JpaRepository<InterestRate, Long
      * @param transactionCategoryCode the transaction category code
      * @return list of interest rates for the specified transaction category
      */
-    List<InterestRate> findByTransactionCategoryCode(String transactionCategoryCode);
+    List<InterestRate> findByTransactionCategoryCode(Integer transactionCategoryCode);
 
     /**
      * Find all active interest rates as of a specific date.
@@ -142,7 +142,7 @@ public interface InterestRateRepository extends JpaRepository<InterestRate, Long
      * @param asOfDate the date to check for rate validity
      * @return list of all active interest rates
      */
-    @Query("SELECT ir FROM InterestRate ir WHERE ir.effectiveDate <= :asOfDate AND ir.expirationDate >= :asOfDate")
+    @Query("SELECT ir FROM InterestRate ir WHERE ir.effectiveDate <= :asOfDate AND (ir.expirationDate IS NULL OR ir.expirationDate >= :asOfDate)")
     List<InterestRate> findAllActiveRates(@Param("asOfDate") LocalDate asOfDate);
 
     /**
@@ -153,7 +153,7 @@ public interface InterestRateRepository extends JpaRepository<InterestRate, Long
      * @param maxRate the maximum interest rate
      * @return list of interest rates within the specified range
      */
-    @Query("SELECT ir FROM InterestRate ir WHERE ir.interestRate >= :minRate AND ir.interestRate <= :maxRate")
+    @Query("SELECT ir FROM InterestRate ir WHERE ir.currentApr >= :minRate AND ir.currentApr <= :maxRate")
     List<InterestRate> findByRateRange(@Param("minRate") BigDecimal minRate, @Param("maxRate") BigDecimal maxRate);
 
     /**
@@ -168,8 +168,8 @@ public interface InterestRateRepository extends JpaRepository<InterestRate, Long
     @Query("SELECT ir FROM InterestRate ir WHERE ir.accountGroupId = :accountGroupId " +
            "AND ir.transactionTypeCode = :transactionTypeCode " +
            "AND ir.transactionCategoryCode = :transactionCategoryCode " +
-           "ORDER BY ir.effectiveDate DESC, ir.createdDate DESC")
+           "ORDER BY ir.effectiveDate DESC")
     Optional<InterestRate> findMostRecentRate(@Param("accountGroupId") String accountGroupId,
                                             @Param("transactionTypeCode") String transactionTypeCode,
-                                            @Param("transactionCategoryCode") String transactionCategoryCode);
+                                            @Param("transactionCategoryCode") Integer transactionCategoryCode);
 }
