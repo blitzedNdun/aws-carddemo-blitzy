@@ -130,10 +130,10 @@ public class FileGenerationService {
             List<AccountStatementData> accountDataList, 
             LocalDate statementDate) throws IOException {
         
-        logger.info("Starting fixed-width file generation for {} accounts", accountDataList.size());
-        
-        // Validate input parameters
+        // Validate input parameters first
         validateFileGenerationInputs(outputFilePath, accountDataList, statementDate);
+        
+        logger.info("Starting fixed-width file generation for {} accounts", accountDataList.size());
         
         // Ensure output directory exists
         Path filePath = Paths.get(outputFilePath);
@@ -212,9 +212,7 @@ public class FileGenerationService {
             List<?> dataObjects, 
             CsvExportConfig csvConfig) throws IOException {
         
-        logger.info("Starting CSV report generation for {} records", dataObjects.size());
-        
-        // Validate inputs
+        // Validate inputs first
         if (outputFilePath == null || outputFilePath.trim().isEmpty()) {
             throw new IllegalArgumentException("Output file path cannot be null or empty");
         }
@@ -224,6 +222,8 @@ public class FileGenerationService {
         if (csvConfig == null) {
             throw new IllegalArgumentException("CSV configuration cannot be null");
         }
+        
+        logger.info("Starting CSV report generation for {} records", dataObjects.size());
         
         Path filePath = Paths.get(outputFilePath);
         Files.createDirectories(filePath.getParent());
@@ -306,10 +306,10 @@ public class FileGenerationService {
             CustomerStatementData statementData, 
             PdfGenerationOptions pdfOptions) throws IOException {
         
-        logger.info("Starting PDF statement generation for account {}", statementData.getAccountNumber());
-        
-        // Validate inputs
+        // Validate inputs first
         validatePdfGenerationInputs(outputFilePath, statementData, pdfOptions);
+        
+        logger.info("Starting PDF statement generation for account {}", statementData.getAccountNumber());
         
         Path filePath = Paths.get(outputFilePath);
         Files.createDirectories(filePath.getParent());
