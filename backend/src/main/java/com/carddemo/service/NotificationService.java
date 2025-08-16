@@ -222,10 +222,13 @@ public class NotificationService {
         logger.debug("Tracking notification history for ID: {} customer: {}", notificationId, customerId);
         
         try {
+            // Validate customer ID
+            String safeCustomerId = customerId != null ? customerId : "UNKNOWN_CUSTOMER";
+            
             // Create notification record
             NotificationRecord record = new NotificationRecord();
             record.setNotificationId(notificationId);
-            record.setCustomerId(customerId);
+            record.setCustomerId(safeCustomerId);
             record.setNotificationType(notificationType);
             record.setSubject(subject);
             record.setMessageBody(messageBody);
@@ -234,11 +237,11 @@ public class NotificationService {
             record.setStatus(STATUS_PENDING);
             
             // Store in notification history
-            notificationHistory.computeIfAbsent(customerId, k -> new ArrayList<>()).add(record);
+            notificationHistory.computeIfAbsent(safeCustomerId, k -> new ArrayList<>()).add(record);
             
             // Log for audit trail
             logger.info("Notification history tracked - ID: {} Type: {} Customer: {} Channels: {}", 
-                       notificationId, notificationType, customerId, deliveryChannels);
+                       notificationId, notificationType, safeCustomerId, deliveryChannels);
             
             return true;
             
@@ -423,6 +426,12 @@ public class NotificationService {
         logger.debug("Retrieving notification preferences for customer: {}", customerId);
         
         try {
+            // Validate customer ID
+            if (customerId == null || customerId.trim().isEmpty()) {
+                logger.warn("Invalid customer ID provided: {}", customerId);
+                return createDefaultPreferences("UNKNOWN_CUSTOMER");
+            }
+            
             // Get preferences from storage (default preferences if not found)
             NotificationPreferences preferences = customerPreferences.get(customerId);
             
@@ -441,7 +450,7 @@ public class NotificationService {
         } catch (Exception e) {
             logger.error("Failed to retrieve notification preferences for customer: {}", customerId, e);
             // Return default preferences to prevent notification failures
-            return createDefaultPreferences(customerId);
+            return createDefaultPreferences(customerId != null ? customerId : "UNKNOWN_CUSTOMER");
         }
     }
 
