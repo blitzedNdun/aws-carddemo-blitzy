@@ -86,39 +86,35 @@ public class FileUtils {
         // Set scale to match COBOL COMP-3 precision
         amount = amount.setScale(decimalPlaces, RoundingMode.HALF_UP);
         
-        // Format the number
-        StringBuilder result = new StringBuilder();
-        
-        // Handle sign
-        if (signDisplay) {
-            if (amount.compareTo(BigDecimal.ZERO) >= 0) {
-                result.append('+');
-            } else {
-                result.append('-');
-                amount = amount.abs();
-            }
-        } else if (amount.compareTo(BigDecimal.ZERO) < 0) {
-            result.append('-');
-            amount = amount.abs();
-        }
+        // Get absolute value for formatting, remember original sign
+        boolean isNegative = amount.compareTo(BigDecimal.ZERO) < 0;
+        BigDecimal absAmount = amount.abs();
         
         // Convert to string without scientific notation
-        String amountStr = amount.toPlainString();
+        String amountStr = absAmount.toPlainString();
         
-        // Remove decimal point for padding calculation
-        String digitsOnly = amountStr.replace(".", "");
-        
-        // Calculate padding needed for total digits
+        // Calculate integer portion digits needed
         int integerDigits = totalDigits - decimalPlaces;
         int currentIntegerDigits = amountStr.indexOf('.') == -1 ? 
             amountStr.length() : amountStr.indexOf('.');
         
-        // Pad with leading zeros if needed
+        // Format the result
+        StringBuilder result = new StringBuilder();
+        
+        // Handle sign
+        if (signDisplay) {
+            result.append(isNegative ? '-' : '+');
+        } else if (isNegative) {
+            result.append('-');
+        }
+        
+        // Add leading zeros for integer part
         int paddingNeeded = integerDigits - currentIntegerDigits;
         for (int i = 0; i < paddingNeeded; i++) {
             result.append(ZERO);
         }
         
+        // Add the formatted amount
         result.append(amountStr);
         
         return result.toString();
@@ -326,7 +322,12 @@ public class FileUtils {
             return true;
         }
         
-        // Check for valid numeric pattern
+        // Check for digits only (most common COBOL numeric format)
+        if (trimmed.matches("^\\d+$")) {
+            return true;
+        }
+        
+        // Check for valid numeric pattern with optional decimal and sign
         return NUMERIC_PATTERN.matcher(trimmed).matches();
     }
 }
