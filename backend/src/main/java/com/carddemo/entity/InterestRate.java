@@ -33,8 +33,6 @@ import java.util.Objects;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString
-@EqualsAndHashCode
 public class InterestRate implements Serializable {
 
     private static final long serialVersionUID = 1L;
