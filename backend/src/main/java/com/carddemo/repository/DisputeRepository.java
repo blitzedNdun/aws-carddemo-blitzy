@@ -1,5 +1,6 @@
 package com.carddemo.repository;
 
+import com.carddemo.entity.Dispute;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -78,7 +79,7 @@ public interface DisputeRepository extends JpaRepository<Dispute, Long> {
      * @param transactionId The transaction ID to search for
      * @return List of disputes linked to the transaction
      */
-    @Query("SELECT d FROM Dispute d WHERE d.transactionId = :transactionId ORDER BY d.disputeDate DESC")
+    @Query("SELECT d FROM Dispute d WHERE d.transactionId = :transactionId ORDER BY d.createdDate DESC")
     List<Dispute> findByTransactionId(@Param("transactionId") Long transactionId);
 
     /**
@@ -89,7 +90,7 @@ public interface DisputeRepository extends JpaRepository<Dispute, Long> {
      * @param pageable Pagination parameters for large result sets
      * @return Page of disputes for the account
      */
-    @Query("SELECT d FROM Dispute d WHERE d.accountId = :accountId ORDER BY d.disputeDate DESC")
+    @Query("SELECT d FROM Dispute d WHERE d.accountId = :accountId ORDER BY d.createdDate DESC")
     Page<Dispute> findByAccountId(@Param("accountId") Long accountId, Pageable pageable);
 
     /**
@@ -98,7 +99,7 @@ public interface DisputeRepository extends JpaRepository<Dispute, Long> {
      * @param accountId The account ID to search for
      * @return List of disputes for the account
      */
-    @Query("SELECT d FROM Dispute d WHERE d.accountId = :accountId ORDER BY d.disputeDate DESC")
+    @Query("SELECT d FROM Dispute d WHERE d.accountId = :accountId ORDER BY d.createdDate DESC")
     List<Dispute> findByAccountId(@Param("accountId") Long accountId);
 
     /**
@@ -108,7 +109,7 @@ public interface DisputeRepository extends JpaRepository<Dispute, Long> {
      * @param status The dispute status to filter by
      * @return List of disputes with matching status
      */
-    @Query("SELECT d FROM Dispute d WHERE d.status = :status ORDER BY d.disputeDate ASC")
+    @Query("SELECT d FROM Dispute d WHERE d.status = :status ORDER BY d.createdDate ASC")
     List<Dispute> findByStatus(@Param("status") String status);
 
     /**
@@ -118,7 +119,7 @@ public interface DisputeRepository extends JpaRepository<Dispute, Long> {
      * @param disputeType The type of dispute to search for
      * @return List of disputes matching the type
      */
-    @Query("SELECT d FROM Dispute d WHERE d.disputeType = :disputeType ORDER BY d.disputeDate DESC")
+    @Query("SELECT d FROM Dispute d WHERE d.disputeType = :disputeType ORDER BY d.createdDate DESC")
     List<Dispute> findByDisputeType(@Param("disputeType") String disputeType);
 
     /**
@@ -129,7 +130,7 @@ public interface DisputeRepository extends JpaRepository<Dispute, Long> {
      * @param endDate The end date of the range (inclusive)
      * @return List of disputes within the date range
      */
-    @Query("SELECT d FROM Dispute d WHERE d.disputeDate BETWEEN :startDate AND :endDate ORDER BY d.disputeDate DESC")
+    @Query("SELECT d FROM Dispute d WHERE d.createdDate BETWEEN :startDate AND :endDate ORDER BY d.createdDate DESC")
     List<Dispute> findByDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     /**
@@ -140,7 +141,7 @@ public interface DisputeRepository extends JpaRepository<Dispute, Long> {
      * @param accountId The account ID to filter by
      * @return List of disputes matching both criteria
      */
-    @Query("SELECT d FROM Dispute d WHERE d.status = :status AND d.accountId = :accountId ORDER BY d.disputeDate DESC")
+    @Query("SELECT d FROM Dispute d WHERE d.status = :status AND d.accountId = :accountId ORDER BY d.createdDate DESC")
     List<Dispute> findByStatusAndAccountId(@Param("status") String status, @Param("accountId") Long accountId);
 
     /**
@@ -171,16 +172,16 @@ public interface DisputeRepository extends JpaRepository<Dispute, Long> {
      * @param pageable Pagination parameters
      * @return Page of disputes with matching status
      */
-    @Query("SELECT d FROM Dispute d WHERE d.status = :status ORDER BY d.disputeDate ASC")
+    @Query("SELECT d FROM Dispute d WHERE d.status = :status ORDER BY d.createdDate ASC")
     Page<Dispute> findByStatus(@Param("status") String status, Pageable pageable);
 
     /**
      * Finds active disputes (non-closed status) for operational management.
      * Supports active dispute queue management and processing prioritization.
      * 
-     * @return List of active disputes ordered by priority
+     * @return List of active disputes ordered by creation date
      */
-    @Query("SELECT d FROM Dispute d WHERE d.status NOT IN ('CLOSED', 'RESOLVED', 'REJECTED') ORDER BY d.priority DESC, d.disputeDate ASC")
+    @Query("SELECT d FROM Dispute d WHERE d.status NOT IN ('CLOSED', 'RESOLVED', 'REJECTED', 'RESOLVED_CUSTOMER', 'RESOLVED_MERCHANT') ORDER BY d.createdDate ASC")
     List<Dispute> findActiveDisputes();
 
     /**
@@ -193,7 +194,7 @@ public interface DisputeRepository extends JpaRepository<Dispute, Long> {
      * @param endDate The end date of the range (inclusive)
      * @return List of disputes matching all criteria
      */
-    @Query("SELECT d FROM Dispute d WHERE d.accountId = :accountId AND d.status = :status AND d.disputeDate BETWEEN :startDate AND :endDate ORDER BY d.disputeDate DESC")
+    @Query("SELECT d FROM Dispute d WHERE d.accountId = :accountId AND d.status = :status AND d.createdDate BETWEEN :startDate AND :endDate ORDER BY d.createdDate DESC")
     List<Dispute> findByAccountIdAndStatusAndDateRange(
         @Param("accountId") Long accountId,
         @Param("status") String status,
@@ -201,25 +202,7 @@ public interface DisputeRepository extends JpaRepository<Dispute, Long> {
         @Param("endDate") LocalDate endDate
     );
 
-    /**
-     * Finds disputes requiring regulatory compliance tracking.
-     * Supports compliance reporting and audit trail requirements.
-     * 
-     * @param complianceFlag The compliance tracking flag
-     * @return List of disputes requiring compliance attention
-     */
-    @Query("SELECT d FROM Dispute d WHERE d.complianceFlag = :complianceFlag ORDER BY d.disputeDate DESC")
-    List<Dispute> findByComplianceFlag(@Param("complianceFlag") boolean complianceFlag);
 
-    /**
-     * Finds high-priority disputes for immediate attention.
-     * Supports priority-based dispute processing and escalation management.
-     * 
-     * @param priorityLevel The minimum priority level
-     * @return List of high-priority disputes ordered by priority and date
-     */
-    @Query("SELECT d FROM Dispute d WHERE d.priority >= :priorityLevel ORDER BY d.priority DESC, d.disputeDate ASC")
-    List<Dispute> findHighPriorityDisputes(@Param("priorityLevel") Integer priorityLevel);
 
     /**
      * Finds disputes by dispute type and status for workflow automation.
@@ -229,7 +212,7 @@ public interface DisputeRepository extends JpaRepository<Dispute, Long> {
      * @param status The dispute status
      * @return List of disputes matching both type and status
      */
-    @Query("SELECT d FROM Dispute d WHERE d.disputeType = :disputeType AND d.status = :status ORDER BY d.disputeDate DESC")
+    @Query("SELECT d FROM Dispute d WHERE d.disputeType = :disputeType AND d.status = :status ORDER BY d.createdDate DESC")
     List<Dispute> findByDisputeTypeAndStatus(@Param("disputeType") String disputeType, @Param("status") String status);
 
     /**
@@ -241,7 +224,7 @@ public interface DisputeRepository extends JpaRepository<Dispute, Long> {
      * @param endDate The end date of the range (inclusive)
      * @return Count of disputes for the account in the date range
      */
-    @Query("SELECT COUNT(d) FROM Dispute d WHERE d.accountId = :accountId AND d.disputeDate BETWEEN :startDate AND :endDate")
+    @Query("SELECT COUNT(d) FROM Dispute d WHERE d.accountId = :accountId AND d.createdDate BETWEEN :startDate AND :endDate")
     Long countByAccountIdAndDateRange(
         @Param("accountId") Long accountId,
         @Param("startDate") LocalDate startDate,
