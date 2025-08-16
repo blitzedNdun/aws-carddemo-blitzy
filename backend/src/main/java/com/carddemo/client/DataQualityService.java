@@ -1143,8 +1143,8 @@ public class DataQualityService {
         String zipCode = getStringValue(customerData, "custAddrZip");
         
         // Check if ZIP code prefix matches state (basic validation)
-        if (stateCode != null && zipCode != null && zipCode.length() >= 5) {
-            String zipPrefix = zipCode.substring(0, 5);
+        if (stateCode != null && zipCode != null && zipCode.length() >= 3) {
+            String zipPrefix = zipCode.substring(0, 3);
             if (!isZipStateConsistent(zipPrefix, stateCode)) {
                 issues.add("ZIP code may not be consistent with state code");
             }
