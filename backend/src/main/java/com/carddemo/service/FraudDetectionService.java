@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -199,7 +200,7 @@ public class FraudDetectionService {
             .reduce(BigDecimal.ZERO, BigDecimal::add);
         
         BigDecimal averageAmount = totalAmount.divide(
-            new BigDecimal(historicalTransactions.size()), 2, BigDecimal.ROUND_HALF_UP);
+            new BigDecimal(historicalTransactions.size()), 2, RoundingMode.HALF_UP);
         
         BigDecimal maxAmount = historicalTransactions.stream()
             .map(TransactionData::getAmount)
@@ -211,7 +212,7 @@ public class FraudDetectionService {
         
         // Calculate deviation score (0-100)
         BigDecimal deviation = transactionAmount.subtract(averageAmount).abs();
-        int deviationScore = deviation.divide(averageAmount.max(BigDecimal.ONE), 2, BigDecimal.ROUND_HALF_UP)
+        int deviationScore = deviation.divide(averageAmount.max(BigDecimal.ONE), 2, RoundingMode.HALF_UP)
                                     .multiply(new BigDecimal(100)).intValue();
         deviationScore = Math.min(deviationScore, 100); // Cap at 100
         
@@ -470,7 +471,7 @@ public class FraudDetectionService {
         
         // Check if amount is significantly higher than average
         if (averageAmount.compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal multiplier = transactionAmount.divide(averageAmount, 2, BigDecimal.ROUND_HALF_UP);
+            BigDecimal multiplier = transactionAmount.divide(averageAmount, 2, RoundingMode.HALF_UP);
             if (multiplier.compareTo(new BigDecimal("5.0")) > 0) {
                 return true;
             }
@@ -478,7 +479,7 @@ public class FraudDetectionService {
         
         // Check if amount exceeds previous maximum by significant margin
         if (maxAmount.compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal multiplier = transactionAmount.divide(maxAmount, 2, BigDecimal.ROUND_HALF_UP);
+            BigDecimal multiplier = transactionAmount.divide(maxAmount, 2, RoundingMode.HALF_UP);
             if (multiplier.compareTo(new BigDecimal("2.0")) > 0) {
                 return true;
             }
