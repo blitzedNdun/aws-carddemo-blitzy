@@ -60,6 +60,18 @@ public final class Constants {
     public static final int TRANSACTION_ID_LENGTH = 16;
 
     /**
+     * Maximum length for transaction type code fields.
+     * Maps to COBOL PIC X(02) specification from CVTRA03Y copybook.
+     */
+    public static final int TYPE_CODE_LENGTH = 2;
+
+    /**
+     * Maximum length for transaction type description fields.
+     * Maps to COBOL PIC X(50) specification from CVTRA03Y copybook.
+     */
+    public static final int DESCRIPTION_LENGTH = 50;
+
+    /**
      * Maximum number of users displayed per page in list views.
      * Matches COBOL screen layout for COUSR00 BMS map supporting 10 users per page.
      */
