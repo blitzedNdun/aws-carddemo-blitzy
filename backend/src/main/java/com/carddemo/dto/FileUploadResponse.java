@@ -169,7 +169,12 @@ public class FileUploadResponse {
      */
     public void setValidationErrors(List<ValidationError> validationErrors) {
         this.validationErrors = validationErrors != null ? new ArrayList<>(validationErrors) : new ArrayList<>();
-        this.errorCount = this.validationErrors.size();
+        // In COBOL batch processing patterns, validation errors are part of total error count
+        // but total error count may include other types of errors beyond validation
+        // So we only sync errorCount with validation errors if no other errors were set
+        if (this.errorCount < this.validationErrors.size()) {
+            this.errorCount = this.validationErrors.size();
+        }
     }
 
     /**
@@ -288,11 +293,10 @@ public class FileUploadResponse {
     public void addValidationError(ValidationError validationError) {
         if (validationError != null) {
             this.validationErrors.add(validationError);
-            this.errorCount = this.validationErrors.size();
-            // If there are validation errors, the upload is considered unsuccessful
-            if (!this.validationErrors.isEmpty()) {
-                this.success = false;
-            }
+            this.errorCount++;
+            // Note: We don't automatically set success=false here to support
+            // COBOL batch processing patterns where overall job can be successful
+            // even with individual record validation errors
         }
     }
 
