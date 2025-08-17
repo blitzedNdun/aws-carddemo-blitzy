@@ -24,9 +24,9 @@ import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Pattern;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
@@ -100,7 +100,7 @@ public class PaymentService {
     @CircuitBreaker(name = "paymentNetworkAuth", fallbackMethod = "authorizePaymentFallback")
     @Retry(name = "paymentNetworkAuth")
     @RateLimiter(name = "paymentNetworkAuth")
-    @Bulkhead(name = "paymentNetworkAuth", type = Bulkhead.Type.THREAD_POOL)
+    @Bulkhead(name = "paymentNetworkAuth", type = Bulkhead.Type.THREADPOOL)
     public PaymentAuthorizationResponse authorizePayment(
             @NotBlank String cardNumber,
             @NotNull BigDecimal amount,
