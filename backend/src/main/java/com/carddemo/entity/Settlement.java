@@ -1,150 +1,130 @@
 package com.carddemo.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
- * JPA entity class representing settlement transaction records for credit card processing.
- * This entity supports the modernized settlement processing system that replaces
- * the legacy COBOL batch program CBTRN02C for transaction posting, reconciliation,
- * and balance management operations.
+ * JPA entity class representing settlement transaction records for payment card processing.
+ * Contains settlement identification, transaction references, merchant information, 
+ * settlement amounts, and processing timestamps. Supports settlement-to-authorization 
+ * matching for reconciliation and chargeback processing workflows.
  * 
- * Settlement processing involves matching authorization transactions with actual
- * payment settlements from merchants, supporting real-time reconciliation and
- * exception processing that was previously handled by mainframe batch jobs.
- * 
- * The entity maps to the PostgreSQL settlements table with appropriate indexing
- * for high-performance queries during batch reconciliation processing.
- * 
- * @author Blitzy agent
- * @version 1.0
- * @since Spring Boot 3.2.x migration from COBOL batch processing
+ * This entity maps to the settlements table in PostgreSQL and maintains COBOL COMP-3 
+ * precision for financial calculations using BigDecimal with scale=2 and HALF_UP rounding.
  */
 @Entity
 @Table(name = "settlements", indexes = {
-    @Index(name = "idx_settlement_transaction_id", columnList = "transaction_id"),
-    @Index(name = "idx_settlement_authorization_id", columnList = "authorization_id"),
-    @Index(name = "idx_settlement_date", columnList = "settlement_date"),
-    @Index(name = "idx_settlement_merchant_date", columnList = "merchant_id, settlement_date"),
-    @Index(name = "idx_settlement_status", columnList = "settlement_status")
+    @Index(name = "settlement_date_idx", columnList = "settlementDate, merchantId"),
+    @Index(name = "settlement_batch_idx", columnList = "batchId"),
+    @Index(name = "settlement_transaction_idx", columnList = "transactionId"),
+    @Index(name = "settlement_authorization_idx", columnList = "authorizationId"),
+    @Index(name = "settlement_merchant_idx", columnList = "merchantId")
 })
 public class Settlement {
 
     /**
-     * Enumeration for settlement status tracking through the settlement lifecycle.
-     * Supports settlement workflow management and exception processing.
+     * Primary key - Settlement transaction identifier
      */
-    public enum SettlementStatus {
-        PENDING,
-        PROCESSED,
-        MATCHED,
-        UNMATCHED,
-        REJECTED,
-        REVERSED
-    }
-
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "settlement_id")
-    private Long id;
+    @Column(name = "settlement_id", nullable = false, precision = 16)
+    private Long settlementId;
 
-    @Column(name = "transaction_id")
+    /**
+     * Reference to the original transaction ID for settlement-transaction matching
+     */
+    @Column(name = "transaction_id", precision = 16)
     private Long transactionId;
 
-    @Size(max = 50, message = "Authorization ID must not exceed 50 characters")
-    @Column(name = "authorization_id", length = 50)
-    private String authorizationId;
+    /**
+     * Reference to the authorization ID for settlement-authorization matching
+     */
+    @Column(name = "authorization_id", precision = 16)
+    private Long authorizationId;
 
-    @NotNull(message = "Settlement date is required")
+    /**
+     * Merchant identifier for settlement grouping and reconciliation
+     */
+    @Column(name = "merchant_id", length = 20)
+    private String merchantId;
+
+    /**
+     * Merchant name for settlement reporting and identification
+     */
+    @Column(name = "merchant_name", length = 50)
+    private String merchantName;
+
+    /**
+     * Settlement amount with COBOL COMP-3 precision (scale=2, HALF_UP rounding)
+     * Maintains exact financial precision for payment processing
+     */
+    @Column(name = "settlement_amount", precision = 12, scale = 2, nullable = false)
+    private BigDecimal settlementAmount;
+
+    /**
+     * Date when the settlement was initiated
+     */
     @Column(name = "settlement_date", nullable = false)
     private LocalDate settlementDate;
 
-    @NotNull(message = "Merchant ID is required")
-    @Size(max = 20, message = "Merchant ID must not exceed 20 characters")
-    @Column(name = "merchant_id", nullable = false, length = 20)
-    private String merchantId;
-
-    @NotNull(message = "Settlement amount is required")
-    @DecimalMin(value = "0.00", message = "Settlement amount must be non-negative")
-    @Digits(integer = 12, fraction = 2, message = "Settlement amount must have at most 12 integer digits and 2 fractional digits")
-    @Column(name = "amount", nullable = false, precision = 14, scale = 2)
-    private BigDecimal amount;
-
-    @NotNull(message = "Settlement status is required")
-    @Enumerated(EnumType.STRING)
-    @Column(name = "settlement_status", nullable = false, length = 20)
-    private SettlementStatus settlementStatus;
-
-    @Size(max = 255, message = "Settlement description must not exceed 255 characters")
-    @Column(name = "settlement_description")
-    private String settlementDescription;
-
-    @Size(max = 50, message = "Settlement reference must not exceed 50 characters")
-    @Column(name = "settlement_reference", length = 50)
-    private String settlementReference;
-
-    @Column(name = "processing_date")
-    private LocalDate processingDate;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @Size(max = 100, message = "Created by must not exceed 100 characters")
-    @Column(name = "created_by", length = 100)
-    private String createdBy;
-
-    @Size(max = 100, message = "Updated by must not exceed 100 characters")
-    @Column(name = "updated_by", length = 100)
-    private String updatedBy;
+    /**
+     * Timestamp when the settlement was processed
+     */
+    @Column(name = "processed_date")
+    private LocalDateTime processedDate;
 
     /**
-     * Default constructor for JPA.
+     * Settlement processing status (PENDING, COMPLETED, FAILED, CANCELLED)
+     */
+    @Column(name = "settlement_status", length = 10, nullable = false)
+    private String settlementStatus;
+
+    /**
+     * Batch identifier for grouping settlements in batch processing
+     */
+    @Column(name = "batch_id", length = 20)
+    private String batchId;
+
+    /**
+     * Acquirer reference number for external reconciliation
+     */
+    @Column(name = "acquirer_reference_number", length = 30)
+    private String acquirerReferenceNumber;
+
+    /**
+     * Default constructor required by JPA
      */
     public Settlement() {
-        this.createdAt = LocalDateTime.now();
-        this.settlementStatus = SettlementStatus.PENDING;
     }
 
     /**
-     * Constructor with required fields for settlement creation.
-     * 
-     * @param merchantId the merchant identifier
-     * @param amount the settlement amount
-     * @param settlementDate the settlement date
+     * Constructor for creating new settlement records
      */
-    public Settlement(String merchantId, BigDecimal amount, LocalDate settlementDate) {
-        this();
+    public Settlement(Long settlementId, Long transactionId, Long authorizationId, 
+                     String merchantId, String merchantName, BigDecimal settlementAmount, 
+                     LocalDate settlementDate, String settlementStatus) {
+        this.settlementId = settlementId;
+        this.transactionId = transactionId;
+        this.authorizationId = authorizationId;
         this.merchantId = merchantId;
-        this.amount = amount;
+        this.merchantName = merchantName;
+        this.settlementAmount = settlementAmount != null ? 
+            settlementAmount.setScale(2, RoundingMode.HALF_UP) : null;
         this.settlementDate = settlementDate;
+        this.settlementStatus = settlementStatus;
     }
 
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+    // Getter and Setter methods
+
+    public Long getSettlementId() {
+        return settlementId;
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    // Getters and Setters
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
+    public void setSettlementId(Long settlementId) {
+        this.settlementId = settlementId;
     }
 
     public Long getTransactionId() {
@@ -155,20 +135,12 @@ public class Settlement {
         this.transactionId = transactionId;
     }
 
-    public String getAuthorizationId() {
+    public Long getAuthorizationId() {
         return authorizationId;
     }
 
-    public void setAuthorizationId(String authorizationId) {
+    public void setAuthorizationId(Long authorizationId) {
         this.authorizationId = authorizationId;
-    }
-
-    public LocalDate getSettlementDate() {
-        return settlementDate;
-    }
-
-    public void setSettlementDate(LocalDate settlementDate) {
-        this.settlementDate = settlementDate;
     }
 
     public String getMerchantId() {
@@ -179,105 +151,185 @@ public class Settlement {
         this.merchantId = merchantId;
     }
 
-    public BigDecimal getAmount() {
-        return amount;
+    public String getMerchantName() {
+        return merchantName;
     }
 
-    public void setAmount(BigDecimal amount) {
-        this.amount = amount;
+    public void setMerchantName(String merchantName) {
+        this.merchantName = merchantName;
     }
 
-    public SettlementStatus getSettlementStatus() {
+    public BigDecimal getSettlementAmount() {
+        return settlementAmount;
+    }
+
+    /**
+     * Sets the settlement amount with COBOL COMP-3 precision preservation
+     * Automatically applies scale=2 and HALF_UP rounding to match COBOL behavior
+     */
+    public void setSettlementAmount(BigDecimal settlementAmount) {
+        if (settlementAmount != null) {
+            // Ensure COBOL COMP-3 precision with scale=2 and HALF_UP rounding
+            this.settlementAmount = settlementAmount.setScale(2, RoundingMode.HALF_UP);
+        } else {
+            this.settlementAmount = null;
+        }
+    }
+
+    public LocalDate getSettlementDate() {
+        return settlementDate;
+    }
+
+    public void setSettlementDate(LocalDate settlementDate) {
+        this.settlementDate = settlementDate;
+    }
+
+    public LocalDateTime getProcessedDate() {
+        return processedDate;
+    }
+
+    public void setProcessedDate(LocalDateTime processedDate) {
+        this.processedDate = processedDate;
+    }
+
+    public String getSettlementStatus() {
         return settlementStatus;
     }
 
-    public void setSettlementStatus(SettlementStatus settlementStatus) {
+    public void setSettlementStatus(String settlementStatus) {
         this.settlementStatus = settlementStatus;
     }
 
-    public String getSettlementDescription() {
-        return settlementDescription;
+    public String getBatchId() {
+        return batchId;
     }
 
-    public void setSettlementDescription(String settlementDescription) {
-        this.settlementDescription = settlementDescription;
+    public void setBatchId(String batchId) {
+        this.batchId = batchId;
     }
 
-    public String getSettlementReference() {
-        return settlementReference;
+    public String getAcquirerReferenceNumber() {
+        return acquirerReferenceNumber;
     }
 
-    public void setSettlementReference(String settlementReference) {
-        this.settlementReference = settlementReference;
+    public void setAcquirerReferenceNumber(String acquirerReferenceNumber) {
+        this.acquirerReferenceNumber = acquirerReferenceNumber;
     }
 
-    public LocalDate getProcessingDate() {
-        return processingDate;
+    // Note: Transaction and Authorization relationships are not implemented 
+    // as those entities are not available in depends_on_files
+    // These methods return null as placeholders for future integration
+    
+    /**
+     * Placeholder for Transaction entity relationship
+     * Returns null until Transaction entity is available
+     */
+    public Object getTransaction() {
+        return null;
     }
 
-    public void setProcessingDate(LocalDate processingDate) {
-        this.processingDate = processingDate;
+    /**
+     * Placeholder for Transaction entity relationship
+     * No operation until Transaction entity is available
+     */
+    public void setTransaction(Object transaction) {
+        // No operation - Transaction entity not available
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+    /**
+     * Placeholder for Authorization entity relationship
+     * Returns null until Authorization entity is available
+     */
+    public Object getAuthorization() {
+        return null;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
+    /**
+     * Placeholder for Authorization entity relationship
+     * No operation until Authorization entity is available
+     */
+    public void setAuthorization(Object authorization) {
+        // No operation - Authorization entity not available
     }
 
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
+    /**
+     * Business method for settlement amount validation
+     * Ensures amount is positive and within valid range
+     */
+    public boolean isValidSettlementAmount() {
+        return settlementAmount != null && 
+               settlementAmount.compareTo(BigDecimal.ZERO) > 0 &&
+               settlementAmount.compareTo(new BigDecimal("999999999.99")) <= 0;
     }
 
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
+    /**
+     * Business method to check if settlement is complete
+     */
+    public boolean isSettlementComplete() {
+        return "COMPLETED".equals(settlementStatus) && processedDate != null;
     }
 
-    public String getCreatedBy() {
-        return createdBy;
+    /**
+     * Business method to create a settlement amount using BigDecimal factory methods
+     * with proper COBOL COMP-3 precision
+     */
+    public static BigDecimal createSettlementAmount(double amount) {
+        return BigDecimal.valueOf(amount).setScale(2, RoundingMode.HALF_UP);
     }
 
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public String getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(String updatedBy) {
-        this.updatedBy = updatedBy;
+    /**
+     * Business method to create a settlement amount from string with validation
+     */
+    public static BigDecimal createSettlementAmount(String amountStr) {
+        if (amountStr == null || amountStr.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return new BigDecimal(amountStr).setScale(2, RoundingMode.HALF_UP);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid settlement amount format: " + amountStr, e);
+        }
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Settlement)) return false;
+        if (o == null || getClass() != o.getClass()) return false;
         Settlement that = (Settlement) o;
-        return Objects.equals(id, that.id) &&
+        return Objects.equals(settlementId, that.settlementId) &&
+               Objects.equals(transactionId, that.transactionId) &&
                Objects.equals(authorizationId, that.authorizationId) &&
                Objects.equals(merchantId, that.merchantId) &&
-               Objects.equals(settlementDate, that.settlementDate);
+               Objects.equals(merchantName, that.merchantName) &&
+               Objects.equals(settlementAmount, that.settlementAmount) &&
+               Objects.equals(settlementDate, that.settlementDate) &&
+               Objects.equals(processedDate, that.processedDate) &&
+               Objects.equals(settlementStatus, that.settlementStatus) &&
+               Objects.equals(batchId, that.batchId) &&
+               Objects.equals(acquirerReferenceNumber, that.acquirerReferenceNumber);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, authorizationId, merchantId, settlementDate);
+        return Objects.hash(settlementId, transactionId, authorizationId, merchantId, 
+                           merchantName, settlementAmount, settlementDate, processedDate, 
+                           settlementStatus, batchId, acquirerReferenceNumber);
     }
 
     @Override
     public String toString() {
         return "Settlement{" +
-               "id=" + id +
+               "settlementId=" + settlementId +
                ", transactionId=" + transactionId +
-               ", authorizationId='" + authorizationId + '\'' +
-               ", settlementDate=" + settlementDate +
+               ", authorizationId=" + authorizationId +
                ", merchantId='" + merchantId + '\'' +
-               ", amount=" + amount +
-               ", settlementStatus=" + settlementStatus +
-               ", createdAt=" + createdAt +
+               ", merchantName='" + merchantName + '\'' +
+               ", settlementAmount=" + settlementAmount +
+               ", settlementDate=" + settlementDate +
+               ", processedDate=" + processedDate +
+               ", settlementStatus='" + settlementStatus + '\'' +
+               ", batchId='" + batchId + '\'' +
+               ", acquirerReferenceNumber='" + acquirerReferenceNumber + '\'' +
                '}';
     }
 }
