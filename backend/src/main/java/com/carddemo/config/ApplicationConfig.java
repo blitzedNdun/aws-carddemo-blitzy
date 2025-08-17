@@ -19,6 +19,10 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.util.List;
 
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.boot.web.client.RestTemplateBuilder;
+
 /**
  * ApplicationConfig - Central configuration class for CardDemo Spring Boot application
  * 
@@ -117,6 +121,24 @@ public class ApplicationConfig {
         configurer.setIgnoreUnresolvablePlaceholders(false);
         configurer.setIgnoreResourceNotFound(false);
         return configurer;
+    }
+
+    /**
+     * RestTemplate bean for HTTP client operations including external API calls.
+     * Configured with appropriate timeouts for address validation services and
+     * other external integrations. This bean is required by AddressValidationService
+     * and other services that make HTTP requests to external systems.
+     * 
+     * @return RestTemplate configured with timeouts and error handling
+     */
+    @Bean
+    public RestTemplate restTemplate() {
+        RestTemplateBuilder builder = new RestTemplateBuilder();
+        
+        return builder
+                .setConnectTimeout(Duration.ofSeconds(5))  // 5 seconds connection timeout
+                .setReadTimeout(Duration.ofSeconds(10))    // 10 seconds read timeout
+                .build();
     }
 
     /**
