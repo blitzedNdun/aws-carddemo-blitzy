@@ -42,7 +42,7 @@ public class AddressValidationService {
     @Value("${address.validation.api.url:https://api.address-validator.com}")
     private String addressValidationApiUrl;
 
-    @Value("${address.validation.api.key}")
+    @Value("${address.validation.api.key:}")
     private String apiKey;
 
     @Value("${address.validation.timeout:5000}")
