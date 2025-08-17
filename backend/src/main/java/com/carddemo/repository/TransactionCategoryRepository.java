@@ -19,6 +19,7 @@
 package com.carddemo.repository;
 
 import com.carddemo.entity.TransactionCategory;
+import com.carddemo.entity.TransactionCategory.TransactionCategoryId;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -54,7 +55,7 @@ import java.util.Optional;
  */
 @Repository
 @Cacheable("transactionCategories")
-public interface TransactionCategoryRepository extends JpaRepository<TransactionCategory, Object> {
+public interface TransactionCategoryRepository extends JpaRepository<TransactionCategory, TransactionCategoryId> {
 
     /**
      * Retrieve all transaction categories by category code.
@@ -165,12 +166,12 @@ public interface TransactionCategoryRepository extends JpaRepository<Transaction
 
     // Inherited standard CRUD operations from JpaRepository:
     // - save(TransactionCategory entity)
-    // - findById(Object id)
+    // - findById(TransactionCategoryId id)
     // - findAll()
     // - delete(TransactionCategory entity)
-    // - deleteById(Object id)
+    // - deleteById(TransactionCategoryId id)
     // - deleteAll()
     // - count()
-    // - existsById(Object id)
+    // - existsById(TransactionCategoryId id)
     // - flush()
 }
