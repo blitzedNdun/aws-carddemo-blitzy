@@ -27,14 +27,7 @@ import java.util.HashMap;
 import lombok.Data;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-/**
- * ResponseStatus enum defines the overall status of an API response
- * Maps to COBOL success/error patterns from CICS transaction processing
- */
-public enum ResponseStatus {
-    SUCCESS,  // Successful operation, equivalent to normal CICS completion
-    ERROR     // Failed operation, equivalent to COBOL ABEND or error condition
-}
+
 
 /**
  * Generic API response wrapper providing standardized response envelope
