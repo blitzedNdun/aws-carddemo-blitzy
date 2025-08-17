@@ -171,7 +171,7 @@ public class SecurityService {
             userSecurity.updateLastLogin();
 
             // Create authentication token with authorities
-            Collection<GrantedAuthority> authorities = userSecurity.getAuthorities();
+            Collection<? extends GrantedAuthority> authorities = userSecurity.getAuthorities();
             Authentication authentication = new UsernamePasswordAuthenticationToken(
                 userDetails, null, authorities);
 
