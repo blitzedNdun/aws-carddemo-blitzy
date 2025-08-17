@@ -140,6 +140,9 @@ public class BmsMessageConverter implements HttpMessageConverter<Object> {
         try (InputStream inputStream = inputMessage.getBody()) {
             JsonNode jsonNode = objectMapper.readTree(inputStream);
             return convertJsonToBmsStructure(jsonNode);
+        } catch (IllegalArgumentException e) {
+            // Re-throw validation errors as-is for better error handling in tests
+            throw e;
         } catch (Exception e) {
             throw new HttpMessageNotReadableException(
                 "Failed to convert JSON to BMS structure: " + e.getMessage(), 
@@ -365,15 +368,22 @@ public class BmsMessageConverter implements HttpMessageConverter<Object> {
         
         String upperFieldName = fieldName.toUpperCase();
         
-        // Check for common numeric field patterns from BMS maps
-        return upperFieldName.contains("AMT") ||     // Amount fields
-               upperFieldName.contains("BAL") ||     // Balance fields  
-               upperFieldName.contains("NUM") ||     // Number fields
-               upperFieldName.contains("ID") ||      // ID fields (account, transaction, etc.)
-               upperFieldName.contains("LIMIT") ||   // Credit limit fields
-               upperFieldName.contains("SCORE") ||   // FICO score fields
-               upperFieldName.contains("RATE") ||    // Interest rate fields
-               upperFieldName.equals("OPTION");      // Menu option field
+        // Check for common numeric field patterns from BMS maps with more precise matching
+        return upperFieldName.contains("AMT") ||       // Amount fields
+               upperFieldName.contains("BAL") ||       // Balance fields  
+               upperFieldName.endsWith("NUM") ||       // Number fields (ending with NUM)
+               upperFieldName.endsWith("ID") ||        // ID fields (ending with ID like accountId, transactionId)
+               upperFieldName.contains("LIMIT") ||     // Credit limit fields
+               upperFieldName.contains("SCORE") ||     // FICO score fields
+               upperFieldName.contains("RATE") ||      // Interest rate fields
+               upperFieldName.equals("OPTION") ||      // Menu option field
+               upperFieldName.matches(".*\\d+.*") ||   // Fields containing digits
+               (upperFieldName.startsWith("ACCOUNT") && upperFieldName.endsWith("ID")) ||
+               (upperFieldName.startsWith("TRANSACTION") && upperFieldName.endsWith("ID")) ||
+               (upperFieldName.startsWith("CARD") && upperFieldName.endsWith("ID")) ||
+               upperFieldName.equals("ACCOUNTID") ||
+               upperFieldName.equals("TRANSACTIONID") ||
+               upperFieldName.equals("CARDID");
     }
 
     /**
