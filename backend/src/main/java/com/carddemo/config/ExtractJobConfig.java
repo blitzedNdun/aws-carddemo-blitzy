@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.sql.DataSource;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
@@ -19,8 +21,8 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.data.JpaItemReader;
-import org.springframework.batch.item.data.builder.JpaItemReaderBuilder;
+import org.springframework.batch.item.database.JdbcCursorItemReader;
+import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
 import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.builder.FlatFileItemWriterBuilder;
 import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
@@ -196,30 +198,44 @@ public class ExtractJobConfig {
     }
 
     /**
-     * JPA-based transaction reader with date range filtering.
+     * JDBC-based transaction reader with date range filtering.
      * 
      * Implements the equivalent of the COBOL sequential read operation
      * with date filtering (TRAN-PROC-TS >= WS-START-DATE AND <= WS-END-DATE).
      * 
-     * @return Configured JpaItemReader
+     * @return Configured JdbcCursorItemReader
      */
     @Bean
     public ItemReader<Object[]> transactionReader() {
-        return new JpaItemReaderBuilder<Object[]>()
+        return new JdbcCursorItemReaderBuilder<Object[]>()
                 .name("transactionReader")
-                .entityManagerFactory(entityManagerFactory)
-                .queryString("""
-                    SELECT t.transactionId, t.accountId, t.cardNumber, t.transactionDate, 
-                           t.amount, t.transactionTypeCode, t.categoryCode, t.merchantName, 
-                           t.source, a.accountNumber, c.firstName, c.lastName
-                    FROM Transaction t 
-                    LEFT JOIN Account a ON t.accountId = a.accountId
-                    LEFT JOIN Customer c ON a.customerId = c.customerId
-                    WHERE t.transactionDate >= :startDate 
-                    AND t.transactionDate <= :endDate
-                    ORDER BY t.cardNumber, t.transactionDate, t.transactionId
+                .dataSource(dataSource)
+                .sql("""
+                    SELECT t.transaction_id, t.account_id, t.card_number, t.transaction_date, 
+                           t.amount, t.transaction_type_code, t.category_code, t.merchant_name, 
+                           t.source, a.account_number, c.first_name, c.last_name
+                    FROM transactions t 
+                    LEFT JOIN accounts a ON t.account_id = a.account_id
+                    LEFT JOIN customers c ON a.customer_id = c.customer_id
+                    WHERE t.transaction_date >= ? 
+                    AND t.transaction_date <= ?
+                    ORDER BY t.card_number, t.transaction_date, t.transaction_id
                     """)
-                .pageSize(chunkSize)
+                .rowMapper((rs, rowNum) -> new Object[] {
+                    rs.getLong("transaction_id"),
+                    rs.getLong("account_id"), 
+                    rs.getString("card_number"),
+                    rs.getDate("transaction_date").toLocalDate(),
+                    rs.getBigDecimal("amount"),
+                    rs.getString("transaction_type_code"),
+                    rs.getString("category_code"),
+                    rs.getString("merchant_name"),
+                    rs.getString("source"),
+                    rs.getString("account_number"),
+                    rs.getString("first_name"),
+                    rs.getString("last_name")
+                })
+                .fetchSize(chunkSize)
                 .saveState(true)
                 .build();
     }
