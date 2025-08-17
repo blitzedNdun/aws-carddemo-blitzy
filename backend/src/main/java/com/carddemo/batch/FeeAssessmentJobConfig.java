@@ -23,6 +23,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Column;
 
 import javax.sql.DataSource;
 import java.math.BigDecimal;
@@ -69,11 +75,11 @@ public class FeeAssessmentJobConfig {
     
     // Fee assessment date parameter (format: YYYY-MM-DD)
     @Value("#{jobParameters['assessmentDate'] ?: T(java.time.LocalDate).now().toString()}")
-    private String assessmentDate;
+    private String assessmentDate = LocalDate.now().toString();
     
     // Fee type filter parameter (e.g., 'MONTHLY', 'ANNUAL', 'OVERDRAFT')
     @Value("#{jobParameters['feeType'] ?: 'MONTHLY'}")
-    private String feeType;
+    private String feeType = "MONTHLY";
 
     /**
      * Main fee assessment job definition.
@@ -441,14 +447,32 @@ public class FeeAssessmentJobConfig {
      * Represents account data required for fee assessment calculations,
      * mirroring the data structures from the COBOL program's working storage.
      */
+    @Entity
+    @Table(name = "account_data")
     public static class FeeAssessmentAccount {
+        @Id
+        @Column(name = "account_id")
         private Long accountId;
+        
+        @Column(name = "card_num")
         private String cardNum;
+        
+        @Column(name = "account_group_cd")
         private String accountGroupId;
+        
+        @Column(name = "current_balance")
         private BigDecimal currentBalance;
+        
+        @Column(name = "monthly_transaction_count")
         private int monthlyTransactionCount;
+        
+        @Column(name = "customer_age")
         private int customerAge;
+        
+        @Column(name = "fee_type")
         private String feeType;
+        
+        @Column(name = "last_fee_assessment_date")
         private LocalDate lastFeeAssessmentDate;
 
         // Getters and setters
@@ -551,7 +575,8 @@ public class FeeAssessmentJobConfig {
      * Defines query methods for retrieving accounts requiring fee assessment.
      * Implementation would be provided by Spring Data JPA.
      */
-    public interface AccountRepository {
+    @Repository
+    public interface AccountRepository extends JpaRepository<FeeAssessmentAccount, Long> {
         /**
          * Find accounts requiring fee assessment based on assessment date and fee type.
          * 
