@@ -299,15 +299,3 @@ public class FileProcessingException extends RuntimeException {
         );
     }
 }
-
-    /**
-     * Gets the underlying cause of this file processing exception.
-     * This method overrides the inherited getCause() to provide enhanced
-     * access to the root cause exception with additional context documentation.
-     * 
-     * @return The underlying Throwable that caused this exception, or null if no cause was set
-     */
-    @Override
-    public Throwable getCause() {
-        return super.getCause();
-    }
