@@ -449,7 +449,8 @@ public final class CobolDataConverter {
                            digitsOnly.substring(decimalPosition);
         } else if (scale > 0) {
             // Pad with leading zeros if necessary
-            decimalString = "0." + String.format("%0" + scale + "s", digitsOnly).replace(' ', '0');
+            String paddedDigits = String.format("%0" + scale + "d", Integer.parseInt(digitsOnly.isEmpty() ? "0" : digitsOnly));
+            decimalString = "0." + paddedDigits;
         } else {
             decimalString = digitsOnly;
         }
