@@ -24,6 +24,7 @@
  */
 package com.carddemo.repository;
 
+import com.carddemo.entity.UserActivity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -326,32 +327,3 @@ public interface UserActivityRepository extends JpaRepository<UserActivity, Long
     }
 }
 
-/**
- * UserActivity entity class representing user activity tracking records.
- * 
- * This entity maps to the user_activity table in PostgreSQL and provides
- * comprehensive tracking of user actions within the CardDemo system.
- * Supports audit trail requirements and administrative reporting needs.
- * 
- * Note: This is a placeholder entity reference. The actual UserActivity entity
- * should be implemented in the com.carddemo.entity package with appropriate
- * JPA annotations, field mappings, and validation constraints.
- * 
- * Expected Entity Structure:
- * - Primary Key: Long id (auto-generated)
- * - User Identity: String userId (foreign key reference)
- * - Activity Classification: String activityType
- * - Temporal Tracking: LocalDateTime activityTimestamp, LocalDate activityDate
- * - Session Metrics: Integer sessionDurationMinutes
- * - Additional Fields: String ipAddress, String userAgent, String description
- * 
- * Database Mapping:
- * - Table: user_activity
- * - Indexes: Composite indexes on (userId, activityDate) and (activityType, activityDate)
- * - Constraints: Not null constraints on required fields
- * - Relationships: Many-to-one relationship with User entity
- */
-class UserActivity {
-    // Placeholder entity class - actual implementation should be in entity package
-    // This reference ensures type safety for repository method signatures
-}
