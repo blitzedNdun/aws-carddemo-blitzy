@@ -577,3 +577,20 @@ function parseDigitCount(segment) {
 
   return 0;
 }
+
+// CommonJS exports for Jest testing compatibility
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    COBOL_DECIMAL_SEPARATORS,
+    COBOL_ROUNDING_MODES,
+    fromComp3,
+    toComp3,
+    formatCurrency,
+    padString,
+    trimString,
+    parseCobolNumber,
+    formatCobolNumber,
+    displayFormat,
+    formatDecimal,
+  };
+}
