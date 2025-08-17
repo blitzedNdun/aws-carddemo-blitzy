@@ -2,10 +2,13 @@ package com.carddemo.batch;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParameter;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
-import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
-import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.step.skip.SkipLimitExceededException;
@@ -17,7 +20,7 @@ import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourc
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JdbcPagingItemReader;
 import org.springframework.batch.item.database.Order;
-import org.springframework.batch.item.database.support.PostgreSqlPagingQueryProvider;
+import org.springframework.batch.item.database.support.PostgresPagingQueryProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -59,10 +62,10 @@ import java.util.Map;
 public class ArchiveJobConfig {
 
     @Autowired
-    private JobBuilderFactory jobBuilderFactory;
+    private JobRepository jobRepository;
 
     @Autowired
-    private StepBuilderFactory stepBuilderFactory;
+    private PlatformTransactionManager transactionManager;
 
     @Autowired
     private DataSource dataSource;
@@ -93,7 +96,7 @@ public class ArchiveJobConfig {
      */
     @Bean
     public Job archivalJob() {
-        return jobBuilderFactory.get("accountArchivalJob")
+        return new JobBuilder("accountArchivalJob", jobRepository)
                 .incrementer(new RunIdIncrementer())
                 .start(archivalStep())
                 .build();
@@ -123,8 +126,8 @@ public class ArchiveJobConfig {
      */
     @Bean
     public Step archivalStep() {
-        return stepBuilderFactory.get("archivalStep")
-                .<AccountArchiveRecord, AccountArchiveRecord>chunk(DEFAULT_CHUNK_SIZE)
+        return new StepBuilder("archivalStep", jobRepository)
+                .<AccountArchiveRecord, AccountArchiveRecord>chunk(DEFAULT_CHUNK_SIZE, transactionManager)
                 .reader(accountArchiveReader())
                 .processor(archivalProcessor())
                 .writer(archiveWriter())
@@ -153,15 +156,15 @@ public class ArchiveJobConfig {
     @Bean
     @StepScope
     public JobParameters getJobParameters() {
-        Map<String, Object> parameters = new HashMap<>();
+        Map<String, JobParameter<?>> parameters = new HashMap<>();
         
         // Calculate default cutoff date based on retention period
         LocalDate cutoffDate = LocalDate.now().minusMonths(DEFAULT_RETENTION_MONTHS);
-        parameters.put("archival.cutoff.date", cutoffDate.toString());
-        parameters.put("retention.months", DEFAULT_RETENTION_MONTHS);
-        parameters.put("chunk.size", DEFAULT_CHUNK_SIZE);
-        parameters.put("dry.run", false);
-        parameters.put("run.date", LocalDate.now().toString());
+        parameters.put("archival.cutoff.date", new JobParameter<>(cutoffDate.toString(), String.class));
+        parameters.put("retention.months", new JobParameter<>(DEFAULT_RETENTION_MONTHS, Integer.class));
+        parameters.put("chunk.size", new JobParameter<>(DEFAULT_CHUNK_SIZE, Integer.class));
+        parameters.put("dry.run", new JobParameter<>(false, Boolean.class));
+        parameters.put("run.date", new JobParameter<>(LocalDate.now().toString(), String.class));
         
         return new JobParameters(parameters);
     }
@@ -196,7 +199,7 @@ public class ArchiveJobConfig {
         reader.setRowMapper(new BeanPropertyRowMapper<>(AccountArchiveRecord.class));
 
         // Configure PostgreSQL-specific paging query provider
-        PostgreSqlPagingQueryProvider queryProvider = new PostgreSqlPagingQueryProvider();
+        PostgresPagingQueryProvider queryProvider = new PostgresPagingQueryProvider();
         queryProvider.setSelectClause("SELECT account_id, customer_id, account_status, " +
                                      "close_date, current_balance, last_transaction_date, " +
                                      "account_type, create_date");
@@ -393,7 +396,7 @@ public class ArchiveJobConfig {
     private static class ArchivalSkipPolicy implements SkipPolicy {
         
         @Override
-        public boolean shouldSkip(Throwable t, int skipCount) throws SkipLimitExceededException {
+        public boolean shouldSkip(Throwable t, long skipCount) throws SkipLimitExceededException {
             // Skip data access exceptions but not business logic errors
             if (t instanceof DataAccessException) {
                 return skipCount < MAX_SKIP_COUNT;
