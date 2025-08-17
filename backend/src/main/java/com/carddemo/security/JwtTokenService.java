@@ -134,10 +134,10 @@ public class JwtTokenService {
             }
             
             // Parse and validate token signature and expiration
-            Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+            Jwts.parser()
+                .verifyWith(getSigningKey())
                 .build()
-                .parseClaimsJws(token);
+                .parseSignedClaims(token);
             
             // Additional validation - check if token is expired
             if (isTokenExpired(token)) {
@@ -209,11 +209,11 @@ public class JwtTokenService {
      */
     public Claims extractClaims(String token) {
         try {
-            return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+            return Jwts.parser()
+                .verifyWith(getSigningKey())
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
         } catch (JwtException e) {
             logger.error("Failed to extract claims from token", e);
             throw new RuntimeException("Invalid JWT token", e);
