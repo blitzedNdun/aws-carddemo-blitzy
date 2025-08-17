@@ -143,6 +143,9 @@ public class CustomerMaintenanceService {
             // Equivalent to COBOL 1000-OPEN-FILES paragraph
             initializeProcessing(result);
             
+            // Update statistics with actual processing parameters
+            result.addStatistic("batchSize", batchSize);
+            
             // Main processing loop - equivalent to COBOL 2000-PROCESS-RECORDS
             processCustomerBatches(batchSize, validateOnly, enableStandardization, customerIdFilter, result);
             
@@ -284,39 +287,50 @@ public class CustomerMaintenanceService {
             
             // Use external address validation service
             AddressValidationService.AddressValidationResult validationResult = 
-                addressValidationService.validateAndStandardizeAddress(addressToValidate);
+                addressValidationService.validateAndStandardizeAddress(
+                    addressToValidate.get("addressLine1"),
+                    addressToValidate.get("addressLine2"),
+                    null, // addressLine3 - not used in current implementation
+                    addressToValidate.get("city"),
+                    addressToValidate.get("state"),
+                    addressToValidate.get("zipCode"),
+                    addressToValidate.get("country"));
             
             if (validationResult.isValid()) {
+                AddressValidationService.Address standardizedAddr = validationResult.getStandardizedAddress();
                 Map<String, Object> standardizedAddress = new HashMap<>();
-                standardizedAddress.put("custAddrLine1", validationResult.getStandardizedAddress().get("addressLine1"));
-                standardizedAddress.put("custAddrLine2", validationResult.getStandardizedAddress().get("addressLine2"));
-                standardizedAddress.put("custAddrCity", validationResult.getStandardizedAddress().get("city"));
-                standardizedAddress.put("custAddrStateCD", validationResult.getStandardizedAddress().get("state"));
-                standardizedAddress.put("custAddrZip", validationResult.getStandardizedAddress().get("zipCode"));
-                standardizedAddress.put("custAddrCountryCD", validationResult.getStandardizedAddress().get("country"));
+                standardizedAddress.put("custAddrLine1", standardizedAddr.getAddressLine1());
+                standardizedAddress.put("custAddrLine2", standardizedAddr.getAddressLine2());
+                standardizedAddress.put("custAddrCity", standardizedAddr.getCity());
+                standardizedAddress.put("custAddrStateCD", standardizedAddr.getState());
+                standardizedAddress.put("custAddrZip", standardizedAddr.getZipCode());
+                standardizedAddress.put("custAddrCountryCD", standardizedAddr.getCountryCode());
                 
                 // Additional validations
                 boolean zipValid = addressValidationService.validateZipCode(
-                    validationResult.getStandardizedAddress().get("zipCode"));
+                    standardizedAddr.getZipCode(), standardizedAddr.getCountryCode());
                 boolean stateValid = addressValidationService.validateState(
-                    validationResult.getStandardizedAddress().get("state"));
+                    standardizedAddr.getState(), standardizedAddr.getCountryCode());
                 boolean deliverable = addressValidationService.isAddressDeliverable(
-                    validationResult.getStandardizedAddress());
+                    standardizedAddr.getAddressLine1(), standardizedAddr.getCity(), 
+                    standardizedAddr.getState(), standardizedAddr.getZipCode(), standardizedAddr.getCountryCode());
                 
                 AddressStandardizationResult result = new AddressStandardizationResult(
                     true, "Address standardization successful", standardizedAddress);
                 result.setZipCodeValid(zipValid);
                 result.setStateCodeValid(stateValid);
                 result.setDeliverable(deliverable);
-                result.setConfidenceScore(validationResult.getConfidenceScore());
+                // Note: Confidence score not available in current AddressValidationResult implementation
+                // result.setConfidenceScore(1.0); // Default high confidence for successful validation
                 
                 logger.debug("Address standardization successful for address: {}", addressLine1);
                 return result;
                 
             } else {
-                logger.warn("Address standardization failed: {}", validationResult.getErrorMessage());
+                String errorMessage = getAddressValidationErrorMessage(validationResult);
+                logger.warn("Address standardization failed: {}", errorMessage);
                 return new AddressStandardizationResult(false, 
-                    "Address standardization failed: " + validationResult.getErrorMessage(), null);
+                    "Address standardization failed: " + errorMessage, null);
             }
             
         } catch (Exception e) {
@@ -992,6 +1006,16 @@ public class CustomerMaintenanceService {
     // ========== UTILITY METHODS ==========
     
     /**
+     * Extract error message from AddressValidationResult
+     */
+    private String getAddressValidationErrorMessage(AddressValidationService.AddressValidationResult result) {
+        if (result.getValidationErrors() != null && !result.getValidationErrors().isEmpty()) {
+            return String.join("; ", result.getValidationErrors());
+        }
+        return "Address validation failed";
+    }
+    
+    /**
      * Safely extract string value from map
      */
     private String getStringValue(Map<String, Object> map, String key) {
@@ -1392,3 +1416,4 @@ public class CustomerMaintenanceService {
             super(message, cause);
         }
     }
+}
