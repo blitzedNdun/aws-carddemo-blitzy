@@ -14,7 +14,7 @@ import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.JdbcPagingItemReader;
 import org.springframework.batch.item.database.PagingQueryProvider;
-import org.springframework.batch.item.database.support.PostgreSqlPagingQueryProvider;
+import org.springframework.batch.item.database.support.PostgresPagingQueryProvider;
 import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
 import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
@@ -238,7 +238,7 @@ public class BalanceReconciliationJobConfig {
         reader.setRowMapper(new BeanPropertyRowMapper<>(AccountBalance.class));
         
         // Configure PostgreSQL-specific paging query
-        PostgreSqlPagingQueryProvider queryProvider = new PostgreSqlPagingQueryProvider();
+        PostgresPagingQueryProvider queryProvider = new PostgresPagingQueryProvider();
         queryProvider.setSelectClause("SELECT a.account_id, a.current_balance, a.active_status as account_status, " +
                                      "a.customer_id, MAX(t.transaction_date) as last_transaction_date");
         queryProvider.setFromClause("FROM account_data a LEFT JOIN transactions t ON a.account_id = t.account_id");
