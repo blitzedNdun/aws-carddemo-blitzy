@@ -1,6 +1,6 @@
 package com.carddemo.security;
 
-import org.springframework.session.data.redis.config.annotation.EnableRedisHttpSession;
+import org.springframework.session.data.redis.config.annotation.web.http.EnableRedisHttpSession;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.session.SessionRepository;
 import org.springframework.session.events.SessionDestroyedEvent;
