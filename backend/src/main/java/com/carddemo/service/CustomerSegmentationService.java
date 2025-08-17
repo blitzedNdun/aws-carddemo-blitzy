@@ -45,9 +45,9 @@ public class CustomerSegmentationService {
     private static final String SEGMENT_INACTIVE = "INACTIVE";
 
     // Risk assessment constants
-    private static final int EXCELLENT_CREDIT_THRESHOLD = 750;
+    private static final int EXCELLENT_CREDIT_THRESHOLD = 800;
     private static final int GOOD_CREDIT_THRESHOLD = 700;
-    private static final int FAIR_CREDIT_THRESHOLD = 650;
+    private static final int FAIR_CREDIT_THRESHOLD = 600;
     private static final int POOR_CREDIT_THRESHOLD = 600;
 
     // Account status thresholds
@@ -87,7 +87,7 @@ public class CustomerSegmentationService {
             // Calculate days since last transaction
             int daysSinceLastTransaction = 0;
             if (lastTransactionDate != null) {
-                daysSinceLastTransaction = Period.between(lastTransactionDate, LocalDate.now()).getDays();
+                daysSinceLastTransaction = (int) java.time.temporal.ChronoUnit.DAYS.between(lastTransactionDate, LocalDate.now());
             }
             
             // Primary segmentation logic preserving COBOL business rules
@@ -97,6 +97,9 @@ public class CustomerSegmentationService {
             logger.info("Customer " + customerId + " classified as: " + segment);
             return segment;
             
+        } catch (IllegalArgumentException e) {
+            logger.severe("Error segmenting customer " + customerId + ": " + e.getMessage());
+            throw e;
         } catch (Exception e) {
             logger.severe("Error segmenting customer " + customerId + ": " + e.getMessage());
             throw new RuntimeException("Customer segmentation failed: " + e.getMessage(), e);
@@ -145,6 +148,9 @@ public class CustomerSegmentationService {
                 return currentSegment;
             }
             
+        } catch (IllegalArgumentException e) {
+            logger.severe("Error updating customer segment for " + customerId + ": " + e.getMessage());
+            throw e;
         } catch (Exception e) {
             logger.severe("Error updating customer segment for " + customerId + ": " + e.getMessage());
             throw new RuntimeException("Customer segment update failed: " + e.getMessage(), e);
@@ -225,6 +231,9 @@ public class CustomerSegmentationService {
             logger.info("Customer " + customerId + " classified as: " + finalClassification);
             return finalClassification;
             
+        } catch (IllegalArgumentException e) {
+            logger.severe("Error classifying customer " + customerId + ": " + e.getMessage());
+            throw e;
         } catch (Exception e) {
             logger.severe("Error classifying customer " + customerId + ": " + e.getMessage());
             throw new RuntimeException("Customer classification failed: " + e.getMessage(), e);
@@ -268,6 +277,9 @@ public class CustomerSegmentationService {
             logger.info("Segment details retrieved for customer: " + customerId);
             return segmentDetails;
             
+        } catch (IllegalArgumentException e) {
+            logger.severe("Error retrieving segment details for customer " + customerId + ": " + e.getMessage());
+            throw e;
         } catch (Exception e) {
             logger.severe("Error retrieving segment details for customer " + customerId + ": " + e.getMessage());
             throw new RuntimeException("Segment details retrieval failed: " + e.getMessage(), e);
@@ -537,23 +549,23 @@ public class CustomerSegmentationService {
         if ("EXCELLENT".equals(creditClassification) && 
             "HIGH_VALUE".equals(valueClassification) &&
             "EXCELLENT_PAYER".equals(paymentClassification)) {
-            return "PREMIUM_CUSTOMER";
+            return SEGMENT_PREMIUM;
         }
         
         // Standard classification criteria
         if (("GOOD".equals(creditClassification) || "EXCELLENT".equals(creditClassification)) &&
             ("MEDIUM_VALUE".equals(valueClassification) || "HIGH_VALUE".equals(valueClassification)) &&
             ("GOOD_PAYER".equals(paymentClassification) || "EXCELLENT_PAYER".equals(paymentClassification))) {
-            return "STANDARD_CUSTOMER";
+            return SEGMENT_STANDARD;
         }
         
         // Risk classification criteria
         if ("POOR".equals(creditClassification) || "POOR_PAYER".equals(paymentClassification)) {
-            return "RISK_CUSTOMER";
+            return SEGMENT_RISK;
         }
         
         // Basic classification default
-        return "BASIC_CUSTOMER";
+        return SEGMENT_BASIC;
     }
 
     // Segment detail helper methods
