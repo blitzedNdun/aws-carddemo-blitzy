@@ -1,26 +1,26 @@
 /**
  * Header Component - Reusable React header that replicates BMS screen header layout
- * 
+ *
  * Replicates the standard BMS screen header layout found in all mapsets (COSGN00, COACTVW, COMEN01).
  * Displays transaction name, program name, current date/time, and screen title.
- * Provides consistent header structure across all 18 React screen components, maintaining 
+ * Provides consistent header structure across all 18 React screen components, maintaining
  * the original 3270 terminal header format with responsive design.
- * 
+ *
  * BMS Header Pattern:
  * Row 1: "Tran:" + TRNNAME (4 chars) + TITLE01 (40 chars) + "Date:" + CURDATE (mm/dd/yy)
  * Row 2: "Prog:" + PGMNAME (8 chars) + TITLE02 (40 chars) + "Time:" + CURTIME (hh:mm:ss)
- * 
+ *
  * Colors: Labels and data in BLUE, titles in YELLOW (matching BMS attributes)
  */
 
-import React, { useState, useEffect } from 'react';
 import { Typography } from '@mui/material';
-import { validateDate } from '../../utils/validation';
+import PropTypes from 'prop-types';
+import { useState, useEffect } from 'react';
 
 /**
  * Header Component Props
  * @param {string} transactionId - Transaction ID (4 characters, maps to TRNNAME)
- * @param {string} programName - Program name (8 characters, maps to PGMNAME) 
+ * @param {string} programName - Program name (8 characters, maps to PGMNAME)
  * @param {string} title - Screen title (spans TITLE01 and TITLE02, up to 80 chars)
  */
 const Header = ({ transactionId = '', programName = '', title = '' }) => {
@@ -34,7 +34,11 @@ const Header = ({ transactionId = '', programName = '', title = '' }) => {
     }, 1000);
 
     // Cleanup timer on component unmount
-    return () => clearInterval(timer);
+    return () => {
+      if (typeof clearInterval !== 'undefined') {
+        clearInterval(timer);
+      }
+    };
   }, []);
 
   /**
@@ -44,7 +48,7 @@ const Header = ({ transactionId = '', programName = '', title = '' }) => {
    */
   const formatDate = (date) => {
     const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0'); 
+    const day = String(date.getDate()).padStart(2, '0');
     const year = String(date.getFullYear()).slice(-2);
     return `${month}/${day}/${year}`;
   };
@@ -61,17 +65,21 @@ const Header = ({ transactionId = '', programName = '', title = '' }) => {
     return `${hours}:${minutes}:${seconds}`;
   };
 
-  // Split title into two lines (40 chars each) to match BMS TITLE01/TITLE02
-  const title1 = title.substring(0, 40);
-  const title2 = title.substring(40, 80);
+  // Safely handle null/undefined props and split title into two lines (40 chars each) to match BMS TITLE01/TITLE02
+  const safeTitle = title || '';
+  const safeTransactionId = transactionId || '';
+  const safeProgramName = programName || '';
+  
+  const title1 = safeTitle.substring(0, 40);
+  const title2 = safeTitle.substring(40, 80);
 
-  // Format current date and time 
+  // Format current date and time
   const formattedDate = formatDate(currentDateTime);
   const formattedTime = formatTime(currentDateTime);
 
   // Truncate/pad fields to match BMS field lengths
-  const displayTransactionId = transactionId.substring(0, 4).padEnd(4, ' ');
-  const displayProgramName = programName.substring(0, 8).padEnd(8, ' ');
+  const displayTransactionId = safeTransactionId.substring(0, 4).padEnd(4, ' ');
+  const displayProgramName = safeProgramName.substring(0, 8).padEnd(8, ' ');
 
   return (
     <div
@@ -110,7 +118,8 @@ const Header = ({ transactionId = '', programName = '', title = '' }) => {
           </Typography>
           <Typography
             variant="body2"
-            component="span" 
+            component="span"
+            data-testid="transaction-id"
             sx={{
               color: '#4FC3F7', // Blue color matching BMS BLUE attribute
               fontFamily: 'monospace',
@@ -128,7 +137,7 @@ const Header = ({ transactionId = '', programName = '', title = '' }) => {
             variant="body2"
             component="span"
             sx={{
-              color: '#FFEB3B', // Yellow color matching BMS YELLOW attribute  
+              color: '#FFEB3B', // Yellow color matching BMS YELLOW attribute
               fontFamily: 'monospace',
               fontSize: 'inherit',
             }}
@@ -144,7 +153,7 @@ const Header = ({ transactionId = '', programName = '', title = '' }) => {
             component="span"
             sx={{
               color: '#4FC3F7', // Blue color matching BMS BLUE attribute
-              fontFamily: 'monospace', 
+              fontFamily: 'monospace',
               fontSize: 'inherit',
               marginRight: '4px',
             }}
@@ -192,9 +201,10 @@ const Header = ({ transactionId = '', programName = '', title = '' }) => {
           <Typography
             variant="body2"
             component="span"
+            data-testid="program-name"
             sx={{
               color: '#4FC3F7', // Blue color matching BMS BLUE attribute
-              fontFamily: 'monospace', 
+              fontFamily: 'monospace',
               fontSize: 'inherit',
               minWidth: '64px', // 8 chars * 8px per char
             }}
@@ -226,7 +236,7 @@ const Header = ({ transactionId = '', programName = '', title = '' }) => {
             sx={{
               color: '#4FC3F7', // Blue color matching BMS BLUE attribute
               fontFamily: 'monospace',
-              fontSize: 'inherit', 
+              fontSize: 'inherit',
               marginRight: '4px',
             }}
           >
@@ -248,6 +258,12 @@ const Header = ({ transactionId = '', programName = '', title = '' }) => {
       </div>
     </div>
   );
+};
+
+Header.propTypes = {
+  transactionId: PropTypes.string,
+  programName: PropTypes.string,
+  title: PropTypes.string,
 };
 
 export default Header;
