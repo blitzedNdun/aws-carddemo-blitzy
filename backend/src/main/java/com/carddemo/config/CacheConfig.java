@@ -85,8 +85,8 @@ public class CacheConfig {
     @Value("${spring.data.redis.database:0}")
     private int redisDatabase;
 
-    @Value("${spring.data.redis.timeout:2000}")
-    private long redisTimeout;
+    @Value("${spring.data.redis.timeout:2000ms}")
+    private Duration redisTimeout;
 
     // Connection pool configuration optimized for financial transaction processing
     @Value("${spring.data.redis.lettuce.pool.max-active:50}")
@@ -98,8 +98,8 @@ public class CacheConfig {
     @Value("${spring.data.redis.lettuce.pool.min-idle:5}")
     private int minIdle;
 
-    @Value("${spring.data.redis.lettuce.pool.max-wait:-1}")
-    private long maxWait;
+    @Value("${spring.data.redis.lettuce.pool.max-wait:-1ms}")
+    private Duration maxWait;
 
     // Cache TTL configurations for different data types
     @Value("${carddemo.cache.session.ttl:30}")
@@ -152,7 +152,7 @@ public class CacheConfig {
         poolConfig.setMaxTotal(maxActive);
         poolConfig.setMaxIdle(maxIdle);
         poolConfig.setMinIdle(minIdle);
-        poolConfig.setMaxWait(Duration.ofMillis(maxWait));
+        poolConfig.setMaxWait(maxWait);
         
         // Enable connection validation for reliability
         poolConfig.setTestOnBorrow(true);
@@ -167,7 +167,7 @@ public class CacheConfig {
         // Lettuce client configuration with pooling
         LettucePoolingClientConfiguration clientConfig = LettucePoolingClientConfiguration.builder()
                 .poolConfig(poolConfig)
-                .commandTimeout(Duration.ofMillis(redisTimeout))
+                .commandTimeout(redisTimeout)
                 .shutdownTimeout(Duration.ofMillis(100))
                 .build();
 
