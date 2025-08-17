@@ -82,7 +82,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
      * @param authorizationId the authorization ID to match against
      * @return List of settlements for the specified authorization
      */
-    List<Settlement> findByAuthorizationId(String authorizationId);
+    List<Settlement> findByAuthorizationId(Long authorizationId);
 
     /**
      * Retrieves settlements within a specific date range for reconciliation processing.
@@ -150,7 +150,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
     List<Settlement> findUnmatchedSettlements();
 
     /**
-     * Finds settlements by amount range for financial analysis and reconciliation.
+     * Finds settlements by settlement amount range for financial analysis and reconciliation.
      * Supports amount-based settlement analysis and exception processing for
      * large-value transactions requiring additional oversight.
      * 
@@ -158,7 +158,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
      * @param maxAmount maximum settlement amount (inclusive)
      * @return List of settlements within the specified amount range
      */
-    List<Settlement> findByAmountBetween(BigDecimal minAmount, BigDecimal maxAmount);
+    List<Settlement> findBySettlementAmountBetween(BigDecimal minAmount, BigDecimal maxAmount);
 
     /**
      * Retrieves settlements for a specific merchant and status combination.
@@ -191,7 +191,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
      * @param endDate the end of the date range (inclusive)
      * @return total settlement amount for the merchant and date range
      */
-    @Query("SELECT COALESCE(SUM(s.amount), 0) FROM Settlement s " +
+    @Query("SELECT COALESCE(SUM(s.settlementAmount), 0) FROM Settlement s " +
            "WHERE s.merchantId = :merchantId " +
            "AND s.settlementDate BETWEEN :startDate AND :endDate")
     BigDecimal sumAmountByMerchantIdAndSettlementDateBetween(
