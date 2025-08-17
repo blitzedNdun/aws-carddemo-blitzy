@@ -243,7 +243,7 @@ public class FeeAssessmentJobConfig {
     public static class FeeAssessmentProcessor implements ItemProcessor<FeeAssessmentAccount, FeeAssessmentResult> {
 
         @Override
-        @Retryable(value = {FeeAssessmentRetryableException.class}, 
+        @Retryable(retryFor = {FeeAssessmentRetryableException.class}, 
                    maxAttempts = 3, 
                    backoff = @Backoff(delay = 1000))
         public FeeAssessmentResult process(FeeAssessmentAccount account) throws Exception {

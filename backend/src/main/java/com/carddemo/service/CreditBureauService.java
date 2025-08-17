@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -294,7 +295,7 @@ public class CreditBureauService {
         // Credit utilization
         BigDecimal creditLimit = (BigDecimal) creditReport.get("totalCreditLimit");
         BigDecimal balance = (BigDecimal) creditReport.get("totalBalance");
-        double utilizationRate = balance.divide(creditLimit, 4, BigDecimal.ROUND_HALF_UP).doubleValue() * 100;
+        double utilizationRate = balance.divide(creditLimit, 4, RoundingMode.HALF_UP).doubleValue() * 100;
         creditReport.put("creditUtilizationRate", utilizationRate);
         
         log.debug("MOCK CREDIT REPORT GENERATED FOR CUSTOMER: {}", customerId);

@@ -28,6 +28,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
@@ -349,14 +350,14 @@ public class StatementGenerationJobConfigB {
         
         // Standard APR rate (configurable in production)
         BigDecimal annualPercentageRate = new BigDecimal("18.99");
-        BigDecimal monthlyRate = annualPercentageRate.divide(new BigDecimal("1200"), 4, BigDecimal.ROUND_HALF_UP);
+        BigDecimal monthlyRate = annualPercentageRate.divide(new BigDecimal("1200"), 4, RoundingMode.HALF_UP);
         
         // Calculate average daily balance
         BigDecimal averageDailyBalance = balance; // Simplified for this implementation
         
         // Calculate finance charge
         BigDecimal financeCharge = averageDailyBalance.multiply(monthlyRate)
-                .setScale(2, BigDecimal.ROUND_HALF_UP);
+                .setScale(2, RoundingMode.HALF_UP);
         
         // Minimum finance charge threshold
         BigDecimal minimumFinanceCharge = new BigDecimal("1.00");
@@ -377,7 +378,7 @@ public class StatementGenerationJobConfigB {
         
         // Minimum payment is typically 2% of balance or $25, whichever is greater
         BigDecimal percentagePayment = totalBalance.multiply(new BigDecimal("0.02"))
-                .setScale(2, BigDecimal.ROUND_HALF_UP);
+                .setScale(2, RoundingMode.HALF_UP);
         
         BigDecimal minimumAmount = new BigDecimal("25.00");
         

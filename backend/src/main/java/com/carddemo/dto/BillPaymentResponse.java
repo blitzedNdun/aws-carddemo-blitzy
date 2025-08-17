@@ -1,6 +1,7 @@
 package com.carddemo.dto;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -87,7 +88,7 @@ public class BillPaymentResponse {
                               String successMessage, String errorMessage, boolean success) {
         this.transactionId = transactionId;
         this.currentBalance = currentBalance != null ? 
-            currentBalance.setScale(2, BigDecimal.ROUND_HALF_UP) : BigDecimal.ZERO.setScale(2);
+            currentBalance.setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(2);
         this.successMessage = successMessage;
         this.errorMessage = errorMessage;
         this.success = success;
@@ -129,7 +130,7 @@ public class BillPaymentResponse {
      */
     public void setCurrentBalance(BigDecimal currentBalance) {
         this.currentBalance = currentBalance != null ? 
-            currentBalance.setScale(2, BigDecimal.ROUND_HALF_UP) : BigDecimal.ZERO.setScale(2);
+            currentBalance.setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(2);
     }
 
     /**

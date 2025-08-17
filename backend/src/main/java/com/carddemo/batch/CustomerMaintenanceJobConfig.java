@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -521,7 +522,7 @@ public class CustomerMaintenanceJobConfig {
             
             // Account utilization impact
             if (customer.getCreditLimit() != null && customer.getCurrentBalance() != null) {
-                BigDecimal utilizationRatio = customer.getCurrentBalance().divide(customer.getCreditLimit(), 4, BigDecimal.ROUND_HALF_UP);
+                BigDecimal utilizationRatio = customer.getCurrentBalance().divide(customer.getCreditLimit(), 4, RoundingMode.HALF_UP);
                 if (utilizationRatio.compareTo(new BigDecimal("0.30")) > 0) {
                     scoreAdjustment -= 15; // High utilization
                 } else if (utilizationRatio.compareTo(new BigDecimal("0.10")) <= 0) {
@@ -626,7 +627,7 @@ public class CustomerMaintenanceJobConfig {
             }
             
             if (customer.getCreditLimit() != null && customer.getCurrentBalance() != null) {
-                BigDecimal utilizationRatio = customer.getCurrentBalance().divide(customer.getCreditLimit(), 4, BigDecimal.ROUND_HALF_UP);
+                BigDecimal utilizationRatio = customer.getCurrentBalance().divide(customer.getCreditLimit(), 4, RoundingMode.HALF_UP);
                 return utilizationRatio.compareTo(new BigDecimal("0.80")) > 0;
             }
             

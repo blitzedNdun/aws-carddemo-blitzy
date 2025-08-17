@@ -28,6 +28,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -317,7 +318,7 @@ public class BalanceReconciliationJobConfig {
                 
                 // For demonstration, return a calculated balance
                 // This preserves COBOL COMP-3 packed decimal precision
-                return new BigDecimal("1000.00").setScale(2, BigDecimal.ROUND_HALF_UP);
+                return new BigDecimal("1000.00").setScale(2, RoundingMode.HALF_UP);
             }
         };
     }
