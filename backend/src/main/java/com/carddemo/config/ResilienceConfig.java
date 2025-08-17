@@ -4,7 +4,9 @@ import com.carddemo.service.PaymentService;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.retry.RetryRegistry;
 import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
-import io.github.resilience4j.micrometer.tagged;
+import io.github.resilience4j.micrometer.tagged.TaggedCircuitBreakerMetrics;
+import io.github.resilience4j.micrometer.tagged.TaggedRetryMetrics;
+import io.github.resilience4j.micrometer.tagged.TaggedRateLimiterMetrics;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -183,9 +185,8 @@ public class ResilienceConfig {
             Retry paymentNetworkAuthRetry = registry.retry("paymentNetworkAuth",
                 RetryConfig.custom()
                     .maxAttempts(DEFAULT_MAX_RETRY_ATTEMPTS)
-                    .waitDuration(DEFAULT_WAIT_DURATION)
-                    .intervalFunction(attempt -> Duration.ofMillis(
-                        DEFAULT_WAIT_DURATION.toMillis() + (attempt * RETRY_DELAY_INCREMENT.toMillis())))
+                    .intervalFunction(attempt -> 
+                        DEFAULT_WAIT_DURATION.toMillis() + (attempt * RETRY_DELAY_INCREMENT.toMillis()))
                     .retryOnException(throwable -> 
                         throwable instanceof java.net.SocketTimeoutException ||
                         throwable instanceof java.net.ConnectException ||
@@ -196,8 +197,7 @@ public class ResilienceConfig {
             Retry paymentProcessingRetry = registry.retry("paymentProcessing",
                 RetryConfig.custom()
                     .maxAttempts(DEFAULT_MAX_RETRY_ATTEMPTS - 1) // Fewer retries for processing
-                    .waitDuration(Duration.ofSeconds(1)) // Longer wait for processing
-                    .intervalFunction(attempt -> Duration.ofSeconds(attempt * 2))
+                    .intervalFunction(attempt -> Duration.ofSeconds(attempt * 2).toMillis())
                     .retryOnException(throwable -> 
                         throwable instanceof java.net.SocketTimeoutException ||
                         throwable instanceof java.net.ConnectException)
@@ -207,8 +207,7 @@ public class ResilienceConfig {
             Retry cardValidationRetry = registry.retry("cardValidation",
                 RetryConfig.custom()
                     .maxAttempts(DEFAULT_MAX_RETRY_ATTEMPTS)
-                    .waitDuration(Duration.ofMillis(300))
-                    .intervalFunction(attempt -> Duration.ofMillis(300 * attempt))
+                    .intervalFunction(attempt -> 300L * attempt)
                     .retryOnException(throwable -> 
                         throwable instanceof java.net.SocketTimeoutException ||
                         throwable instanceof org.springframework.web.client.ResourceAccessException)
@@ -353,7 +352,7 @@ public class ResilienceConfig {
         return RetryConfigCustomizer.of("paymentNetworkAuth", builder -> {
             builder.maxAttempts(DEFAULT_MAX_RETRY_ATTEMPTS)
                    .waitDuration(DEFAULT_WAIT_DURATION)
-                   .intervalFunction(interval -> Duration.ofMillis(interval.toMillis() * 2)) // Exponential backoff
+                   .intervalFunction(attempt -> DEFAULT_WAIT_DURATION.toMillis() * attempt * 2) // Exponential backoff
                    .retryOnException(throwable -> {
                        // Retry on network timeouts and service unavailable errors
                        return throwable instanceof java.net.SocketTimeoutException ||
@@ -403,23 +402,29 @@ public class ResilienceConfig {
      * @param circuitBreakerRegistry The circuit breaker registry
      * @param retryRegistry The retry registry  
      * @param rateLimiterRegistry The rate limiter registry
+     * @return Metrics configuration indicator
      */
     @Bean
-    public void configureMetrics(MeterRegistry meterRegistry,
-                                CircuitBreakerRegistry circuitBreakerRegistry,
-                                RetryRegistry retryRegistry,
-                                RateLimiterRegistry rateLimiterRegistry) {
+    public String resilienceMetricsConfiguration(MeterRegistry meterRegistry,
+                                                CircuitBreakerRegistry circuitBreakerRegistry,
+                                                RetryRegistry retryRegistry,
+                                                RateLimiterRegistry rateLimiterRegistry) {
         
+        if (!metricsEnabled) {
+            logger.info("Metrics collection is disabled - skipping metrics configuration");
+            return "DISABLED";
+        }
+
         logger.info("Configuring comprehensive Resilience4j metrics integration with Micrometer");
         
-        // Configure circuit breaker metrics using tagged utility as specified in external imports
-        tagged.ofCircuitBreakerRegistry(circuitBreakerRegistry).bindTo(meterRegistry);
+        // Configure circuit breaker metrics using TaggedCircuitBreakerMetrics as specified in external imports
+        TaggedCircuitBreakerMetrics.ofCircuitBreakerRegistry(circuitBreakerRegistry).bindTo(meterRegistry);
         
-        // Configure retry metrics using tagged utility as specified in external imports
-        tagged.ofRetryRegistry(retryRegistry).bindTo(meterRegistry);
+        // Configure retry metrics using TaggedRetryMetrics as specified in external imports
+        TaggedRetryMetrics.ofRetryRegistry(retryRegistry).bindTo(meterRegistry);
         
-        // Configure rate limiter metrics using tagged utility as specified in external imports
-        tagged.ofRateLimiterRegistry(rateLimiterRegistry).bindTo(meterRegistry);
+        // Configure rate limiter metrics using TaggedRateLimiterMetrics as specified in external imports
+        TaggedRateLimiterMetrics.ofRateLimiterRegistry(rateLimiterRegistry).bindTo(meterRegistry);
         
         // Create custom gauge for monitoring circuit breaker states
         meterRegistry.gauge("carddemo.resilience.circuit_breakers.total", 
@@ -437,8 +442,7 @@ public class ResilienceConfig {
                    retryRegistry.getAllRetries().size(),
                    rateLimiterRegistry.getAllRateLimiters().size());
         
-        logger.info("ResilienceConfig initialization completed successfully - " +
-                   "All fault tolerance patterns configured for PaymentService external integrations");
+        return "CONFIGURED";
     }
     
     /**
@@ -552,9 +556,9 @@ public class ResilienceConfig {
     private Object createFallbackResponse(String errorCode, String message, String exceptionType) {
         return new Object() {
             public final String status = "DEGRADED";
-            public final String errorCode = errorCode;
-            public final String message = message;
-            public final String exceptionType = exceptionType;
+            public final String code = errorCode;
+            public final String description = message;
+            public final String exception = exceptionType;
             public final long timestamp = System.currentTimeMillis();
             public final String source = "ResilienceConfig";
         };
