@@ -418,7 +418,7 @@ public class StatementDto {
      */
     public BigDecimal getAvailableCredit() {
         if (creditLimit == null || currentBalance == null) {
-            return BigDecimal.ZERO.setScale(2);
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         }
         return creditLimit.subtract(currentBalance).setScale(2, RoundingMode.HALF_UP);
     }
