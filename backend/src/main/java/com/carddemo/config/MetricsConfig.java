@@ -45,6 +45,9 @@ public class MetricsConfig {
 
     @Autowired(required = false)
     private DataSource dataSource;
+    
+    // MeterRegistry will be created by our bean method to avoid circular dependency
+    private MeterRegistry meterRegistry;
 
     // Custom metrics storage for application monitoring
     private final Map<String, Counter> customCounters = new ConcurrentHashMap<>();
@@ -63,6 +66,10 @@ public class MetricsConfig {
         
         // Configure registry with additional settings for production monitoring
         registry.config().commonTags("application", "carddemo");
+        
+        // Store reference and initialize custom metrics
+        this.meterRegistry = registry;
+        initializeCustomTransactionMetrics();
         
         logger.info("Prometheus meter registry configured successfully");
         return registry;
@@ -285,11 +292,13 @@ public class MetricsConfig {
     /**
      * Creates custom business metrics for transaction monitoring.
      * Configures counters and timers for financial transaction tracking.
-     * 
-     * @param meterRegistry the meter registry to register metrics with
+     * Called during bean creation to initialize metrics.
      */
-    @Bean
-    public void customTransactionMetrics(MeterRegistry meterRegistry) {
+    private void initializeCustomTransactionMetrics() {
+        if (meterRegistry == null) {
+            logger.warn("MeterRegistry not available - skipping custom metrics configuration");
+            return;
+        }
         logger.info("Configuring custom transaction metrics");
 
         // Transaction processing counters
