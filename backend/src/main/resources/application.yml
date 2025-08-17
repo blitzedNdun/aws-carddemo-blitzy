@@ -15,7 +15,7 @@ spring:
     active: development
     
   config:
-    import: optional:configserver:
+    import: "optional:configserver:"
     
   # Database Configuration (PostgreSQL 16.x compatible with 15.x)
   datasource:
@@ -152,7 +152,7 @@ spring:
   config:
     activate:
       on-profile: test
-    import: optional:configserver:
+    import: "optional:configserver:"
   cloud:
     config:
       enabled: false
