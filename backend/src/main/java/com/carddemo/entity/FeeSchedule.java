@@ -1,278 +1,338 @@
 package com.carddemo.entity;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Objects;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.validation.constraints.DecimalMax;
+import javax.validation.constraints.DecimalMin;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+
 /**
- * JPA entity representing fee schedule configuration including fee rates, waiver conditions, 
- * and assessment rules. Defines fee calculation parameters for different account types and 
- * fee categories. Supports versioning and effective date ranges for fee schedule changes 
- * and regulatory compliance.
+ * FeeSchedule Entity
  * 
- * This entity replaces VSAM DISCGRP file from the original COBOL system,
- * providing equivalent functionality for fee schedule management and rate lookups.
+ * JPA entity representing fee schedule configuration including fee rates, 
+ * waiver conditions, and assessment rules. Defines fee calculation parameters 
+ * for different account types and fee categories. Supports versioning and 
+ * effective date ranges for fee schedule changes and regulatory compliance.
  * 
- * Based on COBOL programs: CBACT04C (Interest Calculator)
- * Data structure: CVTRA02Y (Disclosure Group Record)
- * 
- * @author CardDemo Development Team
- * @version 1.0
- * @since 2024
+ * This entity supports the fee computation functionality referenced in CBACT04C.cbl
+ * and provides structured fee configuration based on the disclosure group pattern
+ * from CVTRA02Y.cpy.
  */
 @Entity
-@Table(name = "fee_schedules", indexes = {
-    @Index(name = "idx_fee_schedule_type_account", columnList = "fee_type, account_type"),
-    @Index(name = "idx_fee_schedule_effective_date", columnList = "effective_date"),
-    @Index(name = "idx_fee_schedule_account_type", columnList = "account_type"),
-    @Index(name = "idx_fee_schedule_active", columnList = "effective_date, expiration_date")
-})
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Table(name = "fee_schedule")
 public class FeeSchedule {
 
     /**
-     * Primary key for fee schedule record.
-     * Auto-generated Long ID for unique identification.
+     * Fee Type Classification enumeration
+     * Defines the different types of fees that can be configured
      */
+    public enum FeeType {
+        ANNUAL,              // Annual membership fees
+        LATE_PAYMENT,        // Late payment penalties
+        OVER_LIMIT,          // Over credit limit fees
+        FOREIGN_TRANSACTION, // Foreign transaction fees
+        MAINTENANCE          // Account maintenance fees
+    }
+
+    /**
+     * Assessment Frequency enumeration
+     * Defines when and how often fees are assessed
+     */
+    public enum AssessmentFrequency {
+        MONTHLY,        // Monthly assessment
+        ANNUALLY,       // Annual assessment
+        PER_TRANSACTION // Per transaction assessment
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "fee_schedule_id")
     private Long feeScheduleId;
 
-    /**
-     * Fee type code identifying the category of fee.
-     * Examples: ANNUAL, LATE_PAYMENT, OVER_LIMIT, FOREIGN_TRANSACTION, MAINTENANCE
-     * Maps to DIS-TRAN-TYPE-CD from COBOL CVTRA02Y structure.
-     */
     @NotNull
-    @Size(min = 2, max = 20, message = "Fee type must be between 2 and 20 characters")
-    @Column(name = "fee_type", length = 20, nullable = false)
-    private String feeType;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "fee_type", nullable = false, length = 20)
+    private FeeType feeType;
 
-    /**
-     * Account type code for targeted fee application.
-     * Maps to DIS-ACCT-GROUP-ID from COBOL CVTRA02Y structure.
-     * Examples: STANDARD, PREMIUM, REWARDS, STUDENT
-     */
-    @NotNull
-    @Size(min = 1, max = 10, message = "Account type must be between 1 and 10 characters")
-    @Column(name = "account_type", length = 10, nullable = false)
+    @Size(max = 10)
+    @Column(name = "account_type", length = 10)
     private String accountType;
 
-    /**
-     * Fixed fee amount for flat fee assessments.
-     * Uses BigDecimal with scale=2 to preserve COBOL COMP-3 packed decimal precision.
-     * Null if percentage-based fee is used instead.
-     */
-    @DecimalMin(value = "0.00", message = "Fee amount must not be negative")
-    @DecimalMax(value = "9999.99", message = "Fee amount must not exceed 9999.99")
+    @DecimalMin(value = "0.00")
+    @DecimalMax(value = "999999.99")
     @Column(name = "fee_amount", precision = 12, scale = 2)
     private BigDecimal feeAmount;
 
-    /**
-     * Percentage rate for percentage-based fee calculations.
-     * Uses BigDecimal with scale=4 for precise percentage calculations.
-     * Null if fixed amount fee is used instead.
-     */
-    @DecimalMin(value = "0.0000", message = "Fee percentage must not be negative")
-    @DecimalMax(value = "100.0000", message = "Fee percentage must not exceed 100%")
-    @Column(name = "fee_percentage", precision = 8, scale = 4)
+    @DecimalMin(value = "0.00")
+    @DecimalMax(value = "100.00")
+    @Column(name = "fee_percentage", precision = 5, scale = 4)
     private BigDecimal feePercentage;
 
-    /**
-     * Overall fee rate for calculation purposes.
-     * Supports both fixed amounts and percentages in unified field.
-     * Maps to DIS-INT-RATE from COBOL structure (repurposed for fee rates).
-     */
-    @NotNull
-    @DecimalMin(value = "0.00", message = "Fee rate must not be negative")
-    @DecimalMax(value = "9999.99", message = "Fee rate must not exceed 9999.99")
-    @Column(name = "fee_rate", precision = 12, scale = 2, nullable = false)
-    private BigDecimal feeRate;
+    @Size(max = 500)
+    @Column(name = "waiver_conditions", length = 500)
+    private String waiverConditions;
 
-    /**
-     * Minimum balance threshold for fee waiver conditions.
-     * If account balance is above this threshold, fee may be waived.
-     */
-    @DecimalMin(value = "0.00", message = "Minimum balance must not be negative")
-    @Column(name = "minimum_balance", precision = 12, scale = 2)
-    private BigDecimal minimumBalance;
-
-    /**
-     * Date when this fee schedule becomes effective.
-     * Used for fee schedule versioning and historical tracking.
-     */
     @NotNull
     @Column(name = "effective_date", nullable = false)
     private LocalDate effectiveDate;
 
-    /**
-     * Date when this fee schedule expires and is no longer applicable.
-     * Null means no expiration (indefinite validity).
-     */
     @Column(name = "expiration_date")
     private LocalDate expirationDate;
 
-    /**
-     * Flag indicating whether this fee schedule has waiver conditions.
-     * Used for quick filtering of fee schedules with special conditions.
-     */
-    @Builder.Default
-    @Column(name = "has_waiver_conditions", nullable = false)
-    private Boolean hasWaiverConditions = false;
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "assessment_frequency", nullable = false, length = 15)
+    private AssessmentFrequency assessmentFrequency;
+
+    @DecimalMin(value = "0.00")
+    @Column(name = "waiver_threshold", precision = 12, scale = 2)
+    private BigDecimal waiverThreshold;
+
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
+
+    @Size(max = 4)
+    @Column(name = "transaction_category_code", length = 4)
+    private String transactionCategoryCode;
+
+    @Size(max = 2)
+    @Column(name = "transaction_type_code", length = 2)
+    private String transactionTypeCode;
 
     /**
-     * Assessment frequency for recurring fees.
-     * Examples: MONTHLY, ANNUALLY, PER_TRANSACTION
+     * Default constructor
      */
-    @Size(max = 20, message = "Assessment frequency must not exceed 20 characters")
-    @Column(name = "assessment_frequency", length = 20)
-    private String assessmentFrequency;
-
-    /**
-     * Version number for fee schedule versioning and audit tracking.
-     * Supports rollback capabilities and change history.
-     */
-    @Min(value = 1, message = "Version must be at least 1")
-    @Builder.Default
-    @Column(name = "version", nullable = false)
-    private Integer version = 1;
-
-    /**
-     * Textual description of the fee schedule for administrative purposes.
-     */
-    @Size(max = 255, message = "Description must not exceed 255 characters")
-    @Column(name = "description")
-    private String description;
-
-    /**
-     * JSON field for storing additional waiver condition parameters.
-     * Flexible storage for complex waiver rules and thresholds.
-     */
-    @Column(name = "waiver_conditions", columnDefinition = "TEXT")
-    private String waiverConditions;
-
-    /**
-     * Timestamp when the fee schedule record was created.
-     */
-    @Column(name = "created_date", nullable = false, updatable = false)
-    private LocalDate createdDate;
-
-    /**
-     * Timestamp when the fee schedule record was last modified.
-     */
-    @Column(name = "last_modified_date")
-    private LocalDate lastModifiedDate;
-
-    /**
-     * Pre-persist callback to set creation timestamp.
-     */
-    @PrePersist
-    protected void onCreate() {
-        this.createdDate = LocalDate.now();
-        this.lastModifiedDate = LocalDate.now();
+    public FeeSchedule() {
+        this.isActive = true;
+        this.effectiveDate = LocalDate.now();
     }
 
     /**
-     * Pre-update callback to update modification timestamp.
+     * Constructor with required fields
      */
-    @PreUpdate
-    protected void onUpdate() {
-        this.lastModifiedDate = LocalDate.now();
+    public FeeSchedule(FeeType feeType, AssessmentFrequency assessmentFrequency, LocalDate effectiveDate) {
+        this();
+        this.feeType = feeType;
+        this.assessmentFrequency = assessmentFrequency;
+        this.effectiveDate = effectiveDate;
+    }
+
+    // Getters and Setters
+
+    public Long getFeeScheduleId() {
+        return feeScheduleId;
+    }
+
+    public void setFeeScheduleId(Long feeScheduleId) {
+        this.feeScheduleId = feeScheduleId;
+    }
+
+    public FeeType getFeeType() {
+        return feeType;
+    }
+
+    public void setFeeType(FeeType feeType) {
+        this.feeType = feeType;
+    }
+
+    public String getAccountType() {
+        return accountType;
+    }
+
+    public void setAccountType(String accountType) {
+        this.accountType = accountType;
+    }
+
+    public BigDecimal getFeeAmount() {
+        return feeAmount;
+    }
+
+    public void setFeeAmount(BigDecimal feeAmount) {
+        this.feeAmount = feeAmount;
+    }
+
+    public BigDecimal getFeePercentage() {
+        return feePercentage;
+    }
+
+    public void setFeePercentage(BigDecimal feePercentage) {
+        this.feePercentage = feePercentage;
+    }
+
+    public String getWaiverConditions() {
+        return waiverConditions;
+    }
+
+    public void setWaiverConditions(String waiverConditions) {
+        this.waiverConditions = waiverConditions;
+    }
+
+    public LocalDate getEffectiveDate() {
+        return effectiveDate;
+    }
+
+    public void setEffectiveDate(LocalDate effectiveDate) {
+        this.effectiveDate = effectiveDate;
+    }
+
+    public LocalDate getExpirationDate() {
+        return expirationDate;
+    }
+
+    public void setExpirationDate(LocalDate expirationDate) {
+        this.expirationDate = expirationDate;
+    }
+
+    public AssessmentFrequency getAssessmentFrequency() {
+        return assessmentFrequency;
+    }
+
+    public void setAssessmentFrequency(AssessmentFrequency assessmentFrequency) {
+        this.assessmentFrequency = assessmentFrequency;
+    }
+
+    public BigDecimal getWaiverThreshold() {
+        return waiverThreshold;
+    }
+
+    public void setWaiverThreshold(BigDecimal waiverThreshold) {
+        this.waiverThreshold = waiverThreshold;
+    }
+
+    public Boolean getIsActive() {
+        return isActive;
+    }
+
+    public void setIsActive(Boolean isActive) {
+        this.isActive = isActive;
+    }
+
+    public String getTransactionCategoryCode() {
+        return transactionCategoryCode;
+    }
+
+    public void setTransactionCategoryCode(String transactionCategoryCode) {
+        this.transactionCategoryCode = transactionCategoryCode;
+    }
+
+    public String getTransactionTypeCode() {
+        return transactionTypeCode;
+    }
+
+    public void setTransactionTypeCode(String transactionTypeCode) {
+        this.transactionTypeCode = transactionTypeCode;
     }
 
     /**
-     * Determines if this fee schedule is currently active based on effective and expiration dates.
+     * Business logic method to check if this fee schedule is currently active
+     * and within its effective date range.
      * 
-     * @param asOfDate the date to check against (typically current date)
-     * @return true if the fee schedule is active on the given date
+     * @param checkDate The date to check against
+     * @return true if the fee schedule is active and effective on the given date
      */
-    public boolean isActiveAsOf(LocalDate asOfDate) {
-        if (asOfDate == null) {
-            asOfDate = LocalDate.now();
-        }
-        
-        boolean afterEffective = !asOfDate.isBefore(effectiveDate);
-        boolean beforeExpiration = (expirationDate == null) || asOfDate.isBefore(expirationDate);
-        
-        return afterEffective && beforeExpiration;
-    }
-
-    /**
-     * Checks if this fee schedule has expired as of the given date.
-     * 
-     * @param asOfDate the date to check against
-     * @return true if the fee schedule has expired
-     */
-    public boolean isExpiredAsOf(LocalDate asOfDate) {
-        if (expirationDate == null) {
+    public boolean isEffectiveOn(LocalDate checkDate) {
+        if (!Boolean.TRUE.equals(isActive)) {
             return false;
         }
-        return asOfDate.isAfter(expirationDate) || asOfDate.isEqual(expirationDate);
+        
+        if (effectiveDate != null && checkDate.isBefore(effectiveDate)) {
+            return false;
+        }
+        
+        if (expirationDate != null && checkDate.isAfter(expirationDate)) {
+            return false;
+        }
+        
+        return true;
     }
 
     /**
-     * Calculates the applicable fee amount based on the fee schedule configuration.
+     * Business logic method to determine if waiver conditions are met
+     * based on account balance or transaction amount.
      * 
-     * @param baseAmount the base amount for percentage calculations (e.g., transaction amount)
-     * @return the calculated fee amount
+     * @param checkAmount The amount to check against waiver threshold
+     * @return true if fee should be waived based on threshold
+     */
+    public boolean isWaiverApplicable(BigDecimal checkAmount) {
+        if (waiverThreshold == null || checkAmount == null) {
+            return false;
+        }
+        
+        return checkAmount.compareTo(waiverThreshold) >= 0;
+    }
+
+    /**
+     * Calculate the applicable fee amount based on the fee configuration.
+     * Supports both fixed amount and percentage-based fees.
+     * 
+     * @param baseAmount The base amount for percentage calculations
+     * @return The calculated fee amount, or null if no fee applies
      */
     public BigDecimal calculateFeeAmount(BigDecimal baseAmount) {
-        if (baseAmount == null) {
-            baseAmount = BigDecimal.ZERO;
+        // Check if fee is waived
+        if (isWaiverApplicable(baseAmount)) {
+            return BigDecimal.ZERO;
         }
-
-        // If fixed fee amount is specified, use it
+        
+        // Return fixed fee amount if specified
         if (feeAmount != null) {
             return feeAmount;
         }
-
-        // If percentage is specified, calculate percentage of base amount
-        if (feePercentage != null) {
-            return baseAmount.multiply(feePercentage).divide(BigDecimal.valueOf(100), 2, BigDecimal.ROUND_HALF_UP);
+        
+        // Calculate percentage-based fee
+        if (feePercentage != null && baseAmount != null) {
+            return baseAmount.multiply(feePercentage.divide(new BigDecimal("100")))
+                           .setScale(2, BigDecimal.ROUND_HALF_UP);
         }
-
-        // Fall back to fee rate
-        return feeRate;
+        
+        return null;
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        FeeSchedule that = (FeeSchedule) o;
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        
+        FeeSchedule that = (FeeSchedule) obj;
         return Objects.equals(feeScheduleId, that.feeScheduleId) &&
                Objects.equals(feeType, that.feeType) &&
                Objects.equals(accountType, that.accountType) &&
-               Objects.equals(effectiveDate, that.effectiveDate);
+               Objects.equals(effectiveDate, that.effectiveDate) &&
+               Objects.equals(assessmentFrequency, that.assessmentFrequency);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(feeScheduleId, feeType, accountType, effectiveDate);
+        return Objects.hash(feeScheduleId, feeType, accountType, effectiveDate, assessmentFrequency);
     }
 
     @Override
     public String toString() {
         return "FeeSchedule{" +
                 "feeScheduleId=" + feeScheduleId +
-                ", feeType='" + feeType + '\'' +
+                ", feeType=" + feeType +
                 ", accountType='" + accountType + '\'' +
-                ", feeRate=" + feeRate +
+                ", feeAmount=" + feeAmount +
+                ", feePercentage=" + feePercentage +
                 ", effectiveDate=" + effectiveDate +
                 ", expirationDate=" + expirationDate +
-                ", hasWaiverConditions=" + hasWaiverConditions +
-                ", version=" + version +
+                ", assessmentFrequency=" + assessmentFrequency +
+                ", isActive=" + isActive +
                 '}';
     }
 }
