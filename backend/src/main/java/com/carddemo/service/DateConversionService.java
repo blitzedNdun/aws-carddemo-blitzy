@@ -457,7 +457,6 @@ public class DateConversionService {
             throw new DateTimeParseException("Year out of supported range", originalDate, 0);
         }
     }
-}
 
     /**
      * Converts a Lillian date back to LocalDate for validation purposes.
@@ -515,3 +514,4 @@ public class DateConversionService {
                 isoDateString, "ISO-8601", false, e.getMessage(), null);
         }
     }
+}
