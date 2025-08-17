@@ -1,6 +1,6 @@
 package com.carddemo.dto;
 
-import com.carddemo.dto.Message.MessageLevel;
+import com.carddemo.dto.MessageLevel;
 import lombok.Data;
 import jakarta.validation.constraints.NotBlank;
 
