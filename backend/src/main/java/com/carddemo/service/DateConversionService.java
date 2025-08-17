@@ -112,10 +112,11 @@ public class DateConversionService {
 
         /**
          * Formats the complete result message matching COBOL WS-MESSAGE structure.
-         * Format: "nnnn Mesg Code:nnnn result TstDate:date Mask used:format   "
+         * Format: "nnnn Mesg Code:nnnn result TstDate:date Mask used:format     "
+         * Total length: exactly 80 characters to match COBOL LS-RESULT
          */
         public String getFormattedMessage() {
-            return String.format("%4s Mesg Code:%4s %-15s TstDate:%-10s Mask used:%-10s   ",
+            return String.format("%4s Mesg Code:%4s %-15s TstDate:%-10s Mask used:%-10s     ",
                 severity,
                 messageCode, 
                 result,
