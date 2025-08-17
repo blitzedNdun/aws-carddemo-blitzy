@@ -1,5 +1,6 @@
 package com.carddemo.repository;
 
+import com.carddemo.entity.Configuration;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -146,33 +147,4 @@ public interface ConfigurationRepository extends JpaRepository<Configuration, Lo
     // - saveAndFlush(Configuration entity)
     // - count()
     // - existsById(Long id)
-}
-
-/**
- * Configuration entity representing application configuration properties.
- * This is a placeholder definition to satisfy the repository type parameter.
- * The actual Configuration entity should be implemented separately with proper
- * JPA annotations, field mappings, and validation rules.
- * 
- * Note: In a complete implementation, this would be defined in a separate
- * entity package (com.carddemo.entity.Configuration) and imported here.
- */
-class Configuration {
-    private Long id;
-    private String environment;
-    private String name;
-    private String configKey;
-    private String category;
-    private String value;
-    private String description;
-    private Integer version;
-    private boolean active;
-    private boolean requiresValidation;
-    private java.time.LocalDateTime lastModified;
-    private String modifiedBy;
-    private java.time.LocalDateTime createdDate;
-    private String createdBy;
-    
-    // Getters, setters, and JPA annotations would be implemented
-    // in the actual entity class
 }
