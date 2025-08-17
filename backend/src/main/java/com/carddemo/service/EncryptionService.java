@@ -6,6 +6,7 @@ import org.springframework.security.crypto.encrypt.Encryptors;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.security.crypto.keygen.KeyGenerators;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,7 +89,7 @@ public class EncryptionService {
      * Sets up master encryption key and initializes Spring Security TextEncryptor.
      */
     public EncryptionService() {
-        initializeEncryptionService();
+        // Initialization will happen in @PostConstruct method after property injection
     }
     
     /**
@@ -112,6 +113,7 @@ public class EncryptionService {
      * Initializes the encryption service with default keys and configuration.
      * Called during service startup to establish baseline encryption capabilities.
      */
+    @PostConstruct
     private void initializeEncryptionService() {
         try {
             // Generate or load master key
