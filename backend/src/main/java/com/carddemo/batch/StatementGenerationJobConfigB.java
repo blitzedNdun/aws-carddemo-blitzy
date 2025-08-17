@@ -520,9 +520,9 @@ public class StatementGenerationJobConfigB {
                                      LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".txt";
             
             // Get processing statistics from execution context
-            Integer accountCount = (Integer) chunkContext.getStepContext().getJobExecution()
+            Integer accountCount = (Integer) chunkContext.getStepContext().getStepExecution().getJobExecution()
                     .getExecutionContext().get("accountCount");
-            Integer lateFeesProcessed = (Integer) chunkContext.getStepContext().getJobExecution()
+            Integer lateFeesProcessed = (Integer) chunkContext.getStepContext().getStepExecution().getJobExecution()
                     .getExecutionContext().get("lateFeesProcessed");
             
             // Calculate final summary metrics
