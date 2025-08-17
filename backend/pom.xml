@@ -107,6 +107,13 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-pool2</artifactId>
         </dependency>
+        
+        <!-- Apache Commons Lang3 for COBOL-equivalent string operations -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.14.0</version>
+        </dependency>
 
         <!-- Spring Cloud Config for centralized configuration management -->
         <dependency>
