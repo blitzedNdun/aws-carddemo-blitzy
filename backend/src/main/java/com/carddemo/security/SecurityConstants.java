@@ -1,8 +1,5 @@
 package com.carddemo.security;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 /**
  * Security-related constants and configuration values for JWT token management
  * and authentication/authorization processes. Provides centralized security
@@ -12,8 +9,7 @@ import org.springframework.stereotype.Component;
  * and authorization flow, ensuring consistent security behavior across the
  * modernized credit card management system.
  */
-@Component
-public class SecurityConstants {
+public final class SecurityConstants {
 
     /**
      * JWT token expiration time in milliseconds (24 hours)
