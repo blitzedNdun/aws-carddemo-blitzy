@@ -525,7 +525,7 @@ public class ConfigurationService {
             Configuration configEntity;
             if (existingConfig.isPresent()) {
                 configEntity = existingConfig.get();
-                configEntity.setValue(valueToStore);
+                configEntity.setValue(valueToStore.toString());
                 configEntity.setLastModified(LocalDateTime.now());
             } else {
                 // Create new configuration entity
@@ -1069,21 +1069,23 @@ public class ConfigurationService {
         Configuration config = new Configuration();
         config.setEnvironment(currentProfile);
         config.setName(propertyKey);
-        config.setValue(propertyValue);
+        config.setConfigKey(propertyKey);
+        config.setValue(propertyValue.toString());
         config.setCreatedDate(LocalDateTime.now());
         config.setLastModified(LocalDateTime.now());
         config.setVersion(1);
-        config.setEnabled(true);
+        config.setActive(true);
+        config.setRequiresValidation(false);
         
         // Determine category based on property key
         if (propertyKey.startsWith("spring.datasource")) {
-            config.setConfigCategory("DATABASE");
+            config.setCategory("DATABASE");
         } else if (propertyKey.startsWith("carddemo.security")) {
-            config.setConfigCategory("SECURITY");
+            config.setCategory("SECURITY");
         } else if (propertyKey.startsWith("carddemo.business")) {
-            config.setConfigCategory("BUSINESS");
+            config.setCategory("BUSINESS");
         } else {
-            config.setConfigCategory("APPLICATION");
+            config.setCategory("APPLICATION");
         }
         
         return config;
