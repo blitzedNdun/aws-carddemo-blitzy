@@ -19,7 +19,13 @@ import org.springframework.batch.item.support.builder.CompositeItemProcessorBuil
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.stereotype.Repository;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import jakarta.persistence.Entity;
@@ -39,6 +45,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Matcher;
 
 /**
@@ -248,12 +255,13 @@ public class CustomerMaintenanceJobConfig {
     }
     
     /**
-     * Mock repository interface for Customer entity - in real implementation
-     * this would extend Spring Data JPA repository interfaces
+     * Spring Data JPA repository interface for Customer entity providing data access
+     * operations for customer maintenance batch processing. This repository follows
+     * the standard Spring Data JPA pattern used throughout the CardDemo application.
      */
-    public interface CustomerRepository {
-        Iterable<Customer> findAll(Sort sort);
-        Customer save(Customer customer);
+    @Repository
+    public interface CustomerRepository extends PagingAndSortingRepository<Customer, String>, CrudRepository<Customer, String> {
+        
     }
     
     /**
@@ -743,8 +751,9 @@ public class CustomerMaintenanceJobConfig {
             .name("customerReader")
             .repository(mockCustomerRepository())
             .methodName("findAll")
-            .arguments(Sort.by(Sort.Direction.ASC, "customerId"))
+            .arguments(org.springframework.data.domain.Pageable.class)
             .pageSize(100)
+            .sorts(java.util.Map.of("customerId", org.springframework.data.domain.Sort.Direction.ASC))
             .build();
     }
 
@@ -779,10 +788,83 @@ public class CustomerMaintenanceJobConfig {
             }
 
             @Override
-            public Customer save(Customer customer) {
+            public <S extends Customer> S save(S customer) {
                 // Mock implementation - in production this would be actual JPA repository
                 logger.debug("Saving customer: {}", customer.getCustomerId());
                 return customer;
+            }
+
+            @Override
+            public <S extends Customer> Iterable<S> saveAll(Iterable<S> entities) {
+                // Mock implementation - in production this would be actual JPA repository
+                entities.forEach(customer -> logger.debug("Saving customer: {}", customer.getCustomerId()));
+                return entities;
+            }
+
+            @Override
+            public java.util.Optional<Customer> findById(String id) {
+                // Mock implementation - in production this would be actual JPA repository
+                return java.util.Optional.empty();
+            }
+
+            @Override
+            public boolean existsById(String id) {
+                // Mock implementation - in production this would be actual JPA repository
+                return false;
+            }
+
+            @Override
+            public Iterable<Customer> findAll() {
+                // Mock implementation - in production this would be actual JPA repository
+                return Collections.emptyList();
+            }
+
+            @Override
+            public Iterable<Customer> findAllById(Iterable<String> ids) {
+                // Mock implementation - in production this would be actual JPA repository
+                return Collections.emptyList();
+            }
+
+            @Override
+            public long count() {
+                // Mock implementation - in production this would be actual JPA repository
+                return 0;
+            }
+
+            @Override
+            public void deleteById(String id) {
+                // Mock implementation - in production this would be actual JPA repository
+                logger.debug("Deleting customer: {}", id);
+            }
+
+            @Override
+            public void delete(Customer entity) {
+                // Mock implementation - in production this would be actual JPA repository
+                logger.debug("Deleting customer: {}", entity.getCustomerId());
+            }
+
+            @Override
+            public void deleteAllById(Iterable<? extends String> ids) {
+                // Mock implementation - in production this would be actual JPA repository
+                ids.forEach(id -> logger.debug("Deleting customer: {}", id));
+            }
+
+            @Override
+            public void deleteAll(Iterable<? extends Customer> entities) {
+                // Mock implementation - in production this would be actual JPA repository
+                entities.forEach(customer -> logger.debug("Deleting customer: {}", customer.getCustomerId()));
+            }
+
+            @Override
+            public void deleteAll() {
+                // Mock implementation - in production this would be actual JPA repository
+                logger.debug("Deleting all customers");
+            }
+
+            @Override
+            public Page<Customer> findAll(Pageable pageable) {
+                // Mock implementation - in production this would be actual JPA repository
+                return new PageImpl<>(Collections.emptyList(), pageable, 0);
             }
         };
     }
