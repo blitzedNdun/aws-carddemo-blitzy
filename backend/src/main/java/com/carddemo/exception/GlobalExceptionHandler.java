@@ -357,11 +357,108 @@ public class GlobalExceptionHandler {
      * Used by exception handlers to extract request information for logging
      * and error response construction.
      *
-     * @return the current HttpServletRequest
+     * @return the current HttpServletRequest, or a default mock if not available
      */
     private HttpServletRequest getCurrentRequest() {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        return attributes != null ? attributes.getRequest() : null;
+        if (attributes != null) {
+            return attributes.getRequest();
+        }
+        
+        // Return a default mock request for cases where request context is not available
+        // This prevents NullPointerException in exception handlers
+        return new MockHttpServletRequest();
+    }
+    
+    /**
+     * Simple mock implementation of HttpServletRequest for cases where
+     * the actual request is not available (e.g., during async processing
+     * or when exceptions occur outside of web context).
+     */
+    private static class MockHttpServletRequest implements HttpServletRequest {
+        @Override
+        public String getMethod() {
+            return "UNKNOWN";
+        }
+        
+        @Override
+        public String getRequestURI() {
+            return "/unknown";
+        }
+        
+        @Override
+        public String getRemoteAddr() {
+            return "unknown";
+        }
+        
+        // All other HttpServletRequest methods return default values
+        @Override public String getAuthType() { return null; }
+        @Override public jakarta.servlet.http.Cookie[] getCookies() { return new jakarta.servlet.http.Cookie[0]; }
+        @Override public long getDateHeader(String name) { return -1; }
+        @Override public String getHeader(String name) { return null; }
+        @Override public java.util.Enumeration<String> getHeaders(String name) { return java.util.Collections.emptyEnumeration(); }
+        @Override public java.util.Enumeration<String> getHeaderNames() { return java.util.Collections.emptyEnumeration(); }
+        @Override public int getIntHeader(String name) { return -1; }
+        @Override public String getPathInfo() { return null; }
+        @Override public String getPathTranslated() { return null; }
+        @Override public String getContextPath() { return ""; }
+        @Override public String getQueryString() { return null; }
+        @Override public String getRemoteUser() { return null; }
+        @Override public boolean isUserInRole(String role) { return false; }
+        @Override public java.security.Principal getUserPrincipal() { return null; }
+        @Override public String getRequestedSessionId() { return null; }
+        @Override public StringBuffer getRequestURL() { return new StringBuffer("http://unknown/unknown"); }
+        @Override public String getServletPath() { return ""; }
+        @Override public jakarta.servlet.http.HttpSession getSession(boolean create) { return null; }
+        @Override public jakarta.servlet.http.HttpSession getSession() { return null; }
+        @Override public String changeSessionId() { return null; }
+        @Override public boolean isRequestedSessionIdValid() { return false; }
+        @Override public boolean isRequestedSessionIdFromCookie() { return false; }
+        @Override public boolean isRequestedSessionIdFromURL() { return false; }
+        @Override public boolean authenticate(jakarta.servlet.http.HttpServletResponse response) { return false; }
+        @Override public void login(String username, String password) {}
+        @Override public void logout() {}
+        @Override public java.util.Collection<jakarta.servlet.http.Part> getParts() { return java.util.Collections.emptyList(); }
+        @Override public jakarta.servlet.http.Part getPart(String name) { return null; }
+        @Override public <T extends jakarta.servlet.http.HttpUpgradeHandler> T upgrade(Class<T> handlerClass) { return null; }
+        @Override public Object getAttribute(String name) { return null; }
+        @Override public java.util.Enumeration<String> getAttributeNames() { return java.util.Collections.emptyEnumeration(); }
+        @Override public String getCharacterEncoding() { return "UTF-8"; }
+        @Override public void setCharacterEncoding(String env) {}
+        @Override public int getContentLength() { return -1; }
+        @Override public long getContentLengthLong() { return -1; }
+        @Override public String getContentType() { return null; }
+        @Override public jakarta.servlet.ServletInputStream getInputStream() { return null; }
+        @Override public String getParameter(String name) { return null; }
+        @Override public java.util.Enumeration<String> getParameterNames() { return java.util.Collections.emptyEnumeration(); }
+        @Override public String[] getParameterValues(String name) { return null; }
+        @Override public java.util.Map<String, String[]> getParameterMap() { return java.util.Collections.emptyMap(); }
+        @Override public String getProtocol() { return "HTTP/1.1"; }
+        @Override public String getScheme() { return "http"; }
+        @Override public String getServerName() { return "unknown"; }
+        @Override public int getServerPort() { return 80; }
+        @Override public java.io.BufferedReader getReader() { return null; }
+        @Override public String getRemoteHost() { return "unknown"; }
+        @Override public void setAttribute(String name, Object o) {}
+        @Override public void removeAttribute(String name) {}
+        @Override public java.util.Locale getLocale() { return java.util.Locale.getDefault(); }
+        @Override public java.util.Enumeration<java.util.Locale> getLocales() { return java.util.Collections.enumeration(java.util.Arrays.asList(java.util.Locale.getDefault())); }
+        @Override public boolean isSecure() { return false; }
+        @Override public jakarta.servlet.RequestDispatcher getRequestDispatcher(String path) { return null; }
+        @Override public int getRemotePort() { return -1; }
+        @Override public String getLocalName() { return "localhost"; }
+        @Override public String getLocalAddr() { return "127.0.0.1"; }
+        @Override public int getLocalPort() { return 8080; }
+        @Override public jakarta.servlet.ServletContext getServletContext() { return null; }
+        @Override public jakarta.servlet.AsyncContext startAsync() { return null; }
+        @Override public jakarta.servlet.AsyncContext startAsync(jakarta.servlet.ServletRequest servletRequest, jakarta.servlet.ServletResponse servletResponse) { return null; }
+        @Override public boolean isAsyncStarted() { return false; }
+        @Override public boolean isAsyncSupported() { return false; }
+        @Override public jakarta.servlet.AsyncContext getAsyncContext() { return null; }
+        @Override public jakarta.servlet.DispatcherType getDispatcherType() { return jakarta.servlet.DispatcherType.REQUEST; }
+        @Override public String getRequestId() { return "unknown"; }
+        @Override public String getProtocolRequestId() { return "unknown"; }
+        @Override public jakarta.servlet.ServletConnection getServletConnection() { return null; }
     }
 
     /**
