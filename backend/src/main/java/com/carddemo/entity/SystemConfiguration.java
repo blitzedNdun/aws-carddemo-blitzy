@@ -372,6 +372,24 @@ public class SystemConfiguration {
         this.validationRule = validationRule;
     }
 
+    /**
+     * Sets the default value for rollback scenarios.
+     * 
+     * @param defaultValue the default value
+     */
+    public void setDefaultValue(String defaultValue) {
+        this.defaultValue = defaultValue;
+    }
+
+    /**
+     * Sets the version number for rollback capabilities.
+     * 
+     * @param versionNumber the version number
+     */
+    public void setVersionNumber(Long versionNumber) {
+        this.versionNumber = versionNumber;
+    }
+
     // Utility methods for common operations
 
     /**
