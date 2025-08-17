@@ -12,6 +12,9 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 import java.util.Arrays;
 
@@ -30,10 +33,25 @@ import java.util.Arrays;
  * - SEC-USR-TYPE "A" -> ROLE_ADMIN (full access)
  * - SEC-USR-TYPE "U" -> ROLE_USER (limited access)
  */
-@SpringBootTest
+@SpringBootTest(
+    webEnvironment = SpringBootTest.WebEnvironment.NONE,
+    properties = {
+        "spring.batch.job.enabled=false",
+        "spring.cloud.config.enabled=false"
+    },
+    classes = {
+        AuthorizationService.class,
+        AuthorizationServiceTest.TestSecurityConfig.class
+    }
+)
+@ActiveProfiles("test")
 @TestPropertySource(properties = {
     "logging.level.com.carddemo.security=DEBUG",
-    "spring.security.debug=true"
+    "spring.security.debug=true",
+    "spring.batch.job.enabled=false",
+    "spring.jpa.hibernate.ddl-auto=create-drop",
+    "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
+    "spring.datasource.url=jdbc:h2:mem:testdb;MODE=PostgreSQL;REFERENTIAL_INTEGRITY=FALSE"
 })
 public class AuthorizationServiceTest {
 
@@ -60,29 +78,39 @@ public class AuthorizationServiceTest {
      * matching COBOL SEC-USR-TYPE "A" permissions.
      */
     @Test
-    @WithMockUser(username = "TESTADM", roles = {"ADMIN"})
     public void testAdminRoleAccess() {
-        // Test basic admin role detection
-        Assertions.assertTrue(authorizationService.hasAdminRole(),
-            "User with ROLE_ADMIN should be detected as admin");
+        // Manually set up admin user authentication
+        UsernamePasswordAuthenticationToken authentication = 
+            new UsernamePasswordAuthenticationToken("TESTADM", "password", 
+                Arrays.asList(new SimpleGrantedAuthority("ROLE_ADMIN")));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
         
-        // Test admin-specific permissions
-        Assertions.assertTrue(authorizationService.canAccessAllAccounts(),
-            "Admin users should have access to all accounts");
-        
-        Assertions.assertTrue(authorizationService.canManageUsers(),
-            "Admin users should be able to manage other users");
-        
-        Assertions.assertTrue(authorizationService.canAccessReports(),
-            "Admin users should have access to system reports");
-        
-        // Test account modification permissions for admin
-        Assertions.assertTrue(authorizationService.canModifyAccount("12345678901"),
-            "Admin users should be able to modify any account");
-        
-        // Test transaction access for admin
-        Assertions.assertTrue(authorizationService.canAccessTransaction("TXN001"),
-            "Admin users should have access to all transactions");
+        try {
+            // Test basic admin role detection
+            Assertions.assertTrue(authorizationService.hasAdminRole(),
+                "User with ROLE_ADMIN should be detected as admin");
+            
+            // Test admin-specific permissions
+            Assertions.assertTrue(authorizationService.canAccessAllAccounts(),
+                "Admin users should have access to all accounts");
+            
+            Assertions.assertTrue(authorizationService.canManageUsers(),
+                "Admin users should be able to manage other users");
+            
+            Assertions.assertTrue(authorizationService.canAccessReports(),
+                "Admin users should have access to system reports");
+            
+            // Test account modification permissions for admin
+            Assertions.assertTrue(authorizationService.canModifyAccount("12345678901"),
+                "Admin users should be able to modify any account");
+            
+            // Test transaction access for admin
+            Assertions.assertTrue(authorizationService.canAccessTransaction("TXN001"),
+                "Admin users should have access to all transactions");
+        } finally {
+            // Clean up security context
+            SecurityContextHolder.clearContext();
+        }
     }
 
     /**
@@ -91,28 +119,38 @@ public class AuthorizationServiceTest {
      * matching COBOL SEC-USR-TYPE "U" restrictions.
      */
     @Test
-    @WithMockUser(username = "TESTUSR", roles = {"USER"})
     public void testUserRoleAccess() {
-        // Test basic user role detection
-        Assertions.assertTrue(authorizationService.hasUserRole(),
-            "User with ROLE_USER should be detected as regular user");
+        // Manually set up regular user authentication
+        UsernamePasswordAuthenticationToken authentication = 
+            new UsernamePasswordAuthenticationToken("TESTUSR", "password", 
+                Arrays.asList(new SimpleGrantedAuthority("ROLE_USER")));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
         
-        Assertions.assertFalse(authorizationService.hasAdminRole(),
-            "User with ROLE_USER should not be detected as admin");
-        
-        // Test user access restrictions
-        Assertions.assertFalse(authorizationService.canAccessAllAccounts(),
-            "Regular users should not have access to all accounts");
-        
-        Assertions.assertFalse(authorizationService.canManageUsers(),
-            "Regular users should not be able to manage other users");
-        
-        Assertions.assertFalse(authorizationService.canAccessReports(),
-            "Regular users should not have access to system reports");
-        
-        // Test limited account access for regular users
-        Assertions.assertFalse(authorizationService.canModifyAccount("12345678901"),
-            "Regular users should not be able to modify accounts they don't own");
+        try {
+            // Test basic user role detection
+            Assertions.assertTrue(authorizationService.hasUserRole(),
+                "User with ROLE_USER should be detected as regular user");
+            
+            Assertions.assertFalse(authorizationService.hasAdminRole(),
+                "User with ROLE_USER should not be detected as admin");
+            
+            // Test user access restrictions
+            Assertions.assertFalse(authorizationService.canAccessAllAccounts(),
+                "Regular users should not have access to all accounts");
+            
+            Assertions.assertFalse(authorizationService.canManageUsers(),
+                "Regular users should not be able to manage other users");
+            
+            Assertions.assertFalse(authorizationService.canAccessReports(),
+                "Regular users should not have access to system reports");
+            
+            // Test limited account access for regular users
+            Assertions.assertFalse(authorizationService.canModifyAccount("12345678901"),
+                "Regular users should not be able to modify accounts they don't own");
+        } finally {
+            // Clean up security context
+            SecurityContextHolder.clearContext();
+        }
     }
 
     /**
@@ -388,5 +426,14 @@ public class AuthorizationServiceTest {
             );
         
         SecurityContextHolder.getContext().setAuthentication(authentication);
+    }
+
+    /**
+     * Test configuration for enabling method security in test context.
+     */
+    @Configuration
+    @EnableMethodSecurity(prePostEnabled = true)
+    static class TestSecurityConfig {
+        // Empty configuration class to enable method security
     }
 }
