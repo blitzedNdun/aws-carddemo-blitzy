@@ -28,21 +28,21 @@ import java.util.regex.Matcher;
 public class AddressValidationService {
 
     // Street type standardization mapping (COBOL-style lookup table)
-    private static final Map<String, String> STREET_TYPE_STANDARDIZATION = Map.of(
-        "ST", "STREET",
-        "STR", "STREET", 
-        "AVE", "AVENUE",
-        "AV", "AVENUE",
-        "BLVD", "BOULEVARD",
-        "BLV", "BOULEVARD",
-        "RD", "ROAD",
-        "DR", "DRIVE",
-        "LN", "LANE",
-        "CT", "COURT",
-        "CIR", "CIRCLE",
-        "PL", "PLACE",
-        "PKY", "PARKWAY",
-        "HWY", "HIGHWAY"
+    private static final Map<String, String> STREET_TYPE_STANDARDIZATION = Map.ofEntries(
+        Map.entry("ST", "STREET"),
+        Map.entry("STR", "STREET"), 
+        Map.entry("AVE", "AVENUE"),
+        Map.entry("AV", "AVENUE"),
+        Map.entry("BLVD", "BOULEVARD"),
+        Map.entry("BLV", "BOULEVARD"),
+        Map.entry("RD", "ROAD"),
+        Map.entry("DR", "DRIVE"),
+        Map.entry("LN", "LANE"),
+        Map.entry("CT", "COURT"),
+        Map.entry("CIR", "CIRCLE"),
+        Map.entry("PL", "PLACE"),
+        Map.entry("PKY", "PARKWAY"),
+        Map.entry("HWY", "HIGHWAY")
     );
 
     // Directional abbreviation standardization (preserving COBOL abbreviation patterns)
@@ -459,7 +459,7 @@ public class AddressValidationService {
             return false;
         }
         
-        String cleanPhone = phoneNumber.replaceAll("[^\\d()-\\s]", "");
+        String cleanPhone = phoneNumber.replaceAll("[^\\d()\\-\\s]", "");
         return PHONE_PATTERN.matcher(cleanPhone).matches();
     }
 
@@ -474,7 +474,7 @@ public class AddressValidationService {
             return false;
         }
         
-        String cleanSSN = ssn.replaceAll("[^\\d-]", "");
+        String cleanSSN = ssn.replaceAll("[^\\d\\-]", "");
         return SSN_PATTERN.matcher(cleanSSN).matches();
     }
 }
