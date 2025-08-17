@@ -70,11 +70,7 @@ import java.util.concurrent.atomic.AtomicLong;
 )
 @ConfigurationParameter(
     key = "junit.jupiter.execution.parallel.config.strategy", 
-    value = "custom"
-)
-@ConfigurationParameter(
-    key = "junit.jupiter.execution.parallel.config.custom.class", 
-    value = "java.util.concurrent.ForkJoinPool"
+    value = "dynamic"
 )
 @ConfigurationParameter(
     key = "junit.jupiter.execution.timeout.default", 
@@ -231,9 +227,14 @@ public class TestSuiteRunner {
         long totalDuration = 0;
         
         for (String category : TEST_EXECUTION_ORDER) {
-            int count = testCounts.get(category).get();
-            int failures = testFailures.get(category).get();
-            long duration = testDurations.get(category).get();
+            // Defensive programming: ensure counters are initialized
+            AtomicInteger countAtomic = testCounts.get(category);
+            AtomicInteger failuresAtomic = testFailures.get(category);
+            AtomicLong durationAtomic = testDurations.get(category);
+            
+            int count = (countAtomic != null) ? countAtomic.get() : 0;
+            int failures = (failuresAtomic != null) ? failuresAtomic.get() : 0;
+            long duration = (durationAtomic != null) ? durationAtomic.get() : 0;
             double successRate = count > 0 ? ((count - failures) * 100.0 / count) : 0.0;
             
             totalTests += count;
@@ -279,9 +280,14 @@ public class TestSuiteRunner {
         long totalDuration = 0;
         
         for (String category : TEST_EXECUTION_ORDER) {
-            int count = testCounts.get(category).get();
-            int failures = testFailures.get(category).get();
-            long duration = testDurations.get(category).get();
+            // Defensive programming: ensure counters are initialized
+            AtomicInteger countAtomic = testCounts.get(category);
+            AtomicInteger failuresAtomic = testFailures.get(category);
+            AtomicLong durationAtomic = testDurations.get(category);
+            
+            int count = (countAtomic != null) ? countAtomic.get() : 0;
+            int failures = (failuresAtomic != null) ? failuresAtomic.get() : 0;
+            long duration = (durationAtomic != null) ? durationAtomic.get() : 0;
             
             totalTests += count;
             totalFailures += failures;
@@ -383,7 +389,8 @@ public class TestSuiteRunner {
         }
         
         // Validate batch processing window (< 4 hours)
-        long batchDuration = testDurations.get("performance").get();
+        AtomicLong performanceDurationAtomic = testDurations.get("performance");
+        long batchDuration = (performanceDurationAtomic != null) ? performanceDurationAtomic.get() : 0;
         if (batchDuration > BATCH_PROCESSING_WINDOW.toMillis()) {
             logger.error("Batch processing window exceeded - actual: {}ms, threshold: {}ms", 
                         batchDuration, BATCH_PROCESSING_WINDOW.toMillis());
