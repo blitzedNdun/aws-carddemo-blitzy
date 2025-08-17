@@ -122,4 +122,13 @@ public final class Constants {
      * Used in list DTOs when selection is not applicable.
      */
     public static final String SELECTION_FLAG_EMPTY = " ";
+
+    // Date Format Constants
+    
+    /**
+     * Standard date format length for CCYYMMDD format validation.
+     * Maps to COBOL PIC X(8) specification for date fields.
+     * Used by date conversion utilities to ensure consistent CCYYMMDD format length.
+     */
+    public static final int DATE_FORMAT_LENGTH = 8;
 }
