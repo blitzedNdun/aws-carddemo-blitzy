@@ -167,11 +167,9 @@ public interface AccountRepository extends JpaRepository<Account, String> {
      * 
      * Custom JPQL query enables complex fee assessment logic including:
      * - Active account status validation
-     * - Assessment date range filtering
      * - Account group-based fee eligibility
      * - Balance threshold validation for fee applicability
      * 
-     * @param assessmentDate the date for fee assessment
      * @param feeType the type of fee to assess (used for group filtering)
      * @return list of accounts requiring fee assessment
      */
@@ -179,9 +177,7 @@ public interface AccountRepository extends JpaRepository<Account, String> {
            "AND a.accountGroupId = :feeType " +
            "AND a.currentBalance > 0.00 " +
            "ORDER BY a.accountId")
-    List<Account> findAccountsRequiringFeeAssessment(
-            @Param("assessmentDate") LocalDate assessmentDate, 
-            @Param("feeType") String feeType);
+    List<Account> findAccountsRequiringFeeAssessment(@Param("feeType") String feeType);
 
     /**
      * Finds accounts by ZIP code for geographic analysis.
