@@ -79,8 +79,8 @@ public class EncryptionService {
     private TextEncryptor textEncryptor;
     
     // Patterns for sensitive data detection
-    private static final Pattern SSN_PATTERN = Pattern.compile("\\d{3}-\\d{2}-\\d{4}");
-    private static final Pattern CARD_PATTERN = Pattern.compile("\\d{4}-\\d{4}-\\d{4}-\\d{4}");
+    private static final Pattern SSN_PATTERN = Pattern.compile("\\d{3}-\\d{2}-(\\d{4})");
+    private static final Pattern CARD_PATTERN = Pattern.compile("\\d{4}-\\d{4}-\\d{4}-(\\d{4})");
     private static final Pattern PASSWORD_PATTERN = Pattern.compile("password|pwd|secret|key", Pattern.CASE_INSENSITIVE);
     
     /**
@@ -88,6 +88,23 @@ public class EncryptionService {
      * Sets up master encryption key and initializes Spring Security TextEncryptor.
      */
     public EncryptionService() {
+        initializeEncryptionService();
+    }
+    
+    /**
+     * Constructor for testing with explicit configuration parameters.
+     * Allows direct injection of configuration values without Spring dependency injection.
+     * 
+     * @param defaultAlgorithm The encryption algorithm to use (e.g., "AES")
+     * @param keySize The key size in bits (e.g., 256)
+     * @param auditEnabled Whether audit logging is enabled
+     * @param masterKey The master key for encryption
+     */
+    public EncryptionService(String defaultAlgorithm, int keySize, boolean auditEnabled, String masterKey) {
+        this.defaultAlgorithm = defaultAlgorithm;
+        this.keySize = keySize;
+        this.auditEnabled = auditEnabled;
+        this.masterKey = masterKey;
         initializeEncryptionService();
     }
     
@@ -278,14 +295,12 @@ public class EncryptionService {
             // Mask Social Security Numbers (XXX-XX-1234)
             if (SSN_PATTERN.matcher(propertyValue).find()) {
                 maskedValue = SSN_PATTERN.matcher(maskedValue).replaceAll("XXX-XX-$1");
-                maskedValue = maskedValue.replaceAll("(\\d{3}-\\d{2}-)(\\d{4})", "XXX-XX-$2");
                 auditEncryptionOperation("MASK", "SSN", "SSN property masked", true);
             }
             
             // Mask Credit Card Numbers (****-****-****-1234)
             if (CARD_PATTERN.matcher(propertyValue).find()) {
                 maskedValue = CARD_PATTERN.matcher(maskedValue).replaceAll("****-****-****-$1");
-                maskedValue = maskedValue.replaceAll("(\\d{4}-\\d{4}-\\d{4}-)(\\d{4})", "****-****-****-$2");
                 auditEncryptionOperation("MASK", "CARD", "Credit card number masked", true);
             }
             
@@ -719,13 +734,38 @@ public class EncryptionService {
     }
     
     /**
-     * Masks sensitive data in audit logs.
+     * Masks sensitive data in audit logs to prevent exposure.
+     * This is a simple masking that doesn't trigger audit logging to avoid infinite recursion.
      */
     private String maskSensitiveAuditData(String data) {
         if (data == null) {
             return null;
         }
         
-        return maskSensitiveProperty(data);
+        String maskedValue = data;
+        
+        // Simple masking without audit logging to prevent recursion
+        // Mask SSN patterns (XXX-XX-XXXX format)
+        if (SSN_PATTERN.matcher(data).find()) {
+            maskedValue = SSN_PATTERN.matcher(maskedValue).replaceAll("***-**-$1");
+        }
+        
+        // Mask Credit Card Numbers
+        if (CARD_PATTERN.matcher(data).find()) {
+            maskedValue = CARD_PATTERN.matcher(maskedValue).replaceAll("****-****-****-$1");
+        }
+        
+        // Mask passwords and sensitive keys
+        if (PASSWORD_PATTERN.matcher(data).find() || 
+            data.length() > 8 && isLikelyPassword(data)) {
+            maskedValue = maskPassword(data);
+        }
+        
+        // Mask API keys
+        if (isLikelyApiKey(data)) {
+            maskedValue = maskApiKey(data);
+        }
+        
+        return maskedValue;
     }
 }

@@ -52,6 +52,16 @@ public class ApplicationConfig {
 
     private final Environment environment;
 
+    /**
+     * Default constructor for Spring Bean instantiation
+     */
+    public ApplicationConfig() {
+        this.environment = null;
+    }
+
+    /**
+     * Constructor with Environment injection for dependency injection
+     */
     public ApplicationConfig(Environment environment) {
         this.environment = environment;
     }
