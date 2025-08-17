@@ -91,7 +91,7 @@ public class SessionConfig {
      * @return configured RedisTemplate for session operations
      */
     @Bean
-    public RedisTemplate<String, Object> redisTemplate() {
+    public RedisTemplate<String, Object> commareaRedisTemplate() {
         logger.debug("Configuring RedisTemplate for session management with JSON serialization");
         
         RedisTemplate<String, Object> template = new RedisTemplate<>();

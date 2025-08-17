@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * This service replaces COBOL address validation routines while maintaining identical data quality standards
  * and validation rules as required by the mainframe migration specifications.
  */
-@Service
+@Service("addressValidationClient")
 public class AddressValidationService {
 
     private static final Logger logger = LoggerFactory.getLogger(AddressValidationService.class);

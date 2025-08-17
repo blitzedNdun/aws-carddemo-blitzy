@@ -155,7 +155,7 @@ public class ArchiveJobConfig {
      */
     @Bean
     @StepScope
-    public JobParameters getJobParameters() {
+    public JobParameters getArchiveJobParameters() {
         Map<String, JobParameter<?>> parameters = new HashMap<>();
         
         // Calculate default cutoff date based on retention period

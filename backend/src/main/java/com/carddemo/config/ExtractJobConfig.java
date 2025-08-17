@@ -483,7 +483,7 @@ public class ExtractJobConfig {
      * @return Configured JobParameters instance
      */
     @Bean
-    public JobParameters getJobParameters(
+    public JobParameters getExtractJobParameters(
             @Value("${batch.extract.start.date:#{T(java.time.LocalDate).now().minusDays(1).toString()}}") String startDate,
             @Value("${batch.extract.end.date:#{T(java.time.LocalDate).now().toString()}}") String endDate,
             @Value("${batch.extract.output.path:./output}") String outputPath) {
@@ -507,7 +507,7 @@ public class ExtractJobConfig {
      * @param customParams Map of custom parameters
      * @return JobParameters with custom configuration
      */
-    public JobParameters getJobParameters(Map<String, Object> customParams) {
+    public JobParameters getExtractJobParameters(Map<String, Object> customParams) {
         JobParametersBuilder builder = new JobParametersBuilder();
         
         // Set default parameters

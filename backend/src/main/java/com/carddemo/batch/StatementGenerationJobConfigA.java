@@ -102,7 +102,7 @@ public class StatementGenerationJobConfigA {
     @Bean
     public PartitionHandler partitioningHandler() {
         TaskExecutorPartitionHandler partitionHandler = new TaskExecutorPartitionHandler();
-        partitionHandler.setTaskExecutor(taskExecutor());
+        partitionHandler.setTaskExecutor(statementGenerationTaskExecutor());
         partitionHandler.setStep(statementGenerationStepA());
         partitionHandler.setGridSize(THREAD_POOL_SIZE);
         
@@ -186,7 +186,7 @@ public class StatementGenerationJobConfigA {
      */
     @Bean
     @Qualifier("statementGenerationTaskExecutor")
-    public TaskExecutor taskExecutor() {
+    public TaskExecutor statementGenerationTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(CORE_POOL_SIZE);
         executor.setMaxPoolSize(MAX_POOL_SIZE);

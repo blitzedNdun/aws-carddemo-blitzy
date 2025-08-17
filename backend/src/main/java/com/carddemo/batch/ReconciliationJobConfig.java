@@ -144,7 +144,7 @@ public class ReconciliationJobConfig {
         return new StepBuilder("chargebackProcessingStep", jobRepository)
                 .<ChargebackTransaction, ProcessedChargeback>chunk(200, transactionManager)
                 .reader(chargebackTransactionReader())
-                .processor(chargebackProcessor())
+                .processor(chargebackItemProcessor())
                 .writer(chargebackResultWriter())
                 .build();
     }
@@ -159,7 +159,7 @@ public class ReconciliationJobConfig {
     @Bean
     public Step reportGenerationStep() {
         return new StepBuilder("reportGenerationStep", jobRepository)
-                .tasklet(reportGenerationTasklet(), transactionManager)
+                .tasklet(reconciliationReportTasklet(), transactionManager)
                 .build();
     }
 
@@ -382,7 +382,7 @@ public class ReconciliationJobConfig {
      * Implements COBOL balance update logic from account and transaction category files.
      */
     @Bean
-    public ItemProcessor<ChargebackTransaction, ProcessedChargeback> chargebackProcessor() {
+    public ItemProcessor<ChargebackTransaction, ProcessedChargeback> chargebackItemProcessor() {
         return new ItemProcessor<ChargebackTransaction, ProcessedChargeback>() {
             @Override
             public ProcessedChargeback process(ChargebackTransaction chargeback) throws Exception {
@@ -538,7 +538,7 @@ public class ReconciliationJobConfig {
      * Generates detailed reports in format matching COBOL business requirements.
      */
     @Bean
-    public Tasklet reportGenerationTasklet() {
+    public Tasklet reconciliationReportTasklet() {
         return (contribution, chunkContext) -> {
             LocalDateTime reportTimestamp = LocalDateTime.now();
             String reportDate = reportTimestamp.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
