@@ -23,10 +23,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 
 /**
@@ -42,11 +42,10 @@ import java.time.LocalDate;
  * - Lillian date calculation precision (days since January 1, 1601)
  * - Edge case handling including leap years and boundary conditions
  */
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 @DisplayName("DateConversionService - CSUTLDTC COBOL Migration Tests")
 class DateConversionServiceTest {
 
-    @Autowired
     private DateConversionService dateConversionService;
 
     // Test constants matching COBOL program values
@@ -62,8 +61,9 @@ class DateConversionServiceTest {
     
     @BeforeEach
     void setUp() {
-        // Verify service is properly autowired
-        Assertions.assertNotNull(dateConversionService, "DateConversionService should be autowired");
+        // Initialize the service directly since it has no dependencies
+        dateConversionService = new DateConversionService();
+        Assertions.assertNotNull(dateConversionService, "DateConversionService should be initialized");
     }
 
     @Nested
@@ -637,7 +637,7 @@ class DateConversionServiceTest {
         void testLargeVolumeProcessing() {
             // Given: Multiple date validations
             int iterations = 1000;
-            int successCount = 0;
+            int successCountTemp = 0;
             
             long startTime = System.currentTimeMillis();
             
@@ -646,12 +646,15 @@ class DateConversionServiceTest {
                 String dateString = String.format("2024%02d15", (i % 12) + 1);
                 DateValidationResult result = dateConversionService.validateDate(dateString, "CCYYMMDD");
                 if (result.isValid()) {
-                    successCount++;
+                    successCountTemp++;
                 }
             }
             
             long endTime = System.currentTimeMillis();
             long duration = endTime - startTime;
+            
+            // Make variables effectively final for lambda expressions
+            final int successCount = successCountTemp;
             
             // Then: Should process efficiently
             Assertions.assertAll("Performance validation",
@@ -671,7 +674,7 @@ class DateConversionServiceTest {
                 {LocalDate.of(1601, 12, 31), 364L},       // End of epoch year (not leap)
                 {LocalDate.of(1602, 1, 1), 365L},         // Start of second year
                 {LocalDate.of(2000, 1, 1), 145731L},      // Y2K date
-                {LocalDate.of(2024, 1, 1), 154384L}       // Modern date
+                {LocalDate.of(2024, 1, 1), 154497L}       // Modern date (corrected calculation)
             };
             
             for (Object[] testCase : testCases) {
