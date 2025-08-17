@@ -2,6 +2,9 @@ package com.carddemo.dto;
 
 import java.math.BigDecimal;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -23,6 +26,9 @@ public class AuthorizationRequest {
      * Must be a valid 16-digit payment card number.
      */
     @NotNull(message = "Card number is required")
+    @NotBlank(message = "Card number cannot be blank")
+    @Size(min = 13, max = 19, message = "Card number must be between 13 and 19 digits")
+    @Pattern(regexp = "^[0-9]{13,19}$", message = "Card number must contain only digits")
     @JsonProperty("card_number")
     private String cardNumber;
 
@@ -31,6 +37,8 @@ public class AuthorizationRequest {
      * Used for card validity verification during authorization.
      */
     @NotNull(message = "Expiration date is required")
+    @NotBlank(message = "Expiration date cannot be blank")
+    @Pattern(regexp = "^(0[1-9]|1[0-2])([0-9]{2})$", message = "Expiration date must be in MMYY format")
     @JsonProperty("expiration_date")
     private String expirationDate;
 
@@ -39,6 +47,8 @@ public class AuthorizationRequest {
      * Typically a 3 or 4 digit security code.
      */
     @NotNull(message = "CVV is required")
+    @NotBlank(message = "CVV cannot be blank")
+    @Pattern(regexp = "^[0-9]{3,4}$", message = "CVV must be 3 or 4 digits")
     @JsonProperty("cvv")
     private String cvv;
 
@@ -56,6 +66,7 @@ public class AuthorizationRequest {
      * Links transaction to specific merchant account for authorization and settlement.
      */
     @NotNull(message = "Merchant ID is required")
+    @NotBlank(message = "Merchant ID cannot be blank")
     @JsonProperty("merchant_id")
     private String merchantId;
 
@@ -71,6 +82,7 @@ public class AuthorizationRequest {
      * Examples: PURCHASE, REFUND, CASH_ADVANCE, BALANCE_INQUIRY
      */
     @NotNull(message = "Transaction type is required")
+    @NotBlank(message = "Transaction type cannot be blank")
     @JsonProperty("transaction_type")
     private String transactionType;
 
@@ -79,6 +91,7 @@ public class AuthorizationRequest {
      * Used for risk assessment and transaction tracking.
      */
     @NotNull(message = "Terminal ID is required")
+    @NotBlank(message = "Terminal ID cannot be blank")
     @JsonProperty("terminal_id")
     private String terminalId;
 
