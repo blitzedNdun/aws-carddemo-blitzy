@@ -110,10 +110,10 @@ public class JwtTokenService {
         Date expiration = new Date(now.getTime() + SecurityConstants.JWT_EXPIRATION);
         
         return Jwts.builder()
-            .setClaims(claims)
-            .setSubject(subject)
-            .setIssuedAt(now)
-            .setExpiration(expiration)
+            .claims(claims)
+            .subject(subject)
+            .issuedAt(now)
+            .expiration(expiration)
             .signWith(getSigningKey())
             .compact();
     }
