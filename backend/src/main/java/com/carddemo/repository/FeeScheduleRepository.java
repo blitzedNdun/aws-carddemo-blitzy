@@ -65,11 +65,27 @@ public interface FeeScheduleRepository extends JpaRepository<FeeSchedule, Long> 
     @Query("SELECT fs FROM FeeSchedule fs WHERE fs.feeType = :feeType " +
            "AND fs.accountType = :accountType " +
            "AND fs.effectiveDate <= :currentDate " +
-           "ORDER BY fs.effectiveDate DESC LIMIT 1")
-    Optional<FeeSchedule> findCurrentFeeSchedule(
+           "ORDER BY fs.effectiveDate DESC")
+    List<FeeSchedule> findCurrentFeeScheduleList(
             @Param("feeType") String feeType,
             @Param("accountType") String accountType,
             @Param("currentDate") LocalDate currentDate);
+
+    /**
+     * Finds the most current fee schedule for a specific fee type and account type.
+     * Returns the fee schedule with the latest effective date that is not in the future.
+     * 
+     * Used for real-time fee calculation during transaction processing.
+     * 
+     * @param feeType the fee type code
+     * @param accountType the account type code
+     * @param currentDate the current date for comparison
+     * @return optional containing the current fee schedule, or empty if none found
+     */
+    default Optional<FeeSchedule> findCurrentFeeSchedule(String feeType, String accountType, LocalDate currentDate) {
+        List<FeeSchedule> schedules = findCurrentFeeScheduleList(feeType, accountType, currentDate);
+        return schedules.isEmpty() ? Optional.empty() : Optional.of(schedules.get(0));
+    }
 
     /**
      * Finds all fee schedules for a specific account type.
@@ -111,18 +127,22 @@ public interface FeeScheduleRepository extends JpaRepository<FeeSchedule, Long> 
      * @param hasWaiverConditions true to find schedules with waiver conditions, false for no waivers
      * @return list of fee schedules matching waiver condition criteria
      */
-    List<FeeSchedule> findByHasWaiverConditions(boolean hasWaiverConditions);
+    @Query("SELECT fs FROM FeeSchedule fs WHERE " +
+           "(:hasWaiverConditions = true AND fs.waiverConditions IS NOT NULL AND fs.waiverConditions != '') " +
+           "OR (:hasWaiverConditions = false AND (fs.waiverConditions IS NULL OR fs.waiverConditions = '')) " +
+           "ORDER BY fs.feeType, fs.accountType")
+    List<FeeSchedule> findByHasWaiverConditions(@Param("hasWaiverConditions") boolean hasWaiverConditions);
 
     /**
-     * Finds fee schedules by minimum balance requirement.
+     * Finds fee schedules by waiver threshold requirement.
      * Used for fee calculations based on account balance thresholds.
      * 
-     * @param minimumBalance the minimum balance threshold
-     * @return list of fee schedules with minimum balance less than or equal to the specified amount
+     * @param threshold the waiver threshold amount
+     * @return list of fee schedules with waiver threshold less than or equal to the specified amount
      */
-    @Query("SELECT fs FROM FeeSchedule fs WHERE fs.minimumBalance <= :minimumBalance " +
-           "ORDER BY fs.minimumBalance DESC")
-    List<FeeSchedule> findByMinimumBalanceLessThanEqual(@Param("minimumBalance") BigDecimal minimumBalance);
+    @Query("SELECT fs FROM FeeSchedule fs WHERE fs.waiverThreshold <= :threshold " +
+           "ORDER BY fs.waiverThreshold DESC")
+    List<FeeSchedule> findByMinimumBalanceLessThanEqual(@Param("threshold") BigDecimal threshold);
 
     /**
      * Finds active fee schedules as of a specific date.
@@ -137,18 +157,18 @@ public interface FeeScheduleRepository extends JpaRepository<FeeSchedule, Long> 
     List<FeeSchedule> findActiveFeeSchedules(@Param("asOfDate") LocalDate asOfDate);
 
     /**
-     * Finds fee schedules by rate range.
+     * Finds fee schedules by fee amount range.
      * Used for fee analysis and rate comparison reporting.
      * 
-     * @param minRate the minimum fee rate (inclusive)
-     * @param maxRate the maximum fee rate (inclusive)
-     * @return list of fee schedules within the rate range
+     * @param minAmount the minimum fee amount (inclusive)
+     * @param maxAmount the maximum fee amount (inclusive)
+     * @return list of fee schedules within the amount range
      */
-    @Query("SELECT fs FROM FeeSchedule fs WHERE fs.feeRate BETWEEN :minRate AND :maxRate " +
-           "ORDER BY fs.feeRate")
+    @Query("SELECT fs FROM FeeSchedule fs WHERE fs.feeAmount BETWEEN :minAmount AND :maxAmount " +
+           "ORDER BY fs.feeAmount")
     List<FeeSchedule> findByFeeRateBetween(
-            @Param("minRate") BigDecimal minRate,
-            @Param("maxRate") BigDecimal maxRate);
+            @Param("minAmount") BigDecimal minAmount,
+            @Param("maxAmount") BigDecimal maxAmount);
 
     /**
      * Checks if a fee schedule exists for the given criteria.
@@ -187,13 +207,13 @@ public interface FeeScheduleRepository extends JpaRepository<FeeSchedule, Long> 
             @Param("futureDate") LocalDate futureDate);
 
     /**
-     * Finds fee schedules by version for audit and history tracking.
+     * Finds fee schedules by schedule ID for audit and history tracking.
      * Supports fee schedule versioning and historical analysis.
      * 
-     * @param version the fee schedule version number
-     * @return list of fee schedules for the specified version
+     * @param feeScheduleId the fee schedule ID (used as version identifier)
+     * @return list of fee schedules for the specified schedule ID
      */
-    List<FeeSchedule> findByVersionOrderByEffectiveDateDesc(Integer version);
+    List<FeeSchedule> findByFeeScheduleIdOrderByEffectiveDateDesc(Long feeScheduleId);
 
     /**
      * Deletes expired fee schedules before a specific date.
