@@ -1,6 +1,6 @@
 package com.carddemo.service;
 
-import com.carddemo.repository.ConfigurationRepository;
+import com.carddemo.repository.ConfigurationManagementRepository;
 import com.carddemo.entity.Configuration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -77,7 +77,7 @@ public class ConfigurationService {
         Pattern.compile(".*(?:password|secret|key|token|credential).*", Pattern.CASE_INSENSITIVE);
 
     // Dependency injection
-    private final ConfigurationRepository configurationRepository;
+    private final ConfigurationManagementRepository configurationRepository;
     private final EncryptionService encryptionService;
     private final Environment environment;
     private final ApplicationEventPublisher eventPublisher;
@@ -116,7 +116,7 @@ public class ConfigurationService {
      * @param eventPublisher Application event publisher for notifications
      */
     @Autowired
-    public ConfigurationService(ConfigurationRepository configurationRepository,
+    public ConfigurationService(ConfigurationManagementRepository configurationRepository,
                               EncryptionService encryptionService,
                               Environment environment,
                               ApplicationEventPublisher eventPublisher) {
