@@ -126,7 +126,7 @@ public interface AccountArchiveRepository extends JpaRepository<Archive, Long> {
      * @return List of archived accounts approaching retention expiration
      */
     @Query("SELECT a FROM Archive a WHERE a.legalHold = false AND " +
-           "a.retentionDate BETWEEN CURRENT_DATE AND (CURRENT_DATE + :warningDays) " +
+           "a.retentionDate BETWEEN CURRENT_DATE AND DATEADD(DAY, :warningDays, CURRENT_DATE) " +
            "ORDER BY a.retentionDate ASC")
     List<Archive> findByExpirationWarning(@Param("warningDays") Integer warningDays);
 
