@@ -33,8 +33,10 @@ public class TransactionInterceptor implements HandlerInterceptor {
     // ThreadLocal storage for transaction context to ensure thread safety
     private static final ThreadLocal<TransactionContext> transactionContextHolder = new ThreadLocal<>();
 
-    // CICS transaction code validation pattern - 4 character alphanumeric codes
-    private static final Pattern TRANSACTION_CODE_PATTERN = Pattern.compile("^[A-Z0-9]{4}[0-9]{2}[A-Z]$");
+    // CICS transaction code validation pattern - 8 character codes with two possible formats:
+    // Pattern 1: CO + 3 letters + 2 digits + C (e.g., COSGN00C)
+    // Pattern 2: CO + 4 letters + 1 letter + C (e.g., COACTVWC)
+    private static final Pattern TRANSACTION_CODE_PATTERN = Pattern.compile("^CO([A-Z]{3}[0-9]{2}|[A-Z]{4}[A-Z])C$");
 
     // Valid CICS transaction codes based on the technical specification
     private static final Set<String> VALID_TRANSACTION_CODES = Set.of(
@@ -335,7 +337,7 @@ public class TransactionInterceptor implements HandlerInterceptor {
         
         String code = transactionCode.trim().toUpperCase();
         
-        // Check format pattern (7 characters: 4 letters/numbers, 2 numbers, 1 letter)
+        // Check format pattern (8 characters: CO + (3 letters + 2 digits) OR (4 letters + 1 letter) + C)
         if (!TRANSACTION_CODE_PATTERN.matcher(code).matches()) {
             return false;
         }
