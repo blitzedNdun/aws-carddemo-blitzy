@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.Objects;
 
@@ -70,8 +71,8 @@ public class StatementItemDto {
      */
     public StatementItemDto() {
         // Set default scale for monetary amounts to match COBOL COMP-3 precision
-        this.amount = BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP);
-        this.runningBalance = BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP);
+        this.amount = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        this.runningBalance = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         this.showInPlainText = true;
         this.showInHtml = true;
     }
@@ -91,8 +92,8 @@ public class StatementItemDto {
         this.merchantName = merchantName;
         this.transactionDescription = transactionDescription;
         // Ensure proper scale for monetary amounts matching COBOL COMP-3 behavior
-        this.amount = amount != null ? amount.setScale(2, BigDecimal.ROUND_HALF_UP) : BigDecimal.ZERO.setScale(2);
-        this.runningBalance = runningBalance != null ? runningBalance.setScale(2, BigDecimal.ROUND_HALF_UP) : BigDecimal.ZERO.setScale(2);
+        this.amount = amount != null ? amount.setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(2);
+        this.runningBalance = runningBalance != null ? runningBalance.setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(2);
         this.authCode = authCode;
         this.referenceNumber = referenceNumber;
         this.isDebit = isDebit;
@@ -195,12 +196,12 @@ public class StatementItemDto {
 
     public void setAmount(BigDecimal amount) {
         // Ensure proper scale matching COBOL COMP-3 precision
-        this.amount = amount != null ? amount.setScale(2, BigDecimal.ROUND_HALF_UP) : BigDecimal.ZERO.setScale(2);
+        this.amount = amount != null ? amount.setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(2);
     }
 
     public void setRunningBalance(BigDecimal runningBalance) {
         // Ensure proper scale matching COBOL COMP-3 precision
-        this.runningBalance = runningBalance != null ? runningBalance.setScale(2, BigDecimal.ROUND_HALF_UP) : BigDecimal.ZERO.setScale(2);
+        this.runningBalance = runningBalance != null ? runningBalance.setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(2);
     }
 
     public void setAuthCode(String authCode) {
