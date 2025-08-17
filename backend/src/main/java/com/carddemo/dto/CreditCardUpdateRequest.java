@@ -1,5 +1,6 @@
 package com.carddemo.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -88,6 +89,7 @@ public class CreditCardUpdateRequest {
      * 
      * @return true if expiration date is valid according to COBOL rules
      */
+    @JsonIgnore
     public boolean isExpirationDateValid() {
         if (expirationDate == null) {
             return false;
@@ -107,6 +109,7 @@ public class CreditCardUpdateRequest {
      * 
      * @return true if card name contains only alphabetic characters and spaces
      */
+    @JsonIgnore
     public boolean isEmbossedNameValid() {
         if (embossedName == null || embossedName.trim().isEmpty()) {
             return false;
@@ -123,6 +126,7 @@ public class CreditCardUpdateRequest {
      * 
      * @return true if active status is 'Y' or 'N'
      */
+    @JsonIgnore
     public boolean isActiveStatusValid() {
         return "Y".equals(activeStatus) || "N".equals(activeStatus);
     }
@@ -134,6 +138,7 @@ public class CreditCardUpdateRequest {
      * 
      * @return true if card number is valid 16-digit number
      */
+    @JsonIgnore
     public boolean isCardNumberValid() {
         if (cardNumber == null) {
             return false;
@@ -150,6 +155,7 @@ public class CreditCardUpdateRequest {
      * 
      * @return true if all fields are valid according to COBOL validation rules
      */
+    @JsonIgnore
     public boolean isValid() {
         return isCardNumberValid() && 
                isEmbossedNameValid() && 
