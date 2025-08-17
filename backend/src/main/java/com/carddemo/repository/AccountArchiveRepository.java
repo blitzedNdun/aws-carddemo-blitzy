@@ -1,13 +1,17 @@
 package com.carddemo.repository;
 
+import com.carddemo.entity.Archive;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -27,17 +31,17 @@ import java.util.List;
  * - Performance-optimized queries for large archive datasets
  */
 @Repository
-public interface AccountArchiveRepository extends JpaRepository<Object, Long> {
+public interface AccountArchiveRepository extends JpaRepository<Archive, Long> {
 
     /**
      * Standard save operation for archiving account data.
      * Persists account records to the archive schema with archival metadata.
      * 
-     * @param entity The account archive entity to save
-     * @return The saved account archive entity
+     * @param entity The archive entity to save
+     * @return The saved archive entity
      */
     @Override
-    <S> S save(S entity);
+    <S extends Archive> S save(S entity);
 
     /**
      * Retrieves all archived account records.
@@ -46,16 +50,16 @@ public interface AccountArchiveRepository extends JpaRepository<Object, Long> {
      * @return List of all archived account records
      */
     @Override
-    List<Object> findAll();
+    List<Archive> findAll();
 
     /**
      * Standard delete operation for archive records.
      * Used for purging expired archive records per retention policies.
      * 
-     * @param entity The account archive entity to delete
+     * @param entity The archive entity to delete
      */
     @Override
-    void delete(Object entity);
+    void delete(Archive entity);
 
     /**
      * Finds archived account records within the specified date range.
@@ -66,8 +70,8 @@ public interface AccountArchiveRepository extends JpaRepository<Object, Long> {
      * @param endDate The end of the archive date range (inclusive)
      * @return List of archived accounts within the specified date range
      */
-    @Query("SELECT a FROM AccountArchive a WHERE a.archiveDate BETWEEN :startDate AND :endDate ORDER BY a.archiveDate DESC")
-    List<Object> findByArchiveDateBetween(@Param("startDate") LocalDate startDate, 
+    @Query("SELECT a FROM Archive a WHERE DATE(a.archiveDate) BETWEEN :startDate AND :endDate ORDER BY a.archiveDate DESC")
+    List<Archive> findByArchiveDateBetween(@Param("startDate") LocalDate startDate, 
                                          @Param("endDate") LocalDate endDate);
 
     /**
@@ -78,8 +82,8 @@ public interface AccountArchiveRepository extends JpaRepository<Object, Long> {
      * @param retentionMonths The retention period in months
      * @return List of archived accounts eligible for retention processing
      */
-    @Query("SELECT a FROM AccountArchive a WHERE FUNCTION('MONTHS_BETWEEN', CURRENT_DATE, a.archiveDate) >= :retentionMonths AND a.legalHold = false ORDER BY a.archiveDate ASC")
-    List<Object> findByRetentionPeriod(@Param("retentionMonths") Integer retentionMonths);
+    @Query("SELECT a FROM Archive a WHERE a.retentionDate <= CURRENT_DATE AND a.legalHold = false ORDER BY a.archiveDate ASC")
+    List<Archive> findByRetentionPeriod(@Param("retentionMonths") Integer retentionMonths);
 
     /**
      * Finds archived account records by data type and archive date criteria.
@@ -90,8 +94,8 @@ public interface AccountArchiveRepository extends JpaRepository<Object, Long> {
      * @param archiveDate The minimum archive date for filtering
      * @return List of archived accounts matching data type and date criteria
      */
-    @Query("SELECT a FROM AccountArchive a WHERE a.dataType = :dataType AND a.archiveDate >= :archiveDate ORDER BY a.archiveDate DESC")
-    List<Object> findByDataTypeAndArchiveDateAfter(@Param("dataType") String dataType, 
+    @Query("SELECT a FROM Archive a WHERE a.dataType = :dataType AND DATE(a.archiveDate) >= :archiveDate ORDER BY a.archiveDate DESC")
+    List<Archive> findByDataTypeAndArchiveDateAfter(@Param("dataType") String dataType, 
                                                    @Param("archiveDate") LocalDate archiveDate);
 
     /**
@@ -101,8 +105,8 @@ public interface AccountArchiveRepository extends JpaRepository<Object, Long> {
      * 
      * @return List of archived accounts with active legal holds
      */
-    @Query("SELECT a FROM AccountArchive a WHERE a.legalHold = true ORDER BY a.archiveDate ASC")
-    List<Object> findByLegalHoldTrue();
+    @Query("SELECT a FROM Archive a WHERE a.legalHold = true ORDER BY a.archiveDate ASC")
+    List<Archive> findByLegalHoldTrue();
 
     /**
      * Finds archived account records for a specific account ID.
@@ -111,8 +115,8 @@ public interface AccountArchiveRepository extends JpaRepository<Object, Long> {
      * @param accountId The account identifier to search for
      * @return List of archived records for the specified account
      */
-    @Query("SELECT a FROM AccountArchive a WHERE a.accountId = :accountId ORDER BY a.archiveDate DESC")
-    List<Object> findByAccountId(@Param("accountId") Long accountId);
+    @Query("SELECT a FROM Archive a WHERE a.sourceRecordId = :accountId AND a.dataType = 'ACCOUNT_DATA' ORDER BY a.archiveDate DESC")
+    List<Archive> findByAccountId(@Param("accountId") String accountId);
 
     /**
      * Finds archived account records approaching retention expiration.
@@ -121,10 +125,10 @@ public interface AccountArchiveRepository extends JpaRepository<Object, Long> {
      * @param warningDays Number of days before expiration to include
      * @return List of archived accounts approaching retention expiration
      */
-    @Query("SELECT a FROM AccountArchive a WHERE a.legalHold = false AND " +
-           "FUNCTION('DATEDIFF', a.expirationDate, CURRENT_DATE) <= :warningDays AND " +
-           "a.expirationDate > CURRENT_DATE ORDER BY a.expirationDate ASC")
-    List<Object> findByExpirationWarning(@Param("warningDays") Integer warningDays);
+    @Query("SELECT a FROM Archive a WHERE a.legalHold = false AND " +
+           "a.retentionDate BETWEEN CURRENT_DATE AND (CURRENT_DATE + :warningDays) " +
+           "ORDER BY a.retentionDate ASC")
+    List<Archive> findByExpirationWarning(@Param("warningDays") Integer warningDays);
 
     /**
      * Counts archived account records by data type for reporting.
@@ -133,7 +137,7 @@ public interface AccountArchiveRepository extends JpaRepository<Object, Long> {
      * @param dataType The data type to count
      * @return Number of archived records of the specified type
      */
-    @Query("SELECT COUNT(a) FROM AccountArchive a WHERE a.dataType = :dataType")
+    @Query("SELECT COUNT(a) FROM Archive a WHERE a.dataType = :dataType")
     Long countByDataType(@Param("dataType") String dataType);
 
     /**
@@ -143,8 +147,8 @@ public interface AccountArchiveRepository extends JpaRepository<Object, Long> {
      * @param pageable Pagination and sorting criteria
      * @return Page of archived account records
      */
-    @Query("SELECT a FROM AccountArchive a ORDER BY a.archiveDate DESC")
-    Page<Object> findAllWithPagination(Pageable pageable);
+    @Query("SELECT a FROM Archive a ORDER BY a.archiveDate DESC")
+    Page<Archive> findAllWithPagination(Pageable pageable);
 
     /**
      * Finds archived account records by customer ID for customer-specific reporting.
@@ -153,8 +157,8 @@ public interface AccountArchiveRepository extends JpaRepository<Object, Long> {
      * @param customerId The customer identifier to search for
      * @return List of archived records for the specified customer
      */
-    @Query("SELECT a FROM AccountArchive a WHERE a.customerId = :customerId ORDER BY a.archiveDate DESC")
-    List<Object> findByCustomerId(@Param("customerId") Long customerId);
+    @Query("SELECT a FROM Archive a WHERE a.sourceRecordId = :customerId AND a.dataType = 'CUSTOMER_DATA' ORDER BY a.archiveDate DESC")
+    List<Archive> findByCustomerId(@Param("customerId") String customerId);
 
     /**
      * Finds archived account records with expired retention periods.
@@ -163,19 +167,21 @@ public interface AccountArchiveRepository extends JpaRepository<Object, Long> {
      * 
      * @return List of archived accounts eligible for permanent deletion
      */
-    @Query("SELECT a FROM AccountArchive a WHERE a.expirationDate < CURRENT_DATE AND a.legalHold = false ORDER BY a.expirationDate ASC")
-    List<Object> findExpiredRecords();
+    @Query("SELECT a FROM Archive a WHERE a.retentionDate < CURRENT_DATE AND a.legalHold = false ORDER BY a.retentionDate ASC")
+    List<Archive> findExpiredRecords();
 
     /**
      * Updates legal hold status for archived account records.
      * Critical for litigation management and regulatory compliance.
      * 
-     * @param accountId The account ID to update
+     * @param sourceRecordId The source record ID to update
      * @param legalHold The new legal hold status
      * @return Number of records updated
      */
-    @Query("UPDATE AccountArchive a SET a.legalHold = :legalHold, a.lastModified = CURRENT_TIMESTAMP WHERE a.accountId = :accountId")
-    Integer updateLegalHoldStatus(@Param("accountId") Long accountId, @Param("legalHold") Boolean legalHold);
+    @Modifying
+    @Transactional
+    @Query("UPDATE Archive a SET a.legalHold = :legalHold, a.updatedTimestamp = CURRENT_TIMESTAMP WHERE a.sourceRecordId = :sourceRecordId AND a.dataType = 'ACCOUNT_DATA'")
+    Integer updateLegalHoldStatus(@Param("sourceRecordId") String sourceRecordId, @Param("legalHold") Boolean legalHold);
 
     /**
      * Finds archived account records by archive location for storage management.
@@ -184,7 +190,7 @@ public interface AccountArchiveRepository extends JpaRepository<Object, Long> {
      * @param storageLocation The physical or logical storage location
      * @return List of archived records in the specified location
      */
-    @Query("SELECT a FROM AccountArchive a WHERE a.storageLocation = :storageLocation ORDER BY a.archiveDate DESC")
-    List<Object> findByStorageLocation(@Param("storageLocation") String storageLocation);
+    @Query("SELECT a FROM Archive a WHERE a.storageLocation = :storageLocation ORDER BY a.archiveDate DESC")
+    List<Archive> findByStorageLocation(@Param("storageLocation") String storageLocation);
 
 }
