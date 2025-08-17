@@ -64,7 +64,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
      * @param reportType the type of reports to find
      * @return list of reports matching both criteria
      */
-    List<Report> findByStatusAndType(Report.Status status, Report.ReportType reportType);
+    List<Report> findByStatusAndReportType(Report.Status status, Report.ReportType reportType);
 
     /**
      * Finds reports for a specific user within a date range.
@@ -95,8 +95,18 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     @Modifying
     @Transactional
     @Query("DELETE FROM Report r WHERE r.createdAt < :cutoffDate AND " +
-           "(r.status = 'COMPLETED' OR r.status = 'FAILED' OR r.status = 'EXPIRED')")
-    int deleteOldReports(@Param("cutoffDate") LocalDateTime cutoffDate);
+           "r.status IN (:completedStatus, :failedStatus, :expiredStatus)")
+    int deleteOldReports(@Param("cutoffDate") LocalDateTime cutoffDate,
+                         @Param("completedStatus") Report.Status completedStatus,
+                         @Param("failedStatus") Report.Status failedStatus,
+                         @Param("expiredStatus") Report.Status expiredStatus);
+
+    /**
+     * Default convenience method for deleteOldReports with standard status values.
+     */
+    default int deleteOldReports(LocalDateTime cutoffDate) {
+        return deleteOldReports(cutoffDate, Report.Status.COMPLETED, Report.Status.FAILED, Report.Status.EXPIRED);
+    }
 
     /**
      * Finds all reports that are currently pending processing.
@@ -105,9 +115,18 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
      * 
      * @return list of reports that are pending or currently being processed
      */
-    @Query("SELECT r FROM Report r WHERE r.status IN ('REQUESTED', 'QUEUED', 'PROCESSING') " +
+    @Query("SELECT r FROM Report r WHERE r.status IN (:requestedStatus, :queuedStatus, :processingStatus) " +
            "ORDER BY r.createdAt ASC")
-    List<Report> findPendingReports();
+    List<Report> findPendingReports(@Param("requestedStatus") Report.Status requestedStatus,
+                                   @Param("queuedStatus") Report.Status queuedStatus,
+                                   @Param("processingStatus") Report.Status processingStatus);
+
+    /**
+     * Default convenience method for findPendingReports with standard status values.
+     */
+    default List<Report> findPendingReports() {
+        return findPendingReports(Report.Status.REQUESTED, Report.Status.QUEUED, Report.Status.PROCESSING);
+    }
 
     /**
      * Counts reports by type and status for reporting dashboard metrics.
@@ -118,7 +137,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
      * @param status the status of reports to count
      * @return count of reports matching the criteria
      */
-    long countByTypeAndStatus(Report.ReportType reportType, Report.Status status);
+    long countByReportTypeAndStatus(Report.ReportType reportType, Report.Status status);
 
     /**
      * Finds reports by status, ordered by creation date.
@@ -136,13 +155,11 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
      * similar to the report listing functionality in CORPT00C.
      * 
      * @param userId the user ID to search for
-     * @param limit the maximum number of reports to return
-     * @return list of most recent reports for the user
+     * @return list of most recent reports for the user, ordered by creation time
      */
     @Query("SELECT r FROM Report r WHERE r.userId = :userId " +
-           "ORDER BY r.createdAt DESC LIMIT :limit")
-    List<Report> findTopReportsByUserId(@Param("userId") String userId, 
-                                       @Param("limit") int limit);
+           "ORDER BY r.createdAt DESC")
+    List<Report> findTopReportsByUserId(@Param("userId") String userId);
 
     /**
      * Finds reports by multiple report types.
@@ -192,10 +209,18 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
      * @param failedSince timestamp indicating when to start looking for failed reports
      * @return list of failed reports that may be eligible for retry
      */
-    @Query("SELECT r FROM Report r WHERE r.status = 'FAILED' AND " +
+    @Query("SELECT r FROM Report r WHERE r.status = :failedStatus AND " +
            "r.processingCompletedAt >= :failedSince " +
            "ORDER BY r.createdAt ASC")
-    List<Report> findFailedReportsForRetry(@Param("failedSince") LocalDateTime failedSince);
+    List<Report> findFailedReportsForRetry(@Param("failedSince") LocalDateTime failedSince,
+                                          @Param("failedStatus") Report.Status failedStatus);
+
+    /**
+     * Default convenience method for findFailedReportsForRetry with FAILED status.
+     */
+    default List<Report> findFailedReportsForRetry(LocalDateTime failedSince) {
+        return findFailedReportsForRetry(failedSince, Report.Status.FAILED);
+    }
 
     /**
      * Updates report status in batch for multiple reports.
@@ -234,7 +259,15 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
      */
     @Query("SELECT COALESCE(SUM(r.fileSizeBytes), 0) FROM Report r WHERE " +
            "r.createdAt >= :startDate AND r.createdAt <= :endDate AND " +
-           "r.status = 'COMPLETED'")
+           "r.status = :completedStatus")
     Long calculateTotalFileSizeByDateRange(@Param("startDate") LocalDateTime startDate,
-                                          @Param("endDate") LocalDateTime endDate);
+                                          @Param("endDate") LocalDateTime endDate,
+                                          @Param("completedStatus") Report.Status completedStatus);
+
+    /**
+     * Default convenience method for calculateTotalFileSizeByDateRange with COMPLETED status.
+     */
+    default Long calculateTotalFileSizeByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
+        return calculateTotalFileSizeByDateRange(startDate, endDate, Report.Status.COMPLETED);
+    }
 }
