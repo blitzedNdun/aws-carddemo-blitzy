@@ -222,12 +222,12 @@ public class FileExportResponse {
     @Override
     public String toString() {
         return "FileExportResponse{" +
-                "fileFormat='" + fileFormat + '\'' +
+                "fileFormat=" + (fileFormat != null ? "'" + fileFormat + "'" : null) +
                 ", recordCount=" + recordCount +
                 ", fileSize=" + fileSize +
                 ", generationTimestamp=" + generationTimestamp +
-                ", fileName='" + fileName + '\'' +
-                ", filePath='" + filePath + '\'' +
+                ", fileName=" + (fileName != null ? "'" + fileName + "'" : null) +
+                ", filePath=" + (filePath != null ? "'" + filePath + "'" : null) +
                 '}';
     }
     
