@@ -51,22 +51,21 @@ public class PasswordPolicyValidator {
             throw new PasswordPolicyException("Password can NOT be empty...", "EMPTY_PASSWORD");
         }
 
-        // Convert to uppercase for COBOL compatibility and RACF-equivalent processing
-        String normalizedPassword = password.toUpperCase().trim();
-        String normalizedUserId = userId != null ? userId.toUpperCase().trim() : "";
+        // Preserve original password for strength checking
+        String trimmedPassword = password.trim();
 
         // Validate basic password requirements
-        validatePasswordLength(normalizedPassword);
+        validatePasswordLength(trimmedPassword);
         
-        // Check password strength and complexity
-        checkPasswordStrength(normalizedPassword);
+        // Check password strength and complexity (with original case)
+        checkPasswordStrength(trimmedPassword);
         
-        // Enforce complexity rules
-        enforceComplexityRules(normalizedPassword, normalizedUserId);
+        // Enforce complexity rules (user ID will be normalized internally)
+        enforceComplexityRules(trimmedPassword, userId);
         
-        // Validate password history constraints
+        // Validate password history constraints (case-insensitive comparison)
         if (passwordHistory != null && !passwordHistory.isEmpty()) {
-            if (!isPasswordHistoryValid(normalizedPassword, passwordHistory)) {
+            if (!isPasswordHistoryValid(trimmedPassword, passwordHistory)) {
                 throw new PasswordPolicyException(
                     "Password has been used recently. Please choose a different password.",
                     "PASSWORD_REUSE_VIOLATION"
@@ -79,7 +78,7 @@ public class PasswordPolicyValidator {
      * Checks password strength requirements including length and basic character validation.
      * Implements RACF-equivalent strength checking with enterprise security standards.
      * 
-     * @param password The normalized password to check
+     * @param password The password to check (preserving original case)
      * @throws PasswordPolicyException if password does not meet strength requirements
      */
     public void checkPasswordStrength(String password) {
@@ -98,8 +97,8 @@ public class PasswordPolicyValidator {
             strengthIssues.add("at least one number");
         }
 
-        // Check for prohibited common passwords
-        if (PROHIBITED_PASSWORDS.contains(password)) {
+        // Check for prohibited common passwords (case-insensitive comparison)
+        if (PROHIBITED_PASSWORDS.contains(password.toUpperCase())) {
             throw new PasswordPolicyException(
                 "Password is too common and not allowed. Please choose a more secure password.",
                 "COMMON_PASSWORD_VIOLATION"
@@ -130,12 +129,13 @@ public class PasswordPolicyValidator {
             return true; // No history to check against
         }
 
-        // Check against the last N passwords in history
+        // Check against the last N passwords in history (case-insensitive comparison)
         int historyLimit = Math.min(passwordHistory.size(), PASSWORD_HISTORY_COUNT);
+        String normalizedNewPassword = newPassword.toUpperCase();
         
         for (int i = 0; i < historyLimit; i++) {
             String historicalPassword = passwordHistory.get(i);
-            if (historicalPassword != null && historicalPassword.equalsIgnoreCase(newPassword)) {
+            if (historicalPassword != null && historicalPassword.toUpperCase().equals(normalizedNewPassword)) {
                 return false; // Password found in history
             }
         }
@@ -147,24 +147,27 @@ public class PasswordPolicyValidator {
      * Enforces comprehensive password complexity rules.
      * Implements RACF-equivalent complexity requirements with enterprise security standards.
      * 
-     * @param password The normalized password to validate
-     * @param userId The user ID to check for password similarity
+     * @param password The password to validate (preserving original case)
+     * @param userId The user ID to check for password similarity (will be normalized internally)
      * @throws PasswordPolicyException if password violates complexity rules
      */
     public void enforceComplexityRules(String password, String userId) {
         List<String> complexityViolations = new ArrayList<>();
 
-        // Password cannot be the same as user ID
-        if (userId != null && !userId.trim().isEmpty() && password.equals(userId)) {
+        // Normalize user ID for case-insensitive comparison
+        String normalizedUserId = userId != null ? userId.toUpperCase().trim() : "";
+
+        // Password cannot be the same as user ID (case-insensitive comparison)
+        if (!normalizedUserId.isEmpty() && password.toUpperCase().equals(normalizedUserId)) {
             throw new PasswordPolicyException(
                 "Password cannot be the same as User ID.",
                 "PASSWORD_USERID_MATCH"
             );
         }
 
-        // Password cannot contain user ID as substring
-        if (userId != null && !userId.trim().isEmpty() && 
-            userId.length() >= 3 && password.contains(userId)) {
+        // Password cannot contain user ID as substring (case-insensitive comparison)
+        if (!normalizedUserId.isEmpty() && normalizedUserId.length() >= 3 && 
+            password.toUpperCase().contains(normalizedUserId)) {
             complexityViolations.add("cannot contain User ID");
         }
 
@@ -179,8 +182,8 @@ public class PasswordPolicyValidator {
             complexityViolations.add("must contain at least 3 different character types (uppercase, lowercase, numbers, special characters)");
         }
 
-        // Check for alphabetical or numerical sequences
-        if (hasAlphabeticalSequence(password) || hasNumericalSequence(password)) {
+        // Check for alphabetical or numerical sequences (case-insensitive)
+        if (hasAlphabeticalSequence(password.toUpperCase()) || hasNumericalSequence(password)) {
             complexityViolations.add("cannot contain sequential characters (ABC, 123, etc.)");
         }
 
