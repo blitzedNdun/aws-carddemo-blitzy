@@ -2,6 +2,8 @@ package com.carddemo.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -27,10 +29,10 @@ public class CreditCardUpdateResponse {
     private String embossedName;
 
     /**
-     * Credit card expiration date in MM/YY format
+     * Credit card expiration date - last day of expiration month
      */
     @JsonProperty("expirationDate")
-    @JsonFormat(pattern = "MM/yy")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate expirationDate;
 
     /**
