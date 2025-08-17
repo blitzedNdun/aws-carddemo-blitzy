@@ -10,6 +10,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
@@ -134,11 +135,11 @@ public class PaymentService {
             
             // Execute authorization request to payment network
             String authUrl = paymentNetworkEndpoint + "/api/v1/authorize";
-            ResponseEntity<Map> response = restTemplate.exchange(
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
                 authUrl, 
                 HttpMethod.POST, 
                 request, 
-                Map.class
+                new ParameterizedTypeReference<Map<String, Object>>() {}
             );
             
             // Process authorization response
@@ -230,11 +231,11 @@ public class PaymentService {
             
             // Execute transaction processing request
             String processUrl = paymentNetworkEndpoint + "/api/v1/process";
-            ResponseEntity<Map> response = restTemplate.exchange(
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
                 processUrl,
                 HttpMethod.POST,
                 request,
-                Map.class
+                new ParameterizedTypeReference<Map<String, Object>>() {}
             );
             
             // Process transaction response
@@ -311,11 +312,11 @@ public class PaymentService {
             
             // Execute card validation request
             String validationUrl = paymentNetworkEndpoint + "/api/v1/validate";
-            ResponseEntity<Map> response = restTemplate.exchange(
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
                 validationUrl,
                 HttpMethod.POST,
                 request,
-                Map.class
+                new ParameterizedTypeReference<Map<String, Object>>() {}
             );
             
             // Process validation response
@@ -380,11 +381,11 @@ public class PaymentService {
             
             // Execute system status request
             String statusUrl = bankCoreEndpoint + "/api/v1/system/status";
-            ResponseEntity<Map> response = restTemplate.exchange(
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
                 statusUrl,
                 HttpMethod.GET,
                 request,
-                Map.class
+                new ParameterizedTypeReference<Map<String, Object>>() {}
             );
             
             // Process system status response
@@ -454,11 +455,11 @@ public class PaymentService {
             
             // Execute connection refresh request
             String refreshUrl = paymentNetworkEndpoint + "/api/v1/connection/refresh";
-            ResponseEntity<Map> response = restTemplate.exchange(
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
                 refreshUrl,
                 HttpMethod.POST,
                 request,
-                Map.class
+                new ParameterizedTypeReference<Map<String, Object>>() {}
             );
             
             // Verify refresh success
