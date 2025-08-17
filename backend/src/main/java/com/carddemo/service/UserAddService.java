@@ -100,14 +100,14 @@ public class UserAddService {
      */
     @Transactional
     public UserAddResponse addUser(UserAddRequest request) {
-        log.info("Starting user creation process for user ID: {}", request.getUserId());
-        
         try {
             // Validate input parameters
             if (request == null) {
                 log.error("User creation failed: request is null");
                 return createErrorResponse("Request cannot be null", "INVALID_REQUEST");
             }
+            
+            log.info("Starting user creation process for user ID: {}", request.getUserId());
             
             if (request.getUserId() == null || request.getUserId().trim().isEmpty()) {
                 log.error("User creation failed: user ID is null or empty");
