@@ -65,7 +65,7 @@ public interface TransactionCategoryRepository extends JpaRepository<Transaction
      * @return list of matching transaction categories
      */
     @Cacheable("transactionCategoriesByCode")
-    List<TransactionCategory> findByCategoryCode(@Param("categoryCode") String categoryCode);
+    List<TransactionCategory> findByIdCategoryCode(@Param("categoryCode") String categoryCode);
 
     /**
      * Retrieve all transaction categories by subcategory code.
@@ -75,7 +75,7 @@ public interface TransactionCategoryRepository extends JpaRepository<Transaction
      * @return list of matching transaction categories
      */
     @Cacheable("transactionCategoriesBySubcode")
-    List<TransactionCategory> findBySubcategoryCode(@Param("subcategoryCode") String subcategoryCode);
+    List<TransactionCategory> findByIdSubcategoryCode(@Param("subcategoryCode") String subcategoryCode);
 
     /**
      * Retrieve all transaction categories by transaction type code.
@@ -96,7 +96,7 @@ public interface TransactionCategoryRepository extends JpaRepository<Transaction
      * @return optional containing the matching transaction category, if found
      */
     @Cacheable("transactionCategoryByComposite")
-    Optional<TransactionCategory> findByCategoryCodeAndSubcategoryCode(
+    Optional<TransactionCategory> findByIdCategoryCodeAndIdSubcategoryCode(
             @Param("categoryCode") String categoryCode,
             @Param("subcategoryCode") String subcategoryCode);
 
@@ -108,7 +108,7 @@ public interface TransactionCategoryRepository extends JpaRepository<Transaction
      * @return list of matching transaction categories sorted by category code
      */
     @Cacheable("transactionCategoriesByTypeOrdered")
-    List<TransactionCategory> findByTransactionTypeCodeOrderByCategoryCodeAsc(
+    List<TransactionCategory> findByTransactionTypeCodeOrderByIdCategoryCodeAsc(
             @Param("transactionTypeCode") String transactionTypeCode);
 
     /**
@@ -139,7 +139,7 @@ public interface TransactionCategoryRepository extends JpaRepository<Transaction
      * @return count of matching transaction categories
      */
     @Cacheable("transactionCategoryCount")
-    long countByCategoryCode(@Param("categoryCode") String categoryCode);
+    long countByIdCategoryCode(@Param("categoryCode") String categoryCode);
 
     /**
      * Check if a transaction category exists with the specified composite key.
@@ -150,7 +150,7 @@ public interface TransactionCategoryRepository extends JpaRepository<Transaction
      * @return true if the category exists, false otherwise
      */
     @Cacheable("transactionCategoryExists")
-    boolean existsByCategoryCodeAndSubcategoryCode(
+    boolean existsByIdCategoryCodeAndIdSubcategoryCode(
             @Param("categoryCode") String categoryCode,
             @Param("subcategoryCode") String subcategoryCode);
 
