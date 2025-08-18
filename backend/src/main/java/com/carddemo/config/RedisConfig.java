@@ -10,7 +10,7 @@ import com.carddemo.util.CobolDataConverter;
 
 import org.springframework.session.data.redis.config.annotation.web.http.EnableRedisHttpSession;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.session.SessionRepository;
 import org.springframework.session.data.redis.RedisIndexedSessionRepository;
@@ -21,7 +21,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.beans.factory.annotation.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
+
 
 /**
  * Redis configuration class for Spring Session management replacing CICS COMMAREA.
@@ -60,108 +60,14 @@ public class RedisConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(RedisConfig.class);
 
-    // Redis connection configuration from application.yml
-    @Value("${spring.redis.host:localhost}")
-    private String redisHost;
+    // Redis connection configuration is now managed by CacheConfig.java
+    // This class focuses on Spring Session configuration and COBOL data serialization
 
-    @Value("${spring.redis.port:6379}")
-    private int redisPort;
+    // Redis connection factory is provided by CacheConfig.java as @Primary bean
+    // This avoids bean definition conflicts while maintaining session management functionality
 
-    @Value("${spring.redis.password:}")
-    private String redisPassword;
-
-    @Value("${spring.redis.database:0}")
-    private int redisDatabase;
-
-    // Redis connection pool configuration
-    @Value("${spring.redis.lettuce.pool.max-active:20}")
-    private int maxActive;
-
-    @Value("${spring.redis.lettuce.pool.max-idle:10}")
-    private int maxIdle;
-
-    @Value("${spring.redis.lettuce.pool.min-idle:5}")
-    private int minIdle;
-
-    @Value("${spring.redis.lettuce.pool.test-on-borrow:true}")
-    private boolean testOnBorrow;
-
-    @Value("${spring.redis.lettuce.pool.test-on-return:true}")
-    private boolean testOnReturn;
-
-    /**
-     * Creates and configures Redis connection factory using Lettuce client with connection pooling.
-     * 
-     * This method establishes the primary Redis connection factory that supports high-availability
-     * session storage with connection pooling optimized for concurrent user session management.
-     * The configuration matches enterprise requirements for sub-200ms response times and
-     * supports horizontal scaling across multiple application instances.
-     * 
-     * Connection Pool Configuration:
-     * - Maximum 20 active connections per application instance
-     * - Connection validation on borrow/return for reliability
-     * - Minimum idle connections maintained for response time optimization
-     * 
-     * @return configured LettuceConnectionFactory with pooling and validation
-     */
-    @Bean
-    public RedisConnectionFactory redisConnectionFactory() {
-        logger.info("Configuring Redis connection factory - Host: {}, Port: {}, Database: {}", 
-                   redisHost, redisPort, redisDatabase);
-
-        // Create and configure Lettuce connection factory
-        LettuceConnectionFactory factory = new LettuceConnectionFactory();
-        factory.setHostName(redisHost);
-        factory.setPort(redisPort);
-        factory.setDatabase(redisDatabase);
-        
-        // Set password if provided
-        if (redisPassword != null && !redisPassword.trim().isEmpty()) {
-            factory.setPassword(redisPassword);
-            logger.info("Redis password authentication configured");
-        }
-
-        // Configure connection validation and pooling
-        factory.setValidateConnection(true);
-        factory.setShareNativeConnection(false); // Ensure thread safety
-        
-        // Initialize the connection factory
-        factory.afterPropertiesSet();
-        
-        logger.info("Redis connection factory configured successfully");
-        return factory;
-    }
-
-    /**
-     * Creates Redis connection pool configuration optimized for session management workload.
-     * 
-     * This method configures Apache Commons Pool settings specifically tuned for Redis session
-     * storage operations. The pool sizing balances resource utilization with response time
-     * requirements while ensuring connection availability during peak usage periods.
-     * 
-     * @return configured GenericObjectPoolConfig for Redis connections
-     */
-    @Bean
-    public GenericObjectPoolConfig<Object> redisPoolConfig() {
-        GenericObjectPoolConfig<Object> poolConfig = new GenericObjectPoolConfig<>();
-        
-        // Set pool size limits
-        poolConfig.setMaxTotal(maxActive);
-        poolConfig.setMaxIdle(maxIdle);
-        poolConfig.setMinIdle(minIdle);
-        
-        // Configure connection validation
-        poolConfig.setTestOnBorrow(testOnBorrow);
-        poolConfig.setTestOnReturn(testOnReturn);
-        
-        // Enable JMX monitoring for pool metrics
-        poolConfig.setJmxEnabled(true);
-        
-        logger.info("Redis connection pool configured - Max: {}, MaxIdle: {}, MinIdle: {}", 
-                   maxActive, maxIdle, minIdle);
-        
-        return poolConfig;
-    }
+    // Redis connection pool configuration is now managed by CacheConfig.java
+    // Session management uses the shared connection pool from the primary Redis configuration
 
     /**
      * Creates Jackson ObjectMapper configured for COBOL data type serialization.
@@ -192,12 +98,14 @@ public class RedisConfig {
     }
 
     /**
-     * Creates RedisTemplate with Jackson serialization for complex session objects.
+     * Creates RedisTemplate with Jackson serialization for Spring Session management.
      * 
      * This method configures a RedisTemplate with JSON serialization support using
-     * the COBOL-compatible ObjectMapper. The template handles session attribute
+     * the COBOL-compatible ObjectMapper. The template handles Spring Session attribute
      * storage and retrieval while maintaining exact precision for financial data
      * and supporting complex nested session objects.
+     * 
+     * Uses the primary RedisConnectionFactory from CacheConfig to avoid bean conflicts.
      * 
      * Serialization Strategy:
      * - Keys serialized as strings for Redis compatibility
@@ -205,12 +113,12 @@ public class RedisConfig {
      * - Hash keys and values use same JSON serialization for consistency
      * - Session size validation integrated for 32KB COMMAREA limit enforcement
      * 
-     * @param redisConnectionFactory Redis connection factory for template operations
-     * @return configured RedisTemplate with Jackson JSON serialization
+     * @param redisConnectionFactory Redis connection factory for template operations (injected from CacheConfig)
+     * @return configured RedisTemplate with Jackson JSON serialization for Spring Session
      */
-    @Bean
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
-        logger.info("Configuring RedisTemplate with Jackson JSON serialization");
+    @Bean("springSessionRedisTemplate")
+    public RedisTemplate<String, Object> springSessionRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
+        logger.info("Configuring Spring Session RedisTemplate with Jackson JSON serialization");
         
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
@@ -228,7 +136,7 @@ public class RedisConfig {
         // Initialize template
         template.afterPropertiesSet();
         
-        logger.info("RedisTemplate configured with COBOL-compatible JSON serialization");
+        logger.info("Spring Session RedisTemplate configured with COBOL-compatible JSON serialization");
         return template;
     }
 
