@@ -9,6 +9,7 @@ import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfigurat
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -33,8 +34,10 @@ public class WebConfigTestConfiguration {
 
     /**
      * Mock PasswordEncoder bean to satisfy dependencies.
+     * Using @Primary to override the SecurityConfig passwordEncoder for tests.
      */
     @Bean
+    @Primary
     public PasswordEncoder passwordEncoder() {
         return NoOpPasswordEncoder.getInstance();
     }
