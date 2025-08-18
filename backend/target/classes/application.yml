@@ -14,6 +14,9 @@ spring:
   profiles:
     active: development
     
+  config:
+    import: "optional:configserver:"
+    
   # Database Configuration (PostgreSQL 16.x compatible with 15.x)
   datasource:
     url: jdbc:postgresql://localhost:5432/carddemo
@@ -34,7 +37,7 @@ spring:
     hibernate:
       ddl-auto: validate
       naming:
-        physical-strategy: org.hibernate.boot.model.naming.SnakeCasePhysicalNamingStrategy
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
     properties:
       hibernate:
         format_sql: true
@@ -149,6 +152,12 @@ spring:
   config:
     activate:
       on-profile: test
+    import: "optional:configserver:"
+  cloud:
+    config:
+      enabled: false
+      discovery:
+        enabled: false
   datasource:
     url: jdbc:h2:mem:testdb
     driver-class-name: org.h2.Driver
