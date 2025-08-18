@@ -56,12 +56,12 @@ class DataConversionServiceTest {
     private DataConversionService dataConversionService;
     
     // Test data constants for COMP-3 packed decimal testing
-    private static final byte[] COMP3_POSITIVE_123_45 = {0x01, 0x23, 0x4C}; // 123.45 positive
-    private static final byte[] COMP3_NEGATIVE_123_45 = {0x01, 0x23, 0x4D}; // 123.45 negative  
-    private static final byte[] COMP3_UNSIGNED_123_45 = {0x01, 0x23, 0x4F}; // 123.45 unsigned
+    private static final byte[] COMP3_POSITIVE_123_45 = {0x12, 0x34, 0x5C}; // 123.45 positive
+    private static final byte[] COMP3_NEGATIVE_123_45 = {0x12, 0x34, 0x5D}; // 123.45 negative  
+    private static final byte[] COMP3_UNSIGNED_123_45 = {0x12, 0x34, 0x5F}; // 123.45 unsigned
     private static final byte[] COMP3_ZERO = {0x00, 0x0C}; // 0.00
-    private static final byte[] COMP3_MAX_VALUE = {0x99, 0x99, 0x99, 0x9C}; // 999999.99
-    private static final byte[] COMP3_MIN_VALUE = {0x99, 0x99, 0x99, 0x9D}; // -999999.99
+    private static final byte[] COMP3_MAX_VALUE = {(byte)0x09, (byte)0x99, (byte)0x99, (byte)0x99, (byte)0x9C}; // 999999.99
+    private static final byte[] COMP3_MIN_VALUE = {(byte)0x09, (byte)0x99, (byte)0x99, (byte)0x99, (byte)0x9D}; // -999999.99
     
     // Test data constants for EBCDIC to ASCII conversion
     private static final byte[] EBCDIC_HELLO = {(byte)0xC8, (byte)0xC5, (byte)0xD3, (byte)0xD3, (byte)0xD6}; // "HELLO"
@@ -90,7 +90,7 @@ class DataConversionServiceTest {
             
             // Then
             assertThat(result).isNotNull();
-            assertThat(result.compareTo(new BigDecimal("123.45"))).isEqualTo(0);
+            assertThat(result).isEqualByComparingTo(new BigDecimal("123.45"));
             assertThat(result.scale()).isEqualTo(scale);
             assertThat(result.signum()).isEqualTo(1); // Positive
         }
@@ -107,7 +107,7 @@ class DataConversionServiceTest {
             
             // Then
             assertThat(result).isNotNull();
-            assertThat(result.compareTo(new BigDecimal("-123.45"))).isEqualTo(0);
+            assertThat(result).isEqualByComparingTo(new BigDecimal("-123.45"));
             assertThat(result.scale()).isEqualTo(scale);
             assertThat(result.signum()).isEqualTo(-1); // Negative
         }
@@ -124,7 +124,7 @@ class DataConversionServiceTest {
             
             // Then
             assertThat(result).isNotNull();
-            assertThat(result.compareTo(new BigDecimal("123.45"))).isEqualTo(0);
+            assertThat(result).isEqualByComparingTo(new BigDecimal("123.45"));
             assertThat(result.scale()).isEqualTo(scale);
             assertThat(result.signum()).isEqualTo(1); // Unsigned treated as positive
         }
@@ -141,7 +141,7 @@ class DataConversionServiceTest {
             
             // Then
             assertThat(result).isNotNull();
-            assertThat(result.compareTo(BigDecimal.ZERO)).isEqualTo(0);
+            assertThat(result).isEqualByComparingTo(BigDecimal.ZERO);
             assertThat(result.scale()).isEqualTo(scale);
         }
 
@@ -157,7 +157,7 @@ class DataConversionServiceTest {
             
             // Then
             assertThat(result).isNotNull();
-            assertThat(result.compareTo(new BigDecimal("999999.99"))).isEqualTo(0);
+            assertThat(result).isEqualByComparingTo(new BigDecimal("999999.99"));
             assertThat(result.scale()).isEqualTo(scale);
         }
 
@@ -173,7 +173,7 @@ class DataConversionServiceTest {
             
             // Then
             assertThat(result).isNotNull();
-            assertThat(result.compareTo(new BigDecimal("-999999.99"))).isEqualTo(0);
+            assertThat(result).isEqualByComparingTo(new BigDecimal("-999999.99"));
             assertThat(result.scale()).isEqualTo(scale);
         }
 
@@ -189,7 +189,7 @@ class DataConversionServiceTest {
             
             // Then
             assertThat(result).isNotNull();
-            assertThat(result.compareTo(BigDecimal.ZERO)).isEqualTo(0);
+            assertThat(result).isEqualByComparingTo(BigDecimal.ZERO);
             assertThat(result.scale()).isEqualTo(scale);
         }
 
@@ -206,7 +206,7 @@ class DataConversionServiceTest {
             
             // Then
             assertThat(result).isNotNull();
-            assertThat(result.compareTo(BigDecimal.ZERO)).isEqualTo(0);
+            assertThat(result).isEqualByComparingTo(BigDecimal.ZERO);
             assertThat(result.scale()).isEqualTo(scale);
         }
 
@@ -239,7 +239,7 @@ class DataConversionServiceTest {
             assertThat(result.scale()).isEqualTo(scale);
             // Value should be adjusted based on scale
             if (scale == 2) {
-                assertThat(result.compareTo(new BigDecimal("123.45"))).isEqualTo(0);
+                assertThat(result).isEqualByComparingTo(new BigDecimal("123.45"));
             }
         }
     }
@@ -540,7 +540,7 @@ class DataConversionServiceTest {
             
             // Then
             assertThat(result).isNotNull();
-            assertThat(result.compareTo(new BigDecimal("12345"))).isEqualTo(0);
+            assertThat(result).isEqualByComparingTo(new BigDecimal("12345"));
         }
 
         @Test
@@ -556,7 +556,7 @@ class DataConversionServiceTest {
             
             // Then
             assertThat(result).isNotNull();
-            assertThat(result.compareTo(new BigDecimal("-123.45"))).isEqualTo(0);
+            assertThat(result).isEqualByComparingTo(new BigDecimal("-123.45"));
             assertThat(result.signum()).isEqualTo(-1);
         }
 
@@ -572,7 +572,7 @@ class DataConversionServiceTest {
             
             // Then
             assertThat(result).isNotNull();
-            assertThat(result.compareTo(BigDecimal.ZERO)).isEqualTo(0);
+            assertThat(result).isEqualByComparingTo(BigDecimal.ZERO);
         }
 
         @Test
@@ -589,7 +589,7 @@ class DataConversionServiceTest {
             // Then
             assertThat(result).isNotNull();
             assertThat(result.scale()).isGreaterThanOrEqualTo(2);
-            assertThat(result.compareTo(new BigDecimal("1234.56"))).isEqualTo(0);
+            assertThat(result).isEqualByComparingTo(new BigDecimal("1234.56"));
         }
 
         @Test
@@ -605,7 +605,7 @@ class DataConversionServiceTest {
             
             // Then
             assertThat(result).isNotNull();
-            assertThat(result.compareTo(new BigDecimal("999999999999999999.99"))).isEqualTo(0);
+            assertThat(result).isEqualByComparingTo(new BigDecimal("999999999999999999.99"));
         }
 
         @Test
@@ -661,7 +661,7 @@ class DataConversionServiceTest {
             assertThat(result).isNotNull();
             assertThat(result.scale()).isEqualTo(requiredScale);
             // Should be rounded using HALF_UP (COBOL rounding)
-            assertThat(result.compareTo(new BigDecimal("123.46"))).isEqualTo(0);
+            assertThat(result).isEqualByComparingTo(new BigDecimal("123.46"));
         }
 
         @Test
@@ -693,7 +693,7 @@ class DataConversionServiceTest {
             
             // Then
             assertThat(result).isNotNull();
-            assertThat(result.compareTo(BigDecimal.ZERO)).isEqualTo(0);
+            assertThat(result).isEqualByComparingTo(BigDecimal.ZERO);
             assertThat(result.scale()).isEqualTo(requiredScale);
         }
 
@@ -770,8 +770,8 @@ class DataConversionServiceTest {
             BigDecimal amount1 = (BigDecimal) result.get("amount1");
             BigDecimal amount2 = (BigDecimal) result.get("amount2");
             
-            assertThat(amount1.compareTo(new BigDecimal("123.45"))).isEqualTo(0);
-            assertThat(amount2.compareTo(new BigDecimal("-123.45"))).isEqualTo(0);
+            assertThat(amount1).isEqualByComparingTo(new BigDecimal("123.45"));
+            assertThat(amount2).isEqualByComparingTo(new BigDecimal("-123.45"));
         }
 
         @Test
@@ -893,7 +893,7 @@ class DataConversionServiceTest {
             
             // Then
             assertThat(result).isNotNull();
-            assertThat(result.compareTo(new BigDecimal(maxValueString))).isEqualTo(0);
+            assertThat(result).isEqualByComparingTo(new BigDecimal(maxValueString));
         }
 
         @Test
@@ -909,7 +909,7 @@ class DataConversionServiceTest {
             
             // Then
             assertThat(result).isNotNull();
-            assertThat(result.compareTo(new BigDecimal(minValueString))).isEqualTo(0);
+            assertThat(result).isEqualByComparingTo(new BigDecimal(minValueString));
         }
 
         @Test
@@ -925,7 +925,7 @@ class DataConversionServiceTest {
             
             // Then
             assertThat(result).isNotNull();
-            assertThat(result.compareTo(new BigDecimal("0.01"))).isEqualTo(0);
+            assertThat(result).isEqualByComparingTo(new BigDecimal("0.01"));
         }
 
         @Test
@@ -977,7 +977,7 @@ class DataConversionServiceTest {
             
             // Then
             assertThat(result).isNotNull();
-            assertThat(result.compareTo(BigDecimal.ZERO)).isEqualTo(0);
+            assertThat(result).isEqualByComparingTo(BigDecimal.ZERO);
         }
 
         @Test
@@ -994,7 +994,7 @@ class DataConversionServiceTest {
             // Then
             assertThat(result).isNotNull();
             assertThat(result).hasSize(1000);
-            assertThat(result).containsOnly("A");
+            assertThat(result).matches("A+"); // All characters should be 'A'
         }
     }
 
@@ -1014,7 +1014,7 @@ class DataConversionServiceTest {
             
             // Then - should produce same result as direct CobolDataConverter call
             BigDecimal directResult = CobolDataConverter.fromComp3(COMP3_POSITIVE_123_45, scale);
-            assertThat(result.compareTo(directResult)).isEqualTo(0);
+            assertThat(result).isEqualByComparingTo(directResult);
         }
 
         @Test
@@ -1100,7 +1100,7 @@ class DataConversionServiceTest {
                     try {
                         BigDecimal result = dataConversionService.convertComp3ToBigDecimal(
                             COMP3_POSITIVE_123_45, 2, "CONCURRENT_TEST_" + threadIndex);
-                        assertThat(result.compareTo(new BigDecimal("123.45"))).isEqualTo(0);
+                        assertThat(result).isEqualByComparingTo(new BigDecimal("123.45"));
                     } catch (Exception e) {
                         exceptions.set(threadIndex, e);
                     }
@@ -1146,7 +1146,7 @@ class DataConversionServiceTest {
             Arguments.of(new byte[]{0x01, 0x23, 0x4C}, 2, new BigDecimal("123.45")), // Positive
             Arguments.of(new byte[]{0x01, 0x23, 0x4D}, 2, new BigDecimal("-123.45")), // Negative
             Arguments.of(new byte[]{0x00, 0x0C}, 2, new BigDecimal("0.00")), // Zero
-            Arguments.of(new byte[]{0x99, 0x9C}, 1, new BigDecimal("99.9")), // Max 3-digit
+            Arguments.of(new byte[]{(byte)0x99, (byte)0x9C}, 1, new BigDecimal("99.9")), // Max 3-digit
             Arguments.of(new byte[]{0x05, 0x0F}, 0, new BigDecimal("50")) // Unsigned integer
         );
     }
