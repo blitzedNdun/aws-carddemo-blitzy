@@ -207,7 +207,7 @@ public class CobolDataConverterService {
             } else {
                 // Format as plain decimal with preserved precision
                 if (value == null) {
-                    value = BigDecimal.ZERO.setScale(CobolDataConverter.DEFAULT_SCALE, 
+                    value = BigDecimal.ZERO.setScale(CobolDataConverter.MONETARY_SCALE, 
                                                    CobolDataConverter.COBOL_ROUNDING_MODE);
                 }
                 BigDecimal standardized = CobolDataConverter.preservePrecision(value, value.scale());

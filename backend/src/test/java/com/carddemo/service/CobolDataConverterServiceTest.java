@@ -8,7 +8,9 @@ package com.carddemo.service;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,7 +41,8 @@ import java.util.Locale;
  * @version 1.0
  * @since CardDemo v1.0
  */
-@SpringBootTest
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = {CobolDataConverterService.class})
 public class CobolDataConverterServiceTest {
 
     @Autowired
@@ -388,6 +391,11 @@ public class CobolDataConverterServiceTest {
      * @return byte array containing the packed decimal data
      */
     private byte[] hexStringToByteArray(String hexString) {
+        // Pad with leading zero if odd length (common in COMP-3 with sign nibble)
+        if (hexString.length() % 2 != 0) {
+            hexString = "0" + hexString;
+        }
+        
         int length = hexString.length();
         byte[] data = new byte[length / 2];
         for (int i = 0; i < length; i += 2) {

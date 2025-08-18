@@ -10,6 +10,7 @@ import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 import java.text.DecimalFormat;
 
 import com.carddemo.util.Constants;
@@ -70,15 +71,15 @@ public final class CobolDataConverter {
 
     /**
      * Pattern for validating COBOL PIC 9 (numeric) clauses.
-     * Matches formats like "PIC 9(5)" or "PIC 9".
+     * Matches formats like "PIC 9(5)", "PIC 9", "PIC 9(5)V9(4)", "PIC 9V99", etc.
      */
-    private static final Pattern PIC_9_PATTERN = Pattern.compile("PIC\\s+9(?:\\((\\d+)\\))?");
+    private static final Pattern PIC_9_PATTERN = Pattern.compile("PIC\\s+9(?:\\((\\d+)\\))?(?:V(?:9+|9\\((\\d+)\\)))?");
 
     /**
      * Pattern for validating COBOL PIC S9 (signed numeric) clauses.
-     * Matches formats like "PIC S9(10)V99" or "PIC S9(5)".
+     * Matches formats like "PIC S9(10)V99", "PIC S9(5)", "PIC S9(3)V9(4)", etc.
      */
-    private static final Pattern PIC_S9_PATTERN = Pattern.compile("PIC\\s+S9(?:\\((\\d+)\\))?(?:V9{1,2})?");
+    private static final Pattern PIC_S9_PATTERN = Pattern.compile("PIC\\s+S9(?:\\((\\d+)\\))?(?:V(?:9+|9\\((\\d+)\\)))?");
 
     /**
      * Private constructor to prevent instantiation of utility class.
@@ -323,14 +324,38 @@ public final class CobolDataConverter {
      */
     public static Object convertPicNumeric(Object value, String picClause) {
         if (value == null) {
+            // Check if this has decimal notation
+            int scale = parseDecimalScale(picClause);
+            if (scale > 0) {
+                return BigDecimal.ZERO.setScale(scale, COBOL_ROUNDING_MODE);
+            }
             return 0L;
         }
 
         int length = parsePicLength(picClause, PIC_9_PATTERN);
+        int scale = parseDecimalScale(picClause);
         
         // Convert to string first for validation
         String stringValue = value.toString().trim();
         
+        // Handle decimal values when V notation is present
+        if (scale > 0) {
+            // This is a decimal format like PIC 9(5)V9(4)
+            // Validate decimal numeric content
+            if (!stringValue.matches("^\\d*\\.?\\d*$")) {
+                throw new IllegalArgumentException("Invalid decimal value for PIC 9 with V notation: " + value);
+            }
+            
+            // Convert to BigDecimal with appropriate scale
+            try {
+                BigDecimal decimal = new BigDecimal(stringValue);
+                return decimal.setScale(scale, COBOL_ROUNDING_MODE);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid decimal value for PIC 9 with V notation: " + value);
+            }
+        }
+        
+        // Handle integer values (no V notation)
         // Remove leading zeros for processing
         stringValue = stringValue.replaceFirst("^0+", "");
         if (stringValue.isEmpty()) {
@@ -550,11 +575,24 @@ public final class CobolDataConverter {
      */
     private static int parseDecimalScale(String picClause) {
         // Look for V followed by 9s to determine decimal places
-        if (picClause.contains("V99")) {
-            return 2; // Most common case for monetary amounts
-        } else if (picClause.contains("V9")) {
-            return 1; // Single decimal place
+        // First try V9(n) format
+        Pattern vParenPattern = Pattern.compile("V9\\((\\d+)\\)");
+        Matcher parenMatcher = vParenPattern.matcher(picClause);
+        
+        if (parenMatcher.find()) {
+            // V9(n) format - return n
+            return Integer.parseInt(parenMatcher.group(1));
         }
+        
+        // Then try literal V9+ format (V9, V99, V999, etc.)
+        Pattern vLiteralPattern = Pattern.compile("V(9+)");
+        Matcher literalMatcher = vLiteralPattern.matcher(picClause);
+        
+        if (literalMatcher.find()) {
+            // Count the number of 9s after V
+            return literalMatcher.group(1).length();
+        }
+        
         return 0; // No decimal places
     }
 
