@@ -753,12 +753,13 @@ public final class ValidationUtil {
         if (zipCode == null || zipCode.trim().isEmpty()) {
             validationException.addFieldError(fieldName, fieldName + " must be supplied.");
         } else {
-            String cleanZip = zipCode.trim().replaceAll("\\D", "");
+            String trimmedZip = zipCode.trim();
             
-            if (cleanZip.length() != ZIP_CODE_LENGTH) {
-                validationException.addFieldError(fieldName, fieldName + " must be exactly 5 digits.");
-            } else if (!NUMERIC_PATTERN.matcher(cleanZip).matches()) {
+            // First check if it contains only numeric characters (no formatting allowed)
+            if (!NUMERIC_PATTERN.matcher(trimmedZip).matches()) {
                 validationException.addFieldError(fieldName, fieldName + " must contain only numeric characters.");
+            } else if (trimmedZip.length() != ZIP_CODE_LENGTH) {
+                validationException.addFieldError(fieldName, fieldName + " must be exactly 5 digits.");
             }
         }
         

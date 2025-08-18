@@ -382,15 +382,15 @@ public class ValidationUtilsTest {
         // Test non-numeric characters
         assertThatThrownBy(() -> ValidationUtil.validateZipCode("zipCode", "1234A"))
             .isInstanceOf(ValidationException.class)
-            .hasMessageContaining("zipCode must be exactly 5 digits");
+            .hasMessageContaining("zipCode must contain only numeric characters");
         
         assertThatThrownBy(() -> ValidationUtil.validateZipCode("zipCode", "ABCDE"))
             .isInstanceOf(ValidationException.class)
-            .hasMessageContaining("zipCode must be exactly 5 digits");
+            .hasMessageContaining("zipCode must contain only numeric characters");
         
         assertThatThrownBy(() -> ValidationUtil.validateZipCode("zipCode", "123-4"))
             .isInstanceOf(ValidationException.class)
-            .hasMessageContaining("zipCode must be exactly 5 digits");
+            .hasMessageContaining("zipCode must contain only numeric characters");
         
         // Test invalid state-ZIP combinations
         assertThat(ValidationUtil.validateStateZipCode("CA", "10001")).isFalse(); // NY ZIP with CA state
