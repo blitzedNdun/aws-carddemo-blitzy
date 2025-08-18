@@ -5,7 +5,6 @@
 
 package com.carddemo.dto;
 
-import lombok.NoArgsConstructor;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.Size;
 import java.util.List;
@@ -38,7 +37,6 @@ import java.time.LocalDateTime;
  * - menuOptions: Available menu options after successful authentication
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@NoArgsConstructor
 public class SignOnResponse {
 
     /**
