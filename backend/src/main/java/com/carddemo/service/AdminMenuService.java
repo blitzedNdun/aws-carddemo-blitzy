@@ -319,3 +319,4 @@ public class AdminMenuService {
         // For demonstration, return a simulated count
         return 15; // Simulated active user count
     }
+}
