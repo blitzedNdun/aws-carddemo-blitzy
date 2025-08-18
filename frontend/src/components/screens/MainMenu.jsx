@@ -1,21 +1,21 @@
 /**
  * MainMenu.jsx - Main Menu Screen for Regular Users
- * 
- * React component implementing the Main Menu screen (COMEN01) that serves as the 
+ *
+ * React component implementing the Main Menu screen (COMEN01) that serves as the
  * primary navigation hub for regular users. Converted from COBOL program COMEN01C
  * and BMS mapset COMEN01.
- * 
+ *
  * This component replicates the exact functionality of the mainframe CICS transaction
  * CM00, maintaining identical screen layout, validation rules, and navigation patterns
  * while providing a modern React-based user interface.
- * 
+ *
  * Key Features:
  * - Displays numbered menu options (1-12) with role-based availability
  * - Handles keyboard navigation for option selection
  * - Implements PF-key functions (F3=Exit, Enter=Select)
  * - Maintains session context and routes to selected business functions
  * - Preserves COBOL validation logic and error handling patterns
- * 
+ *
  * Converted from:
  * - COBOL Program: COMEN01C.cbl (transaction CM00)
  * - BMS Mapset: COMEN01.bms
@@ -23,19 +23,14 @@
  */
 
 // External imports - React core functionality
-import React, { useState, useEffect, useCallback } from 'react';
+import { TextField, List, ListItem, Box, Typography } from '@mui/material';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 // External imports - Material-UI components for consistent styling
-import { TextField } from '@mui/material';
-import { List } from '@mui/material/List';
-import { ListItem } from '@mui/material/ListItem';
-import { Box } from '@mui/material/Box';
-import { Typography } from '@mui/material/Typography';
 
 // Internal imports - API services and validation utilities
 import { apiService } from '../../services/api.js';
-import { validateDate } from '../../utils/validation.js';
 
 /**
  * Main Menu Data Structure
@@ -143,10 +138,10 @@ const MENU_OPTIONS = [
 
 /**
  * MainMenu Component
- * 
+ *
  * Functional React component that implements the Main Menu screen functionality.
  * Manages state for option selection, error handling, and user interaction.
- * 
+ *
  * @returns {JSX.Element} Main menu screen component
  */
 const MainMenu = () => {
@@ -169,19 +164,19 @@ const MainMenu = () => {
    */
   const updateDateTime = useCallback(() => {
     const now = new Date();
-    
+
     // Format date as MM/DD/YY to match BMS CURDATE format
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
     const year = String(now.getFullYear()).slice(-2);
     const formattedDate = `${month}/${day}/${year}`;
-    
+
     // Format time as HH:MM:SS to match BMS CURTIME format
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const seconds = String(now.getSeconds()).padStart(2, '0');
     const formattedTime = `${hours}:${minutes}:${seconds}`;
-    
+
     setCurrentDateTime({
       date: formattedDate,
       time: formattedTime,
@@ -213,13 +208,118 @@ const MainMenu = () => {
   useEffect(() => {
     updateDateTime();
     loadUserRole();
-    
+
     // Update time every second for real-time display
     const timeInterval = setInterval(updateDateTime, 1000);
-    
+
     // Cleanup interval on component unmount
     return () => clearInterval(timeInterval);
   }, [updateDateTime, loadUserRole]);
+
+  /**
+   * Handle option input change
+   * Validates numeric input and updates selected option state
+   */
+  const handleOptionChange = (event) => {
+    const value = event.target.value;
+
+    // Only allow numeric input (matching COBOL NUM attribute)
+    if (value === '' || /^\d{1,2}$/.test(value)) {
+      setSelectedOption(value);
+      setErrorMessage(''); // Clear any previous error messages
+    }
+  };
+
+  /**
+   * Navigate to selected menu option
+   * Replaces CICS XCTL functionality with React Router navigation
+   */
+  const navigateToSelectedOption = useCallback((menuOption) => {
+    setIsLoading(true);
+
+    try {
+      // Update session context (similar to COMMAREA updates)
+      sessionStorage.setItem('lastTransaction', 'CM00');
+      sessionStorage.setItem('lastProgram', 'COMEN01C');
+      sessionStorage.setItem('selectedOption', menuOption.number.toString());
+      sessionStorage.setItem('targetProgram', menuOption.programName);
+
+      // Navigate to the selected route
+      navigate(menuOption.routePath, {
+        state: {
+          fromMenu: true,
+          selectedOption: menuOption.number,
+          programName: menuOption.programName,
+        },
+      });
+    } catch (error) {
+      console.error('Navigation error:', error);
+      setErrorMessage('System error - please try again...');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [navigate]);
+
+  /**
+   * Process Enter key - validate and navigate to selected option
+   * Replicates PROCESS-ENTER-KEY paragraph from COBOL
+   */
+  const handleEnterKey = useCallback(() => {
+    // Clear any existing error messages
+    setErrorMessage('');
+
+    // Validate option selection (replicates COBOL validation logic)
+    const optionNum = parseInt(selectedOption, 10);
+
+    if (!selectedOption || selectedOption.trim() === '') {
+      setErrorMessage('Please enter a valid option number...');
+      return;
+    }
+
+    if (isNaN(optionNum) || optionNum < 1 || optionNum > MENU_OPTIONS.length) {
+      setErrorMessage('Please enter a valid option number...');
+      return;
+    }
+
+    // Find the selected menu option
+    const selectedMenuOption = MENU_OPTIONS.find(option => option.number === optionNum);
+
+    if (!selectedMenuOption) {
+      setErrorMessage('Please enter a valid option number...');
+      return;
+    }
+
+    // Role-based access control (replicates COBOL user type checking)
+    if (userRole === 'U' && selectedMenuOption.userType === 'A') {
+      setErrorMessage('No access - Admin Only option...');
+      return;
+    }
+
+    // Navigate to selected function (replaces CICS XCTL)
+    navigateToSelectedOption(selectedMenuOption);
+  }, [selectedOption, userRole, navigateToSelectedOption]);
+
+  /**
+   * Handle exit to sign-on screen
+   * Replicates RETURN-TO-SIGNON-SCREEN paragraph from COBOL
+   */
+  const handleExitToSignOn = useCallback(async () => {
+    setIsLoading(true);
+
+    try {
+      // Sign out user (clears session data)
+      await apiService.signOut();
+
+      // Navigate to sign-on screen
+      navigate('/signin', { replace: true });
+    } catch (error) {
+      console.error('Sign-out error:', error);
+      // Even if sign-out fails, still navigate to sign-on
+      navigate('/signin', { replace: true });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [navigate]);
 
   /**
    * Keyboard event handler for PF-key simulation
@@ -242,7 +342,7 @@ const MainMenu = () => {
         // Allow normal key processing
         break;
     }
-  }, [selectedOption]);
+  }, [handleEnterKey, handleExitToSignOn]);
 
   /**
    * Attach keyboard event listeners
@@ -251,111 +351,6 @@ const MainMenu = () => {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
-
-  /**
-   * Handle option input change
-   * Validates numeric input and updates selected option state
-   */
-  const handleOptionChange = (event) => {
-    const value = event.target.value;
-    
-    // Only allow numeric input (matching COBOL NUM attribute)
-    if (value === '' || /^\d{1,2}$/.test(value)) {
-      setSelectedOption(value);
-      setErrorMessage(''); // Clear any previous error messages
-    }
-  };
-
-  /**
-   * Process Enter key - validate and navigate to selected option
-   * Replicates PROCESS-ENTER-KEY paragraph from COBOL
-   */
-  const handleEnterKey = () => {
-    // Clear any existing error messages
-    setErrorMessage('');
-    
-    // Validate option selection (replicates COBOL validation logic)
-    const optionNum = parseInt(selectedOption, 10);
-    
-    if (!selectedOption || selectedOption.trim() === '') {
-      setErrorMessage('Please enter a valid option number...');
-      return;
-    }
-    
-    if (isNaN(optionNum) || optionNum < 1 || optionNum > MENU_OPTIONS.length) {
-      setErrorMessage('Please enter a valid option number...');
-      return;
-    }
-    
-    // Find the selected menu option
-    const selectedMenuOption = MENU_OPTIONS.find(option => option.number === optionNum);
-    
-    if (!selectedMenuOption) {
-      setErrorMessage('Please enter a valid option number...');
-      return;
-    }
-    
-    // Role-based access control (replicates COBOL user type checking)
-    if (userRole === 'U' && selectedMenuOption.userType === 'A') {
-      setErrorMessage('No access - Admin Only option...');
-      return;
-    }
-    
-    // Navigate to selected function (replaces CICS XCTL)
-    navigateToSelectedOption(selectedMenuOption);
-  };
-
-  /**
-   * Navigate to selected menu option
-   * Replaces CICS XCTL functionality with React Router navigation
-   */
-  const navigateToSelectedOption = (menuOption) => {
-    setIsLoading(true);
-    
-    try {
-      // Update session context (similar to COMMAREA updates)
-      sessionStorage.setItem('lastTransaction', 'CM00');
-      sessionStorage.setItem('lastProgram', 'COMEN01C');
-      sessionStorage.setItem('selectedOption', menuOption.number.toString());
-      sessionStorage.setItem('targetProgram', menuOption.programName);
-      
-      // Navigate to the selected route
-      navigate(menuOption.routePath, {
-        state: {
-          fromMenu: true,
-          selectedOption: menuOption.number,
-          programName: menuOption.programName,
-        },
-      });
-    } catch (error) {
-      console.error('Navigation error:', error);
-      setErrorMessage('System error - please try again...');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  /**
-   * Handle exit to sign-on screen
-   * Replicates RETURN-TO-SIGNON-SCREEN paragraph from COBOL
-   */
-  const handleExitToSignOn = async () => {
-    setIsLoading(true);
-    
-    try {
-      // Sign out user (clears session data)
-      await apiService.signOut();
-      
-      // Navigate to sign-on screen
-      navigate('/signin', { replace: true });
-    } catch (error) {
-      console.error('Sign-out error:', error);
-      // Even if sign-out fails, still navigate to sign-on
-      navigate('/signin', { replace: true });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   /**
    * Handle menu option click
@@ -415,7 +410,7 @@ const MainMenu = () => {
             Prog: COMEN01C
           </Typography>
         </Box>
-        
+
         {/* Center - Title */}
         <Box sx={{ flex: 2, textAlign: 'center' }}>
           <Typography variant="h6" sx={{ fontFamily: 'monospace', fontWeight: 'bold', color: '#856404' }}>
@@ -425,7 +420,7 @@ const MainMenu = () => {
             MAIN MENU
           </Typography>
         </Box>
-        
+
         {/* Right side - Date and Time */}
         <Box sx={{ flex: 1, textAlign: 'right' }}>
           <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
@@ -459,7 +454,7 @@ const MainMenu = () => {
             {getAccessibleMenuOptions().map((option) => (
               <ListItem
                 key={option.number}
-                button
+                component="button"
                 dense
                 onClick={() => handleOptionClick(option.number)}
                 sx={{
@@ -503,8 +498,8 @@ const MainMenu = () => {
               type="text"
               inputProps={{
                 maxLength: 2,
-                style: { 
-                  fontFamily: 'monospace', 
+                style: {
+                  fontFamily: 'monospace',
                   textAlign: 'center',
                   fontSize: '1.1rem',
                 },
@@ -531,21 +526,7 @@ const MainMenu = () => {
         </Box>
       </Box>
 
-      {/* Error Message Area - replicates BMS line 23 */}
-      {errorMessage && (
-        <Box
-          sx={{
-            padding: '0.5rem',
-            backgroundColor: '#f8d7da',
-            color: '#721c24',
-            borderRadius: '4px',
-            marginTop: '1rem',
-            fontFamily: 'monospace',
-          }}
-        >
-          <Typography variant="body2">{errorMessage}</Typography>
-        </Box>
-      )}
+      {/* Error Message Area removed to prevent duplicate display - using TextField helperText instead */}
 
       {/* Function Keys Footer - replicates BMS line 24 */}
       <Box
@@ -561,9 +542,9 @@ const MainMenu = () => {
         }}
       >
         <Typography variant="body2" sx={{ color: '#856404' }}>
-          ENTER=Continue  F3=Exit
+          ENTER=Continue F3=Exit
         </Typography>
-        
+
         {isLoading && (
           <Typography variant="body2" sx={{ color: '#0c5460' }}>
             Processing...
