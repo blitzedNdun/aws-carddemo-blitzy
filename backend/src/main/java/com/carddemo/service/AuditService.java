@@ -669,7 +669,7 @@ public class AuditService {
         if (auditLog.getSourceIp() != null && auditLog.getSourceIp().length() > 45) {
             throw new IllegalArgumentException("Source IP address too long (max 45 characters)");
         }
-        if (auditLog.getEventDetails() != null && auditLog.getEventDetails().length() > 4000) {
+        if (auditLog.getDetails() != null && auditLog.getDetails().length() > 4000) {
             throw new IllegalArgumentException("Event details too long (max 4000 characters)");
         }
     }
@@ -763,7 +763,7 @@ public class AuditService {
                 .append("|")
                 .append(auditLog.getSourceIp() != null ? auditLog.getSourceIp() : "")
                 .append("|")
-                .append(auditLog.getEventDetails() != null ? auditLog.getEventDetails() : "");
+                .append(auditLog.getDetails() != null ? auditLog.getDetails() : "");
             
             byte[] hashBytes = digest.digest(hashInput.toString().getBytes(StandardCharsets.UTF_8));
             
