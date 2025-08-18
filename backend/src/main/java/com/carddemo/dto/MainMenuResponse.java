@@ -8,6 +8,7 @@ package com.carddemo.dto;
 import java.util.List;
 import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.Size;
 import jakarta.validation.Valid;
 import lombok.Data;
@@ -227,8 +228,14 @@ public class MainMenuResponse {
             if (option.getAccessLevel() == null) {
                 return false; // Keep options with no access level requirement
             }
-            return !userAccessLevel.equalsIgnoreCase(option.getAccessLevel()) &&
-                   !"ADMIN".equalsIgnoreCase(userAccessLevel); // ADMIN can access everything
+            
+            // If user is ADMIN, they can see everything
+            if ("ADMIN".equalsIgnoreCase(userAccessLevel)) {
+                return false; // Don't remove anything for ADMIN
+            }
+            
+            // For non-ADMIN users, remove options they don't have access to
+            return !userAccessLevel.equalsIgnoreCase(option.getAccessLevel());
         });
     }
 
@@ -257,6 +264,7 @@ public class MainMenuResponse {
      * 
      * @return true if error message is not null and not empty
      */
+    @JsonIgnore
     public boolean hasError() {
         return this.errorMessage != null && !this.errorMessage.trim().isEmpty();
     }
@@ -266,6 +274,7 @@ public class MainMenuResponse {
      * 
      * @return The count of menu options
      */
+    @JsonIgnore
     public int getMenuOptionCount() {
         return this.menuOptions != null ? this.menuOptions.size() : 0;
     }
