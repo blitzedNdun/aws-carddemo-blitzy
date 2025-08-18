@@ -26,10 +26,12 @@ package com.carddemo.repository;
 
 import com.carddemo.entity.Account;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import jakarta.persistence.LockModeType;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -69,6 +71,22 @@ public interface AccountRepository extends JpaRepository<Account, String> {
      * @return Optional Account if found
      */
     Optional<Account> findByAccountId(String accountId);
+
+    /**
+     * Finds account by account ID with pessimistic write lock for updates.
+     * 
+     * Supports VSAM READ FOR UPDATE equivalent operations for account
+     * modification workflows. Acquires pessimistic write lock to prevent
+     * concurrent modifications during update operations, ensuring data
+     * consistency and implementing optimistic locking for COBOL SYNCPOINT
+     * behavior equivalent functionality.
+     * 
+     * @param accountId the account ID (11-digit string)
+     * @return Optional Account if found, with pessimistic write lock
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT a FROM Account a WHERE a.accountId = :accountId")
+    Optional<Account> findByIdForUpdate(@Param("accountId") String accountId);
 
     /**
      * Finds all accounts for a specific customer.
