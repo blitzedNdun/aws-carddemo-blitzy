@@ -33,8 +33,8 @@ import {
 } from '@mui/material';
 
 // Internal imports matching schema requirements
-import { listCards } from '../../../services/api.js';
-import { formatDecimal } from '../../../utils/CobolDataConverter.js';
+import { listCards } from '../../services/api.js';
+import { formatDecimal } from '../../utils/CobolDataConverter.js';
 import Header from '../common/Header.jsx';
 
 /**
