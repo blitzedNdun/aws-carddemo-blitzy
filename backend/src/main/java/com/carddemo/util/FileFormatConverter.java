@@ -91,10 +91,11 @@ public final class FileFormatConverter {
     private static final ObjectMapper objectMapper = initializeObjectMapper();
 
     /**
-     * Private constructor to prevent instantiation of utility class.
+     * Default constructor for FileFormatConverter.
+     * Allows instantiation for using instance methods.
      */
-    private FileFormatConverter() {
-        throw new IllegalStateException("Utility class - cannot be instantiated");
+    public FileFormatConverter() {
+        // Default constructor - allows instantiation for instance methods
     }
 
     /**
