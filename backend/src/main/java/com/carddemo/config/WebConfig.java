@@ -23,7 +23,7 @@
 package com.carddemo.config;
 
 import com.carddemo.converter.BmsMessageConverter;
-import com.carddemo.interceptor.TransactionInterceptor;
+import com.carddemo.interceptor.CicsTransactionInterceptor;
 import com.carddemo.util.CobolDataConverter;
 
 import org.springframework.context.annotation.Bean;
@@ -137,7 +137,7 @@ public class WebConfig implements WebMvcConfigurer {
      */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(transactionInterceptor())
+        registry.addInterceptor(cicsTransactionInterceptor())
                 .addPathPatterns("/api/**")         // Apply to all API endpoints
                 .excludePathPatterns(
                     "/api/health",                  // Exclude health check endpoints
@@ -177,25 +177,25 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     /**
-     * Creates and configures a TransactionInterceptor bean for request processing.
+     * Creates and configures a CicsTransactionInterceptor bean for request processing.
      * 
-     * This method produces a TransactionInterceptor instance that handles the routing
+     * This method produces a CicsTransactionInterceptor instance that handles the routing
      * and processing of REST API requests based on CICS transaction codes. The
      * interceptor maintains compatibility with the original mainframe transaction
      * processing patterns while operating within the Spring Boot framework.
      * 
-     * TransactionInterceptor Features:
+     * CicsTransactionInterceptor Features:
      * - Transaction Code Mapping: Routes requests based on legacy CICS transaction codes
      * - Session State Management: Integrates with Spring Session for user context
      * - Error Handling: Provides COBOL ABEND-equivalent error processing
      * - Performance Monitoring: Includes request timing and throughput metrics
      * - Security Integration: Works with Spring Security for authentication/authorization
      * 
-     * @return Configured TransactionInterceptor for CICS-compatible request processing
+     * @return Configured CicsTransactionInterceptor for CICS-compatible request processing
      */
-    @Bean
-    public TransactionInterceptor transactionInterceptor() {
-        return new TransactionInterceptor();
+    @Bean("cicsTransactionInterceptor")
+    public CicsTransactionInterceptor cicsTransactionInterceptor() {
+        return new CicsTransactionInterceptor();
     }
 
     /**
