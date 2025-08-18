@@ -69,7 +69,7 @@ const Header = ({ transactionId = '', programName = '', title = '' }) => {
   const safeTitle = title || '';
   const safeTransactionId = transactionId || '';
   const safeProgramName = programName || '';
-  
+
   const title1 = safeTitle.substring(0, 40);
   const title2 = safeTitle.substring(40, 80);
 
