@@ -196,14 +196,18 @@ public class SessionController {
             // Update session with extended timing
             SessionContext updatedContext = sessionService.updateSession(request, sessionContext);
             
+            // Use original context if update returns null
+            SessionContext contextToReturn = updatedContext != null ? updatedContext : sessionContext;
+            
             // Create response with extension confirmation
             Map<String, Object> response = new HashMap<>();
-            response.put("status", "extended");
-            response.put("userId", updatedContext.getUserId());
-            response.put("lastActivityTime", updatedContext.getLastActivityTime());
-            response.put("sessionStartTime", updatedContext.getSessionStartTime());
+            response.put("status", "SUCCESS");
+            response.put("message", "Session extended successfully");
+            response.put("userId", contextToReturn.getUserId());
+            response.put("lastActivityTime", contextToReturn.getLastActivityTime());
+            response.put("sessionStartTime", contextToReturn.getSessionStartTime());
             
-            logger.info("Session extended successfully for user: {}", updatedContext.getUserId());
+            logger.info("Session extended successfully for user: {}", contextToReturn.getUserId());
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
@@ -245,7 +249,8 @@ public class SessionController {
             
             // Create logout confirmation response
             Map<String, Object> response = new HashMap<>();
-            response.put("status", "logged_out");
+            response.put("status", "SUCCESS");
+            response.put("message", "Session terminated successfully");
             response.put("timestamp", LocalDateTime.now());
             response.put("userId", userId);
             
@@ -355,7 +360,8 @@ public class SessionController {
             
             // Create response with navigation update confirmation
             Map<String, Object> response = new HashMap<>();
-            response.put("status", "navigation_updated");
+            response.put("status", "SUCCESS");
+            response.put("message", "Navigation added successfully");
             response.put("transactionCode", transactionCode.toUpperCase());
             response.put("timestamp", LocalDateTime.now());
             
@@ -585,6 +591,148 @@ public class SessionController {
             errorStatus.put("timestamp", LocalDateTime.now());
             
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorStatus);
+        }
+    }
+
+    /**
+     * Updates session context with new information.
+     * 
+     * This endpoint provides session context updates equivalent to CICS COMMAREA
+     * modification operations, enabling dynamic state changes throughout user workflows.
+     * 
+     * @param request HTTP request containing current session
+     * @param sessionUpdate SessionContext containing updates to apply
+     * @param principal Authenticated user principal from Spring Security context
+     * @return ResponseEntity<SessionContext> Updated session context
+     */
+    @PutMapping
+    public ResponseEntity<SessionContext> updateSession(
+            HttpServletRequest request,
+            @RequestBody SessionContext sessionUpdate,
+            Principal principal) {
+        
+        logger.debug("Session update requested for user: {}", principal != null ? principal.getName() : "anonymous");
+        
+        try {
+            // Validate session before updating
+            if (!sessionService.validateSession(request)) {
+                logger.warn("Session update denied - invalid session");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            
+            // Update session with provided changes
+            SessionContext updatedContext = sessionService.updateSession(request, sessionUpdate);
+            
+            logger.info("Session updated successfully for user: {}", updatedContext.getUserId());
+            return ResponseEntity.ok(updatedContext);
+            
+        } catch (Exception e) {
+            logger.error("Error updating session: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * Stores transient data in session for multi-step operations.
+     * 
+     * This endpoint provides temporary data storage equivalent to CICS COMMAREA
+     * data preservation, enabling multi-step business operations to maintain
+     * state across REST API calls.
+     * 
+     * @param request HTTP request containing current session
+     * @param dataRequest Map containing key-value pairs to store
+     * @param principal Authenticated user principal from Spring Security context
+     * @return ResponseEntity<Map<String, Object>> Storage confirmation response
+     */
+    @PostMapping("/data")
+    public ResponseEntity<Map<String, Object>> storeTransientData(
+            HttpServletRequest request,
+            @RequestBody @Valid Map<String, Object> dataRequest,
+            Principal principal) {
+        
+        logger.debug("Transient data storage requested for user: {}", principal != null ? principal.getName() : "anonymous");
+        
+        try {
+            // Validate session before storing data
+            if (!sessionService.validateSession(request)) {
+                logger.warn("Transient data storage denied - invalid session");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            
+            // Extract key and value from request
+            String key = (String) dataRequest.get("key");
+            Object value = dataRequest.get("value");
+            
+            if (key == null || key.trim().isEmpty()) {
+                logger.warn("Transient data storage failed - missing key");
+                return ResponseEntity.badRequest().build();
+            }
+            
+            // Store data in session
+            sessionService.storeTransientData(request, key, value);
+            
+            // Create response confirmation
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "SUCCESS");
+            response.put("message", "Data stored successfully");
+            response.put("key", key);
+            response.put("timestamp", LocalDateTime.now());
+            
+            logger.info("Transient data stored successfully for key: {} user: {}", 
+                       key, principal != null ? principal.getName() : "unknown");
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.error("Error storing transient data: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * Retrieves transient data from session storage.
+     * 
+     * This endpoint provides access to temporarily stored data equivalent to CICS
+     * COMMAREA data retrieval, enabling multi-step operations to restore state
+     * information across REST API calls.
+     * 
+     * @param request HTTP request containing current session
+     * @param key Data identifier for transient retrieval
+     * @param principal Authenticated user principal from Spring Security context
+     * @return ResponseEntity<Object> Stored data object or HTTP 404 if not found
+     */
+    @GetMapping("/data/{key}")
+    public ResponseEntity<Object> retrieveTransientData(
+            HttpServletRequest request,
+            @PathVariable String key,
+            Principal principal) {
+        
+        logger.debug("Transient data retrieval requested for key: {} user: {}", 
+                    key, principal != null ? principal.getName() : "anonymous");
+        
+        try {
+            // Validate session before retrieving data
+            if (!sessionService.validateSession(request)) {
+                logger.warn("Transient data retrieval denied - invalid session");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            
+            // Retrieve data from session
+            Object data = sessionService.retrieveTransientData(request, key);
+            
+            if (data == null) {
+                logger.debug("Transient data not found for key: {}", key);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+            
+            logger.debug("Transient data retrieved successfully for key: {} user: {}", 
+                        key, principal != null ? principal.getName() : "unknown");
+            
+            return ResponseEntity.ok(data);
+            
+        } catch (Exception e) {
+            logger.error("Error retrieving transient data: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }
