@@ -18,8 +18,6 @@
  * - Information and error message areas
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Table,
@@ -31,6 +29,8 @@ import {
   Button,
   Typography,
 } from '@mui/material';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 // Internal imports matching schema requirements
 import { listCards } from '../../services/api.js';
@@ -51,11 +51,11 @@ const CreditCardList = () => {
   const [totalPages, setTotalPages] = useState(1); // Total pages calculated
   const [loading, setLoading] = useState(false); // Processing indicator
   const [selectedCards, setSelectedCards] = useState(new Set()); // Selected card tracking (CRDSEL1-7)
-  
+
   // Search filter state (matching BMS input fields)
   const [accountNumberFilter, setAccountNumberFilter] = useState(''); // ACCTSID field
   const [cardNumberFilter, setCardNumberFilter] = useState(''); // CARDSID field
-  
+
   // Message display state (matching BMS message fields)
   const [infoMessage, setInfoMessage] = useState(''); // INFOMSG field
   const [errorMessage, setErrorMessage] = useState(''); // ERRMSG field
@@ -63,7 +63,7 @@ const CreditCardList = () => {
   /**
    * Fetch credit cards data from backend API
    * Maps to COBOL STARTBR/READNEXT operations on CARDDAT file
-   * 
+   *
    * @param {number} page - Page number to fetch (1-based)
    * @param {string} accountFilter - Account number filter
    * @param {string} cardFilter - Card number filter
@@ -76,7 +76,7 @@ const CreditCardList = () => {
 
       // Prepare search parameters matching COBOL program logic
       const searchParams = {
-        page: page,
+        page,
         pageSize: 7, // BMS mapset shows 7 rows (CRDSEL1-CRDSEL7)
         accountNumber: accountFilter.trim() || undefined,
         cardNumber: cardFilter.trim() || undefined,
@@ -97,10 +97,10 @@ const CreditCardList = () => {
         setCards(cardData);
         setCurrentPage(page);
         setTotalPages(response.totalPages || 1);
-        
+
         // Clear previous selections when loading new data
         setSelectedCards(new Set());
-        
+
         // Set info message if no cards found
         if (cardData.length === 0) {
           setInfoMessage('No credit cards found matching your criteria');
@@ -140,7 +140,7 @@ const CreditCardList = () => {
     if (event) {
       event.preventDefault();
     }
-    
+
     // Reset to first page when searching
     fetchCards(1, accountNumberFilter, cardNumberFilter);
   }, [fetchCards, accountNumberFilter, cardNumberFilter]);
@@ -148,7 +148,7 @@ const CreditCardList = () => {
   /**
    * Handle card selection toggle
    * Maps to CRDSEL1-CRDSEL7 field handling in BMS mapset
-   * 
+   *
    * @param {string} cardId - Card identifier for selection
    */
   const handleCardSelection = useCallback((cardId) => {
@@ -175,7 +175,7 @@ const CreditCardList = () => {
   }, [currentPage, fetchCards, accountNumberFilter, cardNumberFilter]);
 
   /**
-   * Navigate to next page  
+   * Navigate to next page
    * Maps to PF8 key functionality (F8=Forward in BMS)
    */
   const handleNextPage = useCallback(() => {
@@ -215,7 +215,7 @@ const CreditCardList = () => {
           break;
       }
     }
-    
+
     // Handle Enter key for search
     if (event.key === 'Enter') {
       handleSearch(event);
@@ -235,7 +235,7 @@ const CreditCardList = () => {
   /**
    * Handle card detail navigation
    * Maps to CICS XCTL COCRDSLC (card detail program)
-   * 
+   *
    * @param {object} card - Selected card data
    */
   const handleCardDetail = useCallback((card) => {
@@ -247,13 +247,13 @@ const CreditCardList = () => {
   /**
    * Format account number for display
    * Uses COBOL data conversion utilities for consistent formatting
-   * 
+   *
    * @param {string} accountNumber - Raw account number
    * @returns {string} Formatted account number
    */
   const formatAccountNumber = useCallback((accountNumber) => {
-    if (!accountNumber) return '';
-    
+    if (!accountNumber) {return '';}
+
     // Use COBOL data converter to maintain formatting consistency
     return formatDecimal(accountNumber, 0);
   }, []);
@@ -261,13 +261,13 @@ const CreditCardList = () => {
   /**
    * Format card number for display with masking
    * Replicates COBOL card number masking logic
-   * 
-   * @param {string} cardNumber - Raw card number  
+   *
+   * @param {string} cardNumber - Raw card number
    * @returns {string} Masked card number (showing last 4 digits)
    */
   const formatCardNumber = useCallback((cardNumber) => {
-    if (!cardNumber) return '';
-    
+    if (!cardNumber) {return '';}
+
     // Mask all but last 4 digits for security (COBOL masking logic)
     if (cardNumber.length > 4) {
       const masked = '*'.repeat(cardNumber.length - 4);
@@ -280,13 +280,13 @@ const CreditCardList = () => {
   /**
    * Format card status for display
    * Maps COBOL status codes to user-friendly display
-   * 
+   *
    * @param {string} status - Raw status code
    * @returns {string} Formatted status display
    */
   const formatCardStatus = useCallback((status) => {
-    if (!status) return '';
-    
+    if (!status) {return '';}
+
     // Convert COBOL status codes to display values
     switch (status.toUpperCase()) {
       case 'Y':
@@ -647,7 +647,7 @@ const CreditCardList = () => {
               >
                 F3=Exit
               </Button>
-              
+
               <Button
                 onClick={handlePreviousPage}
                 disabled={currentPage <= 1}
@@ -666,7 +666,7 @@ const CreditCardList = () => {
               >
                 F7=Previous
               </Button>
-              
+
               <Button
                 onClick={handleNextPage}
                 disabled={currentPage >= totalPages}
