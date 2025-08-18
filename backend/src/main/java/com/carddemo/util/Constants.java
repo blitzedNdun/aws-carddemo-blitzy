@@ -48,6 +48,12 @@ public final class Constants {
     public static final int ACCOUNT_NUMBER_LENGTH = 11;
 
     /**
+     * Maximum length for account ID fields.
+     * Maps to COBOL PIC X(11) specification.
+     */
+    public static final int ACCOUNT_ID_LENGTH = 11;
+
+    /**
      * Maximum length for card number fields.
      * Maps to COBOL PIC X(16) specification for standard credit card numbers.
      */

@@ -48,6 +48,7 @@ public final class ValidationUtil {
     
     // Validation patterns
     private static final Pattern SSN_PATTERN = Pattern.compile("^\\d{3}-?\\d{2}-?\\d{4}$");
+    private static final Pattern SSN_BASIC_FORMAT_PATTERN = Pattern.compile("^[\\d-]+$");
     private static final Pattern PHONE_PATTERN = Pattern.compile("^\\d{3}-?\\d{3}-?\\d{4}$");
     private static final Pattern NUMERIC_PATTERN = Pattern.compile("^\\d+$");
     private static final Pattern ALPHANUMERIC_PATTERN = Pattern.compile("^[A-Za-z0-9]+$");
@@ -381,6 +382,24 @@ public final class ValidationUtil {
     }
 
     /**
+     * Validates numeric field format and length.
+     * Replicates COBOL NUMERIC test with length validation.
+     * 
+     * @param fieldValue the field value to validate
+     * @param expectedLength the expected length of the field
+     * @return true if the field is numeric and has the expected length
+     */
+    public static boolean validateNumericField(String fieldValue, int expectedLength) {
+        if (fieldValue == null || fieldValue.trim().isEmpty()) {
+            return false;
+        }
+        
+        String trimmedValue = fieldValue.trim();
+        return NUMERIC_PATTERN.matcher(trimmedValue).matches() && 
+               trimmedValue.length() == expectedLength;
+    }
+
+    /**
      * Validates date range ensuring start date is before end date.
      * Used for transaction date ranges and reporting periods.
      * 
@@ -584,28 +603,39 @@ public final class ValidationUtil {
         if (ssn == null || ssn.trim().isEmpty()) {
             validationException.addFieldError(fieldName, fieldName + " must be supplied.");
         } else {
-            String cleanSSN = ssn.trim().replaceAll("\\D", "");
+            String trimmedSSN = ssn.trim();
             
-            if (cleanSSN.length() != SSN_LENGTH) {
-                validationException.addFieldError(fieldName, fieldName + " must be exactly 9 digits.");
-            } else if (!SSN_PATTERN.matcher(ssn.trim()).matches()) {
-                validationException.addFieldError(fieldName, fieldName + " format is invalid. Use 999-99-9999 format.");
+            // First check if it contains only digits and dashes (basic format check)
+            if (!SSN_BASIC_FORMAT_PATTERN.matcher(trimmedSSN).matches()) {
+                validationException.addFieldError(fieldName, fieldName + " format is invalid.");
             } else {
-                // Additional SSN validation rules
-                String area = cleanSSN.substring(0, 3);
-                String group = cleanSSN.substring(3, 5);
-                String serial = cleanSSN.substring(5, 9);
+                String cleanSSN = trimmedSSN.replaceAll("\\D", "");
                 
-                if ("000".equals(area) || "666".equals(area) || area.startsWith("9")) {
-                    validationException.addFieldError(fieldName, fieldName + " contains invalid area number.");
-                }
-                
-                if ("00".equals(group)) {
-                    validationException.addFieldError(fieldName, fieldName + " contains invalid group number.");
-                }
-                
-                if ("0000".equals(serial)) {
-                    validationException.addFieldError(fieldName, fieldName + " contains invalid serial number.");
+                // Then check length
+                if (cleanSSN.length() != SSN_LENGTH) {
+                    validationException.addFieldError(fieldName, fieldName + " must be exactly 9 digits.");
+                } else if (!SSN_PATTERN.matcher(trimmedSSN).matches()) {
+                    // Check specific pattern (correct grouping)
+                    validationException.addFieldError(fieldName, fieldName + " format is invalid.");
+                } else {
+                    // Additional SSN validation rules
+                    String area = cleanSSN.substring(0, 3);
+                    String group = cleanSSN.substring(3, 5);
+                    String serial = cleanSSN.substring(5, 9);
+                    
+                    // Convert area to int for range checking
+                    int areaNumber = Integer.parseInt(area);
+                    if (areaNumber == 0 || areaNumber == 666 || (areaNumber >= 900 && areaNumber <= 999)) {
+                        validationException.addFieldError(fieldName, fieldName + " contains invalid area number.");
+                    }
+                    
+                    if ("00".equals(group)) {
+                        validationException.addFieldError(fieldName, fieldName + " contains invalid group number.");
+                    }
+                    
+                    if ("0000".equals(serial)) {
+                        validationException.addFieldError(fieldName, fieldName + " contains invalid serial number.");
+                    }
                 }
             }
         }
@@ -735,5 +765,35 @@ public final class ValidationUtil {
         if (validationException.hasFieldErrors()) {
             throw validationException;
         }
+    }
+
+    /**
+     * Validates transaction amount ensuring it's positive and within reasonable limits.
+     * Returns boolean for use in conditional logic.
+     * 
+     * @param amount the transaction amount to validate
+     * @return true if the amount is valid, false otherwise
+     */
+    public static boolean validateTransactionAmount(BigDecimal amount) {
+        if (amount == null) {
+            return false;
+        }
+        
+        // Must be positive
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            return false;
+        }
+        
+        // Must not exceed $99,999.99 (per credit card transaction limits)
+        if (amount.compareTo(BigDecimal.valueOf(99999.99)) > 0) {
+            return false;
+        }
+        
+        // Must be at least 1 cent
+        if (amount.compareTo(new BigDecimal("0.01")) < 0) {
+            return false;
+        }
+        
+        return true;
     }
 }
