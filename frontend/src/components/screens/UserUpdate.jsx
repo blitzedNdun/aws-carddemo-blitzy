@@ -1,45 +1,42 @@
 /**
  * UserUpdate Component - React component for Update User screen (COUSR02)
- * 
+ *
  * Provides user account maintenance functionality enabling editing of user details,
  * role changes between admin/regular, account activation/deactivation, and maintains
  * audit trail for security compliance. Requires administrative privileges.
  *
  * Maps to COBOL program COUSR02C and BMS mapset COUSR02, implementing identical
  * business logic and field validation while providing modern React interface.
- * 
+ *
  * Transaction Code: CU02
  * COBOL Program: COUSR02C.cbl
  * BMS Mapset: COUSR02.bms
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  Box, 
-  Card, 
-  CardContent, 
-  TextField, 
-  Button, 
-  MenuItem, 
-  FormControl, 
-  InputLabel, 
-  Select, 
-  Switch, 
-  FormControlLabel, 
-  Typography, 
+import {
+  Box,
+  TextField,
+  Button,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
+  Switch,
+  FormControlLabel,
+  Typography,
   Alert,
   Grid,
   Container,
-  Paper
+  Paper,
 } from '@mui/material';
-import { Formik, Form, Field } from 'formik';
+import { Formik, Form } from 'formik';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { string, object } from 'yup';
 
 // Internal imports - ONLY from depends_on_files
-import { getUsers } from '../../services/api.js';
-import { validateDate } from '../../utils/validation.js';
 import Header from '../../components/common/Header.jsx';
+import { getUsers } from '../../services/api.js';
 
 /**
  * Validation schema using Yup matching COBOL validation rules from COUSR02C
@@ -52,29 +49,29 @@ const validationSchema = object({
     .min(1, 'User ID must be at least 1 character')
     .max(8, 'User ID must be 8 characters or less')
     .matches(/^[A-Za-z][A-Za-z0-9]*$/, 'User ID must start with letter and contain only letters and numbers'),
-  
+
   firstName: string()
     .required('First Name can NOT be empty...')
     .min(1, 'First Name must be at least 1 character')
     .max(20, 'First Name must be 20 characters or less')
     .trim(),
-  
+
   lastName: string()
     .required('Last Name can NOT be empty...')
     .min(1, 'Last Name must be at least 1 character')
     .max(20, 'Last Name must be 20 characters or less')
     .trim(),
-  
+
   password: string()
     .required('Password can NOT be empty...')
     .min(1, 'Password must be at least 1 character')
     .max(8, 'Password must be 8 characters or less'),
-  
+
   userType: string()
     .required('User Type can NOT be empty...')
     .min(1, 'User Type must be selected')
     .max(1, 'User Type must be exactly 1 character')
-    .oneOf(['A', 'U'], 'User Type must be A (Admin) or U (User)')
+    .oneOf(['A', 'U'], 'User Type must be A (Admin) or U (User)'),
 });
 
 /**
@@ -95,14 +92,14 @@ const UserUpdate = () => {
   const [userModified, setUserModified] = useState(false);
 
   // Form initial values matching BMS map fields
-  const initialValues = {
+  const initialValues = useMemo(() => ({
     userId: routeUserId || '',
     firstName: '',
     lastName: '',
     password: '',
     userType: '',
-    isActive: true
-  };
+    isActive: true,
+  }), [routeUserId]);
 
   /**
    * READ-USER-SEC-FILE equivalent - Fetches user data by ID
@@ -119,14 +116,14 @@ const UserUpdate = () => {
 
     try {
       // Call getUsers API to fetch specific user
-      const response = await getUsers({ 
+      const response = await getUsers({
         searchTerm: userIdToFetch.toUpperCase(),
-        pageSize: 1 
+        pageSize: 1,
       });
 
       if (response.success && response.data && response.data.users && response.data.users.length > 0) {
         const userData = response.data.users[0];
-        
+
         // Verify exact match (case-insensitive)
         if (userData.userId.toUpperCase() === userIdToFetch.toUpperCase()) {
           setUser(userData);
@@ -155,7 +152,7 @@ const UserUpdate = () => {
    */
   const handleEnterKey = useCallback(async (formik) => {
     const userIdValue = formik.values.userId;
-    
+
     if (!userIdValue || userIdValue.trim() === '') {
       setError('User ID can NOT be empty...');
       return;
@@ -170,7 +167,7 @@ const UserUpdate = () => {
         lastName: userData.lastName || '',
         password: userData.password || '',
         userType: userData.userType || '',
-        isActive: userData.status === 'ACTIVE'
+        isActive: userData.status === 'ACTIVE',
       });
       setUserModified(false);
     }
@@ -192,20 +189,20 @@ const UserUpdate = () => {
       });
 
       const data = await response.json();
-      
+
       if (response.ok) {
         return { success: true, data };
       } else {
-        return { 
-          success: false, 
-          error: data.message || `Server error: ${response.status}` 
+        return {
+          success: false,
+          error: data.message || `Server error: ${response.status}`,
         };
       }
     } catch (error) {
       console.error('Network error updating user:', error);
-      return { 
-        success: false, 
-        error: 'Network error - unable to connect to server' 
+      return {
+        success: false,
+        error: 'Network error - unable to connect to server',
       };
     }
   };
@@ -263,7 +260,7 @@ const UserUpdate = () => {
         lastName: values.lastName.trim(),
         password: values.password,
         userType: values.userType,
-        status: values.isActive ? 'ACTIVE' : 'INACTIVE'
+        status: values.isActive ? 'ACTIVE' : 'INACTIVE',
       };
 
       const response = await callUpdateUserAPI(values.userId.toUpperCase(), updateData);
@@ -271,12 +268,12 @@ const UserUpdate = () => {
       if (response.success) {
         setSuccessMessage(`User ${values.userId} has been updated ...`);
         setUserModified(false);
-        
+
         // Update local user data
         setUser({
           ...user,
           ...updateData,
-          userId: values.userId.toUpperCase()
+          userId: values.userId.toUpperCase(),
         });
 
         if (exitAfterSave) {
@@ -362,7 +359,7 @@ const UserUpdate = () => {
   return (
     <Container maxWidth="lg" sx={{ mt: 2, mb: 4 }}>
       {/* BMS Header replication */}
-      <Header 
+      <Header
         transactionId="CU02"
         programName="COUSR02C"
         title="Update User"
@@ -384,7 +381,7 @@ const UserUpdate = () => {
                     <Typography variant="h6" gutterBottom>
                       Update User
                     </Typography>
-                    
+
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
                       <Typography component="label" sx={{ minWidth: '120px' }}>
                         Enter User ID:
@@ -396,9 +393,9 @@ const UserUpdate = () => {
                         error={Boolean(formik.touched.userId && formik.errors.userId)}
                         helperText={formik.touched.userId && formik.errors.userId}
                         size="small"
-                        inputProps={{ 
+                        inputProps={{
                           maxLength: 8,
-                          style: { textTransform: 'uppercase' }
+                          style: { textTransform: 'uppercase' },
                         }}
                         sx={{ width: '200px' }}
                         disabled={loading}
@@ -416,12 +413,12 @@ const UserUpdate = () => {
 
                   {/* Separator line matching BMS yellow line */}
                   <Grid item xs={12}>
-                    <Box 
-                      sx={{ 
+                    <Box
+                      sx={{
                         borderTop: '2px solid #FFD700',
                         width: '100%',
-                        my: 2
-                      }} 
+                        my: 2,
+                      }}
                     />
                   </Grid>
 
@@ -531,7 +528,7 @@ const UserUpdate = () => {
                       >
                         ENTER=Fetch
                       </Button>
-                      
+
                       <Button
                         variant="contained"
                         color="primary"
@@ -540,7 +537,7 @@ const UserUpdate = () => {
                       >
                         F3=Save&Exit
                       </Button>
-                      
+
                       <Button
                         variant="outlined"
                         onClick={() => handleClearScreen(formik)}
@@ -548,7 +545,7 @@ const UserUpdate = () => {
                       >
                         F4=Clear
                       </Button>
-                      
+
                       <Button
                         variant="contained"
                         color="secondary"
@@ -557,7 +554,7 @@ const UserUpdate = () => {
                       >
                         F5=Save
                       </Button>
-                      
+
                       <Button
                         variant="outlined"
                         color="error"
