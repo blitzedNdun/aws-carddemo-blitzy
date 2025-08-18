@@ -391,7 +391,7 @@ const CreditCardUpdate = () => {
             initialValues={memoizedInitialValues}
             validationSchema={validationSchema}
             onSubmit={handleSubmit}
-            enableReinitialize={true}
+            enableReinitialize
           >
             {({ values, errors, touched, isSubmitting }) => (
               <Form>
