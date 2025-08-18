@@ -296,32 +296,36 @@ public class ReportingService {
             // Simulate async processing delay (equivalent to batch job submission in CORPT00C)
             Thread.sleep(1000);
 
+            // Store the initial report for error handling
+            Report initialReport = report;
+
             // Generate the appropriate report type
+            Report completedReport;
             switch (reportType) {
                 case TRANSACTION_DETAIL:
-                    report = generateTransactionReport(startDate, endDate, format, userId);
+                    completedReport = generateTransactionReport(startDate, endDate, format, userId);
                     break;
                 case DAILY_SUMMARY:
-                    report = generateDailySummaryReport(startDate, endDate, format, userId);
+                    completedReport = generateDailySummaryReport(startDate, endDate, format, userId);
                     break;
                 case MONTHLY:
-                    report = generateMonthlyReport(startDate, endDate, format, userId);
+                    completedReport = generateMonthlyReport(startDate, endDate, format, userId);
                     break;
                 case YEARLY:
-                    report = generateYearlyReport(startDate, endDate, format, userId);
+                    completedReport = generateYearlyReport(startDate, endDate, format, userId);
                     break;
                 case AUDIT:
-                    report = generateAuditReport(startDate, endDate, format, userId);
+                    completedReport = generateAuditReport(startDate, endDate, format, userId);
                     break;
                 case COMPLIANCE:
-                    report = generateComplianceReport(startDate, endDate, format, userId);
+                    completedReport = generateComplianceReport(startDate, endDate, format, userId);
                     break;
                 default:
                     throw new IllegalArgumentException("Unsupported report type: " + reportType);
             }
 
             logger.info("Scheduled report completed for user: {}", userId);
-            return CompletableFuture.completedFuture(report);
+            return CompletableFuture.completedFuture(completedReport);
 
         } catch (Exception e) {
             logger.error("Error in scheduled report processing for user: {}", userId, e);
@@ -479,7 +483,7 @@ public class ReportingService {
         }
 
         // Date range limit validation (business rule)
-        long daysBetween = startDate.until(endDate).getDays();
+        long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
         if (daysBetween > 365) {
             throw new IllegalArgumentException("Date range cannot exceed 365 days");
         }
@@ -953,25 +957,4 @@ public class ReportingService {
         public String getMerchantName() { return merchantName; }
         public void setMerchantName(String merchantName) { this.merchantName = merchantName; }
     }
-}
-
-/**
- * Standalone function for generating transaction reports.
- * This provides a simplified interface for transaction report generation
- * that can be called independently of the service class instance.
- * 
- * @param startDate start date for the report
- * @param endDate end date for the report
- * @param format output format
- * @param userId user requesting the report
- * @return generated Report entity
- */
-public Report generateTransactionReport(LocalDate startDate, LocalDate endDate, 
-                                      Report.Format format, String userId) {
-    // This would typically use a service locator or dependency injection framework
-    // to get the ReportingService instance. For simplicity, creating a new instance.
-    // In a real Spring application, this would be handled by the application context.
-    
-    throw new UnsupportedOperationException(
-        "Standalone function should be accessed through ReportingService bean instance");
 }
