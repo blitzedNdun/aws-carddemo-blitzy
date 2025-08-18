@@ -27,9 +27,11 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -686,7 +688,7 @@ public class CacheServiceTest {
 
         @Test
         @DisplayName("Should handle high-throughput cache operations")
-        void testHighThroughputOperations() throws InterruptedException {
+        void testHighThroughputOperations() throws InterruptedException, ExecutionException, TimeoutException {
             // Given
             int numberOfOperations = 1000;
             ExecutorService executor = Executors.newFixedThreadPool(10);
@@ -725,7 +727,7 @@ public class CacheServiceTest {
 
         @Test
         @DisplayName("Should handle concurrent eviction operations safely")
-        void testConcurrentEvictions() throws InterruptedException {
+        void testConcurrentEvictions() throws InterruptedException, ExecutionException, TimeoutException {
             // Given
             ExecutorService executor = Executors.newFixedThreadPool(5);
             List<CompletableFuture<Integer>> futures = new ArrayList<>();
