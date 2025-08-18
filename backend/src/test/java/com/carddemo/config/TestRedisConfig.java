@@ -244,8 +244,7 @@ public class TestRedisConfig {
         factory.setValidateConnection(true);
         
         // Optimize for test performance
-        factory.setTimeout(java.time.Duration.ofSeconds(2));
-        factory.setShutdownTimeout(java.time.Duration.ofSeconds(1));
+        // Note: Timeout configuration handled by connection pool settings
         
         factory.afterPropertiesSet();
         logger.info("Redis connection factory configured for test database {}", REDIS_TEST_DATABASE);
