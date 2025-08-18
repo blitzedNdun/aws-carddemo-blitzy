@@ -229,7 +229,13 @@ public class TransactionRequest {
         if (amount != null) {
             // Set scale to 2 decimal places to match COBOL COMP-3 S9(09)V99
             this.amount = amount.setScale(2, BigDecimal.ROUND_HALF_UP);
-            ValidationUtil.validateTransactionAmount(this.amount);
+            // Validate the amount - allow zero amounts for certain use cases
+            if (this.amount.compareTo(BigDecimal.ZERO) < 0) {
+                throw new IllegalArgumentException("Transaction amount cannot be negative");
+            }
+            if (this.amount.compareTo(BigDecimal.valueOf(999999.99)) > 0) {
+                throw new IllegalArgumentException("Transaction amount cannot exceed $999,999.99");
+            }
         } else {
             this.amount = null;
         }
@@ -428,15 +434,17 @@ public class TransactionRequest {
 
         // Validate amount precision if provided
         if (amount != null) {
-            if (!ValidationUtil.validateTransactionAmount(amount)) {
-                throw new IllegalArgumentException("Transaction amount is invalid");
+            // Check for negative amounts
+            if (amount.compareTo(BigDecimal.ZERO) < 0) {
+                throw new IllegalArgumentException("Transaction amount cannot be negative");
             }
-            // Ensure amount uses proper BigDecimal operations for financial precision
-            if (amount.compareTo(BigDecimal.ZERO) > 0) {
-                BigDecimal normalizedAmount = BigDecimal.valueOf(amount.doubleValue());
-                if (normalizedAmount.compareTo(amount) != 0) {
-                    throw new IllegalArgumentException("Amount precision error detected");
-                }
+            // Check for excessive amounts
+            if (amount.compareTo(BigDecimal.valueOf(999999.99)) > 0) {
+                throw new IllegalArgumentException("Transaction amount cannot exceed $999,999.99");
+            }
+            // Ensure amount has proper scale (2 decimal places)
+            if (amount.scale() != 2) {
+                throw new IllegalArgumentException("Transaction amount must have exactly 2 decimal places");
             }
         }
 
