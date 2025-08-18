@@ -28,18 +28,18 @@
  */
 
 // External imports
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Box } from '@mui/material';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 // Internal imports - ONLY from depends_on_files
 import { getTransactionDetail } from '../../services/api.js';
-import Header from '../common/Header.jsx';
 import { formatCurrency } from '../../utils/CobolDataConverter.js';
+import Header from '../common/Header.jsx';
 
 /**
  * TransactionView functional component - Default export
- * 
+ *
  * Replicates the COTRN01 transaction detail view screen with complete
  * functionality matching the original COBOL CICS implementation.
  *
@@ -67,8 +67,6 @@ const TransactionView = () => {
     merchantZip: '',
   });
   const [errorMessage, setErrorMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasData, setHasData] = useState(false);
 
   /**
    * Clear all transaction data and reset form to initial state
@@ -90,14 +88,83 @@ const TransactionView = () => {
       merchantCity: '',
       merchantZip: '',
     });
-    setHasData(false);
     setErrorMessage('');
   }, []);
 
   /**
+   * Get base transaction fields from backend data
+   * @param {Object} data - Backend response data
+   * @returns {Object} Base transaction fields
+   */
+  const getBaseFields = useCallback((data) => ({
+    transactionId: data.transactionId || data.id || '',
+    cardNumber: data.cardNumber || '',
+    typeCode: data.typeCode || data.transactionType || '',
+    categoryCode: data.categoryCode || '',
+    source: data.source || '',
+    description: data.description || '',
+  }), []);
+
+  /**
+   * Get financial and date fields from backend data
+   * @param {Object} data - Backend response data
+   * @returns {Object} Financial and date fields
+   */
+  const getFinancialFields = useCallback((data) => ({
+    amount: data.amount ? formatCurrency(data.amount) : '',
+    originalDate: data.originalDate || data.transactionDate || '',
+    processDate: data.processDate || data.processingDate || '',
+  }), []);
+
+  /**
+   * Get merchant fields from backend data
+   * @param {Object} data - Backend response data
+   * @returns {Object} Merchant fields
+   */
+  const getMerchantFields = useCallback((data) => ({
+    merchantId: data.merchantId || '',
+    merchantName: data.merchantName || '',
+    merchantCity: data.merchantCity || '',
+    merchantZip: data.merchantZip || '',
+  }), []);
+
+  /**
+   * Create transaction data object from backend response
+   * @param {Object} data - Backend response data
+   * @returns {Object} Formatted transaction data
+   */
+  const createTransactionData = useCallback((data) => ({
+    ...getBaseFields(data),
+    ...getFinancialFields(data),
+    ...getMerchantFields(data),
+  }), [getBaseFields, getFinancialFields, getMerchantFields]);
+
+  /**
+   * Map backend response data to component state
+   * @param {Object} data - Backend response data
+   */
+  const mapTransactionData = useCallback((data) => {
+    const transactionData = createTransactionData(data);
+    setTransactionData(transactionData);
+  }, [createTransactionData]);
+
+  /**
+   * Handle API error responses matching COBOL error handling
+   * @param {Object} response - API response object
+   */
+  const handleApiError = useCallback((response) => {
+    if (response.status === 404) {
+      setErrorMessage('Transaction ID NOT found...');
+    } else {
+      setErrorMessage(response.error || 'Unable to lookup Transaction...');
+    }
+    clearTransactionData();
+  }, [clearTransactionData]);
+
+  /**
    * Fetch transaction details from backend
    * Replicates COBOL READ-TRANSACT-FILE paragraph with comprehensive error handling
-   * 
+   *
    * @param {string} tranId - Transaction ID to fetch
    */
   const fetchTransactionDetail = useCallback(async (tranId) => {
@@ -106,51 +173,23 @@ const TransactionView = () => {
       return;
     }
 
-    setIsLoading(true);
     setErrorMessage('');
 
     try {
       const response = await getTransactionDetail(tranId.trim());
 
       if (response.success && response.data) {
-        const data = response.data;
-        
-        // Map backend data to component state matching COBOL field assignments
-        setTransactionData({
-          transactionId: data.transactionId || data.id || '',
-          cardNumber: data.cardNumber || '',
-          typeCode: data.typeCode || data.transactionType || '',
-          categoryCode: data.categoryCode || '',
-          source: data.source || '',
-          description: data.description || '',
-          amount: data.amount ? formatCurrency(data.amount) : '',
-          originalDate: data.originalDate || data.transactionDate || '',
-          processDate: data.processDate || data.processingDate || '',
-          merchantId: data.merchantId || '',
-          merchantName: data.merchantName || '',
-          merchantCity: data.merchantCity || '',
-          merchantZip: data.merchantZip || '',
-        });
-        
-        setHasData(true);
+        mapTransactionData(response.data);
         setErrorMessage('');
       } else {
-        // Handle API error responses matching COBOL error handling
-        if (response.status === 404) {
-          setErrorMessage('Transaction ID NOT found...');
-        } else {
-          setErrorMessage(response.error || 'Unable to lookup Transaction...');
-        }
-        clearTransactionData();
+        handleApiError(response);
       }
     } catch (error) {
       console.error('Error fetching transaction detail:', error);
       setErrorMessage('Unable to lookup Transaction...');
       clearTransactionData();
-    } finally {
-      setIsLoading(false);
     }
-  }, [clearTransactionData]);
+  }, [clearTransactionData, mapTransactionData, handleApiError]);
 
   /**
    * Handle ENTER key processing for transaction lookup
@@ -161,14 +200,14 @@ const TransactionView = () => {
       setErrorMessage('Tran ID can NOT be empty...');
       return;
     }
-    
+
     fetchTransactionDetail(transactionId);
   }, [transactionId, fetchTransactionDetail]);
 
   /**
    * Handle PF-key navigation matching original COBOL CICS program flow
    * Replicates COBOL MAIN-PARA EVALUATE EIBAID logic
-   * 
+   *
    * @param {string} pfKey - PF-key pressed (F3, F4, F5)
    */
   const handlePFKey = useCallback((pfKey) => {
@@ -249,7 +288,7 @@ const TransactionView = () => {
   };
 
   return (
-    <Box 
+    <Box
       component="div"
       sx={{
         width: '100%',
@@ -370,7 +409,7 @@ const TransactionView = () => {
               {transactionData.transactionId}
             </Box>
           </Box>
-          
+
           <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Box component="label" sx={{ color: '#4FC3F7', minWidth: '100px' }}>
               Card Number:
@@ -414,7 +453,7 @@ const TransactionView = () => {
               {transactionData.categoryCode}
             </Box>
           </Box>
-          
+
           <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Box component="label" sx={{ color: '#4FC3F7', minWidth: '60px' }}>
               Source:
@@ -431,11 +470,11 @@ const TransactionView = () => {
           </Box>
 
           {/* Row 3: Description (spans both columns) */}
-          <Box 
-            sx={{ 
+          <Box
+            sx={{
               gridColumn: '1 / -1',
-              display: 'flex', 
-              alignItems: 'center', 
+              display: 'flex',
+              alignItems: 'center',
               gap: '8px',
               marginTop: '8px',
             }}
@@ -470,7 +509,7 @@ const TransactionView = () => {
               {transactionData.amount}
             </Box>
           </Box>
-          
+
           <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
             <Box component="label" sx={{ color: '#4FC3F7', minWidth: '80px' }}>
               Orig Date:
@@ -514,7 +553,7 @@ const TransactionView = () => {
               {transactionData.merchantId}
             </Box>
           </Box>
-          
+
           <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
             <Box component="label" sx={{ color: '#4FC3F7', minWidth: '120px' }}>
               Merchant Name:
@@ -545,7 +584,7 @@ const TransactionView = () => {
               {transactionData.merchantCity}
             </Box>
           </Box>
-          
+
           <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
             <Box component="label" sx={{ color: '#4FC3F7', minWidth: '100px' }}>
               Merchant Zip:
