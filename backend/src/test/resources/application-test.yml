@@ -56,6 +56,9 @@ spring:
     jdbc:
       initialize-schema: never
     initialize-schema: never
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration
       
 logging:
   level:
