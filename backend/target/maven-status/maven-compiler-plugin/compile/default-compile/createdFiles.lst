@@ -65,6 +65,7 @@ com/carddemo/config/MenuConfiguration.class
 com/carddemo/service/ReportingService$1.class
 com/carddemo/util/StatementFormatter.class
 com/carddemo/dto/UserDto.class
+com/carddemo/dto/ReportRequestDto$ReportType.class
 com/carddemo/service/DailyTransactionService.class
 com/carddemo/service/CreditBureauService$CreditScoreChangeAudit$Builder.class
 com/carddemo/dto/SignOnResponse$SignOnStatus.class
@@ -442,6 +443,7 @@ com/carddemo/config/BatchConfig.class
 com/carddemo/dto/AdminMenuRequest.class
 com/carddemo/dto/SignOnResponseDto.class
 com/carddemo/batch/ReconciliationJobConfig$ChargebackTransactionRowMapper.class
+com/carddemo/dto/ReportRequestDto.class
 com/carddemo/service/CustomerMaintenanceService$CustomerRetrievalResult.class
 com/carddemo/entity/Configuration.class
 com/carddemo/batch/BalanceReconciliationJobConfig$AccountBalance.class
