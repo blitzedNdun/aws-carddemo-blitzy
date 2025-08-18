@@ -302,4 +302,36 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
             @Param("endDate") LocalDateTime endDate,
             Pageable pageable
     );
+
+    /**
+     * Advanced audit log search with multiple criteria filtering.
+     * Supports comprehensive audit log searching with multiple optional filter criteria
+     * for security incident investigation, compliance audits, and operational monitoring.
+     * 
+     * @param username Optional username filter (can be null)
+     * @param eventType Optional event type filter (can be null)
+     * @param outcome Optional outcome filter (can be null)
+     * @param sourceIp Optional source IP filter (can be null)
+     * @param startDate Optional start date filter (can be null)
+     * @param endDate Optional end date filter (can be null)
+     * @param pageable Pagination parameters for large result sets
+     * @return Page of audit logs matching the specified criteria
+     */
+    @Query("SELECT a FROM AuditLog a " +
+           "WHERE (:username IS NULL OR a.username = :username) " +
+           "AND (:eventType IS NULL OR a.eventType = :eventType) " +
+           "AND (:outcome IS NULL OR a.outcome = :outcome) " +
+           "AND (:sourceIp IS NULL OR a.sourceIp = :sourceIp) " +
+           "AND (:startDate IS NULL OR a.timestamp >= :startDate) " +
+           "AND (:endDate IS NULL OR a.timestamp <= :endDate) " +
+           "ORDER BY a.timestamp DESC")
+    Page<AuditLog> findAuditLogsByAdvancedCriteria(
+            @Param("username") String username,
+            @Param("eventType") String eventType,
+            @Param("outcome") String outcome,
+            @Param("sourceIp") String sourceIp,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            Pageable pageable
+    );
 }
