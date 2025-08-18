@@ -3,23 +3,19 @@
  *
  * Converts the COBOL COBIL00C program and COBIL00.bms mapset to a React component
  * for processing customer bill payments and updating account balances.
- * 
+ *
  * This component replicates the exact functionality of the mainframe bill payment screen:
  * - Account ID validation and account data retrieval
  * - Payment amount entry with currency formatting
  * - Real-time balance calculation and display
  * - Two-stage confirmation workflow
  * - Payment transaction creation and account balance updates
- * 
+ *
  * Maps to CICS Transaction: CB00
  * Original COBOL Program: COBIL00C
  * Original BMS Mapset: COBIL00.bms
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useFormik } from 'formik';
-import * as yup from 'yup';
 import {
   Box,
   TextField,
@@ -31,13 +27,17 @@ import {
   Checkbox,
   FormControlLabel,
   Grid,
-  CircularProgress
+  CircularProgress,
 } from '@mui/material';
+import { useFormik } from 'formik';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import * as yup from 'yup';
 
 // Internal imports from depends_on_files
 import { postTransaction, getAccount } from '../../services/api.js';
-import { validateDate } from '../../utils/validation.js';
 import { formatCurrency } from '../../utils/CobolDataConverter.js';
+import { validateDate } from '../../utils/validation.js';
 import Header from '../common/Header.jsx';
 
 /**
@@ -50,36 +50,106 @@ const validationSchema = yup.object({
     .string()
     .required('Account ID is required')
     .matches(/^\d{11}$/, 'Account ID must be exactly 11 digits'),
-  
+
   // Payment amount validation - positive number with 2 decimal places
   paymentAmount: yup
     .string()
     .required('Payment amount is required')
     .matches(/^\d+(\.\d{1,2})?$/, 'Invalid payment amount format'),
-  
+
   // Confirmation validation - must be 'Y' to proceed
   confirmation: yup
     .string()
-    .oneOf(['Y'], 'You must confirm the payment to proceed')
+    .oneOf(['Y'], 'You must confirm the payment to proceed'),
 });
 
 /**
- * BillPayment Component
- * 
- * Implements the bill payment screen functionality with the following features:
- * - Account ID input and validation
- * - Current balance display
- * - Payment amount entry
- * - New balance calculation
- * - Payment confirmation
- * - Transaction processing
- * - PF-key navigation support
+ * Handle keyboard events for PF-key functionality
+ * Maps function keys to their COBOL equivalents
  */
-const BillPayment = () => {
-  // Navigation hook for PF-key functionality
-  const navigate = useNavigate();
-  
-  // Component state management
+const useKeyboardHandlers = (navigate, formik, accountData, showConfirmation, handleAccountLookup) => {
+  const handleKeyDown = useCallback((event) => {
+    switch (event.key) {
+      case 'F3':
+        event.preventDefault();
+        navigate(-1);
+        break;
+      case 'F5':
+        event.preventDefault();
+        if (formik.isValid && accountData) {
+          formik.handleSubmit();
+        }
+        break;
+      case 'Enter':
+        if (!accountData && formik.values.accountId.length === 11) {
+          handleAccountLookup(formik.values.accountId);
+        } else if (accountData && formik.values.paymentAmount && !showConfirmation) {
+          // This will be handled by the parent component
+        }
+        break;
+    }
+  }, [navigate, formik, accountData, showConfirmation, handleAccountLookup]);
+
+  return handleKeyDown;
+};
+
+/**
+ * Create payment submission handler
+ * Extracts complex payment processing logic
+ */
+const createPaymentHandler = (params) => {
+  const {
+    accountData, showConfirmation, setShowConfirmation, setIsLoading, setError,
+    setPaymentProcessed, setSuccess, setCurrentBalance, newBalance, formik,
+  } = params;
+  return async (values) => {
+    if (!accountData) {
+      setError('Please enter a valid account ID first');
+      return;
+    }
+
+    if (!showConfirmation) {
+      setShowConfirmation(true);
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const transactionData = {
+        accountId: values.accountId,
+        transactionType: 'PAYMENT',
+        transactionAmount: parseFloat(values.paymentAmount),
+        transactionDesc: 'Bill Payment',
+        cardNumber: accountData.cardNumber || '0000000000000000',
+      };
+
+      const result = await postTransaction(transactionData);
+
+      if (result.success) {
+        setPaymentProcessed(true);
+        setSuccess(`Payment processed successfully. Transaction ID: ${result.transactionId}`);
+        setCurrentBalance(newBalance);
+        setShowConfirmation(false);
+        formik.setFieldValue('confirmation', '');
+      } else {
+        throw new Error(result.error || 'Payment processing failed');
+      }
+    } catch (err) {
+      setError(err.message || 'Error processing payment');
+      setShowConfirmation(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+};
+
+/**
+ * Custom hook for bill payment form management
+ * Extracts complex form logic from main component
+ */
+const useBillPaymentForm = (navigate) => {
   const [accountData, setAccountData] = useState(null);
   const [currentBalance, setCurrentBalance] = useState(0);
   const [newBalance, setNewBalance] = useState(0);
@@ -89,18 +159,20 @@ const BillPayment = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [paymentProcessed, setPaymentProcessed] = useState(false);
 
-  /**
-   * Formik form management
-   * Handles form state, validation, and submission
-   */
+  // Create payment handler with proper dependencies
+  const handlePayment = createPaymentHandler({
+    accountData, setError, showConfirmation, setShowConfirmation,
+    setIsLoading, setSuccess, setNewBalance, setPaymentProcessed,
+  });
+
   const formik = useFormik({
     initialValues: {
       accountId: '',
       paymentAmount: '',
-      confirmation: ''
+      confirmation: '',
     },
     validationSchema,
-    onSubmit: handlePaymentSubmission
+    onSubmit: handlePayment,
   });
 
   /**
@@ -114,15 +186,15 @@ const BillPayment = () => {
 
     setIsLoading(true);
     setError('');
-    
+
     try {
       // Use the API service to fetch account data
       const result = await getAccount(accountId);
-      
+
       if (result.success) {
         setAccountData(result.data);
         setCurrentBalance(result.data.balance || 0);
-        
+
         // Calculate new balance if payment amount exists
         if (formik.values.paymentAmount) {
           const paymentAmount = parseFloat(formik.values.paymentAmount) || 0;
@@ -139,7 +211,7 @@ const BillPayment = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [formik.values.paymentAmount]);
+  }, [formik.values.paymentAmount, setAccountData, setCurrentBalance, setError, setIsLoading, setNewBalance]);
 
   /**
    * Calculate new balance when payment amount changes
@@ -153,87 +225,17 @@ const BillPayment = () => {
     } else {
       setNewBalance(currentBalance);
     }
-  }, [accountData, currentBalance, formik.values.paymentAmount]);
+  }, [accountData, currentBalance, formik.values.paymentAmount, setNewBalance]);
 
-  /**
-   * Handle payment submission - replicates COBOL 1200-WRITE-TRANSACT and 1300-UPDATE-ACCT paragraphs
-   * Processes the payment transaction and updates account balance
-   */
-  async function handlePaymentSubmission(values) {
-    if (!accountData) {
-      setError('Please enter a valid account ID first');
-      return;
-    }
-
-    if (!showConfirmation) {
+  // Handle Enter key for confirmation
+  const handleEnterKey = useCallback(() => {
+    if (accountData && formik.values.paymentAmount && !showConfirmation) {
       setShowConfirmation(true);
-      return;
     }
+  }, [accountData, formik.values.paymentAmount, showConfirmation, setShowConfirmation]);
 
-    setIsLoading(true);
-    setError('');
-
-    try {
-      // Create payment transaction using API service
-      const transactionData = {
-        accountId: values.accountId,
-        transactionType: 'PAYMENT',
-        transactionAmount: parseFloat(values.paymentAmount),
-        transactionDesc: 'Bill Payment',
-        cardNumber: accountData.cardNumber || '0000000000000000'
-      };
-
-      const result = await postTransaction(transactionData);
-      
-      if (result.success) {
-        setPaymentProcessed(true);
-        setSuccess(`Payment processed successfully. Transaction ID: ${result.transactionId}`);
-        
-        // Update current balance to reflect the payment
-        setCurrentBalance(newBalance);
-        
-        // Reset confirmation state
-        setShowConfirmation(false);
-        formik.setFieldValue('confirmation', '');
-      } else {
-        throw new Error(result.error || 'Payment processing failed');
-      }
-    } catch (err) {
-      setError(err.message || 'Error processing payment');
-      setShowConfirmation(false);
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  /**
-   * Handle keyboard events for PF-key functionality
-   * Maps function keys to their COBOL equivalents
-   */
-  const handleKeyDown = useCallback((event) => {
-    switch (event.key) {
-      case 'F3':
-        event.preventDefault();
-        // F3 = Exit - navigate back to previous screen
-        navigate(-1);
-        break;
-      case 'F5':
-        event.preventDefault();
-        // F5 = Process Payment - trigger form submission
-        if (formik.isValid && accountData) {
-          formik.handleSubmit();
-        }
-        break;
-      case 'Enter':
-        // Enter = Continue - handle based on current state
-        if (!accountData && formik.values.accountId.length === 11) {
-          handleAccountLookup(formik.values.accountId);
-        } else if (accountData && formik.values.paymentAmount && !showConfirmation) {
-          setShowConfirmation(true);
-        }
-        break;
-    }
-  }, [navigate, formik, accountData, showConfirmation, handleAccountLookup]);
+  // Use keyboard handlers hook
+  const handleKeyDown = useKeyboardHandlers(navigate, formik, accountData, showConfirmation, handleAccountLookup);
 
   // Effect for account lookup when account ID changes
   useEffect(() => {
@@ -249,26 +251,65 @@ const BillPayment = () => {
 
   // Effect for keyboard event listeners
   useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+    const keyHandler = (event) => {
+      handleKeyDown(event);
+      if (event.key === 'Enter' && accountData && formik.values.paymentAmount && !showConfirmation) {
+        handleEnterKey();
+      }
     };
-  }, [handleKeyDown]);
+
+    window.addEventListener('keydown', keyHandler);
+    return () => {
+      window.removeEventListener('keydown', keyHandler);
+    };
+  }, [handleKeyDown, handleEnterKey, accountData, formik.values.paymentAmount, showConfirmation]);
 
   // Effect for date validation - ensure current date is valid for transaction processing
   useEffect(() => {
     const currentDate = new Date();
-    const dateString = currentDate.toLocaleDateString('en-US', { 
-      month: '2-digit', 
-      day: '2-digit', 
-      year: '2-digit' 
+    const dateString = currentDate.toLocaleDateString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: '2-digit',
     });
-    
+
     // Validate current date format for transaction timestamp
     if (!validateDate(dateString)) {
       console.warn('Date validation warning: Invalid date format for transaction processing');
     }
   }, []);
+
+  return {
+    accountData, setAccountData, currentBalance, setCurrentBalance,
+    newBalance, setNewBalance, isLoading, setIsLoading, error, setError,
+    success, setSuccess, showConfirmation, setShowConfirmation,
+    paymentProcessed, setPaymentProcessed, formik, handlePayment,
+  };
+};
+
+/**
+ * BillPayment Component
+ *
+ * Implements the bill payment screen functionality with the following features:
+ * - Account ID input and validation
+ * - Current balance display
+ * - Payment amount entry
+ * - New balance calculation
+ * - Payment confirmation
+ * - Transaction processing
+ * - PF-key navigation support
+ */
+const BillPayment = () => {
+  // Navigation hook for PF-key functionality
+  const navigate = useNavigate();
+
+  // Use comprehensive custom hook for all form management
+  const {
+    accountData, setAccountData, currentBalance, setCurrentBalance,
+    newBalance, setNewBalance, isLoading, error,
+    success, setSuccess, showConfirmation, setShowConfirmation,
+    paymentProcessed, setPaymentProcessed, formik,
+  } = useBillPaymentForm(navigate);
 
   return (
     <Container maxWidth="lg" sx={{ mt: 2, mb: 4 }}>
@@ -297,7 +338,7 @@ const BillPayment = () => {
                 inputProps={{
                   maxLength: 11,
                   pattern: '[0-9]*',
-                  style: { fontFamily: 'monospace' }
+                  style: { fontFamily: 'monospace' },
                 }}
                 sx={{ mb: 2 }}
                 disabled={paymentProcessed}
@@ -313,7 +354,7 @@ const BillPayment = () => {
                   value={formatCurrency(currentBalance)}
                   InputProps={{
                     readOnly: true,
-                    style: { fontFamily: 'monospace', color: '#2E7D32' }
+                    style: { fontFamily: 'monospace', color: '#2E7D32' },
                   }}
                   sx={{ mb: 2 }}
                 />
@@ -335,7 +376,7 @@ const BillPayment = () => {
                   helperText={formik.touched.paymentAmount && formik.errors.paymentAmount}
                   inputProps={{
                     pattern: '[0-9.]*',
-                    style: { fontFamily: 'monospace' }
+                    style: { fontFamily: 'monospace' },
                   }}
                   sx={{ mb: 2 }}
                 />
@@ -351,10 +392,10 @@ const BillPayment = () => {
                   value={formatCurrency(newBalance)}
                   InputProps={{
                     readOnly: true,
-                    style: { 
-                      fontFamily: 'monospace', 
-                      color: newBalance >= 0 ? '#2E7D32' : '#D32F2F' 
-                    }
+                    style: {
+                      fontFamily: 'monospace',
+                      color: newBalance >= 0 ? '#2E7D32' : '#D32F2F',
+                    },
                   }}
                   sx={{ mb: 2 }}
                 />
@@ -373,10 +414,10 @@ const BillPayment = () => {
                     />
                   }
                   label="I confirm this payment is correct and authorize the transaction"
-                  sx={{ 
+                  sx={{
                     fontFamily: 'monospace',
                     color: '#1976d2',
-                    mb: 2
+                    mb: 2,
                   }}
                 />
               </Grid>
@@ -385,9 +426,9 @@ const BillPayment = () => {
             {/* Loading Indicator */}
             {isLoading && (
               <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-                <CircularProgress 
-                  size={40} 
-                  sx={{ color: '#1976d2' }} 
+                <CircularProgress
+                  size={40}
+                  sx={{ color: '#1976d2' }}
                 />
               </Grid>
             )}
@@ -418,26 +459,26 @@ const BillPayment = () => {
                     type="submit"
                     variant="contained"
                     disabled={!formik.isValid || !accountData || isLoading}
-                    sx={{ 
+                    sx={{
                       fontFamily: 'monospace',
-                      minWidth: '120px'
+                      minWidth: '120px',
                     }}
                   >
                     {showConfirmation ? 'Process Payment (F5)' : 'Continue (Enter)'}
                   </Button>
                 )}
-                
+
                 <Button
                   variant="outlined"
                   onClick={() => navigate(-1)}
-                  sx={{ 
+                  sx={{
                     fontFamily: 'monospace',
-                    minWidth: '120px'
+                    minWidth: '120px',
                   }}
                 >
                   Exit (F3)
                 </Button>
-                
+
                 {paymentProcessed && (
                   <Button
                     variant="contained"
@@ -451,9 +492,9 @@ const BillPayment = () => {
                       setSuccess('');
                       setShowConfirmation(false);
                     }}
-                    sx={{ 
+                    sx={{
                       fontFamily: 'monospace',
-                      minWidth: '120px'
+                      minWidth: '120px',
                     }}
                   >
                     New Payment
