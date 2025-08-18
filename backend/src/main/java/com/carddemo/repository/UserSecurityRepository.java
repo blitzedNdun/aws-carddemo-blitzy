@@ -46,6 +46,18 @@ public interface UserSecurityRepository extends JpaRepository<UserSecurity, Long
     Optional<UserSecurity> findBySecUsrId(String secUsrId);
 
     /**
+     * Finds a user by user ID (alias for findBySecUsrId for compatibility).
+     * This method provides an alias for user lookup operations that use userId
+     * instead of secUsrId, ensuring compatibility with UserDetailService.
+     * 
+     * @param userId the user ID (8 characters) - same as SEC-USR-ID
+     * @return Optional containing UserSecurity if found, empty otherwise
+     */
+    default Optional<UserSecurity> findByUserId(String userId) {
+        return findBySecUsrId(userId);
+    }
+
+    /**
      * Finds users by user type for role-based operations.
      * Supports user management and authorization operations by filtering users
      * based on their type ('A' for Admin, 'U' for User).
