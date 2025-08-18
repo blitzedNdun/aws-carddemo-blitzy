@@ -353,6 +353,38 @@ public class SignOnResponse {
         this.systemId = systemId;
     }
 
+    // Convenience methods for SignOnService compatibility
+
+    /**
+     * Sets the authentication success status.
+     * Convenience method that maps boolean success to status string.
+     * 
+     * @param success True for successful authentication, false for failure
+     */
+    public void setSuccess(boolean success) {
+        this.status = success ? "SUCCESS" : "ERROR";
+    }
+
+    /**
+     * Sets the response message.
+     * Convenience method that maps to errorMessage field.
+     * 
+     * @param message The message to set (typically error message)
+     */
+    public void setMessage(String message) {
+        this.errorMessage = message;
+    }
+
+    /**
+     * Sets the user type.
+     * Convenience method that maps to userRole field for compatibility.
+     * 
+     * @param userType The user type/role to set
+     */
+    public void setUserType(String userType) {
+        this.userRole = userType;
+    }
+
     /**
      * Checks equality based on userId and timestamp.
      * Two SignOnResponse objects are equal if they have the same userId and timestamp.
