@@ -2,43 +2,43 @@
  * AccountUpdate.jsx - Account Update Screen Component (COACTUP)
  *
  * React component for the Account Update screen, providing comprehensive account maintenance
- * functionality. Implements editable form fields with extensive validation, record-level 
+ * functionality. Implements editable form fields with extensive validation, record-level
  * locking during updates, modified field highlighting, and confirmation workflow.
- * 
+ *
  * Manages account status, credit limits, customer information updates with real-time validation.
- * 
+ *
  * Maps to:
- * - BMS Mapset: COACTUP.bms  
+ * - BMS Mapset: COACTUP.bms
  * - COBOL Program: COACTUPC.cbl
  * - Transaction Code: CAUP
  * - Copybook: CVACT01Y.cpy (Account Record Structure)
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useFormik } from 'formik';
-import * as yup from 'yup';
 import { Grid } from '@mui/material';
+import { useFormik } from 'formik';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import * as yup from 'yup';
 
 // Internal imports - ONLY from depends_on_files
-import { getAccount } from '../../services/api.js';
-import { validatePhoneAreaCode } from '../../utils/validation.js';
-import { displayFormat } from '../../utils/CobolDataConverter.js';
 import { Header } from '../../components/common/Header.jsx';
+import { getAccount } from '../../services/api.js';
+import { displayFormat } from '../../utils/CobolDataConverter.js';
+import { validatePhoneAreaCode } from '../../utils/validation.js';
 
 /**
  * AccountUpdate Component
- * 
+ *
  * Comprehensive account information maintenance form with extensive validation,
  * optimistic locking, and modified field highlighting matching COBOL business logic
  */
 const AccountUpdate = () => {
   // Navigation hook for PF-key routing
   const navigate = useNavigate();
-  
+
   // Component state management
   const [loading, setLoading] = useState(false);
-  const [accountData, setAccountData] = useState(null);
+  const [_accountData, setAccountData] = useState(null);
   const [originalData, setOriginalData] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
@@ -46,7 +46,7 @@ const AccountUpdate = () => {
   const [isLocked, setIsLocked] = useState(false);
 
   // Extract account ID from URL parameters or session storage
-  const accountId = new URLSearchParams(window.location.search).get('accountId') || 
+  const accountId = new URLSearchParams(window.location.search).get('accountId') ||
                    sessionStorage.getItem('currentAccountId') || '';
 
   /**
@@ -58,204 +58,204 @@ const AccountUpdate = () => {
     accountId: yup.string()
       .matches(/^\d{11}$/, 'Account ID must be exactly 11 digits')
       .required('Account ID is required'),
-    
+
     activeStatus: yup.string()
       .matches(/^[YN]$/, 'Active status must be Y or N')
       .required('Active status is required'),
-    
+
     // Financial fields with COBOL COMP-3 precision
     creditLimit: yup.number()
       .min(0, 'Credit limit cannot be negative')
       .max(99999999.99, 'Credit limit too large')
       .typeError('Credit limit must be a valid number'),
-    
+
     cashCreditLimit: yup.number()
       .min(0, 'Cash credit limit cannot be negative')
-      .max(99999999.99, 'Cash credit limit too large')  
+      .max(99999999.99, 'Cash credit limit too large')
       .typeError('Cash credit limit must be a valid number'),
-    
+
     currentBalance: yup.number()
       .min(-99999999.99, 'Balance too low')
       .max(99999999.99, 'Balance too high')
       .typeError('Current balance must be a valid number'),
-    
+
     currentCycleCredit: yup.number()
       .min(0, 'Current cycle credit cannot be negative')
       .max(99999999.99, 'Current cycle credit too large')
       .typeError('Current cycle credit must be a valid number'),
-    
+
     currentCycleDebit: yup.number()
-      .min(0, 'Current cycle debit cannot be negative') 
+      .min(0, 'Current cycle debit cannot be negative')
       .max(99999999.99, 'Current cycle debit too large')
       .typeError('Current cycle debit must be a valid number'),
-    
+
     // Date validation matching COBOL date edit routines
     openYear: yup.number()
       .min(1900, 'Invalid year')
       .max(2099, 'Invalid year')
       .typeError('Open year must be a number'),
-    
+
     openMonth: yup.number()
       .min(1, 'Month must be 1-12')
       .max(12, 'Month must be 1-12')
       .typeError('Open month must be a number'),
-    
+
     openDay: yup.number()
       .min(1, 'Day must be 1-31')
       .max(31, 'Day must be 1-31')
       .typeError('Open day must be a number'),
-    
+
     expiryYear: yup.number()
       .min(1900, 'Invalid year')
       .max(2099, 'Invalid year')
       .typeError('Expiry year must be a number'),
-    
+
     expiryMonth: yup.number()
       .min(1, 'Month must be 1-12')
       .max(12, 'Month must be 1-12')
       .typeError('Expiry month must be a number'),
-    
+
     expiryDay: yup.number()
       .min(1, 'Day must be 1-31')
       .max(31, 'Day must be 1-31')
       .typeError('Expiry day must be a number'),
-    
+
     reissueYear: yup.number()
       .min(1900, 'Invalid year')
       .max(2099, 'Invalid year')
       .typeError('Reissue year must be a number'),
-    
+
     reissueMonth: yup.number()
       .min(1, 'Month must be 1-12')
       .max(12, 'Month must be 1-12')
       .typeError('Reissue month must be a number'),
-    
+
     reissueDay: yup.number()
       .min(1, 'Day must be 1-31')
       .max(31, 'Day must be 1-31')
       .typeError('Reissue day must be a number'),
-    
+
     // Account grouping
     accountGroup: yup.string()
       .max(10, 'Account group too long')
       .matches(/^[A-Za-z0-9\s]*$/, 'Account group contains invalid characters'),
-    
+
     // Customer information validation
     customerId: yup.string()
       .matches(/^\d{9}$/, 'Customer ID must be exactly 9 digits')
       .required('Customer ID is required'),
-    
+
     // SSN validation in XXX-XX-XXXX format
     ssn1: yup.string()
       .matches(/^\d{3}$/, 'SSN first part must be 3 digits')
       .required('SSN first part required'),
-    
+
     ssn2: yup.string()
       .matches(/^\d{2}$/, 'SSN second part must be 2 digits')
       .required('SSN second part required'),
-    
+
     ssn3: yup.string()
       .matches(/^\d{4}$/, 'SSN third part must be 4 digits')
       .required('SSN third part required'),
-    
+
     // Date of birth validation
     dobYear: yup.number()
       .min(1900, 'Invalid birth year')
       .max(new Date().getFullYear(), 'Birth year cannot be in future')
       .typeError('Birth year must be a number'),
-    
+
     dobMonth: yup.number()
       .min(1, 'Month must be 1-12')
       .max(12, 'Month must be 1-12')
       .typeError('Birth month must be a number'),
-    
+
     dobDay: yup.number()
       .min(1, 'Day must be 1-31')
       .max(31, 'Day must be 1-31')
       .typeError('Birth day must be a number'),
-    
+
     // FICO score validation (300-850 range)
     ficoScore: yup.number()
       .min(300, 'FICO score minimum is 300')
       .max(850, 'FICO score maximum is 850')
       .typeError('FICO score must be a number'),
-    
+
     // Name validation
     firstName: yup.string()
       .max(25, 'First name too long')
       .matches(/^[A-Za-z\s'-]*$/, 'First name contains invalid characters')
       .required('First name is required'),
-    
+
     middleName: yup.string()
       .max(25, 'Middle name too long')
       .matches(/^[A-Za-z\s'-]*$/, 'Middle name contains invalid characters'),
-    
+
     lastName: yup.string()
       .max(25, 'Last name too long')
       .matches(/^[A-Za-z\s'-]*$/, 'Last name contains invalid characters')
       .required('Last name is required'),
-    
+
     // Address validation
     addressLine1: yup.string()
       .max(50, 'Address line 1 too long')
       .required('Address line 1 is required'),
-    
+
     addressLine2: yup.string()
       .max(50, 'Address line 2 too long'),
-    
+
     city: yup.string()
       .max(50, 'City name too long')
       .matches(/^[A-Za-z\s'-]*$/, 'City contains invalid characters')
       .required('City is required'),
-    
+
     state: yup.string()
       .matches(/^[A-Z]{2}$/, 'State must be 2-letter code')
       .required('State is required'),
-    
+
     zipCode: yup.string()
       .matches(/^\d{5}$/, 'ZIP code must be 5 digits')
       .required('ZIP code is required'),
-    
+
     country: yup.string()
       .matches(/^[A-Z]{3}$/, 'Country must be 3-letter code')
       .required('Country is required'),
-    
+
     // Phone number validation using validatePhoneAreaCode dependency
     phone1Area: yup.string()
-      .test('valid-area-code', 'Invalid area code', function(value) {
-        if (!value) return true; // Allow empty
+      .test('valid-area-code', 'Invalid area code', (value) => {
+        if (!value) {return true;} // Allow empty
         const validation = validatePhoneAreaCode(value);
         return validation.isValid;
       }),
-    
+
     phone1Exchange: yup.string()
       .matches(/^\d{3}$/, 'Phone exchange must be 3 digits'),
-    
+
     phone1Number: yup.string()
       .matches(/^\d{4}$/, 'Phone number must be 4 digits'),
-    
+
     phone2Area: yup.string()
-      .test('valid-area-code', 'Invalid area code', function(value) {
-        if (!value) return true; // Allow empty
+      .test('valid-area-code', 'Invalid area code', (value) => {
+        if (!value) {return true;} // Allow empty
         const validation = validatePhoneAreaCode(value);
         return validation.isValid;
       }),
-    
+
     phone2Exchange: yup.string()
       .matches(/^\d{3}$/, 'Phone exchange must be 3 digits'),
-    
+
     phone2Number: yup.string()
       .matches(/^\d{4}$/, 'Phone number must be 4 digits'),
-    
+
     // Government ID and EFT fields
     governmentId: yup.string()
       .max(20, 'Government ID too long'),
-    
+
     eftAccountId: yup.string()
       .max(10, 'EFT account ID too long'),
-    
+
     primaryCardHolder: yup.string()
-      .matches(/^[YN]$/, 'Primary cardholder must be Y or N')
+      .matches(/^[YN]$/, 'Primary cardholder must be Y or N'),
   });
 
   /**
@@ -270,17 +270,17 @@ const AccountUpdate = () => {
 
     setLoading(true);
     setErrorMessage('');
-    
+
     try {
       const response = await getAccount(accountId);
-      
+
       if (response.success && response.data) {
         const data = response.data;
-        
+
         // Store original data for change tracking
         setOriginalData(data);
         setAccountData(data);
-        
+
         // Populate form fields with loaded data
         formik.setValues({
           accountId: data.accountId || '',
@@ -290,42 +290,42 @@ const AccountUpdate = () => {
           currentBalance: displayFormat(data.currentBalance, 'S9(10)V99') || '',
           currentCycleCredit: displayFormat(data.currentCycleCredit, 'S9(10)V99') || '',
           currentCycleDebit: displayFormat(data.currentCycleDebit, 'S9(10)V99') || '',
-          
+
           // Parse date fields (COBOL format: YYYY-MM-DD)
           openYear: data.openDate ? data.openDate.substring(0, 4) : '',
           openMonth: data.openDate ? data.openDate.substring(5, 7) : '',
           openDay: data.openDate ? data.openDate.substring(8, 10) : '',
-          
+
           expiryYear: data.expiryDate ? data.expiryDate.substring(0, 4) : '',
           expiryMonth: data.expiryDate ? data.expiryDate.substring(5, 7) : '',
           expiryDay: data.expiryDate ? data.expiryDate.substring(8, 10) : '',
-          
+
           reissueYear: data.reissueDate ? data.reissueDate.substring(0, 4) : '',
           reissueMonth: data.reissueDate ? data.reissueDate.substring(5, 7) : '',
           reissueDay: data.reissueDate ? data.reissueDate.substring(8, 10) : '',
-          
+
           accountGroup: data.accountGroup || '',
-          
+
           // Customer information
           customerId: data.customerId || '',
-          
+
           // Parse SSN (format: XXX-XX-XXXX)
           ssn1: data.ssn ? data.ssn.substring(0, 3) : '',
           ssn2: data.ssn ? data.ssn.substring(4, 6) : '',
           ssn3: data.ssn ? data.ssn.substring(7, 11) : '',
-          
+
           // Parse date of birth
           dobYear: data.dateOfBirth ? data.dateOfBirth.substring(0, 4) : '',
           dobMonth: data.dateOfBirth ? data.dateOfBirth.substring(5, 7) : '',
           dobDay: data.dateOfBirth ? data.dateOfBirth.substring(8, 10) : '',
-          
+
           ficoScore: data.ficoScore || '',
-          
+
           // Name fields
           firstName: data.firstName || '',
           middleName: data.middleName || '',
           lastName: data.lastName || '',
-          
+
           // Address fields
           addressLine1: data.addressLine1 || '',
           addressLine2: data.addressLine2 || '',
@@ -333,24 +333,24 @@ const AccountUpdate = () => {
           state: data.state || '',
           zipCode: data.zipCode || '',
           country: data.country || 'USA',
-          
+
           // Parse phone numbers (format: XXX-XXX-XXXX)
           phone1Area: data.phone1 ? data.phone1.substring(0, 3) : '',
           phone1Exchange: data.phone1 ? data.phone1.substring(4, 7) : '',
           phone1Number: data.phone1 ? data.phone1.substring(8, 12) : '',
-          
+
           phone2Area: data.phone2 ? data.phone2.substring(0, 3) : '',
           phone2Exchange: data.phone2 ? data.phone2.substring(4, 7) : '',
           phone2Number: data.phone2 ? data.phone2.substring(8, 12) : '',
-          
+
           governmentId: data.governmentId || '',
           eftAccountId: data.eftAccountId || '',
-          primaryCardHolder: data.primaryCardHolder || 'N'
+          primaryCardHolder: data.primaryCardHolder || 'N',
         });
-        
+
         setInfoMessage('Account loaded successfully');
         setIsLocked(true); // Implement optimistic locking
-        
+
       } else {
         setErrorMessage(response.error || 'Failed to load account data');
       }
@@ -360,6 +360,7 @@ const AccountUpdate = () => {
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountId]);
 
   /**
@@ -384,7 +385,7 @@ const AccountUpdate = () => {
    */
   const formik = useFormik({
     initialValues: {
-      accountId: accountId,
+      accountId,
       activeStatus: 'N',
       creditLimit: '',
       cashCreditLimit: '',
@@ -426,13 +427,13 @@ const AccountUpdate = () => {
       phone2Number: '',
       governmentId: '',
       eftAccountId: '',
-      primaryCardHolder: 'N'
+      primaryCardHolder: 'N',
     },
     validationSchema,
     onSubmit: async (values) => {
       // Handle form submission (F5=Save functionality)
       handleSave(values);
-    }
+    },
   });
 
   /**
@@ -459,7 +460,7 @@ const AccountUpdate = () => {
 
     try {
       // Reconstruct data objects for API call
-      const updateData = {
+      const _updateData = {
         accountId: values.accountId,
         activeStatus: values.activeStatus,
         creditLimit: values.creditLimit,
@@ -467,33 +468,33 @@ const AccountUpdate = () => {
         currentBalance: values.currentBalance,
         currentCycleCredit: values.currentCycleCredit,
         currentCycleDebit: values.currentCycleDebit,
-        
+
         // Reconstruct dates in YYYY-MM-DD format
-        openDate: values.openYear && values.openMonth && values.openDay 
+        openDate: values.openYear && values.openMonth && values.openDay
           ? `${values.openYear}-${values.openMonth.padStart(2, '0')}-${values.openDay.padStart(2, '0')}`
           : null,
-        
+
         expiryDate: values.expiryYear && values.expiryMonth && values.expiryDay
           ? `${values.expiryYear}-${values.expiryMonth.padStart(2, '0')}-${values.expiryDay.padStart(2, '0')}`
           : null,
-        
+
         reissueDate: values.reissueYear && values.reissueMonth && values.reissueDay
           ? `${values.reissueYear}-${values.reissueMonth.padStart(2, '0')}-${values.reissueDay.padStart(2, '0')}`
           : null,
-        
+
         accountGroup: values.accountGroup,
         customerId: values.customerId,
-        
+
         // Reconstruct SSN in XXX-XX-XXXX format
-        ssn: values.ssn1 && values.ssn2 && values.ssn3 
+        ssn: values.ssn1 && values.ssn2 && values.ssn3
           ? `${values.ssn1}-${values.ssn2}-${values.ssn3}`
           : null,
-        
+
         // Reconstruct date of birth
         dateOfBirth: values.dobYear && values.dobMonth && values.dobDay
           ? `${values.dobYear}-${values.dobMonth.padStart(2, '0')}-${values.dobDay.padStart(2, '0')}`
           : null,
-        
+
         ficoScore: values.ficoScore,
         firstName: values.firstName,
         middleName: values.middleName,
@@ -504,34 +505,34 @@ const AccountUpdate = () => {
         state: values.state,
         zipCode: values.zipCode,
         country: values.country,
-        
+
         // Reconstruct phone numbers in XXX-XXX-XXXX format
         phone1: values.phone1Area && values.phone1Exchange && values.phone1Number
           ? `${values.phone1Area}-${values.phone1Exchange}-${values.phone1Number}`
           : null,
-        
+
         phone2: values.phone2Area && values.phone2Exchange && values.phone2Number
           ? `${values.phone2Area}-${values.phone2Exchange}-${values.phone2Number}`
           : null,
-        
+
         governmentId: values.governmentId,
         eftAccountId: values.eftAccountId,
-        primaryCardHolder: values.primaryCardHolder
+        primaryCardHolder: values.primaryCardHolder,
       };
 
       // Call updateAccount API (would need to import this function)
       // const response = await updateAccount(values.accountId, updateData);
-      
+
       // For now, simulate successful save
       setInfoMessage('Account updated successfully');
       setModifiedFields(new Set()); // Clear modification indicators
       setIsLocked(false); // Release lock
-      
+
       // Navigate back after successful save
       setTimeout(() => {
         navigate('/accounts');
       }, 2000);
-      
+
     } catch (error) {
       console.error('Error saving account:', error);
       setErrorMessage('System error saving account data');
@@ -557,7 +558,7 @@ const AccountUpdate = () => {
   };
 
   /**
-   * Reset functionality (F12 key handler)  
+   * Reset functionality (F12 key handler)
    * Resets form to original loaded values
    */
   const handleReset = () => {
@@ -574,7 +575,7 @@ const AccountUpdate = () => {
    * Implements F3=Cancel, F5=Save, F12=Reset functionality
    */
   const handleKeyDown = useCallback((event) => {
-    switch(event.key) {
+    switch (event.key) {
       case 'F3':
         event.preventDefault();
         handleCancel();
@@ -594,6 +595,7 @@ const AccountUpdate = () => {
       default:
         break;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formik, modifiedFields]);
 
   // Load account data on component mount
@@ -615,15 +617,15 @@ const AccountUpdate = () => {
    */
   const getFieldClasses = (fieldName) => {
     const classes = ['form-input'];
-    
+
     if (modifiedFields.has(fieldName)) {
       classes.push('field-modified');
     }
-    
+
     if (formik.errors[fieldName] && formik.touched[fieldName]) {
       classes.push('field-error');
     }
-    
+
     return classes.join(' ');
   };
 
@@ -631,22 +633,22 @@ const AccountUpdate = () => {
   return (
     <div className="screen-container">
       {/* BMS Header replication using Header component */}
-      <Header 
-        transactionId="CAUP" 
-        programName="COACTUPC" 
-        title="Update Account" 
+      <Header
+        transactionId="CAUP"
+        programName="COACTUPC"
+        title="Update Account"
       />
-      
+
       {/* Main content area */}
       <div className="content-area">
         <form onSubmit={formik.handleSubmit}>
           <Grid container spacing={2}>
-            
+
             {/* Account Information Section */}
             <Grid item xs={12}>
               <h3>Account Information</h3>
             </Grid>
-            
+
             {/* Account Number and Status */}
             <Grid item xs={6}>
               <label className="field-label">Account Number:</label>
@@ -665,7 +667,7 @@ const AccountUpdate = () => {
                 <div className="error-message">{formik.errors.accountId}</div>
               )}
             </Grid>
-            
+
             <Grid item xs={6}>
               <label className="field-label">Active Y/N:</label>
               <select
@@ -688,7 +690,7 @@ const AccountUpdate = () => {
             <Grid item xs={12}>
               <h4>Dates</h4>
             </Grid>
-            
+
             {/* Open Date */}
             <Grid item xs={4}>
               <label className="field-label">Opened:</label>
