@@ -385,4 +385,53 @@ public final class SessionAttributes {
             session.setAttribute(LAST_ACTIVITY_TIME, System.currentTimeMillis());
         }
     }
+    
+    /**
+     * Validates session storage size against COMMAREA limits for Spring Session Map.
+     * This overloaded method accepts a Map representation of session attributes,
+     * which is used by Spring Session Redis repositories.
+     * 
+     * @param sessionAttributes Map containing session attributes
+     * @return true if session size is within limits
+     */
+    public static boolean validateSessionSize(java.util.Map<String, Object> sessionAttributes) {
+        if (sessionAttributes == null) {
+            return true;
+        }
+        
+        try {
+            // Estimate session size (simplified calculation)
+            int estimatedSize = 0;
+            
+            // Count all attribute names and estimate their storage size
+            for (java.util.Map.Entry<String, Object> entry : sessionAttributes.entrySet()) {
+                String name = entry.getKey();
+                Object value = entry.getValue();
+                
+                // Estimate size based on object type
+                if (name != null) {
+                    estimatedSize += name.length() * 2; // UTF-16 chars
+                }
+                
+                if (value instanceof String) {
+                    estimatedSize += ((String) value).length() * 2;
+                } else if (value instanceof Long || value instanceof Integer) {
+                    estimatedSize += 8;
+                } else if (value != null) {
+                    estimatedSize += 100; // Estimate for complex objects
+                }
+            }
+            
+            boolean withinLimits = estimatedSize <= MAX_SESSION_SIZE;
+            if (!withinLimits) {
+                logger.warn("Session size exceeds limit: {} bytes (max: {})", estimatedSize, MAX_SESSION_SIZE);
+            }
+            
+            return withinLimits;
+            
+        } catch (Exception e) {
+            logger.error("Error validating session size", e);
+            return false;
+        }
+    }
 }
