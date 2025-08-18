@@ -1,14 +1,14 @@
 /**
  * CreditCardDetail.jsx - Credit Card Detail Screen Component
- * 
- * React component for the Credit Card Detail screen (COCRDSL), displaying comprehensive 
- * card information. Shows card details including number, status, expiry date, account 
- * linkage, and cardholder information. Provides read-only view with quick navigation 
+ *
+ * React component for the Credit Card Detail screen (COCRDSL), displaying comprehensive
+ * card information. Shows card details including number, status, expiry date, account
+ * linkage, and cardholder information. Provides read-only view with quick navigation
  * to update functionality via PF-keys.
- * 
+ *
  * Maps to COBOL program COCRDSLC and BMS mapset COCRDSL
  * Transaction Code: CCDL
- * 
+ *
  * This component implements the exact functionality of the COBOL COCRDSLC program:
  * - Displays card details in read-only format matching BMS field layout
  * - Shows account number (11 digits), card number (16 digits), cardholder name
@@ -18,8 +18,6 @@
  * - Retrieves data via getCard API function replacing CICS READ operations
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Box,
   TextField,
@@ -27,20 +25,22 @@ import {
   Grid,
   Alert,
   CircularProgress,
-  Typography
+  Typography,
 } from '@mui/material';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 // Internal imports - ONLY from depends_on_files
+import Header from '../../components/common/Header.jsx';
 import { getCard } from '../../services/api.js';
 import { displayFormat } from '../../utils/CobolDataConverter.js';
-import Header from '../../components/common/Header.jsx';
 
 /**
  * CreditCardDetail Component
- * 
+ *
  * Displays detailed credit card information in a read-only format,
  * replicating the COCRDSL BMS mapset layout and COCRDSLC program functionality.
- * 
+ *
  * @returns {JSX.Element} Credit Card Detail screen component
  */
 const CreditCardDetail = () => {
@@ -55,21 +55,21 @@ const CreditCardDetail = () => {
     cardStatus: '',
     expiryMonth: '',
     expiryYear: '',
-    expiryDate: ''
+    expiryDate: '',
   });
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
   const [searchCriteria, setSearchCriteria] = useState({
     accountId: '',
-    cardNumber: ''
+    cardNumber: '',
   });
 
   /**
    * Load card data using the getCard API function
    * Replicates COBOL 9000-READ-DATA paragraph functionality
-   * 
+   *
    * @param {string} cardNumber - 16-digit card number
    */
   const loadCardData = useCallback(async (cardNumber) => {
@@ -84,10 +84,10 @@ const CreditCardDetail = () => {
 
     try {
       const response = await getCard(cardNumber);
-      
+
       if (response.success) {
         const card = response.data;
-        
+
         setCardData({
           accountId: displayFormat(card.accountId || '', '9(11)'),
           cardNumber: displayFormat(card.cardNumber || '', '9(16)'),
@@ -95,9 +95,9 @@ const CreditCardDetail = () => {
           cardStatus: card.activeStatus === 'Y' ? 'Y' : 'N',
           expiryMonth: card.expiryMonth ? String(card.expiryMonth).padStart(2, '0') : '',
           expiryYear: card.expiryYear ? String(card.expiryYear) : '',
-          expiryDate: card.expiryDate || ''
+          expiryDate: card.expiryDate || '',
         });
-        
+
         setInfoMessage('   Displaying requested details');
       } else {
         // Handle API errors similar to COBOL error handling
@@ -124,17 +124,17 @@ const CreditCardDetail = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const accountParam = urlParams.get('accountId');
     const cardParam = urlParams.get('cardNumber');
-    
+
     // Try to get from session storage if not in URL (coming from card list)
     const sessionAccountId = sessionStorage.getItem('selectedAccountId');
     const sessionCardNumber = sessionStorage.getItem('selectedCardNumber');
-    
+
     const accountId = accountParam || sessionAccountId || '';
     const cardNumber = cardParam || sessionCardNumber || '';
 
     setSearchCriteria({
-      accountId: accountId,
-      cardNumber: cardNumber
+      accountId,
+      cardNumber,
     });
 
     // If we have a card number, load the data automatically
@@ -145,8 +145,8 @@ const CreditCardDetail = () => {
     }
 
     // Clear session storage after use
-    if (sessionAccountId) sessionStorage.removeItem('selectedAccountId');
-    if (sessionCardNumber) sessionStorage.removeItem('selectedCardNumber');
+    if (sessionAccountId) {sessionStorage.removeItem('selectedAccountId');}
+    if (sessionCardNumber) {sessionStorage.removeItem('selectedCardNumber');}
   }, [loadCardData]);
 
   /**
@@ -181,7 +181,7 @@ const CreditCardDetail = () => {
    */
   const handlePFKey = useCallback((key) => {
     switch (key) {
-      case 'F3':
+      case 'F3': {
         // Exit back to calling program or main menu
         const fromProgram = sessionStorage.getItem('fromProgram');
         if (fromProgram === 'COCRDLIC') {
@@ -190,7 +190,8 @@ const CreditCardDetail = () => {
           navigate('/menu');
         }
         break;
-        
+      }
+
       case 'F4':
         // Clear screen data
         setCardData({
@@ -200,21 +201,21 @@ const CreditCardDetail = () => {
           cardStatus: '',
           expiryMonth: '',
           expiryYear: '',
-          expiryDate: ''
+          expiryDate: '',
         });
         setSearchCriteria({
           accountId: '',
-          cardNumber: ''
+          cardNumber: '',
         });
         setError('');
         setInfoMessage('Please enter Account and Card Number');
         break;
-        
+
       case 'ENTER':
         // Execute search with current criteria
         handleSearch();
         break;
-        
+
       default:
         break;
     }
@@ -263,7 +264,7 @@ const CreditCardDetail = () => {
   return (
     <Box sx={{ width: '100%', minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
       {/* Header matching BMS screen header layout */}
-      <Header 
+      <Header
         transactionId="CCDL"
         programName="COCRDSLC"
         title="View Credit Card Detail"
@@ -272,19 +273,19 @@ const CreditCardDetail = () => {
       {/* Main content area */}
       <Box sx={{ padding: 3 }}>
         <Grid container spacing={3}>
-          
+
           {/* Search criteria section */}
           <Grid item xs={12}>
-            <Box sx={{ 
-              backgroundColor: 'white', 
-              padding: 3, 
+            <Box sx={{
+              backgroundColor: 'white',
+              padding: 3,
               borderRadius: 1,
-              border: '1px solid #e0e0e0'
+              border: '1px solid #e0e0e0',
             }}>
               <Typography variant="h6" gutterBottom sx={{ color: '#1976d2' }}>
                 Search Criteria
               </Typography>
-              
+
               <Grid container spacing={2} sx={{ marginTop: 1 }}>
                 <Grid item xs={12} md={6}>
                   <TextField
@@ -293,17 +294,17 @@ const CreditCardDetail = () => {
                     value={searchCriteria.accountId}
                     onChange={(e) => setSearchCriteria(prev => ({
                       ...prev,
-                      accountId: e.target.value
+                      accountId: e.target.value,
                     }))}
-                    inputProps={{ 
+                    inputProps={{
                       maxLength: 11,
-                      style: { fontFamily: 'monospace' }
+                      style: { fontFamily: 'monospace' },
                     }}
                     helperText="11-digit account number"
                     disabled={loading}
                   />
                 </Grid>
-                
+
                 <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
@@ -311,11 +312,11 @@ const CreditCardDetail = () => {
                     value={searchCriteria.cardNumber}
                     onChange={(e) => setSearchCriteria(prev => ({
                       ...prev,
-                      cardNumber: e.target.value
+                      cardNumber: e.target.value,
                     }))}
-                    inputProps={{ 
+                    inputProps={{
                       maxLength: 16,
-                      style: { fontFamily: 'monospace' }
+                      style: { fontFamily: 'monospace' },
                     }}
                     helperText="16-digit card number"
                     disabled={loading}
@@ -328,16 +329,16 @@ const CreditCardDetail = () => {
           {/* Card details section - read-only display */}
           {(cardData.cardNumber || loading) && (
             <Grid item xs={12}>
-              <Box sx={{ 
-                backgroundColor: 'white', 
-                padding: 3, 
+              <Box sx={{
+                backgroundColor: 'white',
+                padding: 3,
                 borderRadius: 1,
-                border: '1px solid #e0e0e0'
+                border: '1px solid #e0e0e0',
               }}>
                 <Typography variant="h6" gutterBottom sx={{ color: '#1976d2' }}>
                   Card Details
                 </Typography>
-                
+
                 {loading ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', padding: 4 }}>
                     <CircularProgress />
@@ -349,35 +350,35 @@ const CreditCardDetail = () => {
                         fullWidth
                         label="Name on card"
                         value={cardData.cardholderName}
-                        InputProps={{ 
+                        InputProps={{
                           readOnly: true,
-                          style: { fontFamily: 'monospace' }
+                          style: { fontFamily: 'monospace' },
                         }}
                         variant="outlined"
                       />
                     </Grid>
-                    
+
                     <Grid item xs={12} md={3}>
                       <TextField
                         fullWidth
                         label="Card Active Y/N"
                         value={cardData.cardStatus}
-                        InputProps={{ 
+                        InputProps={{
                           readOnly: true,
-                          style: { fontFamily: 'monospace' }
+                          style: { fontFamily: 'monospace' },
                         }}
                         variant="outlined"
                       />
                     </Grid>
-                    
+
                     <Grid item xs={12} md={3}>
                       <TextField
                         fullWidth
                         label="Expiry Date"
                         value={getFormattedExpiryDate()}
-                        InputProps={{ 
+                        InputProps={{
                           readOnly: true,
-                          style: { fontFamily: 'monospace' }
+                          style: { fontFamily: 'monospace' },
                         }}
                         variant="outlined"
                         helperText="MM/YYYY format"
@@ -397,7 +398,7 @@ const CreditCardDetail = () => {
               </Alert>
             </Grid>
           )}
-          
+
           {error && (
             <Grid item xs={12}>
               <Alert severity="error" sx={{ fontFamily: 'monospace' }}>
@@ -408,21 +409,21 @@ const CreditCardDetail = () => {
 
           {/* PF-key action buttons */}
           <Grid item xs={12}>
-            <Box sx={{ 
-              backgroundColor: 'white', 
-              padding: 2, 
+            <Box sx={{
+              backgroundColor: 'white',
+              padding: 2,
               borderRadius: 1,
               border: '1px solid #e0e0e0',
-              textAlign: 'center'
+              textAlign: 'center',
             }}>
-              <Typography variant="body2" sx={{ 
-                fontFamily: 'monospace', 
+              <Typography variant="body2" sx={{
+                fontFamily: 'monospace',
                 color: '#fbc02d',
-                marginBottom: 2
+                marginBottom: 2,
               }}>
                 ENTER=Search Cards  F3=Exit  F4=Clear
               </Typography>
-              
+
               <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
                 <Button
                   variant="contained"
@@ -432,7 +433,7 @@ const CreditCardDetail = () => {
                 >
                   Search (Enter)
                 </Button>
-                
+
                 <Button
                   variant="outlined"
                   onClick={() => handlePFKey('F4')}
@@ -441,7 +442,7 @@ const CreditCardDetail = () => {
                 >
                   Clear (F4)
                 </Button>
-                
+
                 <Button
                   variant="outlined"
                   onClick={() => handlePFKey('F3')}
