@@ -1,13 +1,13 @@
 /**
  * SignOn.jsx - React component for the Sign-On screen (COSGN00)
- * 
- * Provides secure system entry with user authentication, implementing credential 
- * validation form with user ID and password fields, real-time validation using 
- * Formik/Yup, error handling for invalid credentials, and automatic role-based 
+ *
+ * Provides secure system entry with user authentication, implementing credential
+ * validation form with user ID and password fields, real-time validation using
+ * Formik/Yup, error handling for invalid credentials, and automatic role-based
  * menu redirection upon successful authentication.
- * 
+ *
  * Maps PF-keys to navigation actions (ENTER=Sign On, F3=Exit, F12=Cancel).
- * 
+ *
  * Converted from BMS mapset COSGN00.bms and COBOL program COSGN00C.cbl
  * - Maintains identical screen layout and business logic
  * - Preserves all field validation rules from COBOL
@@ -16,38 +16,36 @@
  */
 
 // External imports from package dependencies
-import React, { useState, useEffect, useCallback } from 'react';
-import { Formik } from 'formik';
-import * as yup from 'yup';
 import {
-  Box,
-  TextField,
-  Button,
-  Typography,
+  ExitToApp,
+  Login,
+  Visibility,
+  VisibilityOff,
+} from '@mui/icons-material';
+import {
   Alert,
+  Box,
+  Button,
   Card,
   CardContent,
   Grid,
-  InputAdornment,
   IconButton,
+  InputAdornment,
   Paper,
-  Divider,
+  TextField,
+  Typography,
 } from '@mui/material';
-import {
-  Visibility,
-  VisibilityOff,
-  ExitToApp,
-  Login,
-} from '@mui/icons-material';
+import { Formik } from 'formik';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import * as yup from 'yup';
 
 // Internal imports - ONLY from depends_on_files
 import { signIn } from '../../services/api.js';
-import { validateDate } from '../../utils/validation.js';
 
 /**
  * SignOn Component - Main application entry point
- * 
+ *
  * Implements the complete sign-on screen functionality including:
  * - Header information display (transaction, program, date/time)
  * - Credit card demo branding with ASCII art
@@ -55,7 +53,7 @@ import { validateDate } from '../../utils/validation.js';
  * - Role-based authentication and redirection
  * - PF-key navigation support via keyboard events
  * - Session management integration
- * 
+ *
  * @returns {JSX.Element} Complete sign-on screen component
  */
 const SignOn = () => {
@@ -67,7 +65,7 @@ const SignOn = () => {
     date: '',
     time: '',
   });
-  
+
   // Navigation hook for role-based redirection
   const navigate = useNavigate();
 
@@ -78,19 +76,19 @@ const SignOn = () => {
   useEffect(() => {
     const updateDateTime = () => {
       const now = new Date();
-      
+
       // Format date as MM/DD/YY to match BMS CURDATE field
       const month = String(now.getMonth() + 1).padStart(2, '0');
       const day = String(now.getDate()).padStart(2, '0');
       const year = String(now.getFullYear()).slice(-2);
       const formattedDate = `${month}/${day}/${year}`;
-      
+
       // Format time as HH:MM:SS to match BMS CURTIME field
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
       const formattedTime = `${hours}:${minutes}:${seconds}`;
-      
+
       setCurrentDateTime({
         date: formattedDate,
         time: formattedTime,
@@ -99,10 +97,10 @@ const SignOn = () => {
 
     // Initialize immediately
     updateDateTime();
-    
+
     // Update every second to keep time current
     const timeInterval = setInterval(updateDateTime, 1000);
-    
+
     return () => clearInterval(timeInterval);
   }, []);
 
@@ -187,7 +185,7 @@ const SignOn = () => {
   /**
    * Form submission handler
    * Implements COBOL READ-USER-SEC-FILE logic with role-based navigation
-   * 
+   *
    * @param {Object} values - Form values (userId, password)
    * @param {Object} formikActions - Formik helper methods
    */
@@ -209,7 +207,7 @@ const SignOn = () => {
         // Authentication successful - redirect based on user role
         // Replicates COBOL XCTL logic for admin vs regular users
         const userRole = response.data.userRole || response.data.userType;
-        
+
         if (userRole === 'ADMIN' || userRole === 'A') {
           // Navigate to admin menu (maps to EXEC CICS XCTL PROGRAM('COADM01C'))
           navigate('/admin/menu');
@@ -307,7 +305,7 @@ const SignOn = () => {
           }}
         >
           <pre style={{ margin: 0 }}>
-{`+========================================+
+            {`+========================================+
 |%%%%%%%  NATIONAL RESERVE NOTE  %%%%%%%%|
 |%(1)  THE UNITED STATES OF KICSLAND (1)%|
 |%$$              ___       ********  $$%|
@@ -332,8 +330,8 @@ const SignOn = () => {
               initialValues={initialValues}
               validationSchema={validationSchema}
               onSubmit={handleSubmit}
-              validateOnChange={true}
-              validateOnBlur={true}
+              validateOnChange
+              validateOnBlur
             >
               {({
                 values,
@@ -489,7 +487,6 @@ const SignOn = () => {
                     >
                       {isLoading ? 'Signing In...' : 'ENTER=Sign-on'}
                     </Button>
-                    
                     <Button
                       variant="outlined"
                       onClick={handleExit}
