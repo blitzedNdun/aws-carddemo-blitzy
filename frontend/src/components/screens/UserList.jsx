@@ -1,9 +1,9 @@
 /**
  * UserList Component - User List Screen (COUSR00)
- * 
+ *
  * React component that replicates the functionality of COBOL program COUSR00C
  * and BMS mapset COUSR00.bms for user directory browsing and management access.
- * 
+ *
  * Provides:
  * - Paginated user list display (10 users per page)
  * - Search functionality by User ID
@@ -11,7 +11,7 @@
  * - PF-key navigation (F3=Back, F7=Previous, F8=Next, Enter=Continue)
  * - Administrative role requirement enforcement
  * - Direct navigation to user maintenance functions
- * 
+ *
  * Maps COBOL program flow to React component lifecycle:
  * - PROCESS-ENTER-KEY -> handleEnterKey
  * - PROCESS-PF7-KEY -> handlePreviousPage
@@ -20,28 +20,25 @@
  * - STARTBR/READNEXT/READPREV -> API pagination calls
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  TextField, 
-  Box, 
-  Typography, 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow, 
-  Paper, 
-  Alert, 
+import {
+  TextField,
+  Box,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Alert,
   Button,
   CircularProgress,
-  Radio,
-  RadioGroup,
-  FormControlLabel,
-  Container
+  Container,
 } from '@mui/material';
 import { useFormik } from 'formik';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { object as yupObject, string } from 'yup';
 
 // Internal imports - ONLY from depends_on_files
@@ -58,7 +55,7 @@ const validationSchema = yupObject({
     .matches(/^[A-Za-z0-9]*$/, 'User ID must contain only letters and numbers'),
   selectedUser: string(),
   selectionAction: string()
-    .matches(/^[UuDd]?$/, "Selection must be 'U' for Update or 'D' for Delete")
+    .matches(/^[UuDd]?$/, "Selection must be 'U' for Update or 'D' for Delete"),
 });
 
 /**
@@ -72,7 +69,6 @@ const UserList = () => {
   // Component state - maps to COBOL working storage variables
   const [users, setUsers] = useState([]); // Array of user records (USER-REC OCCURS 10 TIMES)
   const [currentPage, setCurrentPage] = useState(1); // Maps to CDEMO-CU00-PAGE-NUM
-  const [totalPages, setTotalPages] = useState(0);
   const [hasNextPage, setHasNextPage] = useState(false); // Maps to CDEMO-CU00-NEXT-PAGE-FLG
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState(''); // Maps to WS-MESSAGE and ERRMSGO
@@ -84,12 +80,12 @@ const UserList = () => {
     initialValues: {
       searchUserId: '', // Maps to USRIDINI field
       selectedUser: '',
-      selectionAction: ''
+      selectionAction: '',
     },
     validationSchema,
-    onSubmit: async (values) => {
+    onSubmit: async (_values) => {
       await handleEnterKey();
-    }
+    },
   });
 
   /**
@@ -99,20 +95,19 @@ const UserList = () => {
   const loadUsers = useCallback(async (pageNumber = 1, searchTerm = '') => {
     setLoading(true);
     setErrorMessage('');
-    
+
     try {
       const response = await getUsers({
         pageSize: 10, // Fixed page size matching COBOL screen layout
         pageNumber,
-        searchTerm: searchTerm || undefined
+        searchTerm: searchTerm || undefined,
       });
 
       if (response.success) {
         setUsers(response.data.users || []);
         setCurrentPage(response.data.currentPage || pageNumber);
-        setTotalPages(response.data.totalPages || 0);
         setHasNextPage(response.data.hasNextPage || false);
-        
+
         // Clear error message on successful load
         setErrorMessage('');
       } else {
@@ -138,7 +133,7 @@ const UserList = () => {
    */
   const handleEnterKey = useCallback(async () => {
     const searchTerm = formik.values.searchUserId.trim();
-    
+
     // Process user selection if a user is selected
     if (selectedUserId && selectedAction) {
       switch (selectedAction.toUpperCase()) {
@@ -146,29 +141,29 @@ const UserList = () => {
           // Navigate to user update - Maps to XCTL PROGRAM(COUSR02C)
           try {
             await updateUser(selectedUserId, { action: 'update' });
-            navigate('/users/update', { 
-              state: { 
+            navigate('/users/update', {
+              state: {
                 userId: selectedUserId,
                 fromProgram: 'COUSR00C',
-                fromTransaction: 'CU00'
-              }
+                fromTransaction: 'CU00',
+              },
             });
           } catch (error) {
             setErrorMessage('Unable to navigate to user update');
           }
           break;
-        
+
         case 'D':
           // Navigate to user delete - Maps to XCTL PROGRAM(COUSR03C)
-          navigate('/users/delete', { 
-            state: { 
+          navigate('/users/delete', {
+            state: {
               userId: selectedUserId,
               fromProgram: 'COUSR00C',
-              fromTransaction: 'CU00'
-            }
+              fromTransaction: 'CU00',
+            },
           });
           break;
-        
+
         default:
           setErrorMessage('Invalid selection. Valid values are U and D');
           break;
@@ -178,21 +173,21 @@ const UserList = () => {
 
     // Perform search if search term provided or reload current view
     await loadUsers(1, searchTerm);
-    
+
     // Clear search field after search - Maps to COBOL field clearing
     formik.setFieldValue('searchUserId', '');
-  }, [formik, selectedUserId, selectedAction, loadUsers, updateUser, navigate]);
+  }, [formik, selectedUserId, selectedAction, loadUsers, navigate]);
 
   /**
    * Handle F3 (Back) key - Return to main menu
    * Maps to COBOL PF3 processing
    */
   const handleBackKey = useCallback(() => {
-    navigate('/menu/main', { 
-      state: { 
+    navigate('/menu/main', {
+      state: {
         fromProgram: 'COUSR00C',
-        fromTransaction: 'CU00'
-      }
+        fromTransaction: 'CU00',
+      },
     });
   }, [navigate]);
 
@@ -209,7 +204,7 @@ const UserList = () => {
   }, [currentPage, loadUsers]);
 
   /**
-   * Handle F8 (Next page) key - Maps to COBOL PROCESS-PF8-KEY  
+   * Handle F8 (Next page) key - Maps to COBOL PROCESS-PF8-KEY
    * Navigates to next page of users
    */
   const handleNextPage = useCallback(async () => {
@@ -273,29 +268,29 @@ const UserList = () => {
   return (
     <Container maxWidth="lg" sx={{ padding: 0 }}>
       {/* Header Component - Maps to BMS screen header */}
-      <Header 
+      <Header
         transactionId="CU00"
-        programName="COUSR00C" 
+        programName="COUSR00C"
         title="List Users"
       />
 
       {/* Main content container with monospace styling for 3270 terminal feel */}
-      <Box 
-        sx={{ 
-          fontFamily: 'monospace', 
+      <Box
+        sx={{
+          fontFamily: 'monospace',
           backgroundColor: '#000000',
           color: '#00FF00',
           minHeight: '600px',
-          padding: '16px'
+          padding: '16px',
         }}
       >
         {/* Page number display - Maps to PAGENUM field */}
         <Box sx={{ textAlign: 'right', marginBottom: '16px' }}>
-          <Typography 
-            variant="body2" 
-            sx={{ 
+          <Typography
+            variant="body2"
+            sx={{
               color: '#00FFFF', // Turquoise color matching BMS
-              fontFamily: 'monospace'
+              fontFamily: 'monospace',
             }}
           >
             Page: {currentPage}
@@ -305,12 +300,12 @@ const UserList = () => {
         {/* Search section - Maps to USRIDIN field */}
         <Box sx={{ marginBottom: '16px' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography 
-              variant="body2" 
-              sx={{ 
+            <Typography
+              variant="body2"
+              sx={{
                 color: '#00FFFF', // Turquoise color matching BMS
                 fontFamily: 'monospace',
-                minWidth: '120px'
+                minWidth: '120px',
               }}
             >
               Search User ID:
@@ -324,14 +319,14 @@ const UserList = () => {
               helperText={formik.touched.searchUserId && formik.errors.searchUserId}
               variant="outlined"
               size="small"
-              inputProps={{ 
+              inputProps={{
                 maxLength: 8,
-                style: { 
+                style: {
                   fontFamily: 'monospace',
                   backgroundColor: '#000000',
                   color: '#00FF00',
-                  border: '1px solid #00FF00'
-                }
+                  border: '1px solid #00FF00',
+                },
               }}
               sx={{
                 '& .MuiOutlinedInput-root': {
@@ -348,8 +343,8 @@ const UserList = () => {
                 },
                 '& .MuiFormHelperText-root': {
                   color: '#FF0000',
-                  fontFamily: 'monospace'
-                }
+                  fontFamily: 'monospace',
+                },
               }}
             />
           </Box>
@@ -357,16 +352,16 @@ const UserList = () => {
 
         {/* Error message display - Maps to ERRMSG field */}
         {errorMessage && (
-          <Alert 
-            severity="error" 
-            sx={{ 
+          <Alert
+            severity="error"
+            sx={{
               marginBottom: '16px',
               backgroundColor: '#330000',
               color: '#FF0000',
               fontFamily: 'monospace',
               '& .MuiAlert-message': {
-                fontFamily: 'monospace'
-              }
+                fontFamily: 'monospace',
+              },
             }}
           >
             {errorMessage}
@@ -381,14 +376,14 @@ const UserList = () => {
         )}
 
         {/* User list table - Maps to user display rows */}
-        <TableContainer 
-          component={Paper} 
-          sx={{ 
+        <TableContainer
+          component={Paper}
+          sx={{
             backgroundColor: '#000000',
             '& .MuiTable-root': {
               borderCollapse: 'separate',
-              borderSpacing: 0
-            }
+              borderSpacing: 0,
+            },
           }}
         >
           <Table size="small">
@@ -416,7 +411,7 @@ const UserList = () => {
               {Array.from({ length: 10 }, (_, index) => {
                 const user = users[index];
                 const rowId = `row-${index + 1}`;
-                
+
                 return (
                   <TableRow key={rowId}>
                     {/* Selection column - Maps to SEL0001-SEL0010 fields */}
@@ -424,15 +419,15 @@ const UserList = () => {
                       {user && (
                         <TextField
                           size="small"
-                          inputProps={{ 
+                          inputProps={{
                             maxLength: 1,
-                            style: { 
+                            style: {
                               fontFamily: 'monospace',
                               backgroundColor: '#000000',
                               color: '#00FF00',
                               width: '20px',
-                              textAlign: 'center'
-                            }
+                              textAlign: 'center',
+                            },
                           }}
                           onChange={(e) => handleUserSelection(user.userId, e.target.value)}
                           sx={{
@@ -441,27 +436,27 @@ const UserList = () => {
                               '& fieldset': {
                                 borderColor: '#00FF00',
                               },
-                            }
+                            },
                           }}
                         />
                       )}
                     </TableCell>
-                    
+
                     {/* User ID column - Maps to USRID01-USRID10 fields */}
                     <TableCell sx={{ color: '#4FC3F7', fontFamily: 'monospace', borderBottom: '1px solid #333' }}>
                       {user?.userId || ''}
                     </TableCell>
-                    
+
                     {/* First Name column - Maps to FNAME01-FNAME10 fields */}
                     <TableCell sx={{ color: '#4FC3F7', fontFamily: 'monospace', borderBottom: '1px solid #333' }}>
                       {user?.firstName || ''}
                     </TableCell>
-                    
+
                     {/* Last Name column - Maps to LNAME01-LNAME10 fields */}
                     <TableCell sx={{ color: '#4FC3F7', fontFamily: 'monospace', borderBottom: '1px solid #333' }}>
                       {user?.lastName || ''}
                     </TableCell>
-                    
+
                     {/* User Type column - Maps to UTYPE01-UTYPE10 fields */}
                     <TableCell sx={{ color: '#4FC3F7', fontFamily: 'monospace', borderBottom: '1px solid #333' }}>
                       {user?.userType || ''}
@@ -475,26 +470,26 @@ const UserList = () => {
 
         {/* Instructions - Maps to BMS screen instructions */}
         <Box sx={{ marginTop: '16px' }}>
-          <Typography 
-            variant="body2" 
-            sx={{ 
-              color: '#FFFFFF', 
+          <Typography
+            variant="body2"
+            sx={{
+              color: '#FFFFFF',
               fontFamily: 'monospace',
               textAlign: 'center',
-              marginBottom: '8px'
+              marginBottom: '8px',
             }}
           >
-            Type 'U' to Update or 'D' to Delete a User from the list
+            Type &apos;U&apos; to Update or &apos;D&apos; to Delete a User from the list
           </Typography>
         </Box>
 
         {/* Function key instructions - Maps to BMS function key line */}
         <Box sx={{ marginTop: '16px', borderTop: '1px solid #333', paddingTop: '8px' }}>
-          <Typography 
-            variant="body2" 
-            sx={{ 
+          <Typography
+            variant="body2"
+            sx={{
               color: '#FFEB3B', // Yellow color matching BMS
-              fontFamily: 'monospace'
+              fontFamily: 'monospace',
             }}
           >
             ENTER=Continue  F3=Back  F7=Backward  F8=Forward
@@ -503,48 +498,48 @@ const UserList = () => {
 
         {/* Navigation buttons for non-keyboard users */}
         <Box sx={{ marginTop: '16px', display: 'flex', gap: 2, justifyContent: 'center' }}>
-          <Button 
-            variant="outlined" 
+          <Button
+            variant="outlined"
             onClick={handleBackKey}
-            sx={{ 
-              color: '#FFEB3B', 
+            sx={{
+              color: '#FFEB3B',
               borderColor: '#FFEB3B',
-              fontFamily: 'monospace'
+              fontFamily: 'monospace',
             }}
           >
             F3 Back
           </Button>
-          <Button 
-            variant="outlined" 
+          <Button
+            variant="outlined"
             onClick={handlePreviousPage}
             disabled={currentPage <= 1}
-            sx={{ 
-              color: '#FFEB3B', 
+            sx={{
+              color: '#FFEB3B',
               borderColor: '#FFEB3B',
-              fontFamily: 'monospace'
+              fontFamily: 'monospace',
             }}
           >
             F7 Previous
           </Button>
-          <Button 
-            variant="outlined" 
+          <Button
+            variant="outlined"
             onClick={handleEnterKey}
-            sx={{ 
-              color: '#FFEB3B', 
+            sx={{
+              color: '#FFEB3B',
               borderColor: '#FFEB3B',
-              fontFamily: 'monospace'
+              fontFamily: 'monospace',
             }}
           >
             Enter Continue
           </Button>
-          <Button 
-            variant="outlined" 
+          <Button
+            variant="outlined"
             onClick={handleNextPage}
             disabled={!hasNextPage}
-            sx={{ 
-              color: '#FFEB3B', 
+            sx={{
+              color: '#FFEB3B',
               borderColor: '#FFEB3B',
-              fontFamily: 'monospace'
+              fontFamily: 'monospace',
             }}
           >
             F8 Next
