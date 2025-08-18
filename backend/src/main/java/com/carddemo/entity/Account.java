@@ -6,9 +6,9 @@
  * limits, important dates, and cycle totals. Uses BigDecimal for monetary fields 
  * to preserve COBOL COMP-3 packed decimal precision.
  * 
- * Implements relationships with Customer and DisclosureGroup entities through 
- * foreign keys, enabling account-to-customer navigation and interest rate 
- * determination for account management operations.
+ * Implements relationship with Customer entity through foreign key.
+ * DisclosureGroup relationship is handled programmatically via accountGroupId
+ * to avoid foreign key constraint issues (account_group_id is not unique).
  * 
  * Based on COBOL copybook: app/cpy/CVACT01Y.cpy
  * - ACCT-ID (PIC 9(11)) for account identification
@@ -38,8 +38,8 @@ import java.util.Objects;
  * 
  * Maps to the account_data PostgreSQL table, providing comprehensive account
  * information including balance tracking, credit limits, important dates,
- * and cycle totals. Maintains relationships with Customer and DisclosureGroup
- * entities for complete account management functionality.
+ * and cycle totals. Maintains relationship with Customer entity for complete 
+ * account management functionality. DisclosureGroup access via repository.
  * 
  * Key functionality:
  * - Account identification and status management
@@ -47,7 +47,7 @@ import java.util.Objects;
  * - Cycle-based credit and debit totals for billing operations
  * - Date tracking for account lifecycle management
  * - Customer relationship through foreign key linkage
- * - Interest rate determination through DisclosureGroup association
+ * - Interest rate determination through accountGroupId lookup
  * 
  * All monetary fields use BigDecimal with scale=2 to preserve exact precision
  * equivalent to COBOL COMP-3 packed decimal fields, ensuring financial
@@ -198,13 +198,12 @@ public class Account {
     private Customer customer;
 
     /**
-     * Many-to-one relationship with DisclosureGroup entity.
-     * Enables interest rate determination based on account group.
+     * Note: DisclosureGroup relationship is handled programmatically rather than
+     * through JPA foreign key due to non-unique account_group_id in disclosure_groups table.
+     * Use DisclosureGroupRepository to query by accountGroupId when needed.
      */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_group_id", referencedColumnName = "account_group_id", 
-                insertable = false, updatable = false)
-    private DisclosureGroup disclosureGroup;
+    // Removed @ManyToOne relationship to prevent foreign key constraint issues
+    // private DisclosureGroup disclosureGroup;
 
     /**
      * Default constructor for JPA.
@@ -343,13 +342,13 @@ public class Account {
         this.customer = customer;
     }
 
-    public DisclosureGroup getDisclosureGroup() {
-        return disclosureGroup;
-    }
-
-    public void setDisclosureGroup(DisclosureGroup disclosureGroup) {
-        this.disclosureGroup = disclosureGroup;
-    }
+    /**
+     * Note: DisclosureGroup access removed due to JPA foreign key constraint issues.
+     * Use DisclosureGroupRepository.findByAccountGroupId(this.accountGroupId) to 
+     * retrieve related disclosure groups programmatically.
+     */
+    // public DisclosureGroup getDisclosureGroup() { return disclosureGroup; }
+    // public void setDisclosureGroup(DisclosureGroup disclosureGroup) { this.disclosureGroup = disclosureGroup; }
 
     /**
      * Utility method to check if account is active.
