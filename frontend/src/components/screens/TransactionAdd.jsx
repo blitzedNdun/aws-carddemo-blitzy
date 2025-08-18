@@ -1,11 +1,11 @@
 /**
  * TransactionAdd.jsx - React component for Add Transaction screen (COTRN02)
- * 
+ *
  * Converts BMS mapset COTRN02 to React component enabling real-time transaction entry
  * and processing. Provides comprehensive form validation, automatic ID generation,
  * account/card cross-reference checking, amount validation with business rules,
  * and confirmation workflow.
- * 
+ *
  * Key Features:
  * - Direct translation from COBOL COTRN02C program logic
  * - Formik form management with Yup validation schemas
@@ -18,34 +18,34 @@
  */
 
 // External imports
-import React, { useState, useEffect, useCallback } from 'react';
-import { useFormik } from 'formik';
-import * as yup from 'yup';
-import { 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogActions, 
-  Button, 
-  TextField, 
-  Typography, 
-  Box, 
-  Grid, 
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  Typography,
+  Box,
+  Grid,
   Alert,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
   Divider,
-  Paper
+  Paper,
 } from '@mui/material';
+import { useFormik } from 'formik';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import * as yup from 'yup';
 
 // Internal imports - ONLY from depends_on_files
-import { getAccount } from '../../services/api.js';
-import { validateDate } from '../../utils/validation.js';
-import { toComp3 } from '../../utils/CobolDataConverter.js';
 import Header from '../../components/common/Header.jsx';
+import { getAccount } from '../../services/api.js';
+import { toComp3 } from '../../utils/CobolDataConverter.js';
+import { validateDate } from '../../utils/validation.js';
 
 /**
  * Transaction type codes mapping (from COBOL validation logic)
@@ -60,7 +60,7 @@ const TRANSACTION_TYPE_CODES = [
   { value: '07', label: '07 - Refund' },
   { value: '08', label: '08 - Adjustment' },
   { value: '09', label: '09 - Transfer' },
-  { value: '10', label: '10 - Other' }
+  { value: '10', label: '10 - Other' },
 ];
 
 /**
@@ -76,7 +76,7 @@ const TRANSACTION_CATEGORY_CODES = [
   { value: '6011', label: '6011 - ATM/Cash Advance' },
   { value: '4111', label: '4111 - Airlines' },
   { value: '7011', label: '7011 - Hotels/Motels' },
-  { value: '5533', label: '5533 - Auto Parts' }
+  { value: '5533', label: '5533 - Auto Parts' },
 ];
 
 /**
@@ -87,82 +87,82 @@ const validationSchema = yup.object({
     .string()
     .matches(/^\d{11}$/, 'Account ID must be exactly 11 digits')
     .required('Account ID can NOT be empty...'),
-  
+
   cardNumber: yup
     .string()
     .matches(/^\d{16}$/, 'Card Number must be exactly 16 digits'),
-  
+
   typeCode: yup
     .string()
     .matches(/^\d{2}$/, 'Type CD must be Numeric...')
     .required('Type CD can NOT be empty...'),
-  
+
   categoryCode: yup
     .string()
     .matches(/^\d{4}$/, 'Category CD must be Numeric...')
     .required('Category CD can NOT be empty...'),
-  
+
   source: yup
     .string()
     .max(10, 'Source cannot exceed 10 characters')
     .required('Source can NOT be empty...'),
-  
+
   description: yup
     .string()
     .max(100, 'Description cannot exceed 100 characters')
     .required('Description can NOT be empty...'),
-  
+
   amount: yup
     .string()
     .matches(/^[+-]?\d{1,8}\.\d{2}$/, 'Amount should be in format -99999999.99')
     .test('amount-range', 'Amount should be in format -99999999.99', (value) => {
-      if (!value) return false;
+      if (!value) {return false;}
       const num = parseFloat(value);
       return num >= -99999999.99 && num <= 99999999.99;
     })
     .required('Amount can NOT be empty...'),
-  
+
   originalDate: yup
     .string()
     .matches(/^\d{4}-\d{2}-\d{2}$/, 'Orig Date should be in format YYYY-MM-DD')
     .test('date-validation', 'Invalid original date', (value) => {
-      if (!value) return false;
+      if (!value) {return false;}
       const dateString = value.replace(/-/g, '');
       const validation = validateDate(dateString);
       return validation.isValid;
     })
     .required('Orig Date can NOT be empty...'),
-  
+
   processingDate: yup
     .string()
     .matches(/^\d{4}-\d{2}-\d{2}$/, 'Proc Date should be in format YYYY-MM-DD')
     .test('date-validation', 'Invalid processing date', (value) => {
-      if (!value) return false;
+      if (!value) {return false;}
       const dateString = value.replace(/-/g, '');
       const validation = validateDate(dateString);
       return validation.isValid;
     })
     .required('Proc Date can NOT be empty...'),
-  
+
   merchantId: yup
     .string()
     .matches(/^\d{9}$/, 'Merchant ID must be exactly 9 digits')
     .required('Merchant ID can NOT be empty...'),
-  
+
   merchantName: yup
     .string()
     .max(50, 'Merchant Name cannot exceed 50 characters')
     .required('Merchant Name can NOT be empty...'),
-  
+
   merchantCity: yup
     .string()
     .max(50, 'Merchant City cannot exceed 50 characters')
     .required('Merchant City can NOT be empty...'),
-  
+
   merchantZip: yup
     .string()
     .max(10, 'Merchant Zip cannot exceed 10 characters')
-    .required('Merchant Zip can NOT be empty...')
+    .required('Merchant Zip can NOT be empty...'),
 });
 
 /**
@@ -171,7 +171,7 @@ const validationSchema = yup.object({
 const TransactionAdd = () => {
   // Navigation hook for PF-key functionality
   const navigate = useNavigate();
-  
+
   // Component state management
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -203,13 +203,13 @@ const TransactionAdd = () => {
       merchantId: '',
       merchantName: '',
       merchantCity: '',
-      merchantZip: ''
+      merchantZip: '',
     },
     validationSchema,
-    onSubmit: async (values) => {
+    onSubmit: async (_values) => {
       setError('');
       setConfirmationOpen(true);
-    }
+    },
   });
 
   // Real-time account validation
@@ -222,11 +222,11 @@ const TransactionAdd = () => {
     try {
       setLoading(true);
       const response = await getAccount(accountId);
-      
+
       if (response.success) {
         setAccountValidated(true);
         setError('');
-        
+
         // Auto-populate card number if available
         if (response.data && response.data.cardNumber) {
           formik.setFieldValue('cardNumber', response.data.cardNumber);
@@ -257,11 +257,11 @@ const TransactionAdd = () => {
       setLoading(true);
       // Use getAccount with card number to validate and get account ID
       const response = await getAccount(cardNumber);
-      
+
       if (response.success) {
         setCardValidated(true);
         setError('');
-        
+
         // Auto-populate account ID if available
         if (response.data && response.data.accountId) {
           formik.setFieldValue('accountId', response.data.accountId);
@@ -311,17 +311,17 @@ const TransactionAdd = () => {
         // Keep original value if formatting fails
       }
     }
-  }, [formik.values.amount, formik]);
+  }, [formik]);
 
   // Handle confirmation and final submission
   const handleConfirmSubmit = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
-      
+
       // Generate transaction ID
       const transactionId = generateTransactionId();
-      
+
       // Prepare transaction data with COBOL precision
       const transactionData = {
         transactionId,
@@ -337,23 +337,23 @@ const TransactionAdd = () => {
         merchantId: formik.values.merchantId,
         merchantName: formik.values.merchantName,
         merchantCity: formik.values.merchantCity,
-        merchantZip: formik.values.merchantZip
+        merchantZip: formik.values.merchantZip,
       };
 
       // Store transaction data for potential copy last transaction functionality
       setLastTransactionData(transactionData);
-      
+
       // TODO: Submit to backend API when transaction endpoint is available
       // const response = await submitTransaction(transactionData);
-      
+
       setSuccessMessage(`Transaction ${transactionId} added successfully!`);
       setConfirmationOpen(false);
-      
+
       // Reset form after successful submission
       formik.resetForm();
       setAccountValidated(false);
       setCardValidated(false);
-      
+
     } catch (err) {
       setError('Unable to add transaction. Please try again.');
     } finally {
@@ -386,7 +386,7 @@ const TransactionAdd = () => {
         merchantId: lastTransactionData.merchantId || '',
         merchantName: lastTransactionData.merchantName || '',
         merchantCity: lastTransactionData.merchantCity || '',
-        merchantZip: lastTransactionData.merchantZip || ''
+        merchantZip: lastTransactionData.merchantZip || '',
       });
       setSuccessMessage('Last transaction data copied successfully');
     }
@@ -429,25 +429,25 @@ const TransactionAdd = () => {
       sx={{
         minHeight: '100vh',
         backgroundColor: '#f5f5f5',
-        fontFamily: 'monospace'
+        fontFamily: 'monospace',
       }}
     >
       {/* BMS Header replication */}
-      <Header 
+      <Header
         transactionId="CT02"
-        programName="COTRN02C" 
+        programName="COTRN02C"
         title="Add Transaction"
       />
 
       <Box sx={{ p: 3, maxWidth: '1200px', margin: '0 auto' }}>
         {/* Title */}
-        <Typography 
-          variant="h4" 
-          sx={{ 
-            textAlign: 'center', 
+        <Typography
+          variant="h4"
+          sx={{
+            textAlign: 'center',
             mb: 3,
             fontWeight: 'bold',
-            fontFamily: 'monospace'
+            fontFamily: 'monospace',
           }}
         >
           Add Transaction
@@ -459,7 +459,7 @@ const TransactionAdd = () => {
             {error}
           </Alert>
         )}
-        
+
         {successMessage && (
           <Alert severity="success" sx={{ mb: 2 }}>
             {successMessage}
@@ -482,23 +482,23 @@ const TransactionAdd = () => {
                     onBlur={handleAccountIdBlur}
                     error={formik.touched.accountId && Boolean(formik.errors.accountId)}
                     helperText={formik.touched.accountId && formik.errors.accountId}
-                    inputProps={{ 
+                    inputProps={{
                       maxLength: 11,
                       autoFocus: true,
-                      style: { fontFamily: 'monospace' }
+                      style: { fontFamily: 'monospace' },
                     }}
                     sx={{
                       '& .MuiInputBase-input': {
-                        backgroundColor: accountValidated ? '#d4edda' : 'white'
-                      }
+                        backgroundColor: accountValidated ? '#d4edda' : 'white',
+                      },
                     }}
                   />
                 </Box>
-                
+
                 <Typography variant="body2" sx={{ mx: 1 }}>
                   (or)
                 </Typography>
-                
+
                 <Box sx={{ minWidth: '300px' }}>
                   <TextField
                     fullWidth
@@ -510,14 +510,14 @@ const TransactionAdd = () => {
                     onBlur={handleCardNumberBlur}
                     error={formik.touched.cardNumber && Boolean(formik.errors.cardNumber)}
                     helperText={formik.touched.cardNumber && formik.errors.cardNumber}
-                    inputProps={{ 
+                    inputProps={{
                       maxLength: 16,
-                      style: { fontFamily: 'monospace' }
+                      style: { fontFamily: 'monospace' },
                     }}
                     sx={{
                       '& .MuiInputBase-input': {
-                        backgroundColor: cardValidated ? '#d4edda' : 'white'
-                      }
+                        backgroundColor: cardValidated ? '#d4edda' : 'white',
+                      },
                     }}
                   />
                 </Box>
@@ -589,9 +589,9 @@ const TransactionAdd = () => {
                 onBlur={formik.handleBlur}
                 error={formik.touched.source && Boolean(formik.errors.source)}
                 helperText={formik.touched.source && formik.errors.source}
-                inputProps={{ 
+                inputProps={{
                   maxLength: 10,
-                  style: { fontFamily: 'monospace' }
+                  style: { fontFamily: 'monospace' },
                 }}
               />
             </Grid>
@@ -608,9 +608,9 @@ const TransactionAdd = () => {
                 onBlur={formik.handleBlur}
                 error={formik.touched.description && Boolean(formik.errors.description)}
                 helperText={formik.touched.description && formik.errors.description}
-                inputProps={{ 
+                inputProps={{
                   maxLength: 100,
-                  style: { fontFamily: 'monospace' }
+                  style: { fontFamily: 'monospace' },
                 }}
               />
             </Grid>
@@ -628,12 +628,12 @@ const TransactionAdd = () => {
                 onBlur={handleAmountBlur}
                 error={formik.touched.amount && Boolean(formik.errors.amount)}
                 helperText={
-                  formik.touched.amount && formik.errors.amount 
-                    ? formik.errors.amount 
-                    : "(-99999999.99)"
+                  formik.touched.amount && formik.errors.amount
+                    ? formik.errors.amount
+                    : '(-99999999.99)'
                 }
-                inputProps={{ 
-                  style: { fontFamily: 'monospace' }
+                inputProps={{
+                  style: { fontFamily: 'monospace' },
                 }}
               />
             </Grid>
@@ -650,9 +650,9 @@ const TransactionAdd = () => {
                 onBlur={formik.handleBlur}
                 error={formik.touched.originalDate && Boolean(formik.errors.originalDate)}
                 helperText={
-                  formik.touched.originalDate && formik.errors.originalDate 
-                    ? formik.errors.originalDate 
-                    : "(YYYY-MM-DD)"
+                  formik.touched.originalDate && formik.errors.originalDate
+                    ? formik.errors.originalDate
+                    : '(YYYY-MM-DD)'
                 }
                 InputLabelProps={{ shrink: true }}
               />
@@ -670,9 +670,9 @@ const TransactionAdd = () => {
                 onBlur={formik.handleBlur}
                 error={formik.touched.processingDate && Boolean(formik.errors.processingDate)}
                 helperText={
-                  formik.touched.processingDate && formik.errors.processingDate 
-                    ? formik.errors.processingDate 
-                    : "(YYYY-MM-DD)"
+                  formik.touched.processingDate && formik.errors.processingDate
+                    ? formik.errors.processingDate
+                    : '(YYYY-MM-DD)'
                 }
                 InputLabelProps={{ shrink: true }}
               />
@@ -690,9 +690,9 @@ const TransactionAdd = () => {
                 onBlur={formik.handleBlur}
                 error={formik.touched.merchantId && Boolean(formik.errors.merchantId)}
                 helperText={formik.touched.merchantId && formik.errors.merchantId}
-                inputProps={{ 
+                inputProps={{
                   maxLength: 9,
-                  style: { fontFamily: 'monospace' }
+                  style: { fontFamily: 'monospace' },
                 }}
               />
             </Grid>
@@ -708,9 +708,9 @@ const TransactionAdd = () => {
                 onBlur={formik.handleBlur}
                 error={formik.touched.merchantName && Boolean(formik.errors.merchantName)}
                 helperText={formik.touched.merchantName && formik.errors.merchantName}
-                inputProps={{ 
+                inputProps={{
                   maxLength: 50,
-                  style: { fontFamily: 'monospace' }
+                  style: { fontFamily: 'monospace' },
                 }}
               />
             </Grid>
@@ -726,9 +726,9 @@ const TransactionAdd = () => {
                 onBlur={formik.handleBlur}
                 error={formik.touched.merchantCity && Boolean(formik.errors.merchantCity)}
                 helperText={formik.touched.merchantCity && formik.errors.merchantCity}
-                inputProps={{ 
+                inputProps={{
                   maxLength: 50,
-                  style: { fontFamily: 'monospace' }
+                  style: { fontFamily: 'monospace' },
                 }}
               />
             </Grid>
@@ -744,9 +744,9 @@ const TransactionAdd = () => {
                 onBlur={formik.handleBlur}
                 error={formik.touched.merchantZip && Boolean(formik.errors.merchantZip)}
                 helperText={formik.touched.merchantZip && formik.errors.merchantZip}
-                inputProps={{ 
+                inputProps={{
                   maxLength: 10,
-                  style: { fontFamily: 'monospace' }
+                  style: { fontFamily: 'monospace' },
                 }}
               />
             </Grid>
@@ -769,13 +769,13 @@ const TransactionAdd = () => {
         </form>
 
         {/* Function Keys */}
-        <Box sx={{ 
-          mt: 4, 
-          p: 2, 
-          backgroundColor: '#e0e0e0', 
+        <Box sx={{
+          mt: 4,
+          p: 2,
+          backgroundColor: '#e0e0e0',
           borderTop: '1px solid #333',
           fontFamily: 'monospace',
-          fontSize: '0.85rem'
+          fontSize: '0.85rem',
         }}>
           <Typography variant="body2">
             ENTER=Continue  F3=Back  F4=Clear  F5=Copy Last Tran.
@@ -798,7 +798,7 @@ const TransactionAdd = () => {
             <Typography variant="body1" sx={{ mb: 2 }}>
               You are about to add this transaction. Please confirm:
             </Typography>
-            
+
             <Box sx={{ mt: 2, fontFamily: 'monospace', fontSize: '0.9rem' }}>
               <Grid container spacing={2}>
                 <Grid item xs={6}>
@@ -821,13 +821,13 @@ const TransactionAdd = () => {
             </Box>
           </DialogContent>
           <DialogActions>
-            <Button 
+            <Button
               onClick={() => setConfirmationOpen(false)}
               color="secondary"
             >
               Cancel (N)
             </Button>
-            <Button 
+            <Button
               onClick={handleConfirmSubmit}
               color="primary"
               variant="contained"
