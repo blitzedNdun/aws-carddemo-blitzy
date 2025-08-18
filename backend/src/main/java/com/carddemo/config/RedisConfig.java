@@ -232,39 +232,8 @@ public class RedisConfig {
         return template;
     }
 
-    /**
-     * Creates Spring Session repository with Redis backend and custom configuration.
-     * 
-     * This method establishes the session repository that directly replaces CICS COMMAREA
-     * functionality with Redis-backed distributed session storage. The repository is
-     * configured with COMMAREA-equivalent constraints including 30-minute timeout,
-     * 32KB size limits, and session attribute validation.
-     * 
-     * CICS COMMAREA Compatibility:
-     * - 30-minute session timeout matching CICS transaction defaults
-     * - Session size validation enforcing 32KB COMMAREA limit
-     * - User context preservation (user ID, user type, navigation state)
-     * - Transaction state management across REST endpoints
-     * 
-     * @param redisConnectionFactory Redis connection factory for session operations
-     * @return configured SessionRepository with COMMAREA-equivalent behavior
-     */
-    @Bean
-    public SessionRepository<?> sessionRepository(RedisConnectionFactory redisConnectionFactory) {
-        logger.info("Configuring Spring Session repository with Redis backend");
-        
-        // Create Redis session repository with custom configuration
-        RedisIndexedSessionRepository repository = new RedisIndexedSessionRepository(redisConnectionFactory);
-        
-        // Set session timeout to 30 minutes (1800 seconds) matching CICS defaults
-        repository.setDefaultMaxInactiveInterval(1800);
-        
-        // Configure Redis key namespace for session isolation
-        repository.setRedisKeyNamespace("carddemo:session");
-        
-        logger.info("Session repository configured with 30-minute timeout and Redis key namespace");
-        return repository;
-    }
+    // Session repository is automatically configured by @EnableRedisHttpSession annotation
+    // with maxInactiveIntervalInSeconds = 1800 (30 minutes) matching CICS COMMAREA defaults
 
     /**
      * Creates session size validator for enforcing 32KB COMMAREA size limits.
