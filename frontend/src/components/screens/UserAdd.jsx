@@ -1,18 +1,18 @@
 /**
  * UserAdd Component - React component for the Add User screen (COUSR01)
- * 
+ *
  * Converts COBOL/BMS COUSR01 mapset and COUSR01C program to React component.
  * Enables new user account creation with role assignment, providing form fields
- * for user details with validation, role selection (admin/regular), initial 
+ * for user details with validation, role selection (admin/regular), initial
  * password assignment, and security setup. Enforces administrative access requirements.
- * 
+ *
  * Maps BMS fields to React form elements:
  * - FNAME (First Name): 20 chars max, initial cursor position
  * - LNAME (Last Name): 20 chars max
  * - USERID (User ID): 8 chars max, alphanumeric starting with letter
  * - PASSWD (Password): 8 chars, hidden input
  * - USRTYPE (User Type): A=Admin, U=User dropdown selection
- * 
+ *
  * Replicates COBOL transaction processing:
  * - Enter: Validate and create user (PROCESS-ENTER-KEY)
  * - F3: Return to admin menu (COADM01C)
@@ -21,9 +21,6 @@
  * - Other keys: Invalid key error
  */
 
-import React, { useState, useEffect } from 'react';
-import { Formik } from 'formik';
-import * as yup from 'yup';
 import {
   TextField,
   Button,
@@ -34,11 +31,14 @@ import {
   MenuItem,
   InputLabel,
 } from '@mui/material';
+import { Formik } from 'formik';
+import { useState, useEffect } from 'react';
+import * as yup from 'yup';
 
 // Internal imports - ONLY from depends_on_files
+import Header from '../../components/common/Header.jsx';
 import { createUser } from '../../services/api.js';
 import { validateUserID } from '../../utils/validation.js';
-import Header from '../../components/common/Header.jsx';
 
 /**
  * UserAdd Component
@@ -58,7 +58,7 @@ const UserAdd = () => {
       try {
         // Check user role from session storage (set during sign-in)
         const userRole = sessionStorage.getItem('userRole');
-        
+
         if (!userRole || userRole.toLowerCase() !== 'admin') {
           setHasAdminAccess(false);
           setSubmitMessage('Access denied - Administrative privileges required');
@@ -93,34 +93,36 @@ const UserAdd = () => {
       .string()
       .required('First Name can NOT be empty...')
       .max(20, 'First Name cannot exceed 20 characters'),
-    
+
     lastName: yup
       .string()
       .required('Last Name can NOT be empty...')
       .max(20, 'Last Name cannot exceed 20 characters'),
-    
+
     userID: yup
       .string()
       .required('User ID can NOT be empty...')
       .max(8, 'User ID cannot exceed 8 characters')
       .test('user-id-format', 'User ID must start with a letter and contain only letters and numbers', (value) => {
-        if (!value) return false;
+        if (!value) {
+          return false;
+        }
         const validation = validateUserID(value);
         return validation.isValid;
       }),
-    
+
     password: yup
       .string()
       .required('Password can NOT be empty...')
       .min(8, 'Password must be exactly 8 characters')
       .max(8, 'Password must be exactly 8 characters')
       .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain at least one uppercase letter, one lowercase letter, and one number'),
-    
+
     passwordConfirm: yup
       .string()
       .required('Password confirmation is required')
       .oneOf([yup.ref('password'), null], 'Passwords must match'),
-    
+
     userType: yup
       .string()
       .required('User Type can NOT be empty...')
@@ -156,7 +158,7 @@ const UserAdd = () => {
 
     // Add keyboard event listener
     document.addEventListener('keydown', handleKeyDown);
-    
+
     // Cleanup event listener on unmount
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
@@ -198,7 +200,7 @@ const UserAdd = () => {
         // Success - replicate COBOL success message pattern
         setSubmitMessage(`User ${values.userID.toUpperCase()} has been added ...`);
         setMessageType('success');
-        
+
         // Clear form after successful creation (INITIALIZE-ALL-FIELDS)
         resetForm();
       } else {
@@ -244,7 +246,7 @@ const UserAdd = () => {
     // Clear messages
     setSubmitMessage('');
     setMessageType('info');
-    
+
     // Trigger form reset via custom event
     const clearEvent = new CustomEvent('clearForm');
     document.dispatchEvent(clearEvent);
@@ -272,10 +274,10 @@ const UserAdd = () => {
       }}
     >
       {/* Header matching BMS layout */}
-      <Header 
-        transactionId="CU01" 
-        programName="COUSR01C" 
-        title="Add User" 
+      <Header
+        transactionId="CU01"
+        programName="COUSR01C"
+        title="Add User"
       />
 
       {/* Main content area */}
@@ -287,20 +289,25 @@ const UserAdd = () => {
           enableReinitialize
         >
           {({ values, errors, touched, handleChange, handleBlur, handleSubmit, resetForm }) => {
-            // Listen for clear form event
-            useEffect(() => {
-              const handleClearEvent = () => {
-                resetForm();
-              };
-              
-              document.addEventListener('clearForm', handleClearEvent);
-              return () => {
-                document.removeEventListener('clearForm', handleClearEvent);
-              };
-            }, [resetForm]);
+            // Move form reset handling to a separate component to avoid hooks violation
+            const FormContent = () => {
+              useEffect(() => {
+                const handleClearEvent = () => {
+                  resetForm();
+                };
+
+                document.addEventListener('clearForm', handleClearEvent);
+                return () => {
+                  document.removeEventListener('clearForm', handleClearEvent);
+                };
+              }, [resetForm]);
+
+              return null;
+            };
 
             return (
               <Box>
+                <FormContent />
                 <form onSubmit={handleSubmit}>
                   <Box
                     sx={{
@@ -325,346 +332,346 @@ const UserAdd = () => {
                       </Box>
                     </Box>
 
-                  {/* Form fields in grid layout matching BMS positions */}
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(2, 1fr)',
-                      gap: '16px',
-                      marginBottom: '24px',
-                    }}
-                  >
-                    {/* First Name - Left side, initial cursor */}
-                    <FormControl fullWidth>
-                      <TextField
-                        name="firstName"
-                        label="First Name"
-                        value={values.firstName}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        error={touched.firstName && Boolean(errors.firstName)}
-                        helperText={touched.firstName && errors.firstName}
-                        autoFocus // IC attribute - initial cursor
-                        disabled={!hasAdminAccess}
-                        inputProps={{
-                          maxLength: 20,
-                          style: {
-                            fontFamily: 'monospace',
-                            backgroundColor: hasAdminAccess ? '#1a1a1a' : '#333333',
-                            color: hasAdminAccess ? '#00FF00' : '#666666',
-                          },
-                        }}
-                        sx={{
-                          '& .MuiInputLabel-root': {
-                            color: '#4FC3F7', // Turquoise matching BMS
-                          },
-                          '& .MuiOutlinedInput-root': {
-                            '& fieldset': {
-                              borderColor: '#4FC3F7',
+                    {/* Form fields in grid layout matching BMS positions */}
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(2, 1fr)',
+                        gap: '16px',
+                        marginBottom: '24px',
+                      }}
+                    >
+                      {/* First Name - Left side, initial cursor */}
+                      <FormControl fullWidth>
+                        <TextField
+                          name="firstName"
+                          label="First Name"
+                          value={values.firstName}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          error={touched.firstName && Boolean(errors.firstName)}
+                          helperText={touched.firstName && errors.firstName}
+                          autoFocus // IC attribute - initial cursor
+                          disabled={!hasAdminAccess}
+                          inputProps={{
+                            maxLength: 20,
+                            style: {
+                              fontFamily: 'monospace',
+                              backgroundColor: hasAdminAccess ? '#1a1a1a' : '#333333',
+                              color: hasAdminAccess ? '#00FF00' : '#666666',
                             },
-                            '&:hover fieldset': {
-                              borderColor: '#00FF00',
+                          }}
+                          sx={{
+                            '& .MuiInputLabel-root': {
+                              color: '#4FC3F7', // Turquoise matching BMS
                             },
-                          },
-                        }}
-                      />
-                    </FormControl>
+                            '& .MuiOutlinedInput-root': {
+                              '& fieldset': {
+                                borderColor: '#4FC3F7',
+                              },
+                              '&:hover fieldset': {
+                                borderColor: '#00FF00',
+                              },
+                            },
+                          }}
+                        />
+                      </FormControl>
 
-                    {/* Last Name - Right side */}
-                    <FormControl fullWidth>
-                      <TextField
-                        name="lastName"
-                        label="Last Name"
-                        value={values.lastName}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        error={touched.lastName && Boolean(errors.lastName)}
-                        helperText={touched.lastName && errors.lastName}
-                        disabled={!hasAdminAccess}
-                        inputProps={{
-                          maxLength: 20,
-                          style: {
-                            fontFamily: 'monospace',
-                            backgroundColor: hasAdminAccess ? '#1a1a1a' : '#333333',
-                            color: hasAdminAccess ? '#00FF00' : '#666666',
-                          },
-                        }}
-                        sx={{
-                          '& .MuiInputLabel-root': {
+                      {/* Last Name - Right side */}
+                      <FormControl fullWidth>
+                        <TextField
+                          name="lastName"
+                          label="Last Name"
+                          value={values.lastName}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          error={touched.lastName && Boolean(errors.lastName)}
+                          helperText={touched.lastName && errors.lastName}
+                          disabled={!hasAdminAccess}
+                          inputProps={{
+                            maxLength: 20,
+                            style: {
+                              fontFamily: 'monospace',
+                              backgroundColor: hasAdminAccess ? '#1a1a1a' : '#333333',
+                              color: hasAdminAccess ? '#00FF00' : '#666666',
+                            },
+                          }}
+                          sx={{
+                            '& .MuiInputLabel-root': {
+                              color: '#4FC3F7',
+                            },
+                            '& .MuiOutlinedInput-root': {
+                              '& fieldset': {
+                                borderColor: '#4FC3F7',
+                              },
+                              '&:hover fieldset': {
+                                borderColor: '#00FF00',
+                              },
+                            },
+                          }}
+                        />
+                      </FormControl>
+                    </Box>
+
+                    {/* User ID and Password row */}
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(2, 1fr)',
+                        gap: '16px',
+                        marginBottom: '24px',
+                      }}
+                    >
+                      {/* User ID - Left side with hint */}
+                      <FormControl fullWidth>
+                        <TextField
+                          name="userID"
+                          label="User ID"
+                          value={values.userID}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          error={touched.userID && Boolean(errors.userID)}
+                          helperText={touched.userID && errors.userID ? errors.userID : '(8 Char)'}
+                          disabled={!hasAdminAccess}
+                          inputProps={{
+                            maxLength: 8,
+                            style: {
+                              fontFamily: 'monospace',
+                              backgroundColor: hasAdminAccess ? '#1a1a1a' : '#333333',
+                              color: hasAdminAccess ? '#00FF00' : '#666666',
+                              textTransform: 'uppercase',
+                            },
+                          }}
+                          sx={{
+                            '& .MuiInputLabel-root': {
+                              color: '#4FC3F7',
+                            },
+                            '& .MuiOutlinedInput-root': {
+                              '& fieldset': {
+                                borderColor: '#4FC3F7',
+                              },
+                              '&:hover fieldset': {
+                                borderColor: '#00FF00',
+                              },
+                            },
+                          }}
+                        />
+                      </FormControl>
+
+                      {/* Password - Right side with hint */}
+                      <FormControl fullWidth>
+                        <TextField
+                          name="password"
+                          label="Password"
+                          type="password"
+                          value={values.password}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          error={touched.password && Boolean(errors.password)}
+                          helperText={touched.password && errors.password ? errors.password : '(8 Char)'}
+                          disabled={!hasAdminAccess}
+                          inputProps={{
+                            maxLength: 8,
+                            style: {
+                              fontFamily: 'monospace',
+                              backgroundColor: hasAdminAccess ? '#1a1a1a' : '#333333',
+                              color: hasAdminAccess ? '#00FF00' : '#666666',
+                            },
+                          }}
+                          sx={{
+                            '& .MuiInputLabel-root': {
+                              color: '#4FC3F7',
+                            },
+                            '& .MuiOutlinedInput-root': {
+                              '& fieldset': {
+                                borderColor: '#4FC3F7',
+                              },
+                              '&:hover fieldset': {
+                                borderColor: '#00FF00',
+                              },
+                            },
+                          }}
+                        />
+                      </FormControl>
+                    </Box>
+
+                    {/* Password Confirmation and User Type row */}
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(2, 1fr)',
+                        gap: '16px',
+                        marginBottom: '24px',
+                      }}
+                    >
+                      {/* Password Confirmation */}
+                      <FormControl fullWidth>
+                        <TextField
+                          name="passwordConfirm"
+                          label="Confirm Password"
+                          type="password"
+                          value={values.passwordConfirm}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          error={touched.passwordConfirm && Boolean(errors.passwordConfirm)}
+                          helperText={touched.passwordConfirm && errors.passwordConfirm}
+                          disabled={!hasAdminAccess}
+                          inputProps={{
+                            maxLength: 8,
+                            style: {
+                              fontFamily: 'monospace',
+                              backgroundColor: hasAdminAccess ? '#1a1a1a' : '#333333',
+                              color: hasAdminAccess ? '#00FF00' : '#666666',
+                            },
+                          }}
+                          sx={{
+                            '& .MuiInputLabel-root': {
+                              color: '#4FC3F7',
+                            },
+                            '& .MuiOutlinedInput-root': {
+                              '& fieldset': {
+                                borderColor: '#4FC3F7',
+                              },
+                              '&:hover fieldset': {
+                                borderColor: '#00FF00',
+                              },
+                            },
+                          }}
+                        />
+                      </FormControl>
+
+                      {/* User Type - Dropdown with hint */}
+                      <FormControl fullWidth error={touched.userType && Boolean(errors.userType)}>
+                        <InputLabel
+                          sx={{
                             color: '#4FC3F7',
-                          },
-                          '& .MuiOutlinedInput-root': {
-                            '& fieldset': {
-                              borderColor: '#4FC3F7',
+                            '&.Mui-focused': {
+                              color: '#00FF00',
                             },
-                            '&:hover fieldset': {
-                              borderColor: '#00FF00',
-                            },
-                          },
-                        }}
-                      />
-                    </FormControl>
-                  </Box>
-
-                  {/* User ID and Password row */}
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(2, 1fr)',
-                      gap: '16px',
-                      marginBottom: '24px',
-                    }}
-                  >
-                    {/* User ID - Left side with hint */}
-                    <FormControl fullWidth>
-                      <TextField
-                        name="userID"
-                        label="User ID"
-                        value={values.userID}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        error={touched.userID && Boolean(errors.userID)}
-                        helperText={touched.userID && errors.userID ? errors.userID : '(8 Char)'}
-                        disabled={!hasAdminAccess}
-                        inputProps={{
-                          maxLength: 8,
-                          style: {
-                            fontFamily: 'monospace',
-                            backgroundColor: hasAdminAccess ? '#1a1a1a' : '#333333',
-                            color: hasAdminAccess ? '#00FF00' : '#666666',
-                            textTransform: 'uppercase',
-                          },
-                        }}
-                        sx={{
-                          '& .MuiInputLabel-root': {
-                            color: '#4FC3F7',
-                          },
-                          '& .MuiOutlinedInput-root': {
-                            '& fieldset': {
-                              borderColor: '#4FC3F7',
-                            },
-                            '&:hover fieldset': {
-                              borderColor: '#00FF00',
-                            },
-                          },
-                        }}
-                      />
-                    </FormControl>
-
-                    {/* Password - Right side with hint */}
-                    <FormControl fullWidth>
-                      <TextField
-                        name="password"
-                        label="Password"
-                        type="password"
-                        value={values.password}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        error={touched.password && Boolean(errors.password)}
-                        helperText={touched.password && errors.password ? errors.password : '(8 Char)'}
-                        disabled={!hasAdminAccess}
-                        inputProps={{
-                          maxLength: 8,
-                          style: {
-                            fontFamily: 'monospace',
-                            backgroundColor: hasAdminAccess ? '#1a1a1a' : '#333333',
-                            color: hasAdminAccess ? '#00FF00' : '#666666',
-                          },
-                        }}
-                        sx={{
-                          '& .MuiInputLabel-root': {
-                            color: '#4FC3F7',
-                          },
-                          '& .MuiOutlinedInput-root': {
-                            '& fieldset': {
-                              borderColor: '#4FC3F7',
-                            },
-                            '&:hover fieldset': {
-                              borderColor: '#00FF00',
-                            },
-                          },
-                        }}
-                      />
-                    </FormControl>
-                  </Box>
-
-                  {/* Password Confirmation and User Type row */}
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(2, 1fr)',
-                      gap: '16px',
-                      marginBottom: '24px',
-                    }}
-                  >
-                    {/* Password Confirmation */}
-                    <FormControl fullWidth>
-                      <TextField
-                        name="passwordConfirm"
-                        label="Confirm Password"
-                        type="password"
-                        value={values.passwordConfirm}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        error={touched.passwordConfirm && Boolean(errors.passwordConfirm)}
-                        helperText={touched.passwordConfirm && errors.passwordConfirm}
-                        disabled={!hasAdminAccess}
-                        inputProps={{
-                          maxLength: 8,
-                          style: {
-                            fontFamily: 'monospace',
-                            backgroundColor: hasAdminAccess ? '#1a1a1a' : '#333333',
-                            color: hasAdminAccess ? '#00FF00' : '#666666',
-                          },
-                        }}
-                        sx={{
-                          '& .MuiInputLabel-root': {
-                            color: '#4FC3F7',
-                          },
-                          '& .MuiOutlinedInput-root': {
-                            '& fieldset': {
-                              borderColor: '#4FC3F7',
-                            },
-                            '&:hover fieldset': {
-                              borderColor: '#00FF00',
-                            },
-                          },
-                        }}
-                      />
-                    </FormControl>
-
-                    {/* User Type - Dropdown with hint */}
-                    <FormControl fullWidth error={touched.userType && Boolean(errors.userType)}>
-                      <InputLabel
-                        sx={{
-                          color: '#4FC3F7',
-                          '&.Mui-focused': {
-                            color: '#00FF00',
-                          },
-                        }}
-                      >
+                          }}
+                        >
                         User Type
-                      </InputLabel>
-                      <Select
-                        name="userType"
-                        value={values.userType}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        disabled={!hasAdminAccess}
+                        </InputLabel>
+                        <Select
+                          name="userType"
+                          value={values.userType}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          disabled={!hasAdminAccess}
+                          sx={{
+                            fontFamily: 'monospace',
+                            backgroundColor: hasAdminAccess ? '#1a1a1a' : '#333333',
+                            color: hasAdminAccess ? '#00FF00' : '#666666',
+                            '& .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#4FC3F7',
+                            },
+                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                              borderColor: hasAdminAccess ? '#00FF00' : '#4FC3F7',
+                            },
+                            '& .MuiSvgIcon-root': {
+                              color: hasAdminAccess ? '#4FC3F7' : '#666666',
+                            },
+                          }}
+                        >
+                          <MenuItem value="">Select...</MenuItem>
+                          <MenuItem value="A">A - Admin</MenuItem>
+                          <MenuItem value="U">U - User</MenuItem>
+                        </Select>
+                        {touched.userType && errors.userType && (
+                          <Box sx={{ color: '#f44336', fontSize: '0.75rem', marginTop: '4px' }}>
+                            {errors.userType}
+                          </Box>
+                        )}
+                        <Box sx={{ color: '#4FC3F7', fontSize: '0.75rem', marginTop: '4px' }}>
+                        (A=Admin, U=User)
+                        </Box>
+                      </FormControl>
+                    </Box>
+
+                    {/* Submit button area */}
+                    <Box sx={{ textAlign: 'center', marginTop: '32px' }}>
+                      <Button
+                        type="submit"
+                        disabled={isSubmitting || !hasAdminAccess}
                         sx={{
+                          backgroundColor: hasAdminAccess ? '#4FC3F7' : '#666666',
+                          color: hasAdminAccess ? '#000000' : '#999999',
                           fontFamily: 'monospace',
-                          backgroundColor: hasAdminAccess ? '#1a1a1a' : '#333333',
-                          color: hasAdminAccess ? '#00FF00' : '#666666',
-                          '& .MuiOutlinedInput-notchedOutline': {
-                            borderColor: '#4FC3F7',
+                          fontWeight: 'bold',
+                          padding: '8px 24px',
+                          '&:hover': {
+                            backgroundColor: hasAdminAccess ? '#00FF00' : '#666666',
                           },
-                          '&:hover .MuiOutlinedInput-notchedOutline': {
-                            borderColor: hasAdminAccess ? '#00FF00' : '#4FC3F7',
-                          },
-                          '& .MuiSvgIcon-root': {
-                            color: hasAdminAccess ? '#4FC3F7' : '#666666',
+                          '&:disabled': {
+                            backgroundColor: '#666666',
+                            color: '#999999',
                           },
                         }}
                       >
-                        <MenuItem value="">Select...</MenuItem>
-                        <MenuItem value="A">A - Admin</MenuItem>
-                        <MenuItem value="U">U - User</MenuItem>
-                      </Select>
-                      {touched.userType && errors.userType && (
-                        <Box sx={{ color: '#f44336', fontSize: '0.75rem', marginTop: '4px' }}>
-                          {errors.userType}
-                        </Box>
-                      )}
-                      <Box sx={{ color: '#4FC3F7', fontSize: '0.75rem', marginTop: '4px' }}>
-                        (A=Admin, U=User)
-                      </Box>
-                    </FormControl>
-                  </Box>
+                        {isSubmitting ? 'Creating User...' : hasAdminAccess ? 'Add User (ENTER)' : 'Access Denied'}
+                      </Button>
+                    </Box>
 
-                  {/* Submit button area */}
-                  <Box sx={{ textAlign: 'center', marginTop: '32px' }}>
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting || !hasAdminAccess}
+                    {/* Additional action buttons */}
+                    <Box
                       sx={{
-                        backgroundColor: hasAdminAccess ? '#4FC3F7' : '#666666',
-                        color: hasAdminAccess ? '#000000' : '#999999',
-                        fontFamily: 'monospace',
-                        fontWeight: 'bold',
-                        padding: '8px 24px',
-                        '&:hover': {
-                          backgroundColor: hasAdminAccess ? '#00FF00' : '#666666',
-                        },
-                        '&:disabled': {
+                        display: 'flex',
+                        justifyContent: 'center',
+                        gap: '16px',
+                        marginTop: '16px',
+                      }}
+                    >
+                      <Button
+                        type="button"
+                        onClick={handleBack}
+                        sx={{
                           backgroundColor: '#666666',
-                          color: '#999999',
-                        },
-                      }}
-                    >
-                      {isSubmitting ? 'Creating User...' : hasAdminAccess ? 'Add User (ENTER)' : 'Access Denied'}
-                    </Button>
-                  </Box>
-
-                  {/* Additional action buttons */}
-                  <Box 
-                    sx={{ 
-                      display: 'flex', 
-                      justifyContent: 'center', 
-                      gap: '16px', 
-                      marginTop: '16px' 
-                    }}
-                  >
-                    <Button
-                      type="button"
-                      onClick={handleBack}
-                      sx={{
-                        backgroundColor: '#666666',
-                        color: '#FFFFFF',
-                        fontFamily: 'monospace',
-                        padding: '6px 16px',
-                        '&:hover': {
-                          backgroundColor: '#888888',
-                        },
-                      }}
-                    >
+                          color: '#FFFFFF',
+                          fontFamily: 'monospace',
+                          padding: '6px 16px',
+                          '&:hover': {
+                            backgroundColor: '#888888',
+                          },
+                        }}
+                      >
                       Back (F3)
-                    </Button>
-                    
-                    <Button
-                      type="button"
-                      onClick={handleClear}
-                      sx={{
-                        backgroundColor: '#666666',
-                        color: '#FFFFFF',
-                        fontFamily: 'monospace',
-                        padding: '6px 16px',
-                        '&:hover': {
-                          backgroundColor: '#888888',
-                        },
-                      }}
-                    >
-                      Clear (F4)
-                    </Button>
+                      </Button>
 
-                    <Button
-                      type="button"
-                      onClick={handleExit}
-                      sx={{
-                        backgroundColor: '#666666',
-                        color: '#FFFFFF',
-                        fontFamily: 'monospace',
-                        padding: '6px 16px',
-                        '&:hover': {
-                          backgroundColor: '#888888',
-                        },
-                      }}
-                    >
+                      <Button
+                        type="button"
+                        onClick={handleClear}
+                        sx={{
+                          backgroundColor: '#666666',
+                          color: '#FFFFFF',
+                          fontFamily: 'monospace',
+                          padding: '6px 16px',
+                          '&:hover': {
+                            backgroundColor: '#888888',
+                          },
+                        }}
+                      >
+                      Clear (F4)
+                      </Button>
+
+                      <Button
+                        type="button"
+                        onClick={handleExit}
+                        sx={{
+                          backgroundColor: '#666666',
+                          color: '#FFFFFF',
+                          fontFamily: 'monospace',
+                          padding: '6px 16px',
+                          '&:hover': {
+                            backgroundColor: '#888888',
+                          },
+                        }}
+                      >
                       Exit (F12)
-                    </Button>
+                      </Button>
+                    </Box>
                   </Box>
-                </Box>
-              </form>
-            </Box>
+                </form>
+              </Box>
             );
           }}
         </Formik>
@@ -673,7 +680,7 @@ const UserAdd = () => {
       {/* Error/Success message area - matches BMS ERRMSG field */}
       {submitMessage && (
         <Box sx={{ padding: '8px 16px' }}>
-          <Alert 
+          <Alert
             severity={messageType}
             sx={{
               fontFamily: 'monospace',
