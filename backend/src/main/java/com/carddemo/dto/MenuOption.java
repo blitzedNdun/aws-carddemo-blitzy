@@ -36,10 +36,11 @@ public class MenuOption {
     private static final int MENU_OPTION_DESCRIPTION_LENGTH = 40;
     
     /**
-     * Maximum length for transaction code matching BMS OPTION field length.
-     * Derived from COMEN01.bms where OPTION field has LENGTH=2.
+     * Maximum length for transaction code matching COBOL program name length.
+     * COBOL program names (transaction codes) are 8 characters (PIC X(08)).
+     * Examples: COACTVWC, COACTUPC, COCRDLIC, etc.
      */
-    private static final int TRANSACTION_CODE_LENGTH = 2;
+    private static final int TRANSACTION_CODE_LENGTH = 8;
     
     /**
      * Maximum menu option number supported by COMEN01 screen layout.
@@ -64,8 +65,8 @@ public class MenuOption {
 
     /**
      * Transaction code for menu option routing.
-     * Used to identify which transaction to execute when option is selected.
-     * Maps to OPTION field validation (PIC X(2)) from COMEN01 copybook.
+     * Used to identify which COBOL program/transaction to execute when option is selected.
+     * Contains the full COBOL program name (PIC X(08)) such as COACTVWC, COACTUPC, etc.
      */
     private String transactionCode;
 
@@ -142,7 +143,7 @@ public class MenuOption {
     /**
      * Sets the transaction code.
      * 
-     * @param transactionCode The transaction code, truncated if exceeds 2 characters
+     * @param transactionCode The transaction code, truncated if exceeds 8 characters
      */
     public void setTransactionCode(String transactionCode) {
         if (transactionCode != null && transactionCode.length() > TRANSACTION_CODE_LENGTH) {
