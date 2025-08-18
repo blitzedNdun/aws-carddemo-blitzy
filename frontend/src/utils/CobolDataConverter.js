@@ -180,7 +180,7 @@ export function toComp3(value, scale = 0, precision = 15) {
 
   // Pack digits into bytes (COMP-3 format)
   let digitIndex = 0;
-  
+
   // Pack pairs of digits into all bytes except the last
   for (let i = 0; i < byteCount - 1; i++) {
     const leftDigit = parseInt(digits[digitIndex] || '0', 10);
