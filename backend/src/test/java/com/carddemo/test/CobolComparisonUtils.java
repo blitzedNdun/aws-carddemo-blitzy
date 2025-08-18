@@ -6,7 +6,6 @@
 package com.carddemo.test;
 
 import com.carddemo.util.CobolDataConverter;
-import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
 
 import java.io.IOException;
@@ -115,10 +114,13 @@ public final class CobolComparisonUtils {
                                         cobolSize, javaSize));
         }
 
-        // Perform byte-level comparison
+        // Perform byte-level comparison using Java NIO
         boolean contentMatch = false;
         try {
-            contentMatch = FileUtils.contentEquals(cobolFilePath.toFile(), javaFilePath.toFile());
+            // Use Files.mismatch() for efficient byte-level comparison (Java 12+)
+            // Returns -1 if files are identical, or index of first different byte
+            long mismatchIndex = Files.mismatch(cobolFilePath, javaFilePath);
+            contentMatch = (mismatchIndex == -1L);
         } catch (IOException e) {
             differences.add("Error during byte-level comparison: " + e.getMessage());
         }
