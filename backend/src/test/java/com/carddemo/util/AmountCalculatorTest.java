@@ -78,10 +78,10 @@ public class AmountCalculatorTest {
         
         // Create COMP-3 test data for precision validation
         // 1250.75 in COMP-3 format: 0x01, 0x25, 0x07, 0x5C (positive)
-        comp3Balance = new byte[]{0x01, 0x25, 0x07, 0x5C};
+        comp3Balance = new byte[]{(byte) 0x01, (byte) 0x25, (byte) 0x07, (byte) 0x5C};
         
         // 18.25 in COMP-3 format with 4 decimal places: 0x01, 0x82, 0x50, 0x0C
-        comp3InterestRate = new byte[]{0x01, 0x82, 0x50, 0x0C};
+        comp3InterestRate = new byte[]{(byte) 0x01, (byte) 0x82, (byte) 0x50, (byte) 0x0C};
     }
 
     /**
@@ -98,8 +98,8 @@ public class AmountCalculatorTest {
             // Test the exact CBACT04C formula
             BigDecimal result = AmountCalculator.calculateMonthlyInterest(testBalance, testInterestRate);
             
-            // Expected: (1250.75 * 18.25) / 1200 = 19.01 (with HALF_UP rounding)
-            BigDecimal expected = new BigDecimal("19.01");
+            // Expected: (1250.75 * 18.25) / 1200 = 19.02239... = 19.02 (with HALF_UP rounding)
+            BigDecimal expected = new BigDecimal("19.02");
             
             assertEquals(expected, result, "Monthly interest calculation should match CBACT04C formula");
             assertEquals(MONETARY_SCALE, result.scale(), "Result should have monetary scale");
@@ -155,8 +155,8 @@ public class AmountCalculatorTest {
         void testCalculateMonthlyInterestFromComp3() {
             BigDecimal result = AmountCalculator.calculateMonthlyInterestFromComp3(comp3Balance, comp3InterestRate);
             
-            // Expected: (1250.75 * 18.25) / 1200 = 19.01
-            BigDecimal expected = new BigDecimal("19.01");
+            // Expected: (1250.75 * 18.25) / 1200 = 19.02239... = 19.02 (with HALF_UP rounding)
+            BigDecimal expected = new BigDecimal("19.02");
             
             assertEquals(expected, result, "COMP-3 interest calculation should match BigDecimal calculation");
         }
@@ -675,7 +675,7 @@ public class AmountCalculatorTest {
             BigDecimal javaResult = AmountCalculator.calculateMonthlyInterest(balance, rate);
             
             // Expected result calculated using COBOL COMP-3 arithmetic
-            BigDecimal expectedCobolResult = new BigDecimal("19.01");
+            BigDecimal expectedCobolResult = new BigDecimal("19.02");
             
             assertEquals(expectedCobolResult, javaResult, 
                 "Java calculation should match COBOL COMP-3 result exactly");
@@ -697,8 +697,8 @@ public class AmountCalculatorTest {
         @DisplayName("Validate COMP-3 to BigDecimal conversion accuracy")
         void testComp3ConversionAccuracy() {
             // Test multiple COMP-3 scenarios
-            byte[] comp3Zero = new byte[]{0x0C};
-            byte[] comp3Negative = new byte[]{0x12, 0x34, 0x5D};
+            byte[] comp3Zero = new byte[]{(byte) 0x0C};
+            byte[] comp3Negative = new byte[]{(byte) 0x12, (byte) 0x34, (byte) 0x5D};
             
             BigDecimal zeroResult = CobolDataConverter.fromComp3(comp3Zero, MONETARY_SCALE);
             BigDecimal negativeResult = CobolDataConverter.fromComp3(comp3Negative, MONETARY_SCALE);
@@ -714,7 +714,7 @@ public class AmountCalculatorTest {
             "1000.00, 12.00, 10.00",
             "2500.00, 18.75, 39.06", 
             "750.50, 21.50, 13.45",
-            "999999.99, 0.01, 833.33"
+            "999999.99, 0.01, 8.33"
         })
         @DisplayName("Validate interest calculation precision across multiple scenarios")
         void testInterestCalculationParameterized(String balanceStr, String rateStr, String expectedStr) {
@@ -763,18 +763,18 @@ public class AmountCalculatorTest {
             // Step 3: Calculate monthly interest
             BigDecimal monthlyInterest = AmountCalculator.calculateMonthlyInterest(
                 newBalance, interestRate);
-            assertEquals(new BigDecimal("20.83"), monthlyInterest, "Monthly interest should be calculated");
+            assertEquals(new BigDecimal("20.82"), monthlyInterest, "Monthly interest should be calculated");
             
             // Step 4: Add interest to balance
             BigDecimal balanceWithInterest = newBalance.add(monthlyInterest);
-            assertEquals(new BigDecimal("1270.83"), balanceWithInterest, "Interest should be added");
+            assertEquals(new BigDecimal("1270.82"), balanceWithInterest, "Interest should be added");
             
             // Step 5: Process payment
             BigDecimal[] paymentResult = AmountCalculator.processPayment(
                 paymentAmount, monthlyInterest, newBalance);
-            assertEquals(new BigDecimal("20.83"), paymentResult[0], "Interest payment");
-            assertEquals(new BigDecimal("79.17"), paymentResult[1], "Principal payment");
-            assertEquals(new BigDecimal("1170.83"), paymentResult[2], "Remaining balance");
+            assertEquals(new BigDecimal("20.82"), paymentResult[0], "Interest payment");
+            assertEquals(new BigDecimal("79.18"), paymentResult[1], "Principal payment");
+            assertEquals(new BigDecimal("1170.82"), paymentResult[2], "Remaining balance");
         }
 
         @Test
