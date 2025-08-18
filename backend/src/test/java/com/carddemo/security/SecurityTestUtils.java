@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.HashMap;
@@ -137,13 +138,12 @@ public final class SecurityTestUtils {
      * @return UsernamePasswordAuthenticationToken configured for testing
      */
     public static UsernamePasswordAuthenticationToken createTestAuthentication(UserDetails userDetails) {
-        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+        // Constructor with authorities automatically sets authenticated to true
+        return new UsernamePasswordAuthenticationToken(
             userDetails, 
             null, 
             userDetails.getAuthorities()
         );
-        auth.setAuthenticated(true);
-        return auth;
     }
 
     /**
@@ -252,7 +252,7 @@ public final class SecurityTestUtils {
         
         Mockito.when(auth.getPrincipal()).thenReturn(userDetails);
         Mockito.when(auth.getName()).thenReturn(username);
-        Mockito.when(auth.getAuthorities()).thenReturn(authorities);
+        Mockito.doReturn(authorities).when(auth).getAuthorities();
         Mockito.when(auth.isAuthenticated()).thenReturn(true);
         
         return auth;
