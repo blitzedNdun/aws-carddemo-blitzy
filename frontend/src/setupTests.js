@@ -10,18 +10,18 @@ if (typeof global.TextEncoder === 'undefined') {
     encode(input) {
       return new Uint8Array(Buffer.from(input, 'utf8'));
     }
-    
+
     encodeInto(input, destination) {
       const encoded = this.encode(input);
       const length = Math.min(encoded.length, destination.length);
-      
+
       for (let i = 0; i < length; i++) {
         destination[i] = encoded[i];
       }
-      
+
       return {
         read: input.length,
-        written: length
+        written: length,
       };
     }
   };
