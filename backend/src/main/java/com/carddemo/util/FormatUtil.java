@@ -10,6 +10,7 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import org.apache.commons.lang3.StringUtils;
 
 import com.carddemo.util.Constants;
 import com.carddemo.util.StringUtil;
@@ -129,7 +130,7 @@ public final class FormatUtil {
             return "";
         }
         
-        return DateConversionUtil.convertDateFormat(date.format(CCYYMMDD_FORMATTER), "CCYYMMDD", "MM/DD/YYYY");
+        return date.format(DISPLAY_DATE_FORMATTER);
     }
 
     /**
@@ -201,7 +202,7 @@ public final class FormatUtil {
      */
     public static String formatAccountNumber(Object accountNumber) {
         if (accountNumber == null) {
-            return StringUtil.padLeft("0", Constants.ACCOUNT_ID_LENGTH, '0');
+            return StringUtils.leftPad("0", Constants.ACCOUNT_NUMBER_LENGTH, '0');
         }
         
         String accountStr = accountNumber.toString().trim();
@@ -210,12 +211,12 @@ public final class FormatUtil {
         accountStr = accountStr.replaceAll("[^0-9]", "");
         
         // Validate length
-        if (accountStr.length() > Constants.ACCOUNT_ID_LENGTH) {
+        if (accountStr.length() > Constants.ACCOUNT_NUMBER_LENGTH) {
             throw new IllegalArgumentException("Account number exceeds maximum length: " + accountStr);
         }
         
         // Pad with leading zeros to match COBOL PIC 9(11)
-        return StringUtil.padLeft(accountStr, Constants.ACCOUNT_ID_LENGTH, '0');
+        return StringUtils.leftPad(accountStr, Constants.ACCOUNT_NUMBER_LENGTH, '0');
     }
 
     /**
@@ -306,7 +307,7 @@ public final class FormatUtil {
     /**
      * Pads string to specified width with left alignment.
      * 
-     * Delegates to StringUtil.padLeft() for consistent string padding
+     * Uses StringUtils.leftPad() for consistent string padding
      * operations throughout the application.
      * 
      * @param text string to pad
@@ -315,13 +316,13 @@ public final class FormatUtil {
      * @return left-padded string
      */
     public static String padLeft(String text, int width, char padChar) {
-        return StringUtil.padLeft(text, width, padChar);
+        return StringUtils.leftPad(text, width, padChar);
     }
 
     /**
      * Pads string to specified width with right alignment.
      * 
-     * Delegates to StringUtil.padRight() for consistent string padding
+     * Uses StringUtils.rightPad() for consistent string padding
      * operations throughout the application.
      * 
      * @param text string to pad
@@ -330,7 +331,7 @@ public final class FormatUtil {
      * @return right-padded string
      */
     public static String padRight(String text, int width, char padChar) {
-        return StringUtil.padRight(text, width, padChar);
+        return StringUtils.rightPad(text, width, padChar);
     }
 
     /**
@@ -461,7 +462,7 @@ public final class FormatUtil {
         formatter.setRoundingMode(RoundingMode.HALF_UP);
         
         String formatted = formatter.format(scaledNumber);
-        return StringUtil.padLeft(formatted, totalWidth, ' ');
+        return StringUtils.leftPad(formatted, totalWidth, ' ');
     }
 
     /**
@@ -528,11 +529,11 @@ public final class FormatUtil {
      */
     public static String formatReportAmount(BigDecimal amount, int fieldWidth) {
         if (amount == null) {
-            return StringUtil.padLeft("", fieldWidth, ' ');
+            return StringUtils.leftPad("", fieldWidth, ' ');
         }
         
         String formatted = formatDecimalAmount(amount);
-        return StringUtil.padLeft(formatted, fieldWidth, ' ');
+        return StringUtils.leftPad(formatted, fieldWidth, ' ');
     }
 
     /**
@@ -618,9 +619,9 @@ public final class FormatUtil {
         }
         
         if (rightAlign) {
-            return StringUtil.padLeft(data, width, ' ');
+            return StringUtils.leftPad(data, width, ' ');
         } else {
-            return StringUtil.padRight(data, width, ' ');
+            return StringUtils.rightPad(data, width, ' ');
         }
     }
 
@@ -646,15 +647,15 @@ public final class FormatUtil {
         
         switch (alignment.toUpperCase()) {
             case "LEFT":
-                return StringUtil.padRight(fieldData, fieldWidth, ' ');
+                return StringUtils.rightPad(fieldData, fieldWidth, ' ');
             case "RIGHT":
-                return StringUtil.padLeft(fieldData, fieldWidth, ' ');
+                return StringUtils.leftPad(fieldData, fieldWidth, ' ');
             case "CENTER":
                 int leftPad = (fieldWidth - fieldData.length()) / 2;
                 int rightPad = fieldWidth - fieldData.length() - leftPad;
                 return " ".repeat(leftPad) + fieldData + " ".repeat(rightPad);
             default:
-                return StringUtil.padRight(fieldData, fieldWidth, ' ');
+                return StringUtils.rightPad(fieldData, fieldWidth, ' ');
         }
     }
 }
