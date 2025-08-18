@@ -121,8 +121,7 @@ public class UserDto {
      * @param firstName the first name to set (maximum 20 characters)
      */
     public void setFirstName(String firstName) {
-        if (firstName != null) {
-            ValidationUtil.validateRequiredField("firstName", firstName);
+        if (firstName != null && !firstName.trim().isEmpty()) {
             ValidationUtil.validateFieldLength("firstName", firstName, Constants.USER_NAME_LENGTH);
         }
         this.firstName = firstName;
@@ -143,8 +142,7 @@ public class UserDto {
      * @param lastName the last name to set (maximum 20 characters)
      */
     public void setLastName(String lastName) {
-        if (lastName != null) {
-            ValidationUtil.validateRequiredField("lastName", lastName);
+        if (lastName != null && !lastName.trim().isEmpty()) {
             ValidationUtil.validateFieldLength("lastName", lastName, Constants.USER_NAME_LENGTH);
         }
         this.lastName = lastName;
@@ -165,9 +163,9 @@ public class UserDto {
      * @param userType the user type to set ('A' for Admin, 'U' for User)
      */
     public void setUserType(String userType) {
-        if (userType != null) {
-            ValidationUtil.validateUserType(userType);
+        if (userType != null && !userType.trim().isEmpty()) {
             ValidationUtil.validateFieldLength("userType", userType, Constants.USER_TYPE_LENGTH);
+            ValidationUtil.validateUserType(userType);
         }
         this.userType = userType;
     }
