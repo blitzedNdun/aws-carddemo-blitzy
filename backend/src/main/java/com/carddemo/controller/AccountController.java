@@ -70,8 +70,8 @@ public class AccountController {
             // Input validation matching COBOL 2210-EDIT-ACCOUNT logic
             validateAccountId(id);
             
-            // Parse account ID to Long for service layer processing
-            Long accountId = Long.parseLong(id);
+            // Parse account ID to Long for service layer processing (trim whitespace)
+            Long accountId = Long.parseLong(id.trim());
             
             // Call service layer - replicates 9000-READ-ACCT section logic
             AccountDto account = accountService.viewAccount(accountId);
@@ -126,8 +126,8 @@ public class AccountController {
             validateAccountId(id);
             validateUpdateRequest(updateRequest, id);
             
-            // Parse account ID for service processing
-            Long accountId = Long.parseLong(id);
+            // Parse account ID for service processing (trim whitespace)
+            Long accountId = Long.parseLong(id.trim());
             
             // Call service layer - replicates account update logic from COACTUPC.cbl
             AccountDto updatedAccount = accountService.updateAccount(accountId, updateRequest);
@@ -173,21 +173,21 @@ public class AccountController {
             throw new ValidationException("Account ID is required");
         }
         
-        // Remove any leading/trailing whitespace
-        accountId = accountId.trim();
+        // Remove any leading/trailing whitespace for validation
+        String trimmedAccountId = accountId.trim();
         
         // Must be exactly 11 digits (matching COBOL PIC 9(11))
-        if (accountId.length() != 11) {
+        if (trimmedAccountId.length() != 11) {
             throw new ValidationException("Account ID must be exactly 11 digits");
         }
         
         // Must be numeric
-        if (!accountId.matches("\\d{11}")) {
+        if (!trimmedAccountId.matches("\\d{11}")) {
             throw new ValidationException("Account ID must contain only digits");
         }
         
         // Must not be all zeros (matching COBOL validation)
-        if (accountId.equals("00000000000")) {
+        if (trimmedAccountId.equals("00000000000")) {
             throw new ValidationException("Account ID cannot be all zeros");
         }
     }
@@ -207,10 +207,10 @@ public class AccountController {
             throw new ValidationException("Update request body is required");
         }
         
-        // Ensure account ID in request matches path parameter
+        // Ensure account ID in request matches path parameter (trim whitespace)
         if (updateRequest.getAccountId() != null) {
             String requestAccountId = updateRequest.getAccountId().toString();
-            if (!pathAccountId.equals(requestAccountId)) {
+            if (!pathAccountId.trim().equals(requestAccountId)) {
                 throw new ValidationException("Account ID in request body must match path parameter");
             }
         }
