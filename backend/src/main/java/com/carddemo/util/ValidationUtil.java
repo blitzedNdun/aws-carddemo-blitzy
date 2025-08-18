@@ -431,9 +431,9 @@ public final class ValidationUtil {
     }
 
     /**
-     * ValidationUtil class with core validation methods for account and transaction operations.
+     * Helper class with core validation methods for account and transaction operations.
      */
-    public static class ValidationUtil {
+    public static class FieldValidator {
         
         /**
          * Validates account ID according to COBOL account ID specifications.
@@ -540,50 +540,34 @@ public final class ValidationUtil {
         String stateZipCombo = state + zipPrefix;
         
         // Valid state-ZIP combinations from CSLKPCDY.cpy VALID-US-STATE-ZIP-CD2-COMBO
-        Map<String, String> validStateZipCombos = Map.of(
-            "AA34", "AA", "AE90", "AE", "AE91", "AE", "AE92", "AE", "AE93", "AE", "AE94", "AE", 
-            "AE95", "AE", "AE96", "AE", "AE97", "AE", "AE98", "AE", "AK99", "AK", "AL35", "AL", 
-            "AL36", "AL", "AP96", "AP", "AR71", "AR", "AR72", "AR", "AS96", "AS", "AZ85", "AZ", 
-            "AZ86", "AZ", "CA90", "CA", "CA91", "CA", "CA92", "CA", "CA93", "CA", "CA94", "CA", 
-            "CA95", "CA", "CA96", "CA", "CO80", "CO", "CO81", "CO", "CT60", "CT", "CT61", "CT", 
-            "CT62", "CT", "CT63", "CT", "CT64", "CT", "CT65", "CT", "CT66", "CT", "CT67", "CT", 
-            "CT68", "CT", "CT69", "CT", "DC20", "DC", "DC56", "DC", "DC88", "DC", "DE19", "DE", 
-            "FL32", "FL", "FL33", "FL", "FL34", "FL", "FM96", "FM", "GA30", "GA", "GA31", "GA", 
-            "GA39", "GA", "GU96", "GU", "HI96", "HI", "IA50", "IA", "IA51", "IA", "IA52", "IA", 
-            "ID83", "ID", "IL60", "IL", "IL61", "IL", "IL62", "IL", "IN46", "IN", "IN47", "IN", 
-            "KS66", "KS", "KS67", "KS", "KY40", "KY", "KY41", "KY", "KY42", "KY", "LA70", "LA", 
-            "LA71", "LA", "MA10", "MA", "MA11", "MA", "MA12", "MA", "MA13", "MA", "MA14", "MA", 
-            "MA15", "MA", "MA16", "MA", "MA17", "MA", "MA18", "MA", "MA19", "MA", "MA20", "MA", 
-            "MA21", "MA", "MA22", "MA", "MA23", "MA", "MA24", "MA", "MA25", "MA", "MA26", "MA", 
-            "MA27", "MA", "MA55", "MA", "MD20", "MD", "MD21", "MD", "ME39", "ME", "ME40", "ME", 
-            "ME41", "ME", "ME42", "ME", "ME43", "ME", "ME44", "ME", "ME45", "ME", "ME46", "ME", 
-            "ME47", "ME", "ME48", "ME", "ME49", "ME", "MH96", "MH", "MI48", "MI", "MI49", "MI", 
-            "MN55", "MN", "MN56", "MN", "MO63", "MO", "MO64", "MO", "MO65", "MO", "MO72", "MO", 
-            "MP96", "MP", "MS38", "MS", "MS39", "MS", "MT59", "MT", "NC27", "NC", "NC28", "NC", 
-            "ND58", "ND", "NE68", "NE", "NE69", "NE", "NH30", "NH", "NH31", "NH", "NH32", "NH", 
-            "NH33", "NH", "NH34", "NH", "NH35", "NH", "NH36", "NH", "NH37", "NH", "NH38", "NH", 
-            "NJ70", "NJ", "NJ71", "NJ", "NJ72", "NJ", "NJ73", "NJ", "NJ74", "NJ", "NJ75", "NJ", 
-            "NJ76", "NJ", "NJ77", "NJ", "NJ78", "NJ", "NJ79", "NJ", "NJ80", "NJ", "NJ81", "NJ", 
-            "NJ82", "NJ", "NJ83", "NJ", "NJ84", "NJ", "NJ85", "NJ", "NJ86", "NJ", "NJ87", "NJ", 
-            "NJ88", "NJ", "NJ89", "NJ", "NM87", "NM", "NM88", "NM", "NV88", "NV", "NV89", "NV", 
-            "NY50", "NY", "NY54", "NY", "NY63", "NY", "NY10", "NY", "NY11", "NY", "NY12", "NY", 
-            "NY13", "NY", "NY14", "NY", "OH43", "OH", "OH44", "OH", "OH45", "OH", "OK73", "OK", 
-            "OK74", "OK", "OR97", "OR", "PA15", "PA", "PA16", "PA", "PA17", "PA", "PA18", "PA", 
-            "PA19", "PA", "PR60", "PR", "PR61", "PR", "PR62", "PR", "PR63", "PR", "PR64", "PR", 
-            "PR65", "PR", "PR66", "PR", "PR67", "PR", "PR68", "PR", "PR69", "PR", "PR70", "PR", 
-            "PR71", "PR", "PR72", "PR", "PR73", "PR", "PR74", "PR", "PR75", "PR", "PR76", "PR", 
-            "PR77", "PR", "PR78", "PR", "PR79", "PR", "PR90", "PR", "PR91", "PR", "PR92", "PR", 
-            "PR93", "PR", "PR94", "PR", "PR95", "PR", "PR96", "PR", "PR97", "PR", "PR98", "PR", 
-            "PW96", "PW", "RI28", "RI", "RI29", "RI", "SC29", "SC", "SD57", "SD", "TN37", "TN", 
-            "TN38", "TN", "TX73", "TX", "TX75", "TX", "TX76", "TX", "TX77", "TX", "TX78", "TX", 
-            "TX79", "TX", "TX88", "TX", "UT84", "UT", "VA20", "VA", "VA22", "VA", "VA23", "VA", 
-            "VA24", "VA", "VI80", "VI", "VI82", "VI", "VI83", "VI", "VI84", "VI", "VI85", "VI", 
-            "VT50", "VT", "VT51", "VT", "VT52", "VT", "VT53", "VT", "VT54", "VT", "VT56", "VT", 
-            "VT57", "VT", "VT58", "VT", "VT59", "VT", "WA98", "WA", "WA99", "WA", "WI53", "WI", 
-            "WI54", "WI", "WV24", "WV", "WV25", "WV", "WV26", "WV", "WY82", "WY", "WY83", "WY"
+        Set<String> validStateZipCombos = Set.of(
+            "AA34", "AE90", "AE91", "AE92", "AE93", "AE94", "AE95", "AE96", "AE97", "AE98",
+            "AK99", "AL35", "AL36", "AP96", "AR71", "AR72", "AS96", "AZ85", "AZ86", "CA90",
+            "CA91", "CA92", "CA93", "CA94", "CA95", "CA96", "CO80", "CO81", "CT60", "CT61",
+            "CT62", "CT63", "CT64", "CT65", "CT66", "CT67", "CT68", "CT69", "DC20", "DC56",
+            "DC88", "DE19", "FL32", "FL33", "FL34", "FM96", "GA30", "GA31", "GA39", "GU96",
+            "HI96", "IA50", "IA51", "IA52", "ID83", "IL60", "IL61", "IL62", "IN46", "IN47",
+            "KS66", "KS67", "KY40", "KY41", "KY42", "LA70", "LA71", "MA10", "MA11", "MA12",
+            "MA13", "MA14", "MA15", "MA16", "MA17", "MA18", "MA19", "MA20", "MA21", "MA22",
+            "MA23", "MA24", "MA25", "MA26", "MA27", "MA55", "MD20", "MD21", "ME39", "ME40",
+            "ME41", "ME42", "ME43", "ME44", "ME45", "ME46", "ME47", "ME48", "ME49", "MH96",
+            "MI48", "MI49", "MN55", "MN56", "MO63", "MO64", "MO65", "MO72", "MP96", "MS38",
+            "MS39", "MT59", "NC27", "NC28", "ND58", "NE68", "NE69", "NH30", "NH31", "NH32",
+            "NH33", "NH34", "NH35", "NH36", "NH37", "NH38", "NJ70", "NJ71", "NJ72", "NJ73",
+            "NJ74", "NJ75", "NJ76", "NJ77", "NJ78", "NJ79", "NJ80", "NJ81", "NJ82", "NJ83",
+            "NJ84", "NJ85", "NJ86", "NJ87", "NJ88", "NJ89", "NM87", "NM88", "NV88", "NV89",
+            "NY50", "NY54", "NY63", "NY10", "NY11", "NY12", "NY13", "NY14", "OH43", "OH44",
+            "OH45", "OK73", "OK74", "OR97", "PA15", "PA16", "PA17", "PA18", "PA19", "PR60",
+            "PR61", "PR62", "PR63", "PR64", "PR65", "PR66", "PR67", "PR68", "PR69", "PR70",
+            "PR71", "PR72", "PR73", "PR74", "PR75", "PR76", "PR77", "PR78", "PR79", "PR90",
+            "PR91", "PR92", "PR93", "PR94", "PR95", "PR96", "PR97", "PR98", "PW96", "RI28",
+            "RI29", "SC29", "SD57", "TN37", "TN38", "TX73", "TX75", "TX76", "TX77", "TX78",
+            "TX79", "TX88", "UT84", "VA20", "VA22", "VA23", "VA24", "VI80", "VI82", "VI83",
+            "VI84", "VI85", "VT50", "VT51", "VT52", "VT53", "VT54", "VT56", "VT57", "VT58",
+            "VT59", "WA98", "WA99", "WI53", "WI54", "WV24", "WV25", "WV26", "WY82", "WY83"
         );
         
-        return validStateZipCombos.containsKey(stateZipCombo);
+        return validStateZipCombos.contains(stateZipCombo);
     }
 
     /**
