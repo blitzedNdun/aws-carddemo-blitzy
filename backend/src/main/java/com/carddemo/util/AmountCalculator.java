@@ -110,6 +110,30 @@ public final class AmountCalculator {
     }
 
     /**
+     * Calculates monthly interest from COBOL COMP-3 packed decimal data.
+     * 
+     * Converts COMP-3 packed decimal balance and interest rate data directly
+     * from COBOL format and applies the monthly interest calculation formula.
+     * Essential for maintaining exact precision when migrating from COBOL.
+     * 
+     * @param balanceComp3 COMP-3 packed decimal balance data
+     * @param rateComp3 COMP-3 packed decimal interest rate data
+     * @return monthly interest amount with exact COBOL precision
+     * @throws IllegalArgumentException if packed data is invalid
+     */
+    public static BigDecimal calculateMonthlyInterestFromComp3(byte[] balanceComp3, byte[] rateComp3) {
+        if (balanceComp3 == null || rateComp3 == null) {
+            throw new IllegalArgumentException("COMP-3 data cannot be null");
+        }
+
+        // Convert COMP-3 data to BigDecimal using CobolDataConverter
+        BigDecimal balance = CobolDataConverter.fromComp3(balanceComp3, MONETARY_SCALE);
+        BigDecimal annualRate = CobolDataConverter.fromComp3(rateComp3, 4); // Interest rates typically have 4 decimal places
+
+        return calculateMonthlyInterest(balance, annualRate);
+    }
+
+    /**
      * Calculates account balance after applying transaction amount.
      * 
      * Implements balance update logic from COBIL00C:
@@ -249,7 +273,9 @@ public final class AmountCalculator {
      * Applies COBOL ROUNDED clause rounding using HALF_UP mode.
      * 
      * Ensures all monetary amounts are rounded to exactly 2 decimal places
-     * using the same rounding behavior as COBOL ROUNDED clause.
+     * using the same rounding behavior as COBOL ROUNDED clause. For amounts
+     * that are already at the correct scale, uses UNNECESSARY rounding mode
+     * to maintain exact precision.
      * 
      * @param amount amount to round
      * @return amount rounded to monetary scale with HALF_UP rounding
@@ -257,6 +283,12 @@ public final class AmountCalculator {
      */
     public static BigDecimal applyRounding(BigDecimal amount) {
         validateAmount(amount, "Amount");
+        
+        // If amount already has the correct scale, use UNNECESSARY to maintain precision
+        if (amount.scale() == MONETARY_SCALE) {
+            return amount.setScale(MONETARY_SCALE, RoundingMode.UNNECESSARY);
+        }
+        
         return CobolDataConverter.preservePrecision(amount, MONETARY_SCALE);
     }
 
@@ -360,16 +392,23 @@ public final class AmountCalculator {
      * Validates monetary amounts for null values and basic constraints.
      * 
      * Performs comprehensive validation of input amounts to ensure
-     * data integrity and prevent calculation errors.
+     * data integrity and prevent calculation errors. Uses CobolDataConverter
+     * for proper type conversion and validation.
      * 
      * @param amount amount to validate
      * @param fieldName name of field for error messages
-     * @throws IllegalArgumentException if amount is null
+     * @throws IllegalArgumentException if amount is null or invalid
      */
     public static void validateAmount(BigDecimal amount, String fieldName) {
         if (amount == null) {
             throw new IllegalArgumentException(fieldName + " cannot be null");
         }
+        
+        // Use CobolDataConverter to ensure proper BigDecimal formatting
+        BigDecimal validatedAmount = CobolDataConverter.toBigDecimal(amount, MONETARY_SCALE);
+        
+        // Additional validation using CobolDataConverter precision preservation
+        CobolDataConverter.preservePrecision(validatedAmount, MONETARY_SCALE);
     }
 
     /**
