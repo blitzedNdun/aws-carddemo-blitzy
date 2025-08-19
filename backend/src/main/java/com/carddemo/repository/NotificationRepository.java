@@ -541,14 +541,14 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
      */
     @Query(value = """
         SELECT 
-            DATE(created_at) as notification_date,
+            CAST(created_at AS DATE) as notification_date,
             notification_type as channel,
             COUNT(*) as daily_volume,
             COUNT(CASE WHEN delivery_status = 'DELIVERED' THEN 1 END) as successful_deliveries,
             COUNT(CASE WHEN delivery_status = 'FAILED' THEN 1 END) as failed_deliveries
         FROM notifications 
         WHERE created_at BETWEEN :startDate AND :endDate 
-        GROUP BY DATE(created_at), notification_type 
+        GROUP BY CAST(created_at AS DATE), notification_type 
         ORDER BY notification_date DESC, notification_type
         """, nativeQuery = true)
     List<Object[]> getVolumeStatistics(@Param("startDate") LocalDateTime startDate, 
