@@ -261,7 +261,7 @@ class UserServiceTest {
             when(userSecurityRepository.save(any(UserSecurity.class))).thenReturn(testUserSecurity);
             when(passwordEncoder.encode("plainPassword123")).thenReturn("$2a$10$encodedPassword");
 
-            try (MockedStatic&lt;ValidationUtil&gt; validationUtil = mockStatic(ValidationUtil.class)) {
+            try (MockedStatic<ValidationUtil> validationUtil = mockStatic(ValidationUtil.class)) {
                 validationUtil.when(() -> ValidationUtil.validateUserData(any(UserDto.class)))
                              .thenReturn(true);
                 validationUtil.when(() -> ValidationUtil.checkDuplicateUser("TEST0001"))
@@ -288,7 +288,7 @@ class UserServiceTest {
             // Given: User already exists
             when(userRepository.existsByUserId("TEST0001")).thenReturn(true);
 
-            try (MockedStatic&lt;ValidationUtil&gt; validationUtil = mockStatic(ValidationUtil.class)) {
+            try (MockedStatic<ValidationUtil> validationUtil = mockStatic(ValidationUtil.class)) {
                 validationUtil.when(() -> ValidationUtil.checkDuplicateUser("TEST0001"))
                              .thenReturn(true);
 
@@ -309,7 +309,7 @@ class UserServiceTest {
             UserDto invalidUser = new UserDto();
             invalidUser.setUserId(""); // Invalid empty user ID
 
-            try (MockedStatic&lt;ValidationUtil&gt; validationUtil = mockStatic(ValidationUtil.class)) {
+            try (MockedStatic<ValidationUtil> validationUtil = mockStatic(ValidationUtil.class)) {
                 ValidationException validationException = new ValidationException("Validation failed");
                 validationException.addFieldError("userId", "User ID cannot be empty");
                 
