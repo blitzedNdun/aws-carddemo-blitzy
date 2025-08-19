@@ -295,6 +295,7 @@ com/carddemo/service/AuthorizationEngine$TransactionLimits.class
 com/carddemo/service/InterestRateService.class
 com/carddemo/config/CacheConfig$1.class
 com/carddemo/service/UserAddService.class
+com/carddemo/util/ReportExporter.class
 com/carddemo/client/EmailClient$DeliveryStatus$Builder.class
 com/carddemo/util/ValidationUtil$FieldValidator.class
 com/carddemo/service/FraudDetectionService$MerchantValidationResult.class
@@ -413,6 +414,7 @@ com/carddemo/controller/SessionController.class
 com/carddemo/config/WebConfig.class
 com/carddemo/repository/ArchiveRepository.class
 com/carddemo/entity/TransactionCategory.class
+com/carddemo/dto/CreditCardDetailResponse.class
 com/carddemo/exception/FileProcessingException.class
 com/carddemo/service/SecurityService$SessionContext.class
 com/carddemo/service/AuthorizationEngine$AuthorizationRequest.class
