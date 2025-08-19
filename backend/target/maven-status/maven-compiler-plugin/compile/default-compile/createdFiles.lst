@@ -266,6 +266,7 @@ com/carddemo/service/CreditBureauService$CreditBureauException.class
 com/carddemo/service/ChargebackProcessor$ReasonCode.class
 com/carddemo/dto/CardDto.class
 com/carddemo/dto/BillPaymentRequest.class
+com/carddemo/controller/FileController.class
 com/carddemo/dto/CreditCardUpdateRequest$CreditCardUpdateRequestBuilder.class
 com/carddemo/dto/CreditCardDto.class
 com/carddemo/dto/BillDto$PaymentAllocation.class
@@ -494,6 +495,7 @@ com/carddemo/dto/SignOnResponseDto.class
 com/carddemo/entity/Card.class
 com/carddemo/batch/ReconciliationJobConfig$ChargebackTransactionRowMapper.class
 com/carddemo/dto/ReportRequestDto.class
+com/carddemo/service/AccountUpdateService.class
 com/carddemo/controller/CustomerController.class
 com/carddemo/service/CustomerMaintenanceService$CustomerRetrievalResult.class
 com/carddemo/entity/Configuration.class
