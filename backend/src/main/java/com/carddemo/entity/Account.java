@@ -364,6 +364,30 @@ public class Account {
     }
     
     /**
+     * Retrieves account group ID from the groupId field.
+     * Provides convenient access to account group identification for processing,
+     * reporting, and batch operations. Used by services and batch jobs for 
+     * group-based account processing and fee assessment.
+     * 
+     * @return account group ID (same as groupId field), null if not set
+     */
+    public String getAccountGroupId() {
+        return this.groupId;
+    }
+    
+    /**
+     * Sets account group ID by updating the groupId field.
+     * Provides convenient access to account group identification for processing,
+     * reporting, and batch operations. Used by services and batch jobs for 
+     * group-based account processing and fee assessment.
+     * 
+     * @param accountGroupId the account group ID to set
+     */
+    public void setAccountGroupId(String accountGroupId) {
+        this.groupId = accountGroupId;
+    }
+    
+    /**
      * Retrieves complete account data as a formatted string.
      * Provides COBOL-compatible account data representation for legacy interfaces
      * and reporting systems that expect fixed-format account records.
