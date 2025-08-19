@@ -5,6 +5,9 @@
 
 package com.carddemo.util;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Application-wide constants for the CardDemo system.
  * Contains field length and validation constants matching COBOL PIC clause specifications.
@@ -155,4 +158,59 @@ public final class Constants {
      * Used by date conversion utilities to ensure consistent CCYYMMDD format length.
      */
     public static final int DATE_FORMAT_LENGTH = 8;
+
+    // Batch Report Constants
+    
+    /**
+     * Default number of lines per page for batch reports.
+     * Matches COBOL batch report layout from CBSTM03A.CBL and CBTRN03C.cbl.
+     */
+    public static final int PAGE_SIZE = 50;
+    
+    /**
+     * Report line width for batch output formatting.
+     * Matches COBOL statement line length from CBSTM03A.CBL.
+     */
+    public static final int REPORT_WIDTH = 132;
+    
+    /**
+     * Field length mappings for batch report formatting.
+     * Maps field names to their corresponding lengths from COBOL copybooks.
+     */
+    public static final Map<String, Integer> FIELD_LENGTHS;
+    
+    /**
+     * Format patterns for various data types in batch reports.
+     * Maps format types to their corresponding pattern strings.
+     */
+    public static final Map<String, String> FORMAT_PATTERNS;
+    
+    static {
+        // Initialize field lengths map
+        FIELD_LENGTHS = new HashMap<>();
+        FIELD_LENGTHS.put("ACCOUNT_ID", 11);
+        FIELD_LENGTHS.put("TRANSACTION_ID", 16);
+        FIELD_LENGTHS.put("CARD_NUMBER", 16);
+        FIELD_LENGTHS.put("CUSTOMER_NAME", 30);
+        FIELD_LENGTHS.put("MERCHANT_NAME", 30);
+        FIELD_LENGTHS.put("AMOUNT", 15);
+        FIELD_LENGTHS.put("DATE", 10);
+        FIELD_LENGTHS.put("TIME", 8);
+        FIELD_LENGTHS.put("DESCRIPTION", 60);
+        FIELD_LENGTHS.put("TYPE_CODE", 2);
+        FIELD_LENGTHS.put("CATEGORY_CODE", 4);
+        FIELD_LENGTHS.put("STATUS", 10);
+        
+        // Initialize format patterns map
+        FORMAT_PATTERNS = new HashMap<>();
+        FORMAT_PATTERNS.put("CURRENCY", "###,##0.00");
+        FORMAT_PATTERNS.put("DATE", "MM/dd/yyyy");
+        FORMAT_PATTERNS.put("TIME", "HH:mm:ss");
+        FORMAT_PATTERNS.put("TIMESTAMP", "MM/dd/yyyy HH:mm:ss");
+        FORMAT_PATTERNS.put("ACCOUNT_NUMBER", "0000-0000-000");
+        FORMAT_PATTERNS.put("CARD_NUMBER", "0000-0000-0000-0000");
+        FORMAT_PATTERNS.put("PERCENTAGE", "##0.00%");
+        FORMAT_PATTERNS.put("INTEGER", "###,##0");
+        FORMAT_PATTERNS.put("DECIMAL", "###,##0.000");
+    }
 }

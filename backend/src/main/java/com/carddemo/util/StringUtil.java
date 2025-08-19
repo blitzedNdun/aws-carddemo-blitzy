@@ -61,6 +61,30 @@ public final class StringUtil {
     }
 
     /**
+     * Pads a string to the right with a specified character to reach the specified length.
+     * Useful for custom field formatting and character-specific padding needs.
+     * 
+     * @param input the string to pad (may be null)
+     * @param length the target length for padding
+     * @param padChar the character to use for padding
+     * @return the right-padded string, truncated if longer than length
+     * @throws IllegalArgumentException if length is negative
+     */
+    public static String padRight(String input, int length, char padChar) {
+        if (length < 0) {
+            throw new IllegalArgumentException("Length cannot be negative: " + length);
+        }
+        
+        String safeInput = defaultString(input);
+        
+        if (safeInput.length() > length) {
+            return safeInput.substring(0, length);
+        }
+        
+        return StringUtils.rightPad(safeInput, length, padChar);
+    }
+
+    /**
      * Pads a string to the left with spaces to reach the specified length.
      * Useful for numeric field formatting and right-justified displays.
      * 
@@ -564,5 +588,63 @@ public final class StringUtil {
             return "";
         }
         return input.trim().toUpperCase();
+    }
+
+    /**
+     * Truncates a string to the specified length or pads it with spaces if shorter.
+     * This method combines truncation and padding operations for fixed-width formatting.
+     * 
+     * @param input the input string to format (may be null)
+     * @param length the target length for the result
+     * @return the formatted string at exactly the specified length
+     * @throws IllegalArgumentException if length is negative
+     */
+    public static String truncateOrPad(String input, int length) {
+        if (length < 0) {
+            throw new IllegalArgumentException("Length cannot be negative: " + length);
+        }
+        
+        if (length == 0) {
+            return "";
+        }
+        
+        String safeInput = defaultString(input);
+        
+        if (safeInput.length() > length) {
+            // Truncate from the right
+            return safeInput.substring(0, length);
+        } else {
+            // Pad with spaces on the right
+            return StringUtils.rightPad(safeInput, length);
+        }
+    }
+
+    /**
+     * Formats a string to a fixed width with proper alignment and padding.
+     * Provides left-aligned formatting with space padding for batch report generation.
+     * 
+     * @param input the input string to format (may be null)
+     * @param width the target width for the formatted string
+     * @return the formatted string at exactly the specified width
+     * @throws IllegalArgumentException if width is negative
+     */
+    public static String formatFixedWidth(String input, int width) {
+        if (width < 0) {
+            throw new IllegalArgumentException("Width cannot be negative: " + width);
+        }
+        
+        if (width == 0) {
+            return "";
+        }
+        
+        String safeInput = defaultString(input);
+        
+        if (safeInput.length() > width) {
+            // Truncate from the right
+            return safeInput.substring(0, width);
+        } else {
+            // Left-align and pad with spaces on the right
+            return StringUtils.rightPad(safeInput, width);
+        }
     }
 }

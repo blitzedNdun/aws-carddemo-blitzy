@@ -658,4 +658,218 @@ public final class FormatUtil {
                 return StringUtils.rightPad(fieldData, fieldWidth, ' ');
         }
     }
+
+    /**
+     * Formats numeric values with proper scale and zero-padding for batch reports.
+     * Provides numeric formatting matching COBOL PIC clause specifications.
+     *
+     * @param value the numeric value to format (BigDecimal, Integer, Long, etc.)
+     * @param totalDigits total number of digits including decimal places
+     * @param decimalPlaces number of decimal places to display
+     * @return formatted numeric string with proper padding and alignment
+     * @throws IllegalArgumentException if parameters are invalid
+     */
+    public static String formatNumeric(Object value, int totalDigits, int decimalPlaces) {
+        if (totalDigits <= 0) {
+            throw new IllegalArgumentException("Total digits must be positive: " + totalDigits);
+        }
+        
+        if (decimalPlaces < 0) {
+            throw new IllegalArgumentException("Decimal places cannot be negative: " + decimalPlaces);
+        }
+        
+        if (decimalPlaces >= totalDigits) {
+            throw new IllegalArgumentException("Decimal places must be less than total digits");
+        }
+        
+        BigDecimal decimalValue;
+        if (value == null) {
+            decimalValue = BigDecimal.ZERO;
+        } else if (value instanceof BigDecimal) {
+            decimalValue = (BigDecimal) value;
+        } else if (value instanceof Number) {
+            decimalValue = new BigDecimal(value.toString());
+        } else {
+            decimalValue = new BigDecimal(value.toString());
+        }
+        
+        // Set scale with HALF_UP rounding to match COBOL behavior
+        decimalValue = decimalValue.setScale(decimalPlaces, RoundingMode.HALF_UP);
+        
+        // Create format pattern with leading zeros
+        StringBuilder pattern = new StringBuilder();
+        int integerDigits = totalDigits - decimalPlaces;
+        pattern.append("0".repeat(integerDigits));
+        if (decimalPlaces > 0) {
+            pattern.append(".");
+            pattern.append("0".repeat(decimalPlaces));
+        }
+        
+        DecimalFormat formatter = new DecimalFormat(pattern.toString());
+        return formatter.format(decimalValue);
+    }
+
+    /**
+     * Formats a value according to a COBOL PIC clause specification.
+     * Provides COBOL PIC clause compatible formatting for batch report generation.
+     *
+     * @param value the value to format
+     * @param picClause the COBOL PIC clause specification (e.g., "PIC 9(5)V99", "PIC X(20)")
+     * @return formatted string matching the PIC clause specification
+     * @throws IllegalArgumentException if PIC clause is invalid
+     */
+    public static String formatWithPicture(Object value, String picClause) {
+        if (picClause == null || picClause.trim().isEmpty()) {
+            throw new IllegalArgumentException("PIC clause cannot be null or empty");
+        }
+        
+        String normalizedPic = picClause.trim().toUpperCase();
+        if (!normalizedPic.startsWith("PIC")) {
+            normalizedPic = "PIC " + normalizedPic;
+        }
+        
+        // Handle numeric PIC clauses (9 patterns)
+        if (normalizedPic.contains("9")) {
+            return formatNumericWithPic(value, normalizedPic);
+        }
+        
+        // Handle alphanumeric PIC clauses (X patterns)
+        if (normalizedPic.contains("X")) {
+            return formatAlphanumericWithPic(value, normalizedPic);
+        }
+        
+        // Default formatting for unrecognized patterns
+        return value != null ? value.toString() : "";
+    }
+
+    /**
+     * Aligns decimal points in numeric values for columnar display.
+     * Provides decimal alignment for financial reports and columnar data display.
+     *
+     * @param value the numeric value to align
+     * @param fieldWidth the total field width for alignment
+     * @param decimalPlaces the number of decimal places to maintain
+     * @return decimal-aligned string suitable for columnar display
+     */
+    public static String alignDecimal(Object value, int fieldWidth, int decimalPlaces) {
+        if (fieldWidth <= 0) {
+            throw new IllegalArgumentException("Field width must be positive: " + fieldWidth);
+        }
+        
+        if (decimalPlaces < 0) {
+            throw new IllegalArgumentException("Decimal places cannot be negative: " + decimalPlaces);
+        }
+        
+        BigDecimal decimalValue;
+        if (value == null) {
+            decimalValue = BigDecimal.ZERO;
+        } else if (value instanceof BigDecimal) {
+            decimalValue = (BigDecimal) value;
+        } else if (value instanceof Number) {
+            decimalValue = new BigDecimal(value.toString());
+        } else {
+            try {
+                decimalValue = new BigDecimal(value.toString());
+            } catch (NumberFormatException e) {
+                // Non-numeric value, return right-aligned string
+                return StringUtils.leftPad(value.toString(), fieldWidth, ' ');
+            }
+        }
+        
+        // Set scale with HALF_UP rounding
+        decimalValue = decimalValue.setScale(decimalPlaces, RoundingMode.HALF_UP);
+        
+        // Format with proper decimal places
+        DecimalFormat formatter = new DecimalFormat();
+        formatter.setMinimumFractionDigits(decimalPlaces);
+        formatter.setMaximumFractionDigits(decimalPlaces);
+        formatter.setGroupingUsed(false);
+        
+        String formattedValue = formatter.format(decimalValue);
+        
+        // Right-align within the field width
+        return StringUtils.leftPad(formattedValue, fieldWidth, ' ');
+    }
+
+    /**
+     * Helper method for formatting numeric values with COBOL PIC 9 patterns.
+     */
+    private static String formatNumericWithPic(Object value, String picClause) {
+        // Parse PIC clause to extract digit counts and decimal places
+        // Simplified implementation for common patterns like PIC 9(5)V99
+        String pattern = picClause.replaceAll("PIC\\s+", "");
+        
+        int totalDigits = 0;
+        int decimalPlaces = 0;
+        
+        // Count 9s before V
+        if (pattern.contains("V")) {
+            String[] parts = pattern.split("V");
+            totalDigits += countDigits(parts[0]);
+            if (parts.length > 1) {
+                decimalPlaces = countDigits(parts[1]);
+                totalDigits += decimalPlaces;
+            }
+        } else {
+            totalDigits = countDigits(pattern);
+        }
+        
+        return formatNumeric(value, totalDigits, decimalPlaces);
+    }
+
+    /**
+     * Helper method for formatting alphanumeric values with COBOL PIC X patterns.
+     */
+    private static String formatAlphanumericWithPic(Object value, String picClause) {
+        // Parse PIC clause to extract character count
+        String pattern = picClause.replaceAll("PIC\\s+", "");
+        int fieldWidth = countCharacters(pattern);
+        
+        String stringValue = value != null ? value.toString() : "";
+        return StringUtils.rightPad(stringValue, fieldWidth, ' ').substring(0, fieldWidth);
+    }
+
+    /**
+     * Helper method to count digits in a PIC pattern.
+     */
+    private static int countDigits(String pattern) {
+        int count = 0;
+        // Count explicit 9s
+        for (char c : pattern.toCharArray()) {
+            if (c == '9') {
+                count++;
+            }
+        }
+        
+        // Handle 9(n) notation
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile("9\\((\\d+)\\)");
+        java.util.regex.Matcher m = p.matcher(pattern);
+        while (m.find()) {
+            count += Integer.parseInt(m.group(1)) - 1; // -1 because we already counted the 9
+        }
+        
+        return count;
+    }
+
+    /**
+     * Helper method to count characters in a PIC X pattern.
+     */
+    private static int countCharacters(String pattern) {
+        int count = 0;
+        // Count explicit Xs
+        for (char c : pattern.toCharArray()) {
+            if (c == 'X') {
+                count++;
+            }
+        }
+        
+        // Handle X(n) notation
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile("X\\((\\d+)\\)");
+        java.util.regex.Matcher m = p.matcher(pattern);
+        while (m.find()) {
+            count += Integer.parseInt(m.group(1)) - 1; // -1 because we already counted the X
+        }
+        
+        return count;
+    }
 }

@@ -395,6 +395,7 @@ com/carddemo/service/CustomerService$ConcurrencyException.class
 com/carddemo/dto/AdminReportResponse$SummaryStatistics.class
 com/carddemo/client/SMSProvider$SMSDeliveryStatus.class
 com/carddemo/config/ExtractJobConfig$3.class
+com/carddemo/batch/BatchDataFormatter.class
 com/carddemo/entity/Archive.class
 com/carddemo/dto/ReportMenuResponse$ReportStatus.class
 com/carddemo/service/CustomerMaintenanceService$CustomerValidationResult.class

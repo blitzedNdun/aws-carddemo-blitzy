@@ -724,4 +724,93 @@ public final class CobolDataConverter {
     public static String formatCurrency(BigDecimal amount) {
         return formatCurrency(amount, java.util.Locale.US);
     }
+
+    /**
+     * Formats a BigDecimal value as a packed decimal string representation.
+     * This method provides String representation of COBOL COMP-3 packed decimal
+     * values for batch report generation and display purposes.
+     *
+     * @param value the BigDecimal value to format
+     * @param scale the number of decimal places to maintain
+     * @return String representation of the packed decimal value
+     * @throws IllegalArgumentException if scale is negative
+     */
+    public static String formatPackedDecimal(BigDecimal value, int scale) {
+        if (value == null) {
+            return "0".repeat(scale > 0 ? scale + 1 : 1);
+        }
+        
+        if (scale < 0) {
+            throw new IllegalArgumentException("Scale cannot be negative: " + scale);
+        }
+        
+        // Set scale with HALF_UP rounding to match COBOL COMP-3 behavior
+        BigDecimal scaledValue = value.setScale(scale, RoundingMode.HALF_UP);
+        
+        // Format with appropriate zero-padding for display
+        StringBuilder pattern = new StringBuilder();
+        if (scale > 0) {
+            pattern.append("0".repeat(Math.max(1, scaledValue.precision() - scale)));
+            pattern.append(".");
+            pattern.append("0".repeat(scale));
+        } else {
+            pattern.append("0".repeat(Math.max(1, scaledValue.precision())));
+        }
+        
+        DecimalFormat formatter = new DecimalFormat(pattern.toString());
+        return formatter.format(scaledValue);
+    }
+
+    /**
+     * Converts a BigDecimal value to COBOL numeric string format.
+     * This method provides COBOL-compatible numeric string representation 
+     * for batch processing and report generation.
+     *
+     * @param value the BigDecimal value to convert
+     * @param totalDigits total number of digits in the COBOL PIC clause
+     * @param decimalPlaces number of decimal places in the COBOL PIC clause
+     * @return COBOL-compatible numeric string with leading zeros
+     * @throws IllegalArgumentException if parameters are invalid
+     */
+    public static String toCobolNumeric(BigDecimal value, int totalDigits, int decimalPlaces) {
+        if (totalDigits <= 0) {
+            throw new IllegalArgumentException("Total digits must be positive: " + totalDigits);
+        }
+        
+        if (decimalPlaces < 0) {
+            throw new IllegalArgumentException("Decimal places cannot be negative: " + decimalPlaces);
+        }
+        
+        if (decimalPlaces >= totalDigits) {
+            throw new IllegalArgumentException("Decimal places must be less than total digits");
+        }
+        
+        if (value == null) {
+            value = BigDecimal.ZERO;
+        }
+        
+        // Set scale with HALF_UP rounding to match COBOL behavior
+        BigDecimal scaledValue = value.setScale(decimalPlaces, RoundingMode.HALF_UP);
+        
+        // Remove decimal point to create integer representation
+        BigDecimal multiplied = scaledValue.multiply(BigDecimal.TEN.pow(decimalPlaces));
+        String numericString = multiplied.toBigInteger().toString();
+        
+        // Handle negative values with leading sign
+        boolean isNegative = numericString.startsWith("-");
+        if (isNegative) {
+            numericString = numericString.substring(1);
+        }
+        
+        // Pad with leading zeros to reach total digits
+        if (numericString.length() < totalDigits) {
+            numericString = "0".repeat(totalDigits - numericString.length()) + numericString;
+        } else if (numericString.length() > totalDigits) {
+            // Truncate if too long (overflow condition)
+            numericString = numericString.substring(numericString.length() - totalDigits);
+        }
+        
+        // Add back negative sign if needed
+        return isNegative ? "-" + numericString : numericString;
+    }
 }

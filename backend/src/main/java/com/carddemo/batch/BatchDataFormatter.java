@@ -8,6 +8,7 @@ import com.carddemo.util.Constants;
 import com.carddemo.exception.ValidationException;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.lang.StringBuilder;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -118,12 +119,12 @@ public class BatchDataFormatter {
         }
         
         // Use CobolDataConverter to maintain COMP-3 precision
-        BigDecimal scaledValue = CobolDataConverter.formatPackedDecimal(value, decimalPlaces);
+        BigDecimal scaledValue = value.setScale(decimalPlaces, RoundingMode.HALF_UP);
         
         // Alternative using fromComp3 for packed decimal conversion if needed
         if (value.scale() != decimalPlaces) {
-            scaledValue = CobolDataConverter.fromComp3(
-                CobolDataConverter.toCobolNumeric(value), decimalPlaces);
+            String cobolNumeric = CobolDataConverter.toCobolNumeric(value, totalWidth, decimalPlaces);
+            scaledValue = CobolDataConverter.fromComp3(cobolNumeric.getBytes(), decimalPlaces);
         }
         
         // Use FormatUtil for additional formatting support
@@ -162,7 +163,7 @@ public class BatchDataFormatter {
         
         // Validate the date format before processing
         String dateString = date.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        if (!DateConversionUtil.validateDateFormat(dateString)) {
+        if (!DateConversionUtil.validateDateFormat(dateString, "yyyyMMdd")) {
             ValidationException ex = new ValidationException("Invalid date for formatting");
             ex.addFieldError("date", "Date validation failed: " + dateString);
             throw ex;
@@ -170,9 +171,9 @@ public class BatchDataFormatter {
         
         switch (formatType.toUpperCase()) {
             case "HEADER":
-                return DateConversionUtil.formatHeaderDate(date);
+                return DateConversionUtil.formatHeaderDate(date.toLocalDate());
             case "REPORT":
-                return DateConversionUtil.formatReportDate(date);
+                return DateConversionUtil.formatReportDate(date.toLocalDate());
             case "TIMESTAMP":
                 return DateConversionUtil.formatTimestamp(date);
             default:

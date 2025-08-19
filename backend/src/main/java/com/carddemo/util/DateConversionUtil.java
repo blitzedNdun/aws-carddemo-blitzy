@@ -6,6 +6,7 @@
 package com.carddemo.util;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.regex.Pattern;
@@ -366,5 +367,96 @@ public final class DateConversionUtil {
      */
     public static boolean isLeapYear(int year) {
         return LocalDate.of(year, 1, 1).isLeapYear();
+    }
+
+    /**
+     * Validates that a date string matches the expected format.
+     * Provides validation for COBOL date format compatibility in batch processing.
+     *
+     * @param dateString the date string to validate
+     * @param expectedFormat the expected date format pattern
+     * @return true if the date string matches the expected format
+     */
+    public static boolean validateDateFormat(String dateString, String expectedFormat) {
+        if (dateString == null || expectedFormat == null) {
+            return false;
+        }
+        
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(expectedFormat);
+            LocalDate.parse(dateString, formatter);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Formats a date for use in batch report headers.
+     * Provides header date formatting matching COBOL batch report layouts.
+     *
+     * @param date the date to format
+     * @return formatted date string suitable for report headers
+     */
+    public static String formatHeaderDate(LocalDate date) {
+        if (date == null) {
+            date = LocalDate.now();
+        }
+        
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy");
+        return formatter.format(date);
+    }
+
+    /**
+     * Formats a date for use in batch reports with COBOL-compatible format.
+     * Provides report date formatting matching COBOL date display patterns.
+     *
+     * @param date the date to format
+     * @return formatted date string for batch reports
+     */
+    public static String formatReportDate(LocalDate date) {
+        if (date == null) {
+            date = LocalDate.now();
+        }
+        
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        return formatter.format(date);
+    }
+
+    /**
+     * Formats a LocalDateTime as a timestamp string for batch processing.
+     * Provides timestamp formatting for batch report generation and logging.
+     *
+     * @param dateTime the LocalDateTime to format
+     * @return formatted timestamp string
+     */
+    public static String formatTimestamp(LocalDateTime dateTime) {
+        if (dateTime == null) {
+            dateTime = LocalDateTime.now();
+        }
+        
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        return formatter.format(dateTime);
+    }
+
+    /**
+     * Formats a LocalDateTime as a timestamp string with custom pattern.
+     * Provides flexible timestamp formatting for various batch processing needs.
+     *
+     * @param dateTime the LocalDateTime to format
+     * @param pattern the custom format pattern
+     * @return formatted timestamp string using the specified pattern
+     */
+    public static String formatTimestamp(LocalDateTime dateTime, String pattern) {
+        if (dateTime == null) {
+            dateTime = LocalDateTime.now();
+        }
+        
+        if (pattern == null || pattern.trim().isEmpty()) {
+            pattern = "yyyy-MM-dd HH:mm:ss";
+        }
+        
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
+        return formatter.format(dateTime);
     }
 }
