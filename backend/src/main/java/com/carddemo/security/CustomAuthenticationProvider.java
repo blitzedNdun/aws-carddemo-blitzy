@@ -97,8 +97,8 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
         try {
             // Extract username and password from authentication object
             // Replicates: USERIDI OF COSGN0AI and PASSWDI OF COSGN0AI (lines 132-135)
-            String username = authentication.getPrincipal().toString();
-            String password = authentication.getCredentials().toString();
+            String username = authentication.getPrincipal() != null ? authentication.getPrincipal().toString() : null;
+            String password = authentication.getCredentials() != null ? authentication.getCredentials().toString() : null;
             
             logger.debug("Authentication request received for username: {}", username);
             
