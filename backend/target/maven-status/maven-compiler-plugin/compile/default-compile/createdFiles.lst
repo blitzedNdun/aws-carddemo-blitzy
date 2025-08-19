@@ -380,6 +380,7 @@ com/carddemo/config/ExtractJobConfig$3.class
 com/carddemo/entity/Archive.class
 com/carddemo/dto/ReportMenuResponse$ReportStatus.class
 com/carddemo/service/CustomerMaintenanceService$CustomerValidationResult.class
+com/carddemo/dto/CardCrossReferenceDto.class
 com/carddemo/service/DateConversionService.class
 com/carddemo/service/FraudDetectionService$FraudDetectionResult.class
 com/carddemo/util/FormatUtil.class
