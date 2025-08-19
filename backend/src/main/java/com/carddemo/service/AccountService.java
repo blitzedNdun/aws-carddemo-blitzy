@@ -106,12 +106,12 @@ public class AccountService {
             logger.debug("Retrieved account data for account ID: {}", accountIdStr);
             
             // Read customer data (replicates READ CUSTDAT from COACTVWC.cbl)
-            // Convert String customerId to Long for CustomerRepository.findById()
-            Long customerIdLong = Long.parseLong(account.getCustomerId());
-            Optional<Customer> customerOpt = customerRepository.findById(customerIdLong);
+            // Customer ID is already Long type from Account entity
+            Long customerId = account.getCustomerId();
+            Optional<Customer> customerOpt = customerRepository.findById(customerId);
             if (customerOpt.isEmpty()) {
-                logger.warn("Customer not found for account {}: {}", accountIdStr, account.getCustomerId());
-                throw new ResourceNotFoundException("Customer", account.getCustomerId());
+                logger.warn("Customer not found for account {}: {}", accountIdStr, customerId);
+                throw new ResourceNotFoundException("Customer", customerId.toString());
             }
             
             Customer customer = customerOpt.get();
@@ -215,7 +215,7 @@ public class AccountService {
         AccountDto dto = new AccountDto();
         
         // Account data mapping
-        dto.setAccountId(account.getAccountId());
+        dto.setAccountId(account.getAccountId() != null ? account.getAccountId().toString() : null);
         dto.setActiveStatus(account.getActiveStatus());
         dto.setCurrentBalance(account.getCurrentBalance());
         dto.setCreditLimit(account.getCreditLimit());
