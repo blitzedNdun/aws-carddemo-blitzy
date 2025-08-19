@@ -14,21 +14,20 @@ import com.carddemo.repository.UserSecurityRepository;
 import com.carddemo.dto.SessionContext;
 import com.carddemo.dto.MenuOption;
 
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.junit.jupiter.api.Assertions;
-import org.mockito.MockBean;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureTestMvc;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.security.test.context.support.WithAnonymousUser;
@@ -79,8 +78,14 @@ import java.time.LocalDateTime;
  * @version 1.0
  * @since 2024
  */
-@SpringBootTest
-@AutoConfigureTestMvc
+@WebMvcTest(controllers = AuthController.class, 
+    excludeAutoConfiguration = {
+        org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class,
+        org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration.class,
+        org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration.class,
+        org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
+        org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration.class
+    })
 @ActiveProfiles("test")
 public class AuthControllerTest {
 
@@ -92,6 +97,12 @@ public class AuthControllerTest {
 
     @MockBean
     private UserSecurityRepository userSecurityRepository;
+    
+    @MockBean
+    private com.carddemo.security.JwtTokenService jwtTokenService;
+    
+    @MockBean
+    private com.carddemo.security.CustomUserDetailsService customUserDetailsService;
 
     @Autowired
     private ObjectMapper objectMapper;
