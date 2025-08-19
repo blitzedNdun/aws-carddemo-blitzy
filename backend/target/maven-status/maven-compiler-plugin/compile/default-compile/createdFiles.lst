@@ -6,8 +6,8 @@ com/carddemo/dto/UserListRequest.class
 com/carddemo/exception/GlobalExceptionHandler$MockHttpServletRequest.class
 com/carddemo/dto/MenuDto$MenuType.class
 com/carddemo/dto/BillInquiryRequest.class
-com/carddemo/batch/ReconciliationJobConfig$ProcessedChargeback.class
 com/carddemo/controller/AccountController.class
+com/carddemo/batch/ReconciliationJobConfig$ProcessedChargeback.class
 com/carddemo/service/MainMenuService.class
 com/carddemo/service/AdminConfigService.class
 com/carddemo/client/EmailClient$BounceEvent$Builder.class
@@ -221,6 +221,7 @@ com/carddemo/entity/UserActivity.class
 com/carddemo/config/ExtractJobConfig$TransactionExtractDto.class
 com/carddemo/dto/MenuOption.class
 com/carddemo/service/StorageService$CompressionType.class
+com/carddemo/service/UserService.class
 com/carddemo/service/PaymentService$BankSystemException.class
 com/carddemo/dto/CreditCardUpdateResponse.class
 com/carddemo/service/NotificationService.class
@@ -242,6 +243,7 @@ com/carddemo/batch/StatementGenerationJobConfigA$1.class
 com/carddemo/service/CustomerMaintenanceService$DuplicateCustomerMatch.class
 com/carddemo/client/DataQualityService$PhoneValidationResult.class
 com/carddemo/exception/BusinessRuleException.class
+com/carddemo/dto/AccountViewResponse.class
 com/carddemo/security/MethodSecurityConfig.class
 com/carddemo/service/PaymentService$PaymentAuthorizationException.class
 com/carddemo/batch/CustomerMaintenanceJobConfig$Customer.class
@@ -264,8 +266,8 @@ com/carddemo/dto/CardDeletionResponse.class
 com/carddemo/exception/GlobalExceptionHandler.class
 com/carddemo/client/SMSProvider.class
 com/carddemo/batch/ReconciliationJobConfig$UnmatchedTransaction.class
-com/carddemo/batch/StatementGenerationJobConfigA$ProcessedStatement.class
 com/carddemo/repository/FeeScheduleRepository.class
+com/carddemo/batch/StatementGenerationJobConfigA$ProcessedStatement.class
 com/carddemo/dto/AdminReportResponse.class
 com/carddemo/service/PaymentService$PaymentNetworkTimeoutException.class
 com/carddemo/batch/BalanceReconciliationJobConfig.class
