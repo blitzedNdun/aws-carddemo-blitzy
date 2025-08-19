@@ -310,8 +310,8 @@ public class CreditCardDto {
         }
         
         // Validate account ID
-        ValidationUtil.validateFieldLength("accountId", this.accountId, Constants.ACCOUNT_ID_LENGTH);
-        ValidationUtil.validateRequiredField("accountId", this.accountId);
+        ValidationUtil.FieldValidator validator = new ValidationUtil.FieldValidator();
+        validator.validateAccountId(this.accountId);
         
         // Validate card status
         if (this.cardStatus != null && !this.cardStatus.trim().isEmpty()) {

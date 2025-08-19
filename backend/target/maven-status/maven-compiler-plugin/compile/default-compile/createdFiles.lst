@@ -246,6 +246,7 @@ com/carddemo/service/CreditBureauService$CreditBureauException.class
 com/carddemo/dto/BillPaymentRequest.class
 com/carddemo/dto/CardDto.class
 com/carddemo/dto/CreditCardUpdateRequest$CreditCardUpdateRequestBuilder.class
+com/carddemo/dto/CreditCardDto.class
 com/carddemo/batch/ReconciliationJobConfig$2.class
 com/carddemo/security/SessionConfig$SessionEventListener.class
 com/carddemo/batch/ReconciliationJobConfig.class
