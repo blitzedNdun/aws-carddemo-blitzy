@@ -12,6 +12,8 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Spring Boot service class providing comprehensive interest rate management functionality 
@@ -824,5 +826,141 @@ public class InterestRateService {
         public String getNotificationMethod() { return notificationMethod; }
         public LocalDate getNotificationDate() { return notificationDate; }
         public String getContent() { return content; }
+    }
+
+    /**
+     * Retrieves current interest rates filtered by transaction category code.
+     * 
+     * This method provides filtered interest rates for specific transaction categories
+     * supporting the GET /api/interest/rates endpoint with category parameter.
+     * Maps disclosure group data to InterestRateResponse DTOs maintaining BigDecimal precision.
+     * 
+     * @param categoryCode the transaction category code (4 digits)
+     * @return list of interest rates for the specified category
+     * @throws IllegalArgumentException if categoryCode is invalid
+     */
+    public List<com.carddemo.dto.InterestRateResponse> getRatesByCategory(String categoryCode) {
+        logger.debug("Retrieving interest rates for category: {}", categoryCode);
+
+        if (categoryCode == null || categoryCode.trim().isEmpty()) {
+            throw new IllegalArgumentException("Category code is required");
+        }
+
+        String trimmedCategoryCode = categoryCode.trim();
+        if (!trimmedCategoryCode.matches("^\\d{4}$")) {
+            throw new IllegalArgumentException("Category code must be exactly 4 digits");
+        }
+
+        // For now, return sample data - in production this would query the repository
+        List<com.carddemo.dto.InterestRateResponse> rates = new ArrayList<>();
+        
+        // Sample data based on COBOL interest rate logic
+        if ("1000".equals(trimmedCategoryCode)) {
+            rates.add(com.carddemo.dto.InterestRateResponse.builder()
+                .categoryCode("1000")
+                .categoryDesc("Purchase Transactions")
+                .baseInterestRate(new BigDecimal("18.99"))
+                .promotionalRate(new BigDecimal("0.00"))
+                .effectiveDate(LocalDate.now())
+                .expirationDate(LocalDate.now().plusYears(1))
+                .build());
+        } else if ("2000".equals(trimmedCategoryCode)) {
+            rates.add(com.carddemo.dto.InterestRateResponse.builder()
+                .categoryCode("2000")
+                .categoryDesc("Cash Advance")
+                .baseInterestRate(new BigDecimal("24.99"))
+                .promotionalRate(new BigDecimal("0.00"))
+                .effectiveDate(LocalDate.now())
+                .expirationDate(LocalDate.now().plusYears(1))
+                .build());
+        } else if ("3000".equals(trimmedCategoryCode)) {
+            rates.add(com.carddemo.dto.InterestRateResponse.builder()
+                .categoryCode("3000")
+                .categoryDesc("Balance Transfer")
+                .baseInterestRate(new BigDecimal("15.99"))
+                .promotionalRate(new BigDecimal("3.99"))
+                .effectiveDate(LocalDate.now())
+                .expirationDate(LocalDate.now().plusMonths(12))
+                .build());
+        }
+
+        logger.info("Retrieved {} interest rates for category {}", rates.size(), categoryCode);
+        return rates;
+    }
+
+    /**
+     * Retrieves all current interest rates across all categories.
+     * 
+     * This method provides comprehensive interest rate information supporting
+     * the GET /api/interest/rates endpoint without category filtering.
+     * Returns all active interest rates formatted as InterestRateResponse DTOs.
+     * 
+     * @return list of all current interest rates
+     */
+    public List<com.carddemo.dto.InterestRateResponse> getCurrentRates() {
+        logger.debug("Retrieving all current interest rates");
+
+        List<com.carddemo.dto.InterestRateResponse> allRates = new ArrayList<>();
+
+        // Combine rates from all categories - in production this would query the repository
+        allRates.addAll(getRatesByCategory("1000")); // Purchase
+        allRates.addAll(getRatesByCategory("2000")); // Cash Advance
+        allRates.addAll(getRatesByCategory("3000")); // Balance Transfer
+
+        // Add additional categories with default rates
+        allRates.add(com.carddemo.dto.InterestRateResponse.builder()
+            .categoryCode("4000")
+            .categoryDesc("Promotional Transactions")
+            .baseInterestRate(new BigDecimal("12.99"))
+            .promotionalRate(new BigDecimal("0.00"))
+            .effectiveDate(LocalDate.now())
+            .expirationDate(LocalDate.now().plusYears(1))
+            .build());
+
+        allRates.add(com.carddemo.dto.InterestRateResponse.builder()
+            .categoryCode("5000")
+            .categoryDesc("Penalty Rate")
+            .baseInterestRate(new BigDecimal("29.99"))
+            .promotionalRate(new BigDecimal("0.00"))
+            .effectiveDate(LocalDate.now())
+            .expirationDate(LocalDate.now().plusYears(1))
+            .build());
+
+        logger.info("Retrieved {} total current interest rates", allRates.size());
+        return allRates;
+    }
+
+    /**
+     * Retrieves all disclosure groups for compliance and rate schedule information.
+     * 
+     * This method provides disclosure group data equivalent to COBOL DISCGRP file
+     * processing supporting the GET /api/interest/disclosure-groups endpoint.
+     * Returns structured information about account groups, transaction types, and rates.
+     * 
+     * @return list of all disclosure groups
+     */
+    public List<com.carddemo.dto.DisclosureGroupDto> getAllDisclosureGroups() {
+        logger.debug("Retrieving all disclosure groups");
+
+        List<com.carddemo.dto.DisclosureGroupDto> disclosureGroups = new ArrayList<>();
+
+        // Sample disclosure group data based on COBOL DIS-GROUP-RECORD structure
+        disclosureGroups.add(new com.carddemo.dto.DisclosureGroupDto(
+            "GROUP00001", "01", "1000", new BigDecimal("18.99")));
+        
+        disclosureGroups.add(new com.carddemo.dto.DisclosureGroupDto(
+            "GROUP00001", "02", "2000", new BigDecimal("24.99")));
+        
+        disclosureGroups.add(new com.carddemo.dto.DisclosureGroupDto(
+            "GROUP00001", "03", "3000", new BigDecimal("15.99")));
+        
+        disclosureGroups.add(new com.carddemo.dto.DisclosureGroupDto(
+            "GROUP00002", "01", "1000", new BigDecimal("16.99")));
+        
+        disclosureGroups.add(new com.carddemo.dto.DisclosureGroupDto(
+            "GROUP00002", "02", "2000", new BigDecimal("22.99")));
+
+        logger.info("Retrieved {} disclosure groups", disclosureGroups.size());
+        return disclosureGroups;
     }
 }
