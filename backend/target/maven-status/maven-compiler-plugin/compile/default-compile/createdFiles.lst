@@ -323,6 +323,7 @@ com/carddemo/client/EmailClient$BulkEmailResult.class
 com/carddemo/entity/DailyTransaction.class
 com/carddemo/dto/ConfigUpdateResponse.class
 com/carddemo/repository/AccountArchiveRepository.class
+com/carddemo/controller/UserController.class
 com/carddemo/batch/StatementGenerationJobConfigA.class
 com/carddemo/service/ChargebackProcessor$ChargebackReport.class
 com/carddemo/service/AuthorizationEngine$CardStatusInfo.class
