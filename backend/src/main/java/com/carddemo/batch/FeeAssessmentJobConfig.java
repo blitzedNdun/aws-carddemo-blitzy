@@ -272,7 +272,7 @@ public class FeeAssessmentJobConfig {
             try {
                 // Initialize fee assessment result
                 FeeAssessmentResult result = new FeeAssessmentResult();
-                result.setAccountId(account.getAccountId());
+                result.setAccountId(account.getAccountId() != null ? account.getAccountId().toString() : null);
                 result.setCardNum("N/A"); // Card number not directly available from Account entity
                 result.setProcessingTimestamp(LocalDateTime.now());
                 
