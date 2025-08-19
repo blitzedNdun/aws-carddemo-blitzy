@@ -133,9 +133,9 @@ public class TransactionCategoryBalance implements Serializable {
      */
     @PrePersist
     public void validateBeforeInsert() {
-        performBalanceValidation();
         initializeDefaults();
         formatFields();
+        performBalanceValidation();
     }
     
     /**
@@ -145,8 +145,8 @@ public class TransactionCategoryBalance implements Serializable {
      */
     @PreUpdate
     public void validateBeforeUpdate() {
-        performBalanceValidation();
         formatFields();
+        performBalanceValidation();
     }
     
     /**
