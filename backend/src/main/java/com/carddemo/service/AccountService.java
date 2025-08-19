@@ -106,7 +106,9 @@ public class AccountService {
             logger.debug("Retrieved account data for account ID: {}", accountIdStr);
             
             // Read customer data (replicates READ CUSTDAT from COACTVWC.cbl)
-            Optional<Customer> customerOpt = customerRepository.findById(account.getCustomerId());
+            // Convert String customerId to Long for CustomerRepository.findById()
+            Long customerIdLong = Long.parseLong(account.getCustomerId());
+            Optional<Customer> customerOpt = customerRepository.findById(customerIdLong);
             if (customerOpt.isEmpty()) {
                 logger.warn("Customer not found for account {}: {}", accountIdStr, account.getCustomerId());
                 throw new ResourceNotFoundException("Customer", account.getCustomerId());
