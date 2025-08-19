@@ -61,11 +61,13 @@ public class DailyTransactionController {
             LocalDate currentDate = LocalDate.now();
             logger.debug("Processing daily transaction summary for date: {}", currentDate);
             
-            List<DailyTransactionDto> transactions = dailyTransactionService.getDailyTransactionSummary();
+            // Get summary from service and convert to DTO list for consistency
+            DailyTransactionService.DailyTransactionSummary summary = dailyTransactionService.getDailyTransactionSummary();
+            List<DailyTransactionDto> transactions = convertSummaryToDto(summary);
             
             if (transactions.isEmpty()) {
                 logger.warn("No transactions found for current date: {}", currentDate);
-                throw new ResourceNotFoundException("No transactions found for current date: " + currentDate);
+                throw new ResourceNotFoundException("Transactions", "current date: " + currentDate);
             }
             
             logger.info("Successfully retrieved {} transactions for current date", transactions.size());
@@ -106,16 +108,18 @@ public class DailyTransactionController {
         
         try {
             // Validate date format (equivalent to COBOL date validation)
-            ValidationUtil.validateDateFormat(dateStr);
+            ValidationUtil.validateRequiredField("date", dateStr);
             LocalDate date = LocalDate.parse(dateStr, DateTimeFormatter.ISO_LOCAL_DATE);
             
             logger.debug("Processing daily transactions for date: {}", date);
             
-            List<DailyTransactionDto> transactions = dailyTransactionService.getDailyTransactionsByDate(date);
+            // Get transactions from service and convert to DTOs
+            List<DailyTransactionService.DailyTransactionDetail> serviceDetails = dailyTransactionService.getDailyTransactionsByDate(date);
+            List<DailyTransactionDto> transactions = convertToDto(serviceDetails);
             
             if (transactions.isEmpty()) {
                 logger.warn("No transactions found for date: {}", date);
-                throw new ResourceNotFoundException("No transactions found for date: " + date);
+                throw new ResourceNotFoundException("Transactions", "date: " + date);
             }
             
             logger.info("Successfully retrieved {} transactions for date: {}", transactions.size(), date);
@@ -156,7 +160,9 @@ public class DailyTransactionController {
             LocalDate currentDate = LocalDate.now();
             logger.debug("Starting end-of-day processing for date: {}", currentDate);
             
-            String result = dailyTransactionService.processDailyTransactions();
+            // Get processing result and convert to string message
+            DailyTransactionService.ProcessingResult processingResult = dailyTransactionService.processDailyTransactions();
+            String result = processingResult.getMessage() + " - Processed " + processingResult.getRecordsProcessed() + " records";
             
             logger.info("Successfully completed end-of-day processing: {}", result);
             
@@ -188,26 +194,28 @@ public class DailyTransactionController {
         
         try {
             // Validate required fields
-            ValidationUtil.validateRequiredField(startDateStr, "startDate");
-            ValidationUtil.validateRequiredField(endDateStr, "endDate");
-            
-            // Validate date formats
-            ValidationUtil.validateDateFormat(startDateStr);
-            ValidationUtil.validateDateFormat(endDateStr);
+            ValidationUtil.validateRequiredField("startDate", startDateStr);
+            ValidationUtil.validateRequiredField("endDate", endDateStr);
             
             LocalDate startDate = LocalDate.parse(startDateStr, DateTimeFormatter.ISO_LOCAL_DATE);
             LocalDate endDate = LocalDate.parse(endDateStr, DateTimeFormatter.ISO_LOCAL_DATE);
             
+            // Convert to CCYYMMDD format for COBOL-style validation
+            String startDateCOBOL = startDate.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+            String endDateCOBOL = endDate.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+            
             // Validate date range (equivalent to COBOL date range validation)
-            ValidationUtil.validateDateRange(startDate, endDate);
+            ValidationUtil.validateDateRange(startDateCOBOL, endDateCOBOL);
             
             logger.debug("Processing daily transactions for date range: {} to {}", startDate, endDate);
             
-            List<DailyTransactionDto> transactions = dailyTransactionService.getDailyTransactionsByDateRange(startDate, endDate);
+            // Get transactions from service and convert to DTOs
+            List<DailyTransactionService.DailyTransactionDetail> serviceDetails = dailyTransactionService.getDailyTransactionsByDateRange(startDate, endDate);
+            List<DailyTransactionDto> transactions = convertToDto(serviceDetails);
             
             if (transactions.isEmpty()) {
                 logger.warn("No transactions found for date range: {} to {}", startDate, endDate);
-                throw new ResourceNotFoundException("No transactions found for date range: " + startDate + " to " + endDate);
+                throw new ResourceNotFoundException("Transactions", "date range: " + startDate + " to " + endDate);
             }
             
             logger.info("Successfully retrieved {} transactions for date range: {} to {}", 
@@ -321,5 +329,65 @@ public class DailyTransactionController {
         } catch (DateTimeParseException e) {
             return false;
         }
+    }
+
+    /**
+     * Convert DailyTransactionDetail list to DailyTransactionDto list.
+     * Maps between service layer objects and controller DTO objects.
+     * 
+     * @param serviceDetails List of DailyTransactionDetail from service
+     * @return List of DailyTransactionDto for API response
+     */
+    private List<DailyTransactionDto> convertToDto(List<DailyTransactionService.DailyTransactionDetail> serviceDetails) {
+        return serviceDetails.stream()
+            .map(this::convertDetailToDto)
+            .collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
+     * Convert single DailyTransactionDetail to DailyTransactionDto.
+     * 
+     * @param detail DailyTransactionDetail from service
+     * @return DailyTransactionDto for API response
+     */
+    private DailyTransactionDto convertDetailToDto(DailyTransactionService.DailyTransactionDetail detail) {
+        return DailyTransactionDto.builder()
+            .transactionId(detail.getTransactionId())
+            .accountId(detail.getAccountId())
+            .cardNumber(detail.getCardNumber())
+            .typeCode(detail.getTransactionTypeCode())
+            .categoryCode(detail.getCategoryCode())
+            .amount(detail.getAmount())
+            .procTimestamp(detail.getProcessTimestamp() != null ? 
+                detail.getProcessTimestamp().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : null)
+            .source(detail.getSource())
+            .merchantId(detail.getMerchantId())
+            .merchantName(detail.getMerchantName())
+            .description(detail.getDescription())
+            .build();
+    }
+
+    /**
+     * Convert DailyTransactionSummary to List of DailyTransactionDto.
+     * Creates a single-item list from summary data for consistent API response.
+     * 
+     * @param summary DailyTransactionSummary from service
+     * @return List containing single DailyTransactionDto representing summary
+     */
+    private List<DailyTransactionDto> convertSummaryToDto(DailyTransactionService.DailyTransactionSummary summary) {
+        // Create a single DTO representing the summary
+        DailyTransactionDto summaryDto = DailyTransactionDto.builder()
+            .transactionId("SUMMARY-" + summary.getReportDate())
+            .accountId(summary.getAccountId())
+            .cardNumber(summary.getCardNumber())
+            .typeCode("SUM")
+            .categoryCode("SUMM")
+            .amount(summary.getTotalAmount())
+            .procTimestamp(summary.getReportDate() != null ? 
+                summary.getReportDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + " 00:00:00" : null)
+            .description("Daily summary - " + summary.getTransactionCount() + " transactions")
+            .build();
+        
+        return java.util.List.of(summaryDto);
     }
 }
