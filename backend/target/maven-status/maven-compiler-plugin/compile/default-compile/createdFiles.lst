@@ -483,6 +483,7 @@ com/carddemo/batch/ArchiveJobConfig$AccountArchiveRecord.class
 com/carddemo/service/InterestRateService$RateHistoryEntry.class
 com/carddemo/dto/ResponseStatus.class
 com/carddemo/dto/ApiRequest.class
+com/carddemo/service/HealthService.class
 com/carddemo/exception/ErrorResponse$Builder.class
 com/carddemo/service/FileGenerationService$DataType.class
 com/carddemo/config/ApplicationConfig$ConfigurationValidator.class

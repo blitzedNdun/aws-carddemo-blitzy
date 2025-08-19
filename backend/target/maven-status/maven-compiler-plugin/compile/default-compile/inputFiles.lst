@@ -224,6 +224,7 @@
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/service/FileGenerationService.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/service/FileService.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/service/FraudDetectionService.java
+/tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/service/HealthService.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/service/InterestCalculationService.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/service/InterestRateService.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/service/MainMenuService.java

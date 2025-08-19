@@ -6,31 +6,51 @@
 package com.carddemo.repository;
 
 import com.carddemo.entity.Card;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
-import java.util.Optional;
+import java.util.List;
 
 /**
- * Spring Data JPA repository for Card entity operations.
+ * Spring Data JPA repository interface for Card entity providing data access operations 
+ * for card_data table. Replaces VSAM CARDDAT file access and CARDAIX alternate index 
+ * with JPA operations.
  * 
- * Provides database access methods for credit card management operations,
- * supporting the functionality migrated from COBOL programs COCRDLIC, 
- * COCRDSLC, and COCRDUPC.
+ * This repository interface provides comprehensive card data access functionality that 
+ * replicates the behavior of the original VSAM CARDDAT dataset and CARDAIX alternate index.
+ * The implementation supports all card management operations required by the credit card 
+ * processing system while leveraging Spring Data JPA's advanced query capabilities.
  * 
- * Query Methods:
- * - Card listing with pagination and filtering
- * - Card details retrieval by card number
- * - Account-based card filtering
- * - Card existence and validation checks
+ * VSAM Migration Details:
+ * - CARDDAT Dataset → card_data PostgreSQL table
+ * - CARDAIX Alternate Index → findByAccountId and findByCustomerId methods
+ * - VSAM STARTBR/READNEXT → Pageable-based pagination
+ * - VSAM READ/WRITE/REWRITE/DELETE → Standard JPA CRUD operations
  * 
- * This repository replaces VSAM KSDS access patterns with modern
- * Spring Data JPA query methods while maintaining identical
- * business logic and data access patterns.
+ * Key Features:
+ * - Primary key access via card number (replacing VSAM primary key access)
+ * - Account-based card lookups (replacing CARDAIX alternate index)
+ * - Customer-based card lookups for comprehensive relationship queries
+ * - Status-based filtering for active/inactive card management
+ * - Existence checks for card number validation
+ * - Counting operations for business reporting
+ * - Pagination support for large result sets
+ * 
+ * Security Considerations:
+ * - All card data access is secured through Spring Security
+ * - CVV codes are excluded from query results via Card entity @JsonIgnore
+ * - Card numbers are masked in display operations through Card.getMaskedCardNumber()
+ * 
+ * Performance Optimizations:
+ * - Database indexes on account_id and customer_id for efficient lookups
+ * - Lazy loading relationships to prevent unnecessary data fetching
+ * - Pageable support for large result sets to prevent memory issues
+ * 
+ * This implementation preserves all business logic from original COBOL programs:
+ * - COCRDLIC.cbl (card list/inquiry operations)
+ * - COCRDSLC.cbl (card selection operations)  
+ * - COCRDUPC.cbl (card update operations)
+ * - COACTVWC.cbl (account view with card details)
  * 
  * @author CardDemo Migration Team
  * @version 1.0
@@ -40,104 +60,119 @@ import java.util.Optional;
 public interface CardRepository extends JpaRepository<Card, String> {
 
     /**
-     * Find card by card number.
-     * Primary lookup method matching COBOL READ operations.
+     * Finds all cards associated with a specific account ID.
      * 
-     * @param cardNumber 16-digit card number
-     * @return Optional Card entity
+     * This method replaces the CARDAIX alternate index access pattern from the
+     * original VSAM implementation. The CARDAIX provided secondary access to
+     * card records based on account ID, enabling efficient lookup of all cards
+     * belonging to a specific account.
+     * 
+     * Database Query: SELECT * FROM card_data WHERE account_id = ?
+     * VSAM Equivalent: STARTBR on CARDAIX with account ID as key
+     * 
+     * @param accountId the account ID to search for
+     * @return List of Card entities associated with the account
      */
-    Optional<Card> findByCardNumber(String cardNumber);
+    List<Card> findByAccountId(Long accountId);
 
     /**
-     * Find cards by account ID with pagination.
-     * Supports card listing operations for specific accounts.
+     * Finds all cards with a specific active status.
      * 
-     * @param accountId 11-digit account identifier
-     * @param pageable Pagination parameters
-     * @return Page of Card entities
+     * This method supports card validation queries by status, enabling the system
+     * to efficiently identify active or inactive cards for business operations
+     * such as card activation/deactivation processing and reporting.
+     * 
+     * Database Query: SELECT * FROM card_data WHERE active_status = ?
+     * 
+     * @param activeStatus the active status ('Y' for active, 'N' for inactive)
+     * @return List of Card entities with the specified status
      */
-    Page<Card> findByAccountId(Long accountId, Pageable pageable);
+    List<Card> findByActiveStatus(String activeStatus);
 
     /**
-     * Find cards by card number pattern with pagination.
-     * Supports partial card number searches for listing operations.
+     * Finds a card by its card number (primary key lookup).
      * 
-     * @param cardNumber Partial card number for filtering
-     * @param pageable Pagination parameters
-     * @return Page of Card entities
+     * This method provides explicit card number lookup functionality, though
+     * the same result can be achieved using findById(). This method exists
+     * for clarity in business logic where card number is the search criteria.
+     * 
+     * Database Query: SELECT * FROM card_data WHERE card_number = ?
+     * VSAM Equivalent: Direct READ on CARDDAT using primary key
+     * 
+     * @param cardNumber the 16-digit card number
+     * @return Card entity if found, null otherwise
      */
-    Page<Card> findByCardNumberContaining(String cardNumber, Pageable pageable);
+    Card findByCardNumber(String cardNumber);
 
     /**
-     * Find cards by account ID and card number pattern.
-     * Combined filtering for both account and card number.
+     * Finds all cards associated with a specific customer ID.
      * 
-     * @param accountId Account identifier filter
-     * @param cardNumber Card number pattern filter
-     * @param pageable Pagination parameters
-     * @return Page of Card entities
+     * This method enables customer-centric card lookups, supporting business
+     * operations that require accessing all cards belonging to a specific
+     * customer across multiple accounts.
+     * 
+     * Database Query: SELECT * FROM card_data WHERE customer_id = ?
+     * 
+     * @param customerId the customer ID to search for
+     * @return List of Card entities associated with the customer
      */
-    Page<Card> findByAccountIdAndCardNumberContaining(
-            Long accountId, String cardNumber, Pageable pageable);
+    List<Card> findByCustomerId(Long customerId);
 
     /**
-     * Check if card exists for given account.
-     * Validation method for account-card relationship.
+     * Finds all cards for a specific account with a specific active status.
      * 
-     * @param cardNumber 16-digit card number
-     * @param accountId 11-digit account identifier
-     * @return true if card exists for account, false otherwise
+     * This compound query supports business operations that need to filter
+     * cards by both account association and active status, such as displaying
+     * only active cards for an account or identifying inactive cards for
+     * cleanup operations.
+     * 
+     * Database Query: SELECT * FROM card_data WHERE account_id = ? AND active_status = ?
+     * 
+     * @param accountId the account ID to search for
+     * @param activeStatus the active status ('Y' for active, 'N' for inactive)
+     * @return List of Card entities matching both criteria
      */
-    boolean existsByCardNumberAndAccountId(String cardNumber, Long accountId);
+    List<Card> findByAccountIdAndActiveStatus(Long accountId, String activeStatus);
 
     /**
-     * Count total cards for account.
-     * Used for pagination metadata calculation.
+     * Checks if a card exists with the specified card number.
      * 
-     * @param accountId Account identifier
-     * @return Total number of cards for account
+     * This method provides efficient existence checking without retrieving
+     * the full Card entity, supporting card number validation operations
+     * during card creation and validation processes.
+     * 
+     * Database Query: SELECT COUNT(*) > 0 FROM card_data WHERE card_number = ?
+     * 
+     * @param cardNumber the 16-digit card number to check
+     * @return true if card exists, false otherwise
+     */
+    boolean existsByCardNumber(String cardNumber);
+
+    /**
+     * Counts the number of cards associated with a specific account.
+     * 
+     * This method supports business reporting and validation operations
+     * that need to determine how many cards are associated with an account
+     * without retrieving the actual card data.
+     * 
+     * Database Query: SELECT COUNT(*) FROM card_data WHERE account_id = ?
+     * 
+     * @param accountId the account ID to count cards for
+     * @return number of cards associated with the account
      */
     long countByAccountId(Long accountId);
 
     /**
-     * Find active cards by account ID.
-     * Filters cards by active status (Y/N).
+     * Counts the number of cards with a specific active status.
      * 
-     * @param accountId Account identifier
-     * @param activeStatus Active status filter (Y/N)
-     * @param pageable Pagination parameters
-     * @return Page of active Card entities
-     */
-    Page<Card> findByAccountIdAndActiveStatus(
-            Long accountId, String activeStatus, Pageable pageable);
-
-    /**
-     * Custom query to find cards with complex filtering.
-     * Supports multiple optional filters for card listing.
+     * This method supports business reporting operations that need statistics
+     * on active vs inactive cards in the system for monitoring and
+     * administrative purposes.
      * 
-     * @param accountId Optional account ID filter
-     * @param cardNumber Optional card number filter
-     * @param activeStatus Optional active status filter
-     * @param pageable Pagination parameters
-     * @return Page of filtered Card entities
-     */
-    @Query("SELECT c FROM Card c WHERE " +
-           "(:accountId IS NULL OR c.accountId = :accountId) AND " +
-           "(:cardNumber IS NULL OR c.cardNumber LIKE CONCAT('%', :cardNumber, '%')) AND " +
-           "(:activeStatus IS NULL OR c.activeStatus = :activeStatus)")
-    Page<Card> findCardsWithFilters(
-            @Param("accountId") Long accountId,
-            @Param("cardNumber") String cardNumber,
-            @Param("activeStatus") String activeStatus,
-            Pageable pageable);
-
-    /**
-     * Find cards ordered by card number for consistent pagination.
-     * Ensures stable pagination order matching COBOL key sequence.
+     * Database Query: SELECT COUNT(*) FROM card_data WHERE active_status = ?
      * 
-     * @param pageable Pagination parameters
-     * @return Page of Card entities ordered by card number
+     * @param activeStatus the active status ('Y' for active, 'N' for inactive)
+     * @return number of cards with the specified status
      */
-    @Query("SELECT c FROM Card c ORDER BY c.cardNumber")
-    Page<Card> findAllOrderedByCardNumber(Pageable pageable);
+    long countByActiveStatus(String activeStatus);
 }
