@@ -227,7 +227,7 @@ public class AccountService {
         dto.setAccountGroupId(account.getAccountGroupId());
         
         // Customer data mapping
-        dto.setCustomerId(customer.getCustomerId());
+        dto.setCustomerId(customer.getCustomerId() != null ? customer.getCustomerId().toString() : null);
         dto.setCustomerFirstName(customer.getFirstName());
         dto.setCustomerMiddleName(customer.getMiddleName());
         dto.setCustomerLastName(customer.getLastName());
