@@ -128,23 +128,34 @@ public class AuthController {
             String password = signOnRequest.getPassword();
             
             // Authenticate user - replaces READ USRSEC-FILE logic
-            UserSecurity authenticatedUser = signOnService.authenticateUser(userId, password);
+            SignOnResponse authResult = signOnService.validateCredentials(userId, password);
+            
+            // Check if authentication was successful
+            if (!"SUCCESS".equals(authResult.getStatus())) {
+                // Authentication failed - return the error response from service
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(authResult);
+            }
+            
+            // Get user details from service for successful authentication
+            UserSecurity authenticatedUser = signOnService.getUserDetails(userId);
             
             if (authenticatedUser != null) {
                 // Successful authentication - replaces COBOL authentication success logic
                 logger.info("Authentication successful for user: {}", userId);
                 
                 // Create session context - replaces EXEC CICS LINK to session setup
-                String sessionToken = signOnService.createSession(authenticatedUser, request);
+                String sessionToken = signOnService.initializeSession(authenticatedUser);
                 
                 // Get menu options based on user type - replaces COBOL user type checking
-                List<MenuOption> menuOptions = signOnService.getMenuOptions(authenticatedUser.getUserType());
+                List<MenuOption> menuOptions = signOnService.buildMenuOptions(authenticatedUser.getUserType());
                 
                 // Build success response - replaces SEND MAP COSGN0AO
                 response.setSuccess(true);
                 response.setMessage("Sign-on successful");
                 response.setSessionToken(sessionToken);
-                response.setUser(authenticatedUser);
+                response.setUserId(authenticatedUser.getSecUsrId());
+                response.setUserName(authenticatedUser.getDisplayName());
+                response.setUserRole(authenticatedUser.getUserType());
                 response.setMenuOptions(menuOptions);
                 
                 // Set session attributes for audit trail
@@ -284,11 +295,13 @@ public class AuthController {
                         UserSecurity userDetails = (UserSecurity) auth.getPrincipal();
                         
                         // Get menu options for current user type
-                        List<MenuOption> menuOptions = signOnService.getMenuOptions(userType);
+                        List<MenuOption> menuOptions = signOnService.buildMenuOptions(userType);
                         
                         response.setSuccess(true);
                         response.setMessage("User is authenticated");
-                        response.setUser(userDetails);
+                        response.setUserId(userDetails.getSecUsrId());
+                        response.setUserName(userDetails.getDisplayName());
+                        response.setUserRole(userDetails.getUserType());
                         response.setMenuOptions(menuOptions);
                         
                         return ResponseEntity.ok(response);

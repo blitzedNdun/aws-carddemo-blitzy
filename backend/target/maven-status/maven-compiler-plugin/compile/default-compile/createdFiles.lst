@@ -111,8 +111,8 @@ com/carddemo/service/PaymentService$PaymentProcessingException.class
 com/carddemo/converter/BmsMessageConverter.class
 com/carddemo/service/CustomerMaintenanceService$CustomerMaintenanceException.class
 com/carddemo/service/FileGenerationService$CsvExportConfig.class
-com/carddemo/dto/AccountUpdateDto.class
 com/carddemo/dto/SignOnResponse.class
+com/carddemo/dto/AccountUpdateDto.class
 com/carddemo/repository/DisclosureGroupRepository.class
 com/carddemo/util/Constants.class
 com/carddemo/config/ApplicationConfig$CardDemoProperties.class
@@ -256,6 +256,7 @@ com/carddemo/dto/BillDto$PaymentAllocation.class
 com/carddemo/batch/ReconciliationJobConfig$2.class
 com/carddemo/security/SessionConfig$SessionEventListener.class
 com/carddemo/batch/ReconciliationJobConfig.class
+com/carddemo/controller/AuthController.class
 com/carddemo/exception/ErrorResponse.class
 com/carddemo/client/SMSProvider$BulkSMSResponse.class
 com/carddemo/dto/ReportMenuResponse.class
