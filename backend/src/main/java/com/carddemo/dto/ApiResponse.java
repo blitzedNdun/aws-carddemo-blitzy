@@ -20,6 +20,7 @@
 package com.carddemo.dto;
 
 import com.carddemo.dto.Message;
+import com.carddemo.dto.ResponseStatus;
 import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
