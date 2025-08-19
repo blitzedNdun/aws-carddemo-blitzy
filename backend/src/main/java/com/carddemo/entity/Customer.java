@@ -31,7 +31,9 @@ import lombok.NoArgsConstructor;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
@@ -251,6 +253,27 @@ public class Customer {
     private Integer ficoScore;
 
     /**
+     * Customer credit limit.
+     * Used for credit qualification and account management.
+     */
+    @Column(name = "credit_limit", precision = 15, scale = 2)
+    private BigDecimal creditLimit;
+
+    /**
+     * Last update timestamp.
+     * Tracks when the customer record was last modified.
+     */
+    @Column(name = "last_update_timestamp")
+    private LocalDateTime lastUpdateTimestamp;
+
+    /**
+     * Created timestamp.
+     * Tracks when the customer record was created.
+     */
+    @Column(name = "created_timestamp")
+    private LocalDateTime createdTimestamp;
+
+    /**
      * JPA lifecycle callback for validation before persisting a new customer.
      * Performs comprehensive field validation using COBOL-equivalent validation rules.
      * 
@@ -260,6 +283,11 @@ public class Customer {
     public void validateBeforeInsert() {
         performCustomerValidation();
         formatFields();
+        // Set creation timestamp
+        if (createdTimestamp == null) {
+            createdTimestamp = LocalDateTime.now();
+        }
+        lastUpdateTimestamp = LocalDateTime.now();
     }
 
     /**
@@ -272,6 +300,8 @@ public class Customer {
     public void validateBeforeUpdate() {
         performCustomerValidation();
         formatFields();
+        // Update last modified timestamp
+        lastUpdateTimestamp = LocalDateTime.now();
     }
 
     /**
@@ -504,6 +534,9 @@ public class Customer {
                 ", eftAccountId='" + eftAccountId + '\'' +
                 ", primaryCardHolderIndicator='" + primaryCardHolderIndicator + '\'' +
                 ", ficoScore=" + ficoScore +
+                ", creditLimit=" + creditLimit +
+                ", lastUpdateTimestamp=" + lastUpdateTimestamp +
+                ", createdTimestamp=" + createdTimestamp +
                 '}';
     }
 }
