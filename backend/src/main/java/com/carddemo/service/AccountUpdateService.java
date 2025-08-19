@@ -11,6 +11,7 @@ import com.carddemo.entity.Account;
 import com.carddemo.entity.Customer;
 import com.carddemo.dto.AccountUpdateRequest;
 import com.carddemo.dto.AccountUpdateResponse;
+import com.carddemo.dto.ValidationError;
 import com.carddemo.util.ValidationUtil;
 import com.carddemo.exception.ValidationException;
 
@@ -142,7 +143,21 @@ public class AccountUpdateService {
             validateCustomerData(customer);
             
             // Step 6: Check for concurrent modifications (maps to 9700-CHECK-CHANGE-IN-REC)
-            checkOptimisticLock(originalAccount, originalCustomer, account, customer);
+            // Retrieve fresh copies from database to check for concurrent modifications
+            Optional<Account> freshAccountOpt = accountRepository.findByIdForUpdate(accountId);
+            if (!freshAccountOpt.isPresent()) {
+                logger.error("Account disappeared during update. AccountId: {}", accountId);
+                return new AccountUpdateResponse("Account not found during concurrent check: " + request.getAccountId());
+            }
+            Account freshAccount = freshAccountOpt.get();
+            Customer freshCustomer = freshAccount.getCustomer();
+            
+            if (freshCustomer == null) {
+                logger.error("Customer disappeared during update. AccountId: {}", accountId);
+                return new AccountUpdateResponse("Customer not found during concurrent check: " + request.getAccountId());
+            }
+            
+            checkOptimisticLock(originalAccount, originalCustomer, freshAccount, freshCustomer);
             
             // Step 7: Save updated entities (maps to REWRITE operations)
             Account savedAccount = accountRepository.save(account);
@@ -157,11 +172,11 @@ public class AccountUpdateService {
             customerRepository.saveAll(customerBatch);
             
             // For audit trail, check if SSN validation is needed for compliance
-            if (customer.getSSN() != null && !customer.getSSN().trim().isEmpty()) {
-                Optional<Customer> existingCustomerBySSN = customerRepository.findBySSN(customer.getSSN());
+            if (customer.getSsn() != null && !customer.getSsn().trim().isEmpty()) {
+                Optional<Customer> existingCustomerBySSN = customerRepository.findBySsn(customer.getSsn());
                 if (existingCustomerBySSN.isPresent() && 
                     !existingCustomerBySSN.get().getCustomerId().equals(customer.getCustomerId())) {
-                    logger.warn("Duplicate SSN detected during update: {}", customer.getSSN());
+                    logger.warn("Duplicate SSN detected during update: {}", customer.getSsn());
                 }
             }
             
@@ -298,9 +313,9 @@ public class AccountUpdateService {
         ValidationException validationException = new ValidationException("Customer data validation failed");
         
         // Validate SSN (maps to COBOL SSN validation logic)
-        if (customer.getSSN() != null && !customer.getSSN().trim().isEmpty()) {
+        if (customer.getSsn() != null && !customer.getSsn().trim().isEmpty()) {
             try {
-                ValidationUtil.validateSSN("ssn", customer.getSSN());
+                ValidationUtil.validateSSN("ssn", customer.getSsn());
             } catch (ValidationException ve) {
                 validationException.addFieldErrors(ve.getFieldErrors());
             }
@@ -311,9 +326,7 @@ public class AccountUpdateService {
             String cleanPhone = customer.getPhoneNumber1().replaceAll("\\D", "");
             if (cleanPhone.length() >= 3) {
                 String areaCode = cleanPhone.substring(0, 3);
-                try {
-                    ValidationUtil.validatePhoneAreaCode("phoneNumber1AreaCode", areaCode);
-                } catch (ValidationException ve) {
+                if (!ValidationUtil.isValidPhoneAreaCode(areaCode)) {
                     validationException.addFieldError("phoneNumber1", "Phone number contains invalid area code: " + areaCode);
                 }
             }
@@ -321,9 +334,7 @@ public class AccountUpdateService {
         
         // Validate State Code (maps to COBOL state code validation)
         if (customer.getStateCode() != null && !customer.getStateCode().trim().isEmpty()) {
-            try {
-                ValidationUtil.validateUSStateCode("stateCode", customer.getStateCode());
-            } catch (ValidationException ve) {
+            if (!ValidationUtil.isValidStateCode(customer.getStateCode())) {
                 validationException.addFieldError("stateCode", "Invalid US state code: " + customer.getStateCode());
             }
         }
@@ -350,7 +361,7 @@ public class AccountUpdateService {
             try {
                 String ficoString = customer.getFicoScore().toString();
                 ValidationUtil.validateNumericField("ficoScore", ficoString);
-                ValidationUtil.validateFieldLength("ficoScore", ficoString, 3, 3); // FICO is 3 digits
+                ValidationUtil.validateFieldLength("ficoScore", ficoString, 3); // FICO is 3 digits
                 
                 // Additional FICO range validation (300-850)
                 int ficoValue = customer.getFicoScore();
@@ -417,7 +428,7 @@ public class AccountUpdateService {
             !safeEquals(originalCustomer.getZipCode(), currentCustomer.getZipCode()) ||
             !safeEquals(originalCustomer.getPhoneNumber1(), currentCustomer.getPhoneNumber1()) ||
             !safeEquals(originalCustomer.getPhoneNumber2(), currentCustomer.getPhoneNumber2()) ||
-            !safeEquals(originalCustomer.getSSN(), currentCustomer.getSSN()) ||
+            !safeEquals(originalCustomer.getSsn(), currentCustomer.getSsn()) ||
             !safeEqualsIgnoreCase(originalCustomer.getGovernmentIssuedId(), currentCustomer.getGovernmentIssuedId()) ||
             !safeEquals(originalCustomer.getDateOfBirth(), currentCustomer.getDateOfBirth()) ||
             !safeEquals(originalCustomer.getEftAccountId(), currentCustomer.getEftAccountId()) ||
@@ -446,10 +457,17 @@ public class AccountUpdateService {
      */
     public AccountUpdateResponse buildUpdateResponse(boolean success, Account account, Customer customer, 
                                                     String errorMessage, String transactionId) {
-        // Create response using constructor or appropriate factory method
-        AccountUpdateResponse response = success ? 
-            new AccountUpdateResponse(account, customer, transactionId) :
-            new AccountUpdateResponse(errorMessage);
+        AccountUpdateResponse response;
+        
+        if (success && account != null && customer != null) {
+            // Create success response with updated account data
+            Map<String, Object> updatedAccountData = buildAccountDataMap(account);
+            Map<String, Object> auditInfo = buildAuditInfoMap(transactionId);
+            response = new AccountUpdateResponse(updatedAccountData, auditInfo);
+        } else {
+            // Create error response
+            response = new AccountUpdateResponse(errorMessage);
+        }
         
         // Validate response data using getter methods as specified in schema
         boolean responseSuccess = response.isSuccess();
@@ -464,6 +482,37 @@ public class AccountUpdateService {
                     responseErrorMessage != null);
         
         return response;
+    }
+
+    /**
+     * Builds account data map from Account entity for response.
+     * 
+     * @param account Account entity to convert
+     * @return Map containing account data
+     */
+    private Map<String, Object> buildAccountDataMap(Account account) {
+        Map<String, Object> accountData = new HashMap<>();
+        accountData.put("accountId", account.getAccountId());
+        accountData.put("activeStatus", account.getActiveStatus());
+        accountData.put("currentBalance", account.getCurrentBalance());
+        accountData.put("creditLimit", account.getCreditLimit());
+        accountData.put("cashCreditLimit", account.getCashCreditLimit());
+        accountData.put("expirationDate", account.getExpirationDate());
+        return accountData;
+    }
+    
+    /**
+     * Builds audit info map for response.
+     * 
+     * @param transactionId Transaction identifier
+     * @return Map containing audit information
+     */
+    private Map<String, Object> buildAuditInfoMap(String transactionId) {
+        Map<String, Object> auditInfo = new HashMap<>();
+        auditInfo.put("transactionId", transactionId);
+        auditInfo.put("updateTimestamp", java.time.LocalDateTime.now());
+        auditInfo.put("updatedBy", "SYSTEM"); // Could be enhanced with actual user context
+        return auditInfo;
     }
 
     /**
@@ -532,7 +581,7 @@ public class AccountUpdateService {
         clone.setZipCode(customer.getZipCode());
         clone.setPhoneNumber1(customer.getPhoneNumber1());
         clone.setPhoneNumber2(customer.getPhoneNumber2());
-        clone.setSSN(customer.getSSN());
+        clone.setSsn(customer.getSsn());
         clone.setGovernmentIssuedId(customer.getGovernmentIssuedId());
         clone.setDateOfBirth(customer.getDateOfBirth());
         clone.setEftAccountId(customer.getEftAccountId());
@@ -554,7 +603,7 @@ public class AccountUpdateService {
         
         // Verify response structure using required getter methods
         boolean success = response.isSuccess();
-        Map<String, String> validationErrors = response.getValidationErrors();
+        List<ValidationError> validationErrors = response.getValidationErrors();
         String errorMessage = response.getErrorMessage();
         
         logger.debug("Validation error response built - Success: {}, ErrorCount: {}, Message: {}", 
