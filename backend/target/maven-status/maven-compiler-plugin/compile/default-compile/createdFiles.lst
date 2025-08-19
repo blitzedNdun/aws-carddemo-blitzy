@@ -362,6 +362,7 @@ com/carddemo/dto/CreditCardUpdateResponse$Builder.class
 com/carddemo/service/AccountFileProcessorService$AccountRecord.class
 com/carddemo/service/TransactionPostingService$CrossReferenceRecord.class
 com/carddemo/service/AuthorizationEngine.class
+com/carddemo/dto/TransactionListRequest.class
 com/carddemo/service/ChargebackProcessor$ChargebackStatus.class
 com/carddemo/service/ChargebackProcessor$RepresentmentRecommendation.class
 com/carddemo/batch/ReconciliationJobConfig$SettlementRecord.class
