@@ -5,7 +5,9 @@ import com.carddemo.dto.CardListDto;
 import com.carddemo.dto.CardRequest;
 import com.carddemo.dto.CardResponse;
 import com.carddemo.dto.PageResponse;
+import com.carddemo.dto.ResponseStatus;
 import com.carddemo.exception.BusinessRuleException;
+import com.carddemo.exception.ResourceNotFoundException;
 import com.carddemo.service.CreditCardService;
 
 import org.slf4j.Logger;
@@ -15,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import java.time.LocalDate;
 
 /**
  * REST controller for credit card operations handling CCLI, CCDL, and CCUP transaction codes.
@@ -69,7 +72,7 @@ public class CardController {
 
             // Create API response matching CICS SEND MAP pattern
             ApiResponse<PageResponse<CardListDto>> response = new ApiResponse<>();
-            response.setStatus("SUCCESS");
+            response.setStatus(ResponseStatus.SUCCESS);
             response.setTransactionCode("CCLI");
             response.setResponseData(cardPage);
 
@@ -82,7 +85,7 @@ public class CardController {
             logger.error("Business rule violation in card listing: {}", e.getMessage());
             
             ApiResponse<PageResponse<CardListDto>> errorResponse = new ApiResponse<>();
-            errorResponse.setStatus("ERROR");
+            errorResponse.setStatus(ResponseStatus.ERROR);
             errorResponse.setTransactionCode("CCLI");
             
             return ResponseEntity.badRequest().body(errorResponse);
@@ -91,7 +94,7 @@ public class CardController {
             logger.error("Unexpected error in card listing", e);
             
             ApiResponse<PageResponse<CardListDto>> errorResponse = new ApiResponse<>();
-            errorResponse.setStatus("ERROR");
+            errorResponse.setStatus(ResponseStatus.ERROR);
             errorResponse.setTransactionCode("CCLI");
             
             return ResponseEntity.status(500).body(errorResponse);
@@ -129,7 +132,7 @@ public class CardController {
 
             // Create API response
             ApiResponse<CardResponse> response = new ApiResponse<>();
-            response.setStatus("SUCCESS");
+            response.setStatus(ResponseStatus.SUCCESS);
             response.setTransactionCode("CCDL");
             response.setResponseData(cardDetails);
 
@@ -142,17 +145,26 @@ public class CardController {
             logger.error("Business rule violation in card detail retrieval: {}", e.getMessage());
             
             ApiResponse<CardResponse> errorResponse = new ApiResponse<>();
-            errorResponse.setStatus("ERROR");
+            errorResponse.setStatus(ResponseStatus.ERROR);
             errorResponse.setTransactionCode("CCDL");
             
             return ResponseEntity.badRequest().body(errorResponse);
+
+        } catch (ResourceNotFoundException e) {
+            logger.error("Card not found: {}", e.getMessage());
+            
+            ApiResponse<CardResponse> errorResponse = new ApiResponse<>();
+            errorResponse.setStatus(ResponseStatus.ERROR);
+            errorResponse.setTransactionCode("CCDL");
+            
+            return ResponseEntity.status(404).body(errorResponse);
 
         } catch (Exception e) {
             logger.error("Unexpected error retrieving card details for cardNumber: {}", 
                         maskCardNumber(cardNumber), e);
             
             ApiResponse<CardResponse> errorResponse = new ApiResponse<>();
-            errorResponse.setStatus("ERROR");
+            errorResponse.setStatus(ResponseStatus.ERROR);
             errorResponse.setTransactionCode("CCDL");
             
             return ResponseEntity.status(500).body(errorResponse);
@@ -187,7 +199,7 @@ public class CardController {
 
             // Create success response
             ApiResponse<CardResponse> response = new ApiResponse<>();
-            response.setStatus("SUCCESS");
+            response.setStatus(ResponseStatus.SUCCESS);
             response.setTransactionCode("CCUP");
             response.setResponseData(updatedCard);
 
@@ -199,7 +211,7 @@ public class CardController {
             logger.error("Business rule violation in card update: {}", e.getMessage());
             
             ApiResponse<CardResponse> errorResponse = new ApiResponse<>();
-            errorResponse.setStatus("ERROR");
+            errorResponse.setStatus(ResponseStatus.ERROR);
             errorResponse.setTransactionCode("CCUP");
             
             return ResponseEntity.badRequest().body(errorResponse);
@@ -208,7 +220,7 @@ public class CardController {
             logger.error("Unexpected error updating card: {}", maskCardNumber(cardNumber), e);
             
             ApiResponse<CardResponse> errorResponse = new ApiResponse<>();
-            errorResponse.setStatus("ERROR");
+            errorResponse.setStatus(ResponseStatus.ERROR);
             errorResponse.setTransactionCode("CCUP");
             
             return ResponseEntity.status(500).body(errorResponse);
@@ -244,7 +256,7 @@ public class CardController {
             logger.error("Business rule violation in cards by account: {}", e.getMessage());
             
             ApiResponse<PageResponse<CardListDto>> errorResponse = new ApiResponse<>();
-            errorResponse.setStatus("ERROR");
+            errorResponse.setStatus(ResponseStatus.ERROR);
             errorResponse.setTransactionCode("CCLI");
             
             return ResponseEntity.badRequest().body(errorResponse);
@@ -253,7 +265,7 @@ public class CardController {
             logger.error("Unexpected error retrieving cards for account: {}", accountId, e);
             
             ApiResponse<PageResponse<CardListDto>> errorResponse = new ApiResponse<>();
-            errorResponse.setStatus("ERROR");
+            errorResponse.setStatus(ResponseStatus.ERROR);
             errorResponse.setTransactionCode("CCLI");
             
             return ResponseEntity.status(500).body(errorResponse);
@@ -331,19 +343,19 @@ public class CardController {
             throw new BusinessRuleException("CARD_NUMBER_REQUIRED", "Card number is required");
         }
 
-        // Remove any leading/trailing whitespace
-        String trimmedCardNumber = cardNumber.trim();
+        // Remove any leading/trailing whitespace and formatting characters
+        String cleanCardNumber = cardNumber.trim().replaceAll("[\\s\\-]", "");
 
-        // Must be exactly 16 digits (matches COBOL PIC 9(16))
-        if (!trimmedCardNumber.matches("\\d{16}")) {
+        // Must be 15-16 digits (15 for Amex, 16 for Visa/MC/Discover)
+        if (!cleanCardNumber.matches("\\d{15,16}")) {
             throw new BusinessRuleException("INVALID_CARD_FORMAT", 
-                "Card number must be exactly 16 digits");
+                "Card number must be exactly 15-16 digits");
         }
 
         // Must not be all zeros
-        if ("0000000000000000".equals(trimmedCardNumber)) {
+        if ("000000000000000".equals(cleanCardNumber) || "0000000000000000".equals(cleanCardNumber)) {
             throw new BusinessRuleException("INVALID_CARD_VALUE", 
-                "Card number must be a non-zero 16 digit number");
+                "Card number must be a non-zero number");
         }
     }
 
@@ -403,25 +415,16 @@ public class CardController {
      * @param expirationDate The expiration date to validate
      * @throws BusinessRuleException if validation fails
      */
-    private void validateExpirationDate(String expirationDate) {
-        if (expirationDate == null || expirationDate.trim().isEmpty()) {
+    private void validateExpirationDate(LocalDate expirationDate) {
+        if (expirationDate == null) {
             throw new BusinessRuleException("EXPIRATION_DATE_REQUIRED", 
                 "Expiration date is required");
         }
 
-        String trimmedDate = expirationDate.trim();
-
-        // Validate format (YYYY-MM-DD)
-        if (!trimmedDate.matches("\\d{4}-\\d{2}-\\d{2}")) {
-            throw new BusinessRuleException("INVALID_DATE_FORMAT", 
-                "Expiration date must be in YYYY-MM-DD format");
-        }
-
-        // Parse and validate date components
-        String[] dateParts = trimmedDate.split("-");
-        int year = Integer.parseInt(dateParts[0]);
-        int month = Integer.parseInt(dateParts[1]);
-        int day = Integer.parseInt(dateParts[2]);
+        // Get date components
+        int year = expirationDate.getYear();
+        int month = expirationDate.getMonthValue();
+        int day = expirationDate.getDayOfMonth();
 
         // Validate year range (1950-2099, matching COBOL VALID-YEAR)
         if (year < 1950 || year > 2099) {
@@ -439,6 +442,13 @@ public class CardController {
         if (day < 1 || day > 31) {
             throw new BusinessRuleException("INVALID_DAY", 
                 "Day must be between 1 and 31");
+        }
+
+        // Validate that the expiration date is in the future
+        LocalDate today = LocalDate.now();
+        if (expirationDate.isBefore(today)) {
+            throw new BusinessRuleException("EXPIRED_CARD", 
+                "Card expiration date cannot be in the past");
         }
     }
 
