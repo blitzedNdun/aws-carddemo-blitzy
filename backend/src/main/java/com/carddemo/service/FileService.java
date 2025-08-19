@@ -22,7 +22,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.nio.charset.StandardCharsets;
@@ -139,7 +141,7 @@ public class FileService {
             throw e; // Re-throw file processing exceptions
         } catch (Exception e) {
             throw new FileProcessingException("Unexpected error during file upload processing: " + e.getMessage(),
-                fileName, FileProcessingException.ERROR_CODE_IO_ERROR, e);
+                fileName, null, FileProcessingException.ERROR_CODE_IO_ERROR, e);
         }
     }
     
@@ -183,7 +185,7 @@ public class FileService {
             throw e; // Re-throw file processing exceptions
         } catch (Exception e) {
             throw new FileProcessingException("Unexpected error during export file generation: " + e.getMessage(),
-                filePath, FileProcessingException.ERROR_CODE_IO_ERROR, e);
+                filePath, null, FileProcessingException.ERROR_CODE_IO_ERROR, e);
         }
     }
     
@@ -239,7 +241,7 @@ public class FileService {
             
         } catch (Exception e) {
             throw new FileProcessingException("Error during file format validation: " + e.getMessage(),
-                fileName, FileProcessingException.ERROR_CODE_VALIDATION_FAILED, e);
+                fileName, null, FileProcessingException.ERROR_CODE_VALIDATION_FAILED, e);
         }
     }
     
@@ -293,7 +295,7 @@ public class FileService {
             throw e; // Re-throw file processing exceptions
         } catch (Exception e) {
             throw new FileProcessingException("Unexpected error during customer data parsing: " + e.getMessage(),
-                FileProcessingException.ERROR_CODE_PARSING_ERROR, e);
+                null, null, FileProcessingException.ERROR_CODE_PARSING_ERROR, e);
         }
     }
     
@@ -307,7 +309,12 @@ public class FileService {
      */
     public String convertToCSV(List<Customer> customers) {
         try {
-            if (customers == null || customers.isEmpty()) {
+            if (customers == null) {
+                throw new FileProcessingException("Customer list cannot be null for CSV conversion",
+                    null, null, FileProcessingException.ERROR_CODE_VALIDATION_FAILED, null);
+            }
+            
+            if (customers.isEmpty()) {
                 return "";
             }
             
@@ -320,15 +327,23 @@ public class FileService {
             
             // Convert each customer to CSV format using FileFormatConverter
             for (Customer customer : customers) {
-                String csvLine = FileFormatConverter.convertToCsv(customer);
-                csvBuilder.append(csvLine).append(System.lineSeparator());
+                Map<String, Object> customerMap = convertCustomerToMap(customer);
+                List<String> fieldNames = getCustomerFieldNames();
+                List<Map<String, Object>> singleRecord = List.of(customerMap);
+                String csvContent = FileFormatConverter.convertToCsv(singleRecord, fieldNames);
+                
+                // Extract only the data line (skip header for individual records)
+                String[] lines = csvContent.split("\\r?\\n");
+                if (lines.length > 1) {
+                    csvBuilder.append(lines[1]).append(System.lineSeparator());
+                }
             }
             
             return csvBuilder.toString();
             
         } catch (Exception e) {
             throw new FileProcessingException("Error converting customer data to CSV format: " + e.getMessage(),
-                FileProcessingException.ERROR_CODE_PARSING_ERROR, e);
+                null, null, FileProcessingException.ERROR_CODE_PARSING_ERROR, e);
         }
     }
     
@@ -343,7 +358,12 @@ public class FileService {
      */
     public String convertToFixedWidth(List<Customer> customers) {
         try {
-            if (customers == null || customers.isEmpty()) {
+            if (customers == null) {
+                throw new FileProcessingException("Customer list cannot be null for CSV conversion",
+                    null, null, FileProcessingException.ERROR_CODE_VALIDATION_FAILED, null);
+            }
+            
+            if (customers.isEmpty()) {
                 return "";
             }
             
@@ -351,7 +371,9 @@ public class FileService {
             
             // Convert each customer to fixed-width format using FileFormatConverter
             for (Customer customer : customers) {
-                String fixedWidthLine = FileFormatConverter.generateFixedWidth(customer);
+                Map<String, Object> customerMap = convertCustomerToMap(customer);
+                Map<String, String> copybookDef = createCopybookDefinition();
+                String fixedWidthLine = FileFormatConverter.convertToFixedWidth(customerMap, copybookDef);
                 fixedWidthBuilder.append(fixedWidthLine).append(System.lineSeparator());
             }
             
@@ -359,7 +381,7 @@ public class FileService {
             
         } catch (Exception e) {
             throw new FileProcessingException("Error converting customer data to fixed-width format: " + e.getMessage(),
-                FileProcessingException.ERROR_CODE_PARSING_ERROR, e);
+                null, null, FileProcessingException.ERROR_CODE_PARSING_ERROR, e);
         }
     }
     
@@ -432,8 +454,8 @@ public class FileService {
      */
     private Customer parseCSVCustomerRecord(String csvLine, int lineNumber) {
         try {
-            // Use FileFormatConverter to parse CSV line
-            Customer customer = FileFormatConverter.convertFromCsv(csvLine);
+            // Parse CSV line manually
+            Customer customer = parseCSVLine(csvLine);
             
             // Validate parsed customer data
             validateCustomerData(customer, lineNumber);
@@ -471,12 +493,13 @@ public class FileService {
             customer.setFirstName(extractField(fixedWidthLine, FIRST_NAME_START, FIRST_NAME_LENGTH).trim());
             customer.setMiddleName(extractField(fixedWidthLine, MIDDLE_NAME_START, MIDDLE_NAME_LENGTH).trim());
             customer.setLastName(extractField(fixedWidthLine, LAST_NAME_START, LAST_NAME_LENGTH).trim());
-            customer.setAddrLine1(extractField(fixedWidthLine, ADDR_LINE_1_START, ADDR_LINE_1_LENGTH).trim());
-            customer.setAddrLine2(extractField(fixedWidthLine, ADDR_LINE_2_START, ADDR_LINE_2_LENGTH).trim());
-            customer.setCity(extractField(fixedWidthLine, CITY_START, CITY_LENGTH).trim());
-            customer.setAddrStateCd(extractField(fixedWidthLine, STATE_START, STATE_LENGTH).trim());
-            customer.setAddrCountryCd(extractField(fixedWidthLine, COUNTRY_START, COUNTRY_LENGTH).trim());
-            customer.setAddrZip(extractField(fixedWidthLine, ZIP_CODE_START, ZIP_CODE_LENGTH).trim());
+            customer.setAddressLine1(extractField(fixedWidthLine, ADDR_LINE_1_START, ADDR_LINE_1_LENGTH).trim());
+            customer.setAddressLine2(extractField(fixedWidthLine, ADDR_LINE_2_START, ADDR_LINE_2_LENGTH).trim());
+            // City field is stored in addressLine3 for this Customer entity structure
+            customer.setAddressLine3(extractField(fixedWidthLine, CITY_START, CITY_LENGTH).trim());
+            customer.setStateCode(extractField(fixedWidthLine, STATE_START, STATE_LENGTH).trim());
+            customer.setCountryCode(extractField(fixedWidthLine, COUNTRY_START, COUNTRY_LENGTH).trim());
+            customer.setZipCode(extractField(fixedWidthLine, ZIP_CODE_START, ZIP_CODE_LENGTH).trim());
             
             String phoneHome = extractField(fixedWidthLine, PHONE_HOME_START, PHONE_HOME_LENGTH).trim();
             customer.setPhoneNumber1(formatPhoneNumber(phoneHome));
@@ -485,7 +508,7 @@ public class FileService {
             customer.setPhoneNumber2(formatPhoneNumber(phoneWork));
             
             customer.setSsn(extractField(fixedWidthLine, SSN_START, SSN_LENGTH).trim());
-            customer.setGovtId(extractField(fixedWidthLine, GOVT_ID_START, GOVT_ID_LENGTH).trim());
+            customer.setGovernmentIssuedId(extractField(fixedWidthLine, GOVT_ID_START, GOVT_ID_LENGTH).trim());
             
             // Parse date of birth
             String dobString = extractField(fixedWidthLine, DOB_START, DOB_LENGTH).trim();
@@ -495,7 +518,7 @@ public class FileService {
             customer.setEftAccountId(extractField(fixedWidthLine, EFT_ACCOUNT_ID_START, EFT_ACCOUNT_ID_LENGTH).trim());
             
             String primaryCardHolderInd = extractField(fixedWidthLine, PRI_CARD_HOLDER_IND_START, PRI_CARD_HOLDER_IND_LENGTH).trim();
-            customer.setPrimaryCardHolderInd("Y".equals(primaryCardHolderInd));
+            customer.setPrimaryCardHolderIndicator(primaryCardHolderInd);
             
             // Parse FICO score
             String ficoScoreString = extractField(fixedWidthLine, FICO_CREDIT_SCORE_START, FICO_CREDIT_SCORE_LENGTH).trim();
@@ -531,7 +554,7 @@ public class FileService {
             // Validate field lengths
             ValidationUtil.validateFieldLength("First Name", customer.getFirstName(), FIRST_NAME_LENGTH);
             ValidationUtil.validateFieldLength("Last Name", customer.getLastName(), LAST_NAME_LENGTH);
-            ValidationUtil.validateFieldLength("City", customer.getCity(), CITY_LENGTH);
+            ValidationUtil.validateFieldLength("City", customer.getAddressLine3(), CITY_LENGTH);
             
             // Validate phone numbers if provided
             if (customer.getPhoneNumber1() != null && !customer.getPhoneNumber1().trim().isEmpty()) {
@@ -579,7 +602,7 @@ public class FileService {
      * Formats a phone number string by removing non-digit characters and adding standard formatting.
      * 
      * @param phoneNumber the raw phone number string
-     * @return formatted phone number in (XXX)XXX-XXXX format
+     * @return formatted phone number in XXX-XXX-XXXX format
      */
     private String formatPhoneNumber(String phoneNumber) {
         if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
@@ -590,7 +613,7 @@ public class FileService {
         String digitsOnly = phoneNumber.replaceAll("\\D", "");
         
         if (digitsOnly.length() == 10) {
-            return String.format("(%s)%s-%s", 
+            return String.format("%s-%s-%s", 
                 digitsOnly.substring(0, 3),
                 digitsOnly.substring(3, 6), 
                 digitsOnly.substring(6, 10));
@@ -626,5 +649,158 @@ public class FileService {
         } catch (Exception e) {
             throw new IllegalArgumentException("Failed to parse date: " + dateString + ". " + e.getMessage(), e);
         }
+    }
+    
+    /**
+     * Converts a Customer entity to a Map for use with FileFormatConverter.
+     * 
+     * @param customer the Customer entity to convert
+     * @return Map representation of the customer data
+     */
+    private Map<String, Object> convertCustomerToMap(Customer customer) {
+        Map<String, Object> customerMap = new HashMap<>();
+        
+        customerMap.put("CUSTOMER_ID", customer.getCustomerId());
+        customerMap.put("FIRST_NAME", customer.getFirstName());
+        customerMap.put("MIDDLE_NAME", customer.getMiddleName());
+        customerMap.put("LAST_NAME", customer.getLastName());
+        customerMap.put("ADDRESS_LINE_1", customer.getAddressLine1());
+        customerMap.put("ADDRESS_LINE_2", customer.getAddressLine2());
+        customerMap.put("CITY", customer.getAddressLine3()); // City stored in addressLine3
+        customerMap.put("STATE", customer.getStateCode());
+        customerMap.put("COUNTRY", customer.getCountryCode());
+        customerMap.put("ZIP_CODE", customer.getZipCode());
+        customerMap.put("PHONE_HOME", customer.getPhoneNumber1());
+        customerMap.put("PHONE_WORK", customer.getPhoneNumber2());
+        customerMap.put("SSN", customer.getSsn());
+        customerMap.put("GOVT_ID", customer.getGovernmentIssuedId());
+        customerMap.put("DATE_OF_BIRTH", customer.getDateOfBirth());
+        customerMap.put("EFT_ACCOUNT_ID", customer.getEftAccountId());
+        customerMap.put("PRIMARY_CARD_HOLDER", customer.getPrimaryCardHolderIndicator());
+        customerMap.put("FICO_SCORE", customer.getFicoScore());
+        
+        return customerMap;
+    }
+    
+    /**
+     * Gets the ordered list of field names for Customer CSV export.
+     * 
+     * @return List of field names in the order they should appear in CSV
+     */
+    private List<String> getCustomerFieldNames() {
+        return List.of(
+            "CUSTOMER_ID", "FIRST_NAME", "MIDDLE_NAME", "LAST_NAME",
+            "ADDRESS_LINE_1", "ADDRESS_LINE_2", "CITY", "STATE", "COUNTRY", "ZIP_CODE",
+            "PHONE_HOME", "PHONE_WORK", "SSN", "GOVT_ID", "DATE_OF_BIRTH",
+            "EFT_ACCOUNT_ID", "PRIMARY_CARD_HOLDER", "FICO_SCORE"
+        );
+    }
+    
+    /**
+     * Creates a COBOL copybook definition map for fixed-width conversion.
+     * 
+     * @return Map of field names to their COBOL PIC clauses
+     */
+    private Map<String, String> createCopybookDefinition() {
+        Map<String, String> copybookDef = new HashMap<>();
+        
+        copybookDef.put("CUSTOMER_ID", "PIC 9(9)");
+        copybookDef.put("FIRST_NAME", "PIC X(25)");
+        copybookDef.put("MIDDLE_NAME", "PIC X(25)");
+        copybookDef.put("LAST_NAME", "PIC X(25)");
+        copybookDef.put("ADDRESS_LINE_1", "PIC X(50)");
+        copybookDef.put("ADDRESS_LINE_2", "PIC X(50)");
+        copybookDef.put("CITY", "PIC X(50)");
+        copybookDef.put("STATE", "PIC X(2)");
+        copybookDef.put("COUNTRY", "PIC X(3)");
+        copybookDef.put("ZIP_CODE", "PIC X(11)");
+        copybookDef.put("PHONE_HOME", "PIC X(14)");
+        copybookDef.put("PHONE_WORK", "PIC X(14)");
+        copybookDef.put("SSN", "PIC X(9)");
+        copybookDef.put("GOVT_ID", "PIC X(20)");
+        copybookDef.put("DATE_OF_BIRTH", "PIC X(8)");
+        copybookDef.put("EFT_ACCOUNT_ID", "PIC X(10)");
+        copybookDef.put("PRIMARY_CARD_HOLDER", "PIC X(1)");
+        copybookDef.put("FICO_SCORE", "PIC 9(3)");
+        
+        return copybookDef;
+    }
+    
+    /**
+     * Parses a single CSV line into a Customer entity.
+     * 
+     * @param csvLine the CSV line to parse
+     * @return Customer entity parsed from the CSV line
+     * @throws IllegalArgumentException if CSV parsing fails
+     */
+    private Customer parseCSVLine(String csvLine) {
+        try {
+            String[] fields = csvLine.split(",");
+            
+            if (fields.length < 18) {
+                throw new IllegalArgumentException("Insufficient fields in CSV line. Expected 18 fields, found " + fields.length);
+            }
+            
+            Customer customer = new Customer();
+            
+            // Parse each field from CSV (trim and handle quotes)
+            customer.setCustomerId(Long.parseLong(cleanCSVField(fields[0])));
+            customer.setFirstName(cleanCSVField(fields[1]));
+            customer.setMiddleName(cleanCSVField(fields[2]));
+            customer.setLastName(cleanCSVField(fields[3]));
+            customer.setAddressLine1(cleanCSVField(fields[4]));
+            customer.setAddressLine2(cleanCSVField(fields[5]));
+            customer.setAddressLine3(cleanCSVField(fields[6])); // City
+            customer.setStateCode(cleanCSVField(fields[7]));
+            customer.setCountryCode(cleanCSVField(fields[8]));
+            customer.setZipCode(cleanCSVField(fields[9]));
+            customer.setPhoneNumber1(cleanCSVField(fields[10]));
+            customer.setPhoneNumber2(cleanCSVField(fields[11]));
+            customer.setSsn(cleanCSVField(fields[12]));
+            customer.setGovernmentIssuedId(cleanCSVField(fields[13]));
+            
+            // Parse date of birth
+            String dobString = cleanCSVField(fields[14]);
+            if (!dobString.isEmpty()) {
+                customer.setDateOfBirth(parseCobolDate(dobString));
+            }
+            
+            customer.setEftAccountId(cleanCSVField(fields[15]));
+            customer.setPrimaryCardHolderIndicator(cleanCSVField(fields[16]));
+            
+            // Parse FICO score
+            String ficoString = cleanCSVField(fields[17]);
+            if (!ficoString.isEmpty()) {
+                customer.setFicoScore(Integer.parseInt(ficoString));
+            }
+            
+            return customer;
+            
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Failed to parse CSV line: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Cleans a CSV field by removing quotes and trimming whitespace.
+     * 
+     * @param field the CSV field to clean
+     * @return cleaned field value
+     */
+    private String cleanCSVField(String field) {
+        if (field == null) {
+            return "";
+        }
+        
+        field = field.trim();
+        
+        // Remove surrounding quotes if present
+        if (field.startsWith("\"") && field.endsWith("\"") && field.length() > 1) {
+            field = field.substring(1, field.length() - 1);
+            // Handle escaped quotes
+            field = field.replace("\"\"", "\"");
+        }
+        
+        return field;
     }
 }
