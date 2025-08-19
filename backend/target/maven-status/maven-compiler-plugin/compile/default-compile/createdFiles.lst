@@ -136,6 +136,7 @@ com/carddemo/entity/Fee$FeeType.class
 com/carddemo/util/DateConversionUtil.class
 com/carddemo/service/AuditService.class
 com/carddemo/config/RedisConfig.class
+com/carddemo/security/JwtAuthenticationFilter.class
 com/carddemo/dto/AdminMenuResponse.class
 com/carddemo/dto/CreditCardUpdateRequest.class
 com/carddemo/service/ReportingService$TransactionReportData.class
