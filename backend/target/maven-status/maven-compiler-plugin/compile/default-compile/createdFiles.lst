@@ -18,6 +18,7 @@ com/carddemo/dto/AccountUpdateRequest.class
 com/carddemo/service/TransactionPostingService$ProcessingResult.class
 com/carddemo/dto/TransactionRequest.class
 com/carddemo/service/SignOnService.class
+com/carddemo/repository/NotificationRepository.class
 com/carddemo/batch/StatementGenerationJobConfigA$TransactionData.class
 com/carddemo/controller/DailyTransactionController.class
 com/carddemo/service/CustomerMaintenanceService$PhoneFormattingResult.class
@@ -108,6 +109,7 @@ com/carddemo/service/InterestRateService$RateChangeNotification.class
 com/carddemo/batch/ArchiveJobConfig.class
 com/carddemo/dto/ReportRequest.class
 com/carddemo/entity/FeeTransaction$TransactionType.class
+com/carddemo/service/FileService.class
 com/carddemo/service/PaymentService$4.class
 com/carddemo/batch/FeeAssessmentJobConfig$FeeAssessmentException.class
 com/carddemo/service/PaymentService$PaymentProcessingException.class
@@ -119,6 +121,7 @@ com/carddemo/dto/AccountUpdateDto.class
 com/carddemo/repository/DisclosureGroupRepository.class
 com/carddemo/util/Constants.class
 com/carddemo/config/ApplicationConfig$CardDemoProperties.class
+com/carddemo/entity/TransactionCategoryBalance$TransactionCategoryBalanceKey.class
 com/carddemo/dto/MainMenuResponse.class
 com/carddemo/entity/Notification.class
 com/carddemo/entity/DisclosureGroup$DisclosureGroupBuilder.class
@@ -129,6 +132,7 @@ com/carddemo/service/ChargebackProcessor$ValidationResult.class
 com/carddemo/entity/InterestRate.class
 com/carddemo/security/PasswordPolicyValidator.class
 com/carddemo/service/DailyTransactionService$DailyTransactionDetail.class
+com/carddemo/entity/AccountClosure.class
 com/carddemo/config/ApplicationConfig$ProductionConfig.class
 com/carddemo/dto/StatementItemDto.class
 com/carddemo/dto/ApiResponse.class
@@ -423,6 +427,7 @@ com/carddemo/entity/Account$AccountBuilder.class
 com/carddemo/service/CustomerMaintenanceService$AddressStandardizationResult.class
 com/carddemo/security/CustomUserDetailsService.class
 com/carddemo/batch/ReconciliationJobConfig$SettlementRecordRowMapper.class
+com/carddemo/entity/TransactionCategoryBalance.class
 com/carddemo/controller/SessionController.class
 com/carddemo/config/WebConfig.class
 com/carddemo/repository/ArchiveRepository.class
@@ -479,6 +484,7 @@ com/carddemo/batch/ReconciliationJobConfig$DiscrepancyRecord.class
 com/carddemo/config/BatchConfig.class
 com/carddemo/dto/AdminMenuRequest.class
 com/carddemo/dto/SignOnResponseDto.class
+com/carddemo/entity/Card.class
 com/carddemo/batch/ReconciliationJobConfig$ChargebackTransactionRowMapper.class
 com/carddemo/dto/ReportRequestDto.class
 com/carddemo/controller/CustomerController.class
