@@ -156,6 +156,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                                 // Audit successful authentication event
                                 securityAuditService.auditAuthenticationEvent(
                                     username, "JWT_AUTH_SUCCESS", clientIp, 
+                                    request.getSession().getId(), "JWT_TOKEN",
                                     buildAuditContext(request, "Authentication successful"));
                                 
                                 // Record successful authentication metrics
@@ -186,6 +187,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             logger.error("Unexpected error in JWT request filter for URI: {}", requestUri, e);
             securityAuditService.auditAuthenticationEvent(
                 "UNKNOWN", "JWT_FILTER_ERROR", clientIp,
+                request.getSession().getId(), "JWT_TOKEN",
                 buildAuditContext(request, "Filter processing error: " + e.getMessage()));
             monitoringService.recordTransactionError();
         } finally {
@@ -398,14 +400,13 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             
             // Audit authentication failure event
             securityAuditService.auditFailedLoginAttempt(
-                effectiveUsername, clientIp, reason, 
-                buildAuditContext(request, reason));
+                effectiveUsername, clientIp, "JWT_TOKEN", reason);
             
             // Record authentication failure metrics
             monitoringService.recordTransactionError();
             
             // Generate security metrics for monitoring
-            securityAuditService.generateSecurityMetrics();
+            securityAuditService.generateSecurityMetrics("AUTHENTICATION", 24);
             
             // Clear any partial security context
             SecurityContextHolder.clearContext();

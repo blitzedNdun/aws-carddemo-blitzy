@@ -106,6 +106,20 @@ public final class SecurityConstants {
     public static final String ROLE_USER = ROLE_PREFIX + "USER";
 
     /**
+     * Public endpoints that don't require JWT authentication
+     */
+    public static final String[] PUBLIC_ENDPOINTS = {
+        "/api/auth/login",
+        "/api/auth/logout", 
+        "/api/auth/signup",
+        "/api/health",
+        "/api/version",
+        "/swagger-ui",
+        "/v3/api-docs",
+        "/actuator"
+    };
+
+    /**
      * Private constructor to prevent instantiation
      */
     private SecurityConstants() {

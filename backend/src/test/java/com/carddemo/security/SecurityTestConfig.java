@@ -10,7 +10,14 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import com.carddemo.repository.UserSecurityRepository;
-import com.carddemo.security.JwtAuthenticationFilter;
+import com.carddemo.security.JwtRequestFilter;
+import com.carddemo.security.SecurityAuditService;
+import com.carddemo.security.SecurityEventListener;
+import com.carddemo.service.AuditService;
+import com.carddemo.service.CacheService;
+import com.carddemo.service.MonitoringService;
+import com.carddemo.repository.AuditLogRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -66,17 +73,41 @@ public class SecurityTestConfig {
 
     @Bean
     @Primary
-    public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        JwtAuthenticationFilter mock = Mockito.mock(JwtAuthenticationFilter.class);
+    public JwtRequestFilter jwtRequestFilter() {
+        JwtRequestFilter mock = Mockito.mock(JwtRequestFilter.class);
         try {
             // Configure the mock to properly handle the filter chain
+            // Mock doFilterInternal for OncePerRequestFilter
+            Mockito.doAnswer(invocation -> {
+                jakarta.servlet.http.HttpServletRequest request = invocation.getArgument(0);
+                jakarta.servlet.http.HttpServletResponse response = invocation.getArgument(1);
+                jakarta.servlet.FilterChain chain = invocation.getArgument(2);
+                
+                // Simply pass through to the next filter in the chain
+                if (chain != null) {
+                    chain.doFilter(request, response);
+                }
+                return null;
+            }).when(mock).doFilterInternal(
+                Mockito.any(jakarta.servlet.http.HttpServletRequest.class),
+                Mockito.any(jakarta.servlet.http.HttpServletResponse.class),
+                Mockito.any(jakarta.servlet.FilterChain.class)
+            );
+            
+            // Mock doFilter to delegate to doFilterInternal
             Mockito.doAnswer(invocation -> {
                 jakarta.servlet.ServletRequest request = invocation.getArgument(0);
                 jakarta.servlet.ServletResponse response = invocation.getArgument(1);
                 jakarta.servlet.FilterChain chain = invocation.getArgument(2);
                 
-                // Simply pass through to the next filter in the chain
-                if (chain != null) {
+                if (request instanceof jakarta.servlet.http.HttpServletRequest && 
+                    response instanceof jakarta.servlet.http.HttpServletResponse) {
+                    mock.doFilterInternal(
+                        (jakarta.servlet.http.HttpServletRequest) request,
+                        (jakarta.servlet.http.HttpServletResponse) response,
+                        chain
+                    );
+                } else if (chain != null) {
                     chain.doFilter(request, response);
                 }
                 return null;
@@ -124,5 +155,47 @@ public class SecurityTestConfig {
     @Primary
     public ObjectMapper objectMapper() {
         return new ObjectMapper();
+    }
+
+    @Bean
+    @Primary
+    public SecurityAuditService securityAuditService() {
+        return Mockito.mock(SecurityAuditService.class);
+    }
+
+    @Bean
+    @Primary
+    public CacheService cacheService() {
+        return Mockito.mock(CacheService.class);
+    }
+
+    @Bean
+    @Primary
+    public MonitoringService monitoringService() {
+        return Mockito.mock(MonitoringService.class);
+    }
+
+    @Bean
+    @Primary
+    public AuditService auditService() {
+        return Mockito.mock(AuditService.class);
+    }
+
+    @Bean
+    @Primary
+    public SecurityEventListener securityEventListener() {
+        return Mockito.mock(SecurityEventListener.class);
+    }
+
+    @Bean
+    @Primary
+    public AuditLogRepository auditLogRepository() {
+        return Mockito.mock(AuditLogRepository.class);
+    }
+
+    @Bean
+    @Primary
+    public MeterRegistry meterRegistry() {
+        return Mockito.mock(MeterRegistry.class);
     }
 }

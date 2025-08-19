@@ -1,6 +1,6 @@
 package com.carddemo.security;
 
-import com.carddemo.security.JwtAuthenticationFilter;
+import com.carddemo.security.JwtRequestFilter;
 import com.carddemo.security.CustomUserDetailsService;
 import com.carddemo.security.JwtTokenService;
 import com.carddemo.security.SecurityConstants;
@@ -51,7 +51,7 @@ import java.util.List;
  * 
  * Authentication Flow:
  * 1. HTTP requests intercepted by Spring Security filter chain
- * 2. JWT tokens extracted and validated through JwtAuthenticationFilter
+ * 2. JWT tokens extracted and validated through JwtRequestFilter
  * 3. User details loaded via CustomUserDetailsService from PostgreSQL
  * 4. Security context established with user authorities
  * 5. Authorization decisions made based on @PreAuthorize annotations
@@ -83,7 +83,7 @@ public class SecurityConfig {
     private JwtTokenService jwtTokenService;
 
     @Autowired
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
+    private JwtRequestFilter jwtRequestFilter;
 
     /**
      * Configures the main security filter chain defining HTTP security policies,
@@ -158,7 +158,7 @@ public class SecurityConfig {
             )
             
             // Add custom JWT authentication filter before username/password filter
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class)
             
             // Configure exception handling for authentication/authorization failures
             .exceptionHandling(ex -> ex
