@@ -9,6 +9,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import com.carddemo.repository.UserSecurityRepository;
+import com.carddemo.security.JwtAuthenticationFilter;
+import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.Arrays;
 
@@ -53,6 +57,39 @@ public class SecurityTestConfig {
     public JwtTokenService jwtTokenService() {
         return Mockito.mock(JwtTokenService.class);
     }
+
+    @Bean
+    @Primary
+    public UserSecurityRepository userSecurityRepository() {
+        return Mockito.mock(UserSecurityRepository.class);
+    }
+
+    @Bean
+    @Primary
+    public JwtAuthenticationFilter jwtAuthenticationFilter() {
+        JwtAuthenticationFilter mock = Mockito.mock(JwtAuthenticationFilter.class);
+        try {
+            // Configure the mock to properly handle the filter chain
+            Mockito.doAnswer(invocation -> {
+                jakarta.servlet.ServletRequest request = invocation.getArgument(0);
+                jakarta.servlet.ServletResponse response = invocation.getArgument(1);
+                jakarta.servlet.FilterChain chain = invocation.getArgument(2);
+                
+                // Simply pass through to the next filter in the chain
+                if (chain != null) {
+                    chain.doFilter(request, response);
+                }
+                return null;
+            }).when(mock).doFilter(
+                Mockito.any(jakarta.servlet.ServletRequest.class),
+                Mockito.any(jakarta.servlet.ServletResponse.class),
+                Mockito.any(jakarta.servlet.FilterChain.class)
+            );
+        } catch (Exception e) {
+            // If mock setup fails, return a basic mock
+        }
+        return mock;
+    }
     
     @Bean
     @Primary 
@@ -75,5 +112,17 @@ public class SecurityTestConfig {
                     throw new UsernameNotFoundException("User not found: " + username);
             }
         };
+    }
+
+    @Bean
+    @Primary
+    public HandlerMappingIntrospector mvcHandlerMappingIntrospector() {
+        return Mockito.mock(HandlerMappingIntrospector.class);
+    }
+
+    @Bean
+    @Primary
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper();
     }
 }
