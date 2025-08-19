@@ -285,51 +285,63 @@ public class Customer {
         ValidationException validationException = new ValidationException("Customer validation failed");
 
         // Validate required fields using ValidationUtil.validateRequiredField()
-        if (!ValidationUtil.validateRequiredField(firstName, "first_name")) {
+        try {
+            ValidationUtil.validateRequiredField("firstName", firstName);
+        } catch (ValidationException e) {
             validationException.addFieldError("firstName", "First name is required");
         }
 
-        if (!ValidationUtil.validateRequiredField(lastName, "last_name")) {
+        try {
+            ValidationUtil.validateRequiredField("lastName", lastName);
+        } catch (ValidationException e) {
             validationException.addFieldError("lastName", "Last name is required");
         }
 
         // Validate SSN format using ValidationUtil.validateSSN()
         if (ssn != null && !ssn.trim().isEmpty()) {
-            if (!ValidationUtil.validateSSN(ssn)) {
+            try {
+                ValidationUtil.validateSSN("ssn", ssn);
+            } catch (ValidationException e) {
                 validationException.addFieldError("ssn", "Invalid SSN format. Must be 9 digits");
             }
         }
 
-        // Validate phone numbers using ValidationUtil.validatePhoneAreaCode()
+        // Validate phone numbers using ValidationUtil.validatePhoneNumber()
         if (phoneNumber1 != null && !phoneNumber1.trim().isEmpty()) {
-            if (!ValidationUtil.validatePhoneAreaCode(phoneNumber1)) {
+            try {
+                ValidationUtil.validatePhoneNumber("phoneNumber1", phoneNumber1);
+            } catch (ValidationException e) {
                 validationException.addFieldError("phoneNumber1", "Invalid phone number format");
             }
         }
 
         if (phoneNumber2 != null && !phoneNumber2.trim().isEmpty()) {
-            if (!ValidationUtil.validatePhoneAreaCode(phoneNumber2)) {
+            try {
+                ValidationUtil.validatePhoneNumber("phoneNumber2", phoneNumber2);
+            } catch (ValidationException e) {
                 validationException.addFieldError("phoneNumber2", "Invalid phone number format");
             }
         }
 
         // Validate ZIP code using ValidationUtil.validateZipCode()
         if (zipCode != null && !zipCode.trim().isEmpty()) {
-            if (!ValidationUtil.validateZipCode(zipCode)) {
+            try {
+                ValidationUtil.validateZipCode("zipCode", zipCode);
+            } catch (ValidationException e) {
                 validationException.addFieldError("zipCode", "Invalid ZIP code format");
             }
         }
 
-        // Validate state code using ValidationUtil.validateUSStateCode()
+        // Validate state code using ValidationUtil.isValidStateCode()
         if (stateCode != null && !stateCode.trim().isEmpty()) {
-            if (!ValidationUtil.validateUSStateCode(stateCode)) {
+            if (!ValidationUtil.isValidStateCode(stateCode)) {
                 validationException.addFieldError("stateCode", "Invalid US state code");
             }
         }
 
         // Validate date of birth using DateConversionUtil.validateDate() and DateConversionUtil.isNotFutureDate()
         if (dateOfBirth != null) {
-            String dateStr = DateConversionUtil.formatCCYYMMDD(dateOfBirth);
+            String dateStr = DateConversionUtil.formatToCobol(dateOfBirth);
             if (!DateConversionUtil.validateDate(dateStr)) {
                 validationException.addFieldError("dateOfBirth", "Invalid date of birth format");
             } else if (!DateConversionUtil.isNotFutureDate(dateOfBirth)) {
