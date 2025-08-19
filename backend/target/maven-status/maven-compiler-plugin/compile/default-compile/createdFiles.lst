@@ -455,6 +455,7 @@ com/carddemo/entity/User.class
 com/carddemo/repository/ArchiveStatistics.class
 com/carddemo/util/CobolStringFormatter.class
 com/carddemo/entity/Notification$NotificationType.class
+com/carddemo/controller/MenuController.class
 com/carddemo/service/FraudDetectionService$FrequencyCheckResult.class
 com/carddemo/batch/BalanceReconciliationJobConfig$2.class
 com/carddemo/entity/Fee$FeeStatus.class

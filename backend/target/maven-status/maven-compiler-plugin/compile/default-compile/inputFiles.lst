@@ -27,6 +27,7 @@
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/controller/CustomerController.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/controller/DailyTransactionController.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/controller/InterestController.java
+/tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/controller/MenuController.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/controller/PaymentController.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/controller/ReportController.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/controller/SessionController.java
