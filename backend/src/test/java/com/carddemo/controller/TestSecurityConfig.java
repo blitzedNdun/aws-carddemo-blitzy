@@ -26,8 +26,9 @@ import static org.mockito.Mockito.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.algorithms.Algorithm;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -167,21 +168,19 @@ public class TestSecurityConfig {
      * @return Valid JWT token string for API authentication testing
      */
     public static String generateTestJwtToken(String username, String userType) {
-        Algorithm algorithm = Algorithm.HMAC256(TEST_SECRET);
-        
         Date expirationDate = new Date(System.currentTimeMillis() + TEST_TOKEN_VALIDITY);
-        
         String role = "A".equals(userType) ? "ROLE_ADMIN" : "ROLE_USER";
         
-        return JWT.create()
-                .withSubject(username)
-                .withClaim("userType", userType)
-                .withClaim("role", role)
-                .withClaim("userId", username.toUpperCase())
-                .withIssuedAt(new Date())
-                .withExpiresAt(expirationDate)
-                .withIssuer("carddemo-test")
-                .sign(algorithm);
+        return Jwts.builder()
+                .setSubject(username)
+                .claim("userType", userType)
+                .claim("role", role)
+                .claim("userId", username.toUpperCase())
+                .setIssuedAt(new Date())
+                .setExpiration(expirationDate)
+                .setIssuer("carddemo-test")
+                .signWith(Keys.hmacShaKeyFor(TEST_SECRET.getBytes()), SignatureAlgorithm.HS256)
+                .compact();
     }
 
     /**
