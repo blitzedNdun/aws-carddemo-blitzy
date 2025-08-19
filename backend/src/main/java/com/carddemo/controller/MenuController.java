@@ -9,8 +9,11 @@ import com.carddemo.dto.MainMenuResponse;
 import com.carddemo.dto.AdminMenuResponse;
 import com.carddemo.dto.MenuOption;
 import com.carddemo.dto.SessionContext;
+import com.carddemo.dto.MenuRequest;
+import com.carddemo.dto.MenuResponse;
 import com.carddemo.service.MenuService;
 import com.carddemo.service.SecurityService;
+import com.carddemo.entity.UserSecurity;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -134,7 +137,7 @@ public class MenuController {
             }
 
             // Additional permission check using SecurityService
-            boolean hasPermissions = securityService.checkPermissions(currentUserId);
+            boolean hasPermissions = securityService.checkPermissions("MENU_ACCESS", "MAIN_MENU");
             if (!hasPermissions) {
                 logger.warn("User {} does not have required permissions for main menu", currentUserId);
                 MainMenuResponse errorResponse = new MainMenuResponse();
@@ -455,9 +458,9 @@ public class MenuController {
             String userId = authentication.getName();
             
             // Use SecurityService to get current user details
-            String currentUser = securityService.getCurrentUser();
-            if (currentUser != null && !currentUser.isEmpty()) {
-                return currentUser;
+            UserSecurity currentUser = securityService.getCurrentUser();
+            if (currentUser != null && currentUser.getUserId() != null && !currentUser.getUserId().isEmpty()) {
+                return currentUser.getUserId();
             }
             
             return userId;
@@ -534,9 +537,10 @@ public class MenuController {
         try {
             MenuRequest request = new MenuRequest();
             request.setUserId(userId);
-            request.setUserType(menuType.equals("ADMIN") ? "A" : "U");
+            request.setUserType(menuType.equals("ADMIN") ? "ADMIN" : "USER");
+            request.setRequestType("MENU");
+            request.setMenuType(menuType);
             request.setTimestamp(LocalDateTime.now());
-            request.setCurrentMenu(menuType);
             return request;
             
         } catch (Exception e) {
@@ -544,6 +548,8 @@ public class MenuController {
             // Return minimal valid request
             MenuRequest fallbackRequest = new MenuRequest();
             fallbackRequest.setUserId(userId != null ? userId : "UNKNOWN");
+            fallbackRequest.setRequestType("MENU");
+            fallbackRequest.setMenuType(menuType);
             return fallbackRequest;
         }
     }
@@ -671,57 +677,4 @@ public class MenuController {
         }
     }
 
-    // ================= INTERNAL DTOs FOR SERVICE COMPATIBILITY =================
-    
-    /**
-     * Internal MenuRequest class to satisfy MenuService method signatures.
-     * Minimal implementation to enable service method calls.
-     */
-    private static class MenuRequest {
-        private String userId;
-        private String userType; 
-        private String selectedOption;
-        private String pfKey;
-        private LocalDateTime timestamp;
-        private String currentMenu;
-        
-        public String getUserId() { return userId; }
-        public void setUserId(String userId) { this.userId = userId; }
-        public String getUserType() { return userType; }
-        public void setUserType(String userType) { this.userType = userType; }
-        public String getSelectedOption() { return selectedOption; }
-        public void setSelectedOption(String selectedOption) { this.selectedOption = selectedOption; }
-        public String getPfKey() { return pfKey; }
-        public void setPfKey(String pfKey) { this.pfKey = pfKey; }
-        public LocalDateTime getTimestamp() { return timestamp; }
-        public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
-        public String getCurrentMenu() { return currentMenu; }
-        public void setCurrentMenu(String currentMenu) { this.currentMenu = currentMenu; }
-    }
-    
-    /**
-     * Internal MenuResponse class to satisfy MenuService method signatures.
-     * Minimal implementation to enable service method calls.
-     */
-    private static class MenuResponse {
-        private List<MenuOption> menuOptions;
-        private String errorMessage;
-        private String successMessage;
-        private String transactionCode;
-        private LocalDateTime timestamp;
-        private String currentMenu;
-        
-        public List<MenuOption> getMenuOptions() { return menuOptions; }
-        public void setMenuOptions(List<MenuOption> menuOptions) { this.menuOptions = menuOptions; }
-        public String getErrorMessage() { return errorMessage; }
-        public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
-        public String getSuccessMessage() { return successMessage; }
-        public void setSuccessMessage(String successMessage) { this.successMessage = successMessage; }
-        public String getTransactionCode() { return transactionCode; }
-        public void setTransactionCode(String transactionCode) { this.transactionCode = transactionCode; }
-        public LocalDateTime getTimestamp() { return timestamp; }
-        public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
-        public String getCurrentMenu() { return currentMenu; }
-        public void setCurrentMenu(String currentMenu) { this.currentMenu = currentMenu; }
-    }
 }
