@@ -4,13 +4,13 @@ import com.carddemo.dto.ReportRequestDto;
 import com.carddemo.service.ReportService;
 import com.carddemo.dto.ApiResponse;
 import com.carddemo.dto.Message;
+import com.carddemo.dto.ResponseStatus;
 import com.carddemo.exception.ValidationException;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -99,7 +99,7 @@ public class ReportController {
             @Valid @RequestBody ReportRequestDto request) {
         
         logger.info("Report generation request received - Type: {}, Confirmation: {}", 
-                   request.getReportType(), request.getConfirmationFlag());
+                   request.getReportType(), request.isConfirmationFlag());
         
         // Create response wrapper matching CICS response patterns
         ApiResponse<Map<String, Object>> response = new ApiResponse<>();
@@ -107,12 +107,12 @@ public class ReportController {
         
         try {
             // Validate confirmation flag first (matching COBOL SUBMIT-JOB-TO-INTRDR logic)
-            if (!request.getConfirmationFlag()) {
+            if (!request.isConfirmationFlag()) {
                 String reportTypeDesc = getReportTypeDescription(request.getReportType());
                 String confirmationMessage = String.format(
                     "Please confirm to print the %s report...", reportTypeDesc);
                 
-                response.setStatus(ApiResponse.ResponseStatus.ERROR);
+                response.setStatus(ResponseStatus.ERROR);
                 response.addMessage(Message.error(confirmationMessage));
                 
                 logger.info("Report generation requires confirmation - Type: {}", request.getReportType());
@@ -124,7 +124,7 @@ public class ReportController {
                 try {
                     request.validateDateRange();
                 } catch (IllegalArgumentException e) {
-                    response.setStatus(ApiResponse.ResponseStatus.ERROR);
+                    response.setStatus(ResponseStatus.ERROR);
                     response.addMessage(Message.error(e.getMessage()));
                     
                     logger.warn("Custom date range validation failed: {}", e.getMessage());
@@ -158,7 +158,7 @@ public class ReportController {
             
             if ((Boolean) jobResult.get("success")) {
                 // Successful job submission
-                response.setStatus(ApiResponse.ResponseStatus.SUCCESS);
+                response.setStatus(ResponseStatus.SUCCESS);
                 response.setResponseData(jobResult);
                 
                 // Add success message matching COBOL success pattern
@@ -173,7 +173,7 @@ public class ReportController {
                 
             } else {
                 // Job submission failed
-                response.setStatus(ApiResponse.ResponseStatus.ERROR);
+                response.setStatus(ResponseStatus.ERROR);
                 response.addMessage(Message.error((String) jobResult.get("errorMessage")));
                 
                 logger.error("Report job submission failed: {}", jobResult.get("errorMessage"));
@@ -182,7 +182,7 @@ public class ReportController {
             
         } catch (ValidationException e) {
             // Handle field-level validation errors
-            response.setStatus(ApiResponse.ResponseStatus.ERROR);
+            response.setStatus(ResponseStatus.ERROR);
             
             // Add field-specific error messages
             Map<String, String> fieldErrors = e.getFieldErrors();
@@ -200,7 +200,7 @@ public class ReportController {
             
         } catch (Exception e) {
             // Handle unexpected system errors
-            response.setStatus(ApiResponse.ResponseStatus.ERROR);
+            response.setStatus(ResponseStatus.ERROR);
             response.addMessage(Message.error("System error processing report request. Please try again."));
             
             logger.error("Unexpected error processing report request", e);
