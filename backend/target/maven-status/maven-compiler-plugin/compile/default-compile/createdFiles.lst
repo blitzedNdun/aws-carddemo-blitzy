@@ -417,6 +417,7 @@ com/carddemo/service/FraudDetectionService$FraudDetectionResult.class
 com/carddemo/util/FormatUtil.class
 com/carddemo/dto/UserUpdateResponse.class
 com/carddemo/config/ExtractJobConfig.class
+com/carddemo/entity/Account$AccountBuilder.class
 com/carddemo/service/CustomerMaintenanceService$AddressStandardizationResult.class
 com/carddemo/security/CustomUserDetailsService.class
 com/carddemo/batch/ReconciliationJobConfig$SettlementRecordRowMapper.class
