@@ -81,6 +81,16 @@ public final class SecurityConstants {
     public static final String USER_TYPE_ADMIN = "A";
 
     /**
+     * Authentication endpoint for user login
+     */
+    public static final String AUTH_LOGIN_ENDPOINT = "/api/auth/login";
+
+    /**
+     * Authentication endpoint for user logout
+     */
+    public static final String AUTH_LOGOUT_ENDPOINT = "/api/auth/logout";
+
+    /**
      * Role prefix for Spring Security authorities
      */
     public static final String ROLE_PREFIX = "ROLE_";
