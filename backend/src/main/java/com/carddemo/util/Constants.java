@@ -72,10 +72,28 @@ public final class Constants {
     public static final int TYPE_CODE_LENGTH = 2;
 
     /**
-     * Maximum length for transaction type description fields.
-     * Maps to COBOL PIC X(50) specification from CVTRA03Y copybook.
+     * Maximum length for transaction category code fields.
+     * Maps to COBOL PIC X(4) specification from COTRN02 BMS map.
      */
-    public static final int DESCRIPTION_LENGTH = 50;
+    public static final int CATEGORY_CODE_LENGTH = 4;
+
+    /**
+     * Maximum length for transaction source fields.
+     * Maps to COBOL PIC X(10) specification from COTRN02 BMS map.
+     */
+    public static final int SOURCE_LENGTH = 10;
+
+    /**
+     * Maximum length for merchant name fields.
+     * Maps to COBOL PIC X(30) specification from COTRN02 BMS map.
+     */
+    public static final int MERCHANT_NAME_LENGTH = 30;
+
+    /**
+     * Maximum length for transaction type description fields.
+     * Maps to COBOL PIC X(60) specification from COTRN02 BMS map.
+     */
+    public static final int DESCRIPTION_LENGTH = 60;
 
     /**
      * Maximum number of users displayed per page in list views.
