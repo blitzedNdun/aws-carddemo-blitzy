@@ -515,5 +515,6 @@ com/carddemo/client/EmailClient$EmailTemplate.class
 com/carddemo/dto/AccountDto.class
 com/carddemo/repository/InterestRateRepository.class
 com/carddemo/service/FileGenerationService$BatchResult.class
+com/carddemo/security/JwtRequestFilter.class
 com/carddemo/service/MenuService.class
 com/carddemo/service/FileGenerationService$FieldConfig.class
