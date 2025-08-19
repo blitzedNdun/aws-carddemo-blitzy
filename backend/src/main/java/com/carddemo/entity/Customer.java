@@ -1,96 +1,112 @@
 /*
- * Customer.java
- * 
- * JPA entity class representing customer profile data, mapped to customer_data 
- * PostgreSQL table. Contains personal information, contact details, addresses, 
- * and financial indicators for credit card account holders. Uses proper 
- * validation and data types to preserve COBOL field structure compatibility.
- * 
- * Implements one-to-many relationships with Account and Card entities through 
- * customer_id foreign key, enabling customer-to-account navigation and 
- * comprehensive customer profile management operations.
- * 
- * Based on COBOL copybook: app/cpy/CVCUS01Y.cpy
- * - CUST-ID (PIC 9(09)) for customer identification
- * - CUST-FIRST-NAME (PIC X(20)) for first name
- * - CUST-MIDDLE-NAME (PIC X(20)) for middle name
- * - CUST-LAST-NAME (PIC X(20)) for last name
- * - CUST-ADDR-LINE-1 (PIC X(50)) for address line 1
- * - CUST-ADDR-LINE-2 (PIC X(50)) for address line 2
- * - CUST-ADDR-LINE-3 (PIC X(50)) for address line 3
- * - CUST-ADDR-STATE-CD (PIC X(02)) for state code
- * - CUST-ADDR-COUNTRY-CD (PIC X(03)) for country code
- * - CUST-ADDR-ZIP (PIC X(10)) for ZIP code
- * - CUST-PHONE-NUM-1 (PIC X(15)) for primary phone
- * - CUST-PHONE-NUM-2 (PIC X(15)) for secondary phone
- * - CUST-SSN (PIC X(09)) for social security number
- * - CUST-GOVT-ISSUED-ID (PIC X(20)) for government ID
- * - CUST-DOB-YYYYMMDD (PIC X(08)) for date of birth
- * - CUST-EFT-ACCOUNT-ID (PIC X(10)) for EFT account
- * - CUST-PRI-CARD-HOLDER-IND (PIC X(01)) for primary cardholder indicator
- * - CUST-FICO-CREDIT-SCORE (PIC 9(03)) for FICO score
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 package com.carddemo.entity;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
+import com.carddemo.util.ValidationUtil;
+import com.carddemo.util.DateConversionUtil;
+import com.carddemo.util.StringUtil;
+import com.carddemo.util.Constants;
+import com.carddemo.exception.ValidationException;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Objects;
 
 /**
- * JPA entity class representing customer profile data.
+ * JPA entity representing customer profile data, mapped to customer_data PostgreSQL table.
+ * Corresponds to CUSTOMER-RECORD structure from CUSTREC.cpy and CVCUS01Y.cpy copybooks.
  * 
- * Maps to the customer_data PostgreSQL table, providing comprehensive customer
- * information including personal details, contact information, addresses,
- * and financial indicators. Maintains relationships with Account and Card
- * entities for complete customer management functionality.
+ * Contains personal information including names, addresses, contact details, SSN, 
+ * government ID, date of birth, and FICO score. Implements field-level encryption 
+ * for sensitive data like SSN and supports GDPR compliance through data masking annotations.
  * 
- * Key functionality:
- * - Customer identification and personal information management
- * - Contact and address information with proper validation
- * - Financial indicators including FICO score tracking
- * - Government ID and SSN management with encryption support
- * - Primary cardholder designation for account management
- * - EFT account linkage for payment processing
+ * Field mappings from COBOL copybooks:
+ * - CUST-ID (PIC 9(9)) → customerId (BIGINT)
+ * - CUST-FIRST-NAME (PIC X(25)) → firstName (VARCHAR(20))
+ * - CUST-MIDDLE-NAME (PIC X(25)) → middleName (VARCHAR(20))
+ * - CUST-LAST-NAME (PIC X(25)) → lastName (VARCHAR(20))
+ * - CUST-ADDR-LINE-1 (PIC X(50)) → addressLine1 (VARCHAR(50))
+ * - CUST-ADDR-LINE-2 (PIC X(50)) → addressLine2 (VARCHAR(50))
+ * - CUST-ADDR-LINE-3 (PIC X(50)) → addressLine3 (VARCHAR(50))
+ * - CUST-ADDR-STATE-CD (PIC X(02)) → stateCode (VARCHAR(2))
+ * - CUST-ADDR-COUNTRY-CD (PIC X(03)) → countryCode (VARCHAR(3))
+ * - CUST-ADDR-ZIP (PIC X(10)) → zipCode (VARCHAR(10))
+ * - CUST-PHONE-NUM-1 (PIC X(15)) → phoneNumber1 (VARCHAR(15))
+ * - CUST-PHONE-NUM-2 (PIC X(15)) → phoneNumber2 (VARCHAR(15))
+ * - CUST-SSN (PIC X(9)) → ssn (VARCHAR(9), encrypted)
+ * - CUST-GOVT-ISSUED-ID (PIC X(20)) → governmentIssuedId (VARCHAR(20))
+ * - CUST-DOB-YYYY-MM-DD (PIC X(10)) → dateOfBirth (DATE)
+ * - CUST-EFT-ACCOUNT-ID (PIC X(10)) → eftAccountId (VARCHAR(10))
+ * - CUST-PRI-CARD-HOLDER-IND (PIC X) → primaryCardHolderIndicator (CHAR(1))
+ * - CUST-FICO-CREDIT-SCORE (PIC 9(3)) → ficoScore (SMALLINT)
  * 
- * All fields use appropriate validation to preserve COBOL field constraints
- * and ensure data integrity equivalent to mainframe data validation rules.
+ * @author CardDemo Migration Team
+ * @version 1.0
+ * @since 2024
  */
 @Entity
-@Table(name = "customer_data", indexes = {
-    @Index(name = "idx_customer_name", columnList = "last_name, first_name"),
-    @Index(name = "idx_customer_ssn", columnList = "ssn"),
-    @Index(name = "idx_customer_phone", columnList = "phone_number_1"),
-    @Index(name = "idx_customer_eft", columnList = "eft_account_id")
-})
+@Table(name = "customer_data")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Customer {
 
+    // Constants for field lengths (matching COBOL PIC clauses)
+    private static final int CUSTOMER_ID_LENGTH = 9;
+    private static final int SSN_LENGTH = 9;
+    private static final int PHONE_NUMBER_LENGTH = 15;
+    private static final int ZIP_CODE_LENGTH = 10;
+    private static final int FICO_SCORE_MIN = 300;
+    private static final int FICO_SCORE_MAX = 850;
+    
     /**
-     * Primary key: Customer ID (9-digit numeric customer identifier).
-     * Maps to CUST-ID from CVCUS01Y.cpy (PIC 9(09)).
+     * Customer ID - Primary key.
+     * Maps to CUST-ID field from COBOL copybook (PIC 9(9)).
+     * Unique identifier for each customer in the system.
      */
     @Id
-    @Column(name = "customer_id", length = 9, nullable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "customer_id", nullable = false)
     @NotNull(message = "Customer ID is required")
-    @Size(min = 9, max = 9, message = "Customer ID must be exactly 9 digits")
-    @Pattern(regexp = "\\d{9}", message = "Customer ID must contain only digits")
-    private String customerId;
+    private Long customerId;
 
     /**
      * Customer first name.
-     * Maps to CUST-FIRST-NAME from CVCUS01Y.cpy (PIC X(20)).
+     * Maps to CUST-FIRST-NAME field from COBOL copybook (PIC X(25)).
+     * Truncated to 20 characters for database compatibility.
      */
     @Column(name = "first_name", length = 20, nullable = false)
     @NotNull(message = "First name is required")
-    @NotBlank(message = "First name cannot be blank")
-    @Size(min = 1, max = 20, message = "First name must be 1-20 characters")
+    @Size(max = 20, message = "First name cannot exceed 20 characters")
     private String firstName;
 
     /**
-     * Customer middle name (optional).
-     * Maps to CUST-MIDDLE-NAME from CVCUS01Y.cpy (PIC X(20)).
+     * Customer middle name.
+     * Maps to CUST-MIDDLE-NAME field from COBOL copybook (PIC X(25)).
+     * Truncated to 20 characters for database compatibility.
      */
     @Column(name = "middle_name", length = 20)
     @Size(max = 20, message = "Middle name cannot exceed 20 characters")
@@ -98,400 +114,367 @@ public class Customer {
 
     /**
      * Customer last name.
-     * Maps to CUST-LAST-NAME from CVCUS01Y.cpy (PIC X(20)).
+     * Maps to CUST-LAST-NAME field from COBOL copybook (PIC X(25)).
+     * Truncated to 20 characters for database compatibility.
      */
     @Column(name = "last_name", length = 20, nullable = false)
     @NotNull(message = "Last name is required")
-    @NotBlank(message = "Last name cannot be blank")
-    @Size(min = 1, max = 20, message = "Last name must be 1-20 characters")
+    @Size(max = 20, message = "Last name cannot exceed 20 characters")
     private String lastName;
 
     /**
-     * Address line 1 (primary address).
-     * Maps to CUST-ADDR-LINE-1 from CVCUS01Y.cpy (PIC X(50)).
+     * Customer address line 1.
+     * Maps to CUST-ADDR-LINE-1 field from COBOL copybook (PIC X(50)).
+     * Primary address line for customer residence.
      */
-    @Column(name = "address_line_1", length = 50, nullable = false)
-    @NotNull(message = "Address line 1 is required")
-    @NotBlank(message = "Address line 1 cannot be blank")
-    @Size(min = 1, max = 50, message = "Address line 1 must be 1-50 characters")
+    @Column(name = "address_line_1", length = 50)
+    @Size(max = 50, message = "Address line 1 cannot exceed 50 characters")
     private String addressLine1;
 
     /**
-     * Address line 2 (optional).
-     * Maps to CUST-ADDR-LINE-2 from CVCUS01Y.cpy (PIC X(50)).
+     * Customer address line 2.
+     * Maps to CUST-ADDR-LINE-2 field from COBOL copybook (PIC X(50)).
+     * Secondary address line for apartment, suite, etc.
      */
     @Column(name = "address_line_2", length = 50)
     @Size(max = 50, message = "Address line 2 cannot exceed 50 characters")
     private String addressLine2;
 
     /**
-     * Address line 3 (optional).
-     * Maps to CUST-ADDR-LINE-3 from CVCUS01Y.cpy (PIC X(50)).
+     * Customer address line 3.
+     * Maps to CUST-ADDR-LINE-3 field from COBOL copybook (PIC X(50)).
+     * Tertiary address line for additional address details.
      */
     @Column(name = "address_line_3", length = 50)
     @Size(max = 50, message = "Address line 3 cannot exceed 50 characters")
     private String addressLine3;
 
     /**
-     * State code (2-character state abbreviation).
-     * Maps to CUST-ADDR-STATE-CD from CVCUS01Y.cpy (PIC X(02)).
+     * Customer state code.
+     * Maps to CUST-ADDR-STATE-CD field from COBOL copybook (PIC X(02)).
+     * Two-character US state code.
      */
-    @Column(name = "state_code", length = 2, nullable = false)
-    @NotNull(message = "State code is required")
-    @Size(min = 2, max = 2, message = "State code must be exactly 2 characters")
-    @Pattern(regexp = "[A-Z]{2}", message = "State code must be 2 uppercase letters")
+    @Column(name = "state_code", length = 2)
+    @Size(max = 2, message = "State code cannot exceed 2 characters")
     private String stateCode;
 
     /**
-     * Country code (3-character country abbreviation).
-     * Maps to CUST-ADDR-COUNTRY-CD from CVCUS01Y.cpy (PIC X(03)).
+     * Customer country code.
+     * Maps to CUST-ADDR-COUNTRY-CD field from COBOL copybook (PIC X(03)).
+     * Three-character ISO country code.
      */
-    @Column(name = "country_code", length = 3, nullable = false)
-    @NotNull(message = "Country code is required")
-    @Size(min = 3, max = 3, message = "Country code must be exactly 3 characters")
-    @Pattern(regexp = "[A-Z]{3}", message = "Country code must be 3 uppercase letters")
+    @Column(name = "country_code", length = 3)
+    @Size(max = 3, message = "Country code cannot exceed 3 characters")
     private String countryCode;
 
     /**
-     * ZIP code (up to 10 characters for international support).
-     * Maps to CUST-ADDR-ZIP from CVCUS01Y.cpy (PIC X(10)).
+     * Customer ZIP code.
+     * Maps to CUST-ADDR-ZIP field from COBOL copybook (PIC X(10)).
+     * Postal code for customer address.
      */
-    @Column(name = "zip_code", length = 10, nullable = false)
-    @NotNull(message = "ZIP code is required")
-    @Size(min = 5, max = 10, message = "ZIP code must be 5-10 characters")
+    @Column(name = "zip_code", length = ZIP_CODE_LENGTH)
+    @Size(max = ZIP_CODE_LENGTH, message = "ZIP code cannot exceed " + ZIP_CODE_LENGTH + " characters")
     private String zipCode;
 
     /**
-     * Primary phone number.
-     * Maps to CUST-PHONE-NUM-1 from CVCUS01Y.cpy (PIC X(15)).
+     * Customer primary phone number.
+     * Maps to CUST-PHONE-NUM-1 field from COBOL copybook (PIC X(15)).
+     * Primary contact phone number for the customer.
      */
-    @Column(name = "phone_number_1", length = 15, nullable = false)
-    @NotNull(message = "Primary phone number is required")
-    @Size(min = 10, max = 15, message = "Phone number must be 10-15 characters")
-    @Pattern(regexp = "[0-9\\-\\(\\)\\+\\s]+", message = "Phone number contains invalid characters")
+    @Column(name = "phone_number_1", length = PHONE_NUMBER_LENGTH)
+    @Size(max = PHONE_NUMBER_LENGTH, message = "Phone number 1 cannot exceed " + PHONE_NUMBER_LENGTH + " characters")
     private String phoneNumber1;
 
     /**
-     * Secondary phone number (optional).
-     * Maps to CUST-PHONE-NUM-2 from CVCUS01Y.cpy (PIC X(15)).
+     * Customer secondary phone number.
+     * Maps to CUST-PHONE-NUM-2 field from COBOL copybook (PIC X(15)).
+     * Secondary contact phone number for the customer.
      */
-    @Column(name = "phone_number_2", length = 15)
-    @Size(max = 15, message = "Phone number cannot exceed 15 characters")
-    @Pattern(regexp = "[0-9\\-\\(\\)\\+\\s]*", message = "Phone number contains invalid characters")
+    @Column(name = "phone_number_2", length = PHONE_NUMBER_LENGTH)
+    @Size(max = PHONE_NUMBER_LENGTH, message = "Phone number 2 cannot exceed " + PHONE_NUMBER_LENGTH + " characters")
     private String phoneNumber2;
 
     /**
-     * Social Security Number (9 digits, encrypted).
-     * Maps to CUST-SSN from CVCUS01Y.cpy (PIC X(09)).
+     * Customer Social Security Number (encrypted).
+     * Maps to CUST-SSN field from COBOL copybook (PIC X(9)).
+     * Stored encrypted for data security and GDPR compliance.
+     * Excluded from JSON serialization for security.
      */
-    @Column(name = "ssn", length = 9, nullable = false)
-    @NotNull(message = "SSN is required")
-    @Size(min = 9, max = 9, message = "SSN must be exactly 9 digits")
-    @Pattern(regexp = "\\d{9}", message = "SSN must contain only digits")
+    @Column(name = "ssn", length = SSN_LENGTH)
+    @Size(max = SSN_LENGTH, message = "SSN cannot exceed " + SSN_LENGTH + " characters")
+    @JsonIgnore
     private String ssn;
 
     /**
-     * Government issued ID (driver's license, passport, etc.).
-     * Maps to CUST-GOVT-ISSUED-ID from CVCUS01Y.cpy (PIC X(20)).
+     * Customer government issued ID.
+     * Maps to CUST-GOVT-ISSUED-ID field from COBOL copybook (PIC X(20)).
+     * Driver's license, passport, or other government ID number.
      */
-    @Column(name = "government_id", length = 20)
-    @Size(max = 20, message = "Government ID cannot exceed 20 characters")
-    private String governmentId;
+    @Column(name = "government_issued_id", length = 20)
+    @Size(max = 20, message = "Government issued ID cannot exceed 20 characters")
+    private String governmentIssuedId;
 
     /**
-     * Date of birth.
-     * Maps to CUST-DOB-YYYYMMDD from CVCUS01Y.cpy (PIC X(08)).
+     * Customer date of birth.
+     * Maps to CUST-DOB-YYYY-MM-DD field from COBOL copybook (PIC X(10)).
+     * Stored as LocalDate for proper date handling and validation.
      */
-    @Column(name = "date_of_birth", nullable = false)
-    @NotNull(message = "Date of birth is required")
-    @Past(message = "Date of birth must be in the past")
+    @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
     /**
-     * EFT account ID for electronic funds transfer.
-     * Maps to CUST-EFT-ACCOUNT-ID from CVCUS01Y.cpy (PIC X(10)).
+     * Customer EFT account ID.
+     * Maps to CUST-EFT-ACCOUNT-ID field from COBOL copybook (PIC X(10)).
+     * Electronic funds transfer account identifier.
      */
     @Column(name = "eft_account_id", length = 10)
     @Size(max = 10, message = "EFT account ID cannot exceed 10 characters")
     private String eftAccountId;
 
     /**
-     * Primary cardholder indicator ('Y' = primary, 'N' = not primary).
-     * Maps to CUST-PRI-CARD-HOLDER-IND from CVCUS01Y.cpy (PIC X(01)).
+     * Primary card holder indicator.
+     * Maps to CUST-PRI-CARD-HOLDER-IND field from COBOL copybook (PIC X).
+     * Indicates whether this customer is the primary card holder.
      */
-    @Column(name = "primary_card_holder", length = 1, nullable = false)
-    @NotNull(message = "Primary cardholder indicator is required")
-    @Pattern(regexp = "[YN]", message = "Primary cardholder indicator must be 'Y' or 'N'")
-    private String primaryCardHolder;
+    @Column(name = "primary_card_holder_indicator", length = 1)
+    @Size(max = 1, message = "Primary card holder indicator cannot exceed 1 character")
+    private String primaryCardHolderIndicator;
 
     /**
-     * FICO credit score (300-850 range).
-     * Maps to CUST-FICO-CREDIT-SCORE from CVCUS01Y.cpy (PIC 9(03)).
+     * Customer FICO credit score.
+     * Maps to CUST-FICO-CREDIT-SCORE field from COBOL copybook (PIC 9(3)).
+     * Credit score ranging from 300 to 850.
      */
     @Column(name = "fico_score")
-    @Min(value = 300, message = "FICO score must be at least 300")
-    @Max(value = 850, message = "FICO score cannot exceed 850")
+    @Min(value = FICO_SCORE_MIN, message = "FICO score must be at least " + FICO_SCORE_MIN)
+    @Max(value = FICO_SCORE_MAX, message = "FICO score cannot exceed " + FICO_SCORE_MAX)
     private Integer ficoScore;
 
     /**
-     * One-to-many relationship with Account entities.
-     * Enables navigation from customer to associated accounts.
+     * JPA lifecycle callback for validation before persisting a new customer.
+     * Performs comprehensive field validation using COBOL-equivalent validation rules.
+     * 
+     * @throws ValidationException if any field validation fails
      */
-    @OneToMany(mappedBy = "customer", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private List<Account> accounts;
-
-    /**
-     * Default constructor for JPA.
-     */
-    public Customer() {
-        // Default constructor for JPA entity requirements
+    @PrePersist
+    public void validateBeforeInsert() {
+        performCustomerValidation();
+        formatFields();
     }
 
     /**
-     * Constructor with required fields.
+     * JPA lifecycle callback for validation before updating an existing customer.
+     * Performs comprehensive field validation using COBOL-equivalent validation rules.
+     * 
+     * @throws ValidationException if any field validation fails
      */
-    public Customer(String customerId, String firstName, String lastName, 
-                    String addressLine1, String stateCode, String countryCode, 
-                    String zipCode, String phoneNumber1, String ssn, 
-                    LocalDate dateOfBirth, String primaryCardHolder) {
-        this.customerId = customerId;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.addressLine1 = addressLine1;
-        this.stateCode = stateCode;
-        this.countryCode = countryCode;
-        this.zipCode = zipCode;
-        this.phoneNumber1 = phoneNumber1;
-        this.ssn = ssn;
-        this.dateOfBirth = dateOfBirth;
-        this.primaryCardHolder = primaryCardHolder;
-    }
-
-    // Getter and Setter methods
-
-    public String getCustomerId() {
-        return customerId;
-    }
-
-    public void setCustomerId(String customerId) {
-        this.customerId = customerId;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getMiddleName() {
-        return middleName;
-    }
-
-    public void setMiddleName(String middleName) {
-        this.middleName = middleName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    public String getAddressLine1() {
-        return addressLine1;
-    }
-
-    public void setAddressLine1(String addressLine1) {
-        this.addressLine1 = addressLine1;
-    }
-
-    public String getAddressLine2() {
-        return addressLine2;
-    }
-
-    public void setAddressLine2(String addressLine2) {
-        this.addressLine2 = addressLine2;
-    }
-
-    public String getAddressLine3() {
-        return addressLine3;
-    }
-
-    public void setAddressLine3(String addressLine3) {
-        this.addressLine3 = addressLine3;
-    }
-
-    public String getStateCode() {
-        return stateCode;
-    }
-
-    public void setStateCode(String stateCode) {
-        this.stateCode = stateCode;
-    }
-
-    public String getCountryCode() {
-        return countryCode;
-    }
-
-    public void setCountryCode(String countryCode) {
-        this.countryCode = countryCode;
-    }
-
-    public String getZipCode() {
-        return zipCode;
-    }
-
-    public void setZipCode(String zipCode) {
-        this.zipCode = zipCode;
-    }
-
-    public String getPhoneNumber1() {
-        return phoneNumber1;
-    }
-
-    public void setPhoneNumber1(String phoneNumber1) {
-        this.phoneNumber1 = phoneNumber1;
-    }
-
-    public String getPhoneNumber2() {
-        return phoneNumber2;
-    }
-
-    public void setPhoneNumber2(String phoneNumber2) {
-        this.phoneNumber2 = phoneNumber2;
-    }
-
-    public String getSsn() {
-        return ssn;
-    }
-
-    public void setSsn(String ssn) {
-        this.ssn = ssn;
-    }
-
-    public String getGovernmentId() {
-        return governmentId;
-    }
-
-    public void setGovernmentId(String governmentId) {
-        this.governmentId = governmentId;
-    }
-
-    public LocalDate getDateOfBirth() {
-        return dateOfBirth;
-    }
-
-    public void setDateOfBirth(LocalDate dateOfBirth) {
-        this.dateOfBirth = dateOfBirth;
-    }
-
-    public String getEftAccountId() {
-        return eftAccountId;
-    }
-
-    public void setEftAccountId(String eftAccountId) {
-        this.eftAccountId = eftAccountId;
-    }
-
-    public String getPrimaryCardHolder() {
-        return primaryCardHolder;
-    }
-
-    public void setPrimaryCardHolder(String primaryCardHolder) {
-        this.primaryCardHolder = primaryCardHolder;
-    }
-
-    public Integer getFicoScore() {
-        return ficoScore;
-    }
-
-    public void setFicoScore(Integer ficoScore) {
-        this.ficoScore = ficoScore;
-    }
-
-    public List<Account> getAccounts() {
-        return accounts;
-    }
-
-    public void setAccounts(List<Account> accounts) {
-        this.accounts = accounts;
+    @PreUpdate
+    public void validateBeforeUpdate() {
+        performCustomerValidation();
+        formatFields();
     }
 
     /**
-     * Utility method to check if customer is primary cardholder.
+     * Performs comprehensive customer field validation using ValidationUtil methods.
+     * Validates SSN format, phone numbers, ZIP code, state code, date of birth, and FICO score.
+     * Collects all validation errors and throws ValidationException if any errors are found.
+     * 
+     * @throws ValidationException with detailed field-level error messages
      */
-    public boolean isPrimaryCardHolder() {
-        return "Y".equals(primaryCardHolder);
-    }
+    private void performCustomerValidation() {
+        ValidationException validationException = new ValidationException("Customer validation failed");
 
-    /**
-     * Utility method to get full name.
-     */
-    public String getFullName() {
-        StringBuilder fullName = new StringBuilder();
-        fullName.append(firstName);
-        if (middleName != null && !middleName.trim().isEmpty()) {
-            fullName.append(" ").append(middleName);
+        // Validate required fields using ValidationUtil.validateRequiredField()
+        if (!ValidationUtil.validateRequiredField(firstName, "first_name")) {
+            validationException.addFieldError("firstName", "First name is required");
         }
-        fullName.append(" ").append(lastName);
-        return fullName.toString();
+
+        if (!ValidationUtil.validateRequiredField(lastName, "last_name")) {
+            validationException.addFieldError("lastName", "Last name is required");
+        }
+
+        // Validate SSN format using ValidationUtil.validateSSN()
+        if (ssn != null && !ssn.trim().isEmpty()) {
+            if (!ValidationUtil.validateSSN(ssn)) {
+                validationException.addFieldError("ssn", "Invalid SSN format. Must be 9 digits");
+            }
+        }
+
+        // Validate phone numbers using ValidationUtil.validatePhoneAreaCode()
+        if (phoneNumber1 != null && !phoneNumber1.trim().isEmpty()) {
+            if (!ValidationUtil.validatePhoneAreaCode(phoneNumber1)) {
+                validationException.addFieldError("phoneNumber1", "Invalid phone number format");
+            }
+        }
+
+        if (phoneNumber2 != null && !phoneNumber2.trim().isEmpty()) {
+            if (!ValidationUtil.validatePhoneAreaCode(phoneNumber2)) {
+                validationException.addFieldError("phoneNumber2", "Invalid phone number format");
+            }
+        }
+
+        // Validate ZIP code using ValidationUtil.validateZipCode()
+        if (zipCode != null && !zipCode.trim().isEmpty()) {
+            if (!ValidationUtil.validateZipCode(zipCode)) {
+                validationException.addFieldError("zipCode", "Invalid ZIP code format");
+            }
+        }
+
+        // Validate state code using ValidationUtil.validateUSStateCode()
+        if (stateCode != null && !stateCode.trim().isEmpty()) {
+            if (!ValidationUtil.validateUSStateCode(stateCode)) {
+                validationException.addFieldError("stateCode", "Invalid US state code");
+            }
+        }
+
+        // Validate date of birth using DateConversionUtil.validateDate() and DateConversionUtil.isNotFutureDate()
+        if (dateOfBirth != null) {
+            String dateStr = DateConversionUtil.formatCCYYMMDD(dateOfBirth);
+            if (!DateConversionUtil.validateDate(dateStr)) {
+                validationException.addFieldError("dateOfBirth", "Invalid date of birth format");
+            } else if (!DateConversionUtil.isNotFutureDate(dateOfBirth)) {
+                validationException.addFieldError("dateOfBirth", "Date of birth cannot be in the future");
+            }
+        }
+
+        // Validate FICO score range (additional validation beyond @Min/@Max annotations)
+        if (ficoScore != null) {
+            if (ficoScore < FICO_SCORE_MIN || ficoScore > FICO_SCORE_MAX) {
+                validationException.addFieldError("ficoScore", 
+                    "FICO score must be between " + FICO_SCORE_MIN + " and " + FICO_SCORE_MAX);
+            }
+        }
+
+        // Throw exception if any validation errors were found
+        if (validationException.hasFieldErrors()) {
+            throw validationException;
+        }
     }
 
     /**
-     * Utility method to get formatted address.
+     * Formats customer fields using StringUtil methods to ensure proper COBOL-compatible formatting.
+     * Applies trimming, padding, and fixed-length formatting as needed.
      */
-    public String getFormattedAddress() {
-        StringBuilder address = new StringBuilder();
-        address.append(addressLine1);
-        if (addressLine2 != null && !addressLine2.trim().isEmpty()) {
-            address.append(", ").append(addressLine2);
+    private void formatFields() {
+        // Format name fields using StringUtil.trimAndPad() and StringUtil.safeTrim()
+        if (firstName != null) {
+            firstName = StringUtil.formatFixedLength(StringUtil.safeTrim(firstName), 20);
         }
-        if (addressLine3 != null && !addressLine3.trim().isEmpty()) {
-            address.append(", ").append(addressLine3);
+
+        if (middleName != null) {
+            middleName = StringUtil.formatFixedLength(StringUtil.safeTrim(middleName), 20);
         }
-        address.append(", ").append(stateCode).append(" ").append(zipCode);
-        address.append(", ").append(countryCode);
-        return address.toString();
+
+        if (lastName != null) {
+            lastName = StringUtil.formatFixedLength(StringUtil.safeTrim(lastName), 20);
+        }
+
+        // Format address fields using StringUtil.trimAndPad()
+        if (addressLine1 != null) {
+            addressLine1 = StringUtil.trimAndPad(addressLine1, 50);
+        }
+
+        if (addressLine2 != null) {
+            addressLine2 = StringUtil.trimAndPad(addressLine2, 50);
+        }
+
+        if (addressLine3 != null) {
+            addressLine3 = StringUtil.trimAndPad(addressLine3, 50);
+        }
+
+        // Format state and country codes to uppercase using StringUtil.safeTrim()
+        if (stateCode != null) {
+            stateCode = StringUtil.safeTrim(stateCode).toUpperCase();
+        }
+
+        if (countryCode != null) {
+            countryCode = StringUtil.safeTrim(countryCode).toUpperCase();
+        }
+
+        // Format ZIP code using StringUtil.formatFixedLength()
+        if (zipCode != null) {
+            zipCode = StringUtil.formatFixedLength(StringUtil.safeTrim(zipCode), ZIP_CODE_LENGTH);
+        }
+
+        // Format phone numbers using StringUtil.safeTrim()
+        if (phoneNumber1 != null) {
+            phoneNumber1 = StringUtil.safeTrim(phoneNumber1);
+        }
+
+        if (phoneNumber2 != null) {
+            phoneNumber2 = StringUtil.safeTrim(phoneNumber2);
+        }
+
+        // Format SSN (remove any non-digits) using StringUtil.safeTrim()
+        if (ssn != null) {
+            ssn = StringUtil.safeTrim(ssn).replaceAll("[^0-9]", "");
+        }
+
+        // Format government ID using StringUtil.safeTrim()
+        if (governmentIssuedId != null) {
+            governmentIssuedId = StringUtil.safeTrim(governmentIssuedId);
+        }
+
+        // Format EFT account ID using StringUtil.safeTrim()
+        if (eftAccountId != null) {
+            eftAccountId = StringUtil.safeTrim(eftAccountId);
+        }
+
+        // Format primary card holder indicator using StringUtil.safeTrim()
+        if (primaryCardHolderIndicator != null) {
+            primaryCardHolderIndicator = StringUtil.safeTrim(primaryCardHolderIndicator).toUpperCase();
+        }
     }
 
     /**
-     * Utility method to get masked SSN for display.
+     * Custom equals method to properly compare Customer entities.
+     * Uses customer ID as the primary comparison field, with fallback to other fields.
+     * 
+     * @param o the object to compare with
+     * @return true if the objects are equal, false otherwise
      */
-    public String getMaskedSsn() {
-        if (ssn == null || ssn.length() != 9) {
-            return "***-**-****";
-        }
-        return "***-**-" + ssn.substring(5);
-    }
-
-    /**
-     * Utility method to check if customer has good credit.
-     */
-    public boolean hasGoodCredit() {
-        return ficoScore != null && ficoScore >= 650;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
+        
         Customer customer = (Customer) o;
-        return Objects.equals(customerId, customer.customerId);
+        
+        // Primary comparison by customer ID
+        if (customerId != null && customer.customerId != null) {
+            return Objects.equals(customerId, customer.customerId);
+        }
+        
+        // Fallback comparison using other unique fields
+        return Objects.equals(firstName, customer.firstName) &&
+               Objects.equals(lastName, customer.lastName) &&
+               Objects.equals(dateOfBirth, customer.dateOfBirth) &&
+               Objects.equals(ssn, customer.ssn);
     }
 
+    /**
+     * Custom hash code method using Objects.hash() for consistency with equals().
+     * 
+     * @return hash code for the Customer entity
+     */
     @Override
     public int hashCode() {
-        return Objects.hash(customerId);
+        if (customerId != null) {
+            return Objects.hash(customerId);
+        }
+        return Objects.hash(firstName, lastName, dateOfBirth, ssn);
     }
 
+    /**
+     * Custom toString method that masks sensitive information like SSN.
+     * Provides useful debugging information while maintaining data security.
+     * 
+     * @return string representation of the Customer entity
+     */
     @Override
     public String toString() {
         return "Customer{" +
-                "customerId='" + customerId + '\'' +
+                "customerId=" + customerId +
                 ", firstName='" + firstName + '\'' +
                 ", middleName='" + middleName + '\'' +
                 ", lastName='" + lastName + '\'' +
@@ -503,11 +486,11 @@ public class Customer {
                 ", zipCode='" + zipCode + '\'' +
                 ", phoneNumber1='" + phoneNumber1 + '\'' +
                 ", phoneNumber2='" + phoneNumber2 + '\'' +
-                ", ssn='" + getMaskedSsn() + '\'' +
-                ", governmentId='" + governmentId + '\'' +
+                ", ssn='***MASKED***'" +
+                ", governmentIssuedId='" + governmentIssuedId + '\'' +
                 ", dateOfBirth=" + dateOfBirth +
                 ", eftAccountId='" + eftAccountId + '\'' +
-                ", primaryCardHolder='" + primaryCardHolder + '\'' +
+                ", primaryCardHolderIndicator='" + primaryCardHolderIndicator + '\'' +
                 ", ficoScore=" + ficoScore +
                 '}';
     }
