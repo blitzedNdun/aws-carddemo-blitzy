@@ -284,7 +284,8 @@ public final class CobolComparisonUtils {
             Map<String, Object> cobolData = loadCobolTestOutput(cobolFilePath.toString());
             
             // Parse copybook layout for field definitions
-            Map<String, Object> parsedCopybook = FileFormatConverter.parseCopybook(copybookLayout);
+            FileFormatConverter converter = new FileFormatConverter();
+            Map<String, String> parsedCopybook = converter.parseCopybook(copybookLayout);
             
             // Compare each field defined in the copybook
             for (String fieldName : parsedCopybook.keySet()) {
@@ -306,7 +307,9 @@ public final class CobolComparisonUtils {
             }
             
             // Validate file structure and record count
-            if (!FileFormatConverter.validateConversion(cobolData, javaDataMap)) {
+            Map<String, Object> validationResult = converter.validateConversion(
+                cobolData.toString(), javaDataMap.toString(), "STRUCTURE");
+            if (!(Boolean) validationResult.getOrDefault("isValid", false)) {
                 differences.add("File structure validation failed");
                 result.setSuccessful(false);
             }
@@ -378,7 +381,7 @@ public final class CobolComparisonUtils {
             }
             
             // Validate round-trip conversion
-            String reconvertedDate = DateConversionUtil.formatCCYYMMDD(javaLocalDate);
+            String reconvertedDate = DateConversionUtil.formatToCobol(javaLocalDate);
             if (!cobolDateString.equals(reconvertedDate)) {
                 differences.add("Round-trip conversion failed: original=" + cobolDateString + 
                               ", reconverted=" + reconvertedDate);
@@ -525,7 +528,11 @@ public final class CobolComparisonUtils {
                 
                 try {
                     // Parse COBOL record using FileFormatConverter
-                    Map<String, Object> recordData = FileFormatConverter.parseCobolRecord(line);
+                    FileFormatConverter converter = new FileFormatConverter();
+                    // Use a basic copybook definition for parsing
+                    Map<String, String> basicCopybook = new HashMap<>();
+                    basicCopybook.put("DEFAULT_FIELD", "PIC X(" + line.length() + ")");
+                    Map<String, Object> recordData = converter.parseCobolRecord(line, basicCopybook);
                     
                     // Merge record data into main map with record number prefix
                     for (Map.Entry<String, Object> entry : recordData.entrySet()) {
@@ -1168,7 +1175,8 @@ public final class CobolComparisonUtils {
         
         try {
             // Parse expected layout using FileFormatConverter
-            Map<String, Object> layoutSpec = FileFormatConverter.parseCopybook(expectedLayout);
+            FileFormatConverter converter = new FileFormatConverter();
+            Map<String, String> layoutSpec = converter.parseCopybook(expectedLayout);
             
             // Validate field presence in both structures
             for (String expectedField : layoutSpec.keySet()) {
@@ -1221,7 +1229,9 @@ public final class CobolComparisonUtils {
             // Validate record length consistency (for fixed-width records)
             if (expectedLayout.contains("FIXED") || expectedLayout.contains("PIC")) {
                 // Additional validation for COBOL fixed-width compatibility
-                if (!FileFormatConverter.validateConversion(cobolRecordData, javaRecordData)) {
+                Map<String, Object> validationResult = converter.validateConversion(
+                    cobolRecordData.toString(), javaRecordData.toString(), "FIXED_WIDTH");
+                if (!(Boolean) validationResult.getOrDefault("isValid", false)) {
                     differences.add("Fixed-width record validation failed");
                     result.setSuccessful(false);
                 }
