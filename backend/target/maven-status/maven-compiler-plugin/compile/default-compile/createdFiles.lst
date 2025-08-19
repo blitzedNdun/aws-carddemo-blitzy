@@ -21,6 +21,7 @@ com/carddemo/service/SignOnService.class
 com/carddemo/batch/StatementGenerationJobConfigA$TransactionData.class
 com/carddemo/controller/DailyTransactionController.class
 com/carddemo/service/CustomerMaintenanceService$PhoneFormattingResult.class
+com/carddemo/security/SecurityAuditService.class
 com/carddemo/batch/BalanceReconciliationJobConfig$1.class
 com/carddemo/util/StringUtil.class
 com/carddemo/dto/InterestCalculationResponse.class
@@ -140,8 +141,8 @@ com/carddemo/config/ApplicationConfig$BatchProperties.class
 com/carddemo/entity/Fee$FeeType.class
 com/carddemo/util/DateConversionUtil.class
 com/carddemo/service/AuditService.class
-com/carddemo/config/RedisConfig.class
 com/carddemo/security/JwtAuthenticationFilter.class
+com/carddemo/config/RedisConfig.class
 com/carddemo/dto/AdminMenuResponse.class
 com/carddemo/dto/CreditCardUpdateRequest.class
 com/carddemo/service/ReportingService$TransactionReportData.class
