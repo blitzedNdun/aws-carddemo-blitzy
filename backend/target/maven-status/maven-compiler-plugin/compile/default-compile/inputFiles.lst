@@ -175,6 +175,7 @@
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/repository/NotificationRepository.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/repository/ReportRepository.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/repository/SettlementRepository.java
+/tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/repository/TransactionCategoryBalanceRepository.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/repository/TransactionCategoryRepository.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/repository/TransactionTypeRepository.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/repository/UserActivityRepository.java

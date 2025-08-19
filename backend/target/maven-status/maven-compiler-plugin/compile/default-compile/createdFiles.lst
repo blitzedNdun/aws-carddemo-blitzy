@@ -232,6 +232,7 @@ com/carddemo/service/PaymentService$CardValidationException.class
 com/carddemo/service/FileGenerationService$CustomerStatementData.class
 com/carddemo/entity/UserActivity.class
 com/carddemo/config/ExtractJobConfig$TransactionExtractDto.class
+com/carddemo/repository/TransactionCategoryBalanceRepository.class
 com/carddemo/dto/MenuOption.class
 com/carddemo/service/StorageService$CompressionType.class
 com/carddemo/service/UserService.class
