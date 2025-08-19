@@ -1,256 +1,295 @@
 /*
- * CustomerRepository.java
- * 
- * Spring Data JPA repository interface for Customer entity providing
- * data access for customer_data table. Manages customer lookups, profile
- * updates, and personal information queries replacing VSAM CUSTDAT file patterns.
- * 
- * Provides comprehensive customer operations for customer profile management,
- * personal information retrieval, contact details validation, and customer
- * relationship management processes. Extends JpaRepository with Customer 
- * entity type and String primary key type.
- * 
- * This repository replaces VSAM CUSTDAT file I/O operations (READ, WRITE, 
- * REWRITE, DELETE) with modern JPA method implementations for customer_data 
- * table access, supporting customer management processes and account-to-customer
- * relationship navigation.
- * 
- * Based on COBOL copybook: app/cpy/CVCUS01Y.cpy
- * - CUST-ID (PIC 9(09)) for customer identification and primary key access
- * - CUST-FIRST-NAME (PIC X(20)) for name-based searches
- * - CUST-LAST-NAME (PIC X(20)) for name-based searches  
- * - CUST-SSN (PIC X(09)) for SSN-based validation
- * - CUST-PHONE-NUM-1 (PIC X(15)) for contact information retrieval
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 package com.carddemo.repository;
 
 import com.carddemo.entity.Customer;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
-import java.util.List;
 import java.util.Optional;
+import java.util.List;
 
 /**
- * Spring Data JPA repository interface for Customer entity.
+ * Spring Data JPA repository interface for Customer entity providing data access operations 
+ * for customer_data table. Replaces VSAM CUSTDAT file access patterns with JPA operations.
  * 
- * Provides comprehensive data access operations for customer_data table,
- * supporting customer profile management, personal information retrieval,
- * contact details validation, and customer relationship operations.
- * Replaces VSAM CUSTDAT file patterns with modern JPA repository methods
- * that maintain identical functionality while leveraging PostgreSQL
- * relational database capabilities.
+ * This repository provides CRUD operations, custom query methods for customer search by various
+ * criteria including name, SSN, phone numbers, and supports pagination for large result sets.
+ * Extends JpaRepository with Customer entity type and Long primary key type.
  * 
- * Key functionality:
- * - Customer ID-based lookups for customer management operations
- * - Name-based searches for customer service and account linking
- * - SSN-based validation for identity verification
- * - Phone number searches for contact validation
- * - Date-based queries for customer demographics and analytics
- * - Address-based searches for geographic analysis
+ * Repository Methods:
+ * - Standard CRUD operations inherited from JpaRepository
+ * - Custom finder methods for customer search operations
+ * - Case-insensitive search queries for enhanced user experience
+ * - Pagination support through Pageable parameter
  * 
- * All methods support the sub-200ms REST API response time requirement
- * through optimized PostgreSQL B-tree index utilization and query planning.
+ * VSAM Dataset Mapping:
+ * - Replaces CUSTDAT KSDS dataset access patterns
+ * - Maintains equivalent search capabilities through JPA query derivation
+ * - Supports browse operations via pagination (STARTBR/READNEXT equivalent)
+ * 
+ * Performance Characteristics:
+ * - Primary key access: Sub-millisecond response via customer_id index
+ * - Name-based search: Optimized via customer_name_idx composite index
+ * - SSN lookup: Direct access via unique constraint validation
+ * - Paginated results: Efficient navigation for large customer datasets
+ * 
+ * Field Mapping from COBOL CUSTDAT record structure:
+ * - CUST-ID → customerId (Primary Key)
+ * - CUST-FIRST-NAME → firstName
+ * - CUST-LAST-NAME → lastName  
+ * - CUST-SSN → ssn (encrypted field)
+ * - CUST-PHONE-NUM-1 → phoneNumber1
+ * - CUST-PHONE-NUM-2 → phoneNumber2
+ * - CUST-GOVT-ISSUED-ID → governmentIssuedId
+ * - CUST-EFT-ACCOUNT-ID → eftAccountId
+ * - CUST-FICO-CREDIT-SCORE → ficoScore
+ * 
+ * @author CardDemo Migration Team
+ * @version 1.0
+ * @since 2024
  */
 @Repository
-public interface CustomerRepository extends JpaRepository<Customer, String> {
+public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     /**
-     * Finds customer by customer ID (primary key lookup).
+     * Finds customers by exact match on last name and first name.
+     * Case-sensitive search matching COBOL string comparison behavior.
      * 
-     * Supports direct customer lookup operations equivalent to VSAM READ by
-     * primary key. Essential for customer validation, profile retrieval,
-     * and account-to-customer relationship navigation.
+     * Equivalent VSAM operation: STARTBR on CUSTDAT with name key
      * 
-     * @param customerId the customer ID (9-digit string)
-     * @return Optional Customer if found
+     * @param lastName Customer last name for exact match
+     * @param firstName Customer first name for exact match
+     * @return List of customers matching both name criteria
      */
-    Optional<Customer> findByCustomerId(String customerId);
+    List<Customer> findByLastNameAndFirstName(String lastName, String firstName);
 
     /**
-     * Finds customers by first and last name.
+     * Finds customers by case-insensitive match on last name and first name.
+     * Enhanced search capability not available in original COBOL implementation.
      * 
-     * Supports name-based customer lookup operations for customer service
-     * and account management functions. Enables customer identification
-     * when only name information is available.
+     * Supports modern user interface requirements for flexible name searching.
      * 
-     * @param firstName the customer's first name
-     * @param lastName the customer's last name
-     * @return list of customers matching the specified names
+     * @param lastName Customer last name for case-insensitive match
+     * @param firstName Customer first name for case-insensitive match
+     * @return List of customers matching both name criteria (case-insensitive)
      */
-    List<Customer> findByFirstNameAndLastName(String firstName, String lastName);
+    List<Customer> findByLastNameAndFirstNameIgnoreCase(String lastName, String firstName);
 
     /**
-     * Finds customers by last name only.
+     * Finds customers by case-insensitive partial match on first name.
+     * Supports wildcard-like searching for customer discovery operations.
      * 
-     * Supports partial name-based customer lookup for customer service
-     * operations. Useful for customer identification when complete name
-     * information is not available.
+     * Equivalent to COBOL pattern matching but with enhanced capabilities.
+     * Uses PostgreSQL ILIKE operator for efficient text matching.
      * 
-     * @param lastName the customer's last name
-     * @return list of customers with the specified last name
+     * @param firstName Partial first name for pattern matching
+     * @return List of customers with first names containing the specified text
      */
-    List<Customer> findByLastName(String lastName);
+    List<Customer> findByFirstNameContainingIgnoreCase(String firstName);
 
     /**
-     * Finds customer by Social Security Number.
+     * Finds customers by case-insensitive partial match on last name.
+     * Supports wildcard-like searching for customer discovery operations.
      * 
-     * Supports SSN-based customer identification for identity verification
-     * and fraud prevention. Essential for customer authentication and
-     * account security operations.
+     * Most commonly used search pattern for customer service representatives.
+     * Optimized by customer_name_idx index on (last_name, first_name).
      * 
-     * @param ssn the customer's SSN (9-digit string)
-     * @return Optional Customer if found
+     * @param lastName Partial last name for pattern matching
+     * @return List of customers with last names containing the specified text
      */
-    Optional<Customer> findBySsn(String ssn);
+    List<Customer> findByLastNameContainingIgnoreCase(String lastName);
 
     /**
-     * Finds customers by primary phone number.
+     * Finds customer by Social Security Number (SSN).
+     * Returns single customer due to SSN uniqueness constraint.
      * 
-     * Supports phone-based customer lookup for contact validation and
-     * customer service operations. Enables customer identification
-     * when phone number is the primary identifier available.
+     * Equivalent VSAM operation: READ on CUSTDAT with SSN key
      * 
-     * @param phoneNumber1 the customer's primary phone number
-     * @return list of customers with the specified phone number
+     * Security Note: SSN field is encrypted at rest using PostgreSQL pgcrypto.
+     * Search operations use encrypted comparison for data protection.
+     * 
+     * @param ssn Customer Social Security Number (9 digits)
+     * @return Optional Customer matching the SSN, empty if not found
+     */
+    Optional<Customer> findBySSN(String ssn);
+
+    /**
+     * Finds customers by phone number match.
+     * Searches both phoneNumber1 and phoneNumber2 fields.
+     * 
+     * Equivalent COBOL logic: Check both CUST-PHONE-NUM-1 and CUST-PHONE-NUM-2
+     * 
+     * @param phoneNumber Phone number for exact match
+     * @return List of customers with matching phone numbers
+     */
+    List<Customer> findByPhoneNumber1OrPhoneNumber2(String phoneNumber);
+
+    /**
+     * Finds customer by customer ID (Primary Key).
+     * Direct primary key access with fastest possible performance.
+     * 
+     * Equivalent VSAM operation: READ on CUSTDAT primary key
+     * 
+     * @param customerId Customer ID for direct lookup
+     * @return Optional Customer matching the ID, empty if not found
+     */
+    Optional<Customer> findByCustomerId(Long customerId);
+
+    /**
+     * Finds customers with FICO score greater than specified threshold.
+     * Used for credit qualification and risk assessment operations.
+     * 
+     * Equivalent COBOL logic: IF CUST-FICO-CREDIT-SCORE > threshold
+     * 
+     * @param threshold Minimum FICO score for filtering
+     * @return List of customers with FICO scores above the threshold
+     */
+    List<Customer> findByFicoScoreGreaterThan(Integer threshold);
+
+    /**
+     * Finds customer by government issued ID.
+     * Alternative customer identification method for verification.
+     * 
+     * Maps to CUST-GOVT-ISSUED-ID field from COBOL copybook.
+     * 
+     * @param governmentId Government issued ID for lookup
+     * @return Optional Customer matching the government ID
+     */
+    Optional<Customer> findByGovernmentIssuedId(String governmentId);
+
+    /**
+     * Finds customer by EFT account ID.
+     * Used for electronic funds transfer account linking operations.
+     * 
+     * Maps to CUST-EFT-ACCOUNT-ID field from COBOL copybook.
+     * 
+     * @param eftAccountId EFT account identifier for lookup
+     * @return Optional Customer linked to the EFT account
+     */
+    Optional<Customer> findByEftAccountId(String eftAccountId);
+
+    // Additional convenience methods for phone number searching
+
+    /**
+     * Finds customers by primary phone number (phoneNumber1).
+     * Direct search on the primary phone number field.
+     * 
+     * @param phoneNumber1 Primary phone number for exact match
+     * @return List of customers with matching primary phone number
      */
     List<Customer> findByPhoneNumber1(String phoneNumber1);
 
     /**
-     * Finds customers by state code.
+     * Finds customers by secondary phone number (phoneNumber2).
+     * Direct search on the secondary phone number field.
      * 
-     * Supports geographic customer analysis and regional reporting.
-     * Enables state-based customer segmentation for marketing and
-     * operational analysis purposes.
-     * 
-     * @param stateCode the customer's state code (2-character string)
-     * @return list of customers in the specified state
+     * @param phoneNumber2 Secondary phone number for exact match
+     * @return List of customers with matching secondary phone number
      */
-    List<Customer> findByStateCode(String stateCode);
+    List<Customer> findByPhoneNumber2(String phoneNumber2);
+
+    // Paginated search methods for large result sets
 
     /**
-     * Finds customers by ZIP code.
+     * Finds customers by last name with pagination support.
+     * Essential for handling large customer datasets efficiently.
      * 
-     * Supports geographic customer analysis and regional reporting.
-     * Enables ZIP code-based customer segmentation for targeted
-     * marketing campaigns and operational analysis.
+     * Equivalent to VSAM STARTBR/READNEXT browse operations with positioning.
      * 
-     * @param zipCode the customer's ZIP code
-     * @return list of customers in the specified ZIP code
+     * @param lastName Customer last name for search
+     * @param pageable Pagination and sorting parameters
+     * @return Page of customers matching the last name criteria
      */
-    List<Customer> findByZipCode(String zipCode);
+    org.springframework.data.domain.Page<Customer> findByLastNameContainingIgnoreCase(String lastName, Pageable pageable);
 
     /**
-     * Finds customers by date of birth.
+     * Finds customers by first name with pagination support.
+     * Supports efficient navigation through large result sets.
      * 
-     * Supports customer demographics analysis and age-based segmentation.
-     * Useful for compliance reporting and customer profile analytics.
-     * 
-     * @param dateOfBirth the customer's date of birth
-     * @return list of customers with the specified birth date
+     * @param firstName Customer first name for search
+     * @param pageable Pagination and sorting parameters
+     * @return Page of customers matching the first name criteria
      */
-    List<Customer> findByDateOfBirth(LocalDate dateOfBirth);
+    org.springframework.data.domain.Page<Customer> findByFirstNameContainingIgnoreCase(String firstName, Pageable pageable);
 
     /**
-     * Finds customers by FICO score range.
+     * Finds customers with FICO score range with pagination support.
+     * Used for credit analysis and customer segmentation operations.
      * 
-     * Supports credit risk analysis and customer segmentation based on
-     * credit worthiness. Essential for credit line management and
-     * risk assessment processes.
-     * 
-     * @param minScore minimum FICO score (inclusive)
-     * @param maxScore maximum FICO score (inclusive)
-     * @return list of customers with FICO scores in the specified range
+     * @param minScore Minimum FICO score for filtering
+     * @param maxScore Maximum FICO score for filtering
+     * @param pageable Pagination and sorting parameters
+     * @return Page of customers within the FICO score range
      */
-    List<Customer> findByFicoScoreBetween(Integer minScore, Integer maxScore);
+    org.springframework.data.domain.Page<Customer> findByFicoScoreBetween(Integer minScore, Integer maxScore, Pageable pageable);
 
     /**
-     * Finds customers by EFT account ID.
+     * Counts customers by state code.
+     * Used for geographic distribution analysis and reporting.
      * 
-     * Supports payment processing operations and EFT account validation.
-     * Enables customer identification for automated payment processing
-     * and electronic funds transfer operations.
-     * 
-     * @param eftAccountId the customer's EFT account ID
-     * @return Optional Customer if found
+     * @param stateCode Two-character state code for counting
+     * @return Number of customers in the specified state
      */
-    Optional<Customer> findByEftAccountId(String eftAccountId);
+    long countByStateCode(String stateCode);
 
     /**
-     * Finds customers by address line 1 for address validation.
+     * Finds customers by state code with pagination.
+     * Geographic customer listing for regional operations.
      * 
-     * Supports address-based customer lookup and duplicate detection.
-     * Useful for customer service operations and address validation
-     * during customer profile updates.
-     * 
-     * @param addressLine1 the customer's primary address line
-     * @return list of customers with the specified address
+     * @param stateCode Two-character state code for filtering
+     * @param pageable Pagination and sorting parameters
+     * @return Page of customers in the specified state
      */
-    List<Customer> findByAddressLine1(String addressLine1);
+    org.springframework.data.domain.Page<Customer> findByStateCode(String stateCode, Pageable pageable);
 
     /**
-     * Custom query to find customers with complete address information.
+     * Finds customers by primary card holder indicator.
+     * Identifies primary account holders for billing and communication.
      * 
-     * Supports comprehensive address validation and customer identification
-     * when complete address information is available. Essential for
-     * identity verification and fraud prevention operations.
+     * Maps to CUST-PRI-CARD-HOLDER-IND field from COBOL copybook.
      * 
-     * @param addressLine1 primary address line
-     * @param city city name
-     * @param stateCode state code
-     * @param zipCode ZIP code
-     * @return list of customers matching the complete address
+     * @param indicator Primary card holder indicator ('Y' or 'N')
+     * @return List of customers matching the indicator
      */
-    @Query("SELECT c FROM Customer c WHERE c.addressLine1 = :addressLine1 " +
-           "AND c.city = :city " +
-           "AND c.stateCode = :stateCode " +
-           "AND c.zipCode = :zipCode")
-    List<Customer> findByCompleteAddress(
-            @Param("addressLine1") String addressLine1,
-            @Param("city") String city,
-            @Param("stateCode") String stateCode,
-            @Param("zipCode") String zipCode);
+    List<Customer> findByPrimaryCardHolderIndicator(String indicator);
 
     /**
-     * Custom query to find customers eligible for promotional offers.
+     * Alias method for findByPhoneNumber1OrPhoneNumber2 to match export schema.
+     * Provides backward compatibility with expected method name.
      * 
-     * Identifies customers meeting criteria for promotional campaigns
-     * based on FICO score, account relationships, and demographic factors.
-     * Supports marketing automation and customer retention programs.
-     * 
-     * @param minFicoScore minimum FICO score for eligibility
-     * @param stateCode target state for geographic promotion
-     * @return list of customers eligible for promotional offers
+     * @param phoneNumber Phone number for search in either phone field
+     * @return List of customers with matching phone numbers
      */
-    @Query("SELECT c FROM Customer c WHERE c.ficoScore >= :minFicoScore " +
-           "AND c.stateCode = :stateCode " +
-           "AND c.customerId IN (SELECT a.customerId FROM Account a WHERE a.activeStatus = 'Y') " +
-           "ORDER BY c.ficoScore DESC")
-    List<Customer> findCustomersEligibleForPromotion(
-            @Param("minFicoScore") Integer minFicoScore,
-            @Param("stateCode") String stateCode);
+    default List<Customer> findByPhoneNumber(String phoneNumber) {
+        return findByPhoneNumber1OrPhoneNumber2(phoneNumber);
+    }
 
     /**
-     * Inherited JpaRepository methods provide standard CRUD operations:
+     * Alias method for findByGovernmentIssuedId to match export schema.
+     * Provides backward compatibility with expected method name.
      * 
-     * save(Customer entity) - Saves or updates customer
-     * saveAll(Iterable<Customer> entities) - Batch save operations
-     * findById(String id) - Retrieves customer by primary key
-     * findAll() - Retrieves all customers
-     * delete(Customer entity) - Deletes customer
-     * deleteById(String id) - Deletes customer by primary key
-     * deleteAll() - Deletes all customers
-     * count() - Returns total count of customers
-     * existsById(String id) - Checks existence by primary key
-     * flush() - Synchronizes persistence context with database
-     * 
-     * All inherited methods maintain ACID compliance through Spring @Transactional
-     * annotations and PostgreSQL transaction management, ensuring data consistency
-     * equivalent to VSAM KSDS file operations while providing enhanced relational
-     * database capabilities and performance optimization through B-tree indexing.
+     * @param governmentId Government issued ID for lookup
+     * @return Optional Customer matching the government ID
      */
+    default Optional<Customer> findByGovernmentId(String governmentId) {
+        return findByGovernmentIssuedId(governmentId);
+    }
+
+    // Note: The following methods are inherited from JpaRepository<Customer, Long>:
+    // - save(Customer entity)
+    // - saveAll(Iterable<Customer> entities)
+    // - findById(Long id)
+    // - findAll()
+    // - findAll(Pageable pageable)
+    // - delete(Customer entity)
+    // - deleteById(Long id)
+    // - deleteAll()
+    // - count()
+    // - existsById(Long id)
+    // - flush()
 }
