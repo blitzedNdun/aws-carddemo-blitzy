@@ -8,12 +8,15 @@ package com.carddemo.repository;
 import com.carddemo.entity.Account;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import jakarta.persistence.LockModeType;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Spring Data JPA repository interface for Account entity providing data access operations for account_data table.
@@ -72,7 +75,7 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
      * @param accountIds collection of account IDs to retrieve
      * @return List of Account entities matching the provided IDs
      */
-    List<Account> findByIdIn(List<Long> accountIds);
+    List<Account> findByAccountIdIn(List<Long> accountIds);
 
     /**
      * Finds all accounts belonging to a specific group ID.
@@ -104,7 +107,10 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
      */
     // Implementation note: This method requires Card and CardXref entities
     // to be implemented to provide the proper join relationships
-    Account findByCardNumber(String cardNumber);
+    // TODO: This method will be properly implemented once Card and CardXref entities are created
+    // For now, using a placeholder query to prevent Spring Data JPA mapping errors
+    @Query("SELECT null FROM Account a WHERE 1=0")
+    Account findByCardNumber(@Param("cardNumber") String cardNumber);
 
     /**
      * Finds accounts by active status and accounts opened before a specific date.
@@ -118,6 +124,38 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
      * @return List of Account entities matching the criteria
      */
     List<Account> findByActiveStatusAndOpenDateBefore(String activeStatus, LocalDate openDate);
+
+    /**
+     * Finds account by ID with pessimistic write lock for update operations.
+     * 
+     * Replicates COBOL "READ FOR UPDATE" functionality from COACTUPC.cbl program
+     * by acquiring a database row lock to prevent concurrent modifications.
+     * This method implements the same locking behavior as EXEC CICS READ UPDATE
+     * commands to ensure data consistency during account update operations.
+     * 
+     * Uses JPA @Lock annotation with LockModeType.PESSIMISTIC_WRITE to acquire
+     * an exclusive lock on the account row, preventing other transactions from
+     * reading or writing the same account until the current transaction commits.
+     * 
+     * This method is essential for:
+     * - Account balance updates that must be atomic
+     * - Credit limit modifications requiring consistency
+     * - Status changes that need transaction isolation
+     * - Any update operation requiring read-then-write atomicity
+     * 
+     * Example usage:
+     * Optional<Account> account = accountRepository.findByIdForUpdate(accountId);
+     * if (account.isPresent()) {
+     *     account.get().setCurrentBalance(newBalance);
+     *     accountRepository.save(account.get());
+     * }
+     * 
+     * @param accountId the account ID to find and lock
+     * @return Optional<Account> containing the locked account if found, empty otherwise
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT a FROM Account a WHERE a.accountId = :accountId")
+    Optional<Account> findByIdForUpdate(@Param("accountId") Long accountId);
 
     /**
      * Finds accounts with account numbers within a specified range.

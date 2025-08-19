@@ -81,7 +81,6 @@ public class Account {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "account_id", nullable = false)
-    @NotNull(message = "Account ID is required")
     private Long accountId;
     
     /**
