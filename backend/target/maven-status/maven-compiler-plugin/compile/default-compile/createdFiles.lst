@@ -255,6 +255,7 @@ com/carddemo/repository/FeeScheduleRepository.class
 com/carddemo/dto/AdminReportResponse.class
 com/carddemo/service/PaymentService$PaymentNetworkTimeoutException.class
 com/carddemo/batch/BalanceReconciliationJobConfig.class
+com/carddemo/dto/DisclosureGroupDto.class
 com/carddemo/service/ReportingService$TransactionSummary.class
 com/carddemo/dto/Message.class
 com/carddemo/batch/StatementGenerationJobConfigA$AccountStatementData.class
