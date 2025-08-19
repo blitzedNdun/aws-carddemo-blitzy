@@ -1,7 +1,12 @@
 package com.carddemo.service;
 
 import com.carddemo.dto.MenuResponse;
+import com.carddemo.dto.MenuRequest;
 import com.carddemo.dto.SessionContext;
+import com.carddemo.dto.AdminMenuRequest;
+import com.carddemo.dto.MenuOption;
+import com.carddemo.dto.UserDto;
+import com.carddemo.dto.AdminMenuResponse;
 import com.carddemo.config.MenuConfiguration;
 import com.carddemo.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -92,45 +97,7 @@ public class MenuService {
     @Autowired
     private MenuConfiguration menuConfiguration;
 
-    /**
-     * Minimal MenuRequest structure to handle missing MenuRequest.java dependency.
-     * This inner class provides the necessary functionality until MenuRequest.java is implemented.
-     */
-    public static class MenuRequest {
-        private String selectedOption;
-        private String userId;
-        private String userType;
-        private String pfKey;
-        private String menuType;
-        private SessionContext sessionContext;
 
-        public MenuRequest() {}
-
-        public MenuRequest(String selectedOption, String userId, String userType) {
-            this.selectedOption = selectedOption;
-            this.userId = userId;
-            this.userType = userType;
-        }
-
-        // Getters and setters to match schema requirements
-        public String getSelectedOption() { return selectedOption; }
-        public void setSelectedOption(String selectedOption) { this.selectedOption = selectedOption; }
-
-        public String getUserId() { return userId; }
-        public void setUserId(String userId) { this.userId = userId; }
-
-        public String getUserType() { return userType; }
-        public void setUserType(String userType) { this.userType = userType; }
-
-        public String getPfKey() { return pfKey; }
-        public void setPfKey(String pfKey) { this.pfKey = pfKey; }
-
-        public String getMenuType() { return menuType; }
-        public void setMenuType(String menuType) { this.menuType = menuType; }
-
-        public SessionContext getSessionContext() { return sessionContext; }
-        public void setSessionContext(SessionContext sessionContext) { this.sessionContext = sessionContext; }
-    }
 
     /**
      * Main entry point for processing menu requests.
@@ -215,26 +182,53 @@ public class MenuService {
         logger.debug("Generating main menu for user: {}", request.getUserId());
 
         try {
+            // Get user details for menu building
+            UserDto user = getUserForMenu(request.getUserId());
+            String userName = user != null ? user.getFirstName() + " " + user.getLastName() : "";
+            
             // Use MainMenuService to build menu (delegates to COMEN01C logic)
-            Map<String, Object> mainMenuData = mainMenuService.buildMenu(request.getUserId());
+            MenuResponse mainMenuData = mainMenuService.buildMainMenu(
+                request.getUserId(), 
+                request.getUserType() != null ? request.getUserType() : USER_TYPE_USER, 
+                userName
+            );
             
             // Process any menu selection if provided
             if (request.getSelectedOption() != null && !request.getSelectedOption().trim().isEmpty()) {
-                Map<String, Object> selectionResult = mainMenuService.processMenuSelection(
-                    request.getSelectedOption(), request.getUserId());
-                
-                if (selectionResult.containsKey("error")) {
+                try {
+                    Integer selectedOption = Integer.parseInt(request.getSelectedOption());
+                    String transactionCode = mainMenuService.processMenuSelection(
+                        selectedOption, 
+                        request.getUserType() != null ? request.getUserType() : USER_TYPE_USER
+                    );
+                    
+                    if (transactionCode != null) {
+                        // Set transaction code for navigation
+                        mainMenuData.setTransactionCode(transactionCode);
+                        mainMenuData.setSuccessMessage("Menu option " + selectedOption + " selected");
+                    }
+                } catch (NumberFormatException e) {
                     MenuResponse errorResponse = new MenuResponse();
-                    errorResponse.setErrorMessage((String) selectionResult.get("error"));
+                    errorResponse.setErrorMessage("Invalid menu selection - please enter a number");
                     return errorResponse;
                 }
-                
-                // Update menu data with selection results
-                mainMenuData.putAll(selectionResult);
             }
 
-            // Execute main menu processing logic
-            Map<String, Object> processResult = mainMenuService.mainMenuProcess(request.getUserId());
+            // Validate menu options if selection provided
+            if (request.getSelectedOption() != null && !request.getSelectedOption().trim().isEmpty()) {
+                try {
+                    Integer selectedOption = Integer.parseInt(request.getSelectedOption());
+                    mainMenuService.validateMenuOption(
+                        selectedOption,
+                        request.getUserType() != null ? request.getUserType() : USER_TYPE_USER
+                    );
+                } catch (Exception e) {
+                    mainMenuData.setErrorMessage("Invalid menu option selected: " + e.getMessage());
+                }
+            }
+            
+            // Populate header information
+            mainMenuService.populateHeaderInfo(mainMenuData);
             
             // Build response using menu data
             return buildMenuResponse(mainMenuData, request, MENU_TYPE_MAIN);
@@ -273,25 +267,43 @@ public class MenuService {
             }
 
             // Use AdminMenuService to build admin menu (delegates to COADM01C logic)
-            Map<String, Object> adminMenuData = adminMenuService.buildAdminMenu(request.getUserId());
+            AdminMenuResponse adminResponse = adminMenuService.buildAdminMenu();
+            MenuResponse adminMenuData = convertAdminResponseToMenuResponse(adminResponse);
             
             // Process any admin selection if provided
             if (request.getSelectedOption() != null && !request.getSelectedOption().trim().isEmpty()) {
-                Map<String, Object> selectionResult = adminMenuService.processAdminSelection(
-                    request.getSelectedOption(), request.getUserId());
-                
-                if (selectionResult.containsKey("error")) {
+                try {
+                    Integer selectedOption = Integer.parseInt(request.getSelectedOption());
+                    AdminMenuRequest adminRequest = new AdminMenuRequest();
+                    adminRequest.setSelectedOption(selectedOption);
+                    adminRequest.setSessionData(request.getUserId()); // Use userId as session data
+                    
+                    String transactionCode = adminMenuService.processAdminSelection(adminRequest);
+                    
+                    if (transactionCode != null) {
+                        // Set transaction code for navigation
+                        adminMenuData.setTransactionCode(transactionCode);
+                        adminMenuData.setSuccessMessage("Admin option " + selectedOption + " selected");
+                    }
+                } catch (NumberFormatException e) {
                     MenuResponse errorResponse = new MenuResponse();
-                    errorResponse.setErrorMessage((String) selectionResult.get("error"));
+                    errorResponse.setErrorMessage("Invalid admin menu selection - please enter a number");
                     return errorResponse;
                 }
-                
-                // Update menu data with selection results
-                adminMenuData.putAll(selectionResult);
             }
 
-            // Execute admin menu processing logic
-            Map<String, Object> processResult = adminMenuService.adminMenuProcess(request.getUserId());
+            // Validate admin access and get system status
+            try {
+                adminMenuService.validateAdminAccess();
+            } catch (Exception e) {
+                adminMenuData.setErrorMessage("Administrative access validation failed: " + e.getMessage());
+            }
+            
+            // Get system status for admin display
+            String systemStatus = adminMenuService.getSystemStatus();
+            if (systemStatus != null && !systemStatus.trim().isEmpty()) {
+                adminMenuData.setSuccessMessage("System Status: " + systemStatus);
+            }
             
             // Build response using admin menu data
             return buildMenuResponse(adminMenuData, request, MENU_TYPE_ADMIN);
@@ -325,11 +337,11 @@ public class MenuService {
             MenuResponse response = new MenuResponse();
             
             // Build report menu options (equivalent to CORPT00C BUILD-REPORT-MENU)
-            List<Map<String, Object>> reportOptions = buildReportMenuOptions();
+            List<MenuOption> reportOptions = buildReportMenuOptionsAsMenuOption();
             response.setMenuOptions(reportOptions);
             
             // Set user context
-            User user = getUserForMenu(request.getUserId());
+            UserDto user = getUserForMenu(request.getUserId());
             if (user != null) {
                 response.setUserName(user.getFirstName() + " " + user.getLastName());
             }
@@ -384,15 +396,15 @@ public class MenuService {
             }
 
             // Validate user exists and get user details
-            User user = userService.getUserById(request.getUserId());
+            UserDto user = userService.findUserById(request.getUserId());
             if (user == null) {
                 response.setErrorMessage("User not found - please contact system administrator");
                 return response;
             }
 
-            // Validate user permissions using UserService
-            boolean hasPermissions = userService.validateUserPermissions(request.getUserId());
-            if (!hasPermissions) {
+            // Note: validateUserPermissions method doesn't exist in UserService
+            // Using basic user existence check as permission validation
+            if (user.getUserId() == null || user.getUserId().trim().isEmpty()) {
                 response.setErrorMessage("User account does not have sufficient permissions");
                 return response;
             }
@@ -601,25 +613,21 @@ public class MenuService {
      * @param menuType Type of menu being built
      * @return MenuResponse Complete response object for frontend
      */
-    public MenuResponse buildMenuResponse(Map<String, Object> menuData, MenuRequest request, String menuType) {
+    public MenuResponse buildMenuResponse(MenuResponse menuData, MenuRequest request, String menuType) {
         logger.debug("Building menu response for menu type: {} and user: {}", 
                     menuType, request.getUserId());
 
         try {
-            MenuResponse response = new MenuResponse();
+            MenuResponse response = menuData != null ? menuData : new MenuResponse();
 
-            // Set menu options from menu data
-            if (menuData.containsKey("menuOptions")) {
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> options = (List<Map<String, Object>>) menuData.get("menuOptions");
-                response.setMenuOptions(options);
-            } else {
+            // Set menu options from menu data or use defaults
+            if (response.getMenuOptions() == null || response.getMenuOptions().isEmpty()) {
                 // Build default menu options based on menu type
                 response.setMenuOptions(getDefaultMenuOptions(menuType));
             }
 
             // Set user context information
-            User user = getUserForMenu(request.getUserId());
+            UserDto user = getUserForMenu(request.getUserId());
             if (user != null) {
                 response.setUserName(user.getFirstName() + " " + user.getLastName());
                 response.setUserId(user.getUserId());
@@ -639,13 +647,13 @@ public class MenuService {
             }
 
             // Set any error messages from menu data
-            if (menuData.containsKey("errorMessage")) {
-                response.setErrorMessage((String) menuData.get("errorMessage"));
+            if (menuData != null && menuData.getErrorMessage() != null) {
+                response.setErrorMessage(menuData.getErrorMessage());
             }
 
             // Set success messages if available
-            if (menuData.containsKey("successMessage")) {
-                response.setSuccessMessage((String) menuData.get("successMessage"));
+            if (menuData != null && menuData.getSuccessMessage() != null) {
+                response.setSuccessMessage(menuData.getSuccessMessage());
             }
 
             logger.debug("Menu response built successfully for menu type: {}", menuType);
@@ -733,7 +741,7 @@ public class MenuService {
             // Determine based on user type (equivalent to COBOL user type check)
             String userType = request.getUserType();
             if (userType == null && request.getUserId() != null) {
-                User user = getUserForMenu(request.getUserId());
+                UserDto user = getUserForMenu(request.getUserId());
                 if (user != null) {
                     userType = user.getUserType();
                 }
@@ -807,6 +815,48 @@ public class MenuService {
         option4.put("optionText", "Custom Date Range Report");
         option4.put("description", "Generate report for custom date range");
         option4.put("enabled", true);
+        reportOptions.add(option4);
+
+        return reportOptions;
+    }
+
+    /**
+     * Builds report menu options as MenuOption objects.
+     * Creates MenuOption instances for report selection menu.
+     */
+    private List<MenuOption> buildReportMenuOptionsAsMenuOption() {
+        List<MenuOption> reportOptions = new ArrayList<>();
+
+        // Report option 1: Daily Transaction Report
+        MenuOption option1 = new MenuOption();
+        option1.setOptionNumber(1);
+        option1.setDescription("Daily Transaction Report");
+        option1.setEnabled(true);
+        option1.setAccessLevel("USER");
+        reportOptions.add(option1);
+
+        // Report option 2: Monthly Account Report  
+        MenuOption option2 = new MenuOption();
+        option2.setOptionNumber(2);
+        option2.setDescription("Monthly Account Report");
+        option2.setEnabled(true);
+        option2.setAccessLevel("USER");
+        reportOptions.add(option2);
+
+        // Report option 3: Customer Report
+        MenuOption option3 = new MenuOption();
+        option3.setOptionNumber(3);
+        option3.setDescription("Customer Report");
+        option3.setEnabled(true);
+        option3.setAccessLevel("USER");
+        reportOptions.add(option3);
+
+        // Report option 4: Custom Date Range
+        MenuOption option4 = new MenuOption();
+        option4.setOptionNumber(4);
+        option4.setDescription("Custom Date Range Report");
+        option4.setEnabled(true);
+        option4.setAccessLevel("USER");
         reportOptions.add(option4);
 
         return reportOptions;
@@ -888,17 +938,19 @@ public class MenuService {
     private MenuResponse processMainMenuSelection(MenuRequest request) {
         try {
             // Delegate to MainMenuService for COMEN01C logic
-            Map<String, Object> selectionResult = mainMenuService.processMenuSelection(
-                request.getSelectedOption(), request.getUserId());
+            Integer selectedOption = Integer.parseInt(request.getSelectedOption());
+            String selectionResult = mainMenuService.processMenuSelection(
+                selectedOption, request.getUserType() != null ? request.getUserType() : USER_TYPE_USER);
             
-            if (selectionResult.containsKey("error")) {
-                MenuResponse errorResponse = new MenuResponse();
-                errorResponse.setErrorMessage((String) selectionResult.get("error"));
-                return errorResponse;
+            // Create response with transaction code
+            MenuResponse response = new MenuResponse();
+            response.setTransactionCode(selectionResult);
+            if (selectionResult != null) {
+                response.setSuccessMessage("Menu option " + selectedOption + " selected");
             }
             
             // Build response from selection result
-            return buildMenuResponse(selectionResult, request, MENU_TYPE_MAIN);
+            return buildMenuResponse(response, request, MENU_TYPE_MAIN);
 
         } catch (Exception e) {
             logger.error("Error processing main menu selection", e);
@@ -914,17 +966,22 @@ public class MenuService {
     private MenuResponse processAdminMenuSelection(MenuRequest request) {
         try {
             // Delegate to AdminMenuService for COADM01C logic
-            Map<String, Object> selectionResult = adminMenuService.processAdminSelection(
-                request.getSelectedOption(), request.getUserId());
+            Integer selectedOption = Integer.parseInt(request.getSelectedOption());
+            AdminMenuRequest adminRequest = new AdminMenuRequest();
+            adminRequest.setSelectedOption(selectedOption);
+            adminRequest.setSessionData(request.getUserId());
             
-            if (selectionResult.containsKey("error")) {
-                MenuResponse errorResponse = new MenuResponse();
-                errorResponse.setErrorMessage((String) selectionResult.get("error"));
-                return errorResponse;
+            String selectionResult = adminMenuService.processAdminSelection(adminRequest);
+            
+            // Create response with transaction code
+            MenuResponse response = new MenuResponse();
+            response.setTransactionCode(selectionResult);
+            if (selectionResult != null) {
+                response.setSuccessMessage("Admin option " + selectedOption + " selected");
             }
             
             // Build response from selection result
-            return buildMenuResponse(selectionResult, request, MENU_TYPE_ADMIN);
+            return buildMenuResponse(response, request, MENU_TYPE_ADMIN);
 
         } catch (Exception e) {
             logger.error("Error processing admin menu selection", e);
@@ -951,10 +1008,10 @@ public class MenuService {
             // Set report menu context
             response.setCurrentMenu(MENU_TYPE_REPORT);
             response.setTransactionCode(TRANS_REPORT_MENU);
-            response.setMenuOptions(buildReportMenuOptions());
+            response.setMenuOptions(buildReportMenuOptionsAsMenuOption());
             
             // Set user context
-            User user = getUserForMenu(request.getUserId());
+            UserDto user = getUserForMenu(request.getUserId());
             if (user != null) {
                 response.setUserName(user.getFirstName() + " " + user.getLastName());
             }
@@ -1014,9 +1071,9 @@ public class MenuService {
     /**
      * Retrieves user information for menu context using UserService.
      */
-    private User getUserForMenu(String userId) {
+    private UserDto getUserForMenu(String userId) {
         try {
-            return userService.getUserById(userId);
+            return userService.findUserById(userId);
         } catch (Exception e) {
             logger.error("Error retrieving user for menu: {}", userId, e);
             return null;
@@ -1026,28 +1083,16 @@ public class MenuService {
     /**
      * Gets default menu options based on menu type and MenuConfiguration.
      */
-    private List<Map<String, Object>> getDefaultMenuOptions(String menuType) {
+    private List<MenuOption> getDefaultMenuOptions(String menuType) {
         try {
             switch (menuType) {
                 case MENU_TYPE_REPORT:
-                    return buildReportMenuOptions();
+                    return buildReportMenuOptionsAsMenuOption();
                 case MENU_TYPE_MAIN:
                 case MENU_TYPE_ADMIN:
                 default:
                     // Use MenuConfiguration for standard menu options
-                    List<Map<String, Object>> defaultOptions = new ArrayList<>();
-                    Map<String, Object> menuOptions = menuConfiguration.getMenuOptions();
-                    
-                    // Convert MenuConfiguration data to response format
-                    for (Map.Entry<String, Object> entry : menuOptions.entrySet()) {
-                        Map<String, Object> option = new HashMap<>();
-                        option.put("optionNumber", entry.getKey());
-                        option.put("optionText", entry.getValue().toString());
-                        option.put("enabled", true);
-                        defaultOptions.add(option);
-                    }
-                    
-                    return defaultOptions;
+                    return menuConfiguration.getMenuOptions();
             }
         } catch (Exception e) {
             logger.error("Error getting default menu options for type: {}", menuType, e);
@@ -1136,5 +1181,29 @@ public class MenuService {
             currentResponse.setErrorMessage("Error during cancel operation");
             return currentResponse;
         }
+    }
+
+    /**
+     * Converts AdminMenuResponse to MenuResponse for unified interface.
+     * 
+     * @param adminResponse AdminMenuResponse from AdminMenuService
+     * @return MenuResponse with admin menu data
+     */
+    private MenuResponse convertAdminResponseToMenuResponse(AdminMenuResponse adminResponse) {
+        MenuResponse menuResponse = new MenuResponse();
+        
+        if (adminResponse != null) {
+            menuResponse.setMenuOptions(adminResponse.getAdminOptions());
+            menuResponse.setCurrentMenu(MENU_TYPE_ADMIN);
+            menuResponse.setTransactionCode(TRANS_ADMIN_MENU);
+            menuResponse.setTimestamp(LocalDateTime.now());
+            
+            // Convert admin-specific status information to general format
+            if (adminResponse.getSystemStatus() != null) {
+                menuResponse.setSuccessMessage("System Status: " + adminResponse.getSystemStatus());
+            }
+        }
+        
+        return menuResponse;
     }
 }

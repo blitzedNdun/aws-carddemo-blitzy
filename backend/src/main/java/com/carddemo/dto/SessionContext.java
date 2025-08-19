@@ -24,6 +24,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
 
@@ -178,6 +180,17 @@ public class SessionContext {
      */
     @JsonProperty("sessionAttributes")
     private Map<String, Object> sessionAttributes;
+
+    /**
+     * Navigation stack for tracking user navigation history.
+     * 
+     * Maintains a stack of menu/screen identifiers to support breadcrumb navigation
+     * and proper back button functionality. This enables CICS-like navigation
+     * patterns where users can traverse between different menus and return to
+     * previous screens.
+     */
+    @JsonProperty("navigationStack")
+    private List<String> navigationStack;
     
     /**
      * Provides a string representation of the session context for logging and debugging.
@@ -280,5 +293,59 @@ public class SessionContext {
             return false;
         }
         return lastActivityTime.isBefore(LocalDateTime.now().minusMinutes(timeoutMinutes));
+    }
+
+    /**
+     * Gets the navigation stack for breadcrumb tracking.
+     * 
+     * @return List of navigation entries, or empty list if none
+     */
+    public List<String> getNavigationStack() {
+        if (navigationStack == null) {
+            navigationStack = new ArrayList<>();
+        }
+        return navigationStack;
+    }
+
+    /**
+     * Sets the navigation stack.
+     * 
+     * @param navigationStack List of navigation entries
+     */
+    public void setNavigationStack(List<String> navigationStack) {
+        this.navigationStack = navigationStack;
+    }
+
+    /**
+     * Adds a menu/screen identifier to the navigation stack.
+     * 
+     * @param menuId Menu or screen identifier to add to navigation history
+     */
+    public void addToNavigationStack(String menuId) {
+        if (navigationStack == null) {
+            navigationStack = new ArrayList<>();
+        }
+        navigationStack.add(menuId);
+    }
+
+    /**
+     * Removes and returns the last navigation entry from the stack.
+     * 
+     * @return Last navigation entry, or null if stack is empty
+     */
+    public String popFromNavigationStack() {
+        if (navigationStack == null || navigationStack.isEmpty()) {
+            return null;
+        }
+        return navigationStack.remove(navigationStack.size() - 1);
+    }
+
+    /**
+     * Clears the navigation stack.
+     */
+    public void clearNavigationStack() {
+        if (navigationStack != null) {
+            navigationStack.clear();
+        }
     }
 }

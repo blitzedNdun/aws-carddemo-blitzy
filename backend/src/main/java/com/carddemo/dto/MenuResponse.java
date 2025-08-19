@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -133,6 +134,54 @@ public class MenuResponse {
      */
     @Size(max = ERROR_MESSAGE_MAX_LENGTH, message = "Error message cannot exceed " + ERROR_MESSAGE_MAX_LENGTH + " characters")
     private String errorMessage;
+
+    /**
+     * Current menu type identifier.
+     * Used for navigation context and session state management.
+     */
+    private String currentMenu;
+
+    /**
+     * Transaction code for the current operation.
+     * Maps to COBOL transaction ID logic.
+     */
+    private String transactionCode;
+
+    /**
+     * Timestamp for the response generation.
+     * Used for session management and audit logging.
+     */
+    private LocalDateTime timestamp;
+
+    /**
+     * User ID for the current session.
+     * Used for session context and security validation.
+     */
+    private String userId;
+
+    /**
+     * User type/role for access control.
+     * Used for role-based menu filtering and security.
+     */
+    private String userType;
+
+    /**
+     * Session ID for state management.
+     * Used for tracking user session across requests.
+     */
+    private String sessionId;
+
+    /**
+     * Navigation stack for tracking user navigation history.
+     * Used for breadcrumb navigation and back navigation functionality.
+     */
+    private List<String> navigationStack;
+
+    /**
+     * Success message for positive feedback.
+     * Used for confirmation messages and user notifications.
+     */
+    private String successMessage;
 
     /**
      * Default constructor initializing empty menu options list.
@@ -461,6 +510,150 @@ public class MenuResponse {
     }
 
     /**
+     * Gets the current menu type.
+     * 
+     * @return Current menu type identifier
+     */
+    public String getCurrentMenu() {
+        return currentMenu;
+    }
+
+    /**
+     * Sets the current menu type.
+     * 
+     * @param currentMenu Menu type identifier
+     */
+    public void setCurrentMenu(String currentMenu) {
+        this.currentMenu = currentMenu;
+    }
+
+    /**
+     * Gets the transaction code.
+     * 
+     * @return Transaction code string
+     */
+    public String getTransactionCode() {
+        return transactionCode;
+    }
+
+    /**
+     * Sets the transaction code.
+     * 
+     * @param transactionCode Transaction code for the operation
+     */
+    public void setTransactionCode(String transactionCode) {
+        this.transactionCode = transactionCode;
+    }
+
+    /**
+     * Gets the response timestamp.
+     * 
+     * @return Timestamp of response generation
+     */
+    public LocalDateTime getTimestamp() {
+        return timestamp;
+    }
+
+    /**
+     * Sets the response timestamp.
+     * 
+     * @param timestamp Timestamp for the response
+     */
+    public void setTimestamp(LocalDateTime timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    /**
+     * Gets the user ID.
+     * 
+     * @return User ID string
+     */
+    public String getUserId() {
+        return userId;
+    }
+
+    /**
+     * Sets the user ID.
+     * 
+     * @param userId User ID for session context
+     */
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
+    /**
+     * Gets the user type.
+     * 
+     * @return User type/role string
+     */
+    public String getUserType() {
+        return userType;
+    }
+
+    /**
+     * Sets the user type.
+     * 
+     * @param userType User type/role for access control
+     */
+    public void setUserType(String userType) {
+        this.userType = userType;
+    }
+
+    /**
+     * Gets the session ID.
+     * 
+     * @return Session ID string
+     */
+    public String getSessionId() {
+        return sessionId;
+    }
+
+    /**
+     * Sets the session ID.
+     * 
+     * @param sessionId Session ID for state management
+     */
+    public void setSessionId(String sessionId) {
+        this.sessionId = sessionId;
+    }
+
+    /**
+     * Gets the success message.
+     * 
+     * @return Success message string
+     */
+    public String getSuccessMessage() {
+        return successMessage;
+    }
+
+    /**
+     * Sets the success message.
+     * 
+     * @param successMessage Success message for user feedback
+     */
+    public void setSuccessMessage(String successMessage) {
+        this.successMessage = successMessage;
+    }
+
+    /**
+     * Gets the navigation stack.
+     * 
+     * @return Navigation stack list
+     */
+    public List<String> getNavigationStack() {
+        return navigationStack;
+    }
+
+    /**
+     * Sets the navigation stack.
+     * 
+     * @param navigationStack Navigation stack for breadcrumb functionality
+     */
+    public void setNavigationStack(List<String> navigationStack) {
+        this.navigationStack = navigationStack;
+    }
+
+    /**
      * Provides string representation of the menu response.
      * Includes key fields and menu option count for debugging.
      * 
@@ -475,6 +668,8 @@ public class MenuResponse {
                 ", currentTime='" + currentTime + '\'' +
                 ", programName='" + programName + '\'' +
                 ", systemId='" + systemId + '\'' +
+                ", currentMenu='" + currentMenu + '\'' +
+                ", transactionCode='" + transactionCode + '\'' +
                 ", hasError=" + hasErrors() +
                 '}';
     }
