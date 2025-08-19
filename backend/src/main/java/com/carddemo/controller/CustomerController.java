@@ -16,7 +16,7 @@ import com.carddemo.util.ValidationUtil;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.http.HttpStatus;
 import org.springframework.data.domain.Page;
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.slf4j.LoggerFactory;
 import java.util.List;
@@ -230,9 +230,6 @@ public class CustomerController {
                 ValidationUtil.validateDateOfBirth("dateOfBirth", dobString);
             }
             
-            // Perform additional business validation through service layer
-            customerService.validateCustomerData(customerRequest);
-            
             // Create customer through service layer
             CustomerDto createdCustomer = customerService.createCustomer(customerRequest);
             
@@ -344,9 +341,6 @@ public class CustomerController {
                 String dobString = customerRequest.getDateOfBirth().toString().replace("-", "");
                 ValidationUtil.validateDateOfBirth("dateOfBirth", dobString);
             }
-            
-            // Perform additional business validation through service layer
-            customerService.validateCustomerData(customerRequest);
             
             // Update customer through service layer
             CustomerDto updatedCustomer = customerService.updateCustomer(customerId, customerRequest);
