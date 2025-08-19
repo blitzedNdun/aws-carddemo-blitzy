@@ -15,6 +15,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -49,6 +51,7 @@ import static org.mockito.Mockito.*;
  * @since 2024
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class FeeCalculationServiceTest {
 
     @Mock
@@ -116,13 +119,21 @@ public class FeeCalculationServiceTest {
         assertEquals(LATE_FEE_MINIMUM, lowBalanceFee, 
             "Minimum late fee should apply for low balances");
 
-        // Test case 3: Mid-range balance - percentage calculation
+        // Test case 3: Mid-range balance - percentage calculation (with maximum cap applied)
         BigDecimal midRangeFee = feeCalculationService.calculateLateFee(
             TEST_ACCOUNT_ID, TEST_BALANCE, 25);
-        BigDecimal expectedMidRange = TEST_BALANCE.multiply(LATE_FEE_RATE)
+        // $1500 * 2.75% = $41.25, but maximum fee cap is $39.00
+        assertEquals(LATE_FEE_MAXIMUM, midRangeFee, 
+            "Late fee should be capped at maximum when calculated percentage exceeds maximum");
+
+        // Test case 3b: Mid-range balance within cap - actual percentage calculation
+        BigDecimal smallerBalance = new BigDecimal("1000.00");
+        BigDecimal smallerRangeFee = feeCalculationService.calculateLateFee(
+            TEST_ACCOUNT_ID, smallerBalance, 25);
+        BigDecimal expectedSmaller = smallerBalance.multiply(LATE_FEE_RATE)
             .setScale(2, RoundingMode.HALF_UP);
-        assertEquals(expectedMidRange, midRangeFee, 
-            "Late fee should be calculated as 2.75% of outstanding balance");
+        assertEquals(expectedSmaller, smallerRangeFee, 
+            "Late fee should be calculated as 2.75% when within minimum and maximum bounds");
 
         // Test case 4: High balance - maximum fee applies
         BigDecimal highBalanceFee = feeCalculationService.calculateLateFee(
