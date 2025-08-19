@@ -266,6 +266,7 @@ com/carddemo/dto/AdminReportRequest$OutputFormat.class
 com/carddemo/batch/ReconciliationJobConfig$AuthorizationRecordRowMapper.class
 com/carddemo/client/EmailClient$BounceData$Builder.class
 com/carddemo/config/ResilienceConfig$1.class
+com/carddemo/dto/AddTransactionRequest.class
 com/carddemo/service/ChargebackProcessor.class
 com/carddemo/entity/Report$Status.class
 com/carddemo/entity/FeeTransaction$PostingStatus.class
