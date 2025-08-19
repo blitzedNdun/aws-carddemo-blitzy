@@ -320,7 +320,12 @@ public class CustomerFileProcessorService {
             
             // Clear customer list to free memory
             if (customerList != null) {
-                customerList.clear();
+                try {
+                    customerList.clear();
+                } catch (UnsupportedOperationException e) {
+                    // List might be immutable (e.g., from List.of()), just nullify it
+                    logger.debug("Customer list is immutable, cannot clear - setting to null");
+                }
                 customerList = null;
             }
             
