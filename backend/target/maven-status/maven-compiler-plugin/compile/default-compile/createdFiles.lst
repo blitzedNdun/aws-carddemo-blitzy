@@ -8,6 +8,7 @@ com/carddemo/dto/MenuDto$MenuType.class
 com/carddemo/dto/BillInquiryRequest.class
 com/carddemo/batch/ReconciliationJobConfig$ProcessedChargeback.class
 com/carddemo/controller/AccountController.class
+com/carddemo/service/MainMenuService.class
 com/carddemo/service/AdminConfigService.class
 com/carddemo/client/EmailClient$BounceEvent$Builder.class
 com/carddemo/dto/UserAddResponse.class
