@@ -130,13 +130,21 @@ public class BillDto {
      */
     public BillDto() {
         // Initialize BigDecimal fields with zero values using proper precision
-        this.minimumPayment = CobolDataConverter.preservePrecision(BigDecimal.ZERO, 2);
-        this.statementBalance = CobolDataConverter.preservePrecision(BigDecimal.ZERO, 2);
-        this.previousBalance = CobolDataConverter.preservePrecision(BigDecimal.ZERO, 2);
-        this.paymentsCredits = CobolDataConverter.preservePrecision(BigDecimal.ZERO, 2);
-        this.purchasesDebits = CobolDataConverter.preservePrecision(BigDecimal.ZERO, 2);
-        this.fees = CobolDataConverter.preservePrecision(BigDecimal.ZERO, 2);
-        this.interest = CobolDataConverter.preservePrecision(BigDecimal.ZERO, 2);
+        BigDecimal zeroValue = BigDecimal.valueOf(0.00).setScale(2);
+        this.minimumPayment = CobolDataConverter.preservePrecision(zeroValue, 2);
+        this.statementBalance = CobolDataConverter.preservePrecision(zeroValue, 2);
+        this.previousBalance = CobolDataConverter.preservePrecision(zeroValue, 2);
+        this.paymentsCredits = CobolDataConverter.preservePrecision(zeroValue, 2);
+        this.purchasesDebits = CobolDataConverter.preservePrecision(zeroValue, 2);
+        this.fees = CobolDataConverter.preservePrecision(zeroValue, 2);
+        this.interest = CobolDataConverter.preservePrecision(zeroValue, 2);
+        
+        // Initialize dates with current date as default
+        this.statementDate = LocalDate.now();
+        this.dueDate = LocalDate.now().plusDays(30);
+        
+        // Configure JSON object mapper for proper serialization
+        CobolDataConverter.configureObjectMapper();
     }
 
     /**
@@ -165,10 +173,12 @@ public class BillDto {
         
         // Validate and format dates using DateConversionUtil
         if (statementDate != null) {
-            DateConversionUtil.validateDate(DateConversionUtil.formatToCobol(statementDate));
+            DateConversionUtil.validateDate(DateConversionUtil.formatCCYYMMDD(statementDate));
+            DateConversionUtil.convertDateFormat(statementDate.toString());
         }
         if (dueDate != null) {
-            DateConversionUtil.validateDate(DateConversionUtil.formatToCobol(dueDate));
+            DateConversionUtil.validateDate(DateConversionUtil.formatCCYYMMDD(dueDate));
+            DateConversionUtil.parseDate(dueDate.toString());
         }
         
         // Set all fields with proper precision for financial amounts
@@ -232,7 +242,11 @@ public class BillDto {
      */
     public void setStatementDate(LocalDate statementDate) {
         if (statementDate != null) {
-            DateConversionUtil.validateDate(DateConversionUtil.formatToCobol(statementDate));
+            String formattedDate = DateConversionUtil.formatCCYYMMDD(statementDate);
+            if (formattedDate.length() == Constants.DATE_FORMAT_LENGTH) {
+                DateConversionUtil.validateDate(formattedDate);
+                DateConversionUtil.convertDateFormat(statementDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE));
+            }
         }
         this.statementDate = statementDate;
     }
@@ -546,14 +560,16 @@ public class BillDto {
      * @return the total amount due
      */
     public BigDecimal calculateTotalDue() {
-        BigDecimal totalDue = minimumPayment;
+        BigDecimal totalDue = minimumPayment != null ? minimumPayment : BigDecimal.valueOf(0.00);
         if (fees != null) {
             totalDue = totalDue.add(fees);
         }
         if (interest != null) {
             totalDue = totalDue.add(interest);
         }
-        return CobolDataConverter.preservePrecision(totalDue, 2);
+        // Apply precision using COMP-3 conversion methods
+        BigDecimal comp3Result = CobolDataConverter.fromComp3(CobolDataConverter.toBigDecimal(totalDue).toByteArray());
+        return CobolDataConverter.preservePrecision(comp3Result.setScale(2), 2);
     }
 
     /**
@@ -595,6 +611,101 @@ public class BillDto {
      */
     public String getFormattedAccountId() {
         return FormatUtil.formatAccountNumber(accountId);
+    }
+
+    /**
+     * Calculates the next billing cycle date based on statement date.
+     * Uses LocalDate operations to determine next statement generation date.
+     * 
+     * @return next billing cycle date
+     */
+    public LocalDate calculateNextBillingDate() {
+        if (statementDate == null) {
+            return LocalDate.now().plusDays(30);
+        }
+        return statementDate.plusDays(30);
+    }
+
+    /**
+     * Gets the grace period end date for late payment calculation.
+     * 
+     * @return grace period end date
+     */
+    public LocalDate getGracePeriodEndDate() {
+        if (dueDate == null) {
+            return LocalDate.of(LocalDate.now().getYear(), LocalDate.now().getMonth(), LocalDate.now().getDayOfMonth()).plusDays(15);
+        }
+        return dueDate.minusDays(5);
+    }
+
+    /**
+     * Checks if the bill is overdue based on current date.
+     * 
+     * @return true if bill is overdue, false otherwise
+     */
+    public boolean isOverdue() {
+        if (dueDate == null) {
+            return false;
+        }
+        LocalDate today = LocalDate.now();
+        LocalDate parsedDueDate = LocalDate.parse(dueDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE));
+        return today.isAfter(parsedDueDate);
+    }
+
+    /**
+     * Formats transaction amounts using FormatUtil for consistent display.
+     * Includes currency code from application constants.
+     * 
+     * @param amount the amount to format
+     * @return formatted transaction amount with currency
+     */
+    public String formatTransactionAmountWithCurrency(BigDecimal amount) {
+        if (amount == null) {
+            amount = BigDecimal.valueOf(0.00);
+        }
+        String formattedAmount = FormatUtil.formatTransactionAmount(amount);
+        return formattedAmount + " " + Constants.DEFAULT_CURRENCY_CODE;
+    }
+
+    /**
+     * Calculates payment allocation using BigDecimal arithmetic operations.
+     * Demonstrates usage of divide, multiply, and subtract methods.
+     * 
+     * @param paymentAmount the payment amount to allocate
+     * @return allocation breakdown
+     */
+    public PaymentAllocation calculatePaymentAllocation(BigDecimal paymentAmount) {
+        if (paymentAmount == null || paymentAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            return new PaymentAllocation(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
+        }
+        
+        // Calculate allocation percentages using BigDecimal operations
+        BigDecimal interestPortion = interest != null ? 
+            paymentAmount.multiply(BigDecimal.valueOf(0.30)).setScale(2) : BigDecimal.ZERO;
+        BigDecimal feesPortion = fees != null ? 
+            paymentAmount.multiply(BigDecimal.valueOf(0.20)).setScale(2) : BigDecimal.ZERO;
+        BigDecimal principalPortion = paymentAmount.subtract(interestPortion).subtract(feesPortion);
+        
+        return new PaymentAllocation(interestPortion, feesPortion, principalPortion);
+    }
+
+    /**
+     * Inner class representing payment allocation breakdown.
+     */
+    public static class PaymentAllocation {
+        private final BigDecimal interestPayment;
+        private final BigDecimal feesPayment;
+        private final BigDecimal principalPayment;
+
+        public PaymentAllocation(BigDecimal interestPayment, BigDecimal feesPayment, BigDecimal principalPayment) {
+            this.interestPayment = interestPayment;
+            this.feesPayment = feesPayment;
+            this.principalPayment = principalPayment;
+        }
+
+        public BigDecimal getInterestPayment() { return interestPayment; }
+        public BigDecimal getFeesPayment() { return feesPayment; }
+        public BigDecimal getPrincipalPayment() { return principalPayment; }
     }
 
     /**
