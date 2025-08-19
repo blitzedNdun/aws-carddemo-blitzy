@@ -61,6 +61,7 @@ com/carddemo/dto/CustomerRequest.class
 com/carddemo/service/AddressValidationService.class
 com/carddemo/config/CacheConfig.class
 com/carddemo/dto/BatchJobExecutionDto.class
+com/carddemo/dto/BillDto$Builder.class
 com/carddemo/repository/SettlementRepository.class
 com/carddemo/config/MenuConfiguration.class
 com/carddemo/service/ReportingService$1.class
@@ -247,6 +248,7 @@ com/carddemo/dto/BillPaymentRequest.class
 com/carddemo/dto/CardDto.class
 com/carddemo/dto/CreditCardUpdateRequest$CreditCardUpdateRequestBuilder.class
 com/carddemo/dto/CreditCardDto.class
+com/carddemo/dto/BillDto$PaymentAllocation.class
 com/carddemo/batch/ReconciliationJobConfig$2.class
 com/carddemo/security/SessionConfig$SessionEventListener.class
 com/carddemo/batch/ReconciliationJobConfig.class
@@ -383,6 +385,7 @@ com/carddemo/service/DailyTransactionService$ProcessingResult.class
 com/carddemo/dto/CreditCardListRequest.class
 com/carddemo/client/SMSProvider$SMSResponse.class
 com/carddemo/interceptor/CicsTransactionInterceptor.class
+com/carddemo/dto/BillDto.class
 com/carddemo/entity/Configuration$ConfigurationBuilder.class
 com/carddemo/util/CobolDataConverter$1.class
 com/carddemo/config/ApplicationConfig$DatabaseProperties.class
