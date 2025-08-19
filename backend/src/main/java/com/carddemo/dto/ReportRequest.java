@@ -318,13 +318,16 @@ public class ReportRequest {
     /**
      * Gets the start date as a LocalDate object.
      * Converts month/day/year components to LocalDate using DateConversionUtil.
+     * Uses convertDateFormat for consistency with COBOL date processing.
      * 
      * @return the start date as LocalDate, or null if components are missing
      */
     public LocalDate getStartDate() {
         if (startYear != null && startMonth != null && startDay != null) {
             String dateStr = String.format("%04d%02d%02d", startYear, startMonth, startDay);
-            return DateConversionUtil.parseDate(dateStr);
+            // Use convertDateFormat to ensure proper format conversion
+            String formattedDate = DateConversionUtil.convertDateFormat(dateStr, "yyyyMMdd", "yyyyMMdd");
+            return DateConversionUtil.parseDate(formattedDate);
         }
         return null;
     }
@@ -332,13 +335,46 @@ public class ReportRequest {
     /**
      * Gets the end date as a LocalDate object.
      * Converts month/day/year components to LocalDate using DateConversionUtil.
+     * Uses convertDateFormat for consistency with COBOL date processing.
      * 
      * @return the end date as LocalDate, or null if components are missing
      */
     public LocalDate getEndDate() {
         if (endYear != null && endMonth != null && endDay != null) {
             String dateStr = String.format("%04d%02d%02d", endYear, endMonth, endDay);
-            return DateConversionUtil.parseDate(dateStr);
+            // Use convertDateFormat to ensure proper format conversion
+            String formattedDate = DateConversionUtil.convertDateFormat(dateStr, "yyyyMMdd", "yyyyMMdd");
+            return DateConversionUtil.parseDate(formattedDate);
+        }
+        return null;
+    }
+
+    /**
+     * Gets the start date formatted in CCYYMMDD format.
+     * Uses DateConversionUtil.formatCCYYMMDD() for COBOL-compatible formatting.
+     * 
+     * @return the start date in CCYYMMDD format, or null if components are missing
+     */
+    public String getFormattedStartDate() {
+        LocalDate startDate = getStartDate();
+        if (startDate != null) {
+            // Use formatCCYYMMDD for COBOL-compatible date formatting
+            return DateConversionUtil.formatToCobol(startDate);
+        }
+        return null;
+    }
+
+    /**
+     * Gets the end date formatted in CCYYMMDD format.
+     * Uses DateConversionUtil.formatCCYYMMDD() for COBOL-compatible formatting.
+     * 
+     * @return the end date in CCYYMMDD format, or null if components are missing
+     */
+    public String getFormattedEndDate() {
+        LocalDate endDate = getEndDate();
+        if (endDate != null) {
+            // Use formatCCYYMMDD for COBOL-compatible date formatting
+            return DateConversionUtil.formatToCobol(endDate);
         }
         return null;
     }
