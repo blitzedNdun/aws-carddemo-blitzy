@@ -3,6 +3,7 @@ package com.carddemo.config;
 import com.carddemo.entity.UserSecurity;
 import com.carddemo.repository.UserSecurityRepository;
 import com.carddemo.service.SignOnService;
+import com.carddemo.dto.SignOnResponse;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -13,7 +14,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurer;
+import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
 
 import java.util.Optional;
 
@@ -189,23 +190,60 @@ public class TestSecurityConfig {
     public SignOnService mockSignOnService() {
         SignOnService mockService = Mockito.mock(SignOnService.class);
         
-        // Configure mock behavior for test users
-        when(mockService.authenticateUser("TESTADM1", "TESTPASS")).thenReturn(true);
-        when(mockService.authenticateUser("TESTUSER1", "TESTPASS")).thenReturn(true);
-        when(mockService.authenticateUser("TESTUSER2", "TESTPASS")).thenReturn(true);
-        when(mockService.authenticateUser(anyString(), anyString())).thenReturn(false);
+        // Configure mock behavior for test users using actual method signatures
+        // Mock validateCredentials method that returns SignOnResponse
+        com.carddemo.dto.SignOnResponse successAdminResponse = new com.carddemo.dto.SignOnResponse();
+        successAdminResponse.setSuccess(true);
+        successAdminResponse.setUserType("A");
+        successAdminResponse.setUserName("Test Admin");
         
-        // Configure credential validation for authentication flows
-        when(mockService.validateCredentials("TESTADM1", "TESTPASS")).thenReturn(true);
-        when(mockService.validateCredentials("TESTUSER1", "TESTPASS")).thenReturn(true);
-        when(mockService.validateCredentials("TESTUSER2", "TESTPASS")).thenReturn(true);
-        when(mockService.validateCredentials(anyString(), anyString())).thenReturn(false);
+        com.carddemo.dto.SignOnResponse successUserResponse = new com.carddemo.dto.SignOnResponse();
+        successUserResponse.setSuccess(true);
+        successUserResponse.setUserType("U");
+        successUserResponse.setUserName("Test User");
         
-        // Configure user context retrieval for session management
-        when(mockService.getUserContext("TESTADM1")).thenReturn("ADMIN");
-        when(mockService.getUserContext("TESTUSER1")).thenReturn("USER");
-        when(mockService.getUserContext("TESTUSER2")).thenReturn("USER");
-        when(mockService.getUserContext(anyString())).thenReturn(null);
+        com.carddemo.dto.SignOnResponse failureResponse = new com.carddemo.dto.SignOnResponse();
+        failureResponse.setSuccess(false);
+        failureResponse.setMessage("Authentication failed");
+        
+        when(mockService.validateCredentials("TESTADM1", "TESTPASS")).thenReturn(successAdminResponse);
+        when(mockService.validateCredentials("TESTUSER1", "TESTPASS")).thenReturn(successUserResponse);
+        when(mockService.validateCredentials("TESTUSER2", "TESTPASS")).thenReturn(successUserResponse);
+        when(mockService.validateCredentials(anyString(), anyString())).thenReturn(failureResponse);
+        
+        // Create test user objects for getUserDetails method
+        UserSecurity testAdminForSignOn = new UserSecurity();
+        testAdminForSignOn.setSecUsrId("TESTADM1");
+        testAdminForSignOn.setUsername("TESTADM1");
+        testAdminForSignOn.setPassword("TESTPASS");
+        testAdminForSignOn.setUserType("A");
+        testAdminForSignOn.setEnabled(true);
+        
+        UserSecurity testUser1ForSignOn = new UserSecurity();
+        testUser1ForSignOn.setSecUsrId("TESTUSER1");
+        testUser1ForSignOn.setUsername("TESTUSER1");
+        testUser1ForSignOn.setPassword("TESTPASS");
+        testUser1ForSignOn.setUserType("U");
+        testUser1ForSignOn.setEnabled(true);
+        
+        UserSecurity testUser2ForSignOn = new UserSecurity();
+        testUser2ForSignOn.setSecUsrId("TESTUSER2");
+        testUser2ForSignOn.setUsername("TESTUSER2");
+        testUser2ForSignOn.setPassword("TESTPASS");
+        testUser2ForSignOn.setUserType("U");
+        testUser2ForSignOn.setEnabled(true);
+        
+        // Mock getUserDetails method
+        when(mockService.getUserDetails("TESTADM1")).thenReturn(testAdminForSignOn);
+        when(mockService.getUserDetails("TESTUSER1")).thenReturn(testUser1ForSignOn);
+        when(mockService.getUserDetails("TESTUSER2")).thenReturn(testUser2ForSignOn);
+        when(mockService.getUserDetails(anyString())).thenReturn(null);
+        
+        // Mock logout method
+        when(mockService.logout("TESTADM1")).thenReturn(true);
+        when(mockService.logout("TESTUSER1")).thenReturn(true);
+        when(mockService.logout("TESTUSER2")).thenReturn(true);
+        when(mockService.logout(anyString())).thenReturn(false);
         
         return mockService;
     }
@@ -221,7 +259,7 @@ public class TestSecurityConfig {
      * @return SecurityMockMvcConfigurer for MockMvc security testing
      */
     @Bean
-    public SecurityMockMvcConfigurer securityMockMvcConfigurer() {
-        return SecurityMockMvcConfigurer.springSecurity();
+    public org.springframework.test.web.servlet.setup.MockMvcConfigurer securityMockMvcConfigurer() {
+        return SecurityMockMvcConfigurers.springSecurity();
     }
 }
