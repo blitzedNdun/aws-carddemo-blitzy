@@ -6,10 +6,14 @@
 package com.carddemo.repository;
 
 import com.carddemo.entity.Card;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Spring Data JPA repository interface for Card entity providing data access operations 
@@ -100,9 +104,9 @@ public interface CardRepository extends JpaRepository<Card, String> {
      * VSAM Equivalent: Direct READ on CARDDAT using primary key
      * 
      * @param cardNumber the 16-digit card number
-     * @return Card entity if found, null otherwise
+     * @return Optional containing Card entity if found, empty otherwise
      */
-    Card findByCardNumber(String cardNumber);
+    Optional<Card> findByCardNumber(String cardNumber);
 
     /**
      * Finds all cards associated with a specific customer ID.
@@ -175,4 +179,87 @@ public interface CardRepository extends JpaRepository<Card, String> {
      * @return number of cards with the specified status
      */
     long countByActiveStatus(String activeStatus);
+
+    // Additional pagination and filtering methods for CreditCardService
+
+    /**
+     * Finds all cards associated with a specific account ID with pagination support.
+     * 
+     * This method extends the basic findByAccountId method with pagination capabilities,
+     * supporting large result sets and efficient data retrieval for card listing
+     * operations in the user interface.
+     * 
+     * Database Query: SELECT * FROM card_data WHERE account_id = ? ORDER BY card_number
+     * VSAM Equivalent: STARTBR on CARDAIX with account ID as key, followed by READNEXT
+     * 
+     * @param accountId the account ID to search for
+     * @param pageable pagination parameters (page, size, sort)
+     * @return Page of Card entities associated with the account
+     */
+    Page<Card> findByAccountId(Long accountId, Pageable pageable);
+
+    /**
+     * Finds cards by account ID and partial card number match with pagination.
+     * 
+     * This method supports filtered card searches where both account association
+     * and card number substring matching are required. Useful for search operations
+     * where users provide partial card numbers within a specific account context.
+     * 
+     * Database Query: SELECT * FROM card_data WHERE account_id = ? AND card_number LIKE %?%
+     * 
+     * @param accountId the account ID to filter by
+     * @param cardNumber partial card number to search for
+     * @param pageable pagination parameters (page, size, sort)
+     * @return Page of Card entities matching both criteria
+     */
+    Page<Card> findByAccountIdAndCardNumberContaining(Long accountId, String cardNumber, Pageable pageable);
+
+    /**
+     * Finds cards by partial card number match with pagination.
+     * 
+     * This method enables card searches based on partial card number matching,
+     * supporting user-friendly search operations where complete card numbers
+     * are not required. Implements LIKE-based database queries for flexible
+     * card number searches.
+     * 
+     * Database Query: SELECT * FROM card_data WHERE card_number LIKE %?%
+     * 
+     * @param cardNumber partial card number to search for
+     * @param pageable pagination parameters (page, size, sort)
+     * @return Page of Card entities with card numbers containing the search term
+     */
+    Page<Card> findByCardNumberContaining(String cardNumber, Pageable pageable);
+
+    /**
+     * Finds all cards ordered by card number with pagination support.
+     * 
+     * This method provides ordered card retrieval for general card listing
+     * operations, ensuring consistent sort order by card number for predictable
+     * user interface display. Replaces VSAM sequential access patterns with
+     * SQL-based ordering and pagination.
+     * 
+     * Database Query: SELECT * FROM card_data ORDER BY card_number
+     * VSAM Equivalent: Sequential read through CARDDAT primary index
+     * 
+     * @param pageable pagination parameters (page, size, sort)
+     * @return Page of all Card entities ordered by card number
+     */
+    @Query("SELECT c FROM Card c ORDER BY c.cardNumber")
+    Page<Card> findAllOrderedByCardNumber(Pageable pageable);
+
+    /**
+     * Checks if a card exists with specific card number and account ID combination.
+     * 
+     * This method validates card-account relationships for cross-reference
+     * validation operations. Ensures that a given card number is actually
+     * associated with the specified account, supporting security and data
+     * integrity validation in business operations.
+     * 
+     * Database Query: SELECT COUNT(*) > 0 FROM card_data WHERE card_number = ? AND account_id = ?
+     * 
+     * @param cardNumber the 16-digit card number to check
+     * @param accountId the account ID to validate against
+     * @return true if card exists and belongs to the account, false otherwise
+     */
+    boolean existsByCardNumberAndAccountId(String cardNumber, Long accountId);
 }
