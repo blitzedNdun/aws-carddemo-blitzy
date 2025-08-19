@@ -304,6 +304,7 @@ public class AccountDto {
      * Calculate derived/computed fields based on base data.
      * Called after setting base fields to ensure consistency.
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public void calculateDerivedFields() {
         // Available credit calculation
         if (creditLimit != null && currentBalance != null) {

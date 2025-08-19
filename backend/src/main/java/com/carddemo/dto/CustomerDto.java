@@ -299,6 +299,7 @@ public class CustomerDto {
      * 
      * @return masked SSN string (e.g., "*****1234")
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public String getMaskedSsn() {
         if (this.ssn == null || this.ssn.length() < 4) {
             return "***-**-****";
@@ -312,6 +313,7 @@ public class CustomerDto {
      * 
      * @return formatted full name
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public String getFullName() {
         StringBuilder fullName = new StringBuilder();
         
@@ -341,6 +343,7 @@ public class CustomerDto {
      * 
      * @return true if the customer is marked as a primary cardholder
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public boolean isPrimaryCardholder() {
         return "Y".equals(this.primaryCardholderIndicator);
     }

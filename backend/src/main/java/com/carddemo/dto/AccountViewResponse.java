@@ -23,7 +23,6 @@ package com.carddemo.dto;
 import com.carddemo.dto.AccountDto;
 import com.carddemo.dto.CustomerDto;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Data;
 
 /**
  * Account View Response DTO
@@ -46,7 +45,6 @@ import lombok.Data;
  * Field access patterns match original COBOL COACTVWC.cbl program flow
  * and preserve exact data types and precision from mainframe implementation.
  */
-@Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AccountViewResponse {
 
@@ -127,6 +125,7 @@ public class AccountViewResponse {
      * 
      * @return Account ID if account data is present, null otherwise
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public String getAccountId() {
         return accountData != null ? accountData.getAccountId() : null;
     }
@@ -137,6 +136,7 @@ public class AccountViewResponse {
      * 
      * @return Customer ID if customer data is present, null otherwise  
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public String getCustomerId() {
         return customerData != null ? customerData.getCustomerId() : null;
     }
@@ -149,6 +149,7 @@ public class AccountViewResponse {
      * 
      * @return Account active status ('Y'/'N') if account data is present, null otherwise
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public String getAccountActiveStatus() {
         return accountData != null ? accountData.getActiveStatus() : null;
     }
@@ -159,6 +160,7 @@ public class AccountViewResponse {
      * 
      * @return Current balance if account data is present, null otherwise
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public java.math.BigDecimal getCurrentBalance() {
         return accountData != null ? accountData.getCurrentBalance() : null;
     }
@@ -169,6 +171,7 @@ public class AccountViewResponse {
      * 
      * @return Credit limit if account data is present, null otherwise
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public java.math.BigDecimal getCreditLimit() {
         return accountData != null ? accountData.getCreditLimit() : null;
     }
@@ -179,6 +182,7 @@ public class AccountViewResponse {
      * 
      * @return Cash credit limit if account data is present, null otherwise
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public java.math.BigDecimal getCashCreditLimit() {
         return accountData != null ? accountData.getCashCreditLimit() : null;
     }
@@ -189,6 +193,7 @@ public class AccountViewResponse {
      * 
      * @return Account open date if account data is present, null otherwise
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public java.time.LocalDate getOpenDate() {
         return accountData != null ? accountData.getOpenDate() : null;
     }
@@ -199,6 +204,7 @@ public class AccountViewResponse {
      * 
      * @return Account expiration date if account data is present, null otherwise
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public java.time.LocalDate getExpirationDate() {
         return accountData != null ? accountData.getExpirationDate() : null;
     }
@@ -209,6 +215,7 @@ public class AccountViewResponse {
      * 
      * @return Account reissue date if account data is present, null otherwise
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public java.time.LocalDate getReissueDate() {
         return accountData != null ? accountData.getReissueDate() : null;
     }
@@ -219,6 +226,7 @@ public class AccountViewResponse {
      * 
      * @return Current cycle credit if account data is present, null otherwise
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public java.math.BigDecimal getCurrentCycleCredit() {
         return accountData != null ? accountData.getCurrentCycleCredit() : null;
     }
@@ -229,6 +237,7 @@ public class AccountViewResponse {
      * 
      * @return Current cycle debit if account data is present, null otherwise
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public java.math.BigDecimal getCurrentCycleDebit() {
         return accountData != null ? accountData.getCurrentCycleDebit() : null;
     }
@@ -240,6 +249,7 @@ public class AccountViewResponse {
      * 
      * @return Account group ID if account data is present, null otherwise
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public String getGroupId() {
         return accountData != null ? accountData.getAccountGroupId() : null;
     }
@@ -252,6 +262,7 @@ public class AccountViewResponse {
      * 
      * @return Customer first name if customer data is present, null otherwise
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public String getFirstName() {
         return customerData != null ? customerData.getFirstName() : null;
     }
@@ -262,6 +273,7 @@ public class AccountViewResponse {
      * 
      * @return Customer middle name if customer data is present, null otherwise
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public String getMiddleName() {
         return customerData != null ? customerData.getMiddleName() : null;
     }
@@ -272,6 +284,7 @@ public class AccountViewResponse {
      * 
      * @return Customer last name if customer data is present, null otherwise
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public String getLastName() {
         return customerData != null ? customerData.getLastName() : null;
     }
@@ -282,6 +295,7 @@ public class AccountViewResponse {
      * 
      * @return Customer address DTO if customer data is present, null otherwise
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public com.carddemo.dto.AddressDto getAddress() {
         return customerData != null ? customerData.getAddress() : null;
     }
@@ -292,6 +306,7 @@ public class AccountViewResponse {
      * 
      * @return Customer phone number 1 if customer data is present, null otherwise
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public String getPhoneNumber1() {
         return customerData != null ? customerData.getPhoneNumber1() : null;
     }
@@ -302,6 +317,7 @@ public class AccountViewResponse {
      * 
      * @return Customer phone number 2 if customer data is present, null otherwise
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public String getPhoneNumber2() {
         return customerData != null ? customerData.getPhoneNumber2() : null;
     }
@@ -312,6 +328,7 @@ public class AccountViewResponse {
      * 
      * @return Customer SSN if customer data is present, null otherwise
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public String getSsn() {
         return customerData != null ? customerData.getSsn() : null;
     }
@@ -322,6 +339,7 @@ public class AccountViewResponse {
      * 
      * @return Customer government ID if customer data is present, null otherwise
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public String getGovernmentId() {
         return customerData != null ? customerData.getGovernmentId() : null;
     }
@@ -332,6 +350,7 @@ public class AccountViewResponse {
      * 
      * @return Customer date of birth if customer data is present, null otherwise
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public java.time.LocalDate getDateOfBirth() {
         return customerData != null ? customerData.getDateOfBirth() : null;
     }
@@ -342,6 +361,7 @@ public class AccountViewResponse {
      * 
      * @return Customer EFT account ID if customer data is present, null otherwise
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public String getEftAccountId() {
         return customerData != null ? customerData.getEftAccountId() : null;
     }
@@ -352,6 +372,7 @@ public class AccountViewResponse {
      * 
      * @return Customer primary cardholder indicator ('Y'/'N') if customer data is present, null otherwise
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public String getPrimaryCardholderIndicator() {
         return customerData != null ? customerData.getPrimaryCardholderIndicator() : null;
     }
@@ -362,6 +383,7 @@ public class AccountViewResponse {
      * 
      * @return Customer FICO score if customer data is present, null otherwise
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public Integer getFicoScore() {
         return customerData != null ? customerData.getFicoScore() : null;
     }
@@ -520,6 +542,7 @@ public class AccountViewResponse {
      * 
      * @return Status summary string
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public String getStatusSummary() {
         if (!successful && errorMessage != null) {
             return "Error: " + errorMessage;
