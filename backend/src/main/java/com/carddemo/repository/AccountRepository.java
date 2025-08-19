@@ -1,282 +1,210 @@
 /*
- * AccountRepository.java
- * 
- * Spring Data JPA repository interface for Account entity providing
- * data access for account_data table. Manages account lookups, balance
- * updates, and fee assessment queries replacing VSAM ACCTDAT file patterns.
- * 
- * Provides comprehensive account operations for customer account management,
- * balance inquiries, credit limit validation, and fee assessment processing.
- * Extends JpaRepository with Account entity type and String primary key type.
- * 
- * This repository replaces VSAM ACCTDAT file I/O operations (READ, WRITE, 
- * REWRITE, DELETE) with modern JPA method implementations for account_data 
- * table access, supporting account management processes and fee assessment 
- * batch operations.
- * 
- * Based on COBOL copybook: app/cpy/CVACT01Y.cpy
- * - ACCT-ID (PIC 9(11)) for account identification and primary key access
- * - ACCT-ACTIVE-STATUS (PIC X(01)) for account status filtering
- * - ACCT-CURR-BAL (PIC S9(10)V99) for balance queries and updates
- * - ACCT-CREDIT-LIMIT (PIC S9(10)V99) for credit limit validation
- * - ACCT-GROUP-ID (PIC X(10)) for fee assessment grouping
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 package com.carddemo.repository;
 
 import com.carddemo.entity.Account;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import jakarta.persistence.LockModeType;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 /**
- * Spring Data JPA repository interface for Account entity.
+ * Spring Data JPA repository interface for Account entity providing data access operations for account_data table.
+ * Implements repository pattern to replace VSAM ACCTDAT file access with modern JPA operations.
  * 
- * Provides comprehensive data access operations for account_data table,
- * supporting account management, balance tracking, credit limit validation,
- * and fee assessment processing. Replaces VSAM ACCTDAT file patterns with 
- * modern JPA repository methods that maintain identical functionality while 
- * leveraging PostgreSQL relational database capabilities.
+ * This repository replaces COBOL VSAM file operations from COACTVWC.cbl program:
+ * - EXEC CICS READ DATASET(LIT-ACCTFILENAME) → findById() method
+ * - VSAM STARTBR/READNEXT operations → findAll(Pageable) for cursor-based pagination
+ * - Alternate index access by customer ID → findByCustomerId() method
  * 
- * Key functionality:
- * - Account ID-based lookups for account management operations
- * - Customer ID filtering for customer account relationships
- * - Active status filtering for operational account queries
- * - Balance range queries for reporting and analysis
- * - Credit utilization calculations for risk management
- * - Fee assessment eligibility determination for batch processing
+ * Key VSAM-to-JPA mappings:
+ * - VSAM KSDS primary key (ACCT-ID) → JPA @Id Long accountId
+ * - VSAM alternate index (customer ID) → JPA custom query methods
+ * - VSAM browse operations → JPA Pageable interface for pagination
+ * - VSAM READ/WRITE/REWRITE/DELETE → JPA save(), delete(), findById() operations
  * 
- * All methods support the sub-200ms REST API response time requirement
- * through optimized PostgreSQL B-tree index utilization and query planning.
+ * Transaction boundaries are managed through Spring's @Transactional support,
+ * replicating CICS SYNCPOINT behavior for data consistency.
+ * 
+ * Provides CRUD operations, custom query methods for account retrieval by customer ID,
+ * and cursor-based pagination support replicating VSAM browse operations.
+ * Extends JpaRepository with Account entity type and Long primary key type.
+ * 
+ * @author CardDemo Migration Team
+ * @version 1.0
+ * @since 2024
  */
 @Repository
 public interface AccountRepository extends JpaRepository<Account, Long> {
 
     /**
-     * Finds account by account ID (primary key lookup).
+     * Finds all accounts associated with a specific customer ID.
      * 
-     * Supports direct account lookup operations equivalent to VSAM READ by
-     * primary key. Essential for account validation, balance inquiries,
-     * and transaction processing workflows.
+     * Replaces VSAM alternate index access pattern from COBOL program COACTVWC.cbl
+     * where customer ID is retrieved through CARDXREF file and used to locate accounts.
      * 
-     * @param accountId the account ID (11-digit Long)
-     * @return Optional Account if found
+     * This method supports customers with multiple credit card accounts by returning
+     * a List<Account> collection. Maps to the COBOL access pattern:
+     * - Read CARDXREF by account ID to get customer ID (line 727-735 in COACTVWC.cbl)
+     * - Use customer ID to locate related accounts
+     * 
+     * Uses custom JPQL query to access the customer_id foreign key relationship.
+     * 
+     * @param customerId the customer ID to search for
+     * @return List of Account entities associated with the customer, empty list if none found
      */
-    Optional<Account> findByAccountId(Long accountId);
+    @Query("SELECT a FROM Account a WHERE a.customer.customerId = :customerId")
+    List<Account> findByCustomerId(@Param("customerId") Long customerId);
 
     /**
-     * Finds account by account ID with pessimistic write lock for updates.
+     * Finds accounts by multiple account IDs in a single query.
      * 
-     * Supports VSAM READ FOR UPDATE equivalent operations for account
-     * modification workflows. Acquires pessimistic write lock to prevent
-     * concurrent modifications during update operations, ensuring data
-     * consistency and implementing optimistic locking for COBOL SYNCPOINT
-     * behavior equivalent functionality.
+     * Supports batch operations where multiple account IDs need to be retrieved
+     * efficiently. Used for bulk processing operations and cross-reference lookups.
      * 
-     * @param accountId the account ID (11-digit Long)
-     * @return Optional Account if found, with pessimistic write lock
+     * @param accountIds collection of account IDs to retrieve
+     * @return List of Account entities matching the provided IDs
      */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT a FROM Account a WHERE a.accountId = :accountId")
-    Optional<Account> findByIdForUpdate(@Param("accountId") Long accountId);
+    List<Account> findByIdIn(List<Long> accountIds);
 
     /**
-     * Finds all accounts for a specific customer.
+     * Finds all accounts belonging to a specific group ID.
      * 
-     * Supports customer-based account lookup operations for customer service
-     * and account management functions. Enables retrieval of all accounts
-     * associated with a customer for comprehensive account viewing.
+     * Groups accounts for processing, reporting, and configuration purposes.
+     * Maps to ACCT-GROUP-ID field from COBOL copybook (PIC X(10)).
+     * Used for batch operations and group-based account management.
      * 
-     * @param customerId the customer ID (9-digit Long)
-     * @return list of accounts for the specified customer
-     */
-    List<Account> findByCustomer_CustomerId(Long customerId);
-
-    /**
-     * Finds accounts by active status.
-     * 
-     * Supports status-based filtering for operational queries and reporting.
-     * Enables separation of active accounts for transaction processing and
-     * inactive accounts for archival and historical reporting.
-     * 
-     * @param activeStatus the active status ('Y' for active, 'N' for inactive)
-     * @return list of accounts with the specified status
-     */
-    List<Account> findByActiveStatus(String activeStatus);
-
-    /**
-     * Finds active accounts for a specific customer.
-     * 
-     * Combines customer and status filtering for precise account retrieval.
-     * Essential for customer service operations requiring only active
-     * account information for transaction processing and balance inquiries.
-     * 
-     * @param customerId the customer ID
-     * @param activeStatus the active status
-     * @return list of active accounts for the specified customer
-     */
-    List<Account> findByCustomer_CustomerIdAndActiveStatus(Long customerId, String activeStatus);
-
-    /**
-     * Finds accounts by account group ID.
-     * 
-     * Supports group-based account lookup operations for fee assessment,
-     * interest calculation, and disclosure group management. Essential for
-     * batch processing operations that apply fees or interest rates based
-     * on account group classifications.
-     * 
-     * @param groupId the account group ID (10-character string)
-     * @return list of accounts in the specified group
+     * @param groupId the account group ID to search for
+     * @return List of Account entities in the specified group
      */
     List<Account> findByGroupId(String groupId);
 
     /**
-     * Finds accounts with current balance greater than specified amount.
+     * Finds account by associated card number.
      * 
-     * Supports balance-based filtering for reporting and analysis operations.
-     * Enables identification of high-balance accounts for special handling,
-     * credit line management, and risk assessment processes.
+     * Provides account lookup via card number relationship, supporting
+     * card-to-account mapping similar to COBOL CARDXREF file access patterns.
      * 
-     * @param balance the minimum balance threshold (exclusive)
-     * @return list of accounts with balance above the threshold
+     * This method signature is defined per the export schema requirements.
+     * Implementation requires card-to-account relationship entities (Card, CardXref)
+     * that replicate the COBOL CARDXREF file structure from COACTVWC.cbl.
+     * 
+     * The actual query implementation will be provided once the complete
+     * entity relationship model is available.
+     * 
+     * @param cardNumber the card number to search for
+     * @return Account entity associated with the card number, null if not found
      */
-    List<Account> findByCurrentBalanceGreaterThan(BigDecimal balance);
+    // Implementation note: This method requires Card and CardXref entities
+    // to be implemented to provide the proper join relationships
+    Account findByCardNumber(String cardNumber);
 
     /**
-     * Finds accounts with current balance less than specified amount.
+     * Finds accounts by active status and accounts opened before a specific date.
      * 
-     * Supports low-balance account identification for customer notifications,
-     * fee assessment eligibility, and account closure processing. Essential
-     * for negative balance monitoring and collection workflows.
+     * Supports account lifecycle management and reporting operations.
+     * Used for identifying accounts that meet specific criteria for
+     * renewal, closure, or special processing.
      * 
-     * @param balance the maximum balance threshold (exclusive)
-     * @return list of accounts with balance below the threshold
+     * @param activeStatus the active status ('Y' or 'N')
+     * @param openDate the cutoff date for account opening
+     * @return List of Account entities matching the criteria
      */
-    List<Account> findByCurrentBalanceLessThan(BigDecimal balance);
+    List<Account> findByActiveStatusAndOpenDateBefore(String activeStatus, LocalDate openDate);
 
     /**
-     * Finds accounts with current balance between two amounts.
+     * Finds accounts with account numbers within a specified range.
      * 
-     * Supports range-based balance queries for targeted customer communications,
-     * promotional offers, and risk assessment categorization. Enables precise
-     * balance segmentation for marketing and account management strategies.
+     * Supports range-based queries for account processing and reporting.
+     * Replicates COBOL STARTBR/READNEXT patterns for sequential processing
+     * of accounts within specific ID ranges.
      * 
-     * @param minBalance the minimum balance (inclusive)
-     * @param maxBalance the maximum balance (inclusive)
-     * @return list of accounts with balance in the specified range
+     * Note: "AccountNumber" in this context refers to the accountId field
+     * in the Account entity, which corresponds to ACCT-ID from COBOL copybook (PIC 9(11)).
+     * This method name follows the export schema specification.
+     * 
+     * @param startAccountNumber the starting account number (inclusive)
+     * @param endAccountNumber the ending account number (inclusive)  
+     * @return List of Account entities within the specified range
      */
-    List<Account> findByCurrentBalanceBetween(BigDecimal minBalance, BigDecimal maxBalance);
+    @Query("SELECT a FROM Account a WHERE a.accountId BETWEEN :startAccountNumber AND :endAccountNumber")
+    List<Account> findByAccountNumberBetween(@Param("startAccountNumber") Long startAccountNumber, 
+                                           @Param("endAccountNumber") Long endAccountNumber);
 
     /**
-     * Finds accounts requiring fee assessment based on assessment criteria.
+     * Finds all accounts with pagination support.
      * 
-     * Supports fee assessment batch processing by identifying accounts eligible
-     * for specific fee types based on assessment date, balance criteria, and
-     * account group configurations. Essential for automated fee processing
-     * workflows and regulatory compliance.
+     * Replicates VSAM STARTBR/READNEXT/READPREV browse operations with consistent ordering.
+     * Provides cursor-based pagination that maintains VSAM-equivalent sequential access patterns.
      * 
-     * Custom JPQL query enables complex fee assessment logic including:
-     * - Active account status validation
-     * - Account group-based fee eligibility
-     * - Balance threshold validation for fee applicability
+     * The Pageable parameter defines:
+     * - Page size (equivalent to VSAM browse buffer size)
+     * - Page number (for sequential navigation)
+     * - Sorting criteria (typically by account ID for consistent ordering)
      * 
-     * @param feeType the type of fee to assess (used for group filtering)
-     * @return list of accounts requiring fee assessment
+     * Example usage for VSAM-equivalent browsing:
+     * Pageable pageable = PageRequest.of(0, 100, Sort.by("accountId"));
+     * Page<Account> accounts = findAll(pageable);
+     * 
+     * This method is inherited from JpaRepository but documented here for
+     * clarity regarding VSAM browse operation replacement.
+     * 
+     * @param pageable pagination and sorting information
+     * @return Page<Account> containing the requested page of accounts
      */
-    @Query("SELECT a FROM Account a WHERE a.activeStatus = 'Y' " +
-           "AND a.groupId = :feeType " +
-           "AND a.currentBalance > 0.00 " +
-           "ORDER BY a.accountId")
-    List<Account> findAccountsRequiringFeeAssessment(@Param("feeType") String feeType);
+    // Inherited from JpaRepository: Page<Account> findAll(Pageable pageable);
 
     /**
-     * Finds accounts by ZIP code for geographic analysis.
+     * Checks if an account exists by account ID.
      * 
-     * Supports geographic segmentation for regional reporting, marketing
-     * campaigns, and risk assessment based on geographic concentration.
-     * Enables ZIP code-based account grouping for operational analysis.
+     * Provides efficient existence checking without loading full entity data.
+     * Replicates COBOL READ operations that only verify record existence.
      * 
-     * @param addressZip the ZIP code (5-digit string)
-     * @return list of accounts in the specified ZIP code
+     * This method is inherited from JpaRepository but documented here for
+     * clarity regarding VSAM record existence checking.
+     * 
+     * @param accountId the account ID to check
+     * @return true if account exists, false otherwise
      */
-    List<Account> findByAddressZip(String addressZip);
+    // Inherited from JpaRepository: boolean existsById(Long accountId);
 
     /**
-     * Finds accounts with expiration date before specified date.
+     * Counts the total number of accounts in the repository.
      * 
-     * Supports account expiration monitoring for card reissue processing,
-     * customer notifications, and account maintenance workflows. Essential
-     * for proactive account lifecycle management and customer service.
+     * Provides record count functionality similar to COBOL file record counting.
+     * Used for reporting and batch processing size estimation.
      * 
-     * @param expirationDate the expiration date threshold
-     * @return list of accounts expiring before the specified date
+     * This method is inherited from JpaRepository but documented here for
+     * clarity regarding VSAM record counting operations.
+     * 
+     * @return total count of Account entities
      */
-    List<Account> findByExpirationDateBefore(LocalDate expirationDate);
+    // Inherited from JpaRepository: long count();
 
     /**
-     * Finds accounts with credit utilization above threshold using custom query.
+     * Deletes all accounts from the repository.
      * 
-     * Calculates credit utilization percentage and filters accounts above
-     * specified threshold for risk management, credit line adjustment, and
-     * customer outreach programs. Supports proactive account management
-     * and risk mitigation strategies.
+     * Provides bulk delete functionality for data reset operations.
+     * Should be used with extreme caution in production environments.
      * 
-     * @param utilizationThreshold the credit utilization threshold (as percentage)
-     * @return list of accounts with high credit utilization
+     * This method is inherited from JpaRepository but documented here for
+     * clarity regarding bulk delete operations.
      */
-    @Query("SELECT a FROM Account a WHERE a.activeStatus = 'Y' " +
-           "AND a.creditLimit > 0 " +
-           "AND (a.currentBalance / a.creditLimit * 100) > :utilizationThreshold " +
-           "ORDER BY (a.currentBalance / a.creditLimit) DESC")
-    List<Account> findAccountsWithHighCreditUtilization(
-            @Param("utilizationThreshold") BigDecimal utilizationThreshold);
+    // Inherited from JpaRepository: void deleteAll();
 
-    /**
-     * Finds accounts eligible for credit line increase using custom query.
-     * 
-     * Identifies accounts meeting criteria for automatic credit line increases
-     * based on payment history, balance utilization, and account age. Supports
-     * customer retention programs and revenue enhancement initiatives.
-     * 
-     * @param minOpenDays minimum number of days account has been open
-     * @param maxUtilization maximum credit utilization percentage
-     * @return list of accounts eligible for credit line increase
-     */
-    @Query("SELECT a FROM Account a WHERE a.activeStatus = 'Y' " +
-           "AND a.openDate <= :cutoffDate " +
-           "AND a.creditLimit > 0 " +
-           "AND (a.currentBalance / a.creditLimit * 100) < :maxUtilization " +
-           "AND a.currentCycleDebit > 0 " +
-           "ORDER BY a.openDate")
-    List<Account> findAccountsEligibleForCreditIncrease(
-            @Param("cutoffDate") LocalDate cutoffDate,
-            @Param("maxUtilization") BigDecimal maxUtilization);
-
-    /**
-     * Inherited JpaRepository methods provide standard CRUD operations:
-     * 
-     * save(Account entity) - Saves or updates account
-     * saveAll(Iterable<Account> entities) - Batch save operations
-     * findById(String id) - Retrieves account by primary key
-     * findAll() - Retrieves all accounts
-     * delete(Account entity) - Deletes account
-     * deleteById(String id) - Deletes account by primary key
-     * deleteAll() - Deletes all accounts
-     * count() - Returns total count of accounts
-     * existsById(String id) - Checks existence by primary key
-     * flush() - Synchronizes persistence context with database
-     * 
-     * All inherited methods maintain ACID compliance through Spring @Transactional
-     * annotations and PostgreSQL transaction management, ensuring data consistency
-     * equivalent to VSAM KSDS file operations while providing enhanced relational
-     * database capabilities and performance optimization through B-tree indexing.
-     */
+    // Additional inherited CRUD methods from JpaRepository<Account, Long>:
+    // - Optional<Account> findById(Long id)
+    // - List<Account> findAll()
+    // - <S extends Account> S save(S entity)
+    // - <S extends Account> List<S> saveAll(Iterable<S> entities)
+    // - void delete(Account entity)
+    // - void deleteById(Long id)
+    // - void deleteAll(Iterable<? extends Account> entities)
 }
