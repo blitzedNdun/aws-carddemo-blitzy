@@ -132,6 +132,7 @@ com/carddemo/dto/CardListDto.class
 com/carddemo/service/ChargebackProcessor$ValidationResult.class
 com/carddemo/entity/InterestRate.class
 com/carddemo/security/PasswordPolicyValidator.class
+com/carddemo/dto/CreditCardListResponse.class
 com/carddemo/service/DailyTransactionService$DailyTransactionDetail.class
 com/carddemo/entity/AccountClosure.class
 com/carddemo/config/ApplicationConfig$ProductionConfig.class
