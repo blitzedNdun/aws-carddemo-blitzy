@@ -144,6 +144,97 @@ class CustomerTest {
         }
 
         @Test
+        @DisplayName("Should validate phone area code using ValidationUtil")
+        void shouldValidatePhoneAreaCode() {
+            String validAreaCode = "555";
+            String invalidAreaCode = "911";
+            
+            assertThat(ValidationUtil.validatePhoneAreaCode(validAreaCode, "Area Code")).isTrue();
+            assertThat(ValidationUtil.validatePhoneAreaCode(invalidAreaCode, "Area Code")).isFalse();
+        }
+
+        @Test
+        @DisplayName("Should validate US state code using ValidationUtil")
+        void shouldValidateUsStateCode() {
+            customer.setState("NY");
+            assertThat(ValidationUtil.validateUSStateCode(customer.getState(), "State")).isTrue();
+            
+            customer.setState("ZZ");
+            assertThat(ValidationUtil.validateUSStateCode(customer.getState(), "State")).isFalse();
+        }
+
+        @Test
+        @DisplayName("Should validate state and zip code combination")
+        void shouldValidateStateZipCodeCombination() {
+            customer.setState("NY");
+            customer.setZipCode("12345");
+            
+            boolean isValid = ValidationUtil.validateStateZipCode(
+                customer.getState(), 
+                customer.getZipCode(), 
+                "State/Zip"
+            );
+            assertThat(isValid).isTrue();
+        }
+
+        @Test
+        @DisplayName("Should validate date of birth using ValidationUtil")
+        void shouldValidateDateOfBirthUsingUtil() {
+            customer.setDateOfBirth(VALID_DOB);
+            String cobolDateFormat = DateConversionUtil.formatToCobol(customer.getDateOfBirth());
+            
+            boolean isValid = ValidationUtil.validateDateOfBirth(cobolDateFormat, "Date of Birth");
+            assertThat(isValid).isTrue();
+        }
+
+        @Test
+        @DisplayName("Should validate address field mapping")
+        void shouldValidateAddressField() {
+            customer.setAddress(VALID_ADDRESS_1);
+            assertThat(customer.getAddress()).isEqualTo(VALID_ADDRESS_1);
+            assertThat(customer.getAddress()).isNotNull();
+            assertThat(customer.getAddress()).isNotEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("Comprehensive Address Testing")
+    class AddressValidationTests {
+
+        @Test
+        @DisplayName("Should validate complete address information using getAddress method")
+        void shouldValidateCompleteAddressInfo() {
+            // Set up complete address information
+            customer.setAddress(VALID_ADDRESS_1);
+            customer.setCity(VALID_CITY);
+            customer.setState(VALID_STATE);
+            customer.setZipCode(VALID_ZIP);
+            customer.setCountryCode(Constants.DEFAULT_COUNTRY_CODE);
+
+            // Test getAddress() method specifically
+            assertThat(customer.getAddress()).isEqualTo(VALID_ADDRESS_1);
+            assertThat(customer.getAddress()).hasSize(VALID_ADDRESS_1.length());
+            
+            // Test complete address validation
+            assertThat(customer.getCity()).isEqualTo(VALID_CITY);
+            assertThat(customer.getState()).isEqualTo(VALID_STATE);
+            assertThat(customer.getZipCode()).isEqualTo(VALID_ZIP);
+            assertThat(customer.getCountryCode()).isEqualTo(Constants.DEFAULT_COUNTRY_CODE);
+        }
+
+        @Test
+        @DisplayName("Should handle multiple address lines")
+        void shouldHandleMultipleAddressLines() {
+            customer.setAddress("123 Main St");
+            customer.setAddress2("Apt 4B");
+            customer.setAddress3("Building C");
+
+            assertThat(customer.getAddress()).isEqualTo("123 Main St");
+            assertThat(customer.getAddress2()).isEqualTo("Apt 4B");
+            assertThat(customer.getAddress3()).isEqualTo("Building C");
+        }
+
+        @Test
         @DisplayName("Should validate required fields are not null or empty")
         void shouldValidateRequiredFields() {
             // Test null values
@@ -209,6 +300,79 @@ class CustomerTest {
             
             customer.setFicoScore(preservedValue);
             assertThat(customer.getFicoScore().scale()).isEqualTo(0);
+            assertThat(customer.getFicoScore()).isEqualByComparingTo(new BigDecimal("750"));
+        }
+
+        @Test
+        @DisplayName("Should convert string to BigDecimal using CobolDataConverter")
+        void shouldConvertStringToBigDecimal() {
+            String ficoScoreString = "750";
+            BigDecimal converted = CobolDataConverter.toBigDecimal(ficoScoreString, 0);
+            
+            customer.setFicoScore(converted);
+            assertThat(customer.getFicoScore()).isEqualByComparingTo(new BigDecimal("750"));
+            assertThat(customer.getFicoScore().scale()).isEqualTo(0);
+        }
+
+        @Test
+        @DisplayName("Should convert PIC string format using CobolDataConverter")
+        void shouldConvertPicStringFormat() {
+            String picFormat = "9(03)"; // FICO score format from COBOL
+            String testValue = "750";
+            
+            Object convertedValue = CobolDataConverter.convertPicString(picFormat, testValue);
+            assertThat(convertedValue).isInstanceOf(BigDecimal.class);
+            
+            customer.setFicoScore((BigDecimal) convertedValue);
+            assertThat(customer.getFicoScore()).isEqualByComparingTo(new BigDecimal("750"));
+        }
+
+        @Test
+        @DisplayName("Should convert to Java type using CobolDataConverter")
+        void shouldConvertToJavaType() {
+            String cobolValue = "750";
+            String javaType = "java.math.BigDecimal";
+            
+            Object javaValue = CobolDataConverter.convertToJavaType(cobolValue, javaType, 0);
+            assertThat(javaValue).isInstanceOf(BigDecimal.class);
+            
+            customer.setFicoScore((BigDecimal) javaValue);
+            assertThat(customer.getFicoScore()).isEqualByComparingTo(new BigDecimal("750"));
+        }
+    }
+
+    @Nested
+    @DisplayName("Additional CobolDataConverter Tests")
+    class AdditionalCobolDataConverterTests {
+
+        @Test
+        @DisplayName("Should convert COBOL PIC string to appropriate Java type")
+        void shouldConvertCobolPicString() {
+            // Test PIC 9(03) for FICO score
+            String picFormat = "9(03)";
+            String testValue = "750";
+            
+            Object result = CobolDataConverter.convertPicString(picFormat, testValue);
+            assertThat(result).isInstanceOf(BigDecimal.class);
+            
+            BigDecimal ficoScore = (BigDecimal) result;
+            customer.setFicoScore(ficoScore);
+            assertThat(customer.getFicoScore()).isEqualByComparingTo(new BigDecimal("750"));
+        }
+
+        @Test
+        @DisplayName("Should convert various COBOL types to Java equivalents")
+        void shouldConvertCobolTypesToJava() {
+            // Test numeric conversion
+            Object numericResult = CobolDataConverter.convertToJavaType("123456789", "java.lang.String", 0);
+            assertThat(numericResult).isInstanceOf(String.class);
+            customer.setCustomerId((String) numericResult);
+            assertThat(customer.getCustomerId()).isEqualTo("123456789");
+
+            // Test BigDecimal conversion
+            Object decimalResult = CobolDataConverter.convertToJavaType("750", "java.math.BigDecimal", 0);
+            assertThat(decimalResult).isInstanceOf(BigDecimal.class);
+            customer.setFicoScore((BigDecimal) decimalResult);
             assertThat(customer.getFicoScore()).isEqualByComparingTo(new BigDecimal("750"));
         }
     }
@@ -331,6 +495,35 @@ class CustomerTest {
             assertThat(customer.getDateOfBirth()).isNotNull();
             String convertedBack = DateConversionUtil.formatToCobol(customer.getDateOfBirth());
             assertThat(convertedBack).isEqualTo(dateString);
+        }
+
+        @Test
+        @DisplayName("Should convert date format using DateConversionUtil")
+        void shouldConvertDateFormatUsingUtil() {
+            String cobolDate = "19850615";
+            String isoFormat = DateConversionUtil.convertDateFormat(cobolDate, "yyyyMMdd", "yyyy-MM-dd");
+            
+            assertThat(isoFormat).isEqualTo("1985-06-15");
+        }
+
+        @Test
+        @DisplayName("Should parse date using DateConversionUtil")
+        void shouldParseDateUsingUtil() {
+            String cobolDate = "19850615";
+            LocalDate parsedDate = DateConversionUtil.parseDate(cobolDate);
+            
+            customer.setDateOfBirth(parsedDate);
+            assertThat(customer.getDateOfBirth()).isEqualTo(VALID_DOB);
+        }
+
+        @Test
+        @DisplayName("Should add days to date using DateConversionUtil")
+        void shouldAddDaysToDate() {
+            customer.setDateOfBirth(VALID_DOB);
+            LocalDate futureDate = DateConversionUtil.addDays(customer.getDateOfBirth(), 30);
+            
+            assertThat(futureDate).isAfter(customer.getDateOfBirth());
+            assertThat(futureDate).isEqualTo(VALID_DOB.plusDays(30));
         }
     }
 
@@ -466,12 +659,123 @@ class CustomerTest {
         void shouldValidateZipCodeLength() {
             customer.setZipCode("12345");
             assertThat(customer.getZipCode()).hasSize(5);
+            assertThat(customer.getZipCode()).hasSizeLessThanOrEqualTo(Constants.ZIP_CODE_LENGTH);
 
             customer.setZipCode("12345-6789");
             assertThat(customer.getZipCode()).hasSize(10);
+            assertThat(customer.getZipCode()).hasSizeLessThanOrEqualTo(Constants.ZIP_CODE_LENGTH);
 
             customer.setZipCode("123456789");
             assertThat(customer.getZipCode()).hasSize(9);
+            assertThat(customer.getZipCode()).hasSizeLessThanOrEqualTo(Constants.ZIP_CODE_LENGTH);
+        }
+
+        @Test
+        @DisplayName("Should validate all field length constants from COBOL copybook")
+        void shouldValidateAllFieldLengthConstants() {
+            Customer testCustomer = createValidCustomer();
+            
+            // Validate each field length matches COBOL PIC clause constraints
+            assertThat(testCustomer.getCustomerId()).hasSize(Constants.CUSTOMER_ID_LENGTH);
+            assertThat(testCustomer.getSSN()).hasSize(Constants.SSN_LENGTH);
+            assertThat(testCustomer.getPhoneNumber()).hasSize(Constants.PHONE_NUMBER_LENGTH);
+            assertThat(testCustomer.getZipCode()).hasSizeLessThanOrEqualTo(Constants.ZIP_CODE_LENGTH);
+        }
+
+        @Test
+        @DisplayName("Should validate default currency code from Constants")
+        void shouldValidateDefaultCurrencyCode() {
+            // Verify the default currency code constant is available
+            assertThat(Constants.DEFAULT_CURRENCY_CODE).isNotNull();
+            assertThat(Constants.DEFAULT_CURRENCY_CODE).isEqualTo("USD");
+        }
+    }
+
+    @Nested
+    @DisplayName("Complete Customer Entity Method Tests")
+    class CompleteCustomerMethodTests {
+
+        @Test
+        @DisplayName("Should test all Customer getter methods required by schema")
+        void shouldTestAllCustomerGetterMethods() {
+            Customer testCustomer = createValidCustomer();
+
+            // Test all getter methods specified in internal_imports members_accessed
+            assertThat(testCustomer.getCustomerId()).isEqualTo(VALID_CUSTOMER_ID);
+            assertThat(testCustomer.getFirstName()).isEqualTo(VALID_FIRST_NAME);
+            assertThat(testCustomer.getLastName()).isEqualTo(VALID_LAST_NAME);
+            assertThat(testCustomer.getPhoneNumber()).isEqualTo(VALID_PHONE);
+            assertThat(testCustomer.getAddress()).isEqualTo(VALID_ADDRESS_1);
+            assertThat(testCustomer.getSSN()).isEqualTo(VALID_SSN);
+            assertThat(testCustomer.getFicoScore()).isEqualByComparingTo(VALID_FICO_SCORE);
+            assertThat(testCustomer.getDateOfBirth()).isEqualTo(VALID_DOB);
+
+            // Test equals(), hashCode(), toString() methods
+            Customer duplicateCustomer = createValidCustomer();
+            assertThat(testCustomer.equals(duplicateCustomer)).isTrue();
+            assertThat(testCustomer.hashCode()).isEqualTo(duplicateCustomer.hashCode());
+            assertThat(testCustomer.toString()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("Should validate entity lifecycle with all required fields")
+        void shouldValidateEntityLifecycleWithAllFields() {
+            Customer lifecycleCustomer = new Customer();
+            
+            // Set all required fields using the exact setters
+            lifecycleCustomer.setCustomerId(VALID_CUSTOMER_ID);
+            lifecycleCustomer.setFirstName(VALID_FIRST_NAME);
+            lifecycleCustomer.setLastName(VALID_LAST_NAME);
+            lifecycleCustomer.setPhoneNumber(VALID_PHONE);
+            lifecycleCustomer.setAddress(VALID_ADDRESS_1);
+            lifecycleCustomer.setSSN(VALID_SSN);
+            lifecycleCustomer.setFicoScore(VALID_FICO_SCORE);
+            lifecycleCustomer.setDateOfBirth(VALID_DOB);
+
+            // Validate all getter methods return expected values
+            assertThat(lifecycleCustomer.getCustomerId()).isEqualTo(VALID_CUSTOMER_ID);
+            assertThat(lifecycleCustomer.getFirstName()).isEqualTo(VALID_FIRST_NAME);
+            assertThat(lifecycleCustomer.getLastName()).isEqualTo(VALID_LAST_NAME);
+            assertThat(lifecycleCustomer.getPhoneNumber()).isEqualTo(VALID_PHONE);
+            assertThat(lifecycleCustomer.getAddress()).isEqualTo(VALID_ADDRESS_1);
+            assertThat(lifecycleCustomer.getSSN()).isEqualTo(VALID_SSN);
+            assertThat(lifecycleCustomer.getFicoScore()).isEqualByComparingTo(VALID_FICO_SCORE);
+            assertThat(lifecycleCustomer.getDateOfBirth()).isEqualTo(VALID_DOB);
+        }
+    }
+
+    @Nested
+    @DisplayName("COBOL-to-Java Functional Parity Tests")
+    class CobolJavaParityTests {
+
+        @Test
+        @DisplayName("Should demonstrate complete COBOL to Java data flow parity")
+        void shouldDemonstrateCobolJavaDataFlowParity() {
+            // Simulate COBOL data input (as would come from CUSTREC copybook)
+            String cobolCustomerId = "123456789";  // PIC 9(09)
+            String cobolSsn = "987654321";        // PIC 9(09) 
+            String cobolFicoScore = "750";        // PIC 9(03)
+            String cobolDob = "19850615";         // PIC 9(08) CCYYMMDD
+
+            // Convert using utility classes
+            BigDecimal javaFicoScore = CobolDataConverter.toBigDecimal(cobolFicoScore, 0);
+            LocalDate javaDob = DateConversionUtil.parseDate(cobolDob);
+
+            // Set up Customer entity
+            customer.setCustomerId(cobolCustomerId);
+            customer.setSSN(cobolSsn);
+            customer.setFicoScore(javaFicoScore);
+            customer.setDateOfBirth(javaDob);
+
+            // Validate functional parity
+            assertThat(customer.getCustomerId()).isEqualTo(cobolCustomerId);
+            assertThat(customer.getSSN()).isEqualTo(cobolSsn);
+            assertThat(customer.getFicoScore()).isEqualByComparingTo(new BigDecimal("750"));
+            assertThat(customer.getDateOfBirth()).isEqualTo(LocalDate.of(1985, 6, 15));
+
+            // Validate conversions back to COBOL format
+            String backToCobolDate = DateConversionUtil.formatToCobol(customer.getDateOfBirth());
+            assertThat(backToCobolDate).isEqualTo(cobolDob);
         }
     }
 
