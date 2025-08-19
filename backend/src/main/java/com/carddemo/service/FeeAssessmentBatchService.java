@@ -773,10 +773,6 @@ public class FeeAssessmentBatchService {
             // Set creation timestamp for audit trail
             feeTransaction.setCreatedDate(java.time.LocalDateTime.now());
             
-            // Note: Transaction ID would be set by the transaction posting system
-            // For now, using a placeholder value to satisfy the entity constraints
-            feeTransaction.setTransactionType(FeeTransaction.TransactionType.FEE_ASSESSMENT);
-            
             logger.debug("Fee transaction generated for fee ID: {}", fee.getId());
             return feeTransaction;
             

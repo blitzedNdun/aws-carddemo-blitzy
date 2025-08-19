@@ -33,6 +33,7 @@ com/carddemo/service/PaymentService$1.class
 com/carddemo/service/FileGenerationService$ValidationResult.class
 com/carddemo/dto/FileExportResponse.class
 com/carddemo/service/FileGenerationService$BatchProcessingConfig.class
+com/carddemo/service/FeeAssessmentBatchService.class
 com/carddemo/dto/AdminReportResponse$PaginationInfo.class
 com/carddemo/service/TransactionReportService$TransactionTypeData.class
 com/carddemo/service/BillingService.class
