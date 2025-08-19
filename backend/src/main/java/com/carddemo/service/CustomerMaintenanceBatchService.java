@@ -18,8 +18,11 @@
 package com.carddemo.service;
 
 import com.carddemo.batch.CustomerMaintenanceJobConfig;
+import com.carddemo.dto.AddressDto;
 import com.carddemo.entity.Customer;
+import com.carddemo.exception.ValidationException;
 import com.carddemo.repository.CustomerRepository;
+import com.carddemo.util.DateConversionUtil;
 import com.carddemo.util.ValidationUtil;
 
 import org.springframework.batch.core.JobParameters;
@@ -78,9 +81,6 @@ public class CustomerMaintenanceBatchService {
 
     @Autowired
     private CustomerRepository customerRepository;
-
-    @Autowired
-    private ValidationUtil validationUtil;
 
     @Autowired
     private AddressValidationService addressValidationService;
@@ -236,32 +236,53 @@ public class CustomerMaintenanceBatchService {
         
         try {
             // Validate required fields using ValidationUtil
-            if (!validationUtil.validateRequiredField(customer.getFirstName())) {
+            try {
+                ValidationUtil.validateRequiredField("firstName", customer.getFirstName());
+            } catch (ValidationException e) {
                 validationErrors.add("First name is required");
             }
             
-            if (!validationUtil.validateRequiredField(customer.getLastName())) {
+            try {
+                ValidationUtil.validateRequiredField("lastName", customer.getLastName());
+            } catch (ValidationException e) {
                 validationErrors.add("Last name is required");
             }
             
             // SSN validation using COBOL edit patterns
-            if (!validationUtil.validateSSN(customer.getSsn())) {
-                validationErrors.add("Invalid SSN format or check digit");
+            if (customer.getSsn() != null && !customer.getSsn().trim().isEmpty()) {
+                try {
+                    ValidationUtil.validateSSN("ssn", customer.getSsn());
+                } catch (ValidationException e) {
+                    validationErrors.add("Invalid SSN format or check digit");
+                }
             }
             
-            // Phone number validation including area code check
-            if (!validationUtil.validatePhoneAreaCode(customer.getPhoneNumber1())) {
-                validationErrors.add("Invalid phone number area code");
+            // Phone number validation
+            if (customer.getPhoneNumber1() != null && !customer.getPhoneNumber1().trim().isEmpty()) {
+                try {
+                    ValidationUtil.validatePhoneNumber("phoneNumber1", customer.getPhoneNumber1());
+                } catch (ValidationException e) {
+                    validationErrors.add("Invalid phone number area code");
+                }
             }
             
             // ZIP code validation
-            if (!validationUtil.validateZipCode(customer.getZipCode())) {
-                validationErrors.add("Invalid ZIP code format");
+            if (customer.getZipCode() != null && !customer.getZipCode().trim().isEmpty()) {
+                try {
+                    ValidationUtil.validateZipCode("zipCode", customer.getZipCode());
+                } catch (ValidationException e) {
+                    validationErrors.add("Invalid ZIP code format");
+                }
             }
             
             // Date of birth validation
-            if (!validationUtil.validateDateOfBirth(customer.getDateOfBirth())) {
-                validationErrors.add("Invalid date of birth");
+            if (customer.getDateOfBirth() != null) {
+                try {
+                    String dateStr = DateConversionUtil.formatToCobol(customer.getDateOfBirth());
+                    ValidationUtil.validateDateOfBirth("dateOfBirth", dateStr);
+                } catch (Exception e) {
+                    validationErrors.add("Invalid date of birth");
+                }
             }
             
             // Compile validation results
@@ -315,10 +336,10 @@ public class CustomerMaintenanceBatchService {
             for (Customer customer : customers) {
                 try {
                     // Create address DTO from customer data for validation service
-                    String fullAddress = buildFullAddress(customer);
+                    AddressDto addressDto = buildAddressDto(customer);
                     
                     // Standardize address using AddressValidationService
-                    String standardizedAddress = addressValidationService.standardizeAddress(fullAddress);
+                    AddressDto standardizedAddress = addressValidationService.standardizeAddress(addressDto);
                     
                     // Validate and update ZIP+4 code
                     String validatedZip = addressValidationService.validateZipCode4(customer.getZipCode());
@@ -611,7 +632,7 @@ public class CustomerMaintenanceBatchService {
         }
         
         // Additional parameter validation can be added here
-        Map<String, Object> paramMap = parameters.getParameters();
+        var paramMap = parameters.getParameters();
         logger.info("Job parameters validated: " + paramMap.size() + " parameters");
     }
 
@@ -714,8 +735,8 @@ public class CustomerMaintenanceBatchService {
         
         // Update processing metrics
         processingMetrics.put("totalCustomersProcessed", 
-            processingMetrics.getOrDefault("totalCustomersProcessed", 0) + 
-            (Integer) processingResult.getOrDefault("processedCount", 0));
+            ((Integer) processingMetrics.getOrDefault("totalCustomersProcessed", 0)) + 
+            ((Integer) processingResult.getOrDefault("processedCount", 0)));
         
         logger.info("Customer maintenance processing finalized");
     }
@@ -756,6 +777,19 @@ public class CustomerMaintenanceBatchService {
         
         // Save updated customer
         customerRepository.save(customer);
+    }
+
+    /**
+     * Builds AddressDto from Customer data for address validation service.
+     */
+    private AddressDto buildAddressDto(Customer customer) {
+        AddressDto addressDto = new AddressDto();
+        addressDto.setAddressLine1(customer.getAddressLine1());
+        addressDto.setAddressLine2(customer.getAddressLine2());
+        addressDto.setAddressLine3(customer.getAddressLine3());
+        addressDto.setStateCode(customer.getStateCode());
+        addressDto.setZipCode(customer.getZipCode());
+        return addressDto;
     }
 
     /**
