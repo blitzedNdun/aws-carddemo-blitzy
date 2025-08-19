@@ -38,14 +38,14 @@ import java.util.Objects;
  * 
  * Features:
  * - Composite primary key using @EmbeddedId for account ID, category code, and balance date
- * - @ManyToOne relationships with Account and TransactionCategory entities
+ * - @ManyToOne relationship with Account entity
  * - BigDecimal balance field with scale=2 for exact monetary precision
  * - JPA validation annotations for data integrity
  * - Support for date-range balance queries and balance history tracking
  * 
  * Relationships:
  * - @ManyToOne with Account entity (account_id foreign key)
- * - @ManyToOne with TransactionCategory entity (category_code foreign key)
+ * - Category lookups handled through application logic using categoryCode
  * 
  * @author CardDemo Migration Team
  * @version 1.0
@@ -79,12 +79,12 @@ public class TransactionCategoryBalance implements Serializable {
     
     /**
      * Transaction category relationship for balance categorization.
-     * @ManyToOne relationship with TransactionCategory entity using category_code foreign key.
-     * Links balance record to category for category-specific balance grouping.
+     * Note: Direct JPA relationship removed due to composite key mismatch.
+     * TransactionCategory has composite key (category_code + subcategory_code)
+     * but TransactionCategoryBalance only contains category_code.
+     * Category lookups should be handled through application logic.
      */
-    @ManyToOne
-    @JoinColumn(name = "category_code", insertable = false, updatable = false)
-    private TransactionCategory transactionCategory;
+    // Relationship removed - use categoryCode from embedded key for lookups
     
     /**
      * Category balance amount.
@@ -246,13 +246,8 @@ public class TransactionCategoryBalance implements Serializable {
         this.account = account;
     }
 
-    public TransactionCategory getTransactionCategory() {
-        return transactionCategory;
-    }
-
-    public void setTransactionCategory(TransactionCategory transactionCategory) {
-        this.transactionCategory = transactionCategory;
-    }
+    // TransactionCategory getter/setter removed due to composite key mismatch
+    // Use id.getCategoryCode() to access category code for application logic
 
     public BigDecimal getBalance() {
         return balance;
