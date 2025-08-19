@@ -103,8 +103,16 @@ public class DisclosureGroupDto {
         ValidationUtil.validateFieldLength("transactionTypeCode", this.transactionTypeCode, Constants.TYPE_CODE_LENGTH);
         ValidationUtil.validateFieldLength("categoryCode", this.categoryCode, CATEGORY_CODE_LENGTH);
         
-        // Validate numeric field format for category code
+        // Validate numeric field format for category code (must be exactly 4 digits)
         ValidationUtil.validateNumericField("categoryCode", this.categoryCode);
+        
+        // Additional check to ensure it's exactly 4 digits (matching @Pattern annotation)
+        if (this.categoryCode != null && !this.categoryCode.trim().isEmpty()) {
+            String trimmedCode = this.categoryCode.trim();
+            if (!trimmedCode.matches("^\\d{4}$")) {
+                throw new IllegalArgumentException("Category code must be exactly 4 digits");
+            }
+        }
         
         // Validate interest rate is not null and is properly scaled
         if (this.interestRate == null) {
