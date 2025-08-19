@@ -5,7 +5,7 @@ import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.StepExecutionListener;
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
@@ -51,7 +51,6 @@ import java.util.Map;
  * business logic for balance verification and discrepancy identification.
  */
 @Configuration
-@EnableBatchProcessing
 public class BalanceReconciliationJobConfig {
 
     @Autowired

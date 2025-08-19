@@ -2,7 +2,7 @@ package com.carddemo.batch;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Sort;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -60,8 +61,13 @@ import java.util.Map;
  * the fee computation logic (originally stubbed in COBOL as 1400-COMPUTE-FEES).
  */
 @Configuration
-@EnableBatchProcessing
 public class FeeAssessmentJobConfig {
+    
+    private final com.carddemo.repository.AccountRepository accountRepository;
+    
+    public FeeAssessmentJobConfig(@Lazy com.carddemo.repository.AccountRepository accountRepository) {
+        this.accountRepository = accountRepository;
+    }
 
     @Autowired
     private JobRepository jobRepository;
@@ -250,9 +256,7 @@ public class FeeAssessmentJobConfig {
                 .build();
     }
 
-    // Repository interface for account data access (injected by Spring)
-    @Autowired
-    private com.carddemo.repository.AccountRepository accountRepository;
+    // Repository interface for account data access (injected via constructor)
 
     /**
      * Fee Assessment Processor implementation.

@@ -41,11 +41,12 @@ public class FeeAssessmentJobConfigSimpleTest {
 
     @BeforeEach
     void setUp() {
-        jobConfig = new FeeAssessmentJobConfig();
         mockJobRepository = mock(JobRepository.class);
         mockTransactionManager = mock(PlatformTransactionManager.class);
         mockDataSource = mock(DataSource.class);
         mockAccountRepository = mock(AccountRepository.class);
+        
+        jobConfig = new FeeAssessmentJobConfig(mockAccountRepository);
         
         // Use reflection to set private fields if needed
         setPrivateField(jobConfig, "jobRepository", mockJobRepository);

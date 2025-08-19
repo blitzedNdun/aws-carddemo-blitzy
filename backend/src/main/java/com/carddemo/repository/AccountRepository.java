@@ -58,7 +58,7 @@ import java.util.Optional;
  * through optimized PostgreSQL B-tree index utilization and query planning.
  */
 @Repository
-public interface AccountRepository extends JpaRepository<Account, String> {
+public interface AccountRepository extends JpaRepository<Account, Long> {
 
     /**
      * Finds account by account ID (primary key lookup).
@@ -67,10 +67,10 @@ public interface AccountRepository extends JpaRepository<Account, String> {
      * primary key. Essential for account validation, balance inquiries,
      * and transaction processing workflows.
      * 
-     * @param accountId the account ID (11-digit string)
+     * @param accountId the account ID (11-digit Long)
      * @return Optional Account if found
      */
-    Optional<Account> findByAccountId(String accountId);
+    Optional<Account> findByAccountId(Long accountId);
 
     /**
      * Finds account by account ID with pessimistic write lock for updates.
@@ -81,12 +81,12 @@ public interface AccountRepository extends JpaRepository<Account, String> {
      * consistency and implementing optimistic locking for COBOL SYNCPOINT
      * behavior equivalent functionality.
      * 
-     * @param accountId the account ID (11-digit string)
+     * @param accountId the account ID (11-digit Long)
      * @return Optional Account if found, with pessimistic write lock
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT a FROM Account a WHERE a.accountId = :accountId")
-    Optional<Account> findByIdForUpdate(@Param("accountId") String accountId);
+    Optional<Account> findByIdForUpdate(@Param("accountId") Long accountId);
 
     /**
      * Finds all accounts for a specific customer.
@@ -95,10 +95,10 @@ public interface AccountRepository extends JpaRepository<Account, String> {
      * and account management functions. Enables retrieval of all accounts
      * associated with a customer for comprehensive account viewing.
      * 
-     * @param customerId the customer ID (9-digit string)
+     * @param customerId the customer ID (9-digit Long)
      * @return list of accounts for the specified customer
      */
-    List<Account> findByCustomerId(String customerId);
+    List<Account> findByCustomer_CustomerId(Long customerId);
 
     /**
      * Finds accounts by active status.
@@ -123,7 +123,7 @@ public interface AccountRepository extends JpaRepository<Account, String> {
      * @param activeStatus the active status
      * @return list of active accounts for the specified customer
      */
-    List<Account> findByCustomerIdAndActiveStatus(String customerId, String activeStatus);
+    List<Account> findByCustomer_CustomerIdAndActiveStatus(Long customerId, String activeStatus);
 
     /**
      * Finds accounts by account group ID.
@@ -133,10 +133,10 @@ public interface AccountRepository extends JpaRepository<Account, String> {
      * batch processing operations that apply fees or interest rates based
      * on account group classifications.
      * 
-     * @param accountGroupId the account group ID (10-character string)
+     * @param groupId the account group ID (10-character string)
      * @return list of accounts in the specified group
      */
-    List<Account> findByAccountGroupId(String accountGroupId);
+    List<Account> findByGroupId(String groupId);
 
     /**
      * Finds accounts with current balance greater than specified amount.
@@ -192,7 +192,7 @@ public interface AccountRepository extends JpaRepository<Account, String> {
      * @return list of accounts requiring fee assessment
      */
     @Query("SELECT a FROM Account a WHERE a.activeStatus = 'Y' " +
-           "AND a.accountGroupId = :feeType " +
+           "AND a.groupId = :feeType " +
            "AND a.currentBalance > 0.00 " +
            "ORDER BY a.accountId")
     List<Account> findAccountsRequiringFeeAssessment(@Param("feeType") String feeType);

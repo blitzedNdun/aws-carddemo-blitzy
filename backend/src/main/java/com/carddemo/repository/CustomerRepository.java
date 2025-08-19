@@ -7,6 +7,8 @@ package com.carddemo.repository;
 
 import com.carddemo.entity.Customer;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
@@ -116,7 +118,7 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
      * @param ssn Customer Social Security Number (9 digits)
      * @return Optional Customer matching the SSN, empty if not found
      */
-    Optional<Customer> findBySSN(String ssn);
+    Optional<Customer> findBySsn(String ssn);
 
     /**
      * Finds customers by phone number match.
@@ -127,7 +129,8 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
      * @param phoneNumber Phone number for exact match
      * @return List of customers with matching phone numbers
      */
-    List<Customer> findByPhoneNumber1OrPhoneNumber2(String phoneNumber);
+    @Query("SELECT c FROM Customer c WHERE c.phoneNumber1 = :phoneNumber OR c.phoneNumber2 = :phoneNumber")
+    List<Customer> findByPhoneNumber1OrPhoneNumber2(@Param("phoneNumber") String phoneNumber);
 
     /**
      * Finds customer by customer ID (Primary Key).

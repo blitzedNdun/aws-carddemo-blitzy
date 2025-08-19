@@ -92,11 +92,11 @@ public class AccountService {
         logger.info("Processing account view for account ID: {}", accountId);
         
         try {
-            // Convert Long to String for entity lookup (matching COBOL PIC 9(11))
+            // Convert Long to String for display/logging (matching COBOL PIC 9(11))
             String accountIdStr = String.format("%011d", accountId);
             
             // Read account data (replicates READ ACCTDAT from COACTVWC.cbl)
-            Optional<Account> accountOpt = accountRepository.findById(accountIdStr);
+            Optional<Account> accountOpt = accountRepository.findById(accountId);
             if (accountOpt.isEmpty()) {
                 logger.warn("Account not found: {}", accountIdStr);
                 throw new ResourceNotFoundException("Account", accountIdStr);
@@ -164,7 +164,7 @@ public class AccountService {
             }
             
             // Read account with pessimistic lock (replicates READ FOR UPDATE from COACTUPC.cbl)
-            Optional<Account> accountOpt = accountRepository.findByIdForUpdate(accountIdStr);
+            Optional<Account> accountOpt = accountRepository.findByIdForUpdate(accountId);
             if (accountOpt.isEmpty()) {
                 logger.warn("Account not found for update: {}", accountIdStr);
                 throw new ResourceNotFoundException("Account", accountIdStr);

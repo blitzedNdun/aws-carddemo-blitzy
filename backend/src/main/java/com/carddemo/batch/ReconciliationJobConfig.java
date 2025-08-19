@@ -2,7 +2,7 @@ package com.carddemo.batch;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
@@ -45,7 +45,6 @@ import java.time.format.DateTimeFormatter;
  * validation rules and processing sequences.
  */
 @Configuration
-@EnableBatchProcessing
 public class ReconciliationJobConfig {
 
     private final JobRepository jobRepository;

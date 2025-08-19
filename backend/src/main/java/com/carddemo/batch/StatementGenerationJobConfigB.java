@@ -4,7 +4,7 @@ import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.repository.JobRepository;
@@ -62,7 +62,6 @@ import java.util.Map;
  * @since Spring Boot 3.2.x, Spring Batch 5.x
  */
 @Configuration
-@EnableBatchProcessing
 public class StatementGenerationJobConfigB {
 
     @Autowired

@@ -289,6 +289,12 @@
             <artifactId>embedded-redis</artifactId>
             <version>0.7.3</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-simple</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         
         <!-- JUnit Platform Suite API for TestSuiteRunner -->
