@@ -343,6 +343,7 @@ com/carddemo/dto/AuthorizationRequest.class
 com/carddemo/service/CustomerService$CustomerEntity.class
 com/carddemo/service/FraudDetectionService$FraudAlert.class
 com/carddemo/client/DataQualityService$EmailValidationResult.class
+com/carddemo/dto/CardResponse.class
 com/carddemo/entity/Customer$CustomerBuilder.class
 com/carddemo/dto/UserDetailResponse.class
 com/carddemo/service/ChargebackProcessor$StatusTransition.class
