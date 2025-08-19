@@ -237,6 +237,24 @@ public interface DisclosureGroupRepository extends JpaRepository<DisclosureGroup
             @Param("transactionTypeCode") String transactionTypeCode);
 
     /**
+     * Finds disclosure group by account group ID, transaction type code, and category code.
+     * 
+     * Supports comprehensive composite key lookup operations equivalent to VSAM READ
+     * by full key combination. Essential for precise disclosure group determination
+     * during interest calculation processes where all three criteria must match
+     * to identify the applicable interest rate and disclosure requirements.
+     * 
+     * @param accountGroupId the account group identifier (10 character string)
+     * @param transactionTypeCode the transaction type code (2 character string)
+     * @param transactionCategoryCode the transaction category code (4 digit numeric)
+     * @return Optional containing disclosure group if found, empty otherwise
+     */
+    Optional<DisclosureGroup> findByAccountGroupIdAndTransactionTypeCodeAndTransactionCategoryCode(
+            String accountGroupId, 
+            String transactionTypeCode, 
+            String transactionCategoryCode);
+
+    /**
      * Inherited JpaRepository methods provide standard CRUD operations:
      * 
      * save(DisclosureGroup entity) - Saves or updates disclosure group
