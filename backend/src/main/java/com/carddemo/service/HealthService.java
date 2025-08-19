@@ -7,7 +7,6 @@ package com.carddemo.service;
 
 import com.carddemo.repository.AccountRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.boot.actuator.health.Health;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -36,7 +35,7 @@ import java.util.Map;
  * Integration with Spring Boot Actuator:
  * This service provides methods that can be called by custom HealthIndicator
  * implementations or exposed through Spring Boot Actuator health endpoints.
- * The health information is formatted using Spring Boot Actuator Health.Builder
+ * The health information is provided as Maps that can be used by custom HealthIndicator implementations
  * for consistent health response structures.
  * 
  * Kubernetes Integration:
@@ -86,13 +85,12 @@ public class HealthService {
      * - Response time measurement for performance monitoring
      * - Error handling and recovery validation
      * 
-     * @return Health object containing database connectivity status with detailed metrics
+     * @return Map containing database connectivity status with detailed metrics
      */
-    public Health getDatabaseHealth() {
+    public Map<String, Object> getDatabaseHealth() {
         logger.debug("Starting database health check validation");
         
-        Health.Builder healthBuilder = new Health.Builder();
-        Map<String, Object> details = new HashMap<>();
+        Map<String, Object> healthInfo = new HashMap<>();
         
         try {
             long startTime = System.currentTimeMillis();
@@ -102,8 +100,8 @@ public class HealthService {
             long accountCount = accountRepository.count();
             
             long connectivityTime = System.currentTimeMillis() - startTime;
-            details.put("connectivity_test_ms", connectivityTime);
-            details.put("account_records_count", accountCount);
+            healthInfo.put("connectivity_test_ms", connectivityTime);
+            healthInfo.put("account_records_count", accountCount);
             
             // Test transaction processing capability
             logger.debug("Executing database transaction test via account repository findById operation");
@@ -113,37 +111,37 @@ public class HealthService {
             accountRepository.findById(999999999L);
             
             long transactionTime = System.currentTimeMillis() - startTime;
-            details.put("transaction_test_ms", transactionTime);
+            healthInfo.put("transaction_test_ms", transactionTime);
             
             // Validate response times against SLA thresholds
             long totalTime = connectivityTime + transactionTime;
-            details.put("total_database_test_ms", totalTime);
+            healthInfo.put("total_database_test_ms", totalTime);
             
             if (totalTime > DATABASE_TIMEOUT_MS) {
                 logger.warn("Database health check exceeded timeout threshold: {}ms > {}ms", 
                            totalTime, DATABASE_TIMEOUT_MS);
-                healthBuilder.status(Health.Status.DOWN);
-                details.put("status", "TIMEOUT");
-                details.put("error", "Database response time exceeded " + DATABASE_TIMEOUT_MS + "ms threshold");
+                healthInfo.put("health_status", "DOWN");
+                healthInfo.put("status", "TIMEOUT");
+                healthInfo.put("error", "Database response time exceeded " + DATABASE_TIMEOUT_MS + "ms threshold");
             } else {
                 logger.debug("Database health check completed successfully in {}ms", totalTime);
-                healthBuilder.status(Health.Status.UP);
-                details.put("status", "HEALTHY");
-                details.put("connection_pool", "AVAILABLE");
-                details.put("transaction_capability", "OPERATIONAL");
+                healthInfo.put("health_status", "UP");
+                healthInfo.put("status", "HEALTHY");
+                healthInfo.put("connection_pool", "AVAILABLE");
+                healthInfo.put("transaction_capability", "OPERATIONAL");
             }
             
         } catch (Exception e) {
             logger.error("Database health check failed with exception", e);
-            healthBuilder.status(Health.Status.DOWN);
-            details.put("status", "ERROR");
-            details.put("error", e.getMessage());
-            details.put("exception_type", e.getClass().getSimpleName());
-            details.put("connection_pool", "UNAVAILABLE");
-            details.put("transaction_capability", "FAILED");
+            healthInfo.put("health_status", "DOWN");
+            healthInfo.put("status", "ERROR");
+            healthInfo.put("error", e.getMessage());
+            healthInfo.put("exception_type", e.getClass().getSimpleName());
+            healthInfo.put("connection_pool", "UNAVAILABLE");
+            healthInfo.put("transaction_capability", "FAILED");
         }
         
-        return healthBuilder.withDetails(details).build();
+        return healthInfo;
     }
 
     /**
@@ -161,62 +159,61 @@ public class HealthService {
      * - Application configuration validation
      * - Runtime environment assessment
      * 
-     * @return Health object containing application component status with operational metrics
+     * @return Map containing application component status with operational metrics
      */
-    public Health getApplicationHealth() {
+    public Map<String, Object> getApplicationHealth() {
         logger.debug("Starting application health check validation");
         
-        Health.Builder healthBuilder = new Health.Builder();
-        Map<String, Object> details = new HashMap<>();
+        Map<String, Object> healthInfo = new HashMap<>();
         
         try {
             // Validate Spring Boot application context
-            details.put("spring_boot_context", "ACTIVE");
-            details.put("service_layer", "OPERATIONAL");
+            healthInfo.put("spring_boot_context", "ACTIVE");
+            healthInfo.put("service_layer", "OPERATIONAL");
             
             // Validate dependency injection
             if (accountRepository != null) {
-                details.put("repository_injection", "SUCCESS");
-                details.put("account_repository", "AVAILABLE");
+                healthInfo.put("repository_injection", "SUCCESS");
+                healthInfo.put("account_repository", "AVAILABLE");
             } else {
                 logger.error("AccountRepository dependency injection failed - null reference detected");
-                details.put("repository_injection", "FAILED");
-                details.put("account_repository", "UNAVAILABLE");
-                healthBuilder.status(Health.Status.DOWN);
-                return healthBuilder.withDetails(details).build();
+                healthInfo.put("repository_injection", "FAILED");
+                healthInfo.put("account_repository", "UNAVAILABLE");
+                healthInfo.put("health_status", "DOWN");
+                return healthInfo;
             }
             
             // Validate runtime environment
             Runtime runtime = Runtime.getRuntime();
-            details.put("available_processors", runtime.availableProcessors());
-            details.put("max_memory_mb", runtime.maxMemory() / (1024 * 1024));
-            details.put("total_memory_mb", runtime.totalMemory() / (1024 * 1024));
-            details.put("free_memory_mb", runtime.freeMemory() / (1024 * 1024));
+            healthInfo.put("available_processors", runtime.availableProcessors());
+            healthInfo.put("max_memory_mb", runtime.maxMemory() / (1024 * 1024));
+            healthInfo.put("total_memory_mb", runtime.totalMemory() / (1024 * 1024));
+            healthInfo.put("free_memory_mb", runtime.freeMemory() / (1024 * 1024));
             
             // Validate Java runtime version
-            details.put("java_version", System.getProperty("java.version"));
-            details.put("java_vendor", System.getProperty("java.vendor"));
+            healthInfo.put("java_version", System.getProperty("java.version"));
+            healthInfo.put("java_vendor", System.getProperty("java.vendor"));
             
             // Application-specific business logic health
-            details.put("health_service", "OPERATIONAL");
-            details.put("monitoring_capability", "ACTIVE");
-            details.put("logging_system", "FUNCTIONAL");
+            healthInfo.put("health_service", "OPERATIONAL");
+            healthInfo.put("monitoring_capability", "ACTIVE");
+            healthInfo.put("logging_system", "FUNCTIONAL");
             
             logger.debug("Application health check completed successfully");
-            healthBuilder.status(Health.Status.UP);
-            details.put("status", "HEALTHY");
-            details.put("application_state", "RUNNING");
+            healthInfo.put("health_status", "UP");
+            healthInfo.put("status", "HEALTHY");
+            healthInfo.put("application_state", "RUNNING");
             
         } catch (Exception e) {
             logger.error("Application health check failed with exception", e);
-            healthBuilder.status(Health.Status.DOWN);
-            details.put("status", "ERROR");
-            details.put("error", e.getMessage());
-            details.put("exception_type", e.getClass().getSimpleName());
-            details.put("application_state", "DEGRADED");
+            healthInfo.put("health_status", "DOWN");
+            healthInfo.put("status", "ERROR");
+            healthInfo.put("error", e.getMessage());
+            healthInfo.put("exception_type", e.getClass().getSimpleName());
+            healthInfo.put("application_state", "DEGRADED");
         }
         
-        return healthBuilder.withDetails(details).build();
+        return healthInfo;
     }
 
     /**
@@ -236,71 +233,70 @@ public class HealthService {
      * - System resource availability and performance indicators
      * - Aggregated health status determination with detailed breakdown
      * 
-     * @return Health object containing comprehensive system health status with detailed metrics
+     * @return Map containing comprehensive system health status with detailed metrics
      */
-    public Health getOverallHealth() {
+    public Map<String, Object> getOverallHealth() {
         logger.debug("Starting comprehensive overall health check validation");
         
-        Health.Builder healthBuilder = new Health.Builder();
-        Map<String, Object> details = new HashMap<>();
+        Map<String, Object> healthInfo = new HashMap<>();
         
         try {
             // Perform individual health checks
-            Health databaseHealth = getDatabaseHealth();
-            Health applicationHealth = getApplicationHealth();
+            Map<String, Object> databaseHealth = getDatabaseHealth();
+            Map<String, Object> applicationHealth = getApplicationHealth();
             Map<String, Object> memoryMetrics = getMemoryUtilization();
             
             // Aggregate health status details
-            details.put("database_health", databaseHealth.getStatus().toString());
-            details.put("application_health", applicationHealth.getStatus().toString());
-            details.put("memory_metrics", memoryMetrics);
+            healthInfo.put("database_health", databaseHealth.get("health_status"));
+            healthInfo.put("application_health", applicationHealth.get("health_status"));
+            healthInfo.put("memory_metrics", memoryMetrics);
             
             // Include detailed metrics from individual health checks
-            if (databaseHealth.getDetails() != null) {
-                details.put("database_details", databaseHealth.getDetails());
+            if (databaseHealth != null && !databaseHealth.isEmpty()) {
+                healthInfo.put("database_details", databaseHealth);
             }
             
-            if (applicationHealth.getDetails() != null) {
-                details.put("application_details", applicationHealth.getDetails());
+            if (applicationHealth != null && !applicationHealth.isEmpty()) {
+                healthInfo.put("application_details", applicationHealth);
             }
             
             // Determine overall health status
-            boolean isDatabaseHealthy = Health.Status.UP.equals(databaseHealth.getStatus());
-            boolean isApplicationHealthy = Health.Status.UP.equals(applicationHealth.getStatus());
+            boolean isDatabaseHealthy = "UP".equals(databaseHealth.get("health_status"));
+            boolean isApplicationHealthy = "UP".equals(applicationHealth.get("health_status"));
             boolean isMemoryHealthy = isMemoryWithinThresholds(memoryMetrics);
             
-            details.put("database_status", isDatabaseHealthy ? "HEALTHY" : "UNHEALTHY");
-            details.put("application_status", isApplicationHealthy ? "HEALTHY" : "UNHEALTHY");
-            details.put("memory_status", isMemoryHealthy ? "HEALTHY" : "WARNING");
+            healthInfo.put("database_status", isDatabaseHealthy ? "HEALTHY" : "UNHEALTHY");
+            healthInfo.put("application_status", isApplicationHealthy ? "HEALTHY" : "UNHEALTHY");
+            healthInfo.put("memory_status", isMemoryHealthy ? "HEALTHY" : "WARNING");
             
             // Overall health determination
             if (isDatabaseHealthy && isApplicationHealthy && isMemoryHealthy) {
-                healthBuilder.status(Health.Status.UP);
-                details.put("overall_status", "HEALTHY");
-                details.put("system_state", "OPERATIONAL");
+                healthInfo.put("health_status", "UP");
+                healthInfo.put("overall_status", "HEALTHY");
+                healthInfo.put("system_state", "OPERATIONAL");
                 logger.debug("Overall health check completed - system is healthy");
             } else {
-                healthBuilder.status(Health.Status.DOWN);
-                details.put("overall_status", "UNHEALTHY");
-                details.put("system_state", "DEGRADED");
+                healthInfo.put("health_status", "DOWN");
+                healthInfo.put("overall_status", "UNHEALTHY");
+                healthInfo.put("system_state", "DEGRADED");
                 logger.warn("Overall health check completed - system has health issues: DB={}, App={}, Memory={}", 
                            isDatabaseHealthy, isApplicationHealthy, isMemoryHealthy);
             }
             
             // Add timestamp for monitoring
-            details.put("health_check_timestamp", System.currentTimeMillis());
-            details.put("health_check_version", "1.0");
+            healthInfo.put("health_check_timestamp", System.currentTimeMillis());
+            healthInfo.put("health_check_version", "1.0");
             
         } catch (Exception e) {
             logger.error("Overall health check failed with exception", e);
-            healthBuilder.status(Health.Status.DOWN);
-            details.put("overall_status", "ERROR");
-            details.put("error", e.getMessage());
-            details.put("exception_type", e.getClass().getSimpleName());
-            details.put("system_state", "FAILED");
+            healthInfo.put("health_status", "DOWN");
+            healthInfo.put("overall_status", "ERROR");
+            healthInfo.put("error", e.getMessage());
+            healthInfo.put("exception_type", e.getClass().getSimpleName());
+            healthInfo.put("system_state", "FAILED");
         }
         
-        return healthBuilder.withDetails(details).build();
+        return healthInfo;
     }
 
     /**
