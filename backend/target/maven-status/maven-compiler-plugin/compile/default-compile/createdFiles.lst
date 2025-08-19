@@ -43,6 +43,7 @@ com/carddemo/dto/CustomerDto.class
 com/carddemo/service/CobolDataConverterService.class
 com/carddemo/service/FileGenerationService.class
 com/carddemo/security/SessionAttributes.class
+com/carddemo/security/CustomAuthenticationProvider.class
 com/carddemo/service/CustomerSegmentationService.class
 com/carddemo/client/DataQualityService$DataQualityReport.class
 com/carddemo/client/EmailClient$1.class
@@ -484,6 +485,7 @@ com/carddemo/client/SMSProvider$SMSRequest.class
 com/carddemo/batch/ArchiveJobConfig$ArchivalSkipPolicy.class
 com/carddemo/dto/DetailedReportResponse.class
 com/carddemo/entity/Customer.class
+com/carddemo/security/SecurityEventListener.class
 com/carddemo/dto/CardDeletionResponse$DeletionStatus.class
 com/carddemo/client/EmailClient$EmailTemplate.class
 com/carddemo/dto/AccountDto.class
