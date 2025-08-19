@@ -31,7 +31,6 @@ import com.carddemo.entity.AuditLog;
 import org.springframework.security.authentication.event.AbstractAuthenticationFailureEvent;
 import org.springframework.security.authorization.event.AuthorizationDeniedEvent;
 import org.springframework.session.events.SessionDestroyedEvent;
-import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,7 +78,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @since 1.0
  */
 @Component
-public class SecurityEventListener implements ApplicationListener<Object> {
+public class SecurityEventListener {
 
     private static final Logger logger = LoggerFactory.getLogger(SecurityEventListener.class);
     
@@ -153,7 +152,6 @@ public class SecurityEventListener implements ApplicationListener<Object> {
      * 
      * @param event The application event to be processed
      */
-    @Override
     public void onApplicationEvent(Object event) {
         try {
             // Log all incoming security-related events for monitoring
@@ -297,7 +295,7 @@ public class SecurityEventListener implements ApplicationListener<Object> {
     @EventListener
     public void handleAuthorizationDeniedEvent(AuthorizationDeniedEvent authzDeniedEvent) {
         try {
-            String username = authzDeniedEvent.getAuthentication().getName();
+            String username = authzDeniedEvent.getAuthentication().get().getName();
             String deniedResource = extractResourceFromEvent(authzDeniedEvent);
             String denialReason = authzDeniedEvent.getAuthorizationDecision().toString();
             LocalDateTime eventTimestamp = LocalDateTime.now();
@@ -465,7 +463,7 @@ public class SecurityEventListener implements ApplicationListener<Object> {
             } else if (event instanceof AuthorizationDeniedEvent) {
                 // Track authorization denial patterns and trends
                 AuthorizationDeniedEvent authzEvent = (AuthorizationDeniedEvent) event;
-                String username = authzEvent.getAuthentication().getName();
+                String username = authzEvent.getAuthentication().get().getName();
                 String resource = extractResourceFromEvent(authzEvent);
                 
                 // Add tagged metrics for authorization monitoring
