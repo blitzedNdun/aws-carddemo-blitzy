@@ -45,6 +45,7 @@ com/carddemo/dto/AdminReportRequest.class
 com/carddemo/dto/CustomerDto.class
 com/carddemo/service/CobolDataConverterService.class
 com/carddemo/service/FileGenerationService.class
+com/carddemo/entity/CardXrefId.class
 com/carddemo/security/SessionAttributes.class
 com/carddemo/security/CustomAuthenticationProvider.class
 com/carddemo/service/CustomerSegmentationService.class
@@ -187,8 +188,8 @@ com/carddemo/service/TransactionPostingService$TransactionRecord.class
 com/carddemo/dto/AddressDto.class
 com/carddemo/dto/MessageDto.class
 com/carddemo/service/FileGenerationService$FileGenerationResult.class
-com/carddemo/client/EmailClient$BounceResult$Builder.class
 com/carddemo/entity/Report.class
+com/carddemo/client/EmailClient$BounceResult$Builder.class
 com/carddemo/service/UserDetailService.class
 com/carddemo/service/ReportingService.class
 com/carddemo/entity/Report$ReportType.class
@@ -291,6 +292,7 @@ com/carddemo/dto/DisclosureGroupDto.class
 com/carddemo/service/ReportingService$TransactionSummary.class
 com/carddemo/dto/Message.class
 com/carddemo/service/CustomerFileProcessorService.class
+com/carddemo/entity/CardXref.class
 com/carddemo/batch/StatementGenerationJobConfigA$AccountStatementData.class
 com/carddemo/service/UtilityDateService.class
 com/carddemo/service/UserUpdateService.class
@@ -309,6 +311,7 @@ com/carddemo/service/ChargebackProcessor$DocumentValidationResult.class
 com/carddemo/dto/MessageLevel.class
 com/carddemo/service/FraudDetectionService$BlacklistCheckResult.class
 com/carddemo/service/ChargebackProcessor$NetworkResponse.class
+com/carddemo/entity/Authorization.class
 com/carddemo/client/EmailClient$BounceResult.class
 com/carddemo/controller/ReportController$1.class
 com/carddemo/dto/BatchJobParametersDto$JobParameterValue.class
@@ -324,6 +327,7 @@ com/carddemo/service/FraudDetectionService$MerchantValidationResult.class
 com/carddemo/dto/UserUpdateResponse$UpdatedUserData.class
 com/carddemo/dto/BatchJobParametersDto.class
 com/carddemo/dto/DailyTransactionDto$DailyTransactionDtoBuilder.class
+com/carddemo/entity/Transaction.class
 com/carddemo/repository/DailyTransactionRepository.class
 com/carddemo/security/CustomAccessDeniedHandler.class
 com/carddemo/repository/UserActivityRepository$UserActivitySummary.class
