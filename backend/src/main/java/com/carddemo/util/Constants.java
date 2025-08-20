@@ -63,6 +63,30 @@ public final class Constants {
     public static final int CARD_NUMBER_LENGTH = 16;
 
     /**
+     * Maximum length for customer ID fields.
+     * Maps to COBOL PIC 9(9) specification for 9-digit customer IDs.
+     */
+    public static final int CUSTOMER_ID_LENGTH = 9;
+
+    /**
+     * Maximum length for SSN fields including dashes.
+     * Maps to COBOL PIC X(11) specification for XXX-XX-XXXX format.
+     */
+    public static final int SSN_LENGTH = 11;
+
+    /**
+     * Maximum length for phone number fields.
+     * Maps to COBOL PIC X(14) specification for (XXX) XXX-XXXX format.
+     */
+    public static final int PHONE_NUMBER_LENGTH = 14;
+
+    /**
+     * Maximum length for ZIP code fields.
+     * Maps to COBOL PIC X(5) specification for 5-digit ZIP codes.
+     */
+    public static final int ZIP_CODE_LENGTH = 5;
+
+    /**
      * Maximum length for transaction ID fields.
      * Maps to COBOL PIC X(16) specification.
      */
