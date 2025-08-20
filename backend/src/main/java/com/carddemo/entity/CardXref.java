@@ -68,6 +68,7 @@ public class CardXref {
      * Must be exactly 16 characters to match card number format.
      * Value is derived from the embedded ID.
      */
+    @Column(name = "xref_card_num")
     @Size(max = 16, message = "Cross-reference card number cannot exceed 16 characters")
     private String xrefCardNum;
 
@@ -77,6 +78,7 @@ public class CardXref {
      * Links to customer_data table for customer relationship.
      * Value is derived from the embedded ID.
      */
+    @Column(name = "xref_cust_id")
     private Long xrefCustId;
 
     /**
@@ -85,6 +87,7 @@ public class CardXref {
      * Links to account_data table for account relationship.
      * Value is derived from the embedded ID.
      */
+    @Column(name = "xref_acct_id")
     private Long xrefAcctId;
 
     /**
