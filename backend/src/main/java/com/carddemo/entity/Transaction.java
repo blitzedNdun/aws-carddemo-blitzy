@@ -8,6 +8,10 @@ package com.carddemo.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -62,6 +66,10 @@ import java.util.Objects;
            @Index(name = "idx_transactions_type_code", columnList = "transaction_type_code"),
            @Index(name = "idx_transactions_category_code", columnList = "category_code")
        })
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Transaction {
 
     // Constants for field constraints (matching COBOL PIC clauses)
@@ -241,26 +249,7 @@ public class Transaction {
     })
     private TransactionCategory transactionCategory;
 
-    /**
-     * Default constructor for JPA.
-     */
-    public Transaction() {
-    }
 
-    /**
-     * Constructor with essential fields for transaction creation.
-     * 
-     * @param amount transaction amount
-     * @param accountId account ID
-     * @param transactionDate transaction date
-     * @param description transaction description
-     */
-    public Transaction(BigDecimal amount, Long accountId, LocalDate transactionDate, String description) {
-        this.amount = amount;
-        this.accountId = accountId;
-        this.transactionDate = transactionDate;
-        this.description = description;
-    }
 
     // Getters and Setters - Required by exports schema
 
