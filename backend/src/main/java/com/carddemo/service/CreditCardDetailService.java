@@ -92,8 +92,11 @@ public class CreditCardDetailService {
         // Validate input card number (equivalent to 2220-EDIT-CARD)
         validateCardNumber(cardNumber);
         
+        // Clean card number for lookup (remove spaces)
+        String cleanCardNumber = cardNumber.trim().replaceAll("\\s+", "");
+        
         // Perform card lookup (equivalent to 9100-GETCARD-BYACCTCARD)
-        Optional<Card> cardOptional = lookupCardByNumber(cardNumber);
+        Optional<Card> cardOptional = lookupCardByNumber(cleanCardNumber);
         
         // Handle not found condition (equivalent to DFHRESP(NOTFND))
         if (cardOptional.isEmpty()) {
@@ -133,8 +136,11 @@ public class CreditCardDetailService {
         // Validate input account ID (equivalent to 2210-EDIT-ACCOUNT)
         validateAccountId(accountId);
         
+        // Clean account ID for lookup (remove spaces)
+        String cleanAccountId = accountId.trim().replaceAll("\\s+", "");
+        
         // Perform card lookup by account (equivalent to 9150-GETCARD-BYACCT)
-        Optional<Card> cardOptional = lookupCardByAccount(accountId);
+        Optional<Card> cardOptional = lookupCardByAccount(cleanAccountId);
         
         // Handle not found condition (equivalent to DFHRESP(NOTFND))
         if (cardOptional.isEmpty()) {
@@ -173,12 +179,15 @@ public class CreditCardDetailService {
         // Validate input card number format
         validateCardNumber(cardNumber);
         
+        // Clean card number for lookup (remove spaces)
+        String cleanCardNumber = cardNumber.trim().replaceAll("\\s+", "");
+        
         // Check card existence in database
-        Optional<Card> cardOptional = lookupCardByNumber(cardNumber);
+        Optional<Card> cardOptional = lookupCardByNumber(cleanCardNumber);
         
         // Throw exception if card not found
         if (cardOptional.isEmpty()) {
-            throw new ResourceNotFoundException("Card", cardNumber,
+            throw new ResourceNotFoundException("Card", cleanCardNumber,
                 "Card not found or not accessible");
         }
         
@@ -273,8 +282,12 @@ public class CreditCardDetailService {
         validateAccountId(accountId);
         validateCardNumber(cardNumber);
         
+        // Clean inputs for lookup (remove spaces)
+        String cleanAccountId = accountId.trim().replaceAll("\\s+", "");
+        String cleanCardNumber = cardNumber.trim().replaceAll("\\s+", "");
+        
         // Lookup card by card number
-        Optional<Card> cardOptional = lookupCardByNumber(cardNumber);
+        Optional<Card> cardOptional = lookupCardByNumber(cleanCardNumber);
         
         // Check if card exists
         if (cardOptional.isEmpty()) {
@@ -285,10 +298,10 @@ public class CreditCardDetailService {
         Card card = cardOptional.get();
         
         // Validate that card belongs to specified account
-        Long accountIdLong = Long.parseLong(accountId);
+        Long accountIdLong = Long.parseLong(cleanAccountId);
         if (!accountIdLong.equals(card.getAccountId())) {
-            throw new ResourceNotFoundException("Card", cardNumber,
-                "Card does not belong to specified account: " + accountId);
+            throw new ResourceNotFoundException("Card", cleanCardNumber,
+                "Card does not belong to specified account: " + cleanAccountId);
         }
         
         // Return mapped response if all validations pass
