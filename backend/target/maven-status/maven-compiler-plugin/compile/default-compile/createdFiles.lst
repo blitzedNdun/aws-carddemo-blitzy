@@ -234,6 +234,7 @@ com/carddemo/dto/TransactionListResponse.class
 com/carddemo/service/NotificationService$NotificationPreferences.class
 com/carddemo/service/PaymentService$CardValidationException.class
 com/carddemo/service/FileGenerationService$CustomerStatementData.class
+com/carddemo/entity/Transaction$TransactionBuilder.class
 com/carddemo/entity/UserActivity.class
 com/carddemo/config/ExtractJobConfig$TransactionExtractDto.class
 com/carddemo/repository/TransactionCategoryBalanceRepository.class
