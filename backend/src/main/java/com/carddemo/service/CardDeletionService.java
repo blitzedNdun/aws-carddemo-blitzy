@@ -178,7 +178,8 @@ public class CardDeletionService {
         } else {
             // Validate card number format
             try {
-                ValidationUtil.validateCardNumber(request.getCardNumber());
+                ValidationUtil.FieldValidator fieldValidator = new ValidationUtil.FieldValidator();
+                fieldValidator.validateCardNumber(request.getCardNumber());
             } catch (Exception e) {
                 validationException.addFieldError("cardNumber", "Invalid card number format");
             }
@@ -316,7 +317,7 @@ public class CardDeletionService {
         BigDecimal currentBalance = account.getCurrentBalance();
         
         // Validate balance using AmountCalculator
-        AmountCalculator.validateAmount(currentBalance);
+        AmountCalculator.validateAmount(currentBalance, "Current Balance");
         
         // Check if balance prevents deletion
         if (currentBalance.compareTo(BigDecimal.ZERO) != 0 && !forceDelete) {
@@ -349,7 +350,7 @@ public class CardDeletionService {
         
         if (!cardOpt.isPresent()) {
             throw new ResourceNotFoundException("Card", cardNumber, 
-                                              Constants.INVALID_KEY_MESSAGE + " - Card not found");
+                                              "Card not found");
         }
         
         Card card = cardOpt.get();
