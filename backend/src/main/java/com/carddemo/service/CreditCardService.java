@@ -10,6 +10,7 @@ import com.carddemo.entity.Card;
 import com.carddemo.repository.CardRepository;
 import com.carddemo.exception.BusinessRuleException;
 import com.carddemo.exception.ResourceNotFoundException;
+import com.carddemo.service.CardDetailsService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -23,6 +24,8 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Optional;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 /**
  * Credit Card Service implementation for card management operations.
@@ -52,6 +55,9 @@ public class CreditCardService {
 
     @Autowired
     private CardRepository cardRepository;
+    
+    @Autowired
+    private CardDetailsService cardDetailsService;
 
     /**
      * Lists credit cards with pagination and optional filtering.
@@ -118,17 +124,15 @@ public class CreditCardService {
         logger.info("Processing card detail request for cardNumber: {}", maskCardNumber(cardNumber));
 
         try {
-            // Retrieve card from repository
-            Optional<Card> cardOpt = cardRepository.findByCardNumber(cardNumber);
+            // Use CardDetailsService to handle business logic from COCRDSLC.cbl
+            CardDetailsService.CardDetailResult detailResult = cardDetailsService.getCardDetail(cardNumber, null);
             
-            if (cardOpt.isEmpty()) {
+            if (!detailResult.isSuccess()) {
                 throw new ResourceNotFoundException("Card", cardNumber);
             }
-
-            Card card = cardOpt.get();
             
-            // Convert to CardResponse DTO
-            return convertToCardResponse(card);
+            // Convert CardDetailResult to CardResponse DTO
+            return convertDetailResultToCardResponse(detailResult);
 
         } catch (ResourceNotFoundException e) {
             logger.warn("Card not found: {}", maskCardNumber(cardNumber));
@@ -252,6 +256,38 @@ public class CreditCardService {
         response.setExpirationDate(card.getExpirationDate());
         response.setActiveStatus(card.getActiveStatus());
         response.setCardType(determineCardType(card.getCardNumber()));
+        
+        return response;
+    }
+    
+    /**
+     * Converts CardDetailResult from CardDetailsService to CardResponse DTO.
+     * Handles date format conversion from "YYYY/MM/DD" to LocalDate.
+     * 
+     * @param detailResult CardDetailResult from CardDetailsService
+     * @return CardResponse for API response
+     */
+    private CardResponse convertDetailResultToCardResponse(CardDetailsService.CardDetailResult detailResult) {
+        CardResponse response = new CardResponse();
+        
+        // Set card number (will be automatically masked)
+        response.setCardNumber(detailResult.getCardNumber());
+        response.setAccountId(detailResult.getAccountId().toString());
+        response.setEmbossedName(detailResult.getEmbossedName());
+        
+        // Convert expiration date from "YYYY/MM/DD" format to LocalDate
+        if (detailResult.getExpirationDate() != null && !detailResult.getExpirationDate().isEmpty()) {
+            try {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd");
+                response.setExpirationDate(LocalDate.parse(detailResult.getExpirationDate(), formatter));
+            } catch (Exception e) {
+                logger.warn("Failed to parse expiration date: {}", detailResult.getExpirationDate(), e);
+                response.setExpirationDate(null);
+            }
+        }
+        
+        response.setActiveStatus(detailResult.getActiveStatus());
+        response.setCardType(determineCardType(detailResult.getCardNumber()));
         
         return response;
     }

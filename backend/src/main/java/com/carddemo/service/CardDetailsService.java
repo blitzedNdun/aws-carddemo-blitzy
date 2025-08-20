@@ -144,28 +144,24 @@ public class CardDetailsService {
      * - EXEC CICS READ FILE(LIT-CARDFILENAME) RIDFLD(WS-CARD-RID-CARDNUM) → cardRepository.findById()
      * - DFHRESP(NORMAL) handling → Optional.isPresent() check
      * - DFHRESP(NOTFND) handling → Optional.isEmpty() check  
-     * - Error response codes → null return for not found
+     * - Error response codes → exceptions propagated for proper error handling
      * 
      * @param cardNumber the 16-digit card number for primary key lookup
-     * @return Card entity if found, null if not found or error occurred
+     * @return Card entity if found, null if not found
+     * @throws RuntimeException if database error occurs (equivalent to other DFHRESP codes)
      */
     public Card readCardData(String cardNumber) {
-        try {
-            // EXEC CICS READ equivalent using JPA repository
-            Optional<Card> cardOptional = cardRepository.findById(cardNumber);
-            
-            // DFHRESP(NORMAL) equivalent - card found
-            if (cardOptional.isPresent()) {
-                return cardOptional.get();
-            }
-            
-            // DFHRESP(NOTFND) equivalent - card not found
-            return null;
-            
-        } catch (Exception e) {
-            // Other DFHRESP codes equivalent - database error
-            return null;
+        // EXEC CICS READ equivalent using JPA repository
+        // Database exceptions will propagate to getCardDetail for proper error handling
+        Optional<Card> cardOptional = cardRepository.findById(cardNumber);
+        
+        // DFHRESP(NORMAL) equivalent - card found
+        if (cardOptional.isPresent()) {
+            return cardOptional.get();
         }
+        
+        // DFHRESP(NOTFND) equivalent - card not found
+        return null;
     }
 
     /**

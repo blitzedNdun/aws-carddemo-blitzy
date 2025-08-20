@@ -6,6 +6,7 @@
 package com.carddemo.controller;
 
 import com.carddemo.service.CreditCardService;
+import com.carddemo.service.CardDetailsService;
 import com.carddemo.service.CacheService;
 import com.carddemo.service.MonitoringService;
 import com.carddemo.dto.ApiResponse;
@@ -106,7 +107,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
  */
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = {CardControllerTest.TestConfig.class})
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class CardControllerTest {
 
 
@@ -116,6 +117,9 @@ public class CardControllerTest {
 
     @MockBean
     private CreditCardService creditCardService;
+    
+    @MockBean
+    private CardDetailsService cardDetailsService;
 
     // Mock security components to prevent autowiring issues
     @MockBean
