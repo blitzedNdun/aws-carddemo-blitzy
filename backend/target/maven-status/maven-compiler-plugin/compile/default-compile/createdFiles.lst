@@ -332,6 +332,7 @@ com/carddemo/client/EmailClient$BounceResult.class
 com/carddemo/controller/ReportController$1.class
 com/carddemo/dto/BatchJobParametersDto$JobParameterValue.class
 com/carddemo/service/FraudDetectionService$VelocityCheckResult.class
+com/carddemo/service/SignOffService.class
 com/carddemo/service/AuthorizationEngine$TransactionLimits.class
 com/carddemo/service/InterestRateService.class
 com/carddemo/config/CacheConfig$1.class
