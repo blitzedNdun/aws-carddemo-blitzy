@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+package com.carddemo.test;
+
 import java.math.RoundingMode;
 import java.time.Duration;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -325,3 +327,4 @@ public final class TestConstants {
      * Used for transaction category validation and processing testing.
      */
     public static final String TEST_TRANSACTION_CATEGORY_CODE = "5411";
+}
