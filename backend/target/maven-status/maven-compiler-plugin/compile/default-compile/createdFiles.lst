@@ -64,6 +64,7 @@ com/carddemo/dto/CardListDto$CardListDtoBuilder.class
 com/carddemo/dto/CardDeletionResponse$CardDeletionResponseBuilder.class
 com/carddemo/dto/ValidationError.class
 com/carddemo/dto/AddTransactionResponse.class
+com/carddemo/controller/HealthController.class
 com/carddemo/service/ChargebackProcessor$LiabilityDistribution.class
 com/carddemo/dto/CustomerRequest.class
 com/carddemo/service/AddressValidationService.class
