@@ -168,6 +168,12 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Liquibase for database schema migrations -->
+        <dependency>
+            <groupId>org.liquibase</groupId>
+            <artifactId>liquibase-core</artifactId>
+        </dependency>
+
         <!-- Lombok for boilerplate reduction -->
         <dependency>
             <groupId>org.projectlombok</groupId>
