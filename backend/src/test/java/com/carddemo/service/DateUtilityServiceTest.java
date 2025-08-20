@@ -1,972 +1,629 @@
+/*
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package com.carddemo.service;
 
-import com.carddemo.service.DateUtilityService;
-import com.carddemo.util.DateConversionUtil;
-import com.carddemo.util.ValidationUtil;
-import com.carddemo.util.Constants;
-// TestDataGenerator import - will be available from test directory
-
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.assertj.core.api.Assertions;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.boot.test.context.SpringBootTest;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /**
- * Comprehensive unit test class for DateUtilityService validating COBOL CSUTLDTC 
- * and CSUTLDPY date conversion logic migration to Java.
+ * Comprehensive unit test suite for DateUtilityService validating COBOL to Java date conversion migration.
+ * Tests all critical date validation, conversion, and business day calculation functionality
+ * ensuring 100% functional parity with original COBOL CSUTLDTC.cbl and CSUTLDPY.cpy programs.
  * 
- * This test class ensures 100% functional parity between the original COBOL date
- * validation and conversion programs and the new Java implementation, including:
- * - CCYYMMDD date format validation matching COBOL EDIT-DATE-CCYYMMDD
- * - Lillian date conversion replicating CEEDAYS API functionality  
- * - Leap year calculations preserving COBOL logic for February 29th validation
- * - Business day calculations for transaction processing
+ * Key Test Areas:
+ * - CCYYMMDD date format validation matching COBOL EDIT-DATE-CCYYMMDD logic
+ * - Date validation with century restrictions (19xx/20xx), month/day validation
+ * - Leap year calculation tests replicating COBOL logic
+ * - Lillian date conversion functionality matching CEEDAYS API behavior
+ * - Business day calculation tests for transaction processing
  * - Date of birth validation preventing future dates
- * - Century validation restricting to 19xx and 20xx years
- * - Month/day validation with proper month-specific day limits
+ * - Comprehensive test scenarios for date parsing and formatting
  * 
- * All tests use exact error conditions and validation rules from the original
- * COBOL programs to ensure minimal change approach and functional preservation.
+ * Uses JUnit 5, Mockito, and AssertJ frameworks as specified in technical requirements.
+ * Ensures functional parity with original COBOL CSUTLDTC and CSUTLDPY programs.
+ * 
+ * This is a pure unit test that doesn't require Spring context, focusing on testing
+ * DateUtilityService business logic in isolation with proper mocking of dependencies.
+ * 
+ * @author CardDemo Migration Team
+ * @version 1.0
+ * @since 2024
  */
-@SpringBootTest
-@DisplayName("DateUtilityService COBOL Migration Tests")
 public class DateUtilityServiceTest {
 
-    @Mock
     private DateUtilityService dateUtilityService;
-    
-    @Mock 
-    private TestDataGenerator testDataGenerator;
-    
-    @Mock
-    private DateConversionUtil dateConversionUtil;
-    
-    @Mock
-    private ValidationUtil validationUtil;
-    
-    private static final String VALID_DATE_FORMAT = "YYYYMMDD";
-    private static final String ALTERNATE_DATE_FORMAT = "CCYYMMDD";
-    private static final int CURRENT_YEAR = LocalDate.now().getYear();
-    private static final int CURRENT_CENTURY = CURRENT_YEAR / 100;
-    
+
     /**
      * Setup test data before each test execution.
-     * Initializes mock objects and prepares test scenarios.
+     * Initializes the service instance for testing.
      */
     @BeforeEach
     public void setupTestData() {
-        MockitoAnnotations.openMocks(this);
-        // Initialize mocks and test data
-        reset(dateUtilityService, testDataGenerator, dateConversionUtil, validationUtil);
-        
-        // Configure common mock behaviors
-        when(testDataGenerator.generateCobolDate()).thenReturn("20231215");
-        when(testDataGenerator.generateDateOfBirth()).thenReturn("19850630");
-        when(testDataGenerator.generateRandomTransactionDate()).thenReturn("20231201");
-        when(testDataGenerator.generateValidTransactionAmount()).thenReturn(new BigDecimal("1250.75"));
-        when(testDataGenerator.generateComp3BigDecimal()).thenReturn(new BigDecimal("999.99"));
-        when(testDataGenerator.generatePicString()).thenReturn("TEST12345");
-        
-        when(dateConversionUtil.validateDate(anyString())).thenReturn(true);
-        when(dateConversionUtil.convertDateFormat(anyString(), anyString())).thenReturn("20231215");
-        when(dateConversionUtil.formatCCYYMMDD(any(LocalDate.class))).thenReturn("20231215");
-        when(dateConversionUtil.parseDate(anyString())).thenReturn(LocalDate.of(2023, 12, 15));
-        when(dateConversionUtil.addDays(any(LocalDate.class), anyInt())).thenReturn(LocalDate.of(2023, 12, 20));
-        
-        when(validationUtil.validateDateOfBirth(anyString())).thenReturn(true);
-        when(validationUtil.validateNumericField(anyString())).thenReturn(true);
-        when(validationUtil.validateFieldLength(anyString(), anyInt())).thenReturn(true);
-        when(validationUtil.validateRequiredField(anyString())).thenReturn(true);
+        // Create a real instance since we're testing the service methods directly
+        dateUtilityService = new DateUtilityService();
     }
 
-    /**
-     * Cleanup test data after each test execution.
-     * Resets mock states and clears any temporary data.
-     */
-    @AfterEach
-    public void tearDownTestData() {
-        // Clear any temporary test data and reset mocks
-        reset(dateUtilityService, testDataGenerator, dateConversionUtil, validationUtil);
+    // ========================================
+    // CCYYMMDD Date Format Validation Tests
+    // ========================================
+
+    @Test
+    @DisplayName("validateCCYYMMDD should accept valid date formats")
+    public void testValidateCCYYMMDD_ValidDates_ShouldReturnTrue() {
+        // Test valid dates in CCYYMMDD format
+        assertThat(dateUtilityService.validateCCYYMMDD("20231215")).isTrue();
+        assertThat(dateUtilityService.validateCCYYMMDD("19850630")).isTrue();
+        assertThat(dateUtilityService.validateCCYYMMDD("20000229")).isTrue(); // Leap year
+        assertThat(dateUtilityService.validateCCYYMMDD("19000228")).isTrue(); // Non-leap year
+        assertThat(dateUtilityService.validateCCYYMMDD("20240101")).isTrue(); // Current century
+        assertThat(dateUtilityService.validateCCYYMMDD("19991231")).isTrue(); // Previous century
     }
 
-    /**
-     * Test CCYYMMDD date validation with valid dates.
-     * Replicates COBOL EDIT-DATE-CCYYMMDD validation logic.
-     * 
-     * @param inputDate Valid date string in CCYYMMDD format
-     * @param expectedValid Expected validation result (true for valid dates)
-     */
     @ParameterizedTest
-    @CsvSource({
-        "20231215, true",  // Valid current date
-        "20240229, true",  // Valid leap year date
-        "19991231, true",  // Valid last century date
-        "20000101, true",  // Valid century boundary
-        "20231201, true",  // Valid first day of month
-        "20231130, true",  // Valid 30-day month
-        "20230228, true",  // Valid non-leap year February
-        "20240229, true",  // Valid leap year February 29th
+    @DisplayName("validateCCYYMMDD should reject invalid date formats")
+    @ValueSource(strings = {
+        "",           // Empty string
+        "   ",        // Whitespace only
+        "2023121",    // Too short
+        "202312155",  // Too long
+        "20AB1215",   // Non-numeric characters
+        "20231232",   // Invalid day
+        "20231305",   // Invalid month
+        "18991215",   // Before 1900
+        "21001215",   // After 2099
+        "20230229",   // Non-leap year Feb 29
+        "20230431"    // April 31st (invalid)
     })
-    @DisplayName("Should validate CCYYMMDD format with valid dates")
-    public void testValidateCCYYMMDD_ValidDates(String inputDate, boolean expectedValid) {
-        // Arrange
-        when(dateUtilityService.validateCCYYMMDD(inputDate)).thenReturn(expectedValid);
-        
-        // Act
-        boolean result = dateUtilityService.validateCCYYMMDD(inputDate);
-        
-        // Assert
-        assertThat(result).isEqualTo(expectedValid);
-        verify(dateUtilityService).validateCCYYMMDD(inputDate);
+    public void testValidateCCYYMMDD_InvalidDates_ShouldReturnFalse(String invalidDate) {
+        assertThat(dateUtilityService.validateCCYYMMDD(invalidDate)).isFalse();
     }
 
-    /**
-     * Test CCYYMMDD date validation with invalid dates.
-     * Validates all error conditions from COBOL EDIT-DATE-CCYYMMDD.
-     * 
-     * @param inputDate Invalid date string
-     * @param expectedValid Expected validation result (false for invalid dates)
-     */
+    @Test
+    @DisplayName("validateCCYYMMDD should handle null input")
+    public void testValidateCCYYMMDD_NullInput_ShouldReturnFalse() {
+        assertThat(dateUtilityService.validateCCYYMMDD(null)).isFalse();
+    }
+
+    // ========================================
+    // Year Validation Tests
+    // ========================================
+
+    @Test
+    @DisplayName("validateYear should accept valid years in range 1900-2099")
+    public void testValidateYear_ValidRange_ShouldReturnTrue() {
+        assertThat(dateUtilityService.validateYear(1900)).isTrue();
+        assertThat(dateUtilityService.validateYear(2000)).isTrue();
+        assertThat(dateUtilityService.validateYear(2023)).isTrue();
+        assertThat(dateUtilityService.validateYear(2099)).isTrue();
+    }
+
+    @Test
+    @DisplayName("validateYear should reject years outside valid range")
+    public void testValidateYear_InvalidRange_ShouldReturnFalse() {
+        assertThat(dateUtilityService.validateYear(1899)).isFalse();
+        assertThat(dateUtilityService.validateYear(2100)).isFalse();
+        assertThat(dateUtilityService.validateYear(1800)).isFalse();
+        assertThat(dateUtilityService.validateYear(3000)).isFalse();
+    }
+
+    // ========================================
+    // Month and Day Validation Tests
+    // ========================================
+
+    @Test
+    @DisplayName("validateMonth should accept valid months 1-12")
+    public void testValidateMonth_ValidRange_ShouldReturnTrue() {
+        for (int month = 1; month <= 12; month++) {
+            assertThat(dateUtilityService.validateMonth(month)).isTrue();
+        }
+    }
+
+    @Test
+    @DisplayName("validateMonth should reject invalid months")
+    public void testValidateMonth_InvalidRange_ShouldReturnFalse() {
+        assertThat(dateUtilityService.validateMonth(0)).isFalse();
+        assertThat(dateUtilityService.validateMonth(13)).isFalse();
+        assertThat(dateUtilityService.validateMonth(-1)).isFalse();
+        assertThat(dateUtilityService.validateMonth(100)).isFalse();
+    }
+
+    @Test
+    @DisplayName("validateDay should accept valid days 1-31")
+    public void testValidateDay_ValidRange_ShouldReturnTrue() {
+        assertThat(dateUtilityService.validateDay(1)).isTrue();
+        assertThat(dateUtilityService.validateDay(15)).isTrue();
+        assertThat(dateUtilityService.validateDay(31)).isTrue();
+    }
+
+    @Test
+    @DisplayName("validateDay should reject invalid days")
+    public void testValidateDay_InvalidRange_ShouldReturnFalse() {
+        assertThat(dateUtilityService.validateDay(0)).isFalse();
+        assertThat(dateUtilityService.validateDay(32)).isFalse();
+        assertThat(dateUtilityService.validateDay(-1)).isFalse();
+        assertThat(dateUtilityService.validateDay(100)).isFalse();
+    }
+
+    // ========================================
+    // Leap Year Tests
+    // ========================================
+
     @ParameterizedTest
-    @CsvSource({
-        "18991231, false", // Invalid century (18xx not allowed)
-        "21001231, false", // Invalid century (21xx not allowed) 
-        "20231301, false", // Invalid month (13)
-        "20230001, false", // Invalid month (0)
-        "20231232, false", // Invalid day (32)
-        "20231200, false", // Invalid day (0)
-        "20230229, false", // Invalid leap year (2023 not leap year)
-        "20230431, false", // Invalid day for April (31st)
-        "20230631, false", // Invalid day for June (31st)
-        "20230931, false", // Invalid day for September (31st)
-        "20231131, false", // Invalid day for November (31st)
-        "20230230, false", // Invalid day for February (30th)
-        "INVALID1, false", // Non-numeric date
-        "       , false", // Blank/empty date
-    })
-    @DisplayName("Should reject invalid CCYYMMDD format dates")
-    public void testValidateCCYYMMDD_InvalidDates(String inputDate, boolean expectedValid) {
-        // Arrange
-        when(dateUtilityService.validateCCYYMMDD(inputDate)).thenReturn(expectedValid);
-        
-        // Act
-        boolean result = dateUtilityService.validateCCYYMMDD(inputDate);
-        
-        // Assert
-        assertThat(result).isEqualTo(expectedValid);
-        verify(dateUtilityService).validateCCYYMMDD(inputDate);
+    @DisplayName("isLeapYear should correctly identify leap years")
+    @ValueSource(ints = {2000, 2004, 2008, 2012, 2016, 2020, 2024})
+    public void testIsLeapYear_LeapYears_ShouldReturnTrue(int year) {
+        assertThat(dateUtilityService.isLeapYear(year)).isTrue();
     }
 
-    /**
-     * Test year validation matching COBOL EDIT-YEAR-CCYY logic.
-     * Only allows 19xx and 20xx centuries as per COBOL specification.
-     * 
-     * @param year Year value to validate
-     * @param expectedValid Expected validation result
-     */
     @ParameterizedTest
-    @CsvSource({
-        "1999, true",  // Valid last century
-        "2000, true",  // Valid century boundary  
-        "2023, true",  // Valid current century
-        "2099, true",  // Valid future this century
-        "1899, false", // Invalid earlier century
-        "2100, false", // Invalid future century
-        "1800, false", // Invalid 18th century
-        "2200, false", // Invalid 22nd century
-    })
-    @DisplayName("Should validate years with century restrictions")
-    public void testValidateYear_ValidYears(int year, boolean expectedValid) {
-        // Arrange
-        when(dateUtilityService.validateYear(year)).thenReturn(expectedValid);
-        
-        // Act
-        boolean result = dateUtilityService.validateYear(year);
-        
-        // Assert
-        assertThat(result).isEqualTo(expectedValid);
-        verify(dateUtilityService).validateYear(year);
+    @DisplayName("isLeapYear should correctly identify non-leap years")
+    @ValueSource(ints = {1900, 2001, 2002, 2003, 2100, 2200, 2300})
+    public void testIsLeapYear_NonLeapYears_ShouldReturnFalse(int year) {
+        assertThat(dateUtilityService.isLeapYear(year)).isFalse();
     }
 
-    /**
-     * Test year validation with invalid years and edge cases.
-     * 
-     * @param year Invalid year value
-     * @param expectedValid Expected validation result (false)
-     */
-    @ParameterizedTest
-    @CsvSource({
-        "0, false",    // Year zero
-        "-1, false",   // Negative year
-        "999, false",  // Too small year
-        "3000, false", // Too large year
-    })
-    @DisplayName("Should reject invalid years")
-    public void testValidateYear_InvalidYears(int year, boolean expectedValid) {
-        // Arrange
-        when(dateUtilityService.validateYear(year)).thenReturn(expectedValid);
+    @Test
+    @DisplayName("isLeapYear should handle century years correctly")
+    public void testIsLeapYear_CenturyYears_ShouldFollowCorrectRules() {
+        // Century years divisible by 400 are leap years
+        assertThat(dateUtilityService.isLeapYear(2000)).isTrue();
+        assertThat(dateUtilityService.isLeapYear(2400)).isTrue();
         
-        // Act
-        boolean result = dateUtilityService.validateYear(year);
-        
-        // Assert
-        assertThat(result).isEqualTo(expectedValid);
-        verify(dateUtilityService).validateYear(year);
+        // Century years not divisible by 400 are not leap years
+        assertThat(dateUtilityService.isLeapYear(1900)).isFalse();
+        assertThat(dateUtilityService.isLeapYear(2100)).isFalse();
+        assertThat(dateUtilityService.isLeapYear(2200)).isFalse();
+        assertThat(dateUtilityService.isLeapYear(2300)).isFalse();
     }
 
-    /**
-     * Test month validation matching COBOL EDIT-MONTH logic.
-     * Validates months 1-12 as per COBOL WS-VALID-MONTH condition.
-     * 
-     * @param month Month value to validate (1-12)
-     * @param expectedValid Expected validation result
-     */
-    @ParameterizedTest
-    @CsvSource({
-        "1, true",   // January
-        "2, true",   // February  
-        "6, true",   // June
-        "12, true",  // December
-    })
-    @DisplayName("Should validate months 1-12")
-    public void testValidateMonth_ValidMonths(int month, boolean expectedValid) {
-        // Arrange
-        when(dateUtilityService.validateMonth(month)).thenReturn(expectedValid);
-        
-        // Act
-        boolean result = dateUtilityService.validateMonth(month);
-        
-        // Assert
-        assertThat(result).isEqualTo(expectedValid);
-        verify(dateUtilityService).validateMonth(month);
+    // ========================================
+    // Date of Birth Validation Tests
+    // ========================================
+
+    @Test
+    @DisplayName("validateDateOfBirth should accept valid past dates")
+    public void testValidateDateOfBirth_ValidPastDates_ShouldReturnTrue() {
+        // Test dates that are definitely in the past
+        assertThat(dateUtilityService.validateDateOfBirth("19850630")).isTrue();
+        assertThat(dateUtilityService.validateDateOfBirth("19950315")).isTrue();
+        assertThat(dateUtilityService.validateDateOfBirth("20000101")).isTrue();
+        assertThat(dateUtilityService.validateDateOfBirth("20100815")).isTrue();
     }
 
-    /**
-     * Test month validation with invalid months.
-     * 
-     * @param month Invalid month value
-     * @param expectedValid Expected validation result (false)
-     */
-    @ParameterizedTest
-    @CsvSource({
-        "0, false",   // Invalid month 0
-        "13, false",  // Invalid month 13
-        "-1, false",  // Negative month
-        "100, false", // Too large month
-    })
-    @DisplayName("Should reject invalid months")
-    public void testValidateMonth_InvalidMonths(int month, boolean expectedValid) {
-        // Arrange
-        when(dateUtilityService.validateMonth(month)).thenReturn(expectedValid);
-        
-        // Act
-        boolean result = dateUtilityService.validateMonth(month);
-        
-        // Assert
-        assertThat(result).isEqualTo(expectedValid);
-        verify(dateUtilityService).validateMonth(month);
+    @Test
+    @DisplayName("validateDateOfBirth should reject invalid formats")
+    public void testValidateDateOfBirth_InvalidFormats_ShouldReturnFalse() {
+        assertThat(dateUtilityService.validateDateOfBirth("")).isFalse();
+        assertThat(dateUtilityService.validateDateOfBirth(null)).isFalse();
+        assertThat(dateUtilityService.validateDateOfBirth("20AB1215")).isFalse();
+        assertThat(dateUtilityService.validateDateOfBirth("20231232")).isFalse();
     }
 
-    /**
-     * Test day validation matching COBOL EDIT-DAY logic.
-     * Validates days 1-31 with proper month-specific validation.
-     * 
-     * @param day Day value to validate
-     * @param expectedValid Expected validation result
-     */
-    @ParameterizedTest
-    @CsvSource({
-        "1, true",   // First day
-        "15, true",  // Mid month
-        "28, true",  // Safe for all months
-        "31, true",  // Last day (needs month context)
-    })
-    @DisplayName("Should validate days 1-31")
-    public void testValidateDay_ValidDays(int day, boolean expectedValid) {
-        // Arrange
-        when(dateUtilityService.validateDay(day)).thenReturn(expectedValid);
-        
-        // Act
-        boolean result = dateUtilityService.validateDay(day);
-        
-        // Assert
-        assertThat(result).isEqualTo(expectedValid);
-        verify(dateUtilityService).validateDay(day);
+    @Test
+    @DisplayName("validateDateOfBirth should reject future dates")
+    public void testValidateDateOfBirth_FutureDates_ShouldReturnFalse() {
+        // Test dates that are definitely in the future
+        LocalDate futureDate = LocalDate.now().plusYears(1);
+        String futureDateString = dateUtilityService.formatDate(futureDate);
+        assertThat(dateUtilityService.validateDateOfBirth(futureDateString)).isFalse();
     }
 
-    /**
-     * Test day validation with invalid days.
-     * 
-     * @param day Invalid day value
-     * @param expectedValid Expected validation result (false)
-     */
-    @ParameterizedTest
-    @CsvSource({
-        "0, false",   // Invalid day 0
-        "32, false",  // Invalid day 32
-        "-1, false",  // Negative day
-        "100, false", // Too large day
-    })
-    @DisplayName("Should reject invalid days")
-    public void testValidateDay_InvalidDays(int day, boolean expectedValid) {
-        // Arrange
-        when(dateUtilityService.validateDay(day)).thenReturn(expectedValid);
-        
-        // Act
-        boolean result = dateUtilityService.validateDay(day);
-        
-        // Assert
-        assertThat(result).isEqualTo(expectedValid);
-        verify(dateUtilityService).validateDay(day);
+    // ========================================
+    // Lillian Date Conversion Tests
+    // ========================================
+
+    @Test
+    @DisplayName("toLillianDate should convert valid dates correctly")
+    public void testToLillianDate_ValidDates_ShouldReturnCorrectValues() {
+        // Test valid dates within COBOL accepted range (1900-2099)
+        Long lillianDate = dateUtilityService.toLillianDate("19000101");
+        assertThat(lillianDate).isNotNull();
+        assertThat(lillianDate).isGreaterThan(0L); // Should be positive since after 1601-01-01
+
+        lillianDate = dateUtilityService.toLillianDate("20231215");
+        assertThat(lillianDate).isNotNull();
+        assertThat(lillianDate).isGreaterThan(0L);
     }
 
-    /**
-     * Test date of birth validation preventing future dates.
-     * Replicates COBOL EDIT-DATE-OF-BIRTH logic checking against current date.
-     * 
-     * @param dateOfBirth Date of birth string
-     * @param expectedValid Expected validation result
-     */
-    @ParameterizedTest
-    @CsvSource({
-        "19850630, true",   // Valid past date
-        "20000101, true",   // Valid Y2K boundary  
-        "19991231, true",   // Valid last century
-        "20231201, false",  // Future date (current month)
-        "20241215, false",  // Future date (next year)
-        "20501231, false",  // Far future date
-    })
-    @DisplayName("Should validate date of birth is not in future")
-    public void testValidateDateOfBirth_FutureDates(String dateOfBirth, boolean expectedValid) {
-        // Arrange
-        when(dateUtilityService.validateDateOfBirth(dateOfBirth)).thenReturn(expectedValid);
+    @Test
+    @DisplayName("toLillianDate should handle invalid dates")
+    public void testToLillianDate_InvalidDates_ShouldReturnNull() {
+        assertThat(dateUtilityService.toLillianDate("")).isNull();
+        assertThat(dateUtilityService.toLillianDate(null)).isNull();
+        assertThat(dateUtilityService.toLillianDate("invalid")).isNull();
+        assertThat(dateUtilityService.toLillianDate("20231232")).isNull();
         
-        // Act
-        boolean result = dateUtilityService.validateDateOfBirth(dateOfBirth);
-        
-        // Assert
-        assertThat(result).isEqualTo(expectedValid);
-        verify(dateUtilityService).validateDateOfBirth(dateOfBirth);
+        // Dates outside COBOL valid range (1900-2099) should return null
+        assertThat(dateUtilityService.toLillianDate("16010101")).isNull(); // Lillian epoch but outside COBOL range
+        assertThat(dateUtilityService.toLillianDate("18991231")).isNull(); // Before COBOL valid range
+        assertThat(dateUtilityService.toLillianDate("21000101")).isNull(); // After COBOL valid range
     }
 
-    /**
-     * Test leap year calculation matching COBOL logic.
-     * Replicates COBOL leap year division algorithm using 4 and 400.
-     * 
-     * @param year Year to test for leap year
-     * @param expectedLeap Expected leap year result
-     */
-    @ParameterizedTest
-    @CsvSource({
-        "2000, true",  // Leap year (divisible by 400)
-        "2004, true",  // Leap year (divisible by 4)
-        "2020, true",  // Leap year (divisible by 4)
-        "2024, true",  // Leap year (divisible by 4)
-        "1900, false", // Not leap year (divisible by 100 but not 400)
-        "2100, false", // Not leap year (divisible by 100 but not 400)
-        "2001, false", // Not leap year (not divisible by 4)
-        "2023, false", // Not leap year (not divisible by 4)
-    })
-    @DisplayName("Should correctly identify leap years")
-    public void testIsLeapYear_LeapYears(int year, boolean expectedLeap) {
-        // Arrange
-        when(dateUtilityService.isLeapYear(year)).thenReturn(expectedLeap);
+    @Test
+    @DisplayName("fromLillianDate should convert back to correct date format")
+    public void testFromLillianDate_ValidValues_ShouldReturnCorrectDates() {
+        // Test round-trip conversion with valid COBOL date range
+        String originalDate = "20231215";
+        Long lillianDate = dateUtilityService.toLillianDate(originalDate);
+        assertThat(lillianDate).isNotNull();
         
-        // Act
-        boolean result = dateUtilityService.isLeapYear(year);
+        String convertedBack = dateUtilityService.fromLillianDate(lillianDate);
+        assertThat(convertedBack).isEqualTo(originalDate);
         
-        // Assert
-        assertThat(result).isEqualTo(expectedLeap);
-        verify(dateUtilityService).isLeapYear(year);
+        // Test another valid date
+        originalDate = "19500615";
+        lillianDate = dateUtilityService.toLillianDate(originalDate);
+        assertThat(lillianDate).isNotNull();
+        
+        convertedBack = dateUtilityService.fromLillianDate(lillianDate);
+        assertThat(convertedBack).isEqualTo(originalDate);
     }
 
-    /**
-     * Test non-leap years to ensure correct leap year calculation.
-     * 
-     * @param year Non-leap year to test
-     * @param expectedLeap Expected result (false)
-     */
-    @ParameterizedTest
-    @CsvSource({
-        "1999, false", // Regular non-leap year
-        "2001, false", // Regular non-leap year
-        "2002, false", // Regular non-leap year
-        "2003, false", // Regular non-leap year
-    })
-    @DisplayName("Should correctly identify non-leap years") 
-    public void testIsLeapYear_NonLeapYears(int year, boolean expectedLeap) {
-        // Arrange
-        when(dateUtilityService.isLeapYear(year)).thenReturn(expectedLeap);
-        
-        // Act
-        boolean result = dateUtilityService.isLeapYear(year);
-        
-        // Assert
-        assertThat(result).isEqualTo(expectedLeap);
-        verify(dateUtilityService).isLeapYear(year);
+    @Test
+    @DisplayName("fromLillianDate should handle null input")
+    public void testFromLillianDate_NullInput_ShouldReturnNull() {
+        assertThat(dateUtilityService.fromLillianDate(null)).isNull();
     }
 
-    /**
-     * Test Lillian date conversion matching CEEDAYS API functionality.
-     * Validates conversion from CCYYMMDD to Lillian date format.
-     * 
-     * @param inputDate Input date string in CCYYMMDD format
-     * @param expectedLillian Expected Lillian date value
-     */
-    @ParameterizedTest
-    @CsvSource({
-        "20000101, 730120", // Y2K boundary
-        "19991231, 730119", // Last day of 1999
-        "20231215, 738857", // Sample current date
-        "20240229, 738933", // Leap year day
-    })
-    @DisplayName("Should convert dates to Lillian format")
-    public void testToLillianDate_ValidDates(String inputDate, long expectedLillian) {
-        // Arrange
-        when(dateUtilityService.toLillianDate(inputDate)).thenReturn(expectedLillian);
-        
-        // Act
-        long result = dateUtilityService.toLillianDate(inputDate);
-        
-        // Assert
-        assertThat(result).isEqualTo(expectedLillian);
-        verify(dateUtilityService).toLillianDate(inputDate);
+    // ========================================
+    // Date Parsing Tests
+    // ========================================
+
+    @Test
+    @DisplayName("parseDate should handle multiple date formats")
+    public void testParseDate_MultipleFormats_ShouldParseCorrectly() {
+        // CCYYMMDD format
+        LocalDate date = dateUtilityService.parseDate("20231215");
+        assertThat(date).isEqualTo(LocalDate.of(2023, 12, 15));
+
+        // ISO format
+        date = dateUtilityService.parseDate("2023-12-15");
+        assertThat(date).isEqualTo(LocalDate.of(2023, 12, 15));
+
+        // US format
+        date = dateUtilityService.parseDate("12/15/2023");
+        assertThat(date).isEqualTo(LocalDate.of(2023, 12, 15));
     }
 
-    /**
-     * Test conversion from Lillian date back to CCYYMMDD format.
-     * Validates round-trip conversion accuracy.
-     * 
-     * @param lillianDate Lillian date value
-     * @param expectedDate Expected CCYYMMDD date string
-     */
-    @ParameterizedTest
-    @CsvSource({
-        "730120, 20000101", // Y2K boundary
-        "730119, 19991231", // Last day of 1999
-        "738857, 20231215", // Sample current date
-        "738933, 20240229", // Leap year day
-    })
-    @DisplayName("Should convert Lillian dates to CCYYMMDD format")
-    public void testFromLillianDate_ValidLillianDates(long lillianDate, String expectedDate) {
-        // Arrange
-        when(dateUtilityService.fromLillianDate(lillianDate)).thenReturn(expectedDate);
-        
-        // Act
-        String result = dateUtilityService.fromLillianDate(lillianDate);
-        
-        // Assert
-        assertThat(result).isEqualTo(expectedDate);
-        verify(dateUtilityService).fromLillianDate(lillianDate);
+    @Test
+    @DisplayName("parseDate should handle invalid formats")
+    public void testParseDate_InvalidFormats_ShouldReturnNull() {
+        assertThat(dateUtilityService.parseDate("")).isNull();
+        assertThat(dateUtilityService.parseDate(null)).isNull();
+        assertThat(dateUtilityService.parseDate("invalid")).isNull();
+        assertThat(dateUtilityService.parseDate("32/15/2023")).isNull();
     }
 
-    /**
-     * Test date parsing with various valid formats.
-     * 
-     * @param dateString Date string to parse
-     * @param expectedDate Expected LocalDate result
-     */
-    @ParameterizedTest
-    @CsvSource({
-        "20231215, 2023-12-15", // YYYYMMDD format
-        "2023-12-15, 2023-12-15", // ISO format
-        "12/15/2023, 2023-12-15", // US format
-    })
-    @DisplayName("Should parse dates in valid formats")
-    public void testParseDate_ValidFormats(String dateString, String expectedDate) {
-        // Arrange
-        LocalDate expected = LocalDate.parse(expectedDate);
-        when(dateUtilityService.parseDate(dateString)).thenReturn(expected);
-        
-        // Act
-        LocalDate result = dateUtilityService.parseDate(dateString);
-        
-        // Assert
-        assertThat(result).isEqualTo(expected);
-        verify(dateUtilityService).parseDate(dateString);
+    // ========================================
+    // Date Formatting Tests
+    // ========================================
+
+    @Test
+    @DisplayName("formatDate should format LocalDate to CCYYMMDD")
+    public void testFormatDate_ValidDate_ShouldReturnCorrectFormat() {
+        LocalDate date = LocalDate.of(2023, 12, 15);
+        String formatted = dateUtilityService.formatDate(date);
+        assertThat(formatted).isEqualTo("20231215");
+
+        date = LocalDate.of(2000, 1, 1);
+        formatted = dateUtilityService.formatDate(date);
+        assertThat(formatted).isEqualTo("20000101");
     }
 
-    /**
-     * Test date formatting to various output formats.
-     * 
-     * @param inputDate Input date to format
-     * @param expectedFormatted Expected formatted result
-     */
-    @ParameterizedTest
-    @CsvSource({
-        "2023-12-15, 20231215", // To YYYYMMDD
-        "2024-02-29, 20240229", // Leap year formatting
-        "2000-01-01, 20000101", // Y2K boundary
-    })
-    @DisplayName("Should format dates to CCYYMMDD")
-    public void testFormatDate_ValidDates(String inputDate, String expectedFormatted) {
-        // Arrange
-        LocalDate date = LocalDate.parse(inputDate);
-        when(dateUtilityService.formatDate(date)).thenReturn(expectedFormatted);
-        
-        // Act
-        String result = dateUtilityService.formatDate(date);
-        
-        // Assert
-        assertThat(result).isEqualTo(expectedFormatted);
-        verify(dateUtilityService).formatDate(date);
+    @Test
+    @DisplayName("formatDate should handle null input")
+    public void testFormatDate_NullInput_ShouldReturnNull() {
+        assertThat(dateUtilityService.formatDate(null)).isNull();
     }
 
-    /**
-     * Test business day calculation between two dates.
-     * Validates business logic for transaction processing.
-     */
-    @DisplayName("Should calculate business days between dates")
-    public void testCalculateBusinessDays() {
-        // Arrange
-        LocalDate startDate = LocalDate.of(2023, 12, 15); // Friday
-        LocalDate endDate = LocalDate.of(2023, 12, 22);   // Friday (next week)
-        int expectedBusinessDays = 5; // Mon, Tue, Wed, Thu, Fri
-        
-        when(dateUtilityService.calculateBusinessDays(startDate, endDate))
-            .thenReturn(expectedBusinessDays);
-        
-        // Act
-        int result = dateUtilityService.calculateBusinessDays(startDate, endDate);
-        
-        // Assert
-        assertThat(result).isEqualTo(expectedBusinessDays);
-        verify(dateUtilityService).calculateBusinessDays(startDate, endDate);
+    @Test
+    @DisplayName("formatCCYYMMDD should be equivalent to formatDate")
+    public void testFormatCCYYMMDD_ShouldMatchFormatDate() {
+        LocalDate date = LocalDate.of(2023, 12, 15);
+        assertThat(dateUtilityService.formatCCYYMMDD(date))
+            .isEqualTo(dateUtilityService.formatDate(date));
     }
 
-    /**
-     * Test adding business days to a date.
-     * Validates weekend and holiday skipping.
-     */
-    @DisplayName("Should add business days skipping weekends")
-    public void testAddBusinessDays() {
-        // Arrange
-        LocalDate startDate = LocalDate.of(2023, 12, 15); // Friday
-        int businessDaysToAdd = 3;
-        LocalDate expectedDate = LocalDate.of(2023, 12, 20); // Wednesday (skip weekend)
-        
-        when(dateUtilityService.addBusinessDays(startDate, businessDaysToAdd))
-            .thenReturn(expectedDate);
-        
-        // Act
-        LocalDate result = dateUtilityService.addBusinessDays(startDate, businessDaysToAdd);
-        
-        // Assert
-        assertThat(result).isEqualTo(expectedDate);
-        verify(dateUtilityService).addBusinessDays(startDate, businessDaysToAdd);
+    // ========================================
+    // Business Day Calculation Tests
+    // ========================================
+
+    @Test
+    @DisplayName("isBusinessDay should correctly identify weekdays")
+    public void testIsBusinessDay_Weekdays_ShouldReturnTrue() {
+        // Monday to Friday should be business days
+        LocalDate monday = LocalDate.of(2023, 12, 11);    // Monday
+        LocalDate tuesday = LocalDate.of(2023, 12, 12);   // Tuesday
+        LocalDate wednesday = LocalDate.of(2023, 12, 13); // Wednesday
+        LocalDate thursday = LocalDate.of(2023, 12, 14);  // Thursday
+        LocalDate friday = LocalDate.of(2023, 12, 15);    // Friday
+
+        assertThat(dateUtilityService.isBusinessDay(monday)).isTrue();
+        assertThat(dateUtilityService.isBusinessDay(tuesday)).isTrue();
+        assertThat(dateUtilityService.isBusinessDay(wednesday)).isTrue();
+        assertThat(dateUtilityService.isBusinessDay(thursday)).isTrue();
+        assertThat(dateUtilityService.isBusinessDay(friday)).isTrue();
     }
 
-    /**
-     * Test subtracting business days from a date.
-     * Validates backward business day calculation.
-     */
-    @DisplayName("Should subtract business days skipping weekends")
-    public void testSubtractBusinessDays() {
-        // Arrange
-        LocalDate startDate = LocalDate.of(2023, 12, 18); // Monday
-        int businessDaysToSubtract = 3;
-        LocalDate expectedDate = LocalDate.of(2023, 12, 13); // Wednesday (skip weekend)
-        
-        when(dateUtilityService.subtractBusinessDays(startDate, businessDaysToSubtract))
-            .thenReturn(expectedDate);
-        
-        // Act
-        LocalDate result = dateUtilityService.subtractBusinessDays(startDate, businessDaysToSubtract);
-        
-        // Assert
-        assertThat(result).isEqualTo(expectedDate);
-        verify(dateUtilityService).subtractBusinessDays(startDate, businessDaysToSubtract);
-    }
-
-    /**
-     * Test business day identification.
-     * Monday through Friday should be business days.
-     */
-    @DisplayName("Should identify business days correctly")
-    public void testIsBusinessDay() {
-        // Arrange - Test various days of week
-        LocalDate monday = LocalDate.of(2023, 12, 18);    // Monday
-        LocalDate friday = LocalDate.of(2023, 12, 15);    // Friday  
+    @Test
+    @DisplayName("isBusinessDay should correctly identify weekends")
+    public void testIsBusinessDay_Weekends_ShouldReturnFalse() {
         LocalDate saturday = LocalDate.of(2023, 12, 16);  // Saturday
         LocalDate sunday = LocalDate.of(2023, 12, 17);    // Sunday
-        
-        when(dateUtilityService.isBusinessDay(monday)).thenReturn(true);
-        when(dateUtilityService.isBusinessDay(friday)).thenReturn(true);
-        when(dateUtilityService.isBusinessDay(saturday)).thenReturn(false);
-        when(dateUtilityService.isBusinessDay(sunday)).thenReturn(false);
-        
-        // Act & Assert
-        assertThat(dateUtilityService.isBusinessDay(monday)).isTrue();
-        assertThat(dateUtilityService.isBusinessDay(friday)).isTrue();
+
         assertThat(dateUtilityService.isBusinessDay(saturday)).isFalse();
         assertThat(dateUtilityService.isBusinessDay(sunday)).isFalse();
-        
-        verify(dateUtilityService).isBusinessDay(monday);
-        verify(dateUtilityService).isBusinessDay(friday);
-        verify(dateUtilityService).isBusinessDay(saturday);
-        verify(dateUtilityService).isBusinessDay(sunday);
     }
 
-    /**
-     * Test weekend identification.
-     * Saturday and Sunday should be weekends.
-     */
-    @DisplayName("Should identify weekends correctly")
-    public void testIsWeekend() {
-        // Arrange - Test various days of week
-        LocalDate friday = LocalDate.of(2023, 12, 15);    // Friday
-        LocalDate saturday = LocalDate.of(2023, 12, 16);  // Saturday
-        LocalDate sunday = LocalDate.of(2023, 12, 17);    // Sunday
-        LocalDate monday = LocalDate.of(2023, 12, 18);    // Monday
-        
-        when(dateUtilityService.isWeekend(friday)).thenReturn(false);
-        when(dateUtilityService.isWeekend(saturday)).thenReturn(true);
-        when(dateUtilityService.isWeekend(sunday)).thenReturn(true);
-        when(dateUtilityService.isWeekend(monday)).thenReturn(false);
-        
-        // Act & Assert
-        assertThat(dateUtilityService.isWeekend(friday)).isFalse();
-        assertThat(dateUtilityService.isWeekend(saturday)).isTrue();
-        assertThat(dateUtilityService.isWeekend(sunday)).isTrue();
-        assertThat(dateUtilityService.isWeekend(monday)).isFalse();
-        
-        verify(dateUtilityService).isWeekend(friday);
-        verify(dateUtilityService).isWeekend(saturday);
-        verify(dateUtilityService).isWeekend(sunday);
-        verify(dateUtilityService).isWeekend(monday);
-    }
-
-    /**
-     * Test getting next business day.
-     * Should skip weekends and return next weekday.
-     */
-    @DisplayName("Should get next business day")
-    public void testGetNextBusinessDay() {
-        // Arrange
-        LocalDate friday = LocalDate.of(2023, 12, 15);     // Friday
-        LocalDate nextMonday = LocalDate.of(2023, 12, 18); // Monday
-        LocalDate thursday = LocalDate.of(2023, 12, 14);   // Thursday  
-        LocalDate nextFriday = LocalDate.of(2023, 12, 15); // Friday
-        
-        when(dateUtilityService.getNextBusinessDay(friday)).thenReturn(nextMonday);
-        when(dateUtilityService.getNextBusinessDay(thursday)).thenReturn(nextFriday);
-        
-        // Act & Assert
-        assertThat(dateUtilityService.getNextBusinessDay(friday)).isEqualTo(nextMonday);
-        assertThat(dateUtilityService.getNextBusinessDay(thursday)).isEqualTo(nextFriday);
-        
-        verify(dateUtilityService).getNextBusinessDay(friday);
-        verify(dateUtilityService).getNextBusinessDay(thursday);
-    }
-
-    /**
-     * Test getting previous business day.
-     * Should skip weekends and return previous weekday.
-     */
-    @DisplayName("Should get previous business day")
-    public void testGetPreviousBusinessDay() {
-        // Arrange
-        LocalDate monday = LocalDate.of(2023, 12, 18);      // Monday
-        LocalDate previousFriday = LocalDate.of(2023, 12, 15); // Friday
-        LocalDate tuesday = LocalDate.of(2023, 12, 19);     // Tuesday
-        LocalDate previousMonday = LocalDate.of(2023, 12, 18); // Monday
-        
-        when(dateUtilityService.getPreviousBusinessDay(monday)).thenReturn(previousFriday);
-        when(dateUtilityService.getPreviousBusinessDay(tuesday)).thenReturn(previousMonday);
-        
-        // Act & Assert
-        assertThat(dateUtilityService.getPreviousBusinessDay(monday)).isEqualTo(previousFriday);
-        assertThat(dateUtilityService.getPreviousBusinessDay(tuesday)).isEqualTo(previousMonday);
-        
-        verify(dateUtilityService).getPreviousBusinessDay(monday);
-        verify(dateUtilityService).getPreviousBusinessDay(tuesday);
-    }
-
-    /**
-     * Test comprehensive date validation using all utilities.
-     * Integrates DateUtilityService with DateConversionUtil and ValidationUtil.
-     */
     @Test
-    @DisplayName("Should validate dates using integrated utilities")
-    public void testComprehensiveDateValidation() {
-        // Arrange
-        String testDate = "20231215";
-        LocalDate parsedDate = LocalDate.of(2023, 12, 15);
-        
-        when(dateUtilityService.isValidDate(testDate)).thenReturn(true);
-        when(dateUtilityService.getCurrentDate()).thenReturn(parsedDate);
-        when(dateUtilityService.getDateDifference(any(LocalDate.class), any(LocalDate.class)))
-            .thenReturn(30L);
-        when(dateUtilityService.formatCCYYMMDD(parsedDate)).thenReturn(testDate);
-        
-        // Use ValidationUtil methods as specified in imports
-        when(validationUtil.validateFieldLength(testDate, Constants.DATE_FORMAT_LENGTH))
-            .thenReturn(true);
-        when(validationUtil.validateNumericField(testDate)).thenReturn(true);
-        when(validationUtil.validateRequiredField(testDate)).thenReturn(true);
-        
-        // Use DateConversionUtil methods as specified in imports  
-        when(dateConversionUtil.validateDate(testDate)).thenReturn(true);
-        when(dateConversionUtil.convertDateFormat(testDate, VALID_DATE_FORMAT))
-            .thenReturn(testDate);
-        when(dateConversionUtil.formatCCYYMMDD(parsedDate)).thenReturn(testDate);
-        when(dateConversionUtil.parseDate(testDate)).thenReturn(parsedDate);
-        when(dateConversionUtil.addDays(parsedDate, 5))
-            .thenReturn(parsedDate.plusDays(5));
-        
-        // Act
-        boolean isValid = dateUtilityService.isValidDate(testDate);
+    @DisplayName("isBusinessDay should handle null input")
+    public void testIsBusinessDay_NullInput_ShouldReturnFalse() {
+        assertThat(dateUtilityService.isBusinessDay(null)).isFalse();
+    }
+
+    @Test
+    @DisplayName("isWeekend should be opposite of isBusinessDay")
+    public void testIsWeekend_ShouldBeOppositeOfIsBusinessDay() {
+        LocalDate weekday = LocalDate.of(2023, 12, 15);   // Friday
+        LocalDate weekend = LocalDate.of(2023, 12, 16);   // Saturday
+
+        assertThat(dateUtilityService.isWeekend(weekday))
+            .isEqualTo(!dateUtilityService.isBusinessDay(weekday));
+        assertThat(dateUtilityService.isWeekend(weekend))
+            .isEqualTo(!dateUtilityService.isBusinessDay(weekend));
+    }
+
+    @Test
+    @DisplayName("calculateBusinessDays should count only weekdays")
+    public void testCalculateBusinessDays_ShouldCountOnlyWeekdays() {
+        // Monday to Friday (5 business days)
+        LocalDate monday = LocalDate.of(2023, 12, 11);
+        LocalDate friday = LocalDate.of(2023, 12, 15);
+
+        int businessDays = dateUtilityService.calculateBusinessDays(monday, friday);
+        assertThat(businessDays).isEqualTo(4); // Tue, Wed, Thu, Fri
+
+        // Spanning a weekend
+        LocalDate friday2 = LocalDate.of(2023, 12, 15);
+        LocalDate monday2 = LocalDate.of(2023, 12, 18);
+
+        businessDays = dateUtilityService.calculateBusinessDays(friday2, monday2);
+        assertThat(businessDays).isEqualTo(1); // Only Monday
+    }
+
+    @Test
+    @DisplayName("calculateBusinessDays should handle same day")
+    public void testCalculateBusinessDays_SameDay_ShouldReturnZero() {
+        LocalDate date = LocalDate.of(2023, 12, 15);
+        int businessDays = dateUtilityService.calculateBusinessDays(date, date);
+        assertThat(businessDays).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("calculateBusinessDays should handle reversed dates")
+    public void testCalculateBusinessDays_ReversedDates_ShouldReturnZero() {
+        LocalDate start = LocalDate.of(2023, 12, 15);
+        LocalDate end = LocalDate.of(2023, 12, 11);
+        int businessDays = dateUtilityService.calculateBusinessDays(start, end);
+        assertThat(businessDays).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("calculateBusinessDays should handle null inputs")
+    public void testCalculateBusinessDays_NullInputs_ShouldReturnZero() {
+        LocalDate date = LocalDate.of(2023, 12, 15);
+        assertThat(dateUtilityService.calculateBusinessDays(null, date)).isEqualTo(0);
+        assertThat(dateUtilityService.calculateBusinessDays(date, null)).isEqualTo(0);
+        assertThat(dateUtilityService.calculateBusinessDays(null, null)).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("addBusinessDays should skip weekends")
+    public void testAddBusinessDays_ShouldSkipWeekends() {
+        LocalDate friday = LocalDate.of(2023, 12, 15);  // Friday
+        LocalDate result = dateUtilityService.addBusinessDays(friday, 1);
+        LocalDate expectedMonday = LocalDate.of(2023, 12, 18);  // Next Monday
+        assertThat(result).isEqualTo(expectedMonday);
+
+        // Adding 5 business days from Monday should land on next Monday
+        LocalDate monday = LocalDate.of(2023, 12, 11);
+        result = dateUtilityService.addBusinessDays(monday, 5);
+        LocalDate expectedNextMonday = LocalDate.of(2023, 12, 18);
+        assertThat(result).isEqualTo(expectedNextMonday);
+    }
+
+    @Test
+    @DisplayName("addBusinessDays should handle zero and negative inputs")
+    public void testAddBusinessDays_ZeroAndNegativeInputs_ShouldReturnOriginal() {
+        LocalDate date = LocalDate.of(2023, 12, 15);
+        assertThat(dateUtilityService.addBusinessDays(date, 0)).isEqualTo(date);
+        assertThat(dateUtilityService.addBusinessDays(date, -1)).isEqualTo(date);
+        assertThat(dateUtilityService.addBusinessDays(null, 5)).isNull();
+    }
+
+    @Test
+    @DisplayName("subtractBusinessDays should skip weekends")
+    public void testSubtractBusinessDays_ShouldSkipWeekends() {
+        LocalDate monday = LocalDate.of(2023, 12, 18);  // Monday
+        LocalDate result = dateUtilityService.subtractBusinessDays(monday, 1);
+        LocalDate expectedFriday = LocalDate.of(2023, 12, 15);  // Previous Friday
+        assertThat(result).isEqualTo(expectedFriday);
+    }
+
+    @Test
+    @DisplayName("subtractBusinessDays should handle zero and negative inputs")
+    public void testSubtractBusinessDays_ZeroAndNegativeInputs_ShouldReturnOriginal() {
+        LocalDate date = LocalDate.of(2023, 12, 15);
+        assertThat(dateUtilityService.subtractBusinessDays(date, 0)).isEqualTo(date);
+        assertThat(dateUtilityService.subtractBusinessDays(date, -1)).isEqualTo(date);
+        assertThat(dateUtilityService.subtractBusinessDays(null, 5)).isNull();
+    }
+
+    @Test
+    @DisplayName("getNextBusinessDay should skip weekends")
+    public void testGetNextBusinessDay_ShouldSkipWeekends() {
+        LocalDate friday = LocalDate.of(2023, 12, 15);  // Friday
+        LocalDate nextBusinessDay = dateUtilityService.getNextBusinessDay(friday);
+        LocalDate expectedMonday = LocalDate.of(2023, 12, 18);  // Next Monday
+        assertThat(nextBusinessDay).isEqualTo(expectedMonday);
+
+        LocalDate thursday = LocalDate.of(2023, 12, 14);  // Thursday
+        nextBusinessDay = dateUtilityService.getNextBusinessDay(thursday);
+        LocalDate expectedFriday = LocalDate.of(2023, 12, 15);  // Next Friday
+        assertThat(nextBusinessDay).isEqualTo(expectedFriday);
+    }
+
+    @Test
+    @DisplayName("getNextBusinessDay should handle null input")
+    public void testGetNextBusinessDay_NullInput_ShouldReturnNull() {
+        assertThat(dateUtilityService.getNextBusinessDay(null)).isNull();
+    }
+
+    @Test
+    @DisplayName("getPreviousBusinessDay should skip weekends")
+    public void testGetPreviousBusinessDay_ShouldSkipWeekends() {
+        LocalDate monday = LocalDate.of(2023, 12, 18);  // Monday
+        LocalDate previousBusinessDay = dateUtilityService.getPreviousBusinessDay(monday);
+        LocalDate expectedFriday = LocalDate.of(2023, 12, 15);  // Previous Friday
+        assertThat(previousBusinessDay).isEqualTo(expectedFriday);
+
+        LocalDate tuesday = LocalDate.of(2023, 12, 19);  // Tuesday
+        previousBusinessDay = dateUtilityService.getPreviousBusinessDay(tuesday);
+        LocalDate expectedMonday = LocalDate.of(2023, 12, 18);  // Previous Monday
+        assertThat(previousBusinessDay).isEqualTo(expectedMonday);
+    }
+
+    @Test
+    @DisplayName("getPreviousBusinessDay should handle null input")
+    public void testGetPreviousBusinessDay_NullInput_ShouldReturnNull() {
+        assertThat(dateUtilityService.getPreviousBusinessDay(null)).isNull();
+    }
+
+    // ========================================
+    // Utility Method Tests
+    // ========================================
+
+    @Test
+    @DisplayName("isValidDate should delegate to validateCCYYMMDD")
+    public void testIsValidDate_ShouldDelegateToValidateCCYYMMDD() {
+        assertThat(dateUtilityService.isValidDate("20231215"))
+            .isEqualTo(dateUtilityService.validateCCYYMMDD("20231215"));
+        assertThat(dateUtilityService.isValidDate("invalid"))
+            .isEqualTo(dateUtilityService.validateCCYYMMDD("invalid"));
+    }
+
+    @Test
+    @DisplayName("getCurrentDate should return current date")
+    public void testGetCurrentDate_ShouldReturnCurrentDate() {
         LocalDate currentDate = dateUtilityService.getCurrentDate();
-        long dateDifference = dateUtilityService.getDateDifference(parsedDate, currentDate);
-        String formattedDate = dateUtilityService.formatCCYYMMDD(parsedDate);
+        assertThat(currentDate).isNotNull();
+        assertThat(currentDate).isEqualTo(LocalDate.now());
+    }
+
+    @Test
+    @DisplayName("getDateDifference should calculate days between dates")
+    public void testGetDateDifference_ShouldCalculateDaysBetween() {
+        LocalDate startDate = LocalDate.of(2023, 12, 10);
+        LocalDate endDate = LocalDate.of(2023, 12, 15);
         
-        boolean fieldLengthValid = validationUtil.validateFieldLength(testDate, Constants.DATE_FORMAT_LENGTH);
-        boolean numericValid = validationUtil.validateNumericField(testDate);
-        boolean requiredValid = validationUtil.validateRequiredField(testDate);
+        Long difference = dateUtilityService.getDateDifference(startDate, endDate);
+        assertThat(difference).isEqualTo(5L);
+
+        // Reverse order should give negative difference
+        difference = dateUtilityService.getDateDifference(endDate, startDate);
+        assertThat(difference).isEqualTo(-5L);
+    }
+
+    @Test
+    @DisplayName("getDateDifference should handle null inputs")
+    public void testGetDateDifference_NullInputs_ShouldReturnNull() {
+        LocalDate date = LocalDate.of(2023, 12, 15);
+        assertThat(dateUtilityService.getDateDifference(null, date)).isNull();
+        assertThat(dateUtilityService.getDateDifference(date, null)).isNull();
+        assertThat(dateUtilityService.getDateDifference(null, null)).isNull();
+    }
+
+    // ========================================
+    // Edge Case and Boundary Tests
+    // ========================================
+
+    @ParameterizedTest
+    @DisplayName("validateCCYYMMDD should handle boundary years correctly")
+    @CsvSource({
+        "19000101, true",   // First valid year
+        "20991231, true",   // Last valid year
+        "18991231, false",  // Before valid range
+        "21000101, false"   // After valid range
+    })
+    public void testValidateCCYYMMDD_BoundaryYears(String date, boolean expected) {
+        assertThat(dateUtilityService.validateCCYYMMDD(date)).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @DisplayName("validateCCYYMMDD should handle month boundaries correctly")
+    @CsvSource({
+        "20230101, true",   // January 1st
+        "20231231, true",   // December 31st
+        "20230001, false",  // Invalid month 00
+        "20231301, false"   // Invalid month 13
+    })
+    public void testValidateCCYYMMDD_BoundaryMonths(String date, boolean expected) {
+        assertThat(dateUtilityService.validateCCYYMMDD(date)).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @DisplayName("validateCCYYMMDD should handle day boundaries correctly")
+    @CsvSource({
+        "20230131, true",   // January 31st (valid)
+        "20230228, true",   // February 28th non-leap year
+        "20200229, true",   // February 29th leap year
+        "20230229, false",  // February 29th non-leap year
+        "20230430, true",   // April 30th (valid)
+        "20230431, false",  // April 31st (invalid)
+        "20230631, false"   // June 31st (invalid)
+    })
+    public void testValidateCCYYMMDD_BoundaryDays(String date, boolean expected) {
+        assertThat(dateUtilityService.validateCCYYMMDD(date)).isEqualTo(expected);
+    }
+
+    @Test
+    @DisplayName("Comprehensive integration test for date processing workflow")
+    public void testDateProcessingWorkflow_IntegrationTest() {
+        // Test complete workflow: validation -> parsing -> formatting -> business day calculations
+        String testDate = "20231215"; // Friday
         
-        boolean dateValid = dateConversionUtil.validateDate(testDate);
-        String convertedDate = dateConversionUtil.convertDateFormat(testDate, VALID_DATE_FORMAT);
-        String ccyymmddFormat = dateConversionUtil.formatCCYYMMDD(parsedDate);
-        LocalDate parsed = dateConversionUtil.parseDate(testDate);
-        LocalDate futureDate = dateConversionUtil.addDays(parsedDate, 5);
+        // Step 1: Validate the date
+        assertThat(dateUtilityService.validateCCYYMMDD(testDate)).isTrue();
         
-        // Assert
-        assertThat(isValid).isTrue();
-        assertThat(currentDate).isEqualTo(parsedDate);
-        assertThat(dateDifference).isEqualTo(30L);
+        // Step 2: Parse the date
+        LocalDate parsedDate = dateUtilityService.parseDate(testDate);
+        assertThat(parsedDate).isNotNull();
+        assertThat(parsedDate).isEqualTo(LocalDate.of(2023, 12, 15));
+        
+        // Step 3: Format the date back
+        String formattedDate = dateUtilityService.formatDate(parsedDate);
         assertThat(formattedDate).isEqualTo(testDate);
         
-        assertThat(fieldLengthValid).isTrue();
-        assertThat(numericValid).isTrue();
-        assertThat(requiredValid).isTrue();
+        // Step 4: Business day calculations
+        assertThat(dateUtilityService.isBusinessDay(parsedDate)).isTrue();
+        LocalDate nextBusinessDay = dateUtilityService.getNextBusinessDay(parsedDate);
+        assertThat(nextBusinessDay).isEqualTo(LocalDate.of(2023, 12, 18)); // Monday
         
-        assertThat(dateValid).isTrue();
-        assertThat(convertedDate).isEqualTo(testDate);
-        assertThat(ccyymmddFormat).isEqualTo(testDate);
-        assertThat(parsed).isEqualTo(parsedDate);
-        assertThat(futureDate).isEqualTo(parsedDate.plusDays(5));
-        
-        // Verify all method calls
-        verify(dateUtilityService).isValidDate(testDate);
-        verify(dateUtilityService).getCurrentDate();
-        verify(dateUtilityService).getDateDifference(parsedDate, currentDate);
-        verify(dateUtilityService).formatCCYYMMDD(parsedDate);
-        
-        verify(validationUtil).validateFieldLength(testDate, Constants.DATE_FORMAT_LENGTH);
-        verify(validationUtil).validateNumericField(testDate);
-        verify(validationUtil).validateRequiredField(testDate);
-        
-        verify(dateConversionUtil).validateDate(testDate);
-        verify(dateConversionUtil).convertDateFormat(testDate, VALID_DATE_FORMAT);
-        verify(dateConversionUtil).formatCCYYMMDD(parsedDate);
-        verify(dateConversionUtil).parseDate(testDate);
-        verify(dateConversionUtil).addDays(parsedDate, 5);
-    }
-
-    /**
-     * Test date of birth validation using ValidationUtil.
-     * Ensures proper integration with validation utilities.
-     */
-    @Test
-    @DisplayName("Should validate date of birth using ValidationUtil")
-    public void testDateOfBirthValidation() {
-        // Arrange
-        String dateOfBirth = "19850630";
-        
-        // Use TestDataGenerator methods as specified in imports
-        when(testDataGenerator.generateDateOfBirth()).thenReturn(dateOfBirth);
-        when(testDataGenerator.generateCobolDate()).thenReturn("20231215");
-        when(testDataGenerator.generateRandomTransactionDate()).thenReturn("20231201");
-        
-        // Use ValidationUtil date of birth validation
-        when(validationUtil.validateDateOfBirth(dateOfBirth)).thenReturn(true);
-        when(validationUtil.validateFieldLength(dateOfBirth, 8)).thenReturn(true);
-        
-        // Use DateUtilityService validation
-        when(dateUtilityService.validateDateOfBirth(dateOfBirth)).thenReturn(true);
-        
-        // Act
-        String generatedDob = testDataGenerator.generateDateOfBirth();
-        String generatedDate = testDataGenerator.generateCobolDate();
-        String generatedTxnDate = testDataGenerator.generateRandomTransactionDate();
-        
-        boolean dobValid = validationUtil.validateDateOfBirth(dateOfBirth);
-        boolean lengthValid = validationUtil.validateFieldLength(dateOfBirth, 8);
-        boolean serviceValid = dateUtilityService.validateDateOfBirth(dateOfBirth);
-        
-        // Assert
-        assertThat(generatedDob).isEqualTo(dateOfBirth);
-        assertThat(generatedDate).isEqualTo("20231215");
-        assertThat(generatedTxnDate).isEqualTo("20231201");
-        
-        assertThat(dobValid).isTrue();
-        assertThat(lengthValid).isTrue();
-        assertThat(serviceValid).isTrue();
-        
-        // Verify all method calls
-        verify(testDataGenerator).generateDateOfBirth();
-        verify(testDataGenerator).generateCobolDate();
-        verify(testDataGenerator).generateRandomTransactionDate();
-        
-        verify(validationUtil).validateDateOfBirth(dateOfBirth);
-        verify(validationUtil).validateFieldLength(dateOfBirth, 8);
-        
-        verify(dateUtilityService).validateDateOfBirth(dateOfBirth);
-    }
-
-    /**
-     * Test COBOL data type generation and validation.
-     * Uses TestDataGenerator for COBOL-compatible test data.
-     */
-    @Test
-    @DisplayName("Should generate and validate COBOL data types")
-    public void testCobolDataGeneration() {
-        // Arrange
-        BigDecimal testAmount = new BigDecimal("1250.75");
-        BigDecimal comp3Value = new BigDecimal("999.99");
-        String picString = "TEST12345";
-        
-        // Use all TestDataGenerator methods as specified in imports
-        when(testDataGenerator.generateValidTransactionAmount()).thenReturn(testAmount);
-        when(testDataGenerator.generateComp3BigDecimal()).thenReturn(comp3Value);
-        when(testDataGenerator.generatePicString()).thenReturn(picString);
-        
-        // Use Constants for field lengths as specified in imports
-        when(validationUtil.validateFieldLength(picString, Constants.SSN_LENGTH))
-            .thenReturn(false); // PIC string won't match SSN length
-        when(validationUtil.validateFieldLength("1234567890", Constants.PHONE_NUMBER_LENGTH))
-            .thenReturn(true);
-        
-        // Act
-        BigDecimal amount = testDataGenerator.generateValidTransactionAmount();
-        BigDecimal comp3 = testDataGenerator.generateComp3BigDecimal();
-        String pic = testDataGenerator.generatePicString();
-        
-        boolean picLengthValid = validationUtil.validateFieldLength(pic, Constants.SSN_LENGTH);
-        boolean phoneLengthValid = validationUtil.validateFieldLength("1234567890", Constants.PHONE_NUMBER_LENGTH);
-        
-        // Assert
-        assertThat(amount).isEqualTo(testAmount);
-        assertThat(comp3).isEqualTo(comp3Value);
-        assertThat(pic).isEqualTo(picString);
-        
-        assertThat(picLengthValid).isFalse(); // PIC string should not match SSN length
-        assertThat(phoneLengthValid).isTrue(); // Phone number should match expected length
-        
-        // Verify all method calls
-        verify(testDataGenerator).generateValidTransactionAmount();
-        verify(testDataGenerator).generateComp3BigDecimal(); 
-        verify(testDataGenerator).generatePicString();
-        
-        verify(validationUtil).validateFieldLength(pic, Constants.SSN_LENGTH);
-        verify(validationUtil).validateFieldLength("1234567890", Constants.PHONE_NUMBER_LENGTH);
-    }
-
-    /**
-     * Test edge cases and error conditions.
-     * Validates comprehensive error handling matching COBOL behavior.
-     */
-    @Test
-    @DisplayName("Should handle edge cases and error conditions")
-    public void testEdgeCasesAndErrors() {
-        // Arrange
-        String invalidDate = "INVALID1";
-        String blankDate = "        ";
-        String nullDate = null;
-        
-        // Configure service to handle error conditions
-        when(dateUtilityService.validateCCYYMMDD(invalidDate)).thenReturn(false);
-        when(dateUtilityService.validateCCYYMMDD(blankDate)).thenReturn(false);
-        when(dateUtilityService.validateCCYYMMDD(nullDate)).thenReturn(false);
-        
-        // Configure validation utility error handling
-        when(validationUtil.validateRequiredField(blankDate)).thenReturn(false);
-        when(validationUtil.validateRequiredField(nullDate)).thenReturn(false);
-        when(validationUtil.validateNumericField(invalidDate)).thenReturn(false);
-        
-        // Test exception scenarios
-        when(dateUtilityService.parseDate(invalidDate))
-            .thenThrow(new IllegalArgumentException("Invalid date format"));
-        
-        // Act & Assert
-        assertThat(dateUtilityService.validateCCYYMMDD(invalidDate)).isFalse();
-        assertThat(dateUtilityService.validateCCYYMMDD(blankDate)).isFalse();
-        assertThat(dateUtilityService.validateCCYYMMDD(nullDate)).isFalse();
-        
-        assertThat(validationUtil.validateRequiredField(blankDate)).isFalse();
-        assertThat(validationUtil.validateRequiredField(nullDate)).isFalse();
-        assertThat(validationUtil.validateNumericField(invalidDate)).isFalse();
-        
-        // Test exception handling
-        assertThatThrownBy(() -> dateUtilityService.parseDate(invalidDate))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Invalid date format");
-        
-        // Verify all method calls
-        verify(dateUtilityService).validateCCYYMMDD(invalidDate);
-        verify(dateUtilityService).validateCCYYMMDD(blankDate);
-        verify(dateUtilityService).validateCCYYMMDD(nullDate);
-        
-        verify(validationUtil).validateRequiredField(blankDate);
-        verify(validationUtil).validateRequiredField(nullDate);
-        verify(validationUtil).validateNumericField(invalidDate);
-        
-        verify(dateUtilityService).parseDate(invalidDate);
-    }
-
-    /**
-     * Test Constants field length validation.
-     * Ensures proper usage of Constants class values.
-     */
-    @Test
-    @DisplayName("Should validate field lengths using Constants")
-    public void testConstantsUsage() {
-        // Arrange
-        String testData = "12345678";
-        
-        // Use all Constants fields as specified in imports
-        when(validationUtil.validateFieldLength(testData, Constants.DATE_FORMAT_LENGTH))
-            .thenReturn(true);
-        when(validationUtil.validateFieldLength("123456789", Constants.SSN_LENGTH))
-            .thenReturn(true);
-        when(validationUtil.validateFieldLength("1234567890", Constants.PHONE_NUMBER_LENGTH))
-            .thenReturn(true);
-        when(validationUtil.validateFieldLength("12345", Constants.ZIP_CODE_LENGTH))
-            .thenReturn(true);
-        
-        // Act
-        boolean dateFormatValid = validationUtil.validateFieldLength(testData, Constants.DATE_FORMAT_LENGTH);
-        boolean ssnValid = validationUtil.validateFieldLength("123456789", Constants.SSN_LENGTH);
-        boolean phoneValid = validationUtil.validateFieldLength("1234567890", Constants.PHONE_NUMBER_LENGTH);
-        boolean zipValid = validationUtil.validateFieldLength("12345", Constants.ZIP_CODE_LENGTH);
-        
-        // Assert
-        assertThat(dateFormatValid).isTrue();
-        assertThat(ssnValid).isTrue();
-        assertThat(phoneValid).isTrue();
-        assertThat(zipValid).isTrue();
-        
-        // Verify all constant usage
-        verify(validationUtil).validateFieldLength(testData, Constants.DATE_FORMAT_LENGTH);
-        verify(validationUtil).validateFieldLength("123456789", Constants.SSN_LENGTH);
-        verify(validationUtil).validateFieldLength("1234567890", Constants.PHONE_NUMBER_LENGTH);
-        verify(validationUtil).validateFieldLength("12345", Constants.ZIP_CODE_LENGTH);
+        // Step 5: Lillian date conversion
+        Long lillianDate = dateUtilityService.toLillianDate(testDate);
+        assertThat(lillianDate).isNotNull();
+        String convertedBack = dateUtilityService.fromLillianDate(lillianDate);
+        assertThat(convertedBack).isEqualTo(testDate);
     }
 }
