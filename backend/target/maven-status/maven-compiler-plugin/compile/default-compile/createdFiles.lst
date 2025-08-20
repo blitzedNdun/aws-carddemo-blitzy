@@ -75,6 +75,7 @@ com/carddemo/dto/BillDto$Builder.class
 com/carddemo/repository/SettlementRepository.class
 com/carddemo/config/MenuConfiguration.class
 com/carddemo/service/ReportingService$1.class
+com/carddemo/repository/AuthorizationRepository.class
 com/carddemo/util/StatementFormatter.class
 com/carddemo/dto/UserDto.class
 com/carddemo/dto/ReportRequestDto$ReportType.class
