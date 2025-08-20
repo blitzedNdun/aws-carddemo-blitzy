@@ -280,6 +280,21 @@ public interface CardRepository extends JpaRepository<Card, String> {
     Page<Card> findByAccountIdAndActiveStatus(Long accountId, String activeStatus, Pageable pageable);
 
     /**
+     * Finds all cards with a specific active status with pagination support.
+     * 
+     * This method extends the basic findByActiveStatus method with pagination capabilities,
+     * supporting large result sets and efficient data retrieval for status-based filtering
+     * operations in the user interface.
+     * 
+     * Database Query: SELECT * FROM card_data WHERE active_status = ? ORDER BY card_number
+     * 
+     * @param activeStatus the active status ('Y' for active, 'N' for inactive)
+     * @param pageable pagination parameters (page, size, sort)
+     * @return Page of Card entities with the specified status
+     */
+    Page<Card> findByActiveStatus(String activeStatus, Pageable pageable);
+
+    /**
      * Checks if a card exists with specific card number and account ID combination.
      * 
      * This method validates card-account relationships for cross-reference
