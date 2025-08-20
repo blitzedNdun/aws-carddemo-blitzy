@@ -8,7 +8,7 @@ package com.carddemo.service;
 import com.carddemo.repository.AccountRepository;
 import com.carddemo.repository.ClosureRequestRepository;
 import com.carddemo.entity.AccountClosure;
-import com.carddemo.repository.StatementRepository;
+
 import com.carddemo.repository.NotificationRepository;
 import com.carddemo.repository.AccountArchiveRepository;
 
@@ -68,7 +68,6 @@ import org.slf4j.LoggerFactory;
  * - AccountRepository: Account data access and balance validation operations
  * - ClosureRequestRepository: Closure request lifecycle management and status tracking
  * - AccountClosure: Entity representing closure requests with business validation
- * - StatementRepository: Final statement generation and history preservation
  * - NotificationRepository: Regulatory notification tracking and delivery management
  * - AccountArchiveRepository: Account history archival with retention policy compliance
  * 
@@ -84,7 +83,6 @@ public class AccountClosureBatchService {
     // Repository dependencies for data access operations
     private final AccountRepository accountRepository;
     private final ClosureRequestRepository closureRequestRepository;
-    private final StatementRepository statementRepository;
     private final NotificationRepository notificationRepository;
     private final AccountArchiveRepository accountArchiveRepository;
 
@@ -93,7 +91,6 @@ public class AccountClosureBatchService {
      * 
      * @param accountRepository Repository for account data access operations
      * @param closureRequestRepository Repository for closure request management
-     * @param statementRepository Repository for statement generation operations
      * @param notificationRepository Repository for notification management
      * @param accountArchiveRepository Repository for account archival operations
      */
@@ -101,12 +98,10 @@ public class AccountClosureBatchService {
     public AccountClosureBatchService(
             AccountRepository accountRepository,
             ClosureRequestRepository closureRequestRepository,
-            StatementRepository statementRepository,
             NotificationRepository notificationRepository,
             AccountArchiveRepository accountArchiveRepository) {
         this.accountRepository = accountRepository;
         this.closureRequestRepository = closureRequestRepository;
-        this.statementRepository = statementRepository;
         this.notificationRepository = notificationRepository;
         this.accountArchiveRepository = accountArchiveRepository;
     }
@@ -346,23 +341,21 @@ public class AccountClosureBatchService {
             com.carddemo.entity.Account account = accountOpt.get();
             
             // Create archive record (equivalent to COBOL 6000-ARCHIVE-PROCESS)
-            com.carddemo.entity.AccountArchive archiveRecord = new com.carddemo.entity.AccountArchive();
-            archiveRecord.setAccountId(accountId);
-            archiveRecord.setCustomerId(account.getCustomerId());
-            archiveRecord.setArchiveDate(archivalDate.toLocalDate());
-            archiveRecord.setRetentionPeriodYears(7); // Standard 7-year retention
-            archiveRecord.setLegalHoldStatus("N");
-            archiveRecord.setArchiveReason("ACCOUNT_CLOSURE");
-            
-            // Calculate retention expiration date (7 years from closure)
-            archiveRecord.setRetentionExpirationDate(archivalDate.toLocalDate().plusYears(7));
+            com.carddemo.entity.Archive archiveRecord = new com.carddemo.entity.Archive();
+            archiveRecord.setDataType("ACCOUNT_CLOSURE");
+            archiveRecord.setSourceRecordId(accountId.toString());
+            archiveRecord.setSourceTableName("account_data");
+            archiveRecord.setArchiveDate(archivalDate);
+            archiveRecord.setRetentionDate(archivalDate.toLocalDate().plusYears(7)); // Standard 7-year retention
+            archiveRecord.setLegalHold(false);
+            archiveRecord.setArchivedBy("SYSTEM_BATCH_CLOSURE");
             
             // Compile account summary data for archival
             StringBuilder archiveData = new StringBuilder();
             archiveData.append("ACCOUNT_ARCHIVE_RECORD|");
             archiveData.append("ACCOUNT_ID:").append(accountId).append("|");
             archiveData.append("CUSTOMER_ID:").append(account.getCustomerId()).append("|");
-            archiveData.append("ACCOUNT_NUMBER:").append(account.getAccountNumber()).append("|");
+            archiveData.append("ACCOUNT_ID:").append(account.getAccountId()).append("|");
             archiveData.append("FINAL_BALANCE:").append(account.getCurrentBalance()).append("|");
             archiveData.append("CLOSURE_DATE:").append(archivalDate.toLocalDate()).append("|");
             archiveData.append("RETENTION_PERIOD:7_YEARS|");
@@ -371,7 +364,7 @@ public class AccountClosureBatchService {
             archiveRecord.setArchivedData(archiveData.toString());
             
             // Save archive record (equivalent to COBOL WRITE archive record)
-            com.carddemo.entity.AccountArchive savedArchive = accountArchiveRepository.save(archiveRecord);
+            com.carddemo.entity.Archive savedArchive = accountArchiveRepository.save(archiveRecord);
             
             logger.info("Account history archived successfully for account ID: {} with archive ID: {}", 
                        accountId, savedArchive.getArchiveId());
@@ -414,7 +407,7 @@ public class AccountClosureBatchService {
             
             // Update account status (equivalent to COBOL 9000-CLOSE paragraph)
             account.setActiveStatus("N"); // Set to inactive (closed)
-            account.setCloseDate(LocalDateTime.now().toLocalDate());
+            // Note: Account entity doesn't have closeDate field - status change indicates closure
             
             // Save updated account (equivalent to COBOL REWRITE account record)
             com.carddemo.entity.Account updatedAccount = accountRepository.save(account);
@@ -467,38 +460,34 @@ public class AccountClosureBatchService {
             Long customerId = account.getCustomerId();
             
             // Generate customer closure confirmation notification
-            com.carddemo.entity.Notification customerNotification = new com.carddemo.entity.Notification();
-            customerNotification.setCustomerId(customerId);
-            customerNotification.setNotificationType("CLOSURE_CONFIRMATION");
-            customerNotification.setNotificationSubject("Account Closure Confirmation");
-            customerNotification.setNotificationContent(
-                String.format("Your account %d has been successfully closed on %s. Reason: %s", 
-                             accountId, LocalDateTime.now().toLocalDate(), closureReasonCode));
-            customerNotification.setNotificationStatus("PENDING");
-            customerNotification.setCreatedDate(LocalDateTime.now());
-            customerNotification.setPriority("HIGH");
-            customerNotification.setDeliveryChannel("EMAIL");
+            com.carddemo.entity.Notification customerNotification = com.carddemo.entity.Notification.builder()
+                .customer(account.getCustomer()) // Assuming Account has a customer relationship
+                .notificationType(com.carddemo.entity.Notification.NotificationType.EMAIL)
+                .templateId("ACCOUNT_CLOSURE_CONFIRMATION")
+                .templateVariables(String.format("{\"accountId\":\"%d\",\"closureDate\":\"%s\",\"reason\":\"%s\"}", 
+                                 accountId, LocalDateTime.now().toLocalDate(), closureReasonCode))
+                .deliveryStatus(com.carddemo.entity.Notification.DeliveryStatus.PENDING)
+                .priority(8) // High priority (1-10 scale)
+                .build();
             
             // Save customer notification
             com.carddemo.entity.Notification savedCustomerNotification = notificationRepository.save(customerNotification);
-            logger.info("Customer closure notification created with ID: {}", savedCustomerNotification.getNotificationId());
+            logger.info("Customer closure notification created with ID: {}", savedCustomerNotification.getId());
             
             // Generate regulatory compliance notification
-            com.carddemo.entity.Notification regulatoryNotification = new com.carddemo.entity.Notification();
-            regulatoryNotification.setCustomerId(customerId);
-            regulatoryNotification.setNotificationType("REGULATORY_REPORT");
-            regulatoryNotification.setNotificationSubject("Account Closure Regulatory Report");
-            regulatoryNotification.setNotificationContent(
-                String.format("Account closure processed - Account: %d, Customer: %d, Reason: %s, Date: %s", 
-                             accountId, customerId, closureReasonCode, LocalDateTime.now().toLocalDate()));
-            regulatoryNotification.setNotificationStatus("PENDING");
-            regulatoryNotification.setCreatedDate(LocalDateTime.now());
-            regulatoryNotification.setPriority("NORMAL");
-            regulatoryNotification.setDeliveryChannel("SYSTEM");
+            com.carddemo.entity.Notification regulatoryNotification = com.carddemo.entity.Notification.builder()
+                .customer(account.getCustomer()) // Assuming Account has a customer relationship
+                .notificationType(com.carddemo.entity.Notification.NotificationType.EMAIL)
+                .templateId("REGULATORY_CLOSURE_REPORT")
+                .templateVariables(String.format("{\"accountId\":\"%d\",\"customerId\":\"%d\",\"reason\":\"%s\",\"date\":\"%s\"}", 
+                                 accountId, customerId, closureReasonCode, LocalDateTime.now().toLocalDate()))
+                .deliveryStatus(com.carddemo.entity.Notification.DeliveryStatus.PENDING)
+                .priority(5) // Normal priority
+                .build();
             
             // Save regulatory notification
             com.carddemo.entity.Notification savedRegulatoryNotification = notificationRepository.save(regulatoryNotification);
-            logger.info("Regulatory closure notification created with ID: {}", savedRegulatoryNotification.getNotificationId());
+            logger.info("Regulatory closure notification created with ID: {}", savedRegulatoryNotification.getId());
             
             logger.info("Closure notifications processed successfully for account ID: {}", accountId);
             
