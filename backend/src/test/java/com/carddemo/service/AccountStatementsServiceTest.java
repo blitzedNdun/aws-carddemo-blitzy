@@ -1,5 +1,14 @@
 package com.carddemo.service;
 
+import com.carddemo.dto.BalanceSummary;
+import com.carddemo.dto.BatchProcessResult;
+import com.carddemo.dto.StatementData;
+import com.carddemo.dto.StatementResult;
+import com.carddemo.entity.Account;
+import com.carddemo.entity.Transaction;
+import com.carddemo.repository.AccountRepository;
+import com.carddemo.repository.TransactionRepository;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -9,6 +18,13 @@ import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
+
+import com.carddemo.entity.Account;
+import com.carddemo.entity.Transaction;
+import com.carddemo.dto.StatementData;
+import com.carddemo.dto.StatementResult;
+import com.carddemo.dto.BalanceSummary;
+import com.carddemo.dto.BatchProcessResult;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -37,6 +53,12 @@ import java.util.*;
 public class AccountStatementsServiceTest {
 
     @Mock
+    private AccountRepository accountRepository;
+    
+    @Mock
+    private TransactionRepository transactionRepository;
+    
+    @InjectMocks
     private AccountStatementsService accountStatementsService;
     
     // Test data will be created locally since TestDataGenerator doesn't exist yet
@@ -62,25 +84,22 @@ public class AccountStatementsServiceTest {
     @DisplayName("Generate Statement - Happy Path")
     void testGenerateStatement() {
         // Arrange
-        when(accountStatementsService.generateStatement(any(), any(), any()))
-            .thenCallRealMethod();
+        LocalDate statementDate = LocalDate.now();
         
-        // Act & Assert
-        // When the real service becomes available, this test will validate:
-        // 1. Statement header generation with account information
-        // 2. Transaction listing in chronological order
-        // 3. Balance calculations with proper COMP-3 precision
-        // 4. Statement footer with summary information
+        // Act
+        StatementResult result = accountStatementsService.generateStatement(
+            sampleAccount, sampleTransactions, statementDate);
         
-        // For now, verify the method signature and basic structure
-        assertThatCode(() -> {
-            // This will be implemented when AccountStatementsService is available
-            // StatementResult result = accountStatementsService.generateStatement(
-            //     sampleAccount, sampleTransactions, LocalDate.now());
-            // assertThat(result).isNotNull();
-            // assertThat(result.getStatementId()).isNotEmpty();
-            // assertThat(result.getTransactionCount()).isEqualTo(sampleTransactions.size());
-        }).doesNotThrowAnyException();
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result.getStatementId()).isNotEmpty();
+        assertThat(result.getTransactionCount()).isEqualTo(sampleTransactions.size());
+        assertThat(result.getSuccess()).isTrue();
+        assertThat(result.getStatementContent()).isNotEmpty();
+        assertThat(result.getFormatType()).isEqualTo("TEXT");
+        assertThat(result.getAccountId()).isEqualTo(sampleAccount.getAccountId().toString());
+        assertThat(result.getGenerationTimestamp()).isNotNull();
+        assertThat(result.getProcessingTimeMs()).isNotNull();
     }
 
     /**
@@ -91,25 +110,26 @@ public class AccountStatementsServiceTest {
     @Test
     @DisplayName("Generate Text Statement - Format Validation")
     void testGenerateTextStatement() {
-        // Arrange
-        when(accountStatementsService.generateTextStatement(any()))
-            .thenCallRealMethod();
+        // Act
+        String textStatement = accountStatementsService.generateTextStatement(sampleStatementData);
         
-        // Act & Assert
-        // When the real service becomes available, this test will validate:
-        // 1. Fixed-width text formatting matching COBOL DISPLAY output
-        // 2. Proper decimal alignment for monetary amounts
-        // 3. Date formatting consistent with COBOL date handling
-        // 4. Character encoding and line termination compatibility
+        // Assert
+        assertThat(textStatement).isNotEmpty();
+        assertThat(textStatement).contains("CREDIT CARD STATEMENT");
+        assertThat(textStatement).contains("STATEMENT PERIOD");
+        assertThat(textStatement).contains("ACCOUNT NUMBER");
+        assertThat(textStatement).contains("BALANCE SUMMARY");
+        assertThat(textStatement).contains("TRANSACTION DETAILS");
+        assertThat(textStatement).contains("Previous Balance:");
+        assertThat(textStatement).contains("Current Balance:");
+        assertThat(textStatement).contains("MINIMUM PAYMENT DUE:");
+        assertThat(textStatement).contains("PAYMENT DUE DATE:");
         
-        assertThatCode(() -> {
-            // This will be implemented when AccountStatementsService is available
-            // String textStatement = accountStatementsService.generateTextStatement(sampleStatementData);
-            // assertThat(textStatement).isNotEmpty();
-            // assertThat(textStatement).contains("STATEMENT PERIOD");
-            // assertThat(textStatement).contains("ACCOUNT NUMBER");
-            // Validate specific format patterns match COBOL output exactly
-        }).doesNotThrowAnyException();
+        // Validate that monetary amounts are formatted correctly
+        assertThat(textStatement).containsPattern("\\$[0-9,]+\\.[0-9]{2}");
+        
+        // Validate date formatting (MM/dd/yyyy)
+        assertThat(textStatement).containsPattern("[0-9]{2}/[0-9]{2}/[0-9]{4}");
     }
 
     /**
@@ -120,25 +140,28 @@ public class AccountStatementsServiceTest {
     @Test
     @DisplayName("Generate HTML Statement - Modern Format")
     void testGenerateHtmlStatement() {
-        // Arrange
-        when(accountStatementsService.generateHtmlStatement(any()))
-            .thenCallRealMethod();
+        // Act
+        String htmlStatement = accountStatementsService.generateHtmlStatement(sampleStatementData);
         
-        // Act & Assert  
-        // When the real service becomes available, this test will validate:
-        // 1. Well-formed HTML structure with proper escaping
-        // 2. CSS styling for professional statement appearance
-        // 3. Identical financial data as text version (precision parity)
-        // 4. Responsive layout for various viewing environments
+        // Assert
+        assertThat(htmlStatement).isNotEmpty();
+        assertThat(htmlStatement).startsWith("<!DOCTYPE html>");
+        assertThat(htmlStatement).contains("<table");
+        assertThat(htmlStatement).contains("<html lang=\"en\">");
+        assertThat(htmlStatement).contains("CREDIT CARD STATEMENT");
+        assertThat(htmlStatement).contains("Account Number:");
+        assertThat(htmlStatement).contains("Statement Date:");
+        assertThat(htmlStatement).contains("Balance Summary");
+        assertThat(htmlStatement).contains("Transaction Details");
+        assertThat(htmlStatement).contains("Payment Information");
         
-        assertThatCode(() -> {
-            // This will be implemented when AccountStatementsService is available
-            // String htmlStatement = accountStatementsService.generateHtmlStatement(sampleStatementData);
-            // assertThat(htmlStatement).isNotEmpty();
-            // assertThat(htmlStatement).startsWith("<!DOCTYPE html>");
-            // assertThat(htmlStatement).contains("<table"); 
-            // Validate financial amounts match text statement exactly
-        }).doesNotThrowAnyException();
+        // Validate HTML structure is well-formed
+        assertThat(htmlStatement).contains("</html>");
+        assertThat(htmlStatement).contains("<style>");
+        assertThat(htmlStatement).contains("</style>");
+        
+        // Validate that monetary amounts are formatted correctly in HTML
+        assertThat(htmlStatement).containsPattern("\\$[0-9,]+\\.[0-9]{2}");
     }
 
     /**
@@ -150,24 +173,32 @@ public class AccountStatementsServiceTest {
     @DisplayName("Aggregate Transactions - VSAM KSDS Logic Migration")
     void testAggregateTransactionsForAccount() {
         // Arrange
-        when(accountStatementsService.aggregateTransactionsForAccount(any(), any(), any()))
-            .thenCallRealMethod();
+        String accountId = "12345678901";
+        LocalDate startDate = LocalDate.now().minusMonths(1);
+        LocalDate endDate = LocalDate.now();
         
-        // Act & Assert
-        // When the real service becomes available, this test will validate:
-        // 1. Date range filtering matching COBOL selection criteria
-        // 2. Transaction sorting by processing timestamp (TRAN-PROC-TS equivalent)
-        // 3. Proper handling of transaction types (debits/credits)
-        // 4. Exclusion of reversed or voided transactions
+        when(transactionRepository.findByAccountIdAndTransactionDateBetween(any(), any(), any()))
+            .thenReturn(sampleTransactions);
         
-        assertThatCode(() -> {
-            // This will be implemented when AccountStatementsService is available
-            // List<Transaction> aggregated = accountStatementsService.aggregateTransactionsForAccount(
-            //     "12345678901", LocalDate.now().minusMonths(1), LocalDate.now());
-            // assertThat(aggregated).isNotEmpty();
-            // assertThat(aggregated).isSortedAccordingTo(
-            //     Comparator.comparing(Transaction::getProcessTimestamp));
-        }).doesNotThrowAnyException();
+        // Act
+        List<Transaction> aggregated = accountStatementsService.aggregateTransactionsForAccount(
+            accountId, startDate, endDate);
+        
+        // Assert
+        assertThat(aggregated).isNotNull();
+        assertThat(aggregated.size()).isLessThanOrEqualTo(sampleTransactions.size()); // Some may be filtered out
+        
+        // Verify repository was called with correct parameters
+        verify(transactionRepository).findByAccountIdAndTransactionDateBetween(
+            Long.valueOf(accountId), startDate, endDate);
+        
+        // Verify transactions are sorted by processing timestamp
+        if (aggregated.size() > 1) {
+            for (int i = 1; i < aggregated.size(); i++) {
+                assertThat(aggregated.get(i).getProcessedTimestamp())
+                    .isAfterOrEqualTo(aggregated.get(i-1).getProcessedTimestamp());
+            }
+        }
     }
 
     /**
@@ -178,27 +209,32 @@ public class AccountStatementsServiceTest {
     @Test
     @DisplayName("Calculate Balance Summary - COMP-3 Precision Parity")  
     void testCalculateBalanceSummary() {
-        // Arrange
-        when(accountStatementsService.calculateBalanceSummary(any(), any()))
-            .thenCallRealMethod();
+        // Act
+        BalanceSummary summary = accountStatementsService.calculateBalanceSummary(
+            sampleAccount, sampleTransactions);
         
-        // Act & Assert
-        // When the real service becomes available, this test will validate:
-        // 1. Previous balance carried forward correctly
-        // 2. Credit transactions summed with proper precision
-        // 3. Debit transactions summed with proper precision  
-        // 4. Interest calculations matching COBOL ROUNDED arithmetic
-        // 5. Final balance calculation with exact COMP-3 equivalent precision
+        // Assert
+        assertThat(summary).isNotNull();
+        assertThat(summary.getPreviousBalance()).isNotNull();
+        assertThat(summary.getCurrentBalance()).isNotNull();
+        assertThat(summary.getAccountId()).isEqualTo(sampleAccount.getAccountId().toString());
+        assertThat(summary.getCreditLimit()).isNotNull();
+        assertThat(summary.getAvailableCredit()).isNotNull();
+        assertThat(summary.getTotalCredits()).isNotNull();
+        assertThat(summary.getTotalDebits()).isNotNull();
+        assertThat(summary.getMinimumPaymentDue()).isNotNull();
+        assertThat(summary.getPaymentDueDate()).isNotNull();
+        assertThat(summary.getCalculationDate()).isNotNull();
         
-        assertThatCode(() -> {
-            // This will be implemented when AccountStatementsService is available
-            // BalanceSummary summary = accountStatementsService.calculateBalanceSummary(
-            //     sampleAccount, sampleTransactions);
-            // assertThat(summary).isNotNull();
-            // assertThat(summary.getPreviousBalance()).isNotNull();
-            // assertThat(summary.getCurrentBalance()).isNotNull();
-            // Validate precision matches COBOL COMP-3 calculations exactly
-        }).doesNotThrowAnyException();
+        // Validate COBOL COMP-3 precision (scale = 2)
+        assertThat(summary.getCurrentBalance().scale()).isEqualTo(2);
+        assertThat(summary.getTotalCredits().scale()).isEqualTo(2);
+        assertThat(summary.getTotalDebits().scale()).isEqualTo(2);
+        
+        // Validate minimum payment calculation logic
+        BigDecimal expectedMinPayment = summary.getCurrentBalance().multiply(new BigDecimal("0.02"))
+                .max(new BigDecimal("25.00"));
+        assertThat(summary.getMinimumPaymentDue()).isEqualTo(expectedMinPayment.setScale(2, java.math.RoundingMode.HALF_UP));
     }
 
     /**
@@ -209,25 +245,34 @@ public class AccountStatementsServiceTest {
     @Test
     @DisplayName("Process Statement Batch - JCL Migration")
     void testProcessStatementBatch() {
-        // Arrange 
-        when(accountStatementsService.processStatementBatch(any(), any()))
-            .thenCallRealMethod();
+        // Arrange
+        LocalDate processDate = LocalDate.now();
+        List<String> accountIds = Arrays.asList("12345678901", "12345678902");
         
-        // Act & Assert
-        // When the real service becomes available, this test will validate:
-        // 1. Batch processing of multiple accounts in sequence
-        // 2. File output generation matching COBOL file layouts
-        // 3. Error handling and recovery matching COBOL ABEND logic
-        // 4. Processing statistics and logging equivalent to JCL output
+        // Mock repository responses
+        when(accountRepository.findById(12345678901L)).thenReturn(Optional.of(sampleAccount));
+        when(accountRepository.findById(12345678902L)).thenReturn(Optional.of(createSecondAccount()));
+        when(transactionRepository.findByAccountIdAndTransactionDateBetween(any(), any(), any()))
+            .thenReturn(sampleTransactions);
         
-        assertThatCode(() -> {
-            // This will be implemented when AccountStatementsService is available
-            // BatchProcessResult result = accountStatementsService.processStatementBatch(
-            //     LocalDate.now(), Arrays.asList("account1", "account2"));
-            // assertThat(result).isNotNull();
-            // assertThat(result.getProcessedCount()).isPositive();
-            // assertThat(result.getErrors()).isEmpty();
-        }).doesNotThrowAnyException();
+        // Act
+        BatchProcessResult result = accountStatementsService.processStatementBatch(processDate, accountIds);
+        
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result.getBatchId()).isNotEmpty();
+        assertThat(result.getTotalCount()).isEqualTo(2);
+        assertThat(result.getProcessedCount()).isPositive();
+        assertThat(result.getStartTime()).isNotNull();
+        assertThat(result.getEndTime()).isNotNull();
+        assertThat(result.getProcessingTimeMs()).isNotNull();
+        assertThat(result.getAccountStatuses()).hasSize(2);
+        assertThat(result.getStatisticsSummary()).isNotEmpty();
+        assertThat(result.getProcessingRate()).isNotNull();
+        
+        // Verify repository interactions
+        verify(accountRepository).findById(12345678901L);
+        verify(accountRepository).findById(12345678902L);
     }
 
     /**
@@ -239,25 +284,30 @@ public class AccountStatementsServiceTest {
     @DisplayName("Statement Generation - Empty Transactions Edge Case")
     void testStatementGenerationWithEmptyTransactions() {
         // Arrange
-        List<Transaction> emptyTransactions = new ArrayList<>();
-        when(accountStatementsService.generateStatement(any(), eq(emptyTransactions), any()))
-            .thenCallRealMethod();
+        Long accountId = 12345678901L;
+        LocalDate startDate = LocalDate.now().minusMonths(1);
+        LocalDate endDate = LocalDate.now();
         
-        // Act & Assert
-        // When the real service becomes available, this test will validate:
-        // 1. Statement still generated with account header information
-        // 2. Transaction section shows "No transactions for this period"
-        // 3. Balance section shows only previous balance carried forward
-        // 4. Proper handling matches COBOL END-OF-FILE condition logic
+        // Mock repository responses for empty transaction scenario
+        when(accountRepository.findById(accountId)).thenReturn(Optional.of(sampleAccount));
+        when(transactionRepository.findByAccountIdAndTransactionDateBetween(accountId, startDate, endDate))
+            .thenReturn(Collections.emptyList());
         
-        assertThatCode(() -> {
-            // This will be implemented when AccountStatementsService is available
-            // StatementResult result = accountStatementsService.generateStatement(
-            //     sampleAccount, emptyTransactions, LocalDate.now());
-            // assertThat(result).isNotNull();
-            // assertThat(result.getTransactionCount()).isZero();
-            // assertThat(result.getStatementContent()).contains("No transactions");
-        }).doesNotThrowAnyException();
+        // Act
+        StatementData result = accountStatementsService.generateStatement(
+            String.valueOf(accountId), startDate, endDate);
+        
+        // Assert - Validate empty transaction handling
+        assertThat(result).isNotNull();
+        assertThat(result.getTransactions()).isEmpty();
+        assertThat(result.getPreviousBalance()).isEqualTo(sampleAccount.getCurrentBalance());
+        assertThat(result.getCurrentBalance()).isEqualTo(sampleAccount.getCurrentBalance());
+        assertThat(result.getTotalDebits()).isEqualTo(BigDecimal.ZERO);
+        assertThat(result.getTotalCredits()).isEqualTo(BigDecimal.ZERO);
+        
+        // Verify repository interactions
+        verify(accountRepository).findById(accountId);
+        verify(transactionRepository).findByAccountIdAndTransactionDateBetween(accountId, startDate, endDate);
     }
 
     /**
@@ -269,23 +319,20 @@ public class AccountStatementsServiceTest {
     @DisplayName("Statement Generation - Null Account Error Handling")
     void testStatementGenerationWithNullAccount() {
         // Arrange
-        when(accountStatementsService.generateStatement(eq(null), any(), any()))
-            .thenCallRealMethod();
+        String nullAccountId = null;
+        LocalDate startDate = LocalDate.now().minusMonths(1);
+        LocalDate endDate = LocalDate.now();
         
         // Act & Assert
-        // When the real service becomes available, this test will validate:
-        // 1. Appropriate exception thrown for null account
-        // 2. Error message provides clear indication of missing data
-        // 3. Exception type matches expected business rule violations
-        // 4. Behavior equivalent to COBOL file not found handling
+        assertThatThrownBy(() -> {
+            accountStatementsService.generateStatement(nullAccountId, startDate, endDate);
+        })
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Account ID cannot be null");
         
-        assertThatCode(() -> {
-            // This will be implemented when AccountStatementsService is available
-            // assertThatThrownBy(() -> 
-            //     accountStatementsService.generateStatement(null, sampleTransactions, LocalDate.now()))
-            //     .isInstanceOf(IllegalArgumentException.class)
-            //     .hasMessageContaining("Account cannot be null");
-        }).doesNotThrowAnyException();
+        // Verify no repository interactions for invalid input
+        verify(accountRepository, never()).findById(any());
+        verify(transactionRepository, never()).findByAccountIdAndTransactionDateBetween(any(), any(), any());
     }
 
     /**
@@ -365,113 +412,124 @@ public class AccountStatementsServiceTest {
     // entity classes when they become available through TestDataGenerator
 
     private Account createSampleAccount() {
-        // When TestDataGenerator becomes available, this will be replaced with:
-        // return TestDataGenerator.generateAccount();
-        
-        // For now, create a mock structure that matches expected Account entity
-        return new Account() {
-            // This will be replaced with actual Account class when available
-            // The structure matches COBOL CVACT01Y copybook fields:
-            // ACCT-ID (PIC 9(11)), ACCT-CURR-BAL (PIC S9(10)V99), etc.
-        };
+        // Create sample account matching COBOL CVACT01Y copybook structure
+        Account account = new Account();
+        account.setAccountId(12345678901L);
+        account.setCurrentBalance(new BigDecimal("1500.00"));
+        account.setCreditLimit(new BigDecimal("5000.00"));
+        account.setCashCreditLimit(new BigDecimal("1000.00"));
+        account.setOpenDate(LocalDate.now().minusYears(2));
+        account.setActiveStatus("Y"); // Active
+        account.setCurrentCycleCredit(new BigDecimal("250.00"));
+        account.setCurrentCycleDebit(new BigDecimal("750.00"));
+        account.setAddressZip("12345");
+        account.setGroupId("DEFAULT");
+        return account;
+    }
+
+    private Account createSecondAccount() {
+        // Create second sample account for batch testing
+        Account account = new Account();
+        account.setAccountId(12345678902L);
+        account.setCurrentBalance(new BigDecimal("2750.50"));
+        account.setCreditLimit(new BigDecimal("7500.00"));
+        account.setCashCreditLimit(new BigDecimal("1500.00"));
+        account.setOpenDate(LocalDate.now().minusYears(1));
+        account.setActiveStatus("Y"); // Active
+        account.setCurrentCycleCredit(new BigDecimal("500.00"));
+        account.setCurrentCycleDebit(new BigDecimal("1250.00"));
+        account.setAddressZip("54321");
+        account.setGroupId("PREMIUM");
+        return account;
     }
 
     private Transaction createCreditTransaction() {
-        // When TestDataGenerator becomes available, this will be replaced with:
-        // return TestDataGenerator.generateTransaction();
-        
-        // For now, create a mock structure matching COBOL CVTRA05Y copybook
-        return new Transaction() {
-            // This will match TRAN-RECORD structure:
-            // TRAN-ID (PIC X(16)), TRAN-AMT (PIC S9(09)V99), etc.
-        };
+        // Credit transaction matching COBOL CVTRA05Y copybook structure
+        Transaction transaction = new Transaction();
+        transaction.setTransactionId(1001L);
+        transaction.setAccountId(12345678901L);
+        transaction.setTransactionDate(LocalDate.now().minusDays(5));
+        transaction.setAmount(new BigDecimal("250.00"));
+        transaction.setTransactionTypeCode("CR");
+        transaction.setCategoryCode("01");
+        transaction.setDescription("PAYMENT RECEIVED");
+        transaction.setMerchantId(1001L);
+        transaction.setMerchantName("PAYMENT PROCESSOR");
+        transaction.setOriginalTimestamp(LocalDateTime.now().minusDays(5));
+        transaction.setProcessedTimestamp(LocalDateTime.now().minusDays(5));
+        return transaction;
     }
 
     private Transaction createDebitTransaction() {
         // Debit transaction for testing balance calculations
-        return new Transaction() {
-            // Negative amount for debit processing
-        };
+        Transaction transaction = new Transaction();
+        transaction.setTransactionId(1002L);
+        transaction.setAccountId(12345678901L);
+        transaction.setTransactionDate(LocalDate.now().minusDays(3));
+        transaction.setAmount(new BigDecimal("-75.50"));
+        transaction.setTransactionTypeCode("DB");
+        transaction.setCategoryCode("02");
+        transaction.setDescription("PURCHASE ACME STORE");
+        transaction.setMerchantId(1002L);
+        transaction.setMerchantName("ACME STORE");
+        transaction.setMerchantCity("ANYTOWN");
+        transaction.setOriginalTimestamp(LocalDateTime.now().minusDays(3));
+        transaction.setProcessedTimestamp(LocalDateTime.now().minusDays(3));
+        return transaction;
     }
 
     private Transaction createPaymentTransaction() {
         // Payment transaction for testing credit processing
-        return new Transaction() {
-            // Payment type with specific TRAN-TYPE-CD
-        };
+        Transaction transaction = new Transaction();
+        transaction.setTransactionId(1003L);
+        transaction.setAccountId(12345678901L);
+        transaction.setTransactionDate(LocalDate.now().minusDays(7));
+        transaction.setAmount(new BigDecimal("500.00"));
+        transaction.setTransactionTypeCode("PM");
+        transaction.setCategoryCode("01");
+        transaction.setDescription("ONLINE PAYMENT");
+        transaction.setMerchantId(1003L);
+        transaction.setMerchantName("ONLINE BANKING");
+        transaction.setOriginalTimestamp(LocalDateTime.now().minusDays(7));
+        transaction.setProcessedTimestamp(LocalDateTime.now().minusDays(7));
+        return transaction;
     }
 
     private Transaction createInterestChargeTransaction() {
-        // Interest charge for testing financial calculations
-        return new Transaction() {
-            // Interest transaction type for COMP-3 precision testing
-        };
+        // Interest charge for testing financial calculations with COMP-3 precision
+        Transaction transaction = new Transaction();
+        transaction.setTransactionId(1004L);
+        transaction.setAccountId(12345678901L);
+        transaction.setTransactionDate(LocalDate.now().minusDays(1));
+        transaction.setAmount(new BigDecimal("-24.95"));
+        transaction.setTransactionTypeCode("IN");
+        transaction.setCategoryCode("05");
+        transaction.setDescription("INTEREST CHARGE");
+        transaction.setMerchantId(1004L);
+        transaction.setMerchantName("CARD ISSUER");
+        transaction.setOriginalTimestamp(LocalDateTime.now().minusDays(1));
+        transaction.setProcessedTimestamp(LocalDateTime.now().minusDays(1));
+        return transaction;
     }
 
     private StatementData createSampleStatementData() {
-        // When TestDataGenerator becomes available, this will be replaced with:
-        // return TestDataGenerator.generateAccountStatementData();
-        
-        return new StatementData() {
-            // Combined account and transaction data for statement generation
-        };
-    }
-
-    // ==================== Inner Classes for Test Data Structure ====================
-    // These temporary interfaces will be replaced with actual entity classes
-    // when the main service implementation becomes available
-
-    /**
-     * Temporary Account interface for testing structure
-     * Will be replaced with actual Account entity from JPA model
-     */
-    private interface Account {
-        // Placeholder for actual Account class
-        // Fields will match COBOL CVACT01Y copybook structure
-    }
-
-    /**
-     * Temporary Transaction interface for testing structure  
-     * Will be replaced with actual Transaction entity from JPA model
-     */
-    private interface Transaction {
-        // Placeholder for actual Transaction class
-        // Fields will match COBOL CVTRA05Y copybook structure
-    }
-
-    /**
-     * Temporary StatementData interface for testing structure
-     * Will be replaced with actual StatementData class from service layer
-     */
-    private interface StatementData {
-        // Placeholder for actual StatementData class
-        // Contains aggregated account and transaction information
-    }
-
-    /**
-     * Temporary StatementResult interface for testing structure
-     * Will be replaced with actual StatementResult class from service layer
-     */
-    private interface StatementResult {
-        // Placeholder for actual StatementResult class
-        // Contains generated statement content and metadata
-    }
-
-    /**
-     * Temporary BalanceSummary interface for testing structure
-     * Will be replaced with actual BalanceSummary class from service layer  
-     */
-    private interface BalanceSummary {
-        // Placeholder for actual BalanceSummary class
-        // Contains calculated balance information with COMP-3 precision
-    }
-
-    /**
-     * Temporary BatchProcessResult interface for testing structure
-     * Will be replaced with actual BatchProcessResult class from service layer
-     */
-    private interface BatchProcessResult {
-        // Placeholder for actual BatchProcessResult class
-        // Contains batch processing statistics and results
+        // Create sample statement data combining account and transaction information
+        StatementData statementData = new StatementData();
+        statementData.setAccount(sampleAccount);
+        statementData.setTransactions(sampleTransactions);
+        statementData.setStatementDate(LocalDate.now());
+        statementData.setPeriodStartDate(LocalDate.now().minusMonths(1));
+        statementData.setPeriodEndDate(LocalDate.now());
+        statementData.setPreviousBalance(new BigDecimal("1200.00"));
+        statementData.setCurrentBalance(new BigDecimal("1500.00"));
+        statementData.setTotalCredits(new BigDecimal("750.00"));
+        statementData.setTotalDebits(new BigDecimal("450.00"));
+        statementData.setInterestCharges(new BigDecimal("24.95"));
+        statementData.setTotalFees(new BigDecimal("0.00"));
+        statementData.setMinimumPaymentDue(new BigDecimal("35.00"));
+        statementData.setPaymentDueDate(LocalDate.now().plusDays(25));
+        statementData.setStatementSequence(1);
+        statementData.setStatementId("STMT-12345678901-202401");
+        return statementData;
     }
 }
