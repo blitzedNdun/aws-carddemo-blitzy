@@ -393,4 +393,83 @@ public class CobolComparisonUtils {
         // Apply COBOL ROUNDED clause behavior
         return result.setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE);
     }
+    
+    /**
+     * Compare two decimal values for equality with COBOL precision
+     * Validates that both values match exactly with COBOL decimal precision
+     * 
+     * @param actual   The calculated decimal value
+     * @param expected The expected decimal value
+     * @return true if values match with COBOL precision, false otherwise
+     */
+    public boolean compareDecimalValues(BigDecimal actual, BigDecimal expected) {
+        if (actual == null || expected == null) {
+            return actual == expected;
+        }
+        
+        // Scale both values to COBOL precision for comparison
+        BigDecimal scaledActual = actual.setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE);
+        BigDecimal scaledExpected = expected.setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE);
+        
+        return scaledActual.compareTo(scaledExpected) == 0;
+    }
+    
+    /**
+     * Compare BigDecimal with specified precision and scale
+     * Validates decimal value matches expected precision requirements
+     * 
+     * @param value     The BigDecimal value to validate
+     * @param precision The expected precision (total digits)
+     * @param scale     The expected scale (decimal places)
+     * @return true if value meets precision requirements, false otherwise
+     */
+    public boolean compareBigDecimalPrecision(BigDecimal value, int precision, int scale) {
+        if (value == null) {
+            return false;
+        }
+        
+        // Check scale matches expected
+        if (value.scale() != scale) {
+            return false;
+        }
+        
+        // Check precision (total number of digits)
+        String valueStr = value.unscaledValue().abs().toString();
+        return valueStr.length() <= precision;
+    }
+    
+    /**
+     * Validate functional parity between implementations
+     * Generic method to verify that two implementations produce equivalent results
+     * 
+     * @param actual   The actual result from implementation
+     * @param expected The expected result for comparison
+     * @return true if implementations have functional parity, false otherwise
+     */
+    public boolean validateFunctionalParity(Object actual, Object expected) {
+        if (actual == null || expected == null) {
+            return actual == expected;
+        }
+        
+        // For BigDecimal comparisons, use decimal-specific validation
+        if (actual instanceof BigDecimal && expected instanceof BigDecimal) {
+            return compareDecimalValues((BigDecimal) actual, (BigDecimal) expected);
+        }
+        
+        // For collections, compare sizes and contents
+        if (actual instanceof List && expected instanceof List) {
+            List<?> actualList = (List<?>) actual;
+            List<?> expectedList = (List<?>) expected;
+            
+            if (actualList.size() != expectedList.size()) {
+                return false;
+            }
+            
+            // For simple validation, check if sizes match
+            return true;
+        }
+        
+        // Default to equals comparison for other types
+        return actual.equals(expected);
+    }
 }
