@@ -107,6 +107,9 @@ public class AccountUpdateResponse {
         this.success = false;
         this.errorMessage = errorMessage;
         this.validationErrors = validationErrors != null ? new ArrayList<>(validationErrors) : new ArrayList<>();
+        // Set updatedAccount and auditInfo to null for error responses
+        this.updatedAccount = null;
+        this.auditInfo = null;
     }
 
     /**
