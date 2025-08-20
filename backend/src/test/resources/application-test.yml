@@ -1,101 +1,85 @@
+# Test application configuration for CardDemo backend testing
+# Optimized for H2 in-memory database with PostgreSQL compatibility
+
 spring:
-  # Test profile configuration using H2 in-memory database
+  # Database configuration for H2 testing
   datasource:
-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL;REFERENTIAL_INTEGRITY=FALSE
-    driverClassName: org.h2.Driver
+    url: jdbc:h2:mem:carddemo_test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
     username: sa
-    password: password
+    password: 
+    driver-class-name: org.h2.Driver
     
+    # Schema initialization
+    initialization-mode: always
+    schema: classpath:schema-test.sql
+    data: classpath:test-data.sql
+    separator: ;
+    continue-on-error: false
+    
+  # JPA/Hibernate configuration for testing
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: create-drop
-    show-sql: false
+      ddl-auto: create-drop  # Create schema for tests, drop after
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    show-sql: true
     properties:
       hibernate:
-        format_sql: false
+        format_sql: true
+        jdbc:
+          batch_size: 10
+        order_inserts: true
+        order_updates: true
+        use_sql_comments: true
+        generate_statistics: true
         globally_quoted_identifiers: false
-        physical_naming_strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
-        hbm2ddl:
-          create_foreign_keys: false
-        
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-      
-  # Disable Redis for tests - use in-memory session management
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      timeout: 2000ms
-      lettuce:
-        pool:
-          max-active: 8
-          max-wait: -1ms
-          max-idle: 8
-          min-idle: 0
-          
-  session:
-    store-type: none
-    
-  # Test security configuration
-  security:
-    debug: false
-    
-  # Disable external configuration server for tests
-  cloud:
-    config:
-      enabled: false
-      
-  # Batch configuration for tests - completely disable
-  batch:
-    job:
-      enabled: false
-    jdbc:
-      initialize-schema: never
-    initialize-schema: never
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration
-      
+        id:
+          new_generator_mappings: true
+        temp:
+          use_jdbc_metadata_defaults: false
+        connection:
+          provider_disables_autocommit: true
+          autocommit: false
+          charSet: UTF-8
+          characterEncoding: UTF-8
+          useUnicode: true
+        query:
+          plan_cache_max_size: 512
+          plan_parameter_metadata_max_size: 64
+          in_clause_parameter_padding: true
+        session:
+          events:
+            log:
+              LOG_QUERIES_SLOWER_THAN_MS: 100
+
+  # Transaction configuration for testing
+  transaction:
+    rollback-on-commit-failure: true
+
+# Test-specific logging configuration
 logging:
   level:
-    org.springframework.security: DEBUG
-    com.carddemo.security: DEBUG
+    com.carddemo: DEBUG
     org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: DEBUG
-    
-# Management endpoints for testing
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics
-  endpoint:
-    health:
-      show-details: always
-      
-# Test-specific security constants
-carddemo:
-  security:
-    jwt:
-      secret: test-jwt-secret-key-for-testing-purposes-only-not-for-production
-      expiration: 300000 # 5 minutes for testing
-    session:
-      timeout: 1800 # 30 minutes
-      
-  test:
-    users:
-      admin:
-        username: TESTADM
-        password: ADMIN123
-        type: A
-      user:
-        username: TESTUSR
-        password: USER123
-        type: U
-        
-# Disable actuator security for tests
-management.security.enabled: false
+    org.hibernate.type: TRACE
+    org.springframework.orm.jpa: DEBUG
+    org.springframework.transaction: DEBUG
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss} - %msg%n'
+
+# Test connection pool configuration (HikariCP)
+hikari:
+  pool-name: CardDemo-Test-H2-HikariCP
+  maximum-pool-size: 5
+  minimum-idle: 1
+  connection-timeout: 10000
+  idle-timeout: 60000
+  max-lifetime: 300000
+  leak-detection-threshold: 30000
+  connection-test-query: SELECT 1
+  data-source-properties:
+    cachePrepStmts: true
+    prepStmtCacheSize: 50
+    prepStmtCacheSqlLimit: 1024
+    useServerPrepStmts: true
