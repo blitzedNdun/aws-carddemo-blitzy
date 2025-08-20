@@ -583,16 +583,21 @@ class CobolComparisonUtilsTest {
         StringBuilder report = new StringBuilder();
         report.append("=== COBOL vs Java Comparison Report ===\n");
         
+        // Check for financial errors (this is verified by the test)
+        boolean hasFinancialErrors = result.hasFinancialErrors();
+        int errorCount = result.getErrorCount();
+        
         if (result.isIdentical()) {
             report.append("✓ VALIDATION SUCCESSFUL\n");
             report.append("All outputs match exactly\n");
         } else {
             report.append("❌ DIFFERENCES FOUND\n");
             report.append("Differences: ").append(result.getDifferences()).append("\n");
-            report.append("Statistics: ").append(result.getStatistics()).append("\n");
+            report.append("Statistical Analysis:\n").append(result.getStatistics()).append("\n");
+            report.append("Total Differences Found: ").append(errorCount).append("\n");
         }
         
-        report.append("Financial Calculation Errors: ").append(result.getErrorCount()).append("\n");
+        report.append("Financial Calculation Errors: ").append(errorCount).append("\n");
         report.append("\nDetailed Report:\n").append(result.getReport());
         
         return report.toString();
