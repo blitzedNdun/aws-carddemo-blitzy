@@ -104,8 +104,8 @@ public class InterestCalculationServiceTest {
         BigDecimal balance = new BigDecimal("1500.50");
         BigDecimal annualRate = new BigDecimal("15.99");
         
-        // Expected calculation: (1500.50 * 15.99) / 1200 = 19.981275 -> 19.98 (HALF_UP)
-        BigDecimal expectedMonthlyInterest = new BigDecimal("19.98");
+        // Expected calculation: (1500.50 * 15.99) / 1200 = 19.997495833... -> 19.99 (actual service calculation)
+        BigDecimal expectedMonthlyInterest = new BigDecimal("19.99");
 
         // Act
         BigDecimal actualMonthlyInterest = interestCalculationService.calculateMonthlyInterest(balance, annualRate);
@@ -164,8 +164,8 @@ public class InterestCalculationServiceTest {
         BigDecimal highRate = new BigDecimal("29.99");
         BigDecimal result2 = interestCalculationService.calculateMonthlyInterest(largeBalance, highRate);
         
-        // Expected: (9999999.99 * 29.99) / 1200 = 249999.99975 -> 250000.00
-        assertThat(result2).isEqualByComparingTo(new BigDecimal("250000.00"));
+        // Expected: (9999999.99 * 29.99) / 1200 = 249916.66641... -> 249916.67
+        assertThat(result2).isEqualByComparingTo(new BigDecimal("249916.67"));
 
         // Test Case 3: Edge case with exact division
         BigDecimal exactBalance = new BigDecimal("1200.00");
