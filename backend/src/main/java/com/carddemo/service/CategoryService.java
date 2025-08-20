@@ -252,8 +252,9 @@ public class CategoryService {
         validateCategoryCode(categoryCode);
         
         try {
-            // Use findByCategoryCode() from TransactionCategoryRepository
-            Optional<TransactionCategory> category = categoryRepository.findByCategoryCode(categoryCode);
+            // Use findByIdCategoryCode() from TransactionCategoryRepository - returns List, get first match
+            List<TransactionCategory> categories = categoryRepository.findByIdCategoryCode(categoryCode);
+            Optional<TransactionCategory> category = categories.isEmpty() ? Optional.empty() : Optional.of(categories.get(0));
             
             if (category.isPresent()) {
                 validateCategoryData(category.get());
@@ -340,10 +341,9 @@ public class CategoryService {
         validateTransactionTypeCode(transactionTypeCode);
         
         try {
-            // Use findByTransactionTypeCode() from TransactionTypeRepository
-            Optional<TransactionType> type = typeRepository.findByTransactionTypeCode(transactionTypeCode);
-            
-            Optional<TransactionTypeDto> typeDto = type.map(this::convertToTypeDto);
+            // Use findByTransactionTypeCode() from TransactionTypeRepository - returns TransactionType, wrap in Optional
+            TransactionType type = typeRepository.findByTransactionTypeCode(transactionTypeCode);
+            Optional<TransactionTypeDto> typeDto = Optional.ofNullable(type).map(this::convertToTypeDto);
             
             logCategoryOperation("getTransactionTypeByCode", typeDto.isPresent() ? 1 : 0, 
                 transactionTypeCode);
@@ -417,9 +417,11 @@ public class CategoryService {
         try {
             Long accountIdLong = Long.parseLong(accountId);
             
-            // Use findByAccountIdAndCategoryCode() from TransactionCategoryBalanceRepository
-            Optional<TransactionCategoryBalance> balanceRecord = 
+            // Use findByAccountIdAndCategoryCode() from TransactionCategoryBalanceRepository - returns List, get first match
+            List<TransactionCategoryBalance> balanceRecords = 
                 categoryBalanceRepository.findByAccountIdAndCategoryCode(accountIdLong, categoryCode);
+            Optional<TransactionCategoryBalance> balanceRecord = 
+                balanceRecords.isEmpty() ? Optional.empty() : Optional.of(balanceRecords.get(0));
             
             Optional<TransactionCategoryBalanceDto> balanceDto = balanceRecord.map(this::convertToBalanceDto);
             
@@ -459,7 +461,7 @@ public class CategoryService {
         // Use all required TransactionCategoryBalance getters as per members_accessed
         Long accountId = balance.getAccountId();
         String categoryCode = balance.getCategoryCode();
-        String typeCode = balance.getTypeCode();
+        String typeCode = null; // TransactionCategoryBalance entity doesn't have typeCode field
         BigDecimal balanceAmount = balance.getBalance();
         LocalDate balanceDate = balance.getBalanceDate();
         
