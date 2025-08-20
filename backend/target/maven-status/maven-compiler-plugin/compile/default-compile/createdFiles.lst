@@ -269,6 +269,7 @@ com/carddemo/service/ReportMenuService.class
 com/carddemo/security/MethodSecurityConfig.class
 com/carddemo/service/PaymentService$PaymentAuthorizationException.class
 com/carddemo/batch/CustomerMaintenanceJobConfig$Customer.class
+com/carddemo/service/CardDetailsService.class
 com/carddemo/config/ExtractJobConfig$1.class
 com/carddemo/service/CreditBureauService$CreditBureauException.class
 com/carddemo/service/ChargebackProcessor$ReasonCode.class
@@ -350,6 +351,7 @@ com/carddemo/client/EmailClient$BulkEmailResult.class
 com/carddemo/entity/DailyTransaction.class
 com/carddemo/dto/ConfigUpdateResponse.class
 com/carddemo/repository/AccountArchiveRepository.class
+com/carddemo/service/CardDetailsService$CardDetailResult.class
 com/carddemo/controller/UserController.class
 com/carddemo/batch/StatementGenerationJobConfigA.class
 com/carddemo/service/ChargebackProcessor$ChargebackReport.class
