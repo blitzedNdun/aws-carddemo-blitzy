@@ -120,6 +120,27 @@ public class MenuRequest {
     private String securityToken;
 
     /**
+     * Current menu level for hierarchical navigation.
+     * Used to track the current position in the menu hierarchy.
+     * Examples: "MAIN", "SUB_MENU", "ROOT"
+     */
+    private String currentMenuLevel;
+
+    /**
+     * Parent menu identifier for back navigation.
+     * Used for PF3 (Exit) functionality to navigate back to parent menu.
+     * Examples: "MAIN_MENU", "ADMIN_MENU", null for root level
+     */
+    private String parentMenu;
+
+    /**
+     * Current menu state for state management.
+     * Used to track menu state across requests, equivalent to COMMAREA state.
+     * Examples: "ACTIVE", "RESET", "PRESERVE"
+     */
+    private String menuState;
+
+    /**
      * Helper method to check if this is an admin menu request.
      * 
      * @return true if this is an admin menu request
@@ -193,5 +214,59 @@ public class MenuRequest {
      */
     public boolean isF12Cancel() {
         return "F12".equalsIgnoreCase(this.pfKey);
+    }
+
+    /**
+     * Gets the current menu level.
+     * 
+     * @return Current menu level string
+     */
+    public String getCurrentMenuLevel() {
+        return currentMenuLevel;
+    }
+
+    /**
+     * Sets the current menu level.
+     * 
+     * @param currentMenuLevel Menu level identifier
+     */
+    public void setCurrentMenuLevel(String currentMenuLevel) {
+        this.currentMenuLevel = currentMenuLevel;
+    }
+
+    /**
+     * Gets the parent menu identifier.
+     * 
+     * @return Parent menu string
+     */
+    public String getParentMenu() {
+        return parentMenu;
+    }
+
+    /**
+     * Sets the parent menu identifier.
+     * 
+     * @param parentMenu Parent menu identifier for back navigation
+     */
+    public void setParentMenu(String parentMenu) {
+        this.parentMenu = parentMenu;
+    }
+
+    /**
+     * Gets the current menu state.
+     * 
+     * @return Menu state string
+     */
+    public String getMenuState() {
+        return menuState;
+    }
+
+    /**
+     * Sets the current menu state.
+     * 
+     * @param menuState Menu state for state management
+     */
+    public void setMenuState(String menuState) {
+        this.menuState = menuState;
     }
 }
