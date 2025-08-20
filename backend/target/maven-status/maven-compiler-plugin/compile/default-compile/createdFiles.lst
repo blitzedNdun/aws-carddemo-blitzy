@@ -400,6 +400,7 @@ com/carddemo/dto/CardResponse.class
 com/carddemo/entity/Customer$CustomerBuilder.class
 com/carddemo/dto/UserDetailResponse.class
 com/carddemo/service/ChargebackProcessor$StatusTransition.class
+com/carddemo/service/SubMenuService.class
 com/carddemo/CardDemoApplication.class
 com/carddemo/service/ChargebackProcessor$StatusUpdateRecord.class
 com/carddemo/service/CustomerMaintenanceService$CustomerUpdateResult.class
