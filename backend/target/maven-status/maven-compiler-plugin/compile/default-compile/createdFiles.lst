@@ -79,6 +79,7 @@ com/carddemo/util/StatementFormatter.class
 com/carddemo/dto/UserDto.class
 com/carddemo/dto/ReportRequestDto$ReportType.class
 com/carddemo/service/DailyTransactionService.class
+com/carddemo/repository/CardXrefRepository.class
 com/carddemo/service/CreditBureauService$CreditScoreChangeAudit$Builder.class
 com/carddemo/dto/SignOnResponse$SignOnStatus.class
 com/carddemo/service/AuthorizationEngine$AuthorizationResult.class
