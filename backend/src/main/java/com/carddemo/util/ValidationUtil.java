@@ -46,8 +46,8 @@ public final class ValidationUtil {
     private static final int FICO_SCORE_MIN = 300;
     private static final int FICO_SCORE_MAX = 850;
     
-    // Validation patterns
-    private static final Pattern SSN_PATTERN = Pattern.compile("^\\d{3}-?\\d{2}-?\\d{4}$");
+    // Validation patterns - accepts both dashed (123-45-6789) and non-dashed (123456789) formats
+    private static final Pattern SSN_PATTERN = Pattern.compile("^(?:\\d{3}-\\d{2}-\\d{4}|\\d{9})$");
     private static final Pattern SSN_BASIC_FORMAT_PATTERN = Pattern.compile("^[\\d-]+$");
     private static final Pattern PHONE_PATTERN = Pattern.compile("^\\d{3}-?\\d{3}-?\\d{4}$");
     private static final Pattern NUMERIC_PATTERN = Pattern.compile("^\\d+$");
@@ -254,7 +254,7 @@ public final class ValidationUtil {
             "470", "473", "474", "475", "478", "479", "480", "484", "501", "502",
             "503", "504", "505", "506", "507", "508", "509", "510", "512", "513",
             "514", "515", "516", "517", "518", "519", "520", "530", "531", "534",
-            "539", "540", "541", "548", "551", "559", "561", "562", "563", "564",
+            "539", "540", "541", "548", "551", "555", "559", "561", "562", "563", "564",
             "567", "570", "571", "572", "573", "574", "575", "579", "580", "581",
             "582", "585", "586", "587", "601", "602", "603", "604", "605", "606",
             "607", "608", "609", "610", "612", "613", "614", "615", "616", "617",
@@ -797,4 +797,114 @@ public final class ValidationUtil {
         
         return true;
     }
+
+    /**
+     * Validates phone area code against NANPA area code standards.
+     * Public method for external validation testing.
+     * 
+     * @param areaCode the 3-digit area code to validate
+     * @return true if the area code is valid, false otherwise
+     */
+    public static boolean validatePhoneAreaCode(String areaCode) {
+        if (areaCode == null || areaCode.trim().length() != 3) {
+            return false;
+        }
+        
+        return isValidPhoneAreaCode(areaCode.trim());
+    }
+
+    /**
+     * Validates US state code against valid state abbreviations.
+     * Public method for external validation testing.
+     * 
+     * @param stateCode the 2-character state code to validate
+     * @return true if the state code is valid, false otherwise
+     */
+    public static boolean validateUSStateCode(String stateCode) {
+        if (stateCode == null || stateCode.trim().length() != 2) {
+            return false;
+        }
+        
+        return isValidStateCode(stateCode.trim().toUpperCase());
+    }
+
+
+
+    /**
+     * Validates numeric field with specified length.
+     * Used for customer ID, account ID, and other numeric fields.
+     * 
+     * @param value the numeric value to validate
+     * @param fieldName the field name for error messages  
+     * @param expectedLength the expected length of the numeric field
+     * @throws ValidationException if the field is invalid
+     */
+    public static void validateNumericField(String value, String fieldName, int expectedLength) {
+        ValidationException validationException = new ValidationException("Numeric field validation failed");
+        
+        if (value == null || value.trim().isEmpty()) {
+            validationException.addFieldError(fieldName, fieldName + " must be supplied.");
+        } else {
+            String trimmedValue = value.trim();
+            
+            if (!NUMERIC_PATTERN.matcher(trimmedValue).matches()) {
+                validationException.addFieldError(fieldName, fieldName + " must contain only digits.");
+            } else if (trimmedValue.length() != expectedLength) {
+                validationException.addFieldError(fieldName, fieldName + " must be exactly " + expectedLength + " digits.");
+            }
+        }
+        
+        if (validationException.hasFieldErrors()) {
+            throw validationException;
+        }
+    }
+
+    /**
+     * Validates date of birth with LocalDate input.
+     * Converts LocalDate to string format for validation.
+     * 
+     * @param dateOfBirth the date of birth as LocalDate
+     * @throws ValidationException if the date of birth is invalid
+     */
+    public static void validateDateOfBirth(LocalDate dateOfBirth) {
+        ValidationException validationException = new ValidationException("Date of birth validation failed");
+        
+        if (dateOfBirth == null) {
+            validationException.addFieldError("dateOfBirth", "Date of birth must be supplied.");
+        } else {
+            // Check if date is not in the future
+            if (dateOfBirth.isAfter(LocalDate.now())) {
+                validationException.addFieldError("dateOfBirth", "Birth date cannot be in the future.");
+            }
+            
+            // Check if customer is at least 18 years old
+            LocalDate minimumAge = LocalDate.now().minusYears(18);
+            if (dateOfBirth.isAfter(minimumAge)) {
+                validationException.addFieldError("dateOfBirth", "Customer must be at least 18 years old.");
+            }
+            
+            // Check reasonable age limits (not more than 120 years ago)
+            LocalDate maximumAge = LocalDate.now().minusYears(120);
+            if (dateOfBirth.isBefore(maximumAge)) {
+                validationException.addFieldError("dateOfBirth", "Invalid birth date - too far in the past.");
+            }
+        }
+        
+        if (validationException.hasFieldErrors()) {
+            throw validationException;
+        }
+    }
+
+    /**
+     * Validates SSN with single parameter for testing purposes.
+     * Uses default field name "SSN" for error messages.
+     * 
+     * @param ssn the SSN to validate
+     * @throws ValidationException if the SSN is invalid
+     */
+    public static void validateSSN(String ssn) {
+        validateSSN("SSN", ssn);
+    }
+
+
 }
