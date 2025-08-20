@@ -18,6 +18,7 @@ import java.util.Collections;
 import com.carddemo.service.UserDetailService;
 import com.carddemo.entity.UserSecurity;
 import com.carddemo.repository.UserSecurityRepository;
+import com.carddemo.repository.UserRepository;
 import com.carddemo.dto.UserDetailResponse;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
@@ -35,11 +36,13 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
  * - Edge cases and boundary conditions from COBOL business rules
  */
 @ExtendWith(MockitoExtension.class)
-@SpringBootTest
 public class UserDetailServiceTest {
 
     @Mock
     private UserSecurityRepository userSecurityRepository;
+    
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private UserDetailService userDetailService;
@@ -101,6 +104,11 @@ public class UserDetailServiceTest {
         lockedUserSecurity.setCredentialsNonExpired(true);
         lockedUserSecurity.setAccountNonExpired(true);
         lockedUserSecurity.setFailedLoginAttempts(5);
+        
+        // Mock UserRepository to return empty (no supplemental user data)
+        // This simulates the common case where UserSecurity is the primary source
+        // Using lenient() because not all tests call UserRepository
+        lenient().when(userRepository.findByUserId(any())).thenReturn(Optional.empty());
     }
 
     /**
@@ -271,11 +279,10 @@ public class UserDetailServiceTest {
     @Test
     void testGetUserDetail_NullUserId_ThrowsIllegalArgumentException() {
         // Act & Assert
-        IllegalArgumentException exception = assertThatThrownBy(() ->
+        assertThatThrownBy(() ->
             userDetailService.getUserDetail(null)
-        ).isInstanceOf(IllegalArgumentException.class);
-
-        assertThat(exception.getMessage()).isEqualTo("User ID can NOT be empty...");
+        ).isInstanceOf(IllegalArgumentException.class)
+         .hasMessage("User ID can NOT be empty...");
 
         // Verify no repository interaction for null input
         verify(userSecurityRepository, never()).findByUserId(any());
@@ -289,11 +296,10 @@ public class UserDetailServiceTest {
     @Test
     void testGetUserDetail_EmptyUserId_ThrowsIllegalArgumentException() {
         // Act & Assert
-        IllegalArgumentException exception = assertThatThrownBy(() ->
+        assertThatThrownBy(() ->
             userDetailService.getUserDetail(EMPTY_USER_ID)
-        ).isInstanceOf(IllegalArgumentException.class);
-
-        assertThat(exception.getMessage()).isEqualTo("User ID can NOT be empty...");
+        ).isInstanceOf(IllegalArgumentException.class)
+         .hasMessage("User ID can NOT be empty...");
 
         // Verify no repository interaction for empty input
         verify(userSecurityRepository, never()).findByUserId(any());
@@ -307,11 +313,10 @@ public class UserDetailServiceTest {
     @Test
     void testGetUserDetail_SpacesOnlyUserId_ThrowsIllegalArgumentException() {
         // Act & Assert
-        IllegalArgumentException exception = assertThatThrownBy(() ->
+        assertThatThrownBy(() ->
             userDetailService.getUserDetail(SPACES_USER_ID)
-        ).isInstanceOf(IllegalArgumentException.class);
-
-        assertThat(exception.getMessage()).isEqualTo("User ID can NOT be empty...");
+        ).isInstanceOf(IllegalArgumentException.class)
+         .hasMessage("User ID can NOT be empty...");
 
         // Verify no repository interaction for spaces-only input
         verify(userSecurityRepository, never()).findByUserId(any());
@@ -329,11 +334,10 @@ public class UserDetailServiceTest {
             .thenReturn(Optional.empty());
 
         // Act & Assert
-        RuntimeException exception = assertThatThrownBy(() ->
+        assertThatThrownBy(() ->
             userDetailService.getUserDetail(INVALID_USER_ID)
-        ).isInstanceOf(RuntimeException.class);
-
-        assertThat(exception.getMessage()).isEqualTo("User ID NOT found...");
+        ).isInstanceOf(RuntimeException.class)
+         .hasMessage("User ID NOT found...");
 
         // Verify repository interaction occurred
         verify(userSecurityRepository, times(1)).findByUserId(INVALID_USER_ID);
@@ -380,11 +384,10 @@ public class UserDetailServiceTest {
     @Test
     void testGetUserDetailByUsername_NullUsername_ThrowsIllegalArgumentException() {
         // Act & Assert
-        IllegalArgumentException exception = assertThatThrownBy(() ->
+        assertThatThrownBy(() ->
             userDetailService.getUserDetailByUsername(null)
-        ).isInstanceOf(IllegalArgumentException.class);
-
-        assertThat(exception.getMessage()).isEqualTo("Username can NOT be empty...");
+        ).isInstanceOf(IllegalArgumentException.class)
+         .hasMessage("Username can NOT be empty...");
 
         // Verify no repository interaction for null input
         verify(userSecurityRepository, never()).findByUsername(any());
@@ -402,11 +405,10 @@ public class UserDetailServiceTest {
             .thenReturn(Optional.empty());
 
         // Act & Assert
-        RuntimeException exception = assertThatThrownBy(() ->
+        assertThatThrownBy(() ->
             userDetailService.getUserDetailByUsername("unknownuser")
-        ).isInstanceOf(RuntimeException.class);
-
-        assertThat(exception.getMessage()).isEqualTo("User NOT found...");
+        ).isInstanceOf(RuntimeException.class)
+         .hasMessage("User NOT found...");
 
         // Verify repository interaction occurred
         verify(userSecurityRepository, times(1)).findByUsername("unknownuser");
@@ -558,11 +560,10 @@ public class UserDetailServiceTest {
     @Test
     void testGetUserSecurityInfo_NullUserId_ThrowsIllegalArgumentException() {
         // Act & Assert
-        IllegalArgumentException exception = assertThatThrownBy(() ->
+        assertThatThrownBy(() ->
             userDetailService.getUserSecurityInfo(null)
-        ).isInstanceOf(IllegalArgumentException.class);
-
-        assertThat(exception.getMessage()).isEqualTo("User ID can NOT be empty...");
+        ).isInstanceOf(IllegalArgumentException.class)
+         .hasMessage("User ID can NOT be empty...");
 
         // Verify no repository interaction for null input
         verify(userSecurityRepository, never()).findByUserId(any());
@@ -580,11 +581,10 @@ public class UserDetailServiceTest {
             .thenReturn(Optional.empty());
 
         // Act & Assert
-        RuntimeException exception = assertThatThrownBy(() ->
+        assertThatThrownBy(() ->
             userDetailService.getUserSecurityInfo(INVALID_USER_ID)
-        ).isInstanceOf(RuntimeException.class);
-
-        assertThat(exception.getMessage()).isEqualTo("User ID NOT found...");
+        ).isInstanceOf(RuntimeException.class)
+         .hasMessage("User ID NOT found...");
 
         // Verify repository interaction occurred
         verify(userSecurityRepository, times(1)).findByUserId(INVALID_USER_ID);
