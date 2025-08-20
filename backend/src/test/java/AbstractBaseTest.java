@@ -662,31 +662,32 @@ public abstract class AbstractBaseTest {
     protected List<Map<String, Object>> getDiscountGroupsFromFixtures() {
         return testFixtures != null ? (List<Map<String, Object>>) testFixtures.get("discountGroups") : new ArrayList<>();
     }
-}
 
-/**
- * Create test audit log entry for compliance and monitoring testing.
- * This function generates audit log entries with proper formatting
- * and data patterns matching regulatory audit requirements.
- *
- * @param userId user ID performing the audited action
- * @param action action being performed and audited
- * @param resourceId ID of the resource being accessed
- * @param timestamp timestamp of the audited action
- * @return Map representing test audit log entry
- */
-public Map<String, Object> createTestAuditLog(String userId, String action, String resourceId, LocalDateTime timestamp) {
-    Map<String, Object> auditLog = new HashMap<>();
-    auditLog.put("auditId", "AUDIT" + System.currentTimeMillis());
-    auditLog.put("userId", userId != null ? userId : TestConstants.TEST_USER_ID);
-    auditLog.put("action", action != null ? action : "TEST_ACTION");
-    auditLog.put("resourceId", resourceId != null ? resourceId : TestConstants.TEST_ACCOUNT_ID);
-    auditLog.put("timestamp", timestamp != null ? timestamp : LocalDateTime.now());
-    auditLog.put("ipAddress", "192.168.1.100");
-    auditLog.put("userAgent", "Test-Agent/1.0");
-    auditLog.put("sessionId", "TEST_SESSION_" + System.currentTimeMillis());
-    auditLog.put("result", "SUCCESS");
-    auditLog.put("details", "Test audit log entry created for compliance testing");
-    
-    return auditLog;
+    /**
+     * Create test audit log entry for compliance and monitoring testing.
+     * This method generates audit log entries with proper formatting
+     * and data patterns matching regulatory audit requirements.
+     *
+     * @param userId user ID performing the audited action
+     * @param action action being performed and audited
+     * @param resourceId ID of the resource being accessed
+     * @param timestamp timestamp of the audited action
+     * @return Map representing test audit log entry
+     */
+    protected Map<String, Object> createTestAuditLog(String userId, String action, String resourceId, LocalDateTime timestamp) {
+        Map<String, Object> auditLog = new HashMap<>();
+        auditLog.put("auditId", "AUDIT" + System.currentTimeMillis());
+        auditLog.put("userId", userId != null ? userId : TestConstants.TEST_USER_ID);
+        auditLog.put("action", action != null ? action : "TEST_ACTION");
+        auditLog.put("resourceId", resourceId != null ? resourceId : TestConstants.TEST_ACCOUNT_ID);
+        auditLog.put("timestamp", timestamp != null ? timestamp : LocalDateTime.now());
+        auditLog.put("ipAddress", "192.168.1.100");
+        auditLog.put("userAgent", "Test-Agent/1.0");
+        auditLog.put("sessionId", "TEST_SESSION_" + System.currentTimeMillis());
+        auditLog.put("result", "SUCCESS");
+        auditLog.put("details", "Test audit log entry created for compliance testing");
+        
+        logTestExecution("Test audit log created", null);
+        return auditLog;
+    }
 }
