@@ -222,7 +222,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
      * @param endDate the end date (inclusive)
      * @return List of transactions matching the type and date range
      */
-    @Query("SELECT t FROM Transaction t WHERE t.transactionType.transactionTypeCode = :transactionTypeCode " +
+    @Query("SELECT t FROM Transaction t WHERE t.transactionTypeCode = :transactionTypeCode " +
            "AND t.transactionDate BETWEEN :startDate AND :endDate")
     List<Transaction> findByTransactionTypeAndTransactionDateBetween(
         @Param("transactionTypeCode") String transactionTypeCode,
@@ -239,7 +239,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
      * @param endDate the end date (inclusive)
      * @return List of transactions matching the category and date range
      */
-    @Query("SELECT t FROM Transaction t WHERE t.transactionCategory.categoryCode = :categoryCode " +
+    @Query("SELECT t FROM Transaction t WHERE t.categoryCode = :categoryCode " +
            "AND t.transactionDate BETWEEN :startDate AND :endDate")
     List<Transaction> findByCategoryCodeAndTransactionDateBetween(
         @Param("categoryCode") String categoryCode,
@@ -370,7 +370,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
      * @return List of matching transactions
      */
     @Query("SELECT t FROM Transaction t WHERE t.accountId = :accountId " +
-           "AND t.transactionType.transactionTypeCode = :transactionTypeCode " +
+           "AND t.transactionTypeCode = :transactionTypeCode " +
            "AND t.transactionDate BETWEEN :startDate AND :endDate " +
            "ORDER BY t.transactionDate DESC")
     List<Transaction> findByAccountIdAndTransactionTypeAndDateRange(
@@ -399,19 +399,19 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
      * @param accountId the account ID to check
      * @param amount the transaction amount
      * @param merchantName the merchant name
-     * @param timeWindow the time window in minutes for duplicate detection
+     * @param cutoffDate the cutoff date for duplicate detection (time window calculated by caller)
      * @return List of potential duplicate transactions
      */
     @Query("SELECT t FROM Transaction t WHERE t.accountId = :accountId " +
            "AND t.amount = :amount " +
            "AND t.merchantName = :merchantName " +
-           "AND t.transactionDate >= CURRENT_DATE - INTERVAL :timeWindow MINUTE " +
+           "AND t.transactionDate >= :cutoffDate " +
            "ORDER BY t.transactionDate DESC")
     List<Transaction> findPotentialDuplicates(
         @Param("accountId") Long accountId,
         @Param("amount") BigDecimal amount,
         @Param("merchantName") String merchantName,
-        @Param("timeWindow") int timeWindow
+        @Param("cutoffDate") LocalDate cutoffDate
     );
 
     /**
@@ -421,8 +421,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
      * @return List of transactions flagged for manual review
      */
     @Query("SELECT t FROM Transaction t WHERE " +
-           "(t.amount > 1000.00 AND t.transactionType.transactionTypeCode = 'PU') " +
-           "OR (t.amount > 500.00 AND t.transactionType.transactionTypeCode = 'CA') " +
+           "(t.amount > 1000.00 AND t.transactionTypeCode = 'PU') " +
+           "OR (t.amount > 500.00 AND t.transactionTypeCode = 'CA') " +
            "OR t.description LIKE '%SUSPICIOUS%' " +
            "ORDER BY t.transactionDate DESC")
     List<Transaction> findTransactionsRequiringReview();
