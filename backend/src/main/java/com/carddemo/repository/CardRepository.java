@@ -248,6 +248,38 @@ public interface CardRepository extends JpaRepository<Card, String> {
     Page<Card> findAllOrderedByCardNumber(Pageable pageable);
 
     /**
+     * Finds cards by card number with pagination support.
+     * 
+     * This method provides paginated card lookup functionality for card number
+     * search operations. Supports partial matches and efficient pagination for
+     * card number-based queries in the user interface.
+     * 
+     * Database Query: SELECT * FROM card_data WHERE card_number = ? ORDER BY card_number
+     * VSAM Equivalent: Direct READ on CARDDAT using primary key with pagination
+     * 
+     * @param cardNumber the 16-digit card number to search for
+     * @param pageable pagination parameters (page, size, sort)
+     * @return Page of Card entities matching the card number
+     */
+    Page<Card> findByCardNumber(String cardNumber, Pageable pageable);
+
+    /**
+     * Finds all cards for a specific account with a specific active status with pagination.
+     * 
+     * This compound query supports business operations that need to filter
+     * cards by both account association and active status with pagination support.
+     * Essential for large result sets in account-based card listing operations.
+     * 
+     * Database Query: SELECT * FROM card_data WHERE account_id = ? AND active_status = ? ORDER BY card_number
+     * 
+     * @param accountId the account ID to search for
+     * @param activeStatus the active status ('Y' for active, 'N' for inactive)
+     * @param pageable pagination parameters (page, size, sort)
+     * @return Page of Card entities matching both criteria
+     */
+    Page<Card> findByAccountIdAndActiveStatus(Long accountId, String activeStatus, Pageable pageable);
+
+    /**
      * Checks if a card exists with specific card number and account ID combination.
      * 
      * This method validates card-account relationships for cross-reference

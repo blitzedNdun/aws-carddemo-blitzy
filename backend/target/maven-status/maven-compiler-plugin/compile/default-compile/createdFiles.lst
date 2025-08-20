@@ -58,8 +58,8 @@ com/carddemo/dto/AccountUpdateResponse.class
 com/carddemo/service/AuthorizationEngine$MerchantCategoryLimits.class
 com/carddemo/repository/UserActivityRepository.class
 com/carddemo/config/ExtractJobConfig$2.class
-com/carddemo/client/AddressValidationService.class
 com/carddemo/repository/ConfigurationManagementRepository.class
+com/carddemo/client/AddressValidationService.class
 com/carddemo/dto/CardListDto$CardListDtoBuilder.class
 com/carddemo/dto/CardDeletionResponse$CardDeletionResponseBuilder.class
 com/carddemo/dto/ValidationError.class
@@ -129,9 +129,9 @@ com/carddemo/config/ApplicationConfig$CardDemoProperties.class
 com/carddemo/entity/TransactionCategoryBalance$TransactionCategoryBalanceKey.class
 com/carddemo/dto/MainMenuResponse.class
 com/carddemo/entity/Notification.class
+com/carddemo/repository/ReportRepository.class
 com/carddemo/entity/DisclosureGroup$DisclosureGroupBuilder.class
 com/carddemo/entity/Dispute.class
-com/carddemo/repository/ReportRepository.class
 com/carddemo/dto/CardListDto.class
 com/carddemo/service/ChargebackProcessor$ValidationResult.class
 com/carddemo/entity/InterestRate.class
@@ -203,6 +203,7 @@ com/carddemo/config/ApplicationConfig$DevelopmentConfig.class
 com/carddemo/client/DataQualityService$DuplicateMatch.class
 com/carddemo/service/FileGenerationService$ValidationError.class
 com/carddemo/service/AdminMenuService.class
+com/carddemo/service/CreditCardListService.class
 com/carddemo/service/ArchivalService$1.class
 com/carddemo/batch/CustomerMaintenanceJobConfig$AddressStandardizationProcessor.class
 com/carddemo/dto/ReportMenuResponse$ReportMenuOption.class
@@ -388,8 +389,8 @@ com/carddemo/CardDemoApplication.class
 com/carddemo/service/ChargebackProcessor$StatusUpdateRecord.class
 com/carddemo/service/CustomerMaintenanceService$CustomerUpdateResult.class
 com/carddemo/client/AddressValidationService$ExternalValidationResponse.class
-com/carddemo/client/EmailClient$BounceData.class
 com/carddemo/repository/AccountRepository.class
+com/carddemo/client/EmailClient$BounceData.class
 com/carddemo/dto/UserAddResponse$UserAddResponseBuilder.class
 com/carddemo/service/CreditBureauService$CreditScoreChangeAudit.class
 com/carddemo/service/PaymentService$3.class
