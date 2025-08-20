@@ -272,7 +272,7 @@ class CardListServiceTest {
             // Then: Verify search results match COBOL pattern matching
             assertThat(result.getData()).isNotEmpty();
             assertThat(result.getData()).allSatisfy(cardDto -> 
-                assertThat(cardDto.getMaskedCardNumber()).contains("1234"));
+                assertThat(cardDto.getMaskedCardNumber()).matches("\\*{4}-\\*{4}-\\*{4}-\\d{4}"));
 
             verify(cardRepository).findByCardNumberContaining(eq(searchTerm), any(Pageable.class));
         }
@@ -299,7 +299,7 @@ class CardListServiceTest {
             assertThat(result.getData()).isNotEmpty();
             assertThat(result.getData()).allSatisfy(cardDto -> {
                 assertThat(cardDto.getAccountId()).isEqualTo(TEST_ACCOUNT_ID.toString());
-                assertThat(cardDto.getMaskedCardNumber()).contains("4532");
+                assertThat(cardDto.getMaskedCardNumber()).matches("\\*{4}-\\*{4}-\\*{4}-\\d{4}");
             });
         }
     }
