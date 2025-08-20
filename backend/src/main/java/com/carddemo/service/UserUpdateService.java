@@ -266,6 +266,16 @@ public class UserUpdateService {
      */
     public void auditUserUpdate(UserSecurity updatedUser, String changeDetails) {
         logger.info("Auditing user update operation");
+        
+        // Handle null user gracefully - this can happen in error scenarios
+        if (updatedUser == null) {
+            logger.warn("Audit called with null user - skipping user-specific logging");
+            logger.info("Updated Fields: {}", changeDetails);
+            logger.info("Updated By: System");
+            logger.info("Update Timestamp: {}", java.time.LocalDateTime.now());
+            return;
+        }
+        
         logger.info("User ID: {}", updatedUser.getUsername());
         logger.info("Updated Fields: {}", changeDetails);
         logger.info("Updated By: System"); // In a full implementation, this would capture the authenticated user

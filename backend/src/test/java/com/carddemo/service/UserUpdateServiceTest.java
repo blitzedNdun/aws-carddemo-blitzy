@@ -1,8 +1,10 @@
 package com.carddemo.service;
 
 import com.carddemo.entity.UserSecurity;
-import com.carddemo.dto.UserDto;
+import com.carddemo.dto.UserUpdateRequest;
+import com.carddemo.dto.UserUpdateResponse;
 import com.carddemo.repository.UserSecurityRepository;
+import com.carddemo.security.PasswordPolicyValidator;
 import com.carddemo.util.ValidationUtil;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -18,6 +20,7 @@ import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.*;
 
 import java.util.Optional;
+import java.util.List;
 import java.time.LocalDateTime;
 
 /**
@@ -51,6 +54,9 @@ public class UserUpdateServiceTest {
     @Mock
     private UserSecurityRepository userSecurityRepository;
 
+    @Mock
+    private PasswordPolicyValidator passwordPolicyValidator;
+
     @InjectMocks
     private UserUpdateService userUpdateService;
 
@@ -66,7 +72,7 @@ public class UserUpdateServiceTest {
     private static final String NEW_PASSWORD = "newpass456";
 
     private UserSecurity testUserSecurity;
-    private UserDto testUserDto;
+    private UserUpdateRequest testUserUpdateRequest;
 
     /**
      * Sets up test data before each test method execution.
@@ -74,14 +80,18 @@ public class UserUpdateServiceTest {
      */
     @BeforeEach
     void setUp() {
-        // Reset mock repository for clean test state
+        // Reset mocks for clean test state
         reset(userSecurityRepository);
+        reset(passwordPolicyValidator);
+        
+        // Configure default password policy validator behavior with lenient stubbing
+        lenient().doNothing().when(passwordPolicyValidator).validatePassword(anyString(), anyString(), any());
         
         // Create test UserSecurity entity matching COBOL CSUSR01Y copybook structure
         testUserSecurity = generateUserSecurity();
         
-        // Create test UserDto for update requests
-        testUserDto = generateUserDto();
+        // Create test UserUpdateRequest for update requests
+        testUserUpdateRequest = generateUserUpdateRequest();
     }
 
     /**
@@ -110,19 +120,19 @@ public class UserUpdateServiceTest {
     }
 
     /**
-     * Generates a test UserDto for update requests.
+     * Generates a test UserUpdateRequest for update requests.
      * Simulates the TestDataGenerator.generateRegularUser() method functionality.
      * 
-     * @return UserDto with test data for update operations
+     * @return UserUpdateRequest with test data for update operations
      */
-    private UserDto generateUserDto() {
-        UserDto dto = new UserDto();
-        dto.setUserId(VALID_USER_ID);
-        dto.setFirstName(VALID_FIRST_NAME);
-        dto.setLastName(VALID_LAST_NAME);
-        dto.setUserType(REGULAR_USER_TYPE);
-        dto.setPassword(VALID_PASSWORD);
-        return dto;
+    private UserUpdateRequest generateUserUpdateRequest() {
+        UserUpdateRequest request = new UserUpdateRequest();
+        request.setUserId(VALID_USER_ID);
+        request.setFirstName(VALID_FIRST_NAME);
+        request.setLastName(VALID_LAST_NAME);
+        request.setUserType(REGULAR_USER_TYPE);
+        request.setPassword(VALID_PASSWORD);
+        return request;
     }
 
     /**
@@ -162,7 +172,7 @@ public class UserUpdateServiceTest {
         @DisplayName("Should successfully update user when all fields are modified")
         void testUpdateUser_Success_AllFieldsModified() {
             // Arrange - Set up test data with modifications
-            UserDto updateRequest = generateUserDto();
+            UserUpdateRequest updateRequest = generateUserUpdateRequest();
             updateRequest.setFirstName(UPDATED_FIRST_NAME);
             updateRequest.setLastName(UPDATED_LAST_NAME);
             updateRequest.setPassword(NEW_PASSWORD);
@@ -180,10 +190,10 @@ public class UserUpdateServiceTest {
             when(userSecurityRepository.save(any(UserSecurity.class))).thenReturn(savedUser);
 
             // Act - Call updateUser method
-            boolean result = userUpdateService.updateUser(updateRequest);
+            UserUpdateResponse result = userUpdateService.updateUser(updateRequest);
 
             // Assert - Verify successful update
-            assertThat(result).isTrue();
+            assertThat(result.isSuccess()).isTrue();
             
             // Verify repository interactions
             verify(userSecurityRepository).findByUsername(VALID_USER_ID);
@@ -202,16 +212,16 @@ public class UserUpdateServiceTest {
         @DisplayName("Should return false when no modifications are detected")
         void testUpdateUser_NoModifications() {
             // Arrange - Set up identical data (no changes)
-            UserDto updateRequest = generateUserDto();
+            UserUpdateRequest updateRequest = generateUserUpdateRequest();
             UserSecurity existingUser = generateUserSecurity();
 
             when(userSecurityRepository.findByUsername(VALID_USER_ID)).thenReturn(Optional.of(existingUser));
 
             // Act - Call updateUser method
-            boolean result = userUpdateService.updateUser(updateRequest);
+            UserUpdateResponse result = userUpdateService.updateUser(updateRequest);
 
             // Assert - Verify no update occurred
-            assertThat(result).isFalse();
+            assertThat(result.isSuccess()).isFalse();
             
             // Verify repository interactions
             verify(userSecurityRepository).findByUsername(VALID_USER_ID);
@@ -222,7 +232,7 @@ public class UserUpdateServiceTest {
         @DisplayName("Should update only first name when only first name is changed")
         void testUpdateUser_OnlyFirstNameChanged() {
             // Arrange - Modify only first name
-            UserDto updateRequest = generateUserDto();
+            UserUpdateRequest updateRequest = generateUserUpdateRequest();
             updateRequest.setFirstName(UPDATED_FIRST_NAME);
 
             UserSecurity existingUser = generateUserSecurity();
@@ -233,10 +243,10 @@ public class UserUpdateServiceTest {
             when(userSecurityRepository.save(any(UserSecurity.class))).thenReturn(savedUser);
 
             // Act
-            boolean result = userUpdateService.updateUser(updateRequest);
+            UserUpdateResponse result = userUpdateService.updateUser(updateRequest);
 
             // Assert
-            assertThat(result).isTrue();
+            assertThat(result.isSuccess()).isTrue();
             verify(userSecurityRepository).save(argThat(user -> 
                 UPDATED_FIRST_NAME.equals(user.getFirstName()) &&
                 VALID_LAST_NAME.equals(user.getLastName()) &&
@@ -249,7 +259,7 @@ public class UserUpdateServiceTest {
         @DisplayName("Should update only last name when only last name is changed")
         void testUpdateUser_OnlyLastNameChanged() {
             // Arrange - Modify only last name
-            UserDto updateRequest = generateUserDto();
+            UserUpdateRequest updateRequest = generateUserUpdateRequest();
             updateRequest.setLastName(UPDATED_LAST_NAME);
 
             UserSecurity existingUser = generateUserSecurity();
@@ -260,10 +270,10 @@ public class UserUpdateServiceTest {
             when(userSecurityRepository.save(any(UserSecurity.class))).thenReturn(savedUser);
 
             // Act
-            boolean result = userUpdateService.updateUser(updateRequest);
+            UserUpdateResponse result = userUpdateService.updateUser(updateRequest);
 
             // Assert
-            assertThat(result).isTrue();
+            assertThat(result.isSuccess()).isTrue();
             verify(userSecurityRepository).save(argThat(user -> 
                 VALID_FIRST_NAME.equals(user.getFirstName()) &&
                 UPDATED_LAST_NAME.equals(user.getLastName()) &&
@@ -281,21 +291,21 @@ public class UserUpdateServiceTest {
         @DisplayName("Should validate user successfully with all required fields")
         void testValidateUser_Success() {
             // Arrange
-            UserDto validRequest = generateUserDto();
+            UserUpdateRequest validRequest = generateUserUpdateRequest();
 
             // Act & Assert - Should not throw exception
-            assertThatNoException().isThrownBy(() -> userUpdateService.validateUser(validRequest));
+            assertThatNoException().isThrownBy(() -> userUpdateService.validateUserData(validRequest));
         }
 
         @Test
         @DisplayName("Should throw exception when user ID is null")
         void testValidateUser_NullUserId() {
             // Arrange
-            UserDto invalidRequest = generateUserDto();
+            UserUpdateRequest invalidRequest = generateUserUpdateRequest();
             invalidRequest.setUserId(null);
 
             // Act & Assert
-            assertThatThrownBy(() -> userUpdateService.validateUser(invalidRequest))
+            assertThatThrownBy(() -> userUpdateService.validateUserData(invalidRequest))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("User ID can NOT be empty...");
         }
@@ -304,11 +314,11 @@ public class UserUpdateServiceTest {
         @DisplayName("Should throw exception when user ID is empty")
         void testValidateUser_EmptyUserId() {
             // Arrange
-            UserDto invalidRequest = generateUserDto();
+            UserUpdateRequest invalidRequest = generateUserUpdateRequest();
             invalidRequest.setUserId("");
 
             // Act & Assert
-            assertThatThrownBy(() -> userUpdateService.validateUser(invalidRequest))
+            assertThatThrownBy(() -> userUpdateService.validateUserData(invalidRequest))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("User ID can NOT be empty...");
         }
@@ -317,11 +327,11 @@ public class UserUpdateServiceTest {
         @DisplayName("Should throw exception when first name is null")
         void testValidateUser_NullFirstName() {
             // Arrange
-            UserDto invalidRequest = generateUserDto();
+            UserUpdateRequest invalidRequest = generateUserUpdateRequest();
             invalidRequest.setFirstName(null);
 
             // Act & Assert
-            assertThatThrownBy(() -> userUpdateService.validateUser(invalidRequest))
+            assertThatThrownBy(() -> userUpdateService.validateUserData(invalidRequest))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("First Name can NOT be empty...");
         }
@@ -330,11 +340,11 @@ public class UserUpdateServiceTest {
         @DisplayName("Should throw exception when last name is null")
         void testValidateUser_NullLastName() {
             // Arrange
-            UserDto invalidRequest = generateUserDto();
+            UserUpdateRequest invalidRequest = generateUserUpdateRequest();
             invalidRequest.setLastName(null);
 
             // Act & Assert
-            assertThatThrownBy(() -> userUpdateService.validateUser(invalidRequest))
+            assertThatThrownBy(() -> userUpdateService.validateUserData(invalidRequest))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Last Name can NOT be empty...");
         }
@@ -343,11 +353,11 @@ public class UserUpdateServiceTest {
         @DisplayName("Should throw exception when password is null")
         void testValidateUser_NullPassword() {
             // Arrange
-            UserDto invalidRequest = generateUserDto();
+            UserUpdateRequest invalidRequest = generateUserUpdateRequest();
             invalidRequest.setPassword(null);
 
             // Act & Assert
-            assertThatThrownBy(() -> userUpdateService.validateUser(invalidRequest))
+            assertThatThrownBy(() -> userUpdateService.validateUserData(invalidRequest))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Password can NOT be empty...");
         }
@@ -356,11 +366,11 @@ public class UserUpdateServiceTest {
         @DisplayName("Should throw exception when user type is null")
         void testValidateUser_NullUserType() {
             // Arrange
-            UserDto invalidRequest = generateUserDto();
+            UserUpdateRequest invalidRequest = generateUserUpdateRequest();
             invalidRequest.setUserType(null);
 
             // Act & Assert
-            assertThatThrownBy(() -> userUpdateService.validateUser(invalidRequest))
+            assertThatThrownBy(() -> userUpdateService.validateUserData(invalidRequest))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("User Type can NOT be empty...");
         }
@@ -427,7 +437,7 @@ public class UserUpdateServiceTest {
         @DisplayName("Should successfully update password when valid new password provided")
         void testUpdatePassword_Success() {
             // Arrange
-            UserDto updateRequest = generateUserDto();
+            UserUpdateRequest updateRequest = generateUserUpdateRequest();
             updateRequest.setPassword(NEW_PASSWORD);
 
             UserSecurity existingUser = generateUserSecurity();
@@ -438,10 +448,10 @@ public class UserUpdateServiceTest {
             when(userSecurityRepository.save(any(UserSecurity.class))).thenReturn(savedUser);
 
             // Act
-            boolean result = userUpdateService.updateUser(updateRequest);
+            UserUpdateResponse result = userUpdateService.updateUser(updateRequest);
 
             // Assert
-            assertThat(result).isTrue();
+            assertThat(result.isSuccess()).isTrue();
             verify(userSecurityRepository).save(argThat(user -> NEW_PASSWORD.equals(user.getPassword())));
         }
 
@@ -449,17 +459,17 @@ public class UserUpdateServiceTest {
         @DisplayName("Should not update password when same password provided")
         void testUpdatePassword_SamePassword() {
             // Arrange
-            UserDto updateRequest = generateUserDto();
+            UserUpdateRequest updateRequest = generateUserUpdateRequest();
             // Password remains the same as existing user
 
             UserSecurity existingUser = generateUserSecurity();
             when(userSecurityRepository.findByUsername(VALID_USER_ID)).thenReturn(Optional.of(existingUser));
 
             // Act
-            boolean result = userUpdateService.updateUser(updateRequest);
+            UserUpdateResponse result = userUpdateService.updateUser(updateRequest);
 
             // Assert
-            assertThat(result).isFalse(); // No modifications detected
+            assertThat(result.isSuccess()).isFalse(); // No modifications detected
             verify(userSecurityRepository, never()).save(any(UserSecurity.class));
         }
 
@@ -470,7 +480,7 @@ public class UserUpdateServiceTest {
             // The actual validation logic is tested in ValidationUtil tests
             
             // Arrange
-            UserDto updateRequest = generateUserDto();
+            UserUpdateRequest updateRequest = generateUserUpdateRequest();
             updateRequest.setPassword("validpass");
 
             UserSecurity existingUser = generateUserSecurity();
@@ -493,7 +503,7 @@ public class UserUpdateServiceTest {
         @DisplayName("Should successfully update user type from User to Admin")
         void testUpdateRole_UserToAdmin() {
             // Arrange
-            UserDto updateRequest = generateUserDto();
+            UserUpdateRequest updateRequest = generateUserUpdateRequest();
             updateRequest.setUserType(ADMIN_USER_TYPE);
 
             UserSecurity existingUser = generateUserSecurity();
@@ -504,10 +514,10 @@ public class UserUpdateServiceTest {
             when(userSecurityRepository.save(any(UserSecurity.class))).thenReturn(savedUser);
 
             // Act
-            boolean result = userUpdateService.updateUser(updateRequest);
+            UserUpdateResponse result = userUpdateService.updateUser(updateRequest);
 
             // Assert
-            assertThat(result).isTrue();
+            assertThat(result.isSuccess()).isTrue();
             verify(userSecurityRepository).save(argThat(user -> ADMIN_USER_TYPE.equals(user.getUserType())));
         }
 
@@ -515,7 +525,7 @@ public class UserUpdateServiceTest {
         @DisplayName("Should successfully update user type from Admin to User")
         void testUpdateRole_AdminToUser() {
             // Arrange
-            UserDto updateRequest = generateUserDto();
+            UserUpdateRequest updateRequest = generateUserUpdateRequest();
             updateRequest.setUserType(REGULAR_USER_TYPE);
 
             UserSecurity existingUser = generateAdminUser();
@@ -526,10 +536,10 @@ public class UserUpdateServiceTest {
             when(userSecurityRepository.save(any(UserSecurity.class))).thenReturn(savedUser);
 
             // Act
-            boolean result = userUpdateService.updateUser(updateRequest);
+            UserUpdateResponse result = userUpdateService.updateUser(updateRequest);
 
             // Assert
-            assertThat(result).isTrue();
+            assertThat(result.isSuccess()).isTrue();
             verify(userSecurityRepository).save(argThat(user -> REGULAR_USER_TYPE.equals(user.getUserType())));
         }
 
@@ -537,17 +547,17 @@ public class UserUpdateServiceTest {
         @DisplayName("Should not update when user type remains the same")
         void testUpdateRole_SameRole() {
             // Arrange
-            UserDto updateRequest = generateUserDto();
+            UserUpdateRequest updateRequest = generateUserUpdateRequest();
             // User type remains the same (REGULAR_USER_TYPE)
 
             UserSecurity existingUser = generateUserSecurity();
             when(userSecurityRepository.findByUsername(VALID_USER_ID)).thenReturn(Optional.of(existingUser));
 
             // Act
-            boolean result = userUpdateService.updateUser(updateRequest);
+            UserUpdateResponse result = userUpdateService.updateUser(updateRequest);
 
             // Assert
-            assertThat(result).isFalse(); // No modifications detected
+            assertThat(result.isSuccess()).isFalse(); // No modifications detected
             verify(userSecurityRepository, never()).save(any(UserSecurity.class));
         }
     }
@@ -624,7 +634,7 @@ public class UserUpdateServiceTest {
         @DisplayName("Should handle complete user profile update with all field changes")
         void testCompleteUserUpdate_AllFields() {
             // Arrange - Complete user update scenario
-            UserDto updateRequest = generateUserDto();
+            UserUpdateRequest updateRequest = generateUserUpdateRequest();
             updateRequest.setFirstName(UPDATED_FIRST_NAME);
             updateRequest.setLastName(UPDATED_LAST_NAME);
             updateRequest.setPassword(NEW_PASSWORD);
@@ -641,10 +651,10 @@ public class UserUpdateServiceTest {
             when(userSecurityRepository.save(any(UserSecurity.class))).thenReturn(savedUser);
 
             // Act
-            boolean result = userUpdateService.updateUser(updateRequest);
+            UserUpdateResponse result = userUpdateService.updateUser(updateRequest);
 
             // Assert
-            assertThat(result).isTrue();
+            assertThat(result.isSuccess()).isTrue();
             
             // Verify complete update flow
             verify(userSecurityRepository).findByUsername(VALID_USER_ID);
@@ -660,7 +670,7 @@ public class UserUpdateServiceTest {
         @DisplayName("Should handle user update with field length validation")
         void testUserUpdate_FieldLengthValidation() {
             // Arrange - Test COBOL field length constraints
-            UserDto updateRequest = generateUserDto();
+            UserUpdateRequest updateRequest = generateUserUpdateRequest();
             updateRequest.setFirstName(generatePicString(20)); // Max length for first name
             updateRequest.setLastName(generatePicString(20));  // Max length for last name
 
@@ -680,7 +690,7 @@ public class UserUpdateServiceTest {
         @DisplayName("Should maintain transaction integrity during user updates")
         void testUserUpdate_TransactionIntegrity() {
             // Arrange
-            UserDto updateRequest = generateUserDto();
+            UserUpdateRequest updateRequest = generateUserUpdateRequest();
             updateRequest.setFirstName(UPDATED_FIRST_NAME);
 
             UserSecurity existingUser = generateUserSecurity();
@@ -689,9 +699,14 @@ public class UserUpdateServiceTest {
             when(userSecurityRepository.save(any(UserSecurity.class)))
                 .thenThrow(new RuntimeException("Database error during save"));
 
-            // Act & Assert - Should propagate transaction errors
-            assertThatThrownBy(() -> userUpdateService.updateUser(updateRequest))
-                .isInstanceOf(RuntimeException.class);
+            // Act
+            UserUpdateResponse result = userUpdateService.updateUser(updateRequest);
+
+            // Assert - Service should return error response instead of throwing exception
+            assertThat(result).isNotNull();
+            assertThat(result.isSuccess()).isFalse();
+            assertThat(result.getMessage()).isEqualTo("Unable to Update User...");
+            assertThat(result.getErrorCode()).isEqualTo("OTHER");
             
             verify(userSecurityRepository).findByUsername(VALID_USER_ID);
             verify(userSecurityRepository).save(any(UserSecurity.class));
@@ -701,7 +716,7 @@ public class UserUpdateServiceTest {
         @DisplayName("Should handle concurrent user updates gracefully")
         void testUserUpdate_ConcurrentUpdates() {
             // Arrange - Simulate concurrent update scenario
-            UserDto updateRequest = generateUserDto();
+            UserUpdateRequest updateRequest = generateUserUpdateRequest();
             updateRequest.setFirstName(UPDATED_FIRST_NAME);
 
             UserSecurity existingUser = generateUserSecurity();
@@ -712,10 +727,10 @@ public class UserUpdateServiceTest {
             when(userSecurityRepository.save(any(UserSecurity.class))).thenReturn(savedUser);
 
             // Act
-            boolean result = userUpdateService.updateUser(updateRequest);
+            UserUpdateResponse result = userUpdateService.updateUser(updateRequest);
 
             // Assert
-            assertThat(result).isTrue();
+            assertThat(result.isSuccess()).isTrue();
             
             // Verify proper handling of concurrent updates
             verify(userSecurityRepository).findByUsername(VALID_USER_ID);
@@ -731,27 +746,31 @@ public class UserUpdateServiceTest {
         @DisplayName("Should handle repository exceptions gracefully")
         void testUpdateUser_RepositoryException() {
             // Arrange
-            UserDto updateRequest = generateUserDto();
+            UserUpdateRequest updateRequest = generateUserUpdateRequest();
             updateRequest.setFirstName(UPDATED_FIRST_NAME);
 
             when(userSecurityRepository.findByUsername(VALID_USER_ID))
                 .thenThrow(new RuntimeException("Database connection failed"));
 
-            // Act & Assert
-            assertThatThrownBy(() -> userUpdateService.updateUser(updateRequest))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("Unable to lookup User...");
+            // Act
+            UserUpdateResponse result = userUpdateService.updateUser(updateRequest);
+
+            // Assert - Service should return error response instead of throwing exception
+            assertThat(result).isNotNull();
+            assertThat(result.isSuccess()).isFalse();
+            assertThat(result.getMessage()).isEqualTo("Unable to Update User...");
+            assertThat(result.getErrorCode()).isEqualTo("OTHER");
         }
 
         @Test
         @DisplayName("Should handle validation errors during update")
         void testUpdateUser_ValidationErrors() {
             // Arrange - Invalid user data
-            UserDto invalidRequest = generateUserDto();
+            UserUpdateRequest invalidRequest = generateUserUpdateRequest();
             invalidRequest.setUserId(null); // Invalid user ID
 
             // Act & Assert
-            assertThatThrownBy(() -> userUpdateService.validateUser(invalidRequest))
+            assertThatThrownBy(() -> userUpdateService.validateUserData(invalidRequest))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("User ID can NOT be empty...");
         }
@@ -760,7 +779,7 @@ public class UserUpdateServiceTest {
         @DisplayName("Should handle save operation failures")
         void testUpdateUser_SaveFailure() {
             // Arrange
-            UserDto updateRequest = generateUserDto();
+            UserUpdateRequest updateRequest = generateUserUpdateRequest();
             updateRequest.setFirstName(UPDATED_FIRST_NAME);
 
             UserSecurity existingUser = generateUserSecurity();
@@ -769,9 +788,14 @@ public class UserUpdateServiceTest {
             when(userSecurityRepository.save(any(UserSecurity.class)))
                 .thenThrow(new RuntimeException("Save operation failed"));
 
-            // Act & Assert
-            assertThatThrownBy(() -> userUpdateService.updateUser(updateRequest))
-                .isInstanceOf(RuntimeException.class);
+            // Act
+            UserUpdateResponse result = userUpdateService.updateUser(updateRequest);
+
+            // Assert - Service should return error response instead of throwing exception
+            assertThat(result).isNotNull();
+            assertThat(result.isSuccess()).isFalse();
+            assertThat(result.getMessage()).isEqualTo("Unable to Update User...");
+            assertThat(result.getErrorCode()).isEqualTo("OTHER");
         }
     }
 
@@ -783,7 +807,7 @@ public class UserUpdateServiceTest {
         @DisplayName("Should replicate COBOL UPDATE-USER-INFO paragraph logic")
         void testCobolUpdateUserInfoParity() {
             // Arrange - Test scenario matching COBOL UPDATE-USER-INFO logic
-            UserDto updateRequest = generateUserDto();
+            UserUpdateRequest updateRequest = generateUserUpdateRequest();
             updateRequest.setFirstName(UPDATED_FIRST_NAME); // Only first name changed
 
             UserSecurity existingUser = generateUserSecurity();
@@ -794,10 +818,10 @@ public class UserUpdateServiceTest {
             when(userSecurityRepository.save(any(UserSecurity.class))).thenReturn(savedUser);
 
             // Act
-            boolean result = userUpdateService.updateUser(updateRequest);
+            UserUpdateResponse result = userUpdateService.updateUser(updateRequest);
 
             // Assert - Verify COBOL-equivalent behavior
-            assertThat(result).isTrue(); // USR-MODIFIED-YES equivalent
+            assertThat(result.isSuccess()).isTrue(); // USR-MODIFIED-YES equivalent
             verify(userSecurityRepository).save(any(UserSecurity.class)); // UPDATE-USER-SEC-FILE equivalent
         }
 
@@ -807,38 +831,38 @@ public class UserUpdateServiceTest {
             // Test each COBOL validation message for exact match
             
             // Test User ID validation
-            UserDto invalidRequest = generateUserDto();
-            invalidRequest.setUserId("");
+            UserUpdateRequest invalidUserIdRequest = generateUserUpdateRequest();
+            invalidUserIdRequest.setUserId("");
             
-            assertThatThrownBy(() -> userUpdateService.validateUser(invalidRequest))
+            assertThatThrownBy(() -> userUpdateService.validateUserData(invalidUserIdRequest))
                 .hasMessage("User ID can NOT be empty...");
 
             // Test First Name validation
-            invalidRequest = generateUserDto();
-            invalidRequest.setFirstName("");
+            UserUpdateRequest invalidFirstNameRequest = generateUserUpdateRequest();
+            invalidFirstNameRequest.setFirstName("");
             
-            assertThatThrownBy(() -> userUpdateService.validateUser(invalidRequest))
+            assertThatThrownBy(() -> userUpdateService.validateUserData(invalidFirstNameRequest))
                 .hasMessage("First Name can NOT be empty...");
 
             // Test Last Name validation
-            invalidRequest = generateUserDto();
-            invalidRequest.setLastName("");
+            UserUpdateRequest invalidLastNameRequest = generateUserUpdateRequest();
+            invalidLastNameRequest.setLastName("");
             
-            assertThatThrownBy(() -> userUpdateService.validateUser(invalidRequest))
+            assertThatThrownBy(() -> userUpdateService.validateUserData(invalidLastNameRequest))
                 .hasMessage("Last Name can NOT be empty...");
 
             // Test Password validation
-            invalidRequest = generateUserDto();
-            invalidRequest.setPassword("");
+            UserUpdateRequest invalidPasswordRequest = generateUserUpdateRequest();
+            invalidPasswordRequest.setPassword("");
             
-            assertThatThrownBy(() -> userUpdateService.validateUser(invalidRequest))
+            assertThatThrownBy(() -> userUpdateService.validateUserData(invalidPasswordRequest))
                 .hasMessage("Password can NOT be empty...");
 
             // Test User Type validation
-            invalidRequest = generateUserDto();
-            invalidRequest.setUserType("");
+            UserUpdateRequest invalidUserTypeRequest = generateUserUpdateRequest();
+            invalidUserTypeRequest.setUserType("");
             
-            assertThatThrownBy(() -> userUpdateService.validateUser(invalidRequest))
+            assertThatThrownBy(() -> userUpdateService.validateUserData(invalidUserTypeRequest))
                 .hasMessage("User Type can NOT be empty...");
         }
 
