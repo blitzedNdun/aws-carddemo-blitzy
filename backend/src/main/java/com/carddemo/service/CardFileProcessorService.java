@@ -347,7 +347,8 @@ public class CardFileProcessorService {
             }
             
             if (cardList != null) {
-                cardList.clear();
+                // Don't call clear() on potentially immutable list from repository
+                // Just set reference to null for garbage collection
                 cardList = null;
             }
             
