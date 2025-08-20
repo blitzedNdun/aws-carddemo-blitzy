@@ -14,6 +14,7 @@ import com.carddemo.dto.AccountUpdateResponse;
 import com.carddemo.dto.ValidationError;
 import com.carddemo.util.ValidationUtil;
 import com.carddemo.exception.ValidationException;
+import com.carddemo.exception.BusinessRuleException;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -189,6 +190,11 @@ public class AccountUpdateService {
             logger.warn("Validation failed for account update. AccountId: {}, Errors: {}", 
                        request.getAccountId(), ve.getFieldErrors());
             return buildValidationErrorResponse(ve, transactionId);
+            
+        } catch (BusinessRuleException bre) {
+            logger.warn("Business rule violation. AccountId: {}, TransactionId: {}, Rule: {}", 
+                       request.getAccountId(), transactionId, bre.getMessage());
+            return new AccountUpdateResponse(bre.getMessage());
             
         } catch (OptimisticLockException ole) {
             logger.warn("Optimistic locking failure. AccountId: {}, TransactionId: {}, Message: {}", 
@@ -512,6 +518,7 @@ public class AccountUpdateService {
         auditInfo.put("transactionId", transactionId);
         auditInfo.put("updateTimestamp", java.time.LocalDateTime.now());
         auditInfo.put("updatedBy", "SYSTEM"); // Could be enhanced with actual user context
+        auditInfo.put("changedFields", java.util.Arrays.asList("account", "customer")); // Track which entities were modified
         return auditInfo;
     }
 
@@ -522,11 +529,19 @@ public class AccountUpdateService {
      * @param request AccountUpdateRequest containing new values
      */
     private void applyAccountUpdates(Account account, AccountUpdateRequest request) {
+        // Store original activeStatus before any modifications for business rule checks
+        String originalActiveStatus = account.getActiveStatus();
+        
         if (request.getActiveStatus() != null) {
             account.setActiveStatus(request.getActiveStatus());
         }
         
         if (request.getCreditLimit() != null) {
+            // Business rule: Cannot modify credit limit for inactive accounts
+            if (!"Y".equals(originalActiveStatus) && 
+                !request.getCreditLimit().equals(account.getCreditLimit())) {
+                throw new BusinessRuleException("Cannot modify credit limit for inactive account", "ACCT_INACTIVE");
+            }
             account.setCreditLimit(request.getCreditLimit().setScale(2, BigDecimal.ROUND_HALF_UP));
         }
         
