@@ -359,6 +359,16 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
+                <configuration>
+                    <!-- Disable parallel execution to prevent test interference -->
+                    <forkCount>1</forkCount>
+                    <reuseForks>false</reuseForks>
+                    <parallel>none</parallel>
+                    <!-- Ensure stable test execution order -->
+                    <runOrder>alphabetical</runOrder>
+                    <!-- Prevent JVM warnings from cluttering output -->
+                    <argLine>-XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false</argLine>
+                </configuration>
             </plugin>
         </plugins>
     </build>

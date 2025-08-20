@@ -167,7 +167,7 @@ public final class TestDataGenerator {
         Customer customer = new Customer();
         
         // Generate customer ID (9 digits)
-        customer.setCustomerId(ThreadLocalRandom.current().nextLong(100000000L, 999999999L));
+        customer.setCustomerId(100000000L + (long)(random.nextDouble() * (999999999L - 100000000L)));
         
         // Generate names with proper formatting
         customer.setFirstName(FIRST_NAMES[random.nextInt(FIRST_NAMES.length)]);
@@ -221,7 +221,7 @@ public final class TestDataGenerator {
         Transaction transaction = new Transaction();
         
         // Generate transaction ID
-        transaction.setTransactionId(ThreadLocalRandom.current().nextLong(1000000000000000L, 9999999999999999L));
+        transaction.setTransactionId(1000000000000000L + (long)(random.nextDouble() * (9999999999999999L - 1000000000000000L)));
         
         // Generate account ID
         transaction.setAccountId(generateAccountId());
@@ -274,7 +274,7 @@ public final class TestDataGenerator {
         
         // Generate account ID and customer ID
         card.setAccountId(generateAccountId());
-        card.setCustomerId(ThreadLocalRandom.current().nextLong(100000000L, 999999999L));
+        card.setCustomerId(100000000L + (long)(random.nextDouble() * (999999999L - 100000000L)));
         
         // Generate CVV (3 digits)
         card.setCvvCode(String.format("%03d", random.nextInt(1000)));
@@ -449,7 +449,7 @@ public final class TestDataGenerator {
         String ssn = String.format("%03d%02d%04d", area, group, serial);
         
         try {
-            ValidationUtil.validateSSN(ssn);
+            ValidationUtil.validateSSN("SSN", ssn);
             return ssn;
         } catch (Exception e) {
             // Fallback to safe default if validation fails
@@ -471,9 +471,11 @@ public final class TestDataGenerator {
             String number = String.format("%04d", random.nextInt(10000));
             
             String phoneNumber = areaCode + exchange + number;
-            ValidationUtil.validatePhoneAreaCode(areaCode);
-            
-            return phoneNumber;
+            if (ValidationUtil.isValidPhoneAreaCode(areaCode)) {
+                return phoneNumber;
+            } else {
+                return "5551234567"; // Fallback
+            }
         } catch (Exception e) {
             // Fallback to safe default
             return "5551234567";
@@ -574,7 +576,7 @@ public final class TestDataGenerator {
      * @return Long merchant ID
      */
     public static Long generateMerchantId() {
-        return ThreadLocalRandom.current().nextLong(100000000L, 999999999L);
+        return 100000000L + (long)(random.nextDouble() * (999999999L - 100000000L));
     }
 
     /**
@@ -584,249 +586,250 @@ public final class TestDataGenerator {
      * @return Long account ID
      */
     public static Long generateAccountId() {
-        return ThreadLocalRandom.current().nextLong(10000000000L, 99999999999L);
+        // Use seeded random for reproducibility instead of ThreadLocalRandom
+        return 10000000000L + (long)(random.nextDouble() * (99999999999L - 10000000000L));
     }
-}
 
 /**
- * Generates card cross-reference data for testing.
- * Creates card-to-account mappings for relationship testing.
- * 
- * @return formatted card cross-reference string
- */
-public static String generateCardXref() {
-    String cardNumber = TestDataGenerator.generatePicString(16, true);
-    Long customerId = ThreadLocalRandom.current().nextLong(100000000L, 999999999L);
-    Long accountId = TestDataGenerator.generateAccountId();
+     * Generates card cross-reference data for testing.
+     * Creates card-to-account mappings for relationship testing.
+     * 
+     * @return formatted card cross-reference string
+     */
+    public static String generateCardXref() {
+        String cardNumber = TestDataGenerator.generatePicString(16, true);
+        Long customerId = ThreadLocalRandom.current().nextLong(100000000L, 999999999L);
+        Long accountId = TestDataGenerator.generateAccountId();
+        
+        return cardNumber + String.format("%09d", customerId) + String.format("%011d", accountId);
+    }
     
-    return cardNumber + String.format("%09d", customerId) + String.format("%011d", accountId);
-}
-
-/**
- * Generates a realistic FICO credit score.
- * Creates scores within valid FICO range (300-850).
- * 
- * @return Integer FICO score
- */
-public static Integer generateFicoScore() {
-    // Generate FICO scores with realistic distribution
-    // Most scores fall between 600-750
-    int baseScore = 600;
-    int range = 150;
-    int score = baseScore + ThreadLocalRandom.current().nextInt(range);
+    /**
+     * Generates a realistic FICO credit score.
+     * Creates scores within valid FICO range (300-850).
+     * 
+     * @return Integer FICO score
+     */
+    public static Integer generateFicoScore() {
+        // Generate FICO scores with realistic distribution
+        // Most scores fall between 600-750
+        int baseScore = 600;
+        int range = 150;
+        int score = baseScore + ThreadLocalRandom.current().nextInt(range);
+        
+        // Ensure within valid FICO range
+        if (score < 300) score = 300;
+        if (score > 850) score = 850;
+        
+        return score;
+    }
     
-    // Ensure within valid FICO range
-    if (score < 300) score = 300;
-    if (score > 850) score = 850;
+    /**
+     * Generates a realistic address line for customer data.
+     * Creates street addresses with proper formatting.
+     * 
+     * @return formatted address string
+     */
+    public static String generateAddress() {
+        int streetNumber = 1 + ThreadLocalRandom.current().nextInt(9999);
+        String[] streetNames = {"MAIN ST", "ELM ST", "OAK AVE", "PARK DR", "FIRST ST", "SECOND AVE"};
+        String streetName = streetNames[ThreadLocalRandom.current().nextInt(streetNames.length)];
+        
+        return streetNumber + " " + streetName;
+    }
     
-    return score;
-}
-
-/**
- * Generates a realistic address line for customer data.
- * Creates street addresses with proper formatting.
- * 
- * @return formatted address string
- */
-public static String generateAddress() {
-    int streetNumber = 1 + ThreadLocalRandom.current().nextInt(9999);
-    String[] streetNames = {"MAIN ST", "ELM ST", "OAK AVE", "PARK DR", "FIRST ST", "SECOND AVE"};
-    String streetName = streetNames[ThreadLocalRandom.current().nextInt(streetNames.length)];
-    
-    return streetNumber + " " + streetName;
-}
-
-/**
- * Generates a realistic date of birth for customer testing.
- * Creates birth dates for adults (18-80 years old).
- * 
- * @return LocalDate representing date of birth
- */
-public static LocalDate generateDateOfBirth() {
-    // Generate ages between 18 and 80 years
-    int ageInYears = 18 + ThreadLocalRandom.current().nextInt(62);
-    LocalDate birthDate = LocalDate.now().minusYears(ageInYears);
-    
-    // Add random days variation within the year
-    int dayVariation = ThreadLocalRandom.current().nextInt(365);
-    birthDate = birthDate.minusDays(dayVariation);
-    
-    try {
-        // Validate using DateConversionUtil
-        String dateStr = birthDate.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        if (DateConversionUtil.validateDate(dateStr)) {
-            return birthDate;
+    /**
+     * Generates a realistic date of birth for customer testing.
+     * Creates birth dates for adults (18-80 years old).
+     * 
+     * @return LocalDate representing date of birth
+     */
+    public static LocalDate generateDateOfBirth() {
+        // Generate ages between 18 and 80 years
+        int ageInYears = 18 + ThreadLocalRandom.current().nextInt(62);
+        LocalDate birthDate = LocalDate.now().minusYears(ageInYears);
+        
+        // Add random days variation within the year
+        int dayVariation = ThreadLocalRandom.current().nextInt(365);
+        birthDate = birthDate.minusDays(dayVariation);
+        
+        try {
+            // Validate using DateConversionUtil
+            String dateStr = birthDate.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+            if (DateConversionUtil.validateDate(dateStr)) {
+                return birthDate;
+            }
+        } catch (Exception e) {
+            // Fallback if validation fails
         }
-    } catch (Exception e) {
-        // Fallback if validation fails
+        
+        // Safe fallback
+        return LocalDate.now().minusYears(30);
     }
     
-    // Safe fallback
-    return LocalDate.now().minusYears(30);
-}
-
-/**
- * Generates a transaction type for transaction testing.
- * Creates transaction type codes from predefined set.
- * 
- * @return transaction type code string
- */
-public static String generateTransactionType() {
-    String[] types = {"01", "02", "03", "04", "05", "06", "07", "08", "09", "10"};
-    return types[ThreadLocalRandom.current().nextInt(types.length)];
-}
-
-/**
- * Generates a list of transaction types for testing.
- * Creates multiple transaction type codes.
- * 
- * @param count number of transaction types to generate
- * @return List of transaction type strings
- */
-public static List<String> generateTransactionTypeList(int count) {
-    List<String> types = new ArrayList<>();
-    for (int i = 0; i < count; i++) {
-        types.add(generateTransactionType());
+    /**
+     * Generates a transaction type for transaction testing.
+     * Creates transaction type codes from predefined set.
+     * 
+     * @return transaction type code string
+     */
+    public static String generateTransactionType() {
+        String[] types = {"01", "02", "03", "04", "05", "06", "07", "08", "09", "10"};
+        return types[ThreadLocalRandom.current().nextInt(types.length)];
     }
-    return types;
-}
-
-/**
- * Generates a transaction category for transaction testing.
- * Creates transaction category codes from predefined set.
- * 
- * @return transaction category code string
- */
-public static String generateTransactionCategory() {
-    String[] categories = {"5411", "5812", "5732", "5541", "5999", "5814", "5912", "4111", "4121", "4131"};
-    return categories[ThreadLocalRandom.current().nextInt(categories.length)];
-}
-
-/**
- * Generates a list of transaction categories for testing.
- * Creates multiple transaction category codes.
- * 
- * @param count number of transaction categories to generate
- * @return List of transaction category strings
- */
-public static List<String> generateTransactionCategoryList(int count) {
-    List<String> categories = new ArrayList<>();
-    for (int i = 0; i < count; i++) {
-        categories.add(generateTransactionCategory());
+    
+    /**
+     * Generates a list of transaction types for testing.
+     * Creates multiple transaction type codes.
+     * 
+     * @param count number of transaction types to generate
+     * @return List of transaction type strings
+     */
+    public static List<String> generateTransactionTypeList(int count) {
+        List<String> types = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            types.add(generateTransactionType());
+        }
+        return types;
     }
-    return categories;
-}
-
-/**
- * Generates a disclosure group for account testing.
- * Creates disclosure group identifiers for account configuration.
- * 
- * @return disclosure group identifier string
- */
-public static String generateDisclosureGroup() {
-    String[] groups = {"GROUP01", "GROUP02", "GROUP03", "STANDARD", "PREMIUM", "BASIC"};
-    return groups[ThreadLocalRandom.current().nextInt(groups.length)];
-}
-
-/**
- * Generates a list of disclosure groups for testing.
- * Creates multiple disclosure group identifiers.
- * 
- * @param count number of disclosure groups to generate
- * @return List of disclosure group strings
- */
-public static List<String> generateDisclosureGroupList(int count) {
-    List<String> groups = new ArrayList<>();
-    for (int i = 0; i < count; i++) {
-        groups.add(generateDisclosureGroup());
+    
+    /**
+     * Generates a transaction category for transaction testing.
+     * Creates transaction category codes from predefined set.
+     * 
+     * @return transaction category code string
+     */
+    public static String generateTransactionCategory() {
+        String[] categories = {"5411", "5812", "5732", "5541", "5999", "5814", "5912", "4111", "4121", "4131"};
+        return categories[ThreadLocalRandom.current().nextInt(categories.length)];
     }
-    return groups;
-}
-
-/**
- * Generates user security data for authentication testing.
- * Creates user credentials and security information.
- * 
- * @return user security data string
- */
-public static String generateUserSecurity() {
-    String userId = TestDataGenerator.generatePicString(8, false);
-    String password = TestDataGenerator.generatePicString(8, false);
-    String userType = ThreadLocalRandom.current().nextBoolean() ? "A" : "U";
     
-    return userId + ":" + password + ":" + userType;
-}
-
-/**
- * Generates admin user data for testing.
- * Creates administrative user accounts with proper privileges.
- * 
- * @return admin user data string
- */
-public static String generateAdminUser() {
-    String firstName = TestDataGenerator.FIRST_NAMES[ThreadLocalRandom.current().nextInt(TestDataGenerator.FIRST_NAMES.length)];
-    String lastName = TestDataGenerator.LAST_NAMES[ThreadLocalRandom.current().nextInt(TestDataGenerator.LAST_NAMES.length)];
-    String userId = (firstName.substring(0, 1) + lastName.substring(0, Math.min(7, lastName.length()))).toUpperCase();
+    /**
+     * Generates a list of transaction categories for testing.
+     * Creates multiple transaction category codes.
+     * 
+     * @param count number of transaction categories to generate
+     * @return List of transaction category strings
+     */
+    public static List<String> generateTransactionCategoryList(int count) {
+        List<String> categories = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            categories.add(generateTransactionCategory());
+        }
+        return categories;
+    }
     
-    return userId + ":ADMIN123:A:" + firstName + ":" + lastName;
-}
-
-/**
- * Generates regular user data for testing.
- * Creates standard user accounts with basic privileges.
- * 
- * @return regular user data string
- */
-public static String generateRegularUser() {
-    String firstName = TestDataGenerator.FIRST_NAMES[ThreadLocalRandom.current().nextInt(TestDataGenerator.FIRST_NAMES.length)];
-    String lastName = TestDataGenerator.LAST_NAMES[ThreadLocalRandom.current().nextInt(TestDataGenerator.LAST_NAMES.length)];
-    String userId = (firstName.substring(0, 1) + lastName.substring(0, Math.min(7, lastName.length()))).toUpperCase();
+    /**
+     * Generates a disclosure group for account testing.
+     * Creates disclosure group identifiers for account configuration.
+     * 
+     * @return disclosure group identifier string
+     */
+    public static String generateDisclosureGroup() {
+        String[] groups = {"GROUP01", "GROUP02", "GROUP03", "STANDARD", "PREMIUM", "BASIC"};
+        return groups[ThreadLocalRandom.current().nextInt(groups.length)];
+    }
     
-    return userId + ":USER123:U:" + firstName + ":" + lastName;
-}
-
-/**
- * Generates menu options for UI testing.
- * Creates menu configuration data for application navigation.
- * 
- * @return menu options data string
- */
-public static String generateMenuOptions() {
-    String[] options = {
-        "1:ACCOUNT:COACTVW", "2:CARD:COCRDLI", "3:CUSTOMER:COUSR00",
-        "4:TRANSACTION:COTRN00", "5:REPORTS:CORPT00", "6:ADMIN:COADM01"
-    };
+    /**
+     * Generates a list of disclosure groups for testing.
+     * Creates multiple disclosure group identifiers.
+     * 
+     * @param count number of disclosure groups to generate
+     * @return List of disclosure group strings
+     */
+    public static List<String> generateDisclosureGroupList(int count) {
+        List<String> groups = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            groups.add(generateDisclosureGroup());
+        }
+        return groups;
+    }
     
-    return options[ThreadLocalRandom.current().nextInt(options.length)];
-}
-
-/**
- * Generates account statement data for reporting tests.
- * Creates statement information for account reporting.
- * 
- * @return account statement data string
- */
-public static String generateAccountStatementData() {
-    Long accountId = TestDataGenerator.generateAccountId();
-    LocalDate statementDate = LocalDate.now().minusMonths(1);
-    BigDecimal beginningBalance = TestDataGenerator.generateBalance();
-    BigDecimal endingBalance = TestDataGenerator.generateBalance();
+    /**
+     * Generates user security data for authentication testing.
+     * Creates user credentials and security information.
+     * 
+     * @return user security data string
+     */
+    public static String generateUserSecurity() {
+        String userId = TestDataGenerator.generatePicString(8, false);
+        String password = TestDataGenerator.generatePicString(8, false);
+        String userType = ThreadLocalRandom.current().nextBoolean() ? "A" : "U";
+        
+        return userId + ":" + password + ":" + userType;
+    }
     
-    return String.format("%011d:%s:%.2f:%.2f", 
-        accountId, statementDate, beginningBalance.doubleValue(), endingBalance.doubleValue());
-}
-
-/**
- * Generates balance data for account balance testing.
- * Creates balance information for account processing.
- * 
- * @return balance data string
- */
-public static String generateBalanceData() {
-    BigDecimal currentBalance = TestDataGenerator.generateBalance();
-    BigDecimal availableBalance = currentBalance.subtract(TestDataGenerator.generateComp3BigDecimal(2, 1000.0));
-    BigDecimal creditLimit = TestDataGenerator.generateCreditLimit();
+    /**
+     * Generates admin user data for testing.
+     * Creates administrative user accounts with proper privileges.
+     * 
+     * @return admin user data string
+     */
+    public static String generateAdminUser() {
+        String firstName = TestDataGenerator.FIRST_NAMES[ThreadLocalRandom.current().nextInt(TestDataGenerator.FIRST_NAMES.length)];
+        String lastName = TestDataGenerator.LAST_NAMES[ThreadLocalRandom.current().nextInt(TestDataGenerator.LAST_NAMES.length)];
+        String userId = (firstName.substring(0, 1) + lastName.substring(0, Math.min(7, lastName.length()))).toUpperCase();
+        
+        return userId + ":ADMIN123:A:" + firstName + ":" + lastName;
+    }
     
-    return String.format("%.2f:%.2f:%.2f", 
-        currentBalance.doubleValue(), availableBalance.doubleValue(), creditLimit.doubleValue());
+    /**
+     * Generates regular user data for testing.
+     * Creates standard user accounts with basic privileges.
+     * 
+     * @return regular user data string
+     */
+    public static String generateRegularUser() {
+        String firstName = TestDataGenerator.FIRST_NAMES[ThreadLocalRandom.current().nextInt(TestDataGenerator.FIRST_NAMES.length)];
+        String lastName = TestDataGenerator.LAST_NAMES[ThreadLocalRandom.current().nextInt(TestDataGenerator.LAST_NAMES.length)];
+        String userId = (firstName.substring(0, 1) + lastName.substring(0, Math.min(7, lastName.length()))).toUpperCase();
+        
+        return userId + ":USER123:U:" + firstName + ":" + lastName;
+    }
+    
+    /**
+     * Generates menu options for UI testing.
+     * Creates menu configuration data for application navigation.
+     * 
+     * @return menu options data string
+     */
+    public static String generateMenuOptions() {
+        String[] options = {
+            "1:ACCOUNT:COACTVW", "2:CARD:COCRDLI", "3:CUSTOMER:COUSR00",
+            "4:TRANSACTION:COTRN00", "5:REPORTS:CORPT00", "6:ADMIN:COADM01"
+        };
+        
+        return options[ThreadLocalRandom.current().nextInt(options.length)];
+    }
+    
+    /**
+     * Generates account statement data for reporting tests.
+     * Creates statement information for account reporting.
+     * 
+     * @return account statement data string
+     */
+    public static String generateAccountStatementData() {
+        Long accountId = TestDataGenerator.generateAccountId();
+        LocalDate statementDate = LocalDate.now().minusMonths(1);
+        BigDecimal beginningBalance = TestDataGenerator.generateBalance();
+        BigDecimal endingBalance = TestDataGenerator.generateBalance();
+        
+        return String.format("%011d:%s:%.2f:%.2f", 
+            accountId, statementDate, beginningBalance.doubleValue(), endingBalance.doubleValue());
+    }
+    
+    /**
+     * Generates balance data for account balance testing.
+     * Creates balance information for account processing.
+     * 
+     * @return balance data string
+     */
+    public static String generateBalanceData() {
+        BigDecimal currentBalance = TestDataGenerator.generateBalance();
+        BigDecimal availableBalance = currentBalance.subtract(TestDataGenerator.generateComp3BigDecimal(2, 1000.0));
+        BigDecimal creditLimit = TestDataGenerator.generateCreditLimit();
+        
+        return String.format("%.2f:%.2f:%.2f", 
+            currentBalance.doubleValue(), availableBalance.doubleValue(), creditLimit.doubleValue());
+    }
 }
