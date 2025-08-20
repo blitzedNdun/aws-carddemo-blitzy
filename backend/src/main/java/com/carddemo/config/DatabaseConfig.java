@@ -7,13 +7,13 @@ package com.carddemo.config;
 
 import com.carddemo.entity.Account;
 import com.carddemo.entity.Transaction;
-import com.carddemo.repository.AccountRepository;
+
 import com.carddemo.util.CobolDataConverter;
 
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
@@ -21,8 +21,6 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.Module;
 
 import javax.sql.DataSource;
 import jakarta.persistence.EntityManagerFactory;
@@ -41,15 +39,14 @@ import java.util.Properties;
  * - Configure transaction management with isolation levels equivalent to CICS SYNCPOINT behavior  
  * - Register COBOL data type converters for exact precision preservation (COMP-3 to BigDecimal)
  * - Enable entity scanning for Account, Transaction, and related domain entities
- * - Configure repository scanning for Spring Data JPA interfaces replacing VSAM file operations
- * - Set up Jackson ObjectMapper with BigDecimal serialization for REST API compatibility
+ * - Provide transaction management beans for Spring Data JPA repositories (scanning handled by main application)
  * 
  * Technical Implementation:
  * - HikariCP connection pooling: maxPoolSize=20, minimumIdle=5, optimized for sub-200ms response times
  * - Hibernate JPA configuration: PostgreSQL dialect, DDL validation, SQL logging for development
  * - Transaction isolation: READ_COMMITTED level preventing dirty reads while allowing concurrency
  * - Entity package scanning: com.carddemo.entity for JPA entity discovery and mapping
- * - Repository package scanning: com.carddemo.repository for Spring Data JPA interface activation
+ * - Transaction management: JPA transaction manager for repository and service layer integration
  * - Custom converters: COBOL COMP-3 packed decimal to BigDecimal with scale=2 and HALF_UP rounding
  * 
  * VSAM-to-PostgreSQL Migration Support:
@@ -65,11 +62,6 @@ import java.util.Properties;
  */
 @Configuration
 @EnableAutoConfiguration
-@EnableJpaRepositories(
-    basePackages = "com.carddemo.repository",
-    entityManagerFactoryRef = "entityManagerFactory",
-    transactionManagerRef = "transactionManager"
-)
 public class DatabaseConfig {
 
     // Database connection configuration constants
@@ -288,65 +280,7 @@ public class DatabaseConfig {
         return transactionManager;
     }
 
-    /**
-     * Configures Jackson ObjectMapper with COBOL data type conversion support for REST API serialization.
-     * 
-     * This method creates a specialized ObjectMapper that handles BigDecimal serialization and 
-     * deserialization with COBOL COMP-3 precision preservation, ensuring exact monetary calculations
-     * across REST API boundaries while maintaining compatibility with existing business logic.
-     * 
-     * COBOL Data Type Integration:
-     * - BigDecimal precision: Scale=2 with HALF_UP rounding matching COBOL ROUNDED clause behavior
-     * - COMP-3 compatibility: Custom serializers preserving packed decimal precision in JSON
-     * - Monetary formatting: Currency-aware serialization for financial amounts
-     * - Type safety: Strict numeric type handling preventing precision loss in JSON conversion
-     * 
-     * REST API Compatibility:
-     * - JSON serialization: BigDecimal values serialized as strings to preserve exact precision  
-     * - Date handling: LocalDate and LocalDateTime serialization with ISO-8601 format
-     * - Null value handling: Consistent null value processing across all data types
-     * - Error handling: Graceful handling of invalid JSON input with appropriate error responses
-     * 
-     * Performance Optimizations:
-     * - Plain string output: BigDecimal serialization without scientific notation
-     * - Module registration: Custom serializer modules for optimized type handling
-     * - Feature configuration: Optimized Jackson features for CardDemo data requirements
-     * - Memory efficiency: Reduced object allocation during JSON processing
-     * 
-     * Integration Points:
-     * - Spring Boot auto-configuration: Automatic registration with Spring MVC controllers
-     * - Service layer: Consistent data type handling across all application layers
-     * - Database operations: Seamless conversion between JSON, Java objects, and database storage
-     * - Legacy interfaces: Compatible with existing COBOL data exchange formats
-     * 
-     * @return configured ObjectMapper with COBOL data type conversion capabilities
-     */
-    @Bean 
-    public ObjectMapper objectMapper() {
-        ObjectMapper mapper = new ObjectMapper();
-        
-        // Configure Jackson with COBOL data type support using CobolDataConverter
-        mapper = CobolDataConverter.configureObjectMapper(mapper);
-        
-        // Register custom BigDecimal module for COMP-3 precision preservation
-        Module bigDecimalModule = CobolDataConverter.createBigDecimalModule();
-        mapper.registerModule(bigDecimalModule);
-        
-        // Configure additional Jackson features for CardDemo requirements
-        mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        mapper.configure(com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        mapper.configure(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-        
-        // Configure BigDecimal handling
-        mapper.enable(com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
-        mapper.enable(com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_INTEGER_FOR_INTS);
-        mapper.configure(com.fasterxml.jackson.core.JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN, true);
-        
-        // Configure Java 8 time module for LocalDate/LocalDateTime support
-        mapper.findAndRegisterModules();
-        
-        return mapper;
-    }
+
 
     /**
      * Resolves Spring property placeholders to actual values.
