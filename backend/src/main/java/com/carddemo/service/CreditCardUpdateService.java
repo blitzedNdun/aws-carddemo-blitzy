@@ -103,7 +103,7 @@ public class CreditCardUpdateService {
      */
     public CreditCardUpdateResponse updateCreditCard(CreditCardUpdateRequest request) {
         logger.info("Starting credit card update for card number: {}", 
-                   request.getCardNumber() != null ? request.getCardNumber().replaceAll("\\d(?=\\d{4})", "*") : "null");
+                   request != null && request.getCardNumber() != null ? request.getCardNumber().replaceAll("\\d(?=\\d{4})", "*") : "null");
 
         try {
             // Step 1: Validate input request (1000-PROCESS-INPUTS from COCRDUPC.CBL)
@@ -127,12 +127,16 @@ public class CreditCardUpdateService {
             // Step 5: Build successful response
             return buildResponse(updatedCard, true, "Changes committed to database");
 
+        } catch (IllegalArgumentException e) {
+            // Let validation exceptions bubble up unchanged
+            logger.error("Validation error during card update: {}", e.getMessage());
+            throw e;
         } catch (ResourceNotFoundException e) {
             logger.error("Card not found during update: {}", e.getMessage());
             throw e;
         } catch (OptimisticLockException e) {
             logger.error("Optimistic locking conflict during card update: {}", e.getMessage());
-            throw new ConcurrencyException("Card", request.getCardNumber(), 
+            throw new ConcurrencyException("Card", request != null ? request.getCardNumber() : "unknown", 
                                          "Record changed by some one else. Please review", e);
         } catch (Exception e) {
             logger.error("Unexpected error during card update: {}", e.getMessage(), e);
