@@ -137,7 +137,7 @@ public class SecurityTestConfig {
         
         String testToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJURVNUVVNSIiwiaWF0IjoxNjAwMDAwMDAwLCJleHAiOjE2MDAwMDM2MDB9.test";
         
-        Mockito.when(mockService.generateToken(TestConstants.TEST_USER_ID))
+        Mockito.when(mockService.generateToken(Mockito.any(UserDetails.class)))
                .thenReturn(testToken);
         Mockito.when(mockService.validateToken(testToken))
                .thenReturn(true);
@@ -177,12 +177,12 @@ public class SecurityTestConfig {
      */
     public UserSecurity createTestUser() {
         UserSecurity testUser = new UserSecurity();
-        testUser.setUserId(TestConstants.TEST_USER_ID);
+        testUser.setSecUsrId(TestConstants.TEST_USER_ID);
+        testUser.setUsername(TestConstants.TEST_USER_ID);
         testUser.setPassword(TestConstants.TEST_USER_PASSWORD);
         testUser.setUserType("U"); // Regular user type from COBOL
         testUser.setFirstName("Test");
         testUser.setLastName("User");
-        testUser.setStatus("A"); // Active status
         return testUser;
     }
     
@@ -193,12 +193,12 @@ public class SecurityTestConfig {
      */
     public UserSecurity createTestAdminUser() {
         UserSecurity adminUser = new UserSecurity();
-        adminUser.setUserId("ADMIN01");
+        adminUser.setSecUsrId("ADMIN01");
+        adminUser.setUsername("ADMIN01");
         adminUser.setPassword("ADMIN123");
         adminUser.setUserType("A"); // Admin user type from COBOL
         adminUser.setFirstName("Admin");
         adminUser.setLastName("User");
-        adminUser.setStatus("A"); // Active status
         return adminUser;
     }
     
@@ -210,13 +210,8 @@ public class SecurityTestConfig {
      * @return Authentication object for testing
      */
     public Authentication createTestAuthentication(String username, Collection<SimpleGrantedAuthority> authorities) {
-        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-            username, 
-            "password", 
-            authorities
-        );
-        auth.setAuthenticated(true);
-        return auth;
+        // Create authenticated token using the constructor that takes authorities
+        return new UsernamePasswordAuthenticationToken(username, "password", authorities);
     }
     
     /**
@@ -330,10 +325,8 @@ class TestAuthenticationBuilder {
             authorities.add(new SimpleGrantedAuthority(SecurityConstants.ROLE_USER));
         }
         
-        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-            username, password, authorities);
-        auth.setAuthenticated(true);
-        return auth;
+        // Create authenticated token using the constructor that takes authorities
+        return new UsernamePasswordAuthenticationToken(username, password, authorities);
     }
     
     /**
@@ -361,7 +354,7 @@ class TestSecurityContextManager {
     public void setupUserContext() {
         Authentication auth = new TestAuthenticationBuilder()
             .withUsername(TestConstants.TEST_USER_ID)
-            .withRole(TestConstants.TEST_USER_ROLE)
+            .withRole("USER")
             .build();
         
         SecurityContext context = SecurityContextHolder.createEmptyContext();
@@ -376,7 +369,7 @@ class TestSecurityContextManager {
     public void setupAdminContext() {
         Authentication auth = new TestAuthenticationBuilder()
             .withUsername("ADMIN01")
-            .withRole(TestConstants.TEST_ADMIN_ROLE)
+            .withRole("ADMIN")
             .build();
         
         SecurityContext context = SecurityContextHolder.createEmptyContext();
