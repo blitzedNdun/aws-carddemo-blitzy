@@ -10,8 +10,10 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -66,10 +68,12 @@ import java.util.Objects;
            @Index(name = "idx_transactions_type_code", columnList = "transaction_type_code"),
            @Index(name = "idx_transactions_category_code", columnList = "category_code")
        })
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(exclude = {"account", "card", "transactionType", "transactionCategory"})
 public class Transaction {
 
     // Constants for field constraints (matching COBOL PIC clauses)
@@ -211,6 +215,15 @@ public class Transaction {
     @Column(name = "transaction_type_code", length = TYPE_CODE_LENGTH)
     @Size(max = TYPE_CODE_LENGTH, message = "Transaction type code cannot exceed " + TYPE_CODE_LENGTH + " characters")
     private String transactionTypeCode;
+
+    /**
+     * Authorization code for transaction approval.
+     * Maps to TRAN-AUTH-CD field from COBOL copybook (PIC X(06)).
+     * Used for transaction authorization verification and approval tracking.
+     */
+    @Column(name = "authorization_code", length = 6)
+    @Size(max = 6, message = "Authorization code cannot exceed 6 characters")
+    private String authorizationCode;
 
     // Relationship entities
 
@@ -428,6 +441,14 @@ public class Transaction {
         this.transactionTypeCode = transactionTypeCode;
     }
 
+    public String getAuthorizationCode() {
+        return authorizationCode;
+    }
+
+    public void setAuthorizationCode(String authorizationCode) {
+        this.authorizationCode = authorizationCode;
+    }
+
     // JPA lifecycle methods
 
     /**
@@ -534,6 +555,10 @@ public class Transaction {
         
         if (subcategoryCode != null) {
             subcategoryCode = subcategoryCode.trim().toUpperCase();
+        }
+        
+        if (authorizationCode != null) {
+            authorizationCode = authorizationCode.trim().toUpperCase();
         }
     }
 
