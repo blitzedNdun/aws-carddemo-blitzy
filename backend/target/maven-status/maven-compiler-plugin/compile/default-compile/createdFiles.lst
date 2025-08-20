@@ -115,6 +115,7 @@ com/carddemo/batch/ArchiveJobConfig.class
 com/carddemo/dto/ReportRequest.class
 com/carddemo/entity/FeeTransaction$TransactionType.class
 com/carddemo/service/FileService.class
+com/carddemo/service/TransactionValidationService$ValidationResult.class
 com/carddemo/service/PaymentService$4.class
 com/carddemo/batch/FeeAssessmentJobConfig$FeeAssessmentException.class
 com/carddemo/service/PaymentService$PaymentProcessingException.class
@@ -298,6 +299,7 @@ com/carddemo/dto/AdminReportResponse.class
 com/carddemo/service/PaymentService$PaymentNetworkTimeoutException.class
 com/carddemo/batch/BalanceReconciliationJobConfig.class
 com/carddemo/dto/DisclosureGroupDto.class
+com/carddemo/service/TransactionValidationService.class
 com/carddemo/service/ReportingService$TransactionSummary.class
 com/carddemo/dto/Message.class
 com/carddemo/service/CustomerFileProcessorService.class
@@ -538,3 +540,5 @@ com/carddemo/service/FileGenerationService$BatchResult.class
 com/carddemo/security/JwtRequestFilter.class
 com/carddemo/service/MenuService.class
 com/carddemo/service/FileGenerationService$FieldConfig.class
+com/carddemo/service/TransactionValidationService$TransactionLocation.class
+com/carddemo/repository/TransactionRepository.class
