@@ -14,6 +14,7 @@ com/carddemo/client/EmailClient$BounceEvent$Builder.class
 com/carddemo/dto/UserAddResponse.class
 com/carddemo/client/EmailClient.class
 com/carddemo/service/TransactionPostingService$TransactionCategoryBalanceRecord.class
+com/carddemo/service/AccountClosureBatchService$ProcessingResult.class
 com/carddemo/dto/AccountUpdateRequest.class
 com/carddemo/service/TransactionPostingService$ProcessingResult.class
 com/carddemo/dto/TransactionRequest.class
@@ -64,6 +65,7 @@ com/carddemo/dto/CardListDto$CardListDtoBuilder.class
 com/carddemo/dto/CardDeletionResponse$CardDeletionResponseBuilder.class
 com/carddemo/dto/ValidationError.class
 com/carddemo/dto/AddTransactionResponse.class
+com/carddemo/service/CategoryService.class
 com/carddemo/controller/HealthController.class
 com/carddemo/service/ChargebackProcessor$LiabilityDistribution.class
 com/carddemo/dto/CustomerRequest.class
@@ -90,6 +92,7 @@ com/carddemo/batch/StatementGenerationJobConfigA$2.class
 com/carddemo/dto/CardDeletionRequest.class
 com/carddemo/service/ChargebackProcessor$LifecycleTrackingRecord.class
 com/carddemo/service/UserListService.class
+com/carddemo/service/AccountClosureBatchService.class
 com/carddemo/dto/MenuResponse.class
 com/carddemo/client/EmailClient$BulkEmailResult$Builder.class
 com/carddemo/batch/ArchiveJobConfig$1.class
@@ -384,6 +387,7 @@ com/carddemo/service/ChargebackProcessor$ChargebackValidationException.class
 com/carddemo/security/SecurityConfig.class
 com/carddemo/dto/AuthorizationResponse.class
 com/carddemo/service/CreditBureauService.class
+com/carddemo/util/CobolComparisonUtils$ComparisonResult.class
 com/carddemo/client/EmailClient$BounceEvent.class
 com/carddemo/batch/CustomerMaintenanceJobConfig$PhoneSSNValidationProcessor.class
 com/carddemo/dto/TransactionTypeDto.class
@@ -417,6 +421,7 @@ com/carddemo/config/ResilienceConfig.class
 com/carddemo/dto/CreditCardUpdateResponse$Builder.class
 com/carddemo/service/AccountFileProcessorService$AccountRecord.class
 com/carddemo/service/TransactionPostingService$CrossReferenceRecord.class
+com/carddemo/util/CobolComparisonUtils.class
 com/carddemo/service/AuthorizationEngine.class
 com/carddemo/dto/TransactionListRequest.class
 com/carddemo/service/ChargebackProcessor$ChargebackStatus.class
@@ -425,6 +430,7 @@ com/carddemo/batch/ReconciliationJobConfig$SettlementRecord.class
 com/carddemo/entity/FeeSchedule.class
 com/carddemo/entity/Archive$ArchiveBuilder.class
 com/carddemo/service/DailyTransactionService$ProcessingResult.class
+com/carddemo/dto/TransactionCategoryBalanceDto.class
 com/carddemo/controller/CardController.class
 com/carddemo/dto/CreditCardListRequest.class
 com/carddemo/client/SMSProvider$SMSResponse.class
