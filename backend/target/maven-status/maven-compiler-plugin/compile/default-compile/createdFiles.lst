@@ -68,6 +68,7 @@ com/carddemo/dto/CardDeletionResponse$CardDeletionResponseBuilder.class
 com/carddemo/dto/ValidationError.class
 com/carddemo/dto/AddTransactionResponse.class
 com/carddemo/service/CategoryService.class
+com/carddemo/config/LiquibaseConfig.class
 com/carddemo/controller/HealthController.class
 com/carddemo/service/ChargebackProcessor$LiabilityDistribution.class
 com/carddemo/dto/CustomerRequest.class
@@ -103,6 +104,7 @@ com/carddemo/batch/StatementGenerationJobConfigB.class
 com/carddemo/service/TransactionReportService$TransactionRecord.class
 com/carddemo/service/AccountFileProcessorService.class
 com/carddemo/service/StorageService$StorageException.class
+com/carddemo/config/BatchConfig$BatchDirectoryConfig.class
 com/carddemo/repository/UserSecurityRepository.class
 com/carddemo/util/FileUtils.class
 com/carddemo/repository/UserRepository.class
@@ -182,6 +184,7 @@ com/carddemo/repository/StorageUtilization.class
 com/carddemo/service/ConfigurationService$ConfigurationChangeEvent.class
 com/carddemo/service/CustomerMaintenanceService.class
 com/carddemo/service/PaymentService$PaymentNetworkException.class
+com/carddemo/batch/BatchProperties.class
 com/carddemo/service/DisputeManagementService.class
 com/carddemo/service/CustomerMaintenanceService$EmailValidationResult.class
 com/carddemo/service/PaymentService$PaymentProcessingResponse.class
@@ -272,6 +275,7 @@ com/carddemo/batch/CustomerMaintenanceJobConfig$CustomerRepository.class
 com/carddemo/service/CardDeletionService.class
 com/carddemo/service/CustomerMaintenanceBatchService.class
 com/carddemo/service/TransactionReportService$CardXrefData.class
+com/carddemo/config/TransactionConfig.class
 com/carddemo/exception/BatchProcessingException.class
 com/carddemo/repository/CustomerRepository.class
 com/carddemo/entity/DisclosureGroup.class
@@ -512,6 +516,7 @@ com/carddemo/service/PaymentService.class
 com/carddemo/dto/BillPaymentResponse.class
 com/carddemo/service/FeeCalculationService.class
 com/carddemo/service/FileGenerationService$BatchProcessor.class
+com/carddemo/config/LiquibaseConfig$LiquibaseProperties.class
 com/carddemo/batch/BalanceReconciliationJobConfig$BalanceDiscrepancy.class
 com/carddemo/dto/InterestCalculationRequest.class
 com/carddemo/service/AuthorizationEngine$AuthorizationHold.class
