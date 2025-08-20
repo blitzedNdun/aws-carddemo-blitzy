@@ -161,6 +161,7 @@ com/carddemo/exception/ResourceNotFoundException.class
 com/carddemo/client/DataQualityService$DataQualityResult.class
 com/carddemo/dto/DateTimeDto.class
 com/carddemo/batch/CustomerMaintenanceJobConfig$CreditScoreUpdateProcessor.class
+com/carddemo/config/DatabaseConfig.class
 com/carddemo/security/SessionConfig.class
 com/carddemo/service/CreditBureauService$CreditScoreRecord.class
 com/carddemo/dto/SessionContext.class
