@@ -362,7 +362,7 @@ public class BaseTestConfig {
         
         // Configure session management for controller testing
         mockServletContext.setSessionTrackingModes(
-            java.util.Set.of(javax.servlet.SessionTrackingMode.COOKIE));
+            java.util.Set.of(jakarta.servlet.SessionTrackingMode.COOKIE));
         mockServletContext.addInitParameter("server.servlet.session.timeout", "30m");
         mockServletContext.addInitParameter("server.servlet.session.cookie.max-age", "1800");
         
@@ -392,7 +392,6 @@ public class BaseTestConfig {
             new RestTemplateBuilder()
                 .setConnectTimeout(Duration.ofSeconds(10))
                 .setReadTimeout(Duration.ofSeconds(30))
-                .build()
         );
     }
 
