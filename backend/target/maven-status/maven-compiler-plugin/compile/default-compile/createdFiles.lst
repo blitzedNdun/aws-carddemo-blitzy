@@ -292,6 +292,7 @@ com/carddemo/security/SessionConfig$SessionEventListener.class
 com/carddemo/batch/ReconciliationJobConfig.class
 com/carddemo/controller/AuthController.class
 com/carddemo/exception/ErrorResponse.class
+com/carddemo/service/AdminFunctionsService.class
 com/carddemo/client/SMSProvider$BulkSMSResponse.class
 com/carddemo/dto/ReportMenuResponse.class
 com/carddemo/dto/CardDeletionResponse.class
