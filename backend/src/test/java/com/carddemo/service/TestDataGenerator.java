@@ -6,6 +6,7 @@
 package com.carddemo.service;
 
 import com.carddemo.entity.Account;
+import com.carddemo.entity.Customer;
 import com.carddemo.entity.Transaction;
 import com.carddemo.util.TestConstants;
 
@@ -14,6 +15,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 
@@ -35,6 +37,8 @@ import java.util.List;
  * @since 2024
  */
 public class TestDataGenerator {
+
+    private final AtomicLong counter = new AtomicLong(1);
 
     /**
      * Generates a standard valid Transaction for testing purposes.
@@ -324,5 +328,105 @@ public class TestDataGenerator {
         errorTransactions.add(zeroAmountTxn);
         
         return errorTransactions;
+    }
+    
+    /**
+     * Generate a single customer for testing purposes
+     * Creates customer with realistic data for CustomerReportsService testing
+     * 
+     * @return Customer entity with test data
+     */
+    public Customer generateCustomer() {
+        Customer customer = new Customer();
+        customer.setCustomerId(counter.incrementAndGet());
+        customer.setFirstName("John");
+        customer.setLastName("Smith");
+        customer.setDateOfBirth(LocalDate.of(1980, 5, 15));
+        customer.setSsn("123456789");
+        customer.setFicoScore(750); // Default high FICO for testing
+        customer.setPhoneNumber1("555-0123");
+        return customer;
+    }
+    
+    /**
+     * Generate a list of customers for testing purposes
+     * Creates diverse set of customers for segmentation testing
+     * 
+     * @return List of Customer entities with varied profiles
+     */
+    public List<Customer> generateCustomerList() {
+        List<Customer> customers = new ArrayList<>();
+        
+        // High value customer
+        Customer highValue = generateCustomer();
+        highValue.setCustomerId(1L);
+        highValue.setFicoScore(780);
+        highValue.setFirstName("Alice");
+        highValue.setLastName("Johnson");
+        customers.add(highValue);
+        
+        // Medium value customer  
+        Customer mediumValue = generateCustomer();
+        mediumValue.setCustomerId(2L);
+        mediumValue.setFicoScore(680);
+        mediumValue.setFirstName("Bob");
+        mediumValue.setLastName("Davis");
+        customers.add(mediumValue);
+        
+        // Low value customer
+        Customer lowValue = generateCustomer();
+        lowValue.setCustomerId(3L);
+        lowValue.setFicoScore(580);
+        lowValue.setFirstName("Carol");
+        lowValue.setLastName("Wilson");
+        customers.add(lowValue);
+        
+        return customers;
+    }
+    
+    /**
+     * Generate a list of accounts for testing purposes
+     * Creates accounts with varied balances and credit limits
+     * 
+     * @return List of Account entities for testing
+     */
+    public List<Account> generateAccountList() {
+        List<Account> accounts = new ArrayList<>();
+        
+        // Create customers for the accounts
+        Customer customer1 = generateCustomer();
+        customer1.setCustomerId(1L);
+        
+        Customer customer2 = generateCustomer();
+        customer2.setCustomerId(2L);
+        
+        Customer customer3 = generateCustomer();
+        customer3.setCustomerId(3L);
+        
+        // High utilization account
+        Account highUtil = generateAccount();
+        highUtil.setAccountId(1L);
+        highUtil.setCustomer(customer1);
+        highUtil.setCurrentBalance(new BigDecimal("8000.00"));
+        highUtil.setCreditLimit(new BigDecimal("10000.00"));
+        accounts.add(highUtil);
+        
+        // Medium utilization account
+        Account mediumUtil = generateAccount();
+        mediumUtil.setAccountId(2L);
+        mediumUtil.setCustomer(customer2);
+        mediumUtil.setCurrentBalance(new BigDecimal("3000.00"));
+        mediumUtil.setCreditLimit(new BigDecimal("5000.00"));
+        accounts.add(mediumUtil);
+        
+        // Low utilization account
+        Account lowUtil = generateAccount();
+        lowUtil.setAccountId(3L);
+        lowUtil.setCustomer(customer3);
+        lowUtil.setCurrentBalance(new BigDecimal("500.00"));
+        lowUtil.setCreditLimit(new BigDecimal("5000.00"));
+        accounts.add(lowUtil);
+        
+        return accounts;
     }
 }
