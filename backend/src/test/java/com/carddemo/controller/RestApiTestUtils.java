@@ -824,13 +824,13 @@ public final class RestApiTestUtils {
         try {
             PageResponse<?> pageResponse = parseJsonResponse(response, PageResponse.class);
             assertThat(pageResponse).isNotNull();
-            assertThat(pageResponse.getCurrentPage()).isEqualTo(expectedPage);
-            assertThat(pageResponse.getPageSize()).isEqualTo(expectedSize);
-            assertThat(pageResponse.getTotalCount()).isEqualTo(expectedTotalElements);
+            assertThat(pageResponse.getPage()).isEqualTo(expectedPage);
+            assertThat(pageResponse.getSize()).isEqualTo(expectedSize);
+            assertThat(pageResponse.getTotalElements()).isEqualTo(expectedTotalElements);
             
             // Validate pagination flags
-            assertThat(pageResponse.getHasMorePages()).isEqualTo(pageResponse.hasNext());
-            assertThat(pageResponse.getHasPreviousPages()).isEqualTo(pageResponse.hasPrevious());
+            assertThat(pageResponse.isHasNext()).isEqualTo(pageResponse.hasNext());
+            assertThat(pageResponse.isHasPrevious()).isEqualTo(pageResponse.hasPrevious());
             
             assertThat(pageResponse.getData()).isNotNull();
         } catch (Exception e) {
