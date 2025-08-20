@@ -249,6 +249,7 @@ com/carddemo/service/DailyTransactionService$DailyTransactionSummary.class
 com/carddemo/util/AmountCalculator.class
 com/carddemo/repository/DisputeRepository.class
 com/carddemo/batch/CustomerMaintenanceJobConfig$CustomerRepository.class
+com/carddemo/service/CardDeletionService.class
 com/carddemo/service/CustomerMaintenanceBatchService.class
 com/carddemo/service/TransactionReportService$CardXrefData.class
 com/carddemo/exception/BatchProcessingException.class
