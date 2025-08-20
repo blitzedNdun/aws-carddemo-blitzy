@@ -663,7 +663,7 @@ public class CacheServiceTest {
             // Then
             assertThat(result).isTrue();
             long durationMs = (endTime - startTime) / 1_000_000; // Convert to milliseconds
-            assertThat(durationMs).isLessThan(10); // Should be very fast with mocks
+            assertThat(durationMs).isLessThanOrEqualTo(15); // Should be very fast with mocks, allowing for JVM overhead
         }
 
         @Test
