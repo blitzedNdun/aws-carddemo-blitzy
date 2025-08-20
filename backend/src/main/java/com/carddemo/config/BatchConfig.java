@@ -13,9 +13,12 @@ import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
 import org.springframework.batch.core.launch.support.TaskExecutorJobLauncher;
+import org.springframework.batch.core.explore.support.JobExplorerFactoryBean;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import javax.sql.DataSource;
@@ -73,7 +76,7 @@ public class BatchConfig {
     
     // Job repository configuration constants
     private static final String TABLE_PREFIX = "BATCH_";  // Database table prefix for batch metadata
-    private static final int ISOLATION_LEVEL = 2;         // READ_COMMITTED isolation level
+    private static final String ISOLATION_LEVEL = "ISOLATION_READ_COMMITTED";  // READ_COMMITTED isolation level
     private static final int MAX_VARCHAR_LENGTH = 2500;   // Maximum varchar length for batch tables
     private static final int CLOBTYPE = 4;                // CLOB type for large text fields
 
@@ -303,14 +306,18 @@ public class BatchConfig {
      * - Compliance reporting: Execution audit trail for regulatory and business compliance requirements
      * - Trend analysis: Long-term execution trends for performance improvement identification
      * 
-     * @param jobRepository configured JobRepository for metadata access
+     * @param dataSource configured HikariCP DataSource from DatabaseConfig for database connectivity
+     * @param transactionManager configured PlatformTransactionManager from DatabaseConfig for transaction management
      * @return JobExplorer configured for comprehensive batch job monitoring
      */
     @Bean
-    public org.springframework.batch.core.explore.JobExplorer jobExplorer(JobRepository jobRepository) {
-        // Create JobExplorer using JobRepository
-        return org.springframework.batch.core.configuration.support.ApplicationContextFactory
-                .createJobExplorer(jobRepository);
+    public org.springframework.batch.core.explore.JobExplorer jobExplorer(DataSource dataSource, PlatformTransactionManager transactionManager) throws Exception {
+        JobExplorerFactoryBean factory = new JobExplorerFactoryBean();
+        factory.setDataSource(dataSource);
+        factory.setTransactionManager(transactionManager);
+        factory.setTablePrefix(TABLE_PREFIX);
+        factory.afterPropertiesSet();
+        return factory.getObject();
     }
 
     /**
