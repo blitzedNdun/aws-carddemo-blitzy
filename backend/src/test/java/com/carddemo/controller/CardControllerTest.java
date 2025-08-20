@@ -56,6 +56,7 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.annotation.DirtiesContext;
 
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -105,6 +106,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
  */
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = {CardControllerTest.TestConfig.class})
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class CardControllerTest {
 
 
@@ -580,8 +582,11 @@ public class CardControllerTest {
         
         @Bean
         @Primary
-        public CardController cardController() {
-            return new CardController();
+        public CardController cardController(@Autowired CreditCardService creditCardService) {
+            CardController controller = new CardController();
+            // Manually inject the mocked service since we're using standalone setup
+            org.springframework.test.util.ReflectionTestUtils.setField(controller, "creditCardService", creditCardService);
+            return controller;
         }
         
         @Bean
@@ -590,7 +595,7 @@ public class CardControllerTest {
         }
         
         @Bean
-        public MockMvc mockMvc(CardController cardController, com.carddemo.exception.GlobalExceptionHandler globalExceptionHandler) {
+        public MockMvc mockMvc(@Autowired CardController cardController, @Autowired com.carddemo.exception.GlobalExceptionHandler globalExceptionHandler) {
             return org.springframework.test.web.servlet.setup.MockMvcBuilders
                 .standaloneSetup(cardController)
                 .setControllerAdvice(globalExceptionHandler)
