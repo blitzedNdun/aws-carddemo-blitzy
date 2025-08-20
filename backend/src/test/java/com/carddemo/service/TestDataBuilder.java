@@ -8,6 +8,7 @@ package com.carddemo.service;
 import com.carddemo.entity.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.ArrayList;
@@ -146,9 +147,9 @@ public class TestDataBuilder {
     public static Card createCard() {
         Card card = new Card();
         card.setCardNumber(generateValidCardNumber());
-        card.setCvv(generateCvv());
+        card.setCvvCode(generateCvv());
         card.setExpirationDate(generateFutureExpirationDate());
-        card.setCardStatus("Y"); // Active status
+        card.setActiveStatus("Y"); // Active status
         card.setAccountId(generateAccountId());
         return card;
     }
@@ -162,8 +163,8 @@ public class TestDataBuilder {
     public static User createUser() {
         User user = new User();
         user.setUserId(generateUserId());
-        user.setUsername(generateUsername());
-        user.setPassword(generatePassword());
+        // Note: User entity doesn't have username/password fields in business entity
+        // These are in UserSecurity entity
         user.setUserType(generateUserType());
         user.setFirstName(generateFirstName());
         user.setLastName(generateLastName());
@@ -178,9 +179,9 @@ public class TestDataBuilder {
      */
     public static CardXref createCardXref() {
         CardXref cardXref = new CardXref();
-        cardXref.setCardNumber(generateValidCardNumber());
-        cardXref.setAccountId(generateAccountId());
-        cardXref.setCustomerId(generateCustomerId());
+        cardXref.setXrefCardNum(generateValidCardNumber());
+        cardXref.setXrefAcctId(generateAccountId());
+        cardXref.setXrefCustId(generateCustomerId());
         return cardXref;
     }
 
@@ -193,10 +194,9 @@ public class TestDataBuilder {
     public static TransactionType createTransactionType() {
         TransactionType transactionType = new TransactionType();
         String typeCode = generateTransactionTypeCode();
-        transactionType.setTypeId(typeCode);
-        transactionType.setTypeCd(typeCode);
-        transactionType.setTypeDesc(generateTransactionTypeDescription(typeCode));
-        transactionType.setCategoryCd(generateCategoryCode());
+        transactionType.setTransactionTypeCode(typeCode);
+        transactionType.setTypeDescription(generateTransactionTypeDescription(typeCode));
+        transactionType.setDebitCreditFlag(generateDebitCreditFlag());
         return transactionType;
     }
 
@@ -209,8 +209,17 @@ public class TestDataBuilder {
     public static TransactionCategory createTransactionCategory() {
         TransactionCategory transactionCategory = new TransactionCategory();
         String categoryCode = generateCategoryCode();
-        transactionCategory.setCategoryCd(categoryCode);
-        transactionCategory.setCategoryDesc(generateCategoryDescription(categoryCode));
+        String subcategoryCode = generateSubcategoryCode();
+        
+        // Create and set the embedded ID
+        TransactionCategory.TransactionCategoryId id = new TransactionCategory.TransactionCategoryId();
+        id.setCategoryCode(categoryCode);
+        id.setSubcategoryCode(subcategoryCode);
+        transactionCategory.setId(id);
+        
+        transactionCategory.setTransactionTypeCode(generateTransactionTypeCode());
+        transactionCategory.setCategoryDescription(generateCategoryDescription(categoryCode));
+        transactionCategory.setCategoryName(generateCategoryName(categoryCode));
         return transactionCategory;
     }
 
@@ -231,7 +240,7 @@ public class TestDataBuilder {
         }
         
         // Calculate and append Luhn checksum digit
-        int checksum = calculateLuhnChecksum(cardNumber.toString());
+        int checksum = calculateLuhnCheckDigit(cardNumber.toString());
         cardNumber.append(checksum);
         
         return cardNumber.toString();
@@ -414,7 +423,36 @@ public class TestDataBuilder {
             if (alternate) {
                 digit *= 2;
                 if (digit > 9) {
-                    digit = (digit % 10) + 1;
+                    digit = (digit / 10) + (digit % 10);
+                }
+            }
+            
+            sum += digit;
+            alternate = !alternate;
+        }
+        
+        return (10 - (sum % 10)) % 10;
+    }
+
+    /**
+     * Calculates the Luhn check digit for a partial card number (without check digit).
+     * Used for generating valid card numbers.
+     * 
+     * @param partialCardNumber card number without the check digit
+     * @return the check digit that makes the number valid
+     */
+    private static int calculateLuhnCheckDigit(String partialCardNumber) {
+        int sum = 0;
+        boolean alternate = true; // Start with true because check digit position will be false
+        
+        // Process digits from right to left (the partial number)
+        for (int i = partialCardNumber.length() - 1; i >= 0; i--) {
+            int digit = Character.getNumericValue(partialCardNumber.charAt(i));
+            
+            if (alternate) {
+                digit *= 2;
+                if (digit > 9) {
+                    digit = (digit / 10) + (digit % 10);
                 }
             }
             
@@ -458,7 +496,7 @@ public class TestDataBuilder {
     }
 
     private static String generateUserType() {
-        String[] userTypes = {"ADMIN", "USER", "READONLY"};
+        String[] userTypes = {"A", "U", "R"}; // COBOL PIC X(01) compatible: A=Admin, U=User, R=Read-only
         return userTypes[ThreadLocalRandom.current().nextInt(userTypes.length)];
     }
 
@@ -677,6 +715,7 @@ public class TestDataBuilder {
         }
 
         private void setDefaults() {
+            account.setAccountId(ThreadLocalRandom.current().nextLong(10000000000L, 99999999999L));
             account.setActiveStatus("Y");
             account.setCurrentBalance(BigDecimal.ZERO.setScale(2));
             account.setCreditLimit(BigDecimal.valueOf(5000.00).setScale(2, BigDecimal.ROUND_HALF_UP));
@@ -846,11 +885,16 @@ public class TestDataBuilder {
         }
 
         private void setDefaults() {
+            transaction.setTransactionId(ThreadLocalRandom.current().nextLong(1000000000L, 9999999999L));
             transaction.setAmount(BigDecimal.valueOf(100.00).setScale(2, BigDecimal.ROUND_HALF_UP));
             transaction.setAccountId(1000000001L);
+            transaction.setCardNumber(generateValidCardNumber());
             transaction.setTransactionDate(LocalDateTime.now().toLocalDate());
             transaction.setDescription("TEST TRANSACTION");
             transaction.setMerchantName("TEST MERCHANT");
+            transaction.setMerchantCity("TEST CITY");
+            transaction.setMerchantZip("12345");
+            transaction.setMerchantId(ThreadLocalRandom.current().nextLong(100000000L, 999999999L));
         }
     }
 
@@ -1012,10 +1056,12 @@ public class TestDataBuilder {
         }
 
         private void setDefaults() {
+            customer.setCustomerId(ThreadLocalRandom.current().nextLong(100000000L, 999999999L));
             customer.setFirstName("JOHN");
             customer.setLastName("DOE");
             customer.setSsn(generateSSN());
             customer.setFicoScore(720);
+            customer.setDateOfBirth(generateDateOfBirth());
             customer.setAddressLine1("123 MAIN ST");
             customer.setStateCode("CA");
             customer.setZipCode("90210");
@@ -1089,5 +1135,91 @@ public class TestDataBuilder {
             customer.setFirstName(""); // Invalid empty name
             return customer;
         }
+
+        /**
+         * Creates an account with invalid field values.
+         * 
+         * @return Account with invalid values for negative testing
+         */
+        public Account getAccountWithInvalidValues() {
+            Account account = new Account();
+            account.setCurrentBalance(BigDecimal.valueOf(-1000.00)); // Invalid negative balance
+            account.setCreditLimit(BigDecimal.valueOf(-100.00)); // Invalid negative credit limit
+            account.setActiveStatus("INVALID"); // Invalid status code
+            return account;
+        }
+
+        /**
+         * Creates a transaction with invalid field values.
+         * 
+         * @return Transaction with invalid values for negative testing
+         */
+        public Transaction getTransactionWithInvalidValues() {
+            Transaction transaction = new Transaction();
+            transaction.setAmount(BigDecimal.valueOf(-50.00)); // Invalid negative amount
+            transaction.setMerchantName(""); // Invalid empty merchant name
+            transaction.setDescription(null); // Invalid null description
+            return transaction;
+        }
+    }
+
+    /**
+     * Generates a debit/credit flag for transaction types.
+     * 
+     * @return "D" for debit or "C" for credit
+     */
+    private static String generateDebitCreditFlag() {
+        return ThreadLocalRandom.current().nextBoolean() ? "D" : "C";
+    }
+
+    /**
+     * Generates a subcategory code for transaction categories.
+     * 
+     * @return 2-character subcategory code
+     */
+    private static String generateSubcategoryCode() {
+        String[] subcategoryCodes = {"01", "02", "03", "04", "05", "06", "07", "08", "09", "10"};
+        return subcategoryCodes[ThreadLocalRandom.current().nextInt(subcategoryCodes.length)];
+    }
+
+    /**
+     * Generates a category name based on the category code.
+     * 
+     * @param categoryCode the category code
+     * @return descriptive category name
+     */
+    private static String generateCategoryName(String categoryCode) {
+        switch (categoryCode) {
+            case "FOOD":
+                return "Food & Dining";
+            case "GAS":
+                return "Gas & Fuel";
+            case "SHOP":
+                return "Shopping";
+            case "TRAV":
+                return "Travel";
+            case "ENTR":
+                return "Entertainment";
+            case "HLTH":
+                return "Healthcare";
+            case "UTIL":
+                return "Utilities";
+            case "MISC":
+                return "Miscellaneous";
+            default:
+                return "General";
+        }
+    }
+
+    /**
+     * Generates a realistic date of birth for customers.
+     * Creates dates for adults between 18 and 80 years old.
+     * 
+     * @return LocalDate representing a date of birth
+     */
+    private static LocalDate generateDateOfBirth() {
+        LocalDate now = LocalDate.now();
+        int yearsBack = ThreadLocalRandom.current().nextInt(18, 81); // Between 18 and 80 years old
+        return now.minusYears(yearsBack).minusDays(ThreadLocalRandom.current().nextInt(365));
     }
 }
