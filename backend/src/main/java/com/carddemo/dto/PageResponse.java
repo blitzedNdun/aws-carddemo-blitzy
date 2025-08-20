@@ -226,6 +226,24 @@ public class PageResponse<T> {
     }
 
     /**
+     * Custom getter for hasNext field to match expected API.
+     * 
+     * @return true if there is a next page available
+     */
+    public boolean hasNext() {
+        return this.hasNext;
+    }
+
+    /**
+     * Custom getter for hasPrevious field to match expected API.
+     * 
+     * @return true if there is a previous page available
+     */
+    public boolean hasPrevious() {
+        return this.hasPrevious;
+    }
+
+    /**
      * Gets the page number for the next page.
      * Returns -1 if there is no next page.
      * 
