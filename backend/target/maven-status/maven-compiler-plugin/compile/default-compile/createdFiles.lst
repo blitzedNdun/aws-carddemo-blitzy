@@ -90,6 +90,7 @@ com/carddemo/service/UserListService.class
 com/carddemo/dto/MenuResponse.class
 com/carddemo/client/EmailClient$BulkEmailResult$Builder.class
 com/carddemo/batch/ArchiveJobConfig$1.class
+com/carddemo/repository/ClosureRequestRepository.class
 com/carddemo/batch/StatementGenerationJobConfigB.class
 com/carddemo/service/TransactionReportService$TransactionRecord.class
 com/carddemo/service/AccountFileProcessorService.class
