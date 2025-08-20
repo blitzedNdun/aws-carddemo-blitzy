@@ -444,6 +444,7 @@ com/carddemo/entity/Account$AccountBuilder.class
 com/carddemo/service/CustomerMaintenanceService$AddressStandardizationResult.class
 com/carddemo/security/CustomUserDetailsService.class
 com/carddemo/batch/ReconciliationJobConfig$SettlementRecordRowMapper.class
+com/carddemo/service/CreditCardUpdateService.class
 com/carddemo/entity/TransactionCategoryBalance.class
 com/carddemo/controller/SessionController.class
 com/carddemo/config/WebConfig.class
