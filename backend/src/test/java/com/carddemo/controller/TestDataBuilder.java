@@ -261,7 +261,7 @@ public class TestDataBuilder {
         customer.setPhoneNumber1(phoneNumber != null ? phoneNumber : generateRandomPhoneNumber());
         
         // Set SSN matching COBOL PIC 9(09) constraints
-        customer.setSSN(ssn != null ? ssn : generateRandomSSN());
+        customer.setSsn(ssn != null ? ssn : generateRandomSSN());
         
         // Set FICO score matching COBOL PIC 9(03) constraints (300-850 range)
         if (ficoScore != null && ficoScore >= 300 && ficoScore <= 850) {
