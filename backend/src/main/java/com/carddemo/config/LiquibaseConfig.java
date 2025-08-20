@@ -137,10 +137,8 @@ public class LiquibaseConfig {
         liquibase.setDropFirst(DROP_FIRST);
         liquibase.setShouldRun(SHOULD_RUN);
         
-        // Configure performance and validation settings
-        liquibase.setValidateOnMigrate(true);
+        // Configure performance settings
         liquibase.setTestRollbackOnUpdate(false);
-        liquibase.setClearCheckSums(false);
         
         // Set custom parameters for VSAM migration support
         Map<String, String> parameters = new HashMap<>();
