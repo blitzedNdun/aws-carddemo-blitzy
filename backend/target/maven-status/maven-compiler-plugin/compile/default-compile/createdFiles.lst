@@ -182,6 +182,7 @@ com/carddemo/entity/Report$Format.class
 com/carddemo/dto/PageResponse$PageResponseBuilder.class
 com/carddemo/entity/TransactionType.class
 com/carddemo/service/FileGenerationService$BatchProcessingResult.class
+com/carddemo/service/CreditCardDetailService.class
 com/carddemo/dto/AdminReportResponse$Status.class
 com/carddemo/entity/UserSecurity.class
 com/carddemo/dto/InterestRateResponse$InterestRateResponseBuilder.class
