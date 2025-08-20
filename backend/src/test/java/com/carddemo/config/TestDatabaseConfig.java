@@ -106,7 +106,7 @@ public class TestDatabaseConfig {
     private static final long TEST_LEAK_DETECTION_THRESHOLD = 30000; // 30 seconds leak detection
     
     // JPA/Hibernate test configuration settings
-    private static final String TEST_HIBERNATE_DDL_AUTO = "validate";      // Validate schema against entities
+    private static final String TEST_HIBERNATE_DDL_AUTO = "create-drop";   // Create schema for tests, drop after
     private static final String TEST_HIBERNATE_SHOW_SQL = "true";          // Enable SQL logging for test debugging
     private static final String TEST_HIBERNATE_FORMAT_SQL = "true";        // Format SQL for test readability
     private static final String TEST_HIBERNATE_JDBC_BATCH_SIZE = "10";     // Smaller batch size for test control
