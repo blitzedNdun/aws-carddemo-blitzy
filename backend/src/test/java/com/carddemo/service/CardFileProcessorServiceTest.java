@@ -623,20 +623,18 @@ class CardFileProcessorServiceTest {
     }
 
     /**
-     * Tests error recovery and exception handling equivalent to COBOL error routines.
+     * Tests error recovery for database connectivity errors equivalent to COBOL error routines.
      * 
-     * This test validates comprehensive error handling patterns:
+     * This test validates database connectivity error handling patterns:
      * - Database connectivity errors
-     * - Null pointer exceptions
-     * - Iterator state exceptions
-     * - Resource cleanup in error conditions
+     * - Exception propagation matching COBOL ABEND patterns
      * 
      * Validates robust error handling matching COBOL ABEND and recovery patterns.
      */
     @Test
-    @DisplayName("Error Recovery - Exception handling equivalent to COBOL error routines")
-    void testErrorRecovery_VariousExceptions_HandlesGracefully() {
-        logger.info("Testing error recovery and exception handling");
+    @DisplayName("Error Recovery - Database connectivity exception equivalent to COBOL error routines")
+    void testErrorRecovery_DatabaseException_HandlesGracefully() {
+        logger.info("Testing error recovery for database connectivity errors");
 
         // Test database connectivity error
         when(cardRepository.findAll()).thenThrow(new RuntimeException("Connection timeout"));
@@ -645,6 +643,26 @@ class CardFileProcessorServiceTest {
             .isInstanceOf(RuntimeException.class)
             .hasMessageContaining("CBACT02C program abnormal termination");
 
+        // Verify repository interaction occurred before error
+        verify(cardRepository, times(1)).findAll();
+        
+        logger.info("Error recovery test completed successfully");
+    }
+
+    /**
+     * Tests error recovery for null pointer safety equivalent to COBOL error routines.
+     * 
+     * This test validates null result error handling patterns:
+     * - Null pointer exceptions
+     * - Exception propagation matching COBOL ABEND patterns
+     * 
+     * Validates robust error handling matching COBOL ABEND and recovery patterns.
+     */
+    @Test
+    @DisplayName("Error Recovery - Null pointer safety equivalent to COBOL error routines")
+    void testErrorRecovery_NullPointerSafety_HandlesGracefully() {
+        logger.info("Testing error recovery for null pointer safety");
+
         // Test null pointer safety
         when(cardRepository.findAll()).thenReturn(null);
         
@@ -652,8 +670,8 @@ class CardFileProcessorServiceTest {
             .isInstanceOf(RuntimeException.class)
             .hasMessageContaining("CBACT02C program abnormal termination");
 
-        // Verify repository interactions occurred before errors
-        verify(cardRepository, atLeast(2)).findAll();
+        // Verify repository interaction occurred before error
+        verify(cardRepository, times(1)).findAll();
         
         logger.info("Error recovery test completed successfully");
     }
