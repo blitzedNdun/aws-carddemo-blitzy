@@ -47,6 +47,7 @@ import java.time.format.DateTimeFormatter;
  */
 @RestController
 @RequestMapping("/api/reports")
+@org.springframework.context.annotation.Profile("!test")
 public class ReportController {
     
     private static final Logger logger = LoggerFactory.getLogger(ReportController.class);

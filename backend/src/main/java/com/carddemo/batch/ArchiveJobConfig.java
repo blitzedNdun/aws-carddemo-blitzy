@@ -58,6 +58,7 @@ import java.util.Map;
  * @since 2024-01-01
  */
 @Configuration
+@org.springframework.context.annotation.Profile("!test")
 public class ArchiveJobConfig {
 
     @Autowired

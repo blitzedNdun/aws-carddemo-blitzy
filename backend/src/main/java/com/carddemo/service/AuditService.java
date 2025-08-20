@@ -921,4 +921,51 @@ public class AuditService {
             .map(entry -> entry.getKey() + "=" + entry.getValue())
             .collect(Collectors.joining(", "));
     }
+
+    /**
+     * Convenience method for logging administrative operations.
+     * 
+     * This method provides a simplified interface for logging administrative actions
+     * by creating an AuditLog entity with the provided parameters and delegating
+     * to the saveAuditLog method for persistent storage.
+     * 
+     * @param userId User ID performing the operation
+     * @param operation Operation type being performed
+     * @param outcome Operation outcome (SUCCESS, FAILURE, ERROR)
+     * @param details Additional operation details
+     * @return The persisted AuditLog entity
+     * @throws IllegalArgumentException if required parameters are null or empty
+     * @throws RuntimeException if database persistence fails
+     */
+    public AuditLog logAdminOperation(String userId, String operation, String outcome, String details) {
+        if (userId == null || userId.trim().isEmpty()) {
+            throw new IllegalArgumentException("User ID cannot be null or empty");
+        }
+        if (operation == null || operation.trim().isEmpty()) {
+            throw new IllegalArgumentException("Operation cannot be null or empty");
+        }
+        if (outcome == null || outcome.trim().isEmpty()) {
+            throw new IllegalArgumentException("Outcome cannot be null or empty");
+        }
+        
+        try {
+            // Create audit log entry for administrative operation
+            AuditLog auditLog = new AuditLog();
+            auditLog.setUsername(userId);
+            auditLog.setEventType("ADMIN_OPERATION");
+            auditLog.setActionPerformed(operation);
+            auditLog.setOutcome(outcome);
+            auditLog.setDetails(details);
+            auditLog.setResourceAccessed("USER_MANAGEMENT");
+            auditLog.setTimestamp(LocalDateTime.now());
+            
+            // Save the audit log entry
+            return saveAuditLog(auditLog);
+            
+        } catch (Exception e) {
+            logger.error("Failed to log admin operation - UserId: {}, Operation: {}, Error: {}", 
+                        userId, operation, e.getMessage(), e);
+            throw new RuntimeException("Failed to log admin operation: " + e.getMessage(), e);
+        }
+    }
 }

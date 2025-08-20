@@ -61,6 +61,7 @@ import java.util.Map;
  * the fee computation logic (originally stubbed in COBOL as 1400-COMPUTE-FEES).
  */
 @Configuration
+@org.springframework.context.annotation.Profile("!test")
 public class FeeAssessmentJobConfig {
     
     private final com.carddemo.repository.AccountRepository accountRepository;

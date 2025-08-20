@@ -57,6 +57,7 @@ import jakarta.persistence.EntityManagerFactory;
  * - Reference data enrichment through lookups
  */
 @Configuration
+@org.springframework.context.annotation.Profile("!test")
 public class ExtractJobConfig {
 
     @Autowired

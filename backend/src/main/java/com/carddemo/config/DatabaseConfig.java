@@ -13,6 +13,7 @@ import com.carddemo.util.CobolDataConverter;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
@@ -62,6 +63,7 @@ import java.util.Properties;
  */
 @Configuration
 @EnableAutoConfiguration
+@Profile("!test")
 public class DatabaseConfig {
 
     // Database connection configuration constants

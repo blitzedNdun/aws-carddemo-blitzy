@@ -45,6 +45,7 @@ import java.time.format.DateTimeFormatter;
  * validation rules and processing sequences.
  */
 @Configuration
+@org.springframework.context.annotation.Profile("!test")
 public class ReconciliationJobConfig {
 
     private final JobRepository jobRepository;

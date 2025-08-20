@@ -59,6 +59,7 @@ import java.util.HashMap;
  * Migration Target: Spring Batch 5.x with @Service annotation
  */
 @Service
+@org.springframework.context.annotation.Profile("!test")
 public class CustomerMaintenanceBatchService {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomerMaintenanceBatchService.class);

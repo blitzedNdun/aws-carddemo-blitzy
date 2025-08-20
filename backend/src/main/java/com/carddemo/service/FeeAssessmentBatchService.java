@@ -49,6 +49,7 @@ import org.slf4j.LoggerFactory;
  * @since 2024
  */
 @Service
+@org.springframework.context.annotation.Profile("!test")
 @Transactional
 public class FeeAssessmentBatchService {
 

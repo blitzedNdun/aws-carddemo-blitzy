@@ -69,6 +69,7 @@ import java.util.regex.Matcher;
  * and monitoring.
  */
 @Configuration
+@org.springframework.context.annotation.Profile("!test")
 public class CustomerMaintenanceJobConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomerMaintenanceJobConfig.class);

@@ -33,6 +33,7 @@ import java.util.HashMap;
  * - Date validation and calculation logic preserved
  */
 @Service
+@org.springframework.context.annotation.Profile("!test")
 public class ReportService {
     
     private static final Logger logger = LoggerFactory.getLogger(ReportService.class);

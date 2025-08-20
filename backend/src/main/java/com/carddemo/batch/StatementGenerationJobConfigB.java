@@ -62,6 +62,7 @@ import java.util.Map;
  * @since Spring Boot 3.2.x, Spring Batch 5.x
  */
 @Configuration
+@org.springframework.context.annotation.Profile("!test")
 public class StatementGenerationJobConfigB {
 
     @Autowired

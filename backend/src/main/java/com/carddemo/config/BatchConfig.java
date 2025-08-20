@@ -32,6 +32,7 @@ import com.carddemo.service.TransactionReportService;
  */
 @Configuration
 @EnableBatchProcessing
+@org.springframework.context.annotation.Profile("!test")
 public class BatchConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(BatchConfig.class);

@@ -51,6 +51,7 @@ import java.util.Map;
  * business logic for balance verification and discrepancy identification.
  */
 @Configuration
+@org.springframework.context.annotation.Profile("!test")
 public class BalanceReconciliationJobConfig {
 
     @Autowired
