@@ -8,11 +8,14 @@ package com.carddemo.service;
 import com.carddemo.dto.CardListDto;
 import com.carddemo.dto.CreditCardListRequest;
 import com.carddemo.dto.CreditCardListResponse;
+import com.carddemo.dto.PageResponse;
 import com.carddemo.entity.Card;
 import com.carddemo.repository.CardRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -143,6 +146,7 @@ public class CreditCardListService {
         dto.setMaskedCardNumber(card.getMaskedCardNumber());
         dto.setAccountId(card.getAccountId().toString());
         dto.setActiveStatus(card.getActiveStatus());
+        dto.setExpirationDate(card.getExpirationDate());
         
         // Set card type if available (using repository pattern safety)
         try {
@@ -347,5 +351,202 @@ public class CreditCardListService {
         } else {
             return "UNKNOWN";
         }
+    }
+
+    // ===== Additional methods for comprehensive card listing API =====
+
+    /**
+     * Lists credit cards with simple pagination parameters.
+     * 
+     * This method provides a simplified API for card listing operations,
+     * wrapping the main listCreditCards method for easier testing and usage.
+     * 
+     * @param page the page number (zero-based)
+     * @param size the number of records per page
+     * @return PageResponse containing card list DTOs and pagination metadata
+     * @throws IllegalArgumentException if pagination parameters are invalid
+     */
+    public PageResponse<CardListDto> listCreditCards(int page, int size) {
+        validatePagination(page, size);
+        
+        Pageable pageable = PageRequest.of(page, size, Sort.by("cardNumber"));
+        Page<Card> cardPage = cardRepository.findAllOrderedByCardNumber(pageable);
+        
+        List<CardListDto> cardDtos = cardPage.getContent()
+            .stream()
+            .map(this::convertToCardListDto)
+            .collect(Collectors.toList());
+        
+        return new PageResponse<>(cardDtos, page, size, cardPage.getTotalElements());
+    }
+
+    /**
+     * Gets a specific page of credit cards.
+     * 
+     * Provides page navigation functionality equivalent to COBOL F7/F8 key handling.
+     * Maintains VSAM STARTBR/READNEXT browse operation semantics.
+     * 
+     * @param pageNumber the page number to retrieve (zero-based)
+     * @param size the number of records per page
+     * @return PageResponse containing the requested page of cards
+     * @throws IllegalArgumentException if pagination parameters are invalid
+     */
+    public PageResponse<CardListDto> getCardPage(int pageNumber, int size) {
+        return listCreditCards(pageNumber, size);
+    }
+
+    /**
+     * Validates pagination parameters using COBOL validation logic.
+     * 
+     * Implements validation rules equivalent to COBOL paragraph validation:
+     * - Page number must be non-negative
+     * - Page size must be positive
+     * - Page size cannot exceed maximum screen capacity (20 records)
+     * 
+     * @param page the page number to validate
+     * @param size the page size to validate
+     * @throws IllegalArgumentException if validation fails
+     */
+    public void validatePagination(int page, int size) {
+        if (page < 0) {
+            throw new IllegalArgumentException("Page number cannot be negative");
+        }
+        
+        if (size <= 0) {
+            throw new IllegalArgumentException("Page size must be positive");
+        }
+        
+        if (size > 20) {
+            throw new IllegalArgumentException("Page size cannot exceed 20");
+        }
+    }
+
+    /**
+     * Filters cards by account ID with pagination support.
+     * 
+     * Implements account-based filtering equivalent to COBOL paragraph 1200-FILTER-BY-ACCOUNT.
+     * Uses CardRepository.findByAccountId with pagination for efficient data retrieval.
+     * 
+     * @param accountId the account ID to filter by
+     * @param page the page number (zero-based)
+     * @param size the number of records per page
+     * @return PageResponse containing cards for the specified account
+     * @throws IllegalArgumentException if parameters are invalid
+     */
+    public PageResponse<CardListDto> filterByAccount(Long accountId, int page, int size) {
+        validatePagination(page, size);
+        
+        if (accountId == null) {
+            throw new IllegalArgumentException("Account ID cannot be null");
+        }
+        
+        Pageable pageable = PageRequest.of(page, size, Sort.by("cardNumber"));
+        Page<Card> cardPage = cardRepository.findByAccountId(accountId, pageable);
+        
+        List<CardListDto> cardDtos = cardPage.getContent()
+            .stream()
+            .map(this::convertToCardListDto)
+            .collect(Collectors.toList());
+        
+        return new PageResponse<>(cardDtos, page, size, cardPage.getTotalElements());
+    }
+
+    /**
+     * Searches cards by partial card number match.
+     * 
+     * Implements card number search functionality equivalent to COBOL paragraph 1700-SEARCH-BY-CARD-NUMBER.
+     * Supports partial card number matching for user-friendly search operations.
+     * 
+     * @param searchTerm the partial card number to search for
+     * @param page the page number (zero-based)
+     * @param size the number of records per page
+     * @return PageResponse containing cards matching the search term
+     * @throws IllegalArgumentException if parameters are invalid
+     */
+    public PageResponse<CardListDto> searchByCardNumber(String searchTerm, int page, int size) {
+        validatePagination(page, size);
+        
+        if (searchTerm == null || searchTerm.trim().isEmpty()) {
+            throw new IllegalArgumentException("Search term cannot be null or empty");
+        }
+        
+        Pageable pageable = PageRequest.of(page, size, Sort.by("cardNumber"));
+        Page<Card> cardPage = cardRepository.findByCardNumberContaining(searchTerm.trim(), pageable);
+        
+        List<CardListDto> cardDtos = cardPage.getContent()
+            .stream()
+            .map(this::convertToCardListDto)
+            .collect(Collectors.toList());
+        
+        return new PageResponse<>(cardDtos, page, size, cardPage.getTotalElements());
+    }
+
+    /**
+     * Searches cards by account ID and partial card number match.
+     * 
+     * Implements complex search functionality equivalent to COBOL paragraph 1800-COMPLEX-SEARCH.
+     * Combines account filtering with card number search for precise card location.
+     * 
+     * @param accountId the account ID to filter by
+     * @param cardNumber the partial card number to search for
+     * @param page the page number (zero-based)
+     * @param size the number of records per page
+     * @return PageResponse containing cards matching both criteria
+     * @throws IllegalArgumentException if parameters are invalid
+     */
+    public PageResponse<CardListDto> searchByAccountAndCardNumber(Long accountId, String cardNumber, int page, int size) {
+        validatePagination(page, size);
+        
+        if (accountId == null) {
+            throw new IllegalArgumentException("Account ID cannot be null");
+        }
+        
+        if (cardNumber == null || cardNumber.trim().isEmpty()) {
+            throw new IllegalArgumentException("Card number cannot be null or empty");
+        }
+        
+        Pageable pageable = PageRequest.of(page, size, Sort.by("cardNumber"));
+        Page<Card> cardPage = cardRepository.findByAccountIdAndCardNumberContaining(accountId, cardNumber.trim(), pageable);
+        
+        List<CardListDto> cardDtos = cardPage.getContent()
+            .stream()
+            .map(this::convertToCardListDto)
+            .collect(Collectors.toList());
+        
+        return new PageResponse<>(cardDtos, page, size, cardPage.getTotalElements());
+    }
+
+    /**
+     * Filters cards by active status with pagination support.
+     * 
+     * Implements status filtering equivalent to COBOL paragraph 1500-FILTER-BY-STATUS.
+     * Supports filtering by active ('Y') or inactive ('N') status.
+     * 
+     * @param status the active status to filter by ('Y' or 'N')
+     * @param page the page number (zero-based)
+     * @param size the number of records per page
+     * @return PageResponse containing cards with the specified status
+     * @throws IllegalArgumentException if parameters are invalid
+     */
+    public PageResponse<CardListDto> filterByStatus(String status, int page, int size) {
+        validatePagination(page, size);
+        
+        if (status == null || status.trim().isEmpty()) {
+            throw new IllegalArgumentException("Status cannot be null or empty");
+        }
+        
+        if (!"Y".equals(status) && !"N".equals(status)) {
+            throw new IllegalArgumentException("Status must be 'Y' or 'N'");
+        }
+        
+        Pageable pageable = PageRequest.of(page, size, Sort.by("cardNumber"));
+        Page<Card> cardPage = cardRepository.findByActiveStatus(status, pageable);
+        
+        List<CardListDto> cardDtos = cardPage.getContent()
+            .stream()
+            .map(this::convertToCardListDto)
+            .collect(Collectors.toList());
+        
+        return new PageResponse<>(cardDtos, page, size, cardPage.getTotalElements());
     }
 }
