@@ -18,11 +18,11 @@ import java.util.Objects;
  */
 @Entity
 @Table(name = "settlements", indexes = {
-    @Index(name = "settlement_date_idx", columnList = "settlementDate, merchantId"),
-    @Index(name = "settlement_batch_idx", columnList = "batchId"),
-    @Index(name = "settlement_transaction_idx", columnList = "transactionId"),
-    @Index(name = "settlement_authorization_idx", columnList = "authorizationId"),
-    @Index(name = "settlement_merchant_idx", columnList = "merchantId")
+    @Index(name = "settlement_date_idx", columnList = "settlement_date, merchant_id"),
+    @Index(name = "settlement_batch_idx", columnList = "batch_id"),
+    @Index(name = "settlement_transaction_idx", columnList = "transaction_id"),
+    @Index(name = "settlement_authorization_idx", columnList = "authorization_id"),
+    @Index(name = "settlement_merchant_idx", columnList = "merchant_id")
 })
 public class Settlement {
 
