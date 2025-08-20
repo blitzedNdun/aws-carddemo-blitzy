@@ -165,8 +165,8 @@ class CobolDataConverterTest {
     @Test
     void testFromComp3UnsignedPositiveAmount() {
         // COMP-3 representation of 67.89 with unsigned positive (F) sign
-        // Bytes: 0x67, 0x8F (where F indicates unsigned positive)
-        byte[] comp3Data = {0x67, (byte) 0x8F};
+        // Bytes: 0x06, 0x78, 0x9F (digits 6789 with F sign for unsigned positive)
+        byte[] comp3Data = {0x06, 0x78, (byte) 0x9F};
         int scale = TestConstants.COBOL_DECIMAL_SCALE;
         
         BigDecimal result = CobolDataConverter.fromComp3(comp3Data, scale);
