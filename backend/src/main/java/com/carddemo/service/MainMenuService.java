@@ -175,13 +175,13 @@ public class MainMenuService {
             throw new ValidationException(INVALID_KEY_MESSAGE);
         }
         
-        // Validate option range (equivalent to WS-OPTION > CDEMO-MENU-OPT-COUNT)
-        if (selectedOption < 1 || selectedOption > MENU_OPTION_COUNT) {
+        // Get menu options to check access level and dynamic count
+        ArrayList<MenuOption> menuOptions = buildMenuOptions(null); // Get all options for validation
+        
+        // Validate option range dynamically based on actual menu options (equivalent to WS-OPTION > CDEMO-MENU-OPT-COUNT)
+        if (selectedOption < 1 || selectedOption > menuOptions.size()) {
             throw new ValidationException(INVALID_KEY_MESSAGE);
         }
-        
-        // Get menu options to check access level
-        ArrayList<MenuOption> menuOptions = buildMenuOptions(null); // Get all options for validation
         
         // Find the selected option and check access
         for (MenuOption option : menuOptions) {

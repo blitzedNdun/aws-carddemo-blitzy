@@ -14,6 +14,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.lenient;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -87,7 +88,8 @@ public class MainMenuServiceTest {
         testMenuRequest = createTestMenuRequest();
         
         // Configure mock to return test menu options (equivalent to COPY COMEN02Y)
-        when(menuConfiguration.getMenuOptions()).thenReturn(testMenuOptions);
+        // Use lenient stubbing to avoid UnnecessaryStubbingException for tests that don't use it
+        lenient().when(menuConfiguration.getMenuOptions()).thenReturn(testMenuOptions);
     }
 
     /**
