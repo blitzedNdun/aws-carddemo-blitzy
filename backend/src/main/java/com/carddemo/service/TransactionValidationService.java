@@ -95,6 +95,14 @@ public class TransactionValidationService {
      * @return ValidationResult containing validation outcome and error details
      */
     public ValidationResult validateTransaction(Transaction transaction, Account account) {
+        // Validate null inputs - throw exceptions for null parameters
+        if (transaction == null) {
+            throw new NullPointerException("Transaction cannot be null");
+        }
+        if (account == null) {
+            throw new NullPointerException("Account cannot be null");
+        }
+        
         ValidationResult result = new ValidationResult();
         
         try {
@@ -1043,7 +1051,7 @@ public class TransactionValidationService {
      */
     private boolean checkSuspiciousMerchantPattern(String merchantName) {
         // Mock implementation - checks for suspicious patterns
-        String[] suspiciousPatterns = {"SUSPICIOUS", "FRAUD", "TEST", "FAKE"};
+        String[] suspiciousPatterns = {"SUSPICIOUS", "FRAUD", "FAKE", "BLACKLISTED"};
         
         for (String pattern : suspiciousPatterns) {
             if (merchantName.toUpperCase().contains(pattern)) {
@@ -1063,8 +1071,12 @@ public class TransactionValidationService {
      */
     private boolean checkUnusualTimingPattern(Transaction transaction) {
         // Mock implementation - checks for unusual timing
-        LocalDateTime now = LocalDateTime.now();
-        int hour = now.getHour();
+        LocalDateTime transactionTime = transaction.getOriginalTimestamp();
+        if (transactionTime == null) {
+            return false; // No timing pattern to check
+        }
+        
+        int hour = transactionTime.getHour();
         
         // Flag transactions between 2 AM and 5 AM as unusual
         return (hour >= 2 && hour <= 5);
