@@ -429,6 +429,7 @@ com/carddemo/batch/StatementGenerationJobConfigA$StatementGenerationJobListener.
 com/carddemo/dto/AdminReportResponse$SummaryStatistics.class
 com/carddemo/client/SMSProvider$SMSDeliveryStatus.class
 com/carddemo/config/ExtractJobConfig$3.class
+com/carddemo/service/CardFileProcessorService.class
 com/carddemo/controller/ReportController.class
 com/carddemo/batch/BatchDataFormatter.class
 com/carddemo/entity/Archive.class
