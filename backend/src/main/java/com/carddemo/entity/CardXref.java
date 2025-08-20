@@ -66,8 +66,8 @@ public class CardXref {
      * Cross-reference card number.
      * Maps to XREF-CARD-NUM field from CVACT03Y.cpy (PIC X(16)).
      * Must be exactly 16 characters to match card number format.
+     * Value is derived from the embedded ID.
      */
-    @Column(name = "xref_card_num", length = 16, nullable = false, insertable = false, updatable = false)
     @Size(max = 16, message = "Cross-reference card number cannot exceed 16 characters")
     private String xrefCardNum;
 
@@ -75,16 +75,16 @@ public class CardXref {
      * Cross-reference customer ID.
      * Maps to XREF-CUST-ID field from CVACT03Y.cpy (PIC 9(09)).
      * Links to customer_data table for customer relationship.
+     * Value is derived from the embedded ID.
      */
-    @Column(name = "xref_cust_id", nullable = false, insertable = false, updatable = false)
     private Long xrefCustId;
 
     /**
      * Cross-reference account ID.
      * Maps to XREF-ACCT-ID field from CVACT03Y.cpy (PIC 9(11)).
      * Links to account_data table for account relationship.
+     * Value is derived from the embedded ID.
      */
-    @Column(name = "xref_acct_id", nullable = false, insertable = false, updatable = false)
     private Long xrefAcctId;
 
     /**
@@ -92,7 +92,7 @@ public class CardXref {
      * Many cross-references can reference one card.
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "xref_card_num", referencedColumnName = "card_number")
+    @MapsId("xrefCardNum")
     private Card card;
 
     /**
@@ -100,7 +100,7 @@ public class CardXref {
      * Many cross-references can reference one customer.
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "xref_cust_id", referencedColumnName = "customer_id")
+    @MapsId("xrefCustId")
     private Customer customer;
 
     /**
@@ -108,7 +108,7 @@ public class CardXref {
      * Many cross-references can reference one account.
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "xref_acct_id", referencedColumnName = "account_id")
+    @MapsId("xrefAcctId")
     private Account account;
 
     /**

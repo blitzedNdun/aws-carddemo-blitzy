@@ -68,6 +68,7 @@ public class Transaction {
     private static final int TRANSACTION_ID_LENGTH = 16;
     private static final int TYPE_CODE_LENGTH = 2;
     private static final int CATEGORY_CODE_LENGTH = 4;
+    private static final int SUBCATEGORY_CODE_LENGTH = 2;
     private static final int SOURCE_LENGTH = 10;
     private static final int DESCRIPTION_LENGTH = 100;
     private static final int MERCHANT_NAME_LENGTH = 50;
@@ -180,6 +181,14 @@ public class Transaction {
     private String categoryCode;
 
     /**
+     * Transaction subcategory code for detailed classification.
+     * Maps to TRAN-SUBCAT-CD field from COBOL copybook (PIC X(02)).
+     */
+    @Column(name = "subcategory_code", length = 2)
+    @Size(max = 2, message = "Subcategory code cannot exceed 2 characters")
+    private String subcategoryCode;
+
+    /**
      * Transaction source indicator.
      * Maps to TRAN-SOURCE field from COBOL copybook (PIC X(10)).
      */
@@ -223,10 +232,13 @@ public class Transaction {
 
     /**
      * Transaction category relationship.
-     * @ManyToOne relationship with TransactionCategory entity using category_code foreign key.
+     * @ManyToOne relationship with TransactionCategory entity using composite key.
      */
     @ManyToOne
-    @JoinColumn(name = "category_code", insertable = false, updatable = false)
+    @JoinColumns({
+        @JoinColumn(name = "category_code", referencedColumnName = "category_code", insertable = false, updatable = false),
+        @JoinColumn(name = "subcategory_code", referencedColumnName = "subcategory_code", insertable = false, updatable = false)
+    })
     private TransactionCategory transactionCategory;
 
     /**
@@ -367,6 +379,14 @@ public class Transaction {
         this.categoryCode = categoryCode;
     }
 
+    public String getSubcategoryCode() {
+        return subcategoryCode;
+    }
+
+    public void setSubcategoryCode(String subcategoryCode) {
+        this.subcategoryCode = subcategoryCode;
+    }
+
     public String getSource() {
         return source;
     }
@@ -407,6 +427,7 @@ public class Transaction {
         this.transactionCategory = transactionCategory;
         if (transactionCategory != null) {
             this.categoryCode = transactionCategory.getCategoryCode();
+            this.subcategoryCode = transactionCategory.getSubcategoryCode();
         }
     }
 
@@ -520,6 +541,10 @@ public class Transaction {
         
         if (categoryCode != null) {
             categoryCode = categoryCode.trim();
+        }
+        
+        if (subcategoryCode != null) {
+            subcategoryCode = subcategoryCode.trim().toUpperCase();
         }
     }
 
@@ -637,6 +662,7 @@ public class Transaction {
                 ", originalTimestamp=" + originalTimestamp +
                 ", processedTimestamp=" + processedTimestamp +
                 ", categoryCode='" + categoryCode + '\'' +
+                ", subcategoryCode='" + subcategoryCode + '\'' +
                 ", source='" + source + '\'' +
                 ", transactionTypeCode='" + transactionTypeCode + '\'' +
                 '}';
