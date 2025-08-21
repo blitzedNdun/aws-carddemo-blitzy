@@ -62,8 +62,6 @@ public class ReportGenerationService {
     private final TransactionRepository transactionRepository;
     private final AccountRepository accountRepository;
     private final ReportFormatter reportFormatter;
-    private final DateConversionUtil dateConversionUtil;
-    private final ValidationUtil validationUtil;
 
     /**
      * Constructor with dependency injection for all required repositories and utilities.
@@ -71,21 +69,15 @@ public class ReportGenerationService {
      * @param transactionRepository Spring Data JPA repository for transaction data access
      * @param accountRepository Spring Data JPA repository for account data access  
      * @param reportFormatter Utility class for COBOL-style report formatting
-     * @param dateConversionUtil Date conversion and validation utility
-     * @param validationUtil Common validation utility
      */
     @Autowired
     public ReportGenerationService(
             TransactionRepository transactionRepository,
             AccountRepository accountRepository,
-            ReportFormatter reportFormatter,
-            DateConversionUtil dateConversionUtil,
-            ValidationUtil validationUtil) {
+            ReportFormatter reportFormatter) {
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
         this.reportFormatter = reportFormatter;
-        this.dateConversionUtil = dateConversionUtil;
-        this.validationUtil = validationUtil;
     }
 
     /**
@@ -457,7 +449,7 @@ public class ReportGenerationService {
         // Additional validation for numeric fields if needed
         if (request.getAccountId() != null && !request.getAccountId().trim().isEmpty()) {
             try {
-                validationUtil.validateNumericField(request.getAccountId(), "Account ID");
+                ValidationUtil.validateNumericField("Account ID", request.getAccountId());
             } catch (Exception e) {
                 response.addValidationError("accountId", "INVALID_NUMERIC", "Account ID must be numeric");
                 isValid = false;
@@ -532,8 +524,8 @@ public class ReportGenerationService {
             
             // Validate individual dates using DateConversionUtil - replicating CSUTLDTC calls
             try {
-                String startDateStr = dateConversionUtil.convertDateFormat(request.getStartDate().toString(), "yyyy-MM-dd", "yyyyMMdd");
-                if (!dateConversionUtil.validateDate(startDateStr)) {
+                String startDateStr = DateConversionUtil.convertDateFormat(request.getStartDate().toString(), "yyyy-MM-dd", "yyyyMMdd");
+                if (!DateConversionUtil.validateDate(startDateStr)) {
                     response.addValidationError("startDate", "INVALID_DATE", "Start Date - Not a valid date...");
                     isValid = false;
                 }
@@ -543,8 +535,8 @@ public class ReportGenerationService {
             }
             
             try {
-                String endDateStr = dateConversionUtil.convertDateFormat(request.getEndDate().toString(), "yyyy-MM-dd", "yyyyMMdd");
-                if (!dateConversionUtil.validateDate(endDateStr)) {
+                String endDateStr = DateConversionUtil.convertDateFormat(request.getEndDate().toString(), "yyyy-MM-dd", "yyyyMMdd");
+                if (!DateConversionUtil.validateDate(endDateStr)) {
                     response.addValidationError("endDate", "INVALID_DATE", "End Date - Not a valid date...");
                     isValid = false;
                 }
@@ -644,7 +636,7 @@ public class ReportGenerationService {
         
         // Set current date and time - matching COBOL FUNCTION CURRENT-DATE
         LocalDate currentDate = LocalDate.now();
-        systemInfo.setCurrentDate(dateConversionUtil.formatToCobol(currentDate));
+        systemInfo.setCurrentDate(DateConversionUtil.formatToCobol(currentDate));
         systemInfo.setCurrentTime(java.time.LocalTime.now().toString());
         
         // Set program and transaction info - matching COBOL header population

@@ -160,11 +160,11 @@ public class AdminReportService {
             
             // User metrics collection
             Long totalUsers = userSecurityRepository.count();
-            List<Object> adminUsers = userSecurityRepository.findByUserType("A");
-            List<Object> regularUsers = userSecurityRepository.findByUserType("U");
+            var adminUsers = userSecurityRepository.findByUserType("A");
+            var regularUsers = userSecurityRepository.findByUserType("U");
             
             // Transaction volume metrics
-            List<Object> transactionData = transactionRepository.findByTransactionDateBetween(
+            var transactionData = transactionRepository.findByTransactionDateBetween(
                     request.getStartDate().toLocalDate(), 
                     request.getEndDate().toLocalDate()
             );
@@ -293,9 +293,9 @@ public class AdminReportService {
             );
             
             // Build summary statistics
-            summaryStats.getCounts().put("totalActiveUsers", (long) mostActiveUsers.size());
-            summaryStats.getCounts().put("loginEvents", loginActivities.getTotalElements());
-            summaryStats.getCounts().put("logoutEvents", logoutActivities.getTotalElements());
+            summaryStats.getCounts().put("totalActiveUsers", (long) (mostActiveUsers != null ? mostActiveUsers.size() : 0));
+            summaryStats.getCounts().put("loginEvents", loginActivities != null ? loginActivities.getTotalElements() : 0L);
+            summaryStats.getCounts().put("logoutEvents", logoutActivities != null ? logoutActivities.getTotalElements() : 0L);
             
             if (avgSessionDuration != null) {
                 summaryStats.getAverages().put("averageSessionDuration", avgSessionDuration);
@@ -329,9 +329,9 @@ public class AdminReportService {
                     "Most Active Users",
                     mostActiveUsers,
                     "Login Activities",
-                    loginActivities.getContent(),
+                    loginActivities != null ? loginActivities.getContent() : List.of(),
                     "Logout Activities", 
-                    logoutActivities.getContent()
+                    logoutActivities != null ? logoutActivities.getContent() : List.of()
             );
             
             AdminReportResponse response = responseBuilder
@@ -452,7 +452,7 @@ public class AdminReportService {
             // Build paginated report data
             int startIndex = request.getPageNumber() * request.getPageSize();
             int endIndex = Math.min(startIndex + request.getPageSize(), allTransactions.size());
-            List<Object> paginatedTransactions = allTransactions.subList(startIndex, endIndex);
+            var paginatedTransactions = allTransactions.subList(startIndex, endIndex);
             
             List<Object> reportData = List.of(
                     "Transaction Volume Summary",
@@ -540,7 +540,7 @@ public class AdminReportService {
                         request.getEndDate(),
                         PageRequest.of(0, request.getPageSize())
                 );
-                userSpecificLogs = List.of(userAuditLogs.getContent());
+                userSpecificLogs = userAuditLogs != null ? List.of(userAuditLogs.getContent()) : List.of();
             }
             
             // Get security events by source IP for analysis
@@ -553,21 +553,23 @@ public class AdminReportService {
                         request.getEndDate(),
                         PageRequest.of(0, 100)
                 );
-                sourceIpEvents = List.of(ipEvents.getContent());
+                sourceIpEvents = ipEvents != null ? List.of(ipEvents.getContent()) : List.of();
             }
             
             // Build security statistics
             Long totalAuditLogs = auditLogRepository.count();
             summaryStats.getCounts().put("totalAuditLogs", totalAuditLogs);
-            summaryStats.getCounts().put("authenticationEvents", authenticationEvents.getTotalElements());
-            summaryStats.getCounts().put("authorizationEvents", authorizationEvents.getTotalElements());
+            summaryStats.getCounts().put("authenticationEvents", authenticationEvents != null ? authenticationEvents.getTotalElements() : 0L);
+            summaryStats.getCounts().put("authorizationEvents", authorizationEvents != null ? authorizationEvents.getTotalElements() : 0L);
             
             if (request.getUserId() != null && !request.getUserId().isEmpty()) {
                 summaryStats.getCounts().put("userSpecificEvents", (long) userSpecificLogs.size());
             }
             
             // Calculate security metrics
-            long totalSecurityEvents = authenticationEvents.getTotalElements() + authorizationEvents.getTotalElements();
+            long authEventsCount = authenticationEvents != null ? authenticationEvents.getTotalElements() : 0L;
+            long authzEventsCount = authorizationEvents != null ? authorizationEvents.getTotalElements() : 0L;
+            long totalSecurityEvents = authEventsCount + authzEventsCount;
             if (totalAuditLogs > 0) {
                 double securityEventPercentage = (double) totalSecurityEvents / totalAuditLogs * 100;
                 summaryStats.getPercentages().put("securityEventPercentage", 
@@ -576,8 +578,7 @@ public class AdminReportService {
             
             // Set security KPIs
             summaryStats.getKeyPerformanceIndicators().put("primaryEventType", 
-                    authenticationEvents.getTotalElements() > authorizationEvents.getTotalElements() 
-                            ? "AUTHENTICATION" : "AUTHORIZATION");
+                    authEventsCount > authzEventsCount ? "AUTHENTICATION" : "AUTHORIZATION");
             summaryStats.getKeyPerformanceIndicators().put("auditPeriodDays", 
                     java.time.temporal.ChronoUnit.DAYS.between(request.getStartDate().toLocalDate(), 
                                                               request.getEndDate().toLocalDate()));
@@ -605,13 +606,17 @@ public class AdminReportService {
             paginationInfo.setLast(request.getPageNumber() >= paginationInfo.getTotalPages() - 1);
             
             // Build comprehensive audit data
+            var authEventsContent = authenticationEvents != null ? authenticationEvents.getContent() : List.of();
+            var authzEventsContent = authorizationEvents != null ? authorizationEvents.getContent() : List.of();
+            var authzEventsSubList = authzEventsContent.subList(0, Math.min(request.getPageSize(), authzEventsContent.size()));
+            
             List<Object> reportData = List.of(
                     "Security Event Summary",
                     summaryStats.getCounts(),
                     "Authentication Events",
-                    authenticationEvents.getContent(),
+                    authEventsContent,
                     "Authorization Events",
-                    authorizationEvents.getContent().subList(0, Math.min(request.getPageSize(), authorizationEvents.getContent().size()))
+                    authzEventsSubList
             );
             
             // Add user-specific logs if available
