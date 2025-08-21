@@ -201,6 +201,20 @@ public class Statement {
     private String statementFilePath;
 
     /**
+     * Cash advance limit for the account
+     * Maps to ACCT-CASH-CREDIT-LIMIT from COBOL account structure
+     */
+    @Column(name = "cash_advance_limit", precision = 12, scale = 2)
+    private BigDecimal cashAdvanceLimit;
+
+    /**
+     * Current cash advance balance
+     * Maps to ACCT-CASH-BALANCE from COBOL account structure  
+     */
+    @Column(name = "cash_advance_balance", precision = 12, scale = 2)
+    private BigDecimal cashAdvanceBalance;
+
+    /**
      * JPA lifecycle callback to set creation timestamp
      */
     @PrePersist
@@ -242,6 +256,51 @@ public class Statement {
                currentBalance.compareTo(BigDecimal.ZERO) > 0 &&
                minimumPaymentAmount != null &&
                minimumPaymentAmount.compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    /**
+     * Get payments and credits amount 
+     * Returns total credits for the statement period
+     * Maps to COBOL statement processing logic
+     */
+    public BigDecimal getPaymentsCredits() {
+        return totalCredits != null ? totalCredits : BigDecimal.ZERO;
+    }
+
+    /**
+     * Get purchases and debits amount
+     * Returns total debits for the statement period
+     * Maps to COBOL statement processing logic
+     */
+    public BigDecimal getPurchasesDebits() {
+        return totalDebits != null ? totalDebits : BigDecimal.ZERO;
+    }
+
+    /**
+     * Get fees and charges amount
+     * Returns total fees assessed during the statement period
+     * Maps to COBOL fee calculation logic
+     */
+    public BigDecimal getFeesCharges() {
+        return fees != null ? fees : BigDecimal.ZERO;
+    }
+
+    /**
+     * Get cash advance limit
+     * Returns the cash advance limit for the account
+     * Maps to COBOL account structure
+     */
+    public BigDecimal getCashAdvanceLimit() {
+        return cashAdvanceLimit != null ? cashAdvanceLimit : BigDecimal.ZERO;
+    }
+
+    /**
+     * Get current cash advance balance
+     * Returns the current cash advance balance
+     * Maps to COBOL account structure
+     */
+    public BigDecimal getCashAdvanceBalance() {
+        return cashAdvanceBalance != null ? cashAdvanceBalance : BigDecimal.ZERO;
     }
 
     @Override
