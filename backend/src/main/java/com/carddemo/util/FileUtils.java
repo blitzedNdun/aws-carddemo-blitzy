@@ -1,5 +1,6 @@
 package com.carddemo.util;
 
+import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -15,6 +16,7 @@ import java.util.regex.Pattern;
  * This class replicates COBOL utility functions to maintain
  * 100% functional parity with the mainframe implementation.
  */
+@Component
 public class FileUtils {
     
     // Constants for COBOL-style formatting
