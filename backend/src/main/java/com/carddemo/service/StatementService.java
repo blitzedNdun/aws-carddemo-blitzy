@@ -116,20 +116,17 @@ public class StatementService {
         // 3000-BUILD-STATEMENT-RESPONSE
         return StatementDto.builder()
             .statementId(currentStatement.getStatementId())
-            .accountId(accountId)
+            .accountId(accountId.toString())
             .statementDate(statementDate)
             .currentBalance(currentStatement.getCurrentBalance().add(pendingBalance))
-            .minimumPaymentAmount(currentStatement.getMinimumPaymentAmount())
+            .minimumPayment(currentStatement.getMinimumPaymentAmount())
             .paymentDueDate(currentStatement.getPaymentDueDate())
             .previousBalance(currentStatement.getPreviousBalance())
-            .paymentsCredits(currentStatement.getPaymentsCredits())
-            .purchasesDebits(currentStatement.getPurchasesDebits())
-            .feesCharges(currentStatement.getFeesCharges())
-            .interestCharges(currentStatement.getInterestCharges())
+            .totalCredits(currentStatement.getPaymentsCredits())
+            .totalDebits(currentStatement.getPurchasesDebits())
+            .totalFees(currentStatement.getFeesCharges())
+            .totalInterest(currentStatement.getInterestCharges())
             .creditLimit(currentStatement.getCreditLimit())
-            .availableCredit(currentStatement.getAvailableCredit())
-            .cashAdvanceLimit(currentStatement.getCashAdvanceLimit())
-            .cashAdvanceBalance(currentStatement.getCashAdvanceBalance())
             .build();
     }
 
@@ -189,20 +186,17 @@ public class StatementService {
             .limit(resultLimit)
             .map(statement -> StatementDto.builder()
                 .statementId(statement.getStatementId())
-                .accountId(accountId)
+                .accountId(accountId.toString())
                 .statementDate(statement.getStatementDate())
                 .currentBalance(statement.getCurrentBalance())
-                .minimumPaymentAmount(statement.getMinimumPaymentAmount())
+                .minimumPayment(statement.getMinimumPaymentAmount())
                 .paymentDueDate(statement.getPaymentDueDate())
                 .previousBalance(statement.getPreviousBalance())
-                .paymentsCredits(statement.getPaymentsCredits())
-                .purchasesDebits(statement.getPurchasesDebits())
-                .feesCharges(statement.getFeesCharges())
-                .interestCharges(statement.getInterestCharges())
+                .totalCredits(statement.getPaymentsCredits())
+                .totalDebits(statement.getPurchasesDebits())
+                .totalFees(statement.getFeesCharges())
+                .totalInterest(statement.getInterestCharges())
                 .creditLimit(statement.getCreditLimit())
-                .availableCredit(statement.getAvailableCredit())
-                .cashAdvanceLimit(statement.getCashAdvanceLimit())
-                .cashAdvanceBalance(statement.getCashAdvanceBalance())
                 .build())
             .collect(java.util.stream.Collectors.toList());
     }
@@ -252,12 +246,14 @@ public class StatementService {
         }
         
         // 2300-COORDINATE-STATEMENT-GENERATION
-        var generatedStatements = statementGenerationService.generateMonthlyStatements(
-            List.of(accountId), effectiveStatementDate);
+        var generatedStatements = statementGenerationService.generateMonthlyStatements();
         
         // 2310-AGGREGATE-TRANSACTION-DATA
+        LocalDate cycleStartDate = effectiveStatementDate.withDayOfMonth(1);
+        LocalDate cycleEndDate = effectiveStatementDate.withDayOfMonth(
+            effectiveStatementDate.lengthOfMonth());
         var aggregatedData = statementGenerationService.aggregateTransactionsByCycle(
-            accountId, effectiveStatementDate);
+            accountId, cycleStartDate, cycleEndDate);
         
         // 2320-RETRIEVE-GENERATED-STATEMENT
         if (generatedStatements.isEmpty()) {
@@ -270,20 +266,17 @@ public class StatementService {
         
         return StatementDto.builder()
             .statementId(newStatement.getStatementId())
-            .accountId(accountId)
+            .accountId(accountId.toString())
             .statementDate(effectiveStatementDate)
             .currentBalance(newStatement.getCurrentBalance())
-            .minimumPaymentAmount(newStatement.getMinimumPaymentAmount())
+            .minimumPayment(newStatement.getMinimumPaymentAmount())
             .paymentDueDate(newStatement.getPaymentDueDate())
             .previousBalance(newStatement.getPreviousBalance())
-            .paymentsCredits(newStatement.getPaymentsCredits())
-            .purchasesDebits(newStatement.getPurchasesDebits())
-            .feesCharges(newStatement.getFeesCharges())
-            .interestCharges(newStatement.getInterestCharges())
+            .totalCredits(newStatement.getPaymentsCredits())
+            .totalDebits(newStatement.getPurchasesDebits())
+            .totalFees(newStatement.getFeesCharges())
+            .totalInterest(newStatement.getInterestCharges())
             .creditLimit(newStatement.getCreditLimit())
-            .availableCredit(newStatement.getAvailableCredit())
-            .cashAdvanceLimit(newStatement.getCashAdvanceLimit())
-            .cashAdvanceBalance(newStatement.getCashAdvanceBalance())
             .build();
     }
 
@@ -479,20 +472,17 @@ public class StatementService {
                                    stmt.getStatementDate().getYear() == effectiveDate.getYear())
                     .map(statement -> StatementDto.builder()
                         .statementId(statement.getStatementId())
-                        .accountId(accountId)
+                        .accountId(accountId.toString())
                         .statementDate(statement.getStatementDate())
                         .currentBalance(statement.getCurrentBalance())
-                        .minimumPaymentAmount(statement.getMinimumPaymentAmount())
+                        .minimumPayment(statement.getMinimumPaymentAmount())
                         .paymentDueDate(statement.getPaymentDueDate())
                         .previousBalance(statement.getPreviousBalance())
-                        .paymentsCredits(statement.getPaymentsCredits())
-                        .purchasesDebits(statement.getPurchasesDebits())
-                        .feesCharges(statement.getFeesCharges())
-                        .interestCharges(statement.getInterestCharges())
+                        .totalCredits(statement.getPaymentsCredits())
+                        .totalDebits(statement.getPurchasesDebits())
+                        .totalFees(statement.getFeesCharges())
+                        .totalInterest(statement.getInterestCharges())
                         .creditLimit(statement.getCreditLimit())
-                        .availableCredit(statement.getAvailableCredit())
-                        .cashAdvanceLimit(statement.getCashAdvanceLimit())
-                        .cashAdvanceBalance(statement.getCashAdvanceBalance())
                         .build())
                     .collect(java.util.stream.Collectors.toList());
                 
@@ -666,20 +656,17 @@ public class StatementService {
         // Build StatementDto and convert to JSON
         var statementDto = StatementDto.builder()
             .statementId(statement.getStatementId())
-            .accountId(statement.getAccountId())
+            .accountId(statement.getAccountId().toString())
             .statementDate(statement.getStatementDate())
             .currentBalance(statement.getCurrentBalance())
-            .minimumPaymentAmount(statement.getMinimumPaymentAmount())
+            .minimumPayment(statement.getMinimumPaymentAmount())
             .paymentDueDate(statement.getPaymentDueDate())
             .previousBalance(statement.getPreviousBalance())
-            .paymentsCredits(statement.getPaymentsCredits())
-            .purchasesDebits(statement.getPurchasesDebits())
-            .feesCharges(statement.getFeesCharges())
-            .interestCharges(statement.getInterestCharges())
+            .totalCredits(statement.getPaymentsCredits())
+            .totalDebits(statement.getPurchasesDebits())
+            .totalFees(statement.getFeesCharges())
+            .totalInterest(statement.getInterestCharges())
             .creditLimit(statement.getCreditLimit())
-            .availableCredit(statement.getAvailableCredit())
-            .cashAdvanceLimit(statement.getCashAdvanceLimit())
-            .cashAdvanceBalance(statement.getCashAdvanceBalance())
             .build();
         
         // Convert to JSON using Jackson ObjectMapper (simplified approach)
