@@ -544,6 +544,7 @@ com/carddemo/client/AddressValidationService$AddressValidationResult.class
 com/carddemo/dto/UserListResponse.class
 com/carddemo/batch/FeeAssessmentJobConfig$FeeAssessmentResult.class
 com/carddemo/dto/AdminReportResponse$Builder.class
+com/carddemo/service/AccountBalanceBatchService.class
 com/carddemo/repository/TransactionTypeRepository.class
 com/carddemo/batch/ArchiveJobConfig$AccountArchiveRecord.class
 com/carddemo/service/InterestRateService$RateHistoryEntry.class
