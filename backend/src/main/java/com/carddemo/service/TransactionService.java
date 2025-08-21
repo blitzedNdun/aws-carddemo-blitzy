@@ -137,7 +137,14 @@ public class TransactionService {
             return Optional.empty();
         }
         
-        return transactionRepository.findById(transactionId);
+        // Convert String transactionId to Long for database lookup
+        try {
+            Long transactionIdLong = Long.parseLong(transactionId);
+            return transactionRepository.findById(transactionIdLong);
+        } catch (NumberFormatException e) {
+            setErrorState("Invalid transaction ID format");
+            return Optional.empty();
+        }
     }
 
     /**
@@ -156,7 +163,7 @@ public class TransactionService {
         clearErrorState();
         
         // Generate new transaction ID (replicating COTRN02C ID generation logic)
-        String newTransactionId = generateTransactionId();
+        Long newTransactionId = generateTransactionIdLong();
         transaction.setTransactionId(newTransactionId);
         
         // Comprehensive validation (replicating COTRN02C validation paragraphs)
@@ -167,7 +174,7 @@ public class TransactionService {
         }
         
         // Set transaction timestamp
-        transaction.setTransactionOrigTs(LocalDateTime.now());
+        transaction.setOriginalTimestamp(LocalDateTime.now());
         
         // Process transaction creation (replicating COTRN02C creation logic)
         return processTransactionCreation(transaction);
@@ -204,7 +211,7 @@ public class TransactionService {
         if (errorFlag) return;
         
         // Validate transaction type and category codes
-        validateTransactionCodes(transaction.getTransactionTypeCode(), transaction.getTransactionCatCode());
+        validateTransactionCodes(transaction.getTransactionTypeCode(), transaction.getCategoryCode());
     }
 
     /**
@@ -371,12 +378,24 @@ public class TransactionService {
     }
 
     /**
+     * Generates unique transaction ID as Long replicating COTRN02C transaction ID creation logic.
+     * 
+     * COBOL Source: COTRN02C.cbl transaction ID generation (inferred from logic)
+     * Original Logic: Sequential ID assignment with uniqueness validation
+     * 
+     * @return unique transaction ID as Long
+     */
+    public Long generateTransactionIdLong() {
+        return transactionIdGenerator.getAndIncrement();
+    }
+
+    /**
      * Generates unique transaction ID replicating COTRN02C transaction ID creation logic.
      * 
      * COBOL Source: COTRN02C.cbl transaction ID generation (inferred from logic)
      * Original Logic: Sequential ID assignment with uniqueness validation
      * 
-     * @return unique transaction ID as String
+     * @return unique transaction ID as String (for backward compatibility)
      */
     public String generateTransactionId() {
         return String.format("%016d", transactionIdGenerator.getAndIncrement());
@@ -555,8 +574,8 @@ public class TransactionService {
     private void updatePaginationState(Page<Transaction> page) {
         if (page.hasContent()) {
             List<Transaction> content = page.getContent();
-            firstTransactionId = content.get(0).getTransactionId();
-            lastTransactionId = content.get(content.size() - 1).getTransactionId();
+            firstTransactionId = content.get(0).getTransactionId().toString();
+            lastTransactionId = content.get(content.size() - 1).getTransactionId().toString();
             hasNextPage = page.hasNext();
         } else {
             firstTransactionId = "";
@@ -624,7 +643,7 @@ public class TransactionService {
         }
         
         // Validate card expiration date
-        if (card.getExpirationDate() != null && card.getExpirationDate().isBefore(LocalDateTime.now())) {
+        if (card.getExpirationDate() != null && card.getExpirationDate().isBefore(LocalDateTime.now().toLocalDate())) {
             setErrorState("Card has expired");
         }
     }
