@@ -99,6 +99,7 @@ com/carddemo/batch/StatementGenerationJobConfigA$2.class
 com/carddemo/dto/CardDeletionRequest.class
 com/carddemo/service/ChargebackProcessor$LifecycleTrackingRecord.class
 com/carddemo/service/UserListService.class
+com/carddemo/dto/BillDetailResponse.class
 com/carddemo/service/AccountClosureBatchService.class
 com/carddemo/dto/MenuResponse.class
 com/carddemo/client/EmailClient$BulkEmailResult$Builder.class
@@ -565,6 +566,7 @@ com/carddemo/batch/ReconciliationJobConfig$ChargebackTransactionRowMapper.class
 com/carddemo/dto/ReportRequestDto.class
 com/carddemo/service/AccountUpdateService.class
 com/carddemo/controller/CustomerController.class
+com/carddemo/service/BillInquiryService.class
 com/carddemo/service/CustomerMaintenanceService$CustomerRetrievalResult.class
 com/carddemo/entity/Configuration.class
 com/carddemo/batch/BalanceReconciliationJobConfig$AccountBalance.class
