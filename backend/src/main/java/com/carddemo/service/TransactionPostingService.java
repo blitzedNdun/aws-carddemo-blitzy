@@ -490,11 +490,13 @@ public class TransactionPostingService {
      */
     public boolean validateCreditLimit(AccountRecord account, BigDecimal transactionAmount) {
         // Calculate temporary balance (equivalent to COBOL COMPUTE WS-TEMP-BAL)
-        tempBalance = account.getCurrentCycleCredit()
-                     .subtract(account.getCurrentCycleDebit())
+        // Current balance = debits minus credits (charges minus payments)
+        // New balance = current balance + transaction amount
+        tempBalance = account.getCurrentCycleDebit()
+                     .subtract(account.getCurrentCycleCredit())
                      .add(transactionAmount);
 
-        // Check if credit limit is exceeded (equivalent to COBOL IF ACCT-CREDIT-LIMIT >= WS-TEMP-BAL)
+        // Check if credit limit is exceeded (equivalent to COBOL IF ACCT-CREDIT-LIMIT < WS-TEMP-BAL)
         if (account.getCreditLimit().compareTo(tempBalance) < 0) {
             validationFailReason = OVERLIMIT_TRANSACTION;
             validationFailDescription = "OVERLIMIT TRANSACTION";
