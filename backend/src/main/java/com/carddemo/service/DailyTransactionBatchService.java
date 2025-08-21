@@ -99,37 +99,25 @@ public class DailyTransactionBatchService {
     private final AccountRepository accountRepository;
     private final CardXrefRepository cardXrefRepository;
     
-    // Utility dependencies for validation and data conversion
-    private final CobolDataConverter cobolDataConverter;
-    private final ValidationUtil validationUtil;
-    private final DateConversionUtil dateConversionUtil;
+
 
     /**
-     * Constructor with dependency injection for all required repositories and utilities.
+     * Constructor with dependency injection for all required repositories.
      * 
      * @param dailyTransactionRepository Repository for accessing daily transaction staging data
      * @param transactionRepository Repository for posting validated transactions
      * @param accountRepository Repository for account validation and balance updates
      * @param cardXrefRepository Repository for card cross-reference validation
-     * @param cobolDataConverter Utility for COBOL data type conversion
-     * @param validationUtil Utility for field validation
-     * @param dateConversionUtil Utility for date format conversion
      */
     public DailyTransactionBatchService(
             DailyTransactionRepository dailyTransactionRepository,
             TransactionRepository transactionRepository,
             AccountRepository accountRepository,
-            CardXrefRepository cardXrefRepository,
-            CobolDataConverter cobolDataConverter,
-            ValidationUtil validationUtil,
-            DateConversionUtil dateConversionUtil) {
+            CardXrefRepository cardXrefRepository) {
         this.dailyTransactionRepository = dailyTransactionRepository;
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
         this.cardXrefRepository = cardXrefRepository;
-        this.cobolDataConverter = cobolDataConverter;
-        this.validationUtil = validationUtil;
-        this.dateConversionUtil = dateConversionUtil;
     }
 
     /**
@@ -160,13 +148,10 @@ public class DailyTransactionBatchService {
             // Step 1: Validate required fields
             validateRequiredFields(dailyTransaction);
             
-            // Step 2: Check for duplicate transaction ID (idempotency check)
-            if (dailyTransaction.getTransactionId() != null && 
-                transactionRepository.existsByTransactionId(dailyTransaction.getTransactionId())) {
-                logger.warn("Duplicate transaction ID detected: {}", dailyTransaction.getTransactionId());
-                dailyTransaction.markAsFailed("Duplicate transaction ID - already processed");
-                validationErrors.incrementAndGet();
-                return false;
+            // Step 2: Check for duplicate processing (idempotency check)
+            if ("COMPLETED".equals(dailyTransaction.getProcessingStatus())) {
+                logger.warn("Transaction already processed: {}", dailyTransaction.getDailyTransactionId());
+                return false; // Already processed, skip silently
             }
             
             // Step 3: Validate card number against XREF (replicating lines 227-239 of CBTRN01C)
@@ -195,10 +180,10 @@ public class DailyTransactionBatchService {
             }
             
             // Step 6: Validate transaction type code
-            validationUtil.validateRequiredField(dailyTransaction.getTransactionTypeCode(), "Transaction Type Code");
+            ValidationUtil.validateRequiredField("Transaction Type Code", dailyTransaction.getTransactionTypeCode());
             
             // Step 7: Validate category code
-            validationUtil.validateRequiredField(dailyTransaction.getCategoryCode(), "Category Code");
+            ValidationUtil.validateRequiredField("Category Code", dailyTransaction.getCategoryCode());
             
             logger.debug("Daily transaction validation successful for ID: {}", dailyTransaction.getDailyTransactionId());
             return true;
@@ -212,7 +197,7 @@ public class DailyTransactionBatchService {
             if (e instanceof BusinessRuleException || e instanceof DataPrecisionException) {
                 throw e;
             } else {
-                throw new BusinessRuleException("Transaction validation failed: " + e.getMessage(), e);
+                throw new BusinessRuleException("Transaction validation failed: " + e.getMessage(), "9999", e);
             }
         }
     }
@@ -250,7 +235,7 @@ public class DailyTransactionBatchService {
             Transaction transaction = createTransactionFromDaily(dailyTransaction);
             
             // Step 3: Apply COBOL precision using CobolDataConverter
-            BigDecimal preciseAmount = cobolDataConverter.toBigDecimal(
+            BigDecimal preciseAmount = CobolDataConverter.toBigDecimal(
                 dailyTransaction.getTransactionAmount(), MONETARY_SCALE);
             transaction.setAmount(preciseAmount);
             
@@ -286,7 +271,7 @@ public class DailyTransactionBatchService {
             if (e instanceof BusinessRuleException || e instanceof DataPrecisionException) {
                 throw e;
             } else {
-                throw new BusinessRuleException("Transaction processing failed: " + e.getMessage(), e);
+                throw new BusinessRuleException("Transaction processing failed: " + e.getMessage(), "9999", e);
             }
         }
     }
@@ -309,13 +294,14 @@ public class DailyTransactionBatchService {
     public org.springframework.batch.item.ItemReader<DailyTransaction> createTransactionReader() {
         logger.info("Creating transaction reader for daily transaction batch processing");
         
-        return new org.springframework.batch.item.database.RepositoryItemReader<DailyTransaction>() {{
-            setRepository(dailyTransactionRepository);
-            setMethodName("findUnprocessedTransactions");
-            setSort(java.util.Map.of("originalTimestamp", org.springframework.data.domain.Sort.Direction.ASC));
-            setPageSize(DEFAULT_CHUNK_SIZE);
-            setSaveState(true); // Enable restart capability
-        }};
+        org.springframework.batch.item.data.RepositoryItemReader<DailyTransaction> reader = 
+            new org.springframework.batch.item.data.RepositoryItemReader<>();
+        reader.setRepository(dailyTransactionRepository);
+        reader.setMethodName("findUnprocessedTransactions");
+        reader.setSort(java.util.Map.of("originalTimestamp", org.springframework.data.domain.Sort.Direction.ASC));
+        reader.setPageSize(DEFAULT_CHUNK_SIZE);
+        reader.setSaveState(true); // Enable restart capability
+        return reader;
     }
 
     /**
@@ -382,10 +368,10 @@ public class DailyTransactionBatchService {
         
         return new ItemWriter<DailyTransaction>() {
             @Override
-            public void write(List<? extends DailyTransaction> items) throws Exception {
-                logger.debug("Writing {} validated transactions to main table", items.size());
+            public void write(org.springframework.batch.item.Chunk<? extends DailyTransaction> chunk) throws Exception {
+                logger.debug("Writing {} validated transactions to main table", chunk.size());
                 
-                for (DailyTransaction dailyTransaction : items) {
+                for (DailyTransaction dailyTransaction : chunk) {
                     try {
                         // Process each validated transaction
                         boolean success = processTransaction(dailyTransaction);
@@ -406,7 +392,7 @@ public class DailyTransactionBatchService {
                     }
                 }
                 
-                logger.info("Completed writing {} transactions", items.size());
+                logger.info("Completed writing {} transactions", chunk.size());
             }
         };
     }
@@ -449,33 +435,32 @@ public class DailyTransactionBatchService {
     private void validateRequiredFields(DailyTransaction dailyTransaction) {
         // Validate account ID
         if (dailyTransaction.getAccountId() == null) {
-            throw new BusinessRuleException("Account ID is required");
+            throw new BusinessRuleException("Account ID is required", "1001");
         }
         
         // Validate card number
-        validationUtil.validateRequiredField(dailyTransaction.getCardNumber(), "Card Number");
-        validationUtil.validateCardNumber(dailyTransaction.getCardNumber());
+        ValidationUtil.validateRequiredField("Card Number", dailyTransaction.getCardNumber());
         
         // Validate transaction date
         if (dailyTransaction.getTransactionDate() == null) {
-            throw new BusinessRuleException("Transaction date is required");
+            throw new BusinessRuleException("Transaction date is required", "1002");
         }
         
         // Validate transaction amount
         if (dailyTransaction.getTransactionAmount() == null) {
-            throw new BusinessRuleException("Transaction amount is required");
+            throw new BusinessRuleException("Transaction amount is required", "1003");
         }
         
         // Validate transaction type code
         if (dailyTransaction.getTransactionTypeCode() == null || 
             dailyTransaction.getTransactionTypeCode().trim().isEmpty()) {
-            throw new BusinessRuleException("Transaction type code is required");
+            throw new BusinessRuleException("Transaction type code is required", "1004");
         }
         
         // Validate category code
         if (dailyTransaction.getCategoryCode() == null || 
             dailyTransaction.getCategoryCode().trim().isEmpty()) {
-            throw new BusinessRuleException("Category code is required");
+            throw new BusinessRuleException("Category code is required", "1005");
         }
     }
 
@@ -494,13 +479,14 @@ public class DailyTransactionBatchService {
             logger.debug("Validating card number against XREF: {}", cardNumber);
             
             // Check if card exists in cross-reference (equivalent to CBTRN01C lines 228-239)
-            if (!cardXrefRepository.existsByCardNumber(cardNumber)) {
+            java.util.Optional<CardXref> cardXrefOptional = cardXrefRepository.findFirstByXrefCardNum(cardNumber);
+            if (cardXrefOptional.isEmpty()) {
                 logger.warn("INVALID CARD NUMBER FOR XREF: {}", cardNumber);
                 return false;
             }
             
             // Retrieve cross-reference data for additional validation
-            CardXref cardXref = cardXrefRepository.findByCardNumber(cardNumber);
+            CardXref cardXref = cardXrefOptional.get();
             if (cardXref == null) {
                 logger.warn("Card cross-reference not found for card: {}", cardNumber);
                 return false;
@@ -571,20 +557,20 @@ public class DailyTransactionBatchService {
     private boolean validateTransactionAmount(BigDecimal amount) {
         try {
             // Validate amount is positive
-            validationUtil.validateTransactionAmount(amount);
+            ValidationUtil.validateTransactionAmount(amount);
             
             // Verify precision preservation using CobolDataConverter
-            BigDecimal preciseAmount = cobolDataConverter.toBigDecimal(amount, MONETARY_SCALE);
+            BigDecimal preciseAmount = CobolDataConverter.toBigDecimal(amount, MONETARY_SCALE);
             
             // Check for precision loss
             if (amount.compareTo(preciseAmount) != 0) {
                 throw new DataPrecisionException("Precision loss detected in transaction amount: " + 
-                    amount + " vs " + preciseAmount);
+                    amount + " vs " + preciseAmount, MONETARY_SCALE, amount.scale(), amount);
             }
             
             // Validate amount is within business limits (equivalent to COBOL range checks)
             if (preciseAmount.scale() != MONETARY_SCALE) {
-                cobolDataConverter.preservePrecision(preciseAmount);
+                preciseAmount = CobolDataConverter.preservePrecision(preciseAmount, MONETARY_SCALE);
             }
             
             return true;
@@ -655,7 +641,7 @@ public class DailyTransactionBatchService {
             
             // Retrieve current account data
             Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new BusinessRuleException("Account not found for balance update: " + accountId));
+                .orElseThrow(() -> new BusinessRuleException("Account not found for balance update: " + accountId, "2001"));
             
             // Get current balance with COBOL precision
             BigDecimal currentBalance = account.getCurrentBalance();
@@ -667,7 +653,7 @@ public class DailyTransactionBatchService {
             BigDecimal newBalance = currentBalance.add(transactionAmount.setScale(MONETARY_SCALE, COBOL_ROUNDING_MODE));
             
             // Apply precision preservation
-            newBalance = cobolDataConverter.toBigDecimal(newBalance, MONETARY_SCALE);
+            newBalance = CobolDataConverter.toBigDecimal(newBalance, MONETARY_SCALE);
             
             // Update account balance
             account.setCurrentBalance(newBalance);
@@ -685,7 +671,7 @@ public class DailyTransactionBatchService {
             if (e instanceof BusinessRuleException || e instanceof DataPrecisionException) {
                 throw e;
             } else {
-                throw new BusinessRuleException("Account balance update failed: " + e.getMessage(), e);
+                throw new BusinessRuleException("Account balance update failed: " + e.getMessage(), "2999", e);
             }
         }
     }
