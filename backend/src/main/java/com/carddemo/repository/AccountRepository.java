@@ -6,6 +6,7 @@
 package com.carddemo.repository;
 
 import com.carddemo.entity.Account;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -175,6 +176,23 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     @Query("SELECT a FROM Account a WHERE a.accountId BETWEEN :startAccountNumber AND :endAccountNumber")
     List<Account> findByAccountNumberBetween(@Param("startAccountNumber") Long startAccountNumber, 
                                            @Param("endAccountNumber") Long endAccountNumber);
+
+    /**
+     * Finds accounts within a specified range for partitioned processing.
+     * 
+     * Used for partitioned batch processing where accounts need to be processed
+     * in groups based on account ID ranges. This method supports the statement
+     * generation batch process which partitions accounts into groups A-M and N-Z.
+     * 
+     * @param minAccountId minimum account ID (inclusive)
+     * @param maxAccountId maximum account ID (inclusive)
+     * @param pageable pagination and sorting information
+     * @return Page<Account> containing accounts within the specified range
+     */
+    @Query("SELECT a FROM Account a WHERE a.accountId BETWEEN :minAccountId AND :maxAccountId ORDER BY a.accountId")
+    Page<Account> findByAccountIdBetween(@Param("minAccountId") Long minAccountId, 
+                                        @Param("maxAccountId") Long maxAccountId, 
+                                        Pageable pageable);
 
     /**
      * Finds all accounts with pagination support.

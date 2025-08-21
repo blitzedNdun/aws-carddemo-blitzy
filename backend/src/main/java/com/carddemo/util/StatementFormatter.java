@@ -1,5 +1,7 @@
 package com.carddemo.util;
 
+import org.springframework.stereotype.Component;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
@@ -20,6 +22,7 @@ import java.util.List;
  * converting COBOL print line formatting to modern Java template engine patterns while
  * preserving the exact layout and formatting requirements of the original mainframe implementation.
  */
+@Component
 public class StatementFormatter {
     
     // Constants for formatting patterns - replicating COBOL STATEMENT-LINES section
