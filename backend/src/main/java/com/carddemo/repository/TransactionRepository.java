@@ -456,4 +456,16 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
         @Param("processedTimestamp") LocalDate processedTimestamp
     );
 
+    /**
+     * Counts transactions for a specific account after a given date.
+     * 
+     * Used for account maintenance operations, dormancy analysis, and activity validation.
+     * Supports transaction count validation for account closure and status update operations.
+     * 
+     * @param accountId the account ID to count transactions for
+     * @param cutoffDate the cutoff date (transactions after this date are counted)
+     * @return the count of transactions after the specified date
+     */
+    Long countByAccountIdAndTransactionDateAfter(Long accountId, LocalDate cutoffDate);
+
 }
