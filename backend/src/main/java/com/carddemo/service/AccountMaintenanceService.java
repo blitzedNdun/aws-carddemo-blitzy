@@ -145,14 +145,14 @@ public class AccountMaintenanceService {
                 processedCount++;
                 
                 // Validate account status eligibility (COBOL: IF ACCT-STATUS = 'ACTIVE')
-                if (!ACCOUNT_STATUS_ACTIVE.equals(account.getAccountStatus())) {
+                if (!ACCOUNT_STATUS_ACTIVE.equals(account.getActiveStatus())) {
                     logger.debug("Skipping account {} - status not ACTIVE: {}", 
-                               account.getAccountId(), account.getAccountStatus());
+                               account.getAccountId(), account.getActiveStatus());
                     continue;
                 }
                 
                 // Verify transaction activity within dormancy period (COBOL: PERFORM COUNT-TRANSACTIONS)
-                Long transactionCount = transactionRepository.countByAccountIdAndDateAfter(
+                Long transactionCount = transactionRepository.countByAccountIdAndTransactionDateAfter(
                     account.getAccountId(), cutoffDate);
                 
                 if (transactionCount == null) {
@@ -161,8 +161,8 @@ public class AccountMaintenanceService {
                 
                 // Apply business rule for dormancy classification (COBOL: IF WS-TRANSACTION-COUNT < 1)
                 if (transactionCount < MINIMUM_TRANSACTION_COUNT) {
-                    // Preserve COBOL precision for balance validation
-                    BigDecimal currentBalance = CobolDataConverter.preservePrecision(account.getCurrentBalance());
+                    // Preserve COBOL precision for balance validation (scale 2 for monetary amounts)
+                    BigDecimal currentBalance = CobolDataConverter.preservePrecision(account.getCurrentBalance(), 2);
                     
                     logger.debug("Account {} identified as dormant - Last activity: {}, Transaction count: {}, Balance: {}",
                                account.getAccountId(), 
@@ -211,11 +211,11 @@ public class AccountMaintenanceService {
      * @throws IllegalArgumentException if account ID is invalid or account not found
      * @throws RuntimeException if closure processing fails due to business rule violations
      */
-    public Map<String, Object> processAccountClosure(String accountId) {
+    public Map<String, Object> processAccountClosure(Long accountId) {
         logger.info("Starting account closure process for account: {}", accountId);
         
-        if (accountId == null || accountId.trim().isEmpty()) {
-            throw new IllegalArgumentException("Account ID cannot be null or empty");
+        if (accountId == null) {
+            throw new IllegalArgumentException("Account ID cannot be null");
         }
         
         try {
@@ -243,12 +243,14 @@ public class AccountMaintenanceService {
                 closureResults.put("success", false);
                 closureResults.put("errorMessage", errorMessage);
                 closureResults.put("validationDetails", validationResult);
+                // Include current balance for error reporting
+                closureResults.put("currentBalance", CobolDataConverter.preservePrecision(account.getCurrentBalance(), 2));
                 return closureResults;
             }
             
             // Preserve COBOL precision for balance verification (COBOL: MOVE ACCT-BALANCE TO WS-BALANCE)
-            BigDecimal accountBalance = CobolDataConverter.preservePrecision(account.getCurrentBalance());
-            BigDecimal zeroBalance = CobolDataConverter.toBigDecimal(BigDecimal.ZERO);
+            BigDecimal accountBalance = CobolDataConverter.preservePrecision(account.getCurrentBalance(), 2);
+            BigDecimal zeroBalance = CobolDataConverter.toBigDecimal(BigDecimal.ZERO, 2);
             
             // Verify zero balance requirement (COBOL: IF WS-BALANCE NOT = ZERO)
             if (accountBalance.compareTo(zeroBalance) != 0) {
@@ -262,7 +264,7 @@ public class AccountMaintenanceService {
             
             // Check for outstanding transactions (COBOL: PERFORM CHECK-OUTSTANDING-TRANSACTIONS)
             LocalDate recentCutoffDate = LocalDate.now().minusDays(30);
-            Long recentTransactionCount = transactionRepository.countByAccountIdAndDateAfter(
+            Long recentTransactionCount = transactionRepository.countByAccountIdAndTransactionDateAfter(
                 accountId, recentCutoffDate);
             
             if (recentTransactionCount != null && recentTransactionCount > 0) {
@@ -275,8 +277,8 @@ public class AccountMaintenanceService {
             }
             
             // Process account closure (COBOL: PERFORM CLOSE-ACCOUNT)
-            String previousStatus = account.getAccountStatus();
-            account.setAccountStatus(ACCOUNT_STATUS_CLOSED);
+            String previousStatus = account.getActiveStatus();
+            account.setActiveStatus(ACCOUNT_STATUS_CLOSED);
             
             // Save account closure status update (COBOL: REWRITE ACCT-RECORD)
             Account closedAccount = accountRepository.save(account);
@@ -335,7 +337,7 @@ public class AccountMaintenanceService {
             logger.debug("Using archival retention cutoff date: {}", DateConversionUtil.formatToCobol(retentionCutoffDate));
             
             // Find closed accounts eligible for archival (COBOL: READ ACCTFILE WHERE STATUS = 'CLOSED')
-            List<Account> closedAccounts = accountRepository.findByAccountStatus(ACCOUNT_STATUS_CLOSED);
+            List<Account> closedAccounts = accountRepository.findByActiveStatus(ACCOUNT_STATUS_CLOSED);
             logger.debug("Found {} closed accounts for archival evaluation", closedAccounts.size());
             
             List<Account> eligibleForArchival = new ArrayList<>();
@@ -361,7 +363,7 @@ public class AccountMaintenanceService {
                     eligibleForArchival.add(account);
                     
                     // Preserve COBOL precision for balance archival (COBOL: MOVE ACCT-BALANCE TO WS-ARCHIVE-BALANCE)
-                    BigDecimal accountBalance = CobolDataConverter.preservePrecision(account.getCurrentBalance());
+                    BigDecimal accountBalance = CobolDataConverter.preservePrecision(account.getCurrentBalance(), 2);
                     totalArchivedBalance = totalArchivedBalance.add(accountBalance);
                     
                     // Generate archival record entry (COBOL: WRITE ARCHIVE-RECORD)
@@ -382,7 +384,7 @@ public class AccountMaintenanceService {
             archivalResults.put("totalAccountsEvaluated", processedCount);
             archivalResults.put("accountsEligibleForArchival", eligibleForArchival.size());
             archivalResults.put("archivalRecordsGenerated", archivalRecords.size());
-            archivalResults.put("totalArchivedBalance", CobolDataConverter.preservePrecision(totalArchivedBalance));
+            archivalResults.put("totalArchivedBalance", CobolDataConverter.preservePrecision(totalArchivedBalance, 2));
             archivalResults.put("archivalDate", DateConversionUtil.formatToCobol(currentDate));
             archivalResults.put("retentionCutoffDate", DateConversionUtil.formatToCobol(retentionCutoffDate));
             archivalResults.put("archivalRecords", archivalRecords);
@@ -449,7 +451,7 @@ public class AccountMaintenanceService {
             // Retrieve accounts for batch processing (COBOL: READ ACCTFILE)
             List<Account> accountsToUpdate;
             if (fromStatus != null && !fromStatus.trim().isEmpty()) {
-                accountsToUpdate = accountRepository.findByAccountStatus(fromStatus);
+                accountsToUpdate = accountRepository.findByActiveStatus(fromStatus);
             } else {
                 accountsToUpdate = accountRepository.findAll();
             }
@@ -480,8 +482,8 @@ public class AccountMaintenanceService {
                             account, targetStatus, dormancyPeriodMonths, validateBalances);
                         
                         if (isEligibleForUpdate) {
-                            String previousStatus = account.getAccountStatus();
-                            account.setAccountStatus(targetStatus);
+                            String previousStatus = account.getActiveStatus();
+                            account.setActiveStatus(targetStatus);
                             
                             // Update account status (COBOL: REWRITE ACCT-RECORD)
                             Account updatedAccount = accountRepository.save(account);
@@ -570,7 +572,7 @@ public class AccountMaintenanceService {
             
             // Account status distribution analysis (COBOL: PERFORM COUNT-BY-STATUS)
             Map<String, Long> statusDistribution = allAccounts.stream()
-                .collect(Collectors.groupingBy(Account::getAccountStatus, Collectors.counting()));
+                .collect(Collectors.groupingBy(Account::getActiveStatus, Collectors.counting()));
             
             // Balance summary statistics (COBOL: PERFORM CALCULATE-BALANCE-TOTALS)
             Map<String, BigDecimal> balanceSummary = calculateBalanceSummary(allAccounts);
@@ -596,7 +598,7 @@ public class AccountMaintenanceService {
             Map<String, Double> statusPercentages = new HashMap<>();
             for (Map.Entry<String, Long> entry : statusDistribution.entrySet()) {
                 double percentage = (entry.getValue().doubleValue() / totalAccountCount) * 100.0;
-                statusPercentages.put(entry.getKey(), CobolDataConverter.preservePrecision(BigDecimal.valueOf(percentage)).doubleValue());
+                statusPercentages.put(entry.getKey(), CobolDataConverter.preservePrecision(BigDecimal.valueOf(percentage), 2).doubleValue());
             }
             maintenanceReport.put("statusPercentages", statusPercentages);
             
@@ -658,7 +660,7 @@ public class AccountMaintenanceService {
             boolean isEligible = true;
             
             // Validate account status (COBOL: IF ACCT-STATUS NOT = 'ACTIVE' AND NOT = 'DORMANT')
-            String accountStatus = account.getAccountStatus();
+            String accountStatus = account.getActiveStatus();
             if (!ACCOUNT_STATUS_ACTIVE.equals(accountStatus) && !ACCOUNT_STATUS_DORMANT.equals(accountStatus)) {
                 isEligible = false;
                 String message = String.format("Invalid account status for closure: %s. Must be ACTIVE or DORMANT.", accountStatus);
@@ -667,8 +669,8 @@ public class AccountMaintenanceService {
             }
             
             // Validate account balance (COBOL: IF ACCT-BALANCE NOT = ZERO)
-            BigDecimal accountBalance = CobolDataConverter.preservePrecision(account.getCurrentBalance());
-            BigDecimal zeroBalance = CobolDataConverter.toBigDecimal(BigDecimal.ZERO);
+            BigDecimal accountBalance = CobolDataConverter.preservePrecision(account.getCurrentBalance(), 2);
+            BigDecimal zeroBalance = CobolDataConverter.toBigDecimal(BigDecimal.ZERO, 2);
             
             if (accountBalance.compareTo(zeroBalance) != 0) {
                 isEligible = false;
@@ -679,7 +681,7 @@ public class AccountMaintenanceService {
             
             // Check for recent transaction activity (COBOL: PERFORM CHECK-RECENT-ACTIVITY)
             LocalDate recentActivityCutoff = LocalDate.now().minusDays(30);
-            Long recentTransactionCount = transactionRepository.countByAccountIdAndDateAfter(
+            Long recentTransactionCount = transactionRepository.countByAccountIdAndTransactionDateAfter(
                 account.getAccountId(), recentActivityCutoff);
             
             if (recentTransactionCount != null && recentTransactionCount > 0) {
@@ -755,9 +757,9 @@ public class AccountMaintenanceService {
      * @throws IllegalArgumentException if account ID is invalid or account not found
      * @throws RuntimeException if archival processing fails or data integrity checks fail
      */
-    public Map<String, Object> archiveAccountData(String accountId) {
-        if (accountId == null || accountId.trim().isEmpty()) {
-            throw new IllegalArgumentException("Account ID cannot be null or empty");
+    public Map<String, Object> archiveAccountData(Long accountId) {
+        if (accountId == null) {
+            throw new IllegalArgumentException("Account ID cannot be null");
         }
         
         logger.info("Starting account data archival for account: {}", accountId);
@@ -778,11 +780,12 @@ public class AccountMaintenanceService {
             Account account = optionalAccount.get();
             
             // Validate account archival eligibility (COBOL: PERFORM VALIDATE-ARCHIVAL-ELIGIBILITY)
-            if (!ACCOUNT_STATUS_CLOSED.equals(account.getAccountStatus())) {
-                String errorMessage = "Account must be in CLOSED status for archival. Current status: " + account.getAccountStatus();
+            if (!ACCOUNT_STATUS_CLOSED.equals(account.getActiveStatus())) {
+                String errorMessage = "Account must be in CLOSED status for archival. Current status: " + account.getActiveStatus();
                 logger.error("Archival eligibility failed for account {}: {}", accountId, errorMessage);
                 archivalResult.put("success", false);
                 archivalResult.put("errorMessage", errorMessage);
+                archivalResult.put("retentionEligible", false);
                 return archivalResult;
             }
             
@@ -807,7 +810,7 @@ public class AccountMaintenanceService {
             String archivalRecord = createArchivalRecord(account, closureDate, LocalDate.now());
             
             // Preserve COBOL precision for archival balance (COBOL: MOVE ACCT-BALANCE TO WS-ARCHIVE-BALANCE)
-            BigDecimal archivalBalance = CobolDataConverter.preservePrecision(account.getCurrentBalance());
+            BigDecimal archivalBalance = CobolDataConverter.preservePrecision(account.getCurrentBalance(), 2);
             
             // Generate archival metadata (COBOL: MOVE metadata TO WS-ARCHIVE-METADATA)
             Map<String, Object> archivalMetadata = new HashMap<>();
@@ -869,7 +872,7 @@ public class AccountMaintenanceService {
      * @throws IllegalArgumentException if account IDs or target status are invalid
      * @throws RuntimeException if status update processing fails
      */
-    public Map<String, Object> updateAccountStatuses(List<String> accountIds, String targetStatus, Map<String, Object> updateCriteria) {
+    public Map<String, Object> updateAccountStatuses(List<Long> accountIds, String targetStatus, Map<String, Object> updateCriteria) {
         if (accountIds == null || accountIds.isEmpty()) {
             throw new IllegalArgumentException("Account IDs list cannot be null or empty");
         }
@@ -896,7 +899,7 @@ public class AccountMaintenanceService {
                         validateBalances, enforceBusinessRules, generateAuditTrail, updateReason);
             
             // Process each account for status update (COBOL: PERFORM VARYING WS-ACCOUNT-INDEX)
-            for (String accountId : accountIds) {
+            for (Long accountId : accountIds) {
                 try {
                     // Retrieve account for status update (COBOL: READ ACCTFILE INTO WS-ACCOUNT-RECORD)
                     Optional<Account> optionalAccount = accountRepository.findById(accountId);
@@ -908,7 +911,7 @@ public class AccountMaintenanceService {
                     }
                     
                     Account account = optionalAccount.get();
-                    String previousStatus = account.getAccountStatus();
+                    String previousStatus = account.getActiveStatus();
                     
                     // Validate status transition eligibility (COBOL: PERFORM VALIDATE-STATUS-TRANSITION)
                     if (enforceBusinessRules) {
@@ -924,8 +927,8 @@ public class AccountMaintenanceService {
                     
                     // Validate account specific requirements (COBOL: PERFORM VALIDATE-ACCOUNT-REQUIREMENTS)
                     if (validateBalances && ACCOUNT_STATUS_CLOSED.equals(targetStatus)) {
-                        BigDecimal accountBalance = CobolDataConverter.preservePrecision(account.getCurrentBalance());
-                        BigDecimal zeroBalance = CobolDataConverter.toBigDecimal(BigDecimal.ZERO);
+                        BigDecimal accountBalance = CobolDataConverter.preservePrecision(account.getCurrentBalance(), 2);
+                        BigDecimal zeroBalance = CobolDataConverter.toBigDecimal(BigDecimal.ZERO, 2);
                         
                         if (accountBalance.compareTo(zeroBalance) != 0) {
                             String errorMessage = String.format("Account %s cannot be closed with non-zero balance: %s", 
@@ -937,12 +940,12 @@ public class AccountMaintenanceService {
                     }
                     
                     // Update account status (COBOL: MOVE targetStatus TO ACCT-STATUS)
-                    account.setAccountStatus(targetStatus);
+                    account.setActiveStatus(targetStatus);
                     
                     // Save account status update (COBOL: REWRITE ACCT-RECORD)
                     Account updatedAccount = accountRepository.save(account);
                     successfullyUpdated.add(updatedAccount);
-                    statusTransitions.put(accountId, previousStatus + " -> " + targetStatus);
+                    statusTransitions.put(accountId.toString(), previousStatus + " -> " + targetStatus);
                     
                     // Generate audit trail if required (COBOL: PERFORM WRITE-AUDIT-RECORD)
                     if (generateAuditTrail) {
@@ -994,11 +997,11 @@ public class AccountMaintenanceService {
         StringBuilder archivalRecord = new StringBuilder();
         
         // Preserve COBOL precision for archival balance
-        BigDecimal accountBalance = CobolDataConverter.preservePrecision(account.getCurrentBalance());
+        BigDecimal accountBalance = CobolDataConverter.preservePrecision(account.getCurrentBalance(), 2);
         
         archivalRecord.append("ARCH|")
                      .append(account.getAccountId()).append("|")
-                     .append(account.getAccountStatus()).append("|")
+                     .append(account.getActiveStatus()).append("|")
                      .append(DateConversionUtil.formatToCobol(closureDate)).append("|")
                      .append(DateConversionUtil.formatToCobol(archivalDate)).append("|")
                      .append(accountBalance).append("|")
@@ -1015,7 +1018,7 @@ public class AccountMaintenanceService {
     private boolean validateStatusUpdateEligibility(Account account, String targetStatus, 
                                                    int dormancyPeriodMonths, boolean validateBalances) {
         // Check current status eligibility
-        String currentStatus = account.getAccountStatus();
+        String currentStatus = account.getActiveStatus();
         
         // Status transition validation
         if (!validateStatusTransition(currentStatus, targetStatus)) {
@@ -1034,8 +1037,8 @@ public class AccountMaintenanceService {
         
         // Balance validation for closure
         if (validateBalances && ACCOUNT_STATUS_CLOSED.equals(targetStatus)) {
-            BigDecimal accountBalance = CobolDataConverter.preservePrecision(account.getCurrentBalance());
-            BigDecimal zeroBalance = CobolDataConverter.toBigDecimal(BigDecimal.ZERO);
+            BigDecimal accountBalance = CobolDataConverter.preservePrecision(account.getCurrentBalance(), 2);
+            BigDecimal zeroBalance = CobolDataConverter.toBigDecimal(BigDecimal.ZERO, 2);
             
             return accountBalance.compareTo(zeroBalance) == 0;
         }
@@ -1094,10 +1097,10 @@ public class AccountMaintenanceService {
         BigDecimal closedBalance = BigDecimal.ZERO;
         
         for (Account account : accounts) {
-            BigDecimal accountBalance = CobolDataConverter.preservePrecision(account.getCurrentBalance());
+            BigDecimal accountBalance = CobolDataConverter.preservePrecision(account.getCurrentBalance(), 2);
             totalBalance = totalBalance.add(accountBalance);
             
-            switch (account.getAccountStatus()) {
+            switch (account.getActiveStatus()) {
                 case ACCOUNT_STATUS_ACTIVE:
                     activeBalance = activeBalance.add(accountBalance);
                     break;
@@ -1110,10 +1113,10 @@ public class AccountMaintenanceService {
             }
         }
         
-        balanceSummary.put("totalBalance", CobolDataConverter.preservePrecision(totalBalance));
-        balanceSummary.put("activeBalance", CobolDataConverter.preservePrecision(activeBalance));
-        balanceSummary.put("dormantBalance", CobolDataConverter.preservePrecision(dormantBalance));
-        balanceSummary.put("closedBalance", CobolDataConverter.preservePrecision(closedBalance));
+        balanceSummary.put("totalBalance", CobolDataConverter.preservePrecision(totalBalance, 2));
+        balanceSummary.put("activeBalance", CobolDataConverter.preservePrecision(activeBalance, 2));
+        balanceSummary.put("dormantBalance", CobolDataConverter.preservePrecision(dormantBalance, 2));
+        balanceSummary.put("closedBalance", CobolDataConverter.preservePrecision(closedBalance, 2));
         
         return balanceSummary;
     }
@@ -1130,9 +1133,9 @@ public class AccountMaintenanceService {
         int eligibleForDormancy = 0;
         
         for (Account account : accounts) {
-            if (ACCOUNT_STATUS_DORMANT.equals(account.getAccountStatus())) {
+            if (ACCOUNT_STATUS_DORMANT.equals(account.getActiveStatus())) {
                 dormantAccounts++;
-            } else if (ACCOUNT_STATUS_ACTIVE.equals(account.getAccountStatus())) {
+            } else if (ACCOUNT_STATUS_ACTIVE.equals(account.getActiveStatus())) {
                 LocalDate lastActivityDate = account.getLastTransactionDate();
                 if (lastActivityDate != null && lastActivityDate.isBefore(cutoffDate)) {
                     eligibleForDormancy++;
@@ -1159,7 +1162,7 @@ public class AccountMaintenanceService {
         int eligibleForArchival = 0;
         
         for (Account account : accounts) {
-            if (ACCOUNT_STATUS_CLOSED.equals(account.getAccountStatus())) {
+            if (ACCOUNT_STATUS_CLOSED.equals(account.getActiveStatus())) {
                 totalClosedAccounts++;
                 
                 LocalDate closureDate = account.getLastTransactionDate();
@@ -1191,7 +1194,7 @@ public class AccountMaintenanceService {
         int inactiveAccounts = 0;
         
         for (Account account : accounts) {
-            if (!ACCOUNT_STATUS_CLOSED.equals(account.getAccountStatus())) {
+            if (!ACCOUNT_STATUS_CLOSED.equals(account.getActiveStatus())) {
                 LocalDate lastActivityDate = account.getLastTransactionDate();
                 
                 if (lastActivityDate != null) {
@@ -1224,7 +1227,7 @@ public class AccountMaintenanceService {
         StringBuilder hashInput = new StringBuilder();
         hashInput.append(account.getAccountId())
                 .append("|")
-                .append(account.getAccountStatus())
+                .append(account.getActiveStatus())
                 .append("|")
                 .append(account.getCurrentBalance())
                 .append("|")
