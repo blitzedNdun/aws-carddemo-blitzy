@@ -111,6 +111,7 @@ com/carddemo/batch/StatementGenerationJobConfigB.class
 com/carddemo/service/TransactionReportService$TransactionRecord.class
 com/carddemo/service/AccountFileProcessorService.class
 com/carddemo/service/StorageService$StorageException.class
+com/carddemo/service/CrossReferenceService.class
 com/carddemo/config/BatchConfig$BatchDirectoryConfig.class
 com/carddemo/repository/UserSecurityRepository.class
 com/carddemo/util/FileUtils.class
