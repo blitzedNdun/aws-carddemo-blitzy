@@ -95,25 +95,32 @@ public class BillInquiryService {
      * Retrieves the current (most recent) statement for the specified account.
      * Corresponds to COBOL statement lookup logic with VSAM STARTBR equivalent operation.
      * 
-     * @param accountId 11-digit account identifier
+     * @param accountId 11-digit account identifier as String
      * @return Optional containing current Statement or empty if not found
      */
     public Optional<Statement> getCurrentStatement(String accountId) {
         log.debug("Retrieving current statement for account: {}", accountId);
         
         try {
-            // Use repository method to find latest statement - equivalent to COBOL READNEXT
-            Statement statement = statementRepository.findLatestStatementByAccountId(accountId);
+            // Convert String accountId to Long for repository call
+            Long accountIdLong = Long.parseLong(accountId);
             
-            if (statement != null) {
+            // Use repository method to find latest statement - equivalent to COBOL READNEXT
+            Optional<Statement> statementOpt = statementRepository.findLatestStatementByAccountId(accountIdLong);
+            
+            if (statementOpt.isPresent()) {
+                Statement statement = statementOpt.get();
                 log.debug("Found current statement for account: {} with date: {}", 
                     accountId, statement.getStatementDate());
-                return Optional.of(statement);
+                return statementOpt;
             } else {
                 log.warn("No current statement found for account: {}", accountId);
                 return Optional.empty();
             }
             
+        } catch (NumberFormatException e) {
+            log.error("Invalid account ID format for account: {}", accountId, e);
+            return Optional.empty();
         } catch (Exception e) {
             log.error("Error retrieving current statement for account: {}", accountId, e);
             return Optional.empty();
@@ -124,7 +131,7 @@ public class BillInquiryService {
      * Retrieves statement history for the specified account within the given date range.
      * Implements COBOL VSAM browse pattern using STARTBR/READNEXT equivalent operations.
      * 
-     * @param accountId 11-digit account identifier
+     * @param accountId 11-digit account identifier as String
      * @param startDate start date for statement history range
      * @param endDate end date for statement history range
      * @return List of Statement objects within the date range
@@ -133,18 +140,24 @@ public class BillInquiryService {
         log.debug("Retrieving statement history for account: {} from {} to {}", accountId, startDate, endDate);
         
         try {
+            // Convert String accountId to Long for repository call
+            Long accountIdLong = Long.parseLong(accountId);
+            
             // Use date range if provided, otherwise get all statements for account
             if (startDate != null && endDate != null) {
                 List<Statement> statements = statementRepository.findByAccountIdAndStatementDateBetween(
-                    accountId, startDate, endDate);
+                    accountIdLong, startDate, endDate);
                 log.debug("Found {} statements for account: {} in date range", statements.size(), accountId);
                 return statements;
             } else {
-                List<Statement> statements = statementRepository.findByAccountId(accountId);
+                List<Statement> statements = statementRepository.findByAccountId(accountIdLong);
                 log.debug("Found {} total statements for account: {}", statements.size(), accountId);
                 return statements;
             }
             
+        } catch (NumberFormatException e) {
+            log.error("Invalid account ID format for account: {}", accountId, e);
+            throw new IllegalArgumentException("Invalid account ID format: " + accountId, e);
         } catch (Exception e) {
             log.error("Error retrieving statement history for account: {}", accountId, e);
             throw new RuntimeException("Failed to retrieve statement history: " + e.getMessage(), e);
@@ -156,7 +169,7 @@ public class BillInquiryService {
      * Filters transactions to show only payment-type transactions (credits to account).
      * Maintains COBOL transaction processing logic with precise amount handling.
      * 
-     * @param accountId 11-digit account identifier
+     * @param accountId 11-digit account identifier as String
      * @param startDate start date for payment history range (optional)
      * @param endDate end date for payment history range (optional)
      * @return List of Transaction objects representing payments
@@ -165,6 +178,9 @@ public class BillInquiryService {
         log.debug("Retrieving payment history for account: {} from {} to {}", accountId, startDate, endDate);
         
         try {
+            // Convert String accountId to Long for repository call
+            Long accountIdLong = Long.parseLong(accountId);
+            
             // Define payment transaction type constant (matching COBOL transaction type codes)
             final String PAYMENT_TRANSACTION_TYPE = "PAYMENT";
             
@@ -173,22 +189,30 @@ public class BillInquiryService {
             if (startDate != null && endDate != null) {
                 // Get payments within date range, ordered by date descending (most recent first)
                 paymentTransactions = transactionRepository.findByAccountIdAndTransactionDateBetween(
-                    accountId, startDate, endDate);
+                    accountIdLong, startDate, endDate);
                 
                 // Filter to only payment transactions (equivalent to COBOL IF TRAN-TYPE = 'P')
                 paymentTransactions = paymentTransactions.stream()
-                    .filter(transaction -> PAYMENT_TRANSACTION_TYPE.equals(transaction.getTransactionType()))
+                    .filter(transaction -> PAYMENT_TRANSACTION_TYPE.equals(transaction.getTransactionTypeCode()))
                     .sorted((t1, t2) -> t2.getTransactionDate().compareTo(t1.getTransactionDate()))
                     .toList();
             } else {
-                // Get all payment transactions for account, ordered by date descending
-                paymentTransactions = transactionRepository.findByAccountIdAndTransactionTypeOrderByTransactionDateDesc(
-                    accountId, PAYMENT_TRANSACTION_TYPE);
+                // Get all payment transactions for account using the correct repository method
+                paymentTransactions = transactionRepository.findByAccountIdAndTransactionTypeAndDateRange(
+                    accountIdLong, PAYMENT_TRANSACTION_TYPE, LocalDate.of(1900, 1, 1), LocalDate.now());
+                    
+                // Sort by date descending (most recent first)
+                paymentTransactions = paymentTransactions.stream()
+                    .sorted((t1, t2) -> t2.getTransactionDate().compareTo(t1.getTransactionDate()))
+                    .toList();
             }
             
             log.debug("Found {} payment transactions for account: {}", paymentTransactions.size(), accountId);
             return paymentTransactions;
             
+        } catch (NumberFormatException e) {
+            log.error("Invalid account ID format for account: {}", accountId, e);
+            throw new IllegalArgumentException("Invalid account ID format: " + accountId, e);
         } catch (Exception e) {
             log.error("Error retrieving payment history for account: {}", accountId, e);
             throw new RuntimeException("Failed to retrieve payment history: " + e.getMessage(), e);
@@ -255,7 +279,7 @@ public class BillInquiryService {
      * Provides comprehensive statement details including balance breakdown, due date, and payment terms.
      * Implements COBOL statement detail lookup with VSAM READ EQUAL equivalent operation.
      * 
-     * @param accountId 11-digit account identifier
+     * @param accountId 11-digit account identifier as String
      * @param statementDate specific statement date for detail retrieval
      * @return Statement object with complete statement information
      */
@@ -263,9 +287,12 @@ public class BillInquiryService {
         log.debug("Retrieving statement details for account: {} and date: {}", accountId, statementDate);
         
         try {
+            // Convert String accountId to Long for repository call
+            Long accountIdLong = Long.parseLong(accountId);
+            
             // Query for specific statement by account and date (equivalent to COBOL READ EQUAL)
             List<Statement> statements = statementRepository.findByAccountIdAndStatementDateBetween(
-                accountId, statementDate, statementDate);
+                accountIdLong, statementDate, statementDate);
             
             if (statements.isEmpty()) {
                 throw new RuntimeException("No statement found for account " + accountId + " on date " + statementDate);
@@ -273,10 +300,13 @@ public class BillInquiryService {
             
             Statement statement = statements.get(0);
             log.debug("Found statement details for account: {} with balance: {} and due date: {}", 
-                accountId, statement.getCurrentBalance(), statement.getDueDate());
+                accountId, statement.getCurrentBalance(), statement.getPaymentDueDate());
             
             return statement;
             
+        } catch (NumberFormatException e) {
+            log.error("Invalid account ID format for account: {}", accountId, e);
+            throw new IllegalArgumentException("Invalid account ID format: " + accountId, e);
         } catch (Exception e) {
             log.error("Error retrieving statement details for account: {} and date: {}", accountId, statementDate, e);
             throw new RuntimeException("Failed to retrieve statement details: " + e.getMessage(), e);
@@ -286,7 +316,7 @@ public class BillInquiryService {
     /**
      * Helper method to build BillDetailResponse from statement data and payment history.
      * Assembles complete billing response using all required data elements for REST API response.
-     * Uses BillDetailResponse accessor methods as specified in the import schema.
+     * Populates all BillDetailResponse fields with statement and calculated data.
      * 
      * @param statement current statement with balance and payment information
      * @param paymentHistory list of payment transactions for the account
@@ -298,31 +328,33 @@ public class BillInquiryService {
             // Create new BillDetailResponse instance
             BillDetailResponse response = new BillDetailResponse();
             
-            // Set account information using BillDetailResponse accessor methods
-            // These method calls match the members_accessed specified in the import schema
-            String accountId = response.getAccountId(); // Will be set in the actual implementation
+            // Set account information from statement
+            response.setAccountId(String.valueOf(statement.getAccountId()));
             
-            // Populate response with statement data
-            // Note: The actual BillDetailResponse implementation will have setter methods
-            // This logic demonstrates how the data would be assembled when the DTO exists
+            // Set current balance from statement
+            response.setCurrentBalance(statement.getCurrentBalance());
             
-            // Current balance from statement
-            BigDecimal currentBalance = statement.getCurrentBalance();
+            // Set previous balance from statement
+            response.setPreviousBalance(statement.getPreviousBalance());
             
-            // Minimum payment (calculated)
-            BigDecimal responseMinimumPayment = minimumPayment;
+            // Set calculated minimum payment
+            response.setMinimumPayment(minimumPayment);
             
-            // Payment due date from statement
-            LocalDate paymentDueDate = statement.getDueDate();
+            // Set payment due date from statement
+            response.setPaymentDueDate(statement.getPaymentDueDate());
             
-            // Interest charges calculation (simplified - would match COBOL interest logic)
+            // Calculate and set interest charges
             BigDecimal interestCharges = calculateInterestCharges(statement);
+            response.setInterestCharges(interestCharges);
             
-            // Payment history from transactions
-            List<Transaction> responsePaymentHistory = paymentHistory;
+            // Set statement date from statement
+            response.setStatementDate(statement.getStatementDate());
             
-            log.debug("Built bill detail response for account with balance: {} and {} payment transactions", 
-                currentBalance, paymentHistory.size());
+            // Set payment history
+            response.setPaymentHistory(paymentHistory);
+            
+            log.debug("Built bill detail response for account {} with balance: {} and {} payment transactions", 
+                response.getAccountId(), response.getCurrentBalance(), paymentHistory.size());
             
             return response;
             
