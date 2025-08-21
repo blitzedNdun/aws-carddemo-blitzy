@@ -685,8 +685,8 @@ public class StatementFileHandlerService {
      */
     private String formatCardXrefRecord(CardXref cardXref) {
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("%-16s", cardXref.getCardNumber() != null ? cardXref.getCardNumber() : ""));
-        sb.append(String.format("%011d", cardXref.getAccountId() != null ? cardXref.getAccountId() : 0L));
+        sb.append(String.format("%-16s", cardXref.getXrefCardNum() != null ? cardXref.getXrefCardNum() : ""));
+        sb.append(String.format("%011d", cardXref.getXrefAcctId() != null ? cardXref.getXrefAcctId() : 0L));
         sb.append(String.format("%09d", cardXref.getXrefCustId() != null ? cardXref.getXrefCustId() : 0L));
         return sb.toString();
     }
@@ -771,7 +771,7 @@ public class StatementFileHandlerService {
         
         if (fieldData.length() >= 16) {
             String cardNumber = fieldData.substring(0, 16).trim();
-            cardXref.setCardNumber(cardNumber);
+            cardXref.setXrefCardNum(cardNumber);
         }
         
         if (fieldData.length() >= 27) {
