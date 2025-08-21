@@ -11,7 +11,7 @@ import com.carddemo.entity.Transaction;
 import com.carddemo.entity.DailyTransaction;
 
 import org.springframework.stereotype.Service;
-import org.springframework.batch.core.JobLauncher;
+import org.springframework.batch.core.launch.JobLauncher;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -22,7 +22,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
-import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -776,7 +775,7 @@ public class TransactionReconBatchService {
             return false;
         }
         
-        LocalDate authDate = authorization.getTimestamp().toLocalDate();
+        LocalDate authDate = authorization.getRequestTimestamp().toLocalDate();
         LocalDate settleDate = settlement.getSettlementDate();
         
         // Settlement must be within MATCHING_WINDOW_DAYS of authorization
@@ -815,7 +814,7 @@ public class TransactionReconBatchService {
         Transaction discrepancy = new Transaction();
         discrepancy.setTransactionId(0L); // Will be generated when saved
         discrepancy.setAmount(authorization.getTransactionAmount());
-        discrepancy.setTransactionDate(authorization.getTimestamp().toLocalDate());
+        discrepancy.setTransactionDate(authorization.getRequestTimestamp().toLocalDate());
         discrepancy.setAccountId(authorization.getAccountId());
         discrepancy.setCardNumber(authorization.getCardNumber());
         discrepancy.setDescription("Unmatched Authorization - " + authorization.getAuthorizationId());
@@ -880,7 +879,7 @@ public class TransactionReconBatchService {
     private Transaction createTransactionFromAuthorization(Authorization authorization) {
         Transaction transaction = new Transaction();
         transaction.setAmount(authorization.getTransactionAmount());
-        transaction.setTransactionDate(authorization.getTimestamp().toLocalDate());
+        transaction.setTransactionDate(authorization.getRequestTimestamp().toLocalDate());
         transaction.setAccountId(authorization.getAccountId());
         transaction.setCardNumber(authorization.getCardNumber());
         transaction.setDescription("Authorization Transaction - " + authorization.getAuthorizationId());
