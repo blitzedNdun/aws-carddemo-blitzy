@@ -646,7 +646,9 @@ public class CardAuthorizationService {
             auth.setDeclineReasonCode(declineReason);
             auth.setVelocityCheckResult(velocityResult);
             auth.setFraudScore(fraudScore);
-            auth.setProcessingTime((int) response.getProcessingTime());
+            // Calculate processing time directly to avoid null pointer exception
+            long processingTimeMs = java.time.Duration.between(startTime, LocalDateTime.now()).toMillis();
+            auth.setProcessingTime((int) processingTimeMs);
 
             // Save to database using repository
             authorizationRepository.save(auth);
