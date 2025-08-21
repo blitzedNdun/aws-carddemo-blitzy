@@ -263,7 +263,7 @@ public class StatementGenerationBatchServiceB {
                     
                     // Calculate average daily balance for the period
                     BigDecimal averageDailyBalance = calculateAverageDailyBalance(
-                        account.getBalance(), 
+                        account.getCurrentBalance(), 
                         transactions, 
                         previousStatementDate, 
                         statementDate
@@ -363,7 +363,7 @@ public class StatementGenerationBatchServiceB {
                     .filter(account -> {
                         // Filter accounts by customer name range N-Z and positive balance
                         if (account.getCustomerId() != null && 
-                            account.getBalance().compareTo(BigDecimal.ZERO) > 0) {
+                            account.getCurrentBalance().compareTo(BigDecimal.ZERO) > 0) {
                             String accountIdStr = account.getAccountId().toString();
                             char firstChar = accountIdStr.charAt(0);
                             return firstChar >= 'N' && firstChar <= 'Z';
@@ -405,15 +405,14 @@ public class StatementGenerationBatchServiceB {
                         if (!paymentReceived) {
                             // Calculate late fee using AmountCalculator
                             BigDecimal lateFee = amountCalculator.calculateFee(
-                                account.getBalance(), 
+                                account.getCurrentBalance(), 
                                 STANDARD_LATE_FEE
                             );
                             
                             // Update account balance with late fee
                             BigDecimal newBalance = amountCalculator.calculateBalance(
-                                account.getBalance(), 
-                                lateFee, 
-                                "ADD"
+                                account.getCurrentBalance(), 
+                                lateFee
                             );
                             
                             // Update statement record with late fee
@@ -514,13 +513,13 @@ public class StatementGenerationBatchServiceB {
                     totalCurrentBalance = totalCurrentBalance.add(statement.getCurrentBalance());
                     
                     // Add finance charges if present
-                    if (statement.getFinanceCharge() != null) {
-                        totalFinanceCharges = totalFinanceCharges.add(statement.getFinanceCharge());
+                    if (statement.getInterestCharges() != null) {
+                        totalFinanceCharges = totalFinanceCharges.add(statement.getInterestCharges());
                     }
                     
                     // Add late fees if present  
-                    if (statement.getLateFee() != null) {
-                        totalLateFees = totalLateFees.add(statement.getLateFee());
+                    if (statement.getFees() != null) {
+                        totalLateFees = totalLateFees.add(statement.getFees());
                     }
                     
                     // Add minimum payments
@@ -721,8 +720,11 @@ public class StatementGenerationBatchServiceB {
             // Calculate processing duration
             long processingDurationMs = 0;
             if (jobExecution.getStartTime() != null && jobExecution.getEndTime() != null) {
-                processingDurationMs = jobExecution.getEndTime().getTime() - 
-                                     jobExecution.getStartTime().getTime();
+                // Convert LocalDateTime to milliseconds using ChronoUnit
+                processingDurationMs = java.time.temporal.ChronoUnit.MILLIS.between(
+                    jobExecution.getStartTime(), 
+                    jobExecution.getEndTime()
+                );
             }
             
             // Get financial totals from statements generated
@@ -740,12 +742,12 @@ public class StatementGenerationBatchServiceB {
             for (Statement statement : generatedStatements) {
                 totalBalances = totalBalances.add(statement.getCurrentBalance());
                 
-                if (statement.getFinanceCharge() != null) {
-                    totalFinanceCharges = totalFinanceCharges.add(statement.getFinanceCharge());
+                if (statement.getInterestCharges() != null) {
+                    totalFinanceCharges = totalFinanceCharges.add(statement.getInterestCharges());
                 }
                 
-                if (statement.getLateFee() != null) {
-                    totalLateFees = totalLateFees.add(statement.getLateFee());
+                if (statement.getFees() != null) {
+                    totalLateFees = totalLateFees.add(statement.getFees());
                 }
                 
                 if (statement.getMinimumPaymentAmount() != null) {
@@ -900,20 +902,18 @@ public class StatementGenerationBatchServiceB {
             // Set statement fields
             statement.setAccountId(account.getAccountId());
             statement.setStatementDate(statementDate);
-            statement.setCurrentBalance(account.getBalance());
-            statement.setFinanceCharge(financeCharge);
+            statement.setCurrentBalance(account.getCurrentBalance());
+            statement.setInterestCharges(financeCharge);
             
             // Calculate new balance with finance charge
             BigDecimal newBalance = amountCalculator.calculateBalance(
-                account.getBalance(), financeCharge, "ADD");
+                account.getCurrentBalance(), financeCharge);
             statement.setCurrentBalance(newBalance);
             
             // Calculate minimum payment (typically 2% of balance or $25, whichever is greater)
-            BigDecimal minimumPayment = amountCalculator.calculateBalance(
-                newBalance.multiply(new BigDecimal("0.02")), 
-                new BigDecimal("25.00"), 
-                "MAX"
-            );
+            BigDecimal minimumPaymentPercentage = newBalance.multiply(new BigDecimal("0.02"));
+            BigDecimal minimumPayment = minimumPaymentPercentage.max(new BigDecimal("25.00"));
+            
             statement.setMinimumPaymentAmount(minimumPayment);
             
             // Set payment due date (typically 25 days from statement date)
@@ -945,19 +945,17 @@ public class StatementGenerationBatchServiceB {
         
         try {
             // Set late fee amount
-            statement.setLateFee(lateFee);
+            statement.setFees(lateFee);
             
             // Update current balance with late fee
             BigDecimal newBalance = amountCalculator.calculateBalance(
-                statement.getCurrentBalance(), lateFee, "ADD");
+                statement.getCurrentBalance(), lateFee);
             statement.setCurrentBalance(newBalance);
             
             // Recalculate minimum payment with late fee included
-            BigDecimal minimumPayment = amountCalculator.calculateBalance(
-                newBalance.multiply(new BigDecimal("0.02")), 
-                new BigDecimal("25.00"), 
-                "MAX"
-            );
+            BigDecimal minimumPaymentPercentage = newBalance.multiply(new BigDecimal("0.02"));
+            BigDecimal minimumPayment = minimumPaymentPercentage.max(new BigDecimal("25.00"));
+            
             statement.setMinimumPaymentAmount(minimumPayment);
             
             // Update statement status to indicate late fee assessed

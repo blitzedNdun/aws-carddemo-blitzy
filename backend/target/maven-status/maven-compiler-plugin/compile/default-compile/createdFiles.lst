@@ -486,6 +486,7 @@ com/carddemo/entity/Archive.class
 com/carddemo/dto/ReportMenuResponse$ReportStatus.class
 com/carddemo/service/CustomerMaintenanceService$CustomerValidationResult.class
 com/carddemo/dto/CardCrossReferenceDto.class
+com/carddemo/service/StatementGenerationBatchServiceB.class
 com/carddemo/service/DateConversionService.class
 com/carddemo/controller/InterestController.class
 com/carddemo/service/FraudDetectionService$FraudDetectionResult.class
