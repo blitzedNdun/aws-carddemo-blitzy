@@ -33,6 +33,7 @@ import com.carddemo.repository.CardXrefRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Optional;
+import java.util.List;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -192,8 +193,12 @@ public class AccountViewService {
         logger.debug("Looking up account master data for accountId: {}", accountId);
         
         try {
+            // Convert String account ID to Long for repository lookup
+            String cleanAccountId = accountId != null ? accountId.trim() : accountId;
+            Long accountIdLong = Long.parseLong(cleanAccountId);
+            
             // Direct repository lookup - replaces EXEC CICS READ DATASET(ACCTDAT)
-            Optional<Account> accountOpt = accountRepository.findById(accountId);
+            Optional<Account> accountOpt = accountRepository.findById(accountIdLong);
             
             if (accountOpt.isPresent()) {
                 logger.debug("Found account in master file: {}", accountId);
@@ -203,8 +208,15 @@ public class AccountViewService {
                 return Optional.empty();
             }
             
+        } catch (NumberFormatException e) {
+            logger.error("Invalid account ID format: {}", accountId, e);
+            return Optional.empty();
+        } catch (RuntimeException e) {
+            // Allow RuntimeExceptions to bubble up to be handled by main exception handler
+            logger.error("System error reading account master file for accountId: {}", accountId, e);
+            throw e;
         } catch (Exception e) {
-            logger.error("Error reading account master file for accountId: {}", accountId, e);
+            logger.error("Database error reading account master file for accountId: {}", accountId, e);
             return Optional.empty();
         }
     }
@@ -227,17 +239,22 @@ public class AccountViewService {
         logger.debug("Looking up customer via card cross-reference for accountId: {}", accountId);
         
         try {
-            // Step 1: Read CARDXREF by account ID - maps to 9200-GETCARDXREF-BYACCT
-            // Replaces EXEC CICS READ DATASET(CARDXREFNAME-ACCT-PATH) with alternate index
-            Optional<CardXref> cardXrefOpt = cardXrefRepository.findByAccountId(accountId);
+            // Convert String account ID to Long for repository lookup
+            String cleanAccountId = accountId != null ? accountId.trim() : accountId;
+            Long accountIdLong = Long.parseLong(cleanAccountId);
             
-            if (!cardXrefOpt.isPresent()) {
+            // Step 1: Read CARDXREF by account ID - maps to 9200-GETCARDXREF-BYACCT
+            // Use the correct method name from CardXrefRepository
+            List<CardXref> cardXrefList = cardXrefRepository.findByXrefAcctId(accountIdLong);
+            
+            if (cardXrefList.isEmpty()) {
                 logger.debug("Account not found in card cross-reference: {}", accountId);
                 return Optional.empty();
             }
             
-            CardXref cardXref = cardXrefOpt.get();
-            String customerId = cardXref.getXrefCustId();
+            // Get the first cross-reference (assuming one customer per account for account view)
+            CardXref cardXref = cardXrefList.get(0);
+            Long customerId = cardXref.getXrefCustId();
             logger.debug("Found customer ID {} via card cross-reference for account {}", customerId, accountId);
             
             // Step 2: Read CUSTDAT by customer ID - maps to 9400-GETCUSTDATA-BYCUST  
@@ -252,8 +269,15 @@ public class AccountViewService {
                 return Optional.empty();
             }
             
+        } catch (NumberFormatException e) {
+            logger.error("Invalid account ID format: {}", accountId, e);
+            return Optional.empty();
+        } catch (RuntimeException e) {
+            // Allow RuntimeExceptions to bubble up to be handled by main exception handler
+            logger.error("System error in card cross-reference lookup for accountId: {}", accountId, e);
+            throw e;
         } catch (Exception e) {
-            logger.error("Error in card cross-reference lookup for accountId: {}", accountId, e);
+            logger.error("Database error in card cross-reference lookup for accountId: {}", accountId, e);
             return Optional.empty();
         }
     }
@@ -316,8 +340,8 @@ public class AccountViewService {
     private AccountDto convertToAccountDto(Account account) {
         AccountDto dto = new AccountDto();
         
-        // Map core account fields
-        dto.setAccountId(account.getAccountId());
+        // Map core account fields - convert Long ID to String
+        dto.setAccountId(String.valueOf(account.getAccountId()));
         dto.setActiveStatus(account.getActiveStatus());  
         dto.setCurrentBalance(account.getCurrentBalance());
         dto.setCreditLimit(account.getCreditLimit());
@@ -329,9 +353,9 @@ public class AccountViewService {
         dto.setCurrentCycleDebit(account.getCurrentCycleDebit());
         dto.setAccountGroupId(account.getAccountGroupId());
         
-        // Set customer ID if available through relationship
+        // Set customer ID if available through relationship - convert Long ID to String
         if (account.getCustomer() != null) {
-            dto.setCustomerId(account.getCustomer().getCustomerId());
+            dto.setCustomerId(String.valueOf(account.getCustomer().getCustomerId()));
         }
         
         // Calculate derived fields
@@ -350,22 +374,22 @@ public class AccountViewService {
     private CustomerDto convertToCustomerDto(Customer customer) {
         CustomerDto dto = new CustomerDto();
         
-        // Map customer identification fields
-        dto.setCustomerId(customer.getCustomerId());
+        // Map customer identification fields - convert Long ID to String
+        dto.setCustomerId(String.valueOf(customer.getCustomerId()));
         dto.setFirstName(customer.getFirstName());
         dto.setMiddleName(customer.getMiddleName());
         dto.setLastName(customer.getLastName());
         
-        // Map contact information
+        // Map contact information - use correct field names
         dto.setPhoneNumber1(customer.getPhoneNumber1());
         dto.setPhoneNumber2(customer.getPhoneNumber2());
         dto.setSsn(customer.getSsn());
-        dto.setGovernmentId(customer.getGovernmentId());
+        dto.setGovernmentId(customer.getGovernmentIssuedId()); // Correct field name
         
         // Map date and financial information
         dto.setDateOfBirth(customer.getDateOfBirth());
         dto.setEftAccountId(customer.getEftAccountId());
-        dto.setPrimaryCardholderIndicator(customer.getPrimaryCardholderIndicator());
+        dto.setPrimaryCardholderIndicator(customer.getPrimaryCardHolderIndicator()); // Correct field name
         dto.setFicoScore(customer.getFicoScore());
         
         // Map address information - Customer entity has embedded address
