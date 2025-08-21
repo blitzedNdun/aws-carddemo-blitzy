@@ -5,6 +5,10 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -22,7 +26,13 @@ import java.util.Objects;
  * (CBSTM03A/CBSTM03B) maintaining exact formatting and precision requirements
  * for financial statement generation while providing modern REST API compatibility.
  */
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class StatementDto {
+
+    // Statement ID
+    private Long statementId;
 
     // Basic Account Information
     @NotBlank(message = "Account ID cannot be blank")
@@ -114,33 +124,13 @@ public class StatementDto {
     private String plainTextFormat;
     private String htmlFormat;
 
-    /**
-     * Default constructor initializing all BigDecimal fields with proper scale
-     * and setting up default formatting options.
-     */
-    public StatementDto() {
-        // Initialize all monetary fields with scale 2 for COBOL COMP-3 precision
-        this.previousBalance = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-        this.currentBalance = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-        this.creditLimit = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-        this.minimumPayment = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-        this.totalCredits = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-        this.totalDebits = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-        this.totalFees = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-        this.totalInterest = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-        
-        // Initialize transaction list
-        this.transactionSummary = new ArrayList<>();
-        this.transactionCount = 0;
-        
-        // Set default formatting options
-        this.generatePlainText = true;
-        this.generateHtml = true;
-        this.plainTextFormat = "standard";
-        this.htmlFormat = "table";
-    }
+
 
     // Getter methods (required by export schema)
+
+    public Long getStatementId() {
+        return statementId;
+    }
 
     public String getAccountId() {
         return accountId;
@@ -255,6 +245,10 @@ public class StatementDto {
     }
 
     // Setter methods (some required by export schema)
+
+    public void setStatementId(Long statementId) {
+        this.statementId = statementId;
+    }
 
     public void setAccountId(String accountId) {
         this.accountId = accountId;
