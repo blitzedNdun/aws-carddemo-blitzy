@@ -223,6 +223,7 @@ com/carddemo/exception/ConcurrencyException.class
 com/carddemo/config/ApplicationConfig$DevelopmentConfig.class
 com/carddemo/client/DataQualityService$DuplicateMatch.class
 com/carddemo/service/FileGenerationService$ValidationError.class
+com/carddemo/entity/Dispute$DisputeBuilder.class
 com/carddemo/service/AdminMenuService.class
 com/carddemo/service/CreditCardListService.class
 com/carddemo/service/ArchivalService$1.class
