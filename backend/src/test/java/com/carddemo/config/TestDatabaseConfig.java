@@ -15,6 +15,7 @@ import com.carddemo.util.CobolDataConverter;
 import com.carddemo.util.Constants;
 
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
@@ -106,7 +107,7 @@ public class TestDatabaseConfig {
     private static final long TEST_LEAK_DETECTION_THRESHOLD = 30000; // 30 seconds leak detection
     
     // JPA/Hibernate test configuration settings
-    private static final String TEST_HIBERNATE_DDL_AUTO = "create-drop";   // Create schema for tests, drop after
+    private static final String TEST_HIBERNATE_DDL_AUTO = "none";   // Use manual schema initialization instead
     private static final String TEST_HIBERNATE_SHOW_SQL = "true";          // Enable SQL logging for test debugging
     private static final String TEST_HIBERNATE_FORMAT_SQL = "true";        // Format SQL for test readability
     private static final String TEST_HIBERNATE_JDBC_BATCH_SIZE = "10";     // Smaller batch size for test control
@@ -144,7 +145,7 @@ public class TestDatabaseConfig {
      * 
      * @return configured HikariDataSource for H2 in-memory database connectivity
      */
-    @Bean
+    @Bean("dataSource")
     @Primary
     @Profile("test")
     public DataSource h2DataSource() {
@@ -213,8 +214,8 @@ public class TestDatabaseConfig {
      * 
      * @return configured HikariDataSource for Testcontainers PostgreSQL database connectivity
      */
-    @Bean
-    @Profile("integration-test")
+    @Bean("dataSource")
+    @Profile("integration-test") 
     public DataSource testcontainersDataSource() {
         // Create PostgreSQL container with specified version and configuration
         PostgreSQLContainer<?> postgresContainer = createPostgreSQLContainer();
@@ -290,7 +291,7 @@ public class TestDatabaseConfig {
      * @param dataSource configured test DataSource (H2 or PostgreSQL Testcontainers)
      * @return LocalContainerEntityManagerFactoryBean for test JPA entity management
      */
-    @Bean
+    @Bean("entityManagerFactory")
     @Primary
     public EntityManagerFactory testEntityManagerFactory(DataSource dataSource) {
         LocalContainerEntityManagerFactoryBean factory = new LocalContainerEntityManagerFactoryBean();
@@ -397,6 +398,7 @@ public class TestDatabaseConfig {
      * @return DataSourceInitializer for automated test database setup and population
      */
     @Bean
+    @ConditionalOnProperty(name = "spring.liquibase.enabled", havingValue = "false", matchIfMissing = true)
     public DataSourceInitializer testDataSourceInitializer(DataSource dataSource) {
         DataSourceInitializer initializer = new DataSourceInitializer();
         initializer.setDataSource(dataSource);
@@ -406,6 +408,40 @@ public class TestDatabaseConfig {
         initializer.setDatabasePopulator(populator);
         
         // Enable database initialization on startup
+        initializer.setEnabled(true);
+        
+        return initializer;
+    }
+
+    /**
+     * Configures DataSourceInitializer for test data loading when Liquibase handles schema creation.
+     * 
+     * This method creates a test database initialization strategy that only loads test data,
+     * allowing Liquibase to handle schema creation and migration. This prevents conflicts between
+     * manual schema scripts and Liquibase-managed database structures while still providing
+     * comprehensive test data for validation scenarios.
+     * 
+     * This bean is conditionally created only when Liquibase is enabled, complementing the
+     * Liquibase schema management with necessary test data population.
+     * 
+     * @param dataSource configured test DataSource for database operations
+     * @return DataSourceInitializer for test data loading only
+     */
+    @Bean
+    @ConditionalOnProperty(name = "spring.liquibase.enabled", havingValue = "true")
+    public DataSourceInitializer liquibaseCompatibleDataInitializer(DataSource dataSource) {
+        DataSourceInitializer initializer = new DataSourceInitializer();
+        initializer.setDataSource(dataSource);
+        
+        // Create database populator with only test data (no schema)
+        ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
+        populator.addScript(new ClassPathResource(TEST_DATA_SCRIPT));
+        
+        // Configure populator behavior for test reliability
+        populator.setContinueOnError(false); // Fail fast for test environment issues
+        populator.setIgnoreFailedDrops(true); // Allow clean test restarts
+        
+        initializer.setDatabasePopulator(populator);
         initializer.setEnabled(true);
         
         return initializer;

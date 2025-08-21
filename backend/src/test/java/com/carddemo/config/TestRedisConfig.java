@@ -212,7 +212,6 @@ public class TestRedisConfig {
      * @return configured LettuceConnectionFactory for test Redis connections
      */
     @Bean
-    @Primary
     public LettuceConnectionFactory testRedisConnectionFactory() {
         logger.info("Configuring Redis connection factory for test environment");
         
