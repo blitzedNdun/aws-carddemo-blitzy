@@ -199,6 +199,7 @@ com/carddemo/service/DisputeManagementService.class
 com/carddemo/service/CustomerMaintenanceService$EmailValidationResult.class
 com/carddemo/service/PaymentService$PaymentProcessingResponse.class
 com/carddemo/security/JwtTokenService.class
+com/carddemo/service/TransactionAddService.class
 com/carddemo/service/TransactionProcessingService$ValidationResult.class
 com/carddemo/batch/StatementGenerationJobConfigA$StatementGenerationStepListener.class
 com/carddemo/dto/BillingDto.class
@@ -219,6 +220,7 @@ com/carddemo/util/ValidationUtil.class
 com/carddemo/service/TransactionPostingService$TransactionRecord.class
 com/carddemo/dto/AddressDto.class
 com/carddemo/dto/MessageDto.class
+com/carddemo/service/AccountViewService.class
 com/carddemo/service/FileGenerationService$FileGenerationResult.class
 com/carddemo/entity/Report.class
 com/carddemo/client/EmailClient$BounceResult$Builder.class
