@@ -545,6 +545,7 @@ com/carddemo/entity/Fee$FeeStatus.class
 com/carddemo/service/TransactionPostingService$DailyTransactionRecord.class
 com/carddemo/service/PaymentService.class
 com/carddemo/dto/BillPaymentResponse.class
+com/carddemo/service/TransactionReconBatchService.class
 com/carddemo/service/FeeCalculationService.class
 com/carddemo/service/FileGenerationService$BatchProcessor.class
 com/carddemo/config/LiquibaseConfig$LiquibaseProperties.class
