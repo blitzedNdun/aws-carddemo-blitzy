@@ -395,7 +395,7 @@ class TransactionPostingServiceTest {
             validAccountRecord.setCreditLimit(new BigDecimal("1000.00"));
             validAccountRecord.setCurrentCycleCredit(new BigDecimal("500.00"));
             validAccountRecord.setCurrentCycleDebit(new BigDecimal("800.00"));
-            BigDecimal transactionAmount = new BigDecimal("600.00"); // Would exceed limit
+            BigDecimal transactionAmount = new BigDecimal("800.00"); // Would exceed limit: 300 + 800 = 1100 > 1000
 
             // Act
             boolean result = transactionPostingService.validateCreditLimit(validAccountRecord, transactionAmount);
@@ -427,7 +427,7 @@ class TransactionPostingServiceTest {
             validAccountRecord.setCreditLimit(new BigDecimal("2000.00"));
             validAccountRecord.setCurrentCycleCredit(new BigDecimal("1500.00"));
             validAccountRecord.setCurrentCycleDebit(new BigDecimal("500.00")); // Net credit balance
-            BigDecimal transactionAmount = new BigDecimal("1500.00"));
+            BigDecimal transactionAmount = new BigDecimal("1500.00");
 
             // Act
             boolean result = transactionPostingService.validateCreditLimit(validAccountRecord, transactionAmount);
