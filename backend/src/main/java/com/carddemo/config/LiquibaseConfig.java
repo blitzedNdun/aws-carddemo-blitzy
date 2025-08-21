@@ -11,16 +11,19 @@ import com.carddemo.entity.Transaction;
 import liquibase.integration.spring.SpringLiquibase;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.liquibase.LiquibaseAutoConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.env.Environment;
 
 import javax.sql.DataSource;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Arrays;
 
 /**
  * Liquibase configuration class for PostgreSQL database schema versioning and migration management.
@@ -72,6 +75,13 @@ public class LiquibaseConfig {
     
     private static final Logger logger = LoggerFactory.getLogger(LiquibaseConfig.class);
     
+    private final Environment environment;
+    
+    // Constructor injection for Environment
+    public LiquibaseConfig(Environment environment) {
+        this.environment = environment;
+    }
+    
     // Liquibase configuration constants
     private static final String CHANGE_LOG_PATH = "classpath:db/changelog/db.changelog-master.xml";
     private static final String DEFAULT_SCHEMA = "public";
@@ -121,6 +131,7 @@ public class LiquibaseConfig {
     @Bean
     @Primary
     @DependsOn("dataSource")
+    @ConditionalOnProperty(name = "spring.liquibase.enabled", havingValue = "true", matchIfMissing = true)
     public SpringLiquibase springLiquibase(DataSource dataSource) {
         logger.info("Initializing SpringLiquibase for CardDemo database schema migration");
         
@@ -130,12 +141,30 @@ public class LiquibaseConfig {
         liquibase.setDataSource(dataSource);
         liquibase.setChangeLog(CHANGE_LOG_PATH);
         liquibase.setDefaultSchema(DEFAULT_SCHEMA);
-        liquibase.setLiquibaseSchema(LIQUIBASE_SCHEMA);
         
-        // Configure migration behavior and contexts
-        liquibase.setContexts(DEFAULT_CONTEXTS);
+        // Use default schema for Liquibase tables in test environments, separate schema in production
+        boolean isTestEnvironment = Arrays.asList(environment.getActiveProfiles())
+                .stream()
+                .anyMatch(profile -> profile.contains("test") || profile.contains("unit") || profile.contains("integration"));
+        
+        if (isTestEnvironment) {
+            // For H2 test database, use the default schema for Liquibase tracking tables
+            liquibase.setLiquibaseSchema(DEFAULT_SCHEMA);
+            logger.info("Test environment detected - using default schema '{}' for Liquibase tables", DEFAULT_SCHEMA);
+        } else {
+            // For production PostgreSQL, use dedicated liquibase schema for separation
+            liquibase.setLiquibaseSchema(LIQUIBASE_SCHEMA);
+            logger.info("Production environment - using dedicated schema '{}' for Liquibase tables", LIQUIBASE_SCHEMA);
+        }
+        
+        // Configure migration behavior and contexts based on environment
+        String migrationContexts = isTestEnvironment ? "test" : DEFAULT_CONTEXTS;
+        liquibase.setContexts(migrationContexts);
         liquibase.setDropFirst(DROP_FIRST);
         liquibase.setShouldRun(SHOULD_RUN);
+        
+        logger.info("Using migration contexts: {} for {} environment", 
+                   migrationContexts, isTestEnvironment ? "test" : "production");
         
         // Configure performance settings
         liquibase.setTestRollbackOnUpdate(false);
@@ -192,6 +221,7 @@ public class LiquibaseConfig {
      */
     @Bean
     @ConfigurationProperties(prefix = "spring.liquibase")
+    @ConditionalOnProperty(name = "spring.liquibase.enabled", havingValue = "true", matchIfMissing = true)
     public LiquibaseProperties liquibaseProperties() {
         logger.info("Configuring LiquibaseProperties for CardDemo schema migration");
         
