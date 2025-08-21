@@ -1,6 +1,8 @@
 package com.carddemo.performance;
 
 import com.carddemo.config.MetricsConfig;
+import com.carddemo.config.TestDatabaseConfig;
+import com.carddemo.config.TestRedisConfig;
 import com.carddemo.test.TestConstants;
 import com.carddemo.test.PerformanceTest;
 
@@ -13,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.context.annotation.Import;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -63,8 +66,9 @@ import java.util.regex.Pattern;
  * @since CardDemo v1.0
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("test")
+@ActiveProfiles("test") 
 @Tag("performance")
+@Import({TestDatabaseConfig.class, TestRedisConfig.class})
 public class MetricsCollectionTest implements PerformanceTest {
 
     @Autowired
