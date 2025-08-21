@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+
+    <changeSet id="002-create-account-table" author="CardDemo Migration Team" context="development,migration,test,production">
+        <comment>Create account_data table for Account entity (VSAM ACCTDAT migration)</comment>
+        
+        <createTable tableName="account_data">
+            <column name="account_id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            
+            <column name="active_status" type="CHAR(1)">
+                <constraints nullable="false" checkConstraint="active_status IN ('Y', 'N')"/>
+            </column>
+            
+            <column name="current_balance" type="DECIMAL(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="credit_limit" type="DECIMAL(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="cash_credit_limit" type="DECIMAL(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="open_date" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="expiration_date" type="DATE"/>
+            
+            <column name="reissue_date" type="DATE"/>
+            
+            <column name="current_cycle_credit" type="DECIMAL(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="current_cycle_debit" type="DECIMAL(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="zip_code" type="VARCHAR(10)"/>
+            
+            <column name="group_id" type="VARCHAR(10)"/>
+            
+            <column name="customer_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="disclosure_group_id" type="BIGINT"/>
+        </createTable>
+        
+        <rollback>
+            <dropTable tableName="account_data"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="002-add-account-comments" author="CardDemo Migration Team" context="development,migration,test,production">
+        <comment>Add column comments for account_data table documentation</comment>
+        
+        <setTableRemarks tableName="account_data" remarks="Credit card account data migrated from VSAM ACCTDAT dataset"/>
+        
+        <setColumnRemarks tableName="account_data" columnName="account_id" 
+                         remarks="Account ID - Primary key, maps to ACCT-ID (PIC 9(11))"/>
+        <setColumnRemarks tableName="account_data" columnName="active_status" 
+                         remarks="Account active status, maps to ACCT-ACTIVE-STATUS (PIC X(01))"/>
+        <setColumnRemarks tableName="account_data" columnName="current_balance" 
+                         remarks="Current account balance, maps to ACCT-CURR-BAL (PIC S9(10)V99)"/>
+        <setColumnRemarks tableName="account_data" columnName="credit_limit" 
+                         remarks="Account credit limit, maps to ACCT-CREDIT-LIMIT (PIC S9(10)V99)"/>
+        <setColumnRemarks tableName="account_data" columnName="cash_credit_limit" 
+                         remarks="Cash credit limit, maps to ACCT-CASH-CREDIT-LIMIT (PIC S9(10)V99)"/>
+        <setColumnRemarks tableName="account_data" columnName="open_date" 
+                         remarks="Account open date, maps to ACCT-OPEN-DATE (PIC X(10))"/>
+        <setColumnRemarks tableName="account_data" columnName="expiration_date" 
+                         remarks="Account expiration date, maps to ACCT-EXPIRAION-DATE (PIC X(10))"/>
+        <setColumnRemarks tableName="account_data" columnName="reissue_date" 
+                         remarks="Account reissue date, maps to ACCT-REISSUE-DATE (PIC X(10))"/>
+        <setColumnRemarks tableName="account_data" columnName="current_cycle_credit" 
+                         remarks="Current cycle credit, maps to ACCT-CURR-CYC-CREDIT (PIC S9(10)V99)"/>
+        <setColumnRemarks tableName="account_data" columnName="current_cycle_debit" 
+                         remarks="Current cycle debit, maps to ACCT-CURR-CYC-DEBIT (PIC S9(10)V99)"/>
+        <setColumnRemarks tableName="account_data" columnName="zip_code" 
+                         remarks="Account ZIP code, maps to ACCT-ADDR-ZIP (PIC X(10))"/>
+        <setColumnRemarks tableName="account_data" columnName="group_id" 
+                         remarks="Account group ID, maps to ACCT-GROUP-ID (PIC X(10))"/>
+        <setColumnRemarks tableName="account_data" columnName="customer_id" 
+                         remarks="Foreign key to customer_data table"/>
+        <setColumnRemarks tableName="account_data" columnName="disclosure_group_id" 
+                         remarks="Foreign key to disclosure_groups table"/>
+    </changeSet>
+
+</databaseChangeLog>

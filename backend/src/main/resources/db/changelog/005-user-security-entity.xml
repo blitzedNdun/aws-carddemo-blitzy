@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+
+    <changeSet id="005-create-user-security-table" author="CardDemo Migration Team" context="development,migration,test,production">
+        <comment>Create user_security table for UserSecurity entity (COBOL CSUSR01Y migration)</comment>
+        
+        <createTable tableName="user_security">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            
+            <column name="sec_usr_id" type="VARCHAR(8)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            
+            <column name="username" type="VARCHAR(50)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            
+            <column name="password_hash" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="first_name" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="last_name" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="sec_usr_type" type="CHAR(1)">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="enabled" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="account_non_expired" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="account_non_locked" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="credentials_non_expired" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="failed_login_attempts" type="INTEGER" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="last_login" type="TIMESTAMP"/>
+            
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="updated_at" type="TIMESTAMP"/>
+            
+            <column name="filler" type="VARCHAR(23)"/>
+        </createTable>
+        
+        <rollback>
+            <dropTable tableName="user_security"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="005-add-user-security-indexes" author="CardDemo Migration Team" context="development,migration,test,production">
+        <comment>Add indexes for user_security table performance</comment>
+        
+        <createIndex tableName="user_security" indexName="idx_user_security_username">
+            <column name="username"/>
+        </createIndex>
+        
+        <createIndex tableName="user_security" indexName="idx_user_security_user_id">
+            <column name="sec_usr_id"/>
+        </createIndex>
+        
+        <rollback>
+            <dropIndex tableName="user_security" indexName="idx_user_security_username"/>
+            <dropIndex tableName="user_security" indexName="idx_user_security_user_id"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="005-add-user-security-constraints" author="CardDemo Migration Team" context="development,migration,test,production">
+        <comment>Add constraints for user_security table validation</comment>
+        
+        <sql>
+            ALTER TABLE user_security ADD CONSTRAINT chk_sec_usr_type CHECK (sec_usr_type IN ('A', 'U'));
+        </sql>
+        <sql>
+            ALTER TABLE user_security ADD CONSTRAINT chk_failed_login_attempts CHECK (failed_login_attempts &gt;= 0);
+        </sql>
+        
+        <rollback>
+            <sql>ALTER TABLE user_security DROP CONSTRAINT chk_sec_usr_type;</sql>
+            <sql>ALTER TABLE user_security DROP CONSTRAINT chk_failed_login_attempts;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="005-add-user-security-comments" author="CardDemo Migration Team" context="development,migration,test,production">
+        <comment>Add column comments for user_security table documentation</comment>
+        
+        <setTableRemarks tableName="user_security" remarks="User authentication and authorization data migrated from COBOL CSUSR01Y copybook"/>
+        
+        <setColumnRemarks tableName="user_security" columnName="id" 
+                         remarks="User Security ID - Primary key for internal references"/>
+        <setColumnRemarks tableName="user_security" columnName="sec_usr_id" 
+                         remarks="User ID from COBOL SEC-USR-ID field (8 characters) - Business key"/>
+        <setColumnRemarks tableName="user_security" columnName="username" 
+                         remarks="Username for login authentication"/>
+        <setColumnRemarks tableName="user_security" columnName="password_hash" 
+                         remarks="BCrypt encrypted password hash for secure authentication"/>
+        <setColumnRemarks tableName="user_security" columnName="first_name" 
+                         remarks="User first name from COBOL SEC-USR-FNAME field"/>
+        <setColumnRemarks tableName="user_security" columnName="last_name" 
+                         remarks="User last name from COBOL SEC-USR-LNAME field"/>
+        <setColumnRemarks tableName="user_security" columnName="sec_usr_type" 
+                         remarks="User type from COBOL SEC-USR-TYPE: A=Administrator, U=Regular User"/>
+        <setColumnRemarks tableName="user_security" columnName="enabled" 
+                         remarks="Account enabled flag for Spring Security"/>
+        <setColumnRemarks tableName="user_security" columnName="account_non_expired" 
+                         remarks="Account non-expired flag for Spring Security"/>
+        <setColumnRemarks tableName="user_security" columnName="account_non_locked" 
+                         remarks="Account non-locked flag for Spring Security"/>
+        <setColumnRemarks tableName="user_security" columnName="credentials_non_expired" 
+                         remarks="Credentials non-expired flag for Spring Security"/>
+        <setColumnRemarks tableName="user_security" columnName="failed_login_attempts" 
+                         remarks="Counter for failed login attempts for security lockout"/>
+        <setColumnRemarks tableName="user_security" columnName="last_login" 
+                         remarks="Timestamp of last successful login"/>
+        <setColumnRemarks tableName="user_security" columnName="created_at" 
+                         remarks="Timestamp when user account was created"/>
+        <setColumnRemarks tableName="user_security" columnName="updated_at" 
+                         remarks="Timestamp when user account was last updated"/>
+        <setColumnRemarks tableName="user_security" columnName="filler" 
+                         remarks="Filler field from COBOL for compatibility (unused)"/>
+    </changeSet>
+
+</databaseChangeLog>

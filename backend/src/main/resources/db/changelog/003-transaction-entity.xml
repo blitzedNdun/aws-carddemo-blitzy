@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+
+    <changeSet id="003-create-transaction-table" author="CardDemo Migration Team" context="development,migration,test,production">
+        <comment>Create transactions table for Transaction entity (VSAM TRANSACT migration)</comment>
+        
+        <createTable tableName="transactions">
+            <column name="transaction_id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            
+            <column name="amount" type="DECIMAL(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="account_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="transaction_date" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="description" type="VARCHAR(100)"/>
+            
+            <column name="merchant_id" type="BIGINT"/>
+            
+            <column name="merchant_name" type="VARCHAR(50)"/>
+            
+            <column name="merchant_city" type="VARCHAR(50)"/>
+            
+            <column name="merchant_zip" type="VARCHAR(10)"/>
+            
+            <column name="card_number" type="VARCHAR(16)"/>
+            
+            <column name="original_timestamp" type="TIMESTAMP"/>
+            
+            <column name="processed_timestamp" type="TIMESTAMP"/>
+            
+            <column name="category_code" type="VARCHAR(4)"/>
+            
+            <column name="subcategory_code" type="VARCHAR(2)"/>
+            
+            <column name="source" type="VARCHAR(10)"/>
+            
+            <column name="transaction_type_code" type="VARCHAR(2)"/>
+            
+            <column name="authorization_code" type="VARCHAR(6)"/>
+        </createTable>
+        
+        <rollback>
+            <dropTable tableName="transactions"/>
+        </rollback>
+    </changeSet>
+
+
+
+    <changeSet id="003-add-transaction-comments" author="CardDemo Migration Team" context="development,migration,test,production">
+        <comment>Add column comments for transactions table documentation</comment>
+        
+        <setTableRemarks tableName="transactions" remarks="Financial transaction records migrated from VSAM TRANSACT dataset"/>
+        
+        <setColumnRemarks tableName="transactions" columnName="transaction_id" 
+                         remarks="Transaction ID - Primary key, maps to TRAN-ID (PIC X(16))"/>
+        <setColumnRemarks tableName="transactions" columnName="amount" 
+                         remarks="Transaction amount, maps to TRAN-AMT (PIC S9(09)V99)"/>
+        <setColumnRemarks tableName="transactions" columnName="account_id" 
+                         remarks="Account ID foreign key linking transaction to account"/>
+        <setColumnRemarks tableName="transactions" columnName="transaction_date" 
+                         remarks="Transaction date for partitioning and date-range queries"/>
+        <setColumnRemarks tableName="transactions" columnName="description" 
+                         remarks="Transaction description, maps to TRAN-DESC (PIC X(100))"/>
+        <setColumnRemarks tableName="transactions" columnName="merchant_id" 
+                         remarks="Merchant ID, maps to TRAN-MERCHANT-ID (PIC 9(09))"/>
+        <setColumnRemarks tableName="transactions" columnName="merchant_name" 
+                         remarks="Merchant name, maps to TRAN-MERCHANT-NAME (PIC X(50))"/>
+        <setColumnRemarks tableName="transactions" columnName="merchant_city" 
+                         remarks="Merchant city, maps to TRAN-MERCHANT-CITY (PIC X(50))"/>
+        <setColumnRemarks tableName="transactions" columnName="merchant_zip" 
+                         remarks="Merchant ZIP code, maps to TRAN-MERCHANT-ZIP (PIC X(10))"/>
+        <setColumnRemarks tableName="transactions" columnName="card_number" 
+                         remarks="Card number used for transaction, maps to TRAN-CARD-NUM (PIC X(16))"/>
+        <setColumnRemarks tableName="transactions" columnName="original_timestamp" 
+                         remarks="Original transaction timestamp, maps to TRAN-ORIG-TS (PIC X(26))"/>
+        <setColumnRemarks tableName="transactions" columnName="processed_timestamp" 
+                         remarks="Processed transaction timestamp, maps to TRAN-PROC-TS (PIC X(26))"/>
+        <setColumnRemarks tableName="transactions" columnName="category_code" 
+                         remarks="Transaction category code, maps to TRAN-CAT-CD (PIC 9(04))"/>
+        <setColumnRemarks tableName="transactions" columnName="subcategory_code" 
+                         remarks="Transaction subcategory code, maps to TRAN-SUBCAT-CD (PIC X(02))"/>
+        <setColumnRemarks tableName="transactions" columnName="source" 
+                         remarks="Transaction source indicator, maps to TRAN-SOURCE (PIC X(10))"/>
+        <setColumnRemarks tableName="transactions" columnName="transaction_type_code" 
+                         remarks="Transaction type code, maps to TRAN-TYPE-CD (PIC X(02))"/>
+        <setColumnRemarks tableName="transactions" columnName="authorization_code" 
+                         remarks="Authorization code for transaction approval, maps to TRAN-AUTH-CD (PIC X(06))"/>
+    </changeSet>
+
+</databaseChangeLog>
