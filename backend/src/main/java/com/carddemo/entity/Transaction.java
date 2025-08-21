@@ -60,14 +60,7 @@ import java.util.Objects;
  * @since 2024
  */
 @Entity
-@Table(name = "transactions", 
-       indexes = {
-           @Index(name = "idx_transactions_account_id", columnList = "account_id"),
-           @Index(name = "idx_transactions_card_number", columnList = "card_number"),
-           @Index(name = "idx_transactions_date_account", columnList = "transaction_date, account_id"),
-           @Index(name = "idx_transactions_type_code", columnList = "transaction_type_code"),
-           @Index(name = "idx_transactions_category_code", columnList = "category_code")
-       })
+@Table(name = "transactions")
 @Getter
 @Setter
 @Builder

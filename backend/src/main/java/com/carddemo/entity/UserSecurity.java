@@ -24,10 +24,7 @@ import com.carddemo.security.SecurityConstants;
  * providing authentication capabilities for the modernized credit card management system.
  */
 @Entity
-@Table(name = "user_security", indexes = {
-    @Index(name = "idx_user_security_username", columnList = "username"),
-    @Index(name = "idx_user_security_user_id", columnList = "sec_usr_id")
-})
+@Table(name = "user_security")
 public class UserSecurity implements UserDetails {
 
     @Id
