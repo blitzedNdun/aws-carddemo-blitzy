@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -457,6 +458,15 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     );
 
     /**
+     * Counts all transactions for a specific account.
+     * Used for pagination calculations and account activity analysis.
+     * 
+     * @param accountId the account ID to count transactions for
+     * @return the total count of transactions for the account
+     */
+    Long countByAccountId(Long accountId);
+
+    /**
      * Counts transactions for a specific account after a given date.
      * 
      * Used for account maintenance operations, dormancy analysis, and activity validation.
@@ -467,5 +477,25 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
      * @return the count of transactions after the specified date
      */
     Long countByAccountIdAndTransactionDateAfter(Long accountId, LocalDate cutoffDate);
+
+    /**
+     * Finds transactions for a specific account within a LocalDateTime date range.
+     * Provides flexibility for timestamp-based filtering and supports legacy COBOL conversion needs.
+     * 
+     * @param accountId the account ID to filter by
+     * @param startDate the start date and time (inclusive)
+     * @param endDate the end date and time (inclusive)
+     * @param pageable pagination information
+     * @return Page of transactions within the specified date range
+     */
+    @Query("SELECT t FROM Transaction t WHERE t.accountId = :accountId " +
+           "AND t.originalTimestamp >= :startDate AND t.originalTimestamp <= :endDate " +
+           "ORDER BY t.transactionId ASC")
+    Page<Transaction> findByAccountIdAndDateRange(
+        @Param("accountId") Long accountId,
+        @Param("startDate") LocalDateTime startDate,
+        @Param("endDate") LocalDateTime endDate,
+        Pageable pageable
+    );
 
 }
