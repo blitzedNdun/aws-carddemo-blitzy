@@ -45,6 +45,10 @@ spring:
     console:
       enabled: false
 
+  # Disable Liquibase for unit tests - Hibernate DDL handles schema
+  liquibase:
+    enabled: false
+
   # Security Configuration - DISABLED for Unit Tests
   # Allows isolated testing of controllers without authentication
   security:

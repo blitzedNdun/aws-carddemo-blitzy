@@ -2,6 +2,39 @@
 -- Sample data for testing COBOL-to-Java migration functionality
 -- This data supports comprehensive unit and integration testing
 
+-- Clear all existing test data to avoid unique constraint violations
+-- Delete in reverse dependency order to avoid foreign key constraint violations
+DELETE FROM archive;
+DELETE FROM account_closure;
+DELETE FROM audit_log;
+DELETE FROM fee_schedule;
+DELETE FROM settlement;
+DELETE FROM authorization_data;
+DELETE FROM daily_transactions;
+DELETE FROM dispute;
+DELETE FROM report;
+DELETE FROM notification;
+DELETE FROM fee;
+DELETE FROM statement;
+DELETE FROM interest_rate;
+DELETE FROM disclosure_groups;
+DELETE FROM card_xref;
+DELETE FROM transaction_category_balance;
+DELETE FROM transaction_data;
+DELETE FROM user_data;
+DELETE FROM user_security;
+DELETE FROM card_data;
+DELETE FROM account_data;
+DELETE FROM customer_data;
+DELETE FROM configuration WHERE environment = 'TEST';
+
+INSERT INTO configuration (environment, name, config_key, category, config_value, description, version, active, requires_validation) VALUES
+('TEST', 'Database Connection Pool Size', 'db.pool.size', 'DATABASE', '10', 'Maximum database connection pool size', 1, true, false),
+('TEST', 'Session Timeout Minutes', 'session.timeout.minutes', 'SECURITY', '30', 'User session timeout in minutes', 1, true, false),
+('TEST', 'Interest Rate Default', 'interest.rate.default', 'BUSINESS', '18.5', 'Default interest rate for new accounts', 1, true, true),
+('TEST', 'Maximum Transaction Amount', 'transaction.max.amount', 'BUSINESS', '10000.00', 'Maximum allowed transaction amount', 1, true, true),
+('TEST', 'Batch Processing Schedule', 'batch.processing.schedule', 'BATCH', '0 2 * * *', 'Cron expression for batch processing schedule', 1, true, false);
+
 -- Insert test customers
 INSERT INTO customer_data (customer_id, first_name, middle_name, last_name, address_line1, address_line2, 
     state_code, country_code, zip_code, phone_number1, ssn, date_of_birth, fico_score) VALUES
@@ -42,7 +75,7 @@ INSERT INTO user_security (user_id, username, password_hash, first_name, last_na
 (5, 'AUDITOR', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iYqiSfFe5KuEty6iXPLJ.T4RsKtS', 'Internal', 'Auditor', 'AU');
 
 -- Insert test business users
-INSERT INTO user (user_id, first_name, last_name, email, phone, status, user_type) VALUES
+INSERT INTO user_data (user_id, first_name, last_name, email, phone, status, user_type) VALUES
 ('USR001', 'John', 'Administrator', 'admin@carddemo.com', '555-001-0001', 'ACTIVE', 'ADMIN'),
 ('USR002', 'Jane', 'Manager', 'manager@carddemo.com', '555-001-0002', 'ACTIVE', 'MANAGER'),
 ('USR003', 'Bob', 'Analyst', 'analyst@carddemo.com', '555-001-0003', 'ACTIVE', 'ANALYST'),
@@ -142,7 +175,7 @@ INSERT INTO daily_transactions (transaction_id, account_id, type_code, category_
 ('DT000000000003', 12345678903, '03', '0300', 'ELECTRONIC', 'PENDING PAYMENT', -150.00, CURRENT_DATE, 'POSTED');
 
 -- Insert test authorizations
-INSERT INTO authorization (card_number, account_id, transaction_amount, authorization_code, 
+INSERT INTO authorization_data (card_number, account_id, transaction_amount, authorization_code, 
     approval_status, request_timestamp, response_timestamp, processing_time) VALUES
 ('4000123456789001', 12345678901, 67.89, 'A12345', 'APPROVED', CURRENT_TIMESTAMP - INTERVAL '2' HOUR, CURRENT_TIMESTAMP - INTERVAL '2' HOUR, 150),
 ('4000123456789002', 12345678902, 234.50, 'A12346', 'APPROVED', CURRENT_TIMESTAMP - INTERVAL '1' HOUR, CURRENT_TIMESTAMP - INTERVAL '1' HOUR, 98),

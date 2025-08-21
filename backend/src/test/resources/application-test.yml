@@ -20,7 +20,7 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: create-drop  # Create schema for tests, drop after
+      ddl-auto: none  # Use manual schema initialization instead
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     show-sql: true
@@ -56,6 +56,10 @@ spring:
   # Transaction configuration for testing
   transaction:
     rollback-on-commit-failure: true
+  
+  # Disable Liquibase for testing - Hibernate DDL handles schema
+  liquibase:
+    enabled: false
 
 # Test-specific logging configuration
 logging:
