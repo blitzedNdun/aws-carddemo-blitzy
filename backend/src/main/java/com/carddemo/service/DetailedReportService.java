@@ -12,6 +12,7 @@ import com.carddemo.entity.Transaction;
 import com.carddemo.repository.AccountRepository;
 import com.carddemo.repository.TransactionRepository;
 import com.carddemo.util.AmountCalculator;
+import com.carddemo.util.CobolDataConverter;
 import com.carddemo.util.FormatUtil;
 import com.carddemo.util.ReportExporter;
 
@@ -77,14 +78,7 @@ public class DetailedReportService {
     @Autowired
     private AccountRepository accountRepository;
 
-    @Autowired
-    private ReportExporter reportExporter;
-
-    @Autowired
-    private FormatUtil formatUtil;
-
-    @Autowired
-    private AmountCalculator amountCalculator;
+    // Utility classes are static - no injection needed
 
     /**
      * Generates detailed transaction and account reports with comprehensive filtering and formatting.
@@ -200,8 +194,8 @@ public class DetailedReportService {
         
         BigDecimal averageAmount = totalAmount.divide(
             BigDecimal.valueOf(transactions.size()), 
-            AmountCalculator.MONETARY_SCALE, 
-            AmountCalculator.COBOL_ROUNDING
+            CobolDataConverter.MONETARY_SCALE, 
+            CobolDataConverter.COBOL_ROUNDING_MODE
         );
         
         BigDecimal minAmount = transactions.stream()
@@ -255,8 +249,14 @@ public class DetailedReportService {
     public String exportReportToCsv(List<Transaction> transactions, DetailedReportRequest request) {
         List<Map<String, Object>> reportData = formatReportData(transactions, request);
         List<String> columnHeaders = generateColumnHeaders(request);
+        int[] columnWidths = generateColumnWidths(columnHeaders.size());
+        String fileName = "detailed_report_" + System.currentTimeMillis() + ".csv";
         
-        return reportExporter.exportToCsv(reportData, columnHeaders);
+        try {
+            return ReportExporter.exportToCsv(reportData, columnHeaders, columnWidths, fileName);
+        } catch (Exception e) {
+            throw new RuntimeException("CSV export failed: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -273,9 +273,16 @@ public class DetailedReportService {
     public byte[] exportReportToPdf(List<Transaction> transactions, DetailedReportRequest request) {
         List<Map<String, Object>> reportData = formatReportData(transactions, request);
         List<String> columnHeaders = generateColumnHeaders(request);
-        Map<String, Map<String, Object>> controlBreaks = processControlBreaks(transactions, request);
+        int[] columnWidths = generateColumnWidths(columnHeaders.size());
+        String reportTitle = generateReportTitle(request);
         
-        return reportExporter.exportToPdf(reportData, columnHeaders, controlBreaks);
+        try {
+            java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
+            ReportExporter.exportToPdf(reportData, columnHeaders, columnWidths, reportTitle, outputStream);
+            return outputStream.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("PDF export failed: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -453,7 +460,7 @@ public class DetailedReportService {
             .map(Transaction::getAmount)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
         
-        BigDecimal averageAmount = amountCalculator.calculateBalance(
+        BigDecimal averageAmount = AmountCalculator.calculateBalance(
             totalAmount, 
             BigDecimal.valueOf(totalCount)
         );
@@ -486,45 +493,45 @@ public class DetailedReportService {
             Map<String, Object> row = new HashMap<>();
             
             // Format transaction ID with proper padding
-            row.put("transaction_id", formatUtil.formatFixedLength(
-                String.valueOf(transaction.getTransactionId()), 16, true
+            row.put("transaction_id", FormatUtil.formatFixedLength(
+                String.valueOf(transaction.getTransactionId()), 16
             ));
             
             // Format transaction date using COBOL date format
-            row.put("transaction_date", formatUtil.formatDate(transaction.getTransactionDate()));
+            row.put("transaction_date", FormatUtil.formatDate(transaction.getTransactionDate().atStartOfDay()));
             
             // Format amount with currency symbol and proper decimal places
-            row.put("amount", formatUtil.formatCurrency(transaction.getAmount()));
+            row.put("amount", FormatUtil.formatCurrency(transaction.getAmount()));
             
             // Format decimal amount without currency symbol for calculations
-            row.put("decimal_amount", formatUtil.formatDecimalAmount(transaction.getAmount()));
+            row.put("decimal_amount", FormatUtil.formatDecimalAmount(transaction.getAmount()));
             
             // Format account ID with zero padding
-            row.put("account_id", formatUtil.formatFixedLength(
-                String.valueOf(transaction.getAccountId()), 11, true
+            row.put("account_id", FormatUtil.formatFixedLength(
+                String.valueOf(transaction.getAccountId()), 11
             ));
             
             // Format description with proper truncation and padding
             if (transaction.getDescription() != null) {
-                row.put("description", formatUtil.formatFixedLength(
-                    transaction.getDescription(), 50, false
+                row.put("description", FormatUtil.formatFixedLength(
+                    transaction.getDescription(), 50
                 ));
             } else {
-                row.put("description", formatUtil.formatFixedLength("", 50, false));
+                row.put("description", FormatUtil.formatFixedLength("", 50));
             }
             
             // Format merchant name with proper alignment
             if (transaction.getMerchantName() != null) {
-                row.put("merchant_name", formatUtil.formatFixedLength(
-                    transaction.getMerchantName(), 30, false
+                row.put("merchant_name", FormatUtil.formatFixedLength(
+                    transaction.getMerchantName(), 30
                 ));
             } else {
-                row.put("merchant_name", formatUtil.formatFixedLength("", 30, false));
+                row.put("merchant_name", FormatUtil.formatFixedLength("", 30));
             }
             
             // Format numeric fields for display
             row.put("merchant_id", transaction.getMerchantId() != null ? 
-                formatUtil.formatNumber(BigDecimal.valueOf(transaction.getMerchantId())) : "0");
+                FormatUtil.formatNumber(BigDecimal.valueOf(transaction.getMerchantId()), 0) : "0");
             
             formattedData.add(row);
         }
@@ -646,7 +653,12 @@ public class DetailedReportService {
         
         // Set formatted report data
         response.setReportData(formattedData);
-        response.setFormattedLines(reportExporter.formatColumnarData(formattedData));
+        // Format as columnar text for display - convert to string representation
+        List<String> formattedLines = new ArrayList<>();
+        for (Map<String, Object> row : formattedData) {
+            formattedLines.add(row.toString());
+        }
+        response.setFormattedLines(formattedLines);
         
         // Set control break and calculation results
         response.setControlBreakSummary(controlBreaks);
@@ -674,28 +686,6 @@ public class DetailedReportService {
     // Helper methods for internal processing
 
     private List<Transaction> sortTransactionsByControlBreakFields(List<Transaction> transactions, List<String> controlBreakFields) {
-        Sort sort = Sort.by();
-        
-        for (String field : controlBreakFields) {
-            switch (field.toUpperCase()) {
-                case "ACCOUNT_ID":
-                    sort = sort.and(Sort.by("accountId").ascending());
-                    break;
-                case "TRANSACTION_DATE":
-                    sort = sort.and(Sort.by("transactionDate").ascending());
-                    break;
-                case "TRANSACTION_TYPE":
-                    sort = sort.and(Sort.by("transactionTypeCode").ascending());
-                    break;
-                case "AMOUNT":
-                    sort = sort.and(Sort.by("amount").ascending());
-                    break;
-                default:
-                    // Default sort by transaction date
-                    sort = sort.and(Sort.by("transactionDate").ascending());
-            }
-        }
-        
         return transactions.stream()
             .sorted((t1, t2) -> compareTransactionsBySort(t1, t2, controlBreakFields))
             .collect(Collectors.toList());
@@ -754,7 +744,7 @@ public class DetailedReportService {
         }
         
         BigDecimal total = calculateGroupTotal(transactions);
-        return amountCalculator.calculateBalance(total, BigDecimal.valueOf(transactions.size()));
+        return AmountCalculator.calculateBalance(total, BigDecimal.valueOf(transactions.size()));
     }
 
     private String generateReportTitle(DetailedReportRequest request) {
@@ -779,8 +769,8 @@ public class DetailedReportService {
         }
         
         if (request.getStartDate() != null && request.getEndDate() != null) {
-            title.append(" (").append(formatUtil.formatDate(request.getStartDate()))
-                 .append(" - ").append(formatUtil.formatDate(request.getEndDate()))
+            title.append(" (").append(FormatUtil.formatDate(request.getStartDate().atStartOfDay()))
+                 .append(" - ").append(FormatUtil.formatDate(request.getEndDate().atStartOfDay()))
                  .append(")");
         }
         
@@ -811,5 +801,26 @@ public class DetailedReportService {
         }
         
         return headers;
+    }
+
+    private int[] generateColumnWidths(int columnCount) {
+        int[] widths = new int[columnCount];
+        
+        // Standard column widths matching COBOL report formatting
+        if (columnCount >= 6) {
+            widths[0] = 16; // Transaction ID
+            widths[1] = 10; // Date
+            widths[2] = 11; // Account ID
+            widths[3] = 12; // Amount
+            widths[4] = 50; // Description
+            widths[5] = 30; // Merchant
+        }
+        
+        // Additional columns for different report types
+        for (int i = 6; i < columnCount; i++) {
+            widths[i] = 15; // Default width for additional columns
+        }
+        
+        return widths;
     }
 }

@@ -193,7 +193,7 @@ public class ExtractJobConfig {
                 .reader(transactionReader())
                 .processor(transactionProcessor())
                 .writer(compositeWriter())
-                .taskExecutor(taskExecutor())
+                .taskExecutor(extractTaskExecutor())
                 .build();
     }
 
@@ -449,7 +449,7 @@ public class ExtractJobConfig {
     }
 
     /**
-     * Task executor for parallel processing.
+     * Task executor for parallel processing in extract jobs.
      * 
      * Configured to handle large datasets efficiently while maintaining
      * system stability and resource usage within acceptable limits.
@@ -457,7 +457,7 @@ public class ExtractJobConfig {
      * @return Configured ThreadPoolTaskExecutor
      */
     @Bean
-    public TaskExecutor taskExecutor() {
+    public TaskExecutor extractTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(threadPoolSize);
         executor.setMaxPoolSize(threadPoolSize * 2);

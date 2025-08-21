@@ -235,52 +235,7 @@ public class DatabaseConfig {
         return factory.getObject();
     }
 
-    /**
-     * Configures Spring PlatformTransactionManager for declarative transaction management.
-     * 
-     * This method establishes comprehensive transaction management that replicates CICS SYNCPOINT
-     * behavior while providing enhanced capabilities for modern application requirements. The
-     * configuration ensures ACID compliance and proper isolation levels for financial transaction
-     * processing.
-     * 
-     * Transaction Management Features:
-     * - Declarative transactions: @Transactional annotation support at service layer methods
-     * - ACID compliance: Atomicity, Consistency, Isolation, Durability guarantees
-     * - Isolation level: READ_COMMITTED preventing dirty reads while allowing concurrent access
-     * - Rollback management: Automatic rollback on runtime exceptions with configurable rules
-     * - Timeout configuration: Configurable transaction timeouts for long-running operations
-     * 
-     * CICS Migration Equivalency:
-     * - SYNCPOINT boundaries: @Transactional methods replicate CICS transaction boundaries
-     * - Resource coordination: Single-phase commit coordination for PostgreSQL operations
-     * - Error handling: Exception-based rollback matching CICS ABEND behavior
-     * - Concurrency control: Optimistic locking patterns replacing CICS locking mechanisms
-     * 
-     * Performance Characteristics:
-     * - Connection reuse: Transaction-scoped EntityManager instances with connection pooling
-     * - Lazy initialization: Entity loading optimization for reduced memory usage
-     * - Batch coordination: Integration with Spring Batch for bulk processing operations
-     * - Read-only optimization: Performance improvements for query-only operations
-     * 
-     * @param entityManagerFactory configured JPA EntityManagerFactory for entity management
-     * @return JpaTransactionManager for Spring transaction management integration
-     */
-    @Bean
-    public PlatformTransactionManager transactionManager(EntityManagerFactory entityManagerFactory) {
-        JpaTransactionManager transactionManager = new JpaTransactionManager();
-        
-        // Associate with EntityManagerFactory for JPA integration
-        transactionManager.setEntityManagerFactory(entityManagerFactory);
-        
-        // Configure transaction manager behavior
-        transactionManager.setRollbackOnCommitFailure(true);
-        transactionManager.setFailEarlyOnGlobalRollbackOnly(true);
-        transactionManager.setNestedTransactionAllowed(true);
-        transactionManager.setValidateExistingTransaction(true);
-        transactionManager.setGlobalRollbackOnParticipationFailure(true);
-        
-        return transactionManager;
-    }
+
 
 
 

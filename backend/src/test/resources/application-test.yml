@@ -1,89 +1,65 @@
-# Test application configuration for CardDemo backend testing
-# Optimized for H2 in-memory database with PostgreSQL compatibility
+# Test Configuration - H2 In-Memory Database
+# Overrides main application.yml for testing
 
 spring:
-  # Database configuration for H2 testing
+  main:
+    allow-bean-definition-overriding: true
+    
   datasource:
-    url: jdbc:h2:mem:carddemo_test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
+    url: jdbc:h2:mem:testdb;DB_CLOSE_ON_EXIT=FALSE;DATABASE_TO_UPPER=false
     username: sa
     password: 
     driver-class-name: org.h2.Driver
-    
-    # Schema initialization
-    initialization-mode: always
-    schema: classpath:schema-test.sql
-    data: classpath:test-data.sql
-    separator: ;
-    continue-on-error: false
-    
-  # JPA/Hibernate configuration for testing
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 5000
+      
+  sql:
+    init:
+      schema-locations: classpath:schema-test.sql
+      data-locations: classpath:test-data.sql
+      mode: always
+      continue-on-error: false
+      
+  # JPA Configuration for H2
   jpa:
+    database: h2
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: none  # Use manual schema initialization instead
+      ddl-auto: none
       naming:
-        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
-    show-sql: true
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
     properties:
       hibernate:
         format_sql: true
-        jdbc:
-          batch_size: 10
-        order_inserts: true
-        order_updates: true
-        use_sql_comments: true
-        generate_statistics: true
-        globally_quoted_identifiers: false
-        id:
-          new_generator_mappings: true
-        temp:
-          use_jdbc_metadata_defaults: false
-        connection:
-          provider_disables_autocommit: true
-          autocommit: false
-          charSet: UTF-8
-          characterEncoding: UTF-8
-          useUnicode: true
-        query:
-          plan_cache_max_size: 512
-          plan_parameter_metadata_max_size: 64
-          in_clause_parameter_padding: true
-        session:
-          events:
-            log:
-              LOG_QUERIES_SLOWER_THAN_MS: 100
-
-  # Transaction configuration for testing
-  transaction:
-    rollback-on-commit-failure: true
-  
-  # Disable Liquibase for testing - Hibernate DDL handles schema
-  liquibase:
-    enabled: false
-
-# Test-specific logging configuration
+        show_sql: false
+        
+  h2:
+    console:
+      enabled: true
+      
+  # Session Configuration for Testing
+  session:
+    store-type: none
+    
+  # Batch Configuration for Testing
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: embedded
+      
+  # Redis Configuration for Testing (disabled)
+  redis:
+    host: localhost
+    port: 6379
+    timeout: 2000ms
+    
+# Logging Configuration
 logging:
   level:
+    org.springframework: WARN
     com.carddemo: DEBUG
     org.hibernate.SQL: DEBUG
-    org.hibernate.type: TRACE
-    org.springframework.orm.jpa: DEBUG
-    org.springframework.transaction: DEBUG
-  pattern:
-    console: '%d{yyyy-MM-dd HH:mm:ss} - %msg%n'
-
-# Test connection pool configuration (HikariCP)
-hikari:
-  pool-name: CardDemo-Test-H2-HikariCP
-  maximum-pool-size: 5
-  minimum-idle: 1
-  connection-timeout: 10000
-  idle-timeout: 60000
-  max-lifetime: 300000
-  leak-detection-threshold: 30000
-  connection-test-query: SELECT 1
-  data-source-properties:
-    cachePrepStmts: true
-    prepStmtCacheSize: 50
-    prepStmtCacheSqlLimit: 1024
-    useServerPrepStmts: true
+    org.hibernate.type.descriptor.sql: TRACE
