@@ -420,6 +420,7 @@ com/carddemo/service/ChargebackProcessor$RepresentmentAnalysis.class
 com/carddemo/util/CobolDataConverter.class
 com/carddemo/repository/UserActivityRepository$DailyActivityStats.class
 com/carddemo/entity/FeeSchedule$FeeType.class
+com/carddemo/controller/CategoryController.class
 com/carddemo/repository/CardRepository.class
 com/carddemo/security/CustomAuthenticationEntryPoint.class
 com/carddemo/service/FileGenerationService$ValidationWarning.class
