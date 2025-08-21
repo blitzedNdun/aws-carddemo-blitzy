@@ -6,6 +6,7 @@ com/carddemo/dto/UserListRequest.class
 com/carddemo/exception/GlobalExceptionHandler$MockHttpServletRequest.class
 com/carddemo/dto/MenuDto$MenuType.class
 com/carddemo/dto/BillInquiryRequest.class
+com/carddemo/service/StatementFileHandlerService$FileOperationResponse.class
 com/carddemo/controller/AccountController.class
 com/carddemo/batch/ReconciliationJobConfig$ProcessedChargeback.class
 com/carddemo/service/MainMenuService.class
@@ -170,6 +171,7 @@ com/carddemo/dto/BatchProcessResult.class
 com/carddemo/dto/ConfigUpdateRequest.class
 com/carddemo/repository/FeeRepository.class
 com/carddemo/dto/ErrorDetail.class
+com/carddemo/service/StatementFileHandlerService.class
 com/carddemo/service/CustomerService.class
 com/carddemo/config/ApplicationConfig$BatchProperties.class
 com/carddemo/entity/Fee$FeeType.class
@@ -298,6 +300,7 @@ com/carddemo/service/TransactionReportService$CardXrefData.class
 com/carddemo/config/TransactionConfig.class
 com/carddemo/exception/BatchProcessingException.class
 com/carddemo/repository/CustomerRepository.class
+com/carddemo/service/CardAuthorizationService.class
 com/carddemo/entity/DisclosureGroup.class
 com/carddemo/dto/DetailedReportRequest.class
 com/carddemo/service/InterestCalculationService.class
@@ -404,6 +407,7 @@ com/carddemo/repository/AccountArchiveRepository.class
 com/carddemo/dto/StatementData$StatementDataBuilder.class
 com/carddemo/service/CardDetailsService$CardDetailResult.class
 com/carddemo/controller/UserController.class
+com/carddemo/service/CrossReferenceProcessorService.class
 com/carddemo/service/TransactionProcessingService$ReconciliationResult.class
 com/carddemo/batch/StatementGenerationJobConfigA.class
 com/carddemo/service/ChargebackProcessor$ChargebackReport.class
@@ -441,6 +445,7 @@ com/carddemo/dto/AuthorizationRequest.class
 com/carddemo/service/FraudDetectionService$FraudAlert.class
 com/carddemo/client/DataQualityService$EmailValidationResult.class
 com/carddemo/dto/CardResponse.class
+com/carddemo/service/StatementFileHandlerService$FileOperationRequest.class
 com/carddemo/entity/Customer$CustomerBuilder.class
 com/carddemo/dto/UserDetailResponse.class
 com/carddemo/service/ChargebackProcessor$StatusTransition.class
