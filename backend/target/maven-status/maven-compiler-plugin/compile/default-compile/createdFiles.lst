@@ -171,6 +171,7 @@ com/carddemo/security/JwtAuthenticationFilter.class
 com/carddemo/config/RedisConfig.class
 com/carddemo/dto/AdminMenuResponse.class
 com/carddemo/dto/CreditCardUpdateRequest.class
+com/carddemo/service/ReportGenerationService.class
 com/carddemo/service/ReportingService$TransactionReportData.class
 com/carddemo/service/AccountService.class
 com/carddemo/entity/FeeSchedule$AssessmentFrequency.class
@@ -266,6 +267,7 @@ com/carddemo/repository/TransactionCategoryBalanceRepository.class
 com/carddemo/dto/MenuOption.class
 com/carddemo/service/StorageService$CompressionType.class
 com/carddemo/service/UserService.class
+com/carddemo/util/ReportFormatter.class
 com/carddemo/service/PaymentService$BankSystemException.class
 com/carddemo/controller/PaymentController.class
 com/carddemo/dto/CreditCardUpdateResponse.class
