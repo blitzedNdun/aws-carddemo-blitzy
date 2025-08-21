@@ -202,6 +202,7 @@ com/carddemo/dto/BillingDto.class
 com/carddemo/service/NotificationService$NotificationRecord.class
 com/carddemo/dto/StatementData.class
 com/carddemo/dto/TransactionResponse.class
+com/carddemo/service/DetailedReportService.class
 com/carddemo/service/ChargebackProcessor$SettlementCalculation.class
 com/carddemo/entity/Report$Format.class
 com/carddemo/dto/PageResponse$PageResponseBuilder.class
