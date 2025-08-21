@@ -267,6 +267,7 @@ com/carddemo/service/FileGenerationService$CustomerStatementData.class
 com/carddemo/entity/Transaction$TransactionBuilder.class
 com/carddemo/entity/UserActivity.class
 com/carddemo/service/TransactionProcessingService$BatchProcessingResult.class
+com/carddemo/service/AccountReconciliationService.class
 com/carddemo/config/ExtractJobConfig$TransactionExtractDto.class
 com/carddemo/repository/TransactionCategoryBalanceRepository.class
 com/carddemo/dto/MenuOption.class
