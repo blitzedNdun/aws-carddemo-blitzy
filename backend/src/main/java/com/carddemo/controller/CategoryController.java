@@ -15,11 +15,14 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 
 /**
  * REST controller for transaction category and type management operations.
@@ -194,6 +197,92 @@ public class CategoryController {
             
         } catch (Exception e) {
             logger.error("Failed to retrieve category balances for account: {}", accountId, e);
+            // Use ResponseEntity.internalServerError() as per external_imports schema
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    
+    /**
+     * Aggregates category balances for an account within a specified date range.
+     * 
+     * This endpoint provides date-range balance analysis for reporting, statement
+     * generation, and account analysis functionality. Supports balance trend
+     * analysis and historical balance inquiries. Replaces COBOL date-range balance
+     * calculation routines from paragraph 4000-AGGREGATE-BALANCES.
+     * 
+     * Maps to COBOL account balance aggregation routines that calculate balances
+     * within specified date ranges for analytical reporting and trend analysis.
+     * 
+     * @param accountId the 11-digit account ID to aggregate balances for
+     * @param startDate the start date of the range (YYYY-MM-DD format, inclusive)
+     * @param endDate the end date of the range (YYYY-MM-DD format, inclusive)
+     * @return ResponseEntity containing list of aggregated category balance DTOs or error response
+     * 
+     * Response format:
+     * - 200 OK: List of aggregated TransactionCategoryBalanceDto objects
+     * - 404 Not Found: No data found for the specified account and date range
+     * - 400 Bad Request: Invalid date format or date range parameters
+     * - 500 Internal Server Error: Database access error or service failure
+     * 
+     * Example request: GET /api/categories/12345678901/balances/aggregate?startDate=2024-01-01&endDate=2024-01-31
+     * 
+     * Example response:
+     * [
+     *   {
+     *     "accountId": 12345678901,
+     *     "categoryCode": "0001",
+     *     "balance": 2468.14,
+     *     "balanceDate": null
+     *   }
+     * ]
+     */
+    @GetMapping("/categories/{accountId}/balances/aggregate")
+    public ResponseEntity<List<TransactionCategoryBalanceDto>> aggregateCategoryBalances(
+            @PathVariable String accountId,
+            @RequestParam String startDate,
+            @RequestParam String endDate) {
+        try {
+            logger.info("Processing aggregate balance request for account: {} from {} to {}", 
+                       accountId, startDate, endDate);
+            
+            // Parse date parameters
+            LocalDate parsedStartDate = LocalDate.parse(startDate);
+            LocalDate parsedEndDate = LocalDate.parse(endDate);
+            
+            // Use CategoryService.aggregateCategoryBalances() method as per internal_imports schema
+            List<TransactionCategoryBalanceDto> aggregatedBalances = 
+                categoryService.aggregateCategoryBalances(accountId, parsedStartDate, parsedEndDate);
+            
+            // Validate response using List.isEmpty() as per external_imports schema
+            if (aggregatedBalances.isEmpty()) {
+                logger.warn("No aggregated balances found for account: {} in date range {} to {}", 
+                           accountId, startDate, endDate);
+                // Use ResponseEntity.notFound() as per external_imports schema
+                return ResponseEntity.notFound().build();
+            }
+            
+            // Log success with List.size() as per external_imports schema
+            logger.info("Successfully aggregated {} category balances for account: {} in date range {} to {}", 
+                       aggregatedBalances.size(), accountId, startDate, endDate);
+            
+            // Use ResponseEntity.ok() as per external_imports schema
+            return ResponseEntity.ok(aggregatedBalances);
+            
+        } catch (DateTimeParseException e) {
+            logger.error("Invalid date format for aggregateCategoryBalances: startDate={}, endDate={} - {}", 
+                        startDate, endDate, e.getMessage());
+            // Use ResponseEntity.internalServerError() as per external_imports schema
+            return ResponseEntity.internalServerError().build();
+            
+        } catch (IllegalArgumentException e) {
+            logger.error("Invalid parameters for aggregateCategoryBalances: account={}, dates={}-{} - {}", 
+                        accountId, startDate, endDate, e.getMessage());
+            // Use ResponseEntity.internalServerError() as per external_imports schema
+            return ResponseEntity.internalServerError().build();
+            
+        } catch (Exception e) {
+            logger.error("Failed to aggregate category balances for account: {} in date range {} to {}", 
+                        accountId, startDate, endDate, e);
             // Use ResponseEntity.internalServerError() as per external_imports schema
             return ResponseEntity.internalServerError().build();
         }
