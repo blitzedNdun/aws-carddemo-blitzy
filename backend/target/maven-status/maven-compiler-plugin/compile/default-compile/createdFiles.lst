@@ -54,6 +54,7 @@ com/carddemo/service/FileGenerationService.class
 com/carddemo/entity/CardXrefId.class
 com/carddemo/security/SessionAttributes.class
 com/carddemo/security/CustomAuthenticationProvider.class
+com/carddemo/service/StatementGenerationBatchServiceA.class
 com/carddemo/service/CustomerSegmentationService.class
 com/carddemo/client/DataQualityService$DataQualityReport.class
 com/carddemo/client/EmailClient$1.class
