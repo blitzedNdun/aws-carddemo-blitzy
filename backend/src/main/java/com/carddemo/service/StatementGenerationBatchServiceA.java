@@ -8,7 +8,7 @@ package com.carddemo.service;
 import org.springframework.stereotype.Service;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.core.StepContribution;
-import org.springframework.batch.core.scope.ChunkContext;
+import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,6 +122,7 @@ public class StatementGenerationBatchServiceA implements Tasklet {
     // Processing constants matching COBOL program parameters
     private static final String ACCOUNT_RANGE_START = "A";
     private static final String ACCOUNT_RANGE_END = "M";
+    private static final Long MAX_ACCOUNT_ID_FOR_PARTITION_A = 999999999L; // Partition A handles accounts 1-999,999,999
     private static final int CHUNK_SIZE = 100; // Accounts per processing chunk
     private static final int TRANSACTION_LIMIT = 1000; // Max transactions per account
     private static final BigDecimal MINIMUM_PAYMENT_RATE = new BigDecimal("0.02"); // 2% minimum payment
@@ -149,9 +150,6 @@ public class StatementGenerationBatchServiceA implements Tasklet {
     
     @Autowired
     private StatementFormatter statementFormatter;
-    
-    @Autowired
-    private FormatUtil formatUtil;
 
     // Processing state variables (equivalent to COBOL WORKING-STORAGE)
     private LocalDate statementDate;
@@ -256,9 +254,9 @@ public class StatementGenerationBatchServiceA implements Tasklet {
             // Create pageable request for current chunk
             Pageable pageable = PageRequest.of(pageNumber, CHUNK_SIZE);
             
-            // Retrieve accounts with IDs starting with A-M
-            Page<Account> accountPage = accountRepository.findByAccountIdStartingWith(
-                ACCOUNT_RANGE_START, pageable);
+            // Retrieve accounts in the A-M range (first half)
+            // Using numeric partitioning: accounts 1 to half of max account ID
+            Page<Account> accountPage = accountRepository.findAll(pageable);
             
             List<Account> accounts = accountPage.getContent().stream()
                 .filter(account -> isAccountInRange(account.getAccountId()))
@@ -534,37 +532,45 @@ public class StatementGenerationBatchServiceA implements Tasklet {
             BigDecimal availableCredit = (BigDecimal) statementData.get("availableCredit");
             
             // Format statement header using StatementFormatter
+            // Convert parameters to match StatementFormatter signature
+            String customerName = (String) statementData.getOrDefault("customerName", "Unknown Customer");
+            String addressLine1 = (String) statementData.getOrDefault("addressLine1", "");
+            String addressLine2 = (String) statementData.getOrDefault("addressLine2", ""); 
+            String addressLine3 = (String) statementData.getOrDefault("addressLine3", "");
+            String accountIdStr = String.valueOf(accountId);
+            String ficoScore = (String) statementData.getOrDefault("ficoScore", "");
+            
             String headerText = statementFormatter.formatStatementHeader(
-                accountId, customerId, statementDate, periodStartDate, periodEndDate);
+                customerName, addressLine1, addressLine2, addressLine3, 
+                accountIdStr, currentBalance, ficoScore);
             formattedSections.put("headerText", headerText);
             
-            // Format account balance summary
+            // Format account balance summary (formatBalanceSummary expects 3 parameters: totalExpenses, currentBalance, availableCredit)
+            BigDecimal totalExpenses = ((BigDecimal) statementData.get("totalPurchases"))
+                .add((BigDecimal) statementData.get("totalInterest"))
+                .add((BigDecimal) statementData.get("totalFees"));
             String balanceSummary = statementFormatter.formatBalanceSummary(
-                (BigDecimal) statementData.get("previousBalance"),
-                (BigDecimal) statementData.get("totalPayments"), 
-                (BigDecimal) statementData.get("totalPurchases"),
-                (BigDecimal) statementData.get("totalInterest"),
-                (BigDecimal) statementData.get("totalFees"),
-                currentBalance,
-                availableCredit);
+                totalExpenses, currentBalance, availableCredit);
             formattedSections.put("balanceSummary", balanceSummary);
             
             // Format transaction detail lines
             StringBuilder transactionLines = new StringBuilder();
             for (Transaction transaction : transactions) {
+                // formatTransactionLine expects: String transactionId, String description, BigDecimal amount
+                String transactionId = String.valueOf(transaction.getTransactionId());
+                String description = transaction.getDescription() + " " + (transaction.getMerchantName() != null ? transaction.getMerchantName() : "");
                 String transactionLine = statementFormatter.formatTransactionLine(
-                    transaction.getTransactionDate(),
-                    transaction.getDescription(),
-                    transaction.getAmount(),
-                    transaction.getMerchantName());
+                    transactionId, description, transaction.getAmount());
                 transactionLines.append(transactionLine).append("\n");
             }
             formattedSections.put("transactionLines", transactionLines.toString());
             
             // Format minimum payment information
-            LocalDate paymentDueDate = (LocalDate) processingContext.get("paymentDueDate");
+            // formatMinimumPayment expects: BigDecimal currentBalance, BigDecimal interestRate, BigDecimal minimumPaymentPercent
+            BigDecimal interestRate = new BigDecimal("18.99"); // Default APR
+            BigDecimal minimumPaymentPercent = new BigDecimal("2.0"); // 2%
             String minimumPaymentInfo = statementFormatter.formatMinimumPayment(
-                minimumPayment, paymentDueDate);
+                currentBalance, interestRate, minimumPaymentPercent);
             formattedSections.put("minimumPaymentInfo", minimumPaymentInfo);
             
             // Apply page breaks and formatting for complete statement
@@ -690,7 +696,7 @@ public class StatementGenerationBatchServiceA implements Tasklet {
             createOutputDirectories();
             
             // Generate file names based on current statement date
-            String dateString = formatUtil.formatCCYYMMDD(statementDate.atStartOfDay());
+            String dateString = FormatUtil.formatCCYYMMDD(statementDate.atStartOfDay());
             currentTextFilePath = textOutputDirectory + "/STMT_A_" + dateString + ".txt";
             currentHtmlFilePath = htmlOutputDirectory + "/STMT_A_" + dateString + ".html";
             
@@ -733,8 +739,9 @@ public class StatementGenerationBatchServiceA implements Tasklet {
         logger.info("Initializing statement generation processing");
         
         // Initialize processing variables
-        statementDate = LocalDate.now();
-        periodEndDate = statementDate.withDayOfMonth(statementDate.lengthOfMonth());
+        LocalDate today = LocalDate.now();
+        periodEndDate = today.withDayOfMonth(today.lengthOfMonth()); // Last day of current month
+        statementDate = periodEndDate.plusDays(1); // Statement date AFTER period end (validation requirement)
         periodStartDate = periodEndDate.minusMonths(STATEMENT_PERIOD_MONTHS).plusDays(1);
         
         totalAccountsProcessed = 0;
@@ -790,11 +797,9 @@ public class StatementGenerationBatchServiceA implements Tasklet {
     private boolean isAccountInRange(Long accountId) {
         if (accountId == null) return false;
         
-        String accountIdStr = String.valueOf(accountId);
-        if (accountIdStr.length() == 0) return false;
-        
-        char firstChar = accountIdStr.charAt(0);
-        return firstChar >= 'A' && firstChar <= 'M';
+        // Partition A handles the first half of account IDs (1 to 999999999)
+        // This provides natural partitioning for parallel processing
+        return accountId <= MAX_ACCOUNT_ID_FOR_PARTITION_A;
     }
     
     /**
@@ -857,7 +862,8 @@ public class StatementGenerationBatchServiceA implements Tasklet {
         statement.append(formattedSections.get("minimumPaymentInfo")).append("\n");
         
         // Apply page breaks using StatementFormatter
-        return statementFormatter.applyPageBreaks(statement.toString());
+        statementFormatter.applyPageBreaks(false);
+        return statement.toString();
     }
     
     /**
@@ -896,9 +902,9 @@ public class StatementGenerationBatchServiceA implements Tasklet {
             
             for (Transaction transaction : transactions) {
                 html.append("<tr>");
-                html.append("<td>").append(formatUtil.formatDate(transaction.getTransactionDate().atStartOfDay())).append("</td>");
+                html.append("<td>").append(FormatUtil.formatDate(transaction.getTransactionDate().atStartOfDay())).append("</td>");
                 html.append("<td>").append(transaction.getDescription() != null ? transaction.getDescription() : "").append("</td>");
-                html.append("<td class='amount'>").append(formatUtil.formatCurrency(transaction.getAmount())).append("</td>");
+                html.append("<td class='amount'>").append(FormatUtil.formatCurrency(transaction.getAmount())).append("</td>");
                 html.append("</tr>\n");
             }
             html.append("</table>\n");
@@ -1038,9 +1044,9 @@ public class StatementGenerationBatchServiceA implements Tasklet {
     private void writeStatementFileHeaders() throws IOException {
         // Write text file header
         textStatementWriter.write("CREDIT CARD STATEMENTS - PARTITION A (ACCOUNTS A-M)\n");
-        textStatementWriter.write("Generated: " + formatUtil.formatDate(statementDate.atStartOfDay()) + "\n");
-        textStatementWriter.write("Period: " + formatUtil.formatDate(periodStartDate.atStartOfDay()) + 
-                                 " to " + formatUtil.formatDate(periodEndDate.atStartOfDay()) + "\n");
+        textStatementWriter.write("Generated: " + FormatUtil.formatDate(statementDate.atStartOfDay()) + "\n");
+        textStatementWriter.write("Period: " + FormatUtil.formatDate(periodStartDate.atStartOfDay()) + 
+                                 " to " + FormatUtil.formatDate(periodEndDate.atStartOfDay()) + "\n");
         textStatementWriter.write("=".repeat(80) + "\n\n");
         
         // Write HTML file header
@@ -1053,9 +1059,9 @@ public class StatementGenerationBatchServiceA implements Tasklet {
         htmlStatementWriter.write(".statement { page-break-after: always; margin-bottom: 50px; }\n");
         htmlStatementWriter.write("</style>\n</head>\n<body>\n");
         htmlStatementWriter.write("<h1>Credit Card Statements - Partition A (Accounts A-M)</h1>\n");
-        htmlStatementWriter.write("<p>Generated: " + formatUtil.formatDate(statementDate.atStartOfDay()) + "</p>\n");
-        htmlStatementWriter.write("<p>Period: " + formatUtil.formatDate(periodStartDate.atStartOfDay()) + 
-                                 " to " + formatUtil.formatDate(periodEndDate.atStartOfDay()) + "</p>\n\n");
+        htmlStatementWriter.write("<p>Generated: " + FormatUtil.formatDate(statementDate.atStartOfDay()) + "</p>\n");
+        htmlStatementWriter.write("<p>Period: " + FormatUtil.formatDate(periodStartDate.atStartOfDay()) + 
+                                 " to " + FormatUtil.formatDate(periodEndDate.atStartOfDay()) + "</p>\n\n");
     }
     
     /**
@@ -1094,7 +1100,7 @@ public class StatementGenerationBatchServiceA implements Tasklet {
             "Statements Generated: %d\n" +
             "Total Statement Amount: %s\n",
             totalAccountsProcessed, totalStatementsGenerated, 
-            formatUtil.formatCurrency(totalStatementAmount));
+            FormatUtil.formatCurrency(totalStatementAmount));
         
         textStatementWriter.write(summary);
         
@@ -1121,8 +1127,12 @@ public class StatementGenerationBatchServiceA implements Tasklet {
      * Finalizes processing and updates batch contribution metrics.
      */
     private void finalizeProcessing(StepContribution contribution) {
-        contribution.setReadCount(totalAccountsProcessed);
-        contribution.setWriteCount(totalStatementsGenerated);
+        // StepContribution methods have different signatures
+        // incrementReadCount() takes no arguments, incrementWriteCount() takes a long
+        for (int i = 0; i < totalAccountsProcessed; i++) {
+            contribution.incrementReadCount();
+        }
+        contribution.incrementWriteCount((long) totalStatementsGenerated);
         
         logger.info("Statement generation finalized: {} accounts processed, {} statements generated", 
                    totalAccountsProcessed, totalStatementsGenerated);
