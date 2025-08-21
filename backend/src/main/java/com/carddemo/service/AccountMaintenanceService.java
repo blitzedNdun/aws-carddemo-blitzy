@@ -98,13 +98,7 @@ public class AccountMaintenanceService {
     private TransactionRepository transactionRepository;
     
     @Autowired
-    private CobolDataConverter cobolDataConverter;
-    
-    @Autowired
     private AuditService auditService;
-    
-    @Autowired
-    private DateConversionUtil dateConversionUtil;
 
     /**
      * Identifies dormant accounts based on transaction history and last activity date.
