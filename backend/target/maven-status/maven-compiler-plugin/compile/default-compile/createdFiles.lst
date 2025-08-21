@@ -58,6 +58,7 @@ com/carddemo/batch/FeeAssessmentJobConfig$FeeAssessmentRetryableException.class
 com/carddemo/entity/Notification$NotificationBuilder.class
 com/carddemo/service/ChargebackProcessor$MerchantResponseResult.class
 com/carddemo/dto/AccountUpdateResponse.class
+com/carddemo/service/FileWriterService.class
 com/carddemo/service/AuthorizationEngine$MerchantCategoryLimits.class
 com/carddemo/repository/UserActivityRepository.class
 com/carddemo/config/ExtractJobConfig$2.class
@@ -125,6 +126,7 @@ com/carddemo/dto/ReportRequest.class
 com/carddemo/entity/FeeTransaction$TransactionType.class
 com/carddemo/service/FileService.class
 com/carddemo/service/TransactionValidationService$ValidationResult.class
+com/carddemo/entity/Statement.class
 com/carddemo/service/PaymentService$4.class
 com/carddemo/batch/FeeAssessmentJobConfig$FeeAssessmentException.class
 com/carddemo/service/PaymentService$PaymentProcessingException.class
@@ -322,6 +324,7 @@ com/carddemo/service/PaymentService$PaymentNetworkTimeoutException.class
 com/carddemo/batch/BalanceReconciliationJobConfig.class
 com/carddemo/dto/DisclosureGroupDto.class
 com/carddemo/service/TransactionValidationService.class
+com/carddemo/repository/StatementRepository.class
 com/carddemo/service/ReportingService$TransactionSummary.class
 com/carddemo/dto/Message.class
 com/carddemo/service/CustomerFileProcessorService.class
@@ -408,6 +411,7 @@ com/carddemo/service/ChargebackProcessor$ChargebackValidationException.class
 com/carddemo/security/SecurityConfig.class
 com/carddemo/dto/AuthorizationResponse.class
 com/carddemo/service/CreditBureauService.class
+com/carddemo/service/StatementGenerationService.class
 com/carddemo/util/CobolComparisonUtils$ComparisonResult.class
 com/carddemo/client/EmailClient$BounceEvent.class
 com/carddemo/batch/CustomerMaintenanceJobConfig$PhoneSSNValidationProcessor.class
@@ -546,6 +550,7 @@ com/carddemo/dto/StatementResult$StatementResultBuilder.class
 com/carddemo/batch/ReconciliationJobConfig$DiscrepancyRecord.class
 com/carddemo/config/BatchConfig.class
 com/carddemo/dto/AdminMenuRequest.class
+com/carddemo/entity/Statement$StatementBuilder.class
 com/carddemo/dto/SignOnResponseDto.class
 com/carddemo/entity/Card.class
 com/carddemo/batch/ReconciliationJobConfig$ChargebackTransactionRowMapper.class

@@ -150,6 +150,7 @@
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/entity/Notification.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/entity/Report.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/entity/Settlement.java
+/tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/entity/Statement.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/entity/SystemConfiguration.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/entity/Transaction.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/entity/TransactionCategory.java
@@ -188,6 +189,7 @@
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/repository/NotificationRepository.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/repository/ReportRepository.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/repository/SettlementRepository.java
+/tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/repository/StatementRepository.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/repository/TransactionCategoryBalanceRepository.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/repository/TransactionCategoryRepository.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/repository/TransactionRepository.java
@@ -254,6 +256,7 @@
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/service/FeeCalculationService.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/service/FileGenerationService.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/service/FileService.java
+/tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/service/FileWriterService.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/service/FraudDetectionService.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/service/HealthService.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/service/InterestCalculationService.java
@@ -270,6 +273,7 @@
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/service/SessionService.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/service/SignOffService.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/service/SignOnService.java
+/tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/service/StatementGenerationService.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/service/StorageService.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/service/SubMenuService.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/service/TransactionPostingService.java
