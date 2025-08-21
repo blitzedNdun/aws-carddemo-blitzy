@@ -49,6 +49,7 @@ import java.util.Map;
  * - Maintain transactional integrity for financial data
  */
 @Configuration
+@org.springframework.context.annotation.Profile("!test")
 public class StatementGenerationJobConfigA {
 
     @Autowired
