@@ -137,6 +137,7 @@ com/carddemo/batch/FeeAssessmentJobConfig$FeeAssessmentException.class
 com/carddemo/service/PaymentService$PaymentProcessingException.class
 com/carddemo/converter/BmsMessageConverter.class
 com/carddemo/service/CustomerMaintenanceService$CustomerMaintenanceException.class
+com/carddemo/service/TransactionService.class
 com/carddemo/dto/BatchProcessResult$BatchProcessResultBuilder.class
 com/carddemo/service/FileGenerationService$CsvExportConfig.class
 com/carddemo/dto/SignOnResponse.class
@@ -252,6 +253,7 @@ com/carddemo/service/ChargebackProcessor$ChargebackProcessingException.class
 com/carddemo/security/AuthorizationService.class
 com/carddemo/exception/BatchProcessingException$ErrorType.class
 com/carddemo/entity/AuditLog.class
+com/carddemo/dto/StatementDto$StatementDtoBuilder.class
 com/carddemo/service/ConfigurationService.class
 com/carddemo/client/EmailClient$EmailMessage.class
 com/carddemo/repository/AuditLogRepository.class
@@ -303,6 +305,7 @@ com/carddemo/service/CustomerMaintenanceService$DuplicateCustomerMatch.class
 com/carddemo/client/DataQualityService$PhoneValidationResult.class
 com/carddemo/exception/BusinessRuleException.class
 com/carddemo/dto/AccountViewResponse.class
+com/carddemo/service/StatementService.class
 com/carddemo/service/ReportMenuService.class
 com/carddemo/security/MethodSecurityConfig.class
 com/carddemo/service/PaymentService$PaymentAuthorizationException.class
