@@ -115,6 +115,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @Transactional
+@org.springframework.context.annotation.Profile("!test")
 public class StatementGenerationBatchServiceA implements Tasklet {
 
     private static final Logger logger = LoggerFactory.getLogger(StatementGenerationBatchServiceA.class);
