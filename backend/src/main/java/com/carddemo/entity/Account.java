@@ -152,6 +152,14 @@ public class Account {
     private LocalDate reissueDate;
     
     /**
+     * Last transaction date.
+     * Date of the most recent transaction activity on the account.
+     * Used for dormancy analysis and account maintenance operations.
+     */
+    @Column(name = "last_transaction_date")
+    private LocalDate lastTransactionDate;
+    
+    /**
      * Current cycle credit amount.
      * Maps to ACCT-CURR-CYC-CREDIT field from COBOL copybook (PIC S9(10)V99).
      * Total credits applied to the account in the current billing cycle.
