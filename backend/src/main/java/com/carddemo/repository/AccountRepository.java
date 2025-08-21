@@ -263,4 +263,27 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     // - void delete(Account entity)
     // - void deleteById(Long id)
     // - void deleteAll(Iterable<? extends Account> entities)
+
+    /**
+     * Finds accounts by active status (account status).
+     * 
+     * Supports account maintenance operations by retrieving accounts with
+     * specific status values (ACTIVE, DORMANT, CLOSED, SUSPENDED).
+     * Maps to activeStatus field in the Account entity.
+     * 
+     * @param activeStatus the account active status to filter by
+     * @return List of Account entities with the specified status
+     */
+    List<Account> findByActiveStatus(String activeStatus);
+
+    /**
+     * Finds accounts with last transaction date before a specific cutoff date.
+     * 
+     * Used for dormancy identification and account maintenance operations.
+     * Retrieves accounts that have not had transaction activity since the specified date.
+     * 
+     * @param cutoffDate the cutoff date for last transaction activity
+     * @return List of Account entities with last transaction before the cutoff date
+     */
+    List<Account> findByLastTransactionDateBefore(LocalDate cutoffDate);
 }
