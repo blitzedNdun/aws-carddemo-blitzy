@@ -2,6 +2,12 @@ package com.carddemo.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,6 +41,7 @@ import java.time.LocalDateTime;
     @Index(name = "idx_dispute_created_date", columnList = "created_date"),
     @Index(name = "idx_dispute_type", columnList = "dispute_type")
 })
+@Builder
 public class Dispute {
 
     /**
@@ -148,31 +155,127 @@ public class Dispute {
     private String description;
 
     /**
-     * Default constructor required by JPA specification for entity instantiation
-     * during database operations and object-relational mapping.
+     * The disputed amount that the customer is claiming.
+     * This amount may differ from the original transaction amount in cases
+     * of partial disputes or incorrect charging amounts.
+     */
+    @Column(name = "dispute_amount", precision = 12, scale = 2)
+    @DecimalMin(value = "0.00", message = "Dispute amount must be non-negative")
+    @Digits(integer = 10, fraction = 2, message = "Dispute amount must have at most 2 decimal places")
+    private BigDecimal disputeAmount;
+
+    /**
+     * Flag indicating whether provisional credit is eligible for this dispute.
+     * Based on dispute type, amount, and regulatory requirements.
+     */
+    @Column(name = "provisional_credit_eligible")
+    private Boolean provisionalCreditEligible;
+
+    /**
+     * Flag indicating whether provisional credit has been issued for this dispute.
+     */
+    @Column(name = "provisional_credit_issued")
+    private Boolean provisionalCreditIssued;
+
+    /**
+     * Date when provisional credit was issued to the customer account.
+     */
+    @Column(name = "provisional_credit_date")
+    private LocalDateTime provisionalCreditDate;
+
+    /**
+     * Transaction ID for the provisional credit transaction.
+     */
+    @Column(name = "provisional_txn_id", length = 50)
+    @Size(max = 50, message = "Provisional transaction ID cannot exceed 50 characters")
+    private String provisionalTxnId;
+
+    /**
+     * Flag indicating whether a chargeback has been initiated for this dispute.
+     */
+    @Column(name = "chargeback_initiated")
+    private Boolean chargebackInitiated;
+
+    /**
+     * Chargeback case ID assigned when chargeback is initiated with payment network.
+     */
+    @Column(name = "chargeback_case_id", length = 50)
+    @Size(max = 50, message = "Chargeback case ID cannot exceed 50 characters")
+    private String chargebackCaseId;
+
+    /**
+     * Date when chargeback was initiated with the payment network.
+     */
+    @Column(name = "chargeback_date")
+    private LocalDateTime chargebackDate;
+
+    /**
+     * Flag indicating whether a merchant response has been received.
+     */
+    @Column(name = "merchant_response_received")
+    private Boolean merchantResponseReceived;
+
+    /**
+     * Date when merchant response was received.
+     */
+    @Column(name = "merchant_response_date")
+    private LocalDateTime merchantResponseDate;
+
+    /**
+     * Type of response received from the merchant (ACCEPT, REJECT, PARTIAL, etc.).
+     */
+    @Column(name = "merchant_response_type", length = 20)
+    @Size(max = 20, message = "Merchant response type cannot exceed 20 characters")
+    private String merchantResponseType;
+
+    /**
+     * Last date/time when the dispute record was updated.
+     * Used for tracking changes and audit trail.
+     */
+    @Column(name = "last_updated_date")
+    private LocalDateTime lastUpdatedDate;
+
+
+
+    /**
+     * Default constructor required by JPA and Lombok Builder.
      */
     public Dispute() {
         // JPA requires default constructor
     }
 
     /**
-     * Constructor for creating new dispute cases with essential information.
-     * Initializes core dispute fields and sets creation timestamp.
-     * 
-     * @param transactionId The ID of the transaction being disputed
-     * @param accountId The account ID associated with the dispute
-     * @param disputeType The type/category of the dispute
-     * @param status The initial status of the dispute
-     * @param description Detailed description of the dispute
+     * All-args constructor required by Lombok Builder.
      */
-    public Dispute(Long transactionId, Long accountId, String disputeType, String status, String description) {
+    public Dispute(Long disputeId, Long transactionId, Long accountId, String disputeType,
+                  String status, LocalDate createdDate, LocalDate resolutionDate,
+                  BigDecimal provisionalCreditAmount, String reasonCode, String description,
+                  BigDecimal disputeAmount, Boolean provisionalCreditEligible, Boolean provisionalCreditIssued,
+                  LocalDateTime provisionalCreditDate, String provisionalTxnId, Boolean chargebackInitiated,
+                  String chargebackCaseId, LocalDateTime chargebackDate, Boolean merchantResponseReceived,
+                  LocalDateTime merchantResponseDate, String merchantResponseType, LocalDateTime lastUpdatedDate) {
+        this.disputeId = disputeId;
         this.transactionId = transactionId;
         this.accountId = accountId;
         this.disputeType = disputeType;
         this.status = status;
+        this.createdDate = createdDate;
+        this.resolutionDate = resolutionDate;
+        this.provisionalCreditAmount = provisionalCreditAmount;
+        this.reasonCode = reasonCode;
         this.description = description;
-        this.createdDate = LocalDate.now();
-        this.provisionalCreditAmount = BigDecimal.ZERO;
+        this.disputeAmount = disputeAmount;
+        this.provisionalCreditEligible = provisionalCreditEligible;
+        this.provisionalCreditIssued = provisionalCreditIssued;
+        this.provisionalCreditDate = provisionalCreditDate;
+        this.provisionalTxnId = provisionalTxnId;
+        this.chargebackInitiated = chargebackInitiated;
+        this.chargebackCaseId = chargebackCaseId;
+        this.chargebackDate = chargebackDate;
+        this.merchantResponseReceived = merchantResponseReceived;
+        this.merchantResponseDate = merchantResponseDate;
+        this.merchantResponseType = merchantResponseType;
+        this.lastUpdatedDate = lastUpdatedDate;
     }
 
     /**
@@ -353,6 +456,222 @@ public class Dispute {
      */
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    /**
+     * Gets the disputed amount.
+     * 
+     * @return The dispute amount as a BigDecimal
+     */
+    public BigDecimal getDisputeAmount() {
+        return disputeAmount;
+    }
+
+    /**
+     * Sets the disputed amount.
+     * 
+     * @param disputeAmount The dispute amount to set
+     */
+    public void setDisputeAmount(BigDecimal disputeAmount) {
+        this.disputeAmount = disputeAmount;
+    }
+
+    /**
+     * Gets whether provisional credit is eligible for this dispute.
+     * 
+     * @return Boolean indicating provisional credit eligibility
+     */
+    public Boolean getProvisionalCreditEligible() {
+        return provisionalCreditEligible;
+    }
+
+    /**
+     * Sets whether provisional credit is eligible for this dispute.
+     * 
+     * @param provisionalCreditEligible The eligibility flag to set
+     */
+    public void setProvisionalCreditEligible(Boolean provisionalCreditEligible) {
+        this.provisionalCreditEligible = provisionalCreditEligible;
+    }
+
+    /**
+     * Gets whether provisional credit has been issued.
+     * 
+     * @return Boolean indicating if provisional credit was issued
+     */
+    public Boolean getProvisionalCreditIssued() {
+        return provisionalCreditIssued;
+    }
+
+    /**
+     * Sets whether provisional credit has been issued.
+     * 
+     * @param provisionalCreditIssued The issued flag to set
+     */
+    public void setProvisionalCreditIssued(Boolean provisionalCreditIssued) {
+        this.provisionalCreditIssued = provisionalCreditIssued;
+    }
+
+    /**
+     * Gets the date when provisional credit was issued.
+     * 
+     * @return The provisional credit date as LocalDateTime
+     */
+    public LocalDateTime getProvisionalCreditDate() {
+        return provisionalCreditDate;
+    }
+
+    /**
+     * Sets the date when provisional credit was issued.
+     * 
+     * @param provisionalCreditDate The provisional credit date to set
+     */
+    public void setProvisionalCreditDate(LocalDateTime provisionalCreditDate) {
+        this.provisionalCreditDate = provisionalCreditDate;
+    }
+
+    /**
+     * Gets the provisional credit transaction ID.
+     * 
+     * @return The provisional transaction ID as String
+     */
+    public String getProvisionalTxnId() {
+        return provisionalTxnId;
+    }
+
+    /**
+     * Sets the provisional credit transaction ID.
+     * 
+     * @param provisionalTxnId The provisional transaction ID to set
+     */
+    public void setProvisionalTxnId(String provisionalTxnId) {
+        this.provisionalTxnId = provisionalTxnId;
+    }
+
+    /**
+     * Gets whether a chargeback has been initiated.
+     * 
+     * @return Boolean indicating if chargeback was initiated
+     */
+    public Boolean getChargebackInitiated() {
+        return chargebackInitiated;
+    }
+
+    /**
+     * Sets whether a chargeback has been initiated.
+     * 
+     * @param chargebackInitiated The chargeback initiated flag to set
+     */
+    public void setChargebackInitiated(Boolean chargebackInitiated) {
+        this.chargebackInitiated = chargebackInitiated;
+    }
+
+    /**
+     * Gets the chargeback case ID.
+     * 
+     * @return The chargeback case ID as String
+     */
+    public String getChargebackCaseId() {
+        return chargebackCaseId;
+    }
+
+    /**
+     * Sets the chargeback case ID.
+     * 
+     * @param chargebackCaseId The chargeback case ID to set
+     */
+    public void setChargebackCaseId(String chargebackCaseId) {
+        this.chargebackCaseId = chargebackCaseId;
+    }
+
+    /**
+     * Gets the date when chargeback was initiated.
+     * 
+     * @return The chargeback date as LocalDateTime
+     */
+    public LocalDateTime getChargebackDate() {
+        return chargebackDate;
+    }
+
+    /**
+     * Sets the date when chargeback was initiated.
+     * 
+     * @param chargebackDate The chargeback date to set
+     */
+    public void setChargebackDate(LocalDateTime chargebackDate) {
+        this.chargebackDate = chargebackDate;
+    }
+
+    /**
+     * Gets whether a merchant response has been received.
+     * 
+     * @return Boolean indicating if merchant response was received
+     */
+    public Boolean getMerchantResponseReceived() {
+        return merchantResponseReceived;
+    }
+
+    /**
+     * Sets whether a merchant response has been received.
+     * 
+     * @param merchantResponseReceived The merchant response received flag to set
+     */
+    public void setMerchantResponseReceived(Boolean merchantResponseReceived) {
+        this.merchantResponseReceived = merchantResponseReceived;
+    }
+
+    /**
+     * Gets the date when merchant response was received.
+     * 
+     * @return The merchant response date as LocalDateTime
+     */
+    public LocalDateTime getMerchantResponseDate() {
+        return merchantResponseDate;
+    }
+
+    /**
+     * Sets the date when merchant response was received.
+     * 
+     * @param merchantResponseDate The merchant response date to set
+     */
+    public void setMerchantResponseDate(LocalDateTime merchantResponseDate) {
+        this.merchantResponseDate = merchantResponseDate;
+    }
+
+    /**
+     * Gets the type of merchant response.
+     * 
+     * @return The merchant response type as String
+     */
+    public String getMerchantResponseType() {
+        return merchantResponseType;
+    }
+
+    /**
+     * Sets the type of merchant response.
+     * 
+     * @param merchantResponseType The merchant response type to set
+     */
+    public void setMerchantResponseType(String merchantResponseType) {
+        this.merchantResponseType = merchantResponseType;
+    }
+
+    /**
+     * Gets the last updated date for this dispute.
+     * 
+     * @return The last updated date as LocalDateTime
+     */
+    public LocalDateTime getLastUpdatedDate() {
+        return lastUpdatedDate;
+    }
+
+    /**
+     * Sets the last updated date for this dispute.
+     * 
+     * @param lastUpdatedDate The last updated date to set
+     */
+    public void setLastUpdatedDate(LocalDateTime lastUpdatedDate) {
+        this.lastUpdatedDate = lastUpdatedDate;
     }
 
     /**
