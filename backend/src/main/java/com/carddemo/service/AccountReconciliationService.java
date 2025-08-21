@@ -110,9 +110,6 @@ public class AccountReconciliationService {
     private TransactionRepository transactionRepository;
     
     @Autowired
-    private CobolDataConverter cobolDataConverter;
-    
-    @Autowired
     private AuditService auditService;
 
     /**
@@ -151,7 +148,7 @@ public class AccountReconciliationService {
                 .orElseThrow(() -> new RuntimeException("Account not found with ID: " + accountId));
             
             // Get current balance with COBOL precision preservation
-            BigDecimal currentBalance = cobolDataConverter.preservePrecision(account.getCurrentBalance(), CURRENCY_SCALE)
+            BigDecimal currentBalance = CobolDataConverter.preservePrecision(account.getCurrentBalance(), CURRENCY_SCALE)
                 .setScale(CURRENCY_SCALE, CURRENCY_ROUNDING_MODE);
             
             // Calculate transaction sum for the account
@@ -628,7 +625,7 @@ public class AccountReconciliationService {
                 .orElseThrow(() -> new RuntimeException("Account not found with ID: " + accountId));
             
             // Get current balance with COBOL precision preservation
-            BigDecimal currentBalance = cobolDataConverter.preservePrecision(account.getCurrentBalance(), CURRENCY_SCALE)
+            BigDecimal currentBalance = CobolDataConverter.preservePrecision(account.getCurrentBalance(), CURRENCY_SCALE)
                 .setScale(CURRENCY_SCALE, CURRENCY_ROUNDING_MODE);
             
             // Calculate expected balance from transaction totals
@@ -640,7 +637,7 @@ public class AccountReconciliationService {
             boolean isValid = true;
             
             // 1. Balance range validation
-            BigDecimal creditLimit = cobolDataConverter.preservePrecision(account.getCreditLimit(), CURRENCY_SCALE)
+            BigDecimal creditLimit = CobolDataConverter.preservePrecision(account.getCreditLimit(), CURRENCY_SCALE)
                 .setScale(CURRENCY_SCALE, CURRENCY_ROUNDING_MODE);
             
             if (currentBalance.compareTo(creditLimit.negate()) < 0) {
@@ -765,7 +762,7 @@ public class AccountReconciliationService {
             
             // Process each transaction with precision preservation
             for (Transaction transaction : transactions) {
-                BigDecimal transactionAmount = cobolDataConverter.preservePrecision(transaction.getAmount(), CURRENCY_SCALE)
+                BigDecimal transactionAmount = CobolDataConverter.preservePrecision(transaction.getAmount(), CURRENCY_SCALE)
                     .setScale(CURRENCY_SCALE, CURRENCY_ROUNDING_MODE);
                 
                 // Add to total amount
