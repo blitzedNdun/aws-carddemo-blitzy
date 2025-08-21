@@ -15,6 +15,7 @@ com/carddemo/dto/UserAddResponse.class
 com/carddemo/client/EmailClient.class
 com/carddemo/service/TransactionPostingService$TransactionCategoryBalanceRecord.class
 com/carddemo/service/AccountClosureBatchService$ProcessingResult.class
+com/carddemo/service/AdminReportService$1.class
 com/carddemo/dto/AccountUpdateRequest.class
 com/carddemo/service/TransactionPostingService$ProcessingResult.class
 com/carddemo/dto/TransactionRequest.class
@@ -40,6 +41,7 @@ com/carddemo/service/FeeAssessmentBatchService.class
 com/carddemo/service/AccountStatementsService.class
 com/carddemo/dto/AdminReportResponse$PaginationInfo.class
 com/carddemo/service/TransactionReportService$TransactionTypeData.class
+com/carddemo/service/AdminReportService.class
 com/carddemo/service/BillingService.class
 com/carddemo/batch/ReconciliationJobConfig$3.class
 com/carddemo/service/StorageService$StorageMetadata.class
