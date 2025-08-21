@@ -137,8 +137,18 @@ public class TransactionDetailService {
             return transactionDetail;
             
         } catch (RuntimeException e) {
-            log.error("Runtime error during transaction detail retrieval for ID {}: {}", transactionId, e.getMessage());
-            throw e;
+            // Check if this is one of our expected business logic exceptions
+            String message = e.getMessage();
+            if (message != null && (message.equals("Transaction ID NOT found...") || 
+                                   message.equals("Tran ID can NOT be empty..."))) {
+                // Re-throw our business logic exceptions as-is
+                log.error("Business logic error during transaction detail retrieval for ID {}: {}", transactionId, e.getMessage());
+                throw e;
+            } else {
+                // Convert unexpected runtime exceptions to generic error message
+                log.error("Unexpected runtime error during transaction detail retrieval for ID {}: {}", transactionId, e.getMessage(), e);
+                throw new RuntimeException("Unable to lookup Transaction...");
+            }
         } catch (Exception e) {
             log.error("Unexpected error during transaction detail retrieval for ID {}: {}", transactionId, e.getMessage(), e);
             throw new RuntimeException("Unable to lookup Transaction...");
