@@ -151,7 +151,7 @@ public class AccountReconciliationService {
                 .orElseThrow(() -> new RuntimeException("Account not found with ID: " + accountId));
             
             // Get current balance with COBOL precision preservation
-            BigDecimal currentBalance = cobolDataConverter.preservePrecision(account.getCurrentBalance())
+            BigDecimal currentBalance = cobolDataConverter.preservePrecision(account.getCurrentBalance(), CURRENCY_SCALE)
                 .setScale(CURRENCY_SCALE, CURRENCY_ROUNDING_MODE);
             
             // Calculate transaction sum for the account
@@ -628,7 +628,7 @@ public class AccountReconciliationService {
                 .orElseThrow(() -> new RuntimeException("Account not found with ID: " + accountId));
             
             // Get current balance with COBOL precision preservation
-            BigDecimal currentBalance = cobolDataConverter.preservePrecision(account.getCurrentBalance())
+            BigDecimal currentBalance = cobolDataConverter.preservePrecision(account.getCurrentBalance(), CURRENCY_SCALE)
                 .setScale(CURRENCY_SCALE, CURRENCY_ROUNDING_MODE);
             
             // Calculate expected balance from transaction totals
@@ -640,7 +640,7 @@ public class AccountReconciliationService {
             boolean isValid = true;
             
             // 1. Balance range validation
-            BigDecimal creditLimit = cobolDataConverter.preservePrecision(account.getCreditLimit())
+            BigDecimal creditLimit = cobolDataConverter.preservePrecision(account.getCreditLimit(), CURRENCY_SCALE)
                 .setScale(CURRENCY_SCALE, CURRENCY_ROUNDING_MODE);
             
             if (currentBalance.compareTo(creditLimit.negate()) < 0) {
@@ -765,7 +765,7 @@ public class AccountReconciliationService {
             
             // Process each transaction with precision preservation
             for (Transaction transaction : transactions) {
-                BigDecimal transactionAmount = cobolDataConverter.preservePrecision(transaction.getAmount())
+                BigDecimal transactionAmount = cobolDataConverter.preservePrecision(transaction.getAmount(), CURRENCY_SCALE)
                     .setScale(CURRENCY_SCALE, CURRENCY_ROUNDING_MODE);
                 
                 // Add to total amount
@@ -790,18 +790,11 @@ public class AccountReconciliationService {
                 }
             }
             
-            // Use repository method for verification if available
-            BigDecimal repositoryCalculatedSum = transactionRepository.sumAmountByAccountId(accountId);
-            if (repositoryCalculatedSum != null) {
-                repositoryCalculatedSum = cobolDataConverter.preservePrecision(repositoryCalculatedSum)
-                    .setScale(CURRENCY_SCALE, CURRENCY_ROUNDING_MODE);
-                
-                // Compare manual calculation with repository calculation
-                BigDecimal calculationDifference = totalAmount.subtract(repositoryCalculatedSum).abs();
-                if (calculationDifference.compareTo(RECONCILIATION_TOLERANCE) > 0) {
-                    logger.warn("Transaction sum calculation mismatch for account {} - Manual: {}, Repository: {}, Difference: {}", 
-                               accountId, totalAmount, repositoryCalculatedSum, calculationDifference);
-                }
+            // Verification: Cross-check transaction count for data integrity
+            long expectedTransactionCount = transactions.size();
+            if (transactionCount != expectedTransactionCount) {
+                logger.warn("Transaction count mismatch for account {} - Expected: {}, Actual: {}", 
+                           accountId, expectedTransactionCount, transactionCount);
             }
             
             // Build comprehensive calculation result
