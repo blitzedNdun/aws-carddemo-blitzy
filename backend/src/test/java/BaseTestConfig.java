@@ -5,6 +5,7 @@
 
 package com.carddemo.test;
 
+import com.carddemo.batch.TestReconciliationJobConfig;
 import com.carddemo.config.DatabaseConfig;
 
 import org.springframework.boot.test.context.TestConfiguration;
@@ -81,7 +82,7 @@ import org.slf4j.LoggerFactory;
  * @see Section 6.6 TESTING STRATEGY
  */
 @TestConfiguration
-@Import(DatabaseConfig.class)
+@Import({DatabaseConfig.class, TestReconciliationJobConfig.class})
 @TestPropertySource(locations = "classpath:application-test.yml")
 @ExtendWith(SpringExtension.class)
 public class BaseTestConfig {

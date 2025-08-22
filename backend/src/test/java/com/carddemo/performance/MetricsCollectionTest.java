@@ -1,5 +1,6 @@
 package com.carddemo.performance;
 
+import com.carddemo.batch.TestReconciliationJobConfig;
 import com.carddemo.config.MetricsConfig;
 import com.carddemo.config.TestDatabaseConfig;
 import com.carddemo.config.TestRedisConfig;
@@ -68,7 +69,7 @@ import java.util.regex.Pattern;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test") 
 @Tag("performance")
-@Import({TestDatabaseConfig.class, TestRedisConfig.class})
+@Import({TestDatabaseConfig.class, TestRedisConfig.class, TestReconciliationJobConfig.class})
 public class MetricsCollectionTest implements PerformanceTest {
 
     @Autowired

@@ -5,6 +5,7 @@
 
 // No package declaration - this class is in the root test directory
 
+import com.carddemo.batch.TestReconciliationJobConfig;
 import com.carddemo.config.DatabaseConfig;
 import com.carddemo.config.RedisConfig;
 import com.carddemo.util.CobolDataConverter;
@@ -116,7 +117,7 @@ import org.slf4j.LoggerFactory;
 @Rollback
 @TestPropertySource(locations = "classpath:application-test.properties")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({DatabaseConfig.class, RedisConfig.class})
+@Import({DatabaseConfig.class, RedisConfig.class, TestReconciliationJobConfig.class})
 public abstract class BaseIntegrationTest {
 
     private static final Logger logger = LoggerFactory.getLogger(BaseIntegrationTest.class);

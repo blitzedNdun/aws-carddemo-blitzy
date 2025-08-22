@@ -13,6 +13,7 @@ import com.carddemo.entity.AuditLog;
 import com.carddemo.repository.UserSecurityRepository;
 import com.carddemo.service.AuditService;
 import com.carddemo.service.AdminFunctionsService;
+import com.carddemo.batch.TestReconciliationJobConfig;
 import com.carddemo.config.TestDatabaseConfig;
 import com.carddemo.config.TestRedisConfig;
 
@@ -72,7 +73,7 @@ import java.time.LocalDateTime;
 @SpringBootTest
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.properties")
-@Import({TestDatabaseConfig.class, TestRedisConfig.class})
+@Import({TestDatabaseConfig.class, TestRedisConfig.class, TestReconciliationJobConfig.class})
 public class AdminFunctionsServiceTest {
 
     // Service under test - will be injected with mocked dependencies
