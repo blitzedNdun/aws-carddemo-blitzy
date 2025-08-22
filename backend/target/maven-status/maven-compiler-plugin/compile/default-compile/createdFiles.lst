@@ -25,6 +25,7 @@ com/carddemo/service/TransactionDetailService.class
 com/carddemo/repository/NotificationRepository.class
 com/carddemo/batch/StatementGenerationJobConfigA$TransactionData.class
 com/carddemo/controller/DailyTransactionController.class
+com/carddemo/security/PlainTextPasswordEncoder.class
 com/carddemo/service/CustomerMaintenanceService$PhoneFormattingResult.class
 com/carddemo/security/SecurityAuditService.class
 com/carddemo/batch/BalanceReconciliationJobConfig$1.class
@@ -329,6 +330,7 @@ com/carddemo/dto/CreditCardUpdateRequest$CreditCardUpdateRequestBuilder.class
 com/carddemo/dto/CreditCardDto.class
 com/carddemo/dto/BillDto$PaymentAllocation.class
 com/carddemo/batch/ReconciliationJobConfig$2.class
+com/carddemo/util/TransactionIdGenerator.class
 com/carddemo/security/SessionConfig$SessionEventListener.class
 com/carddemo/batch/AccountClosureJobConfig.class
 com/carddemo/batch/ReconciliationJobConfig.class
@@ -534,6 +536,7 @@ com/carddemo/service/EncryptionService.class
 com/carddemo/dto/ReportMenuResponse$SystemInfo.class
 com/carddemo/service/CustomerMaintenanceService$CustomerProcessingResult.class
 com/carddemo/service/FileGenerationService$RecordLayoutConfig.class
+com/carddemo/security/AuthenticationService.class
 com/carddemo/service/TransactionReportService$TransactionCategoryData.class
 com/carddemo/entity/User.class
 com/carddemo/repository/ArchiveStatistics.class
