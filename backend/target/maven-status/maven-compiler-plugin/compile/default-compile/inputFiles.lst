@@ -210,6 +210,7 @@
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/security/JwtAuthenticationFilter.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/security/JwtRequestFilter.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/security/JwtTokenService.java
+/tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/security/LegacyPasswordEncoder.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/security/MethodSecurityConfig.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/security/PasswordGenerator.java
 /tmp/blitzy/aws-carddemo-blitzy/blitzy5ae377bd3/backend/src/main/java/com/carddemo/security/PasswordPolicyValidator.java

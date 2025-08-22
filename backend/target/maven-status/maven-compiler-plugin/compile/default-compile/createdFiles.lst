@@ -151,6 +151,7 @@ com/carddemo/repository/DisclosureGroupRepository.class
 com/carddemo/util/Constants.class
 com/carddemo/config/ApplicationConfig$CardDemoProperties.class
 com/carddemo/entity/TransactionCategoryBalance$TransactionCategoryBalanceKey.class
+com/carddemo/security/LegacyPasswordEncoder.class
 com/carddemo/dto/MainMenuResponse.class
 com/carddemo/entity/Notification.class
 com/carddemo/repository/ReportRepository.class
