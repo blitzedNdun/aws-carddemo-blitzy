@@ -236,7 +236,7 @@ public class TransactionTest extends AbstractBaseTest implements UnitTest {
         String testDescription = "A".repeat(100);
         transaction.setDescription(testDescription);
         
-        assertThat(transaction.getDescription()).hasSize(Constants.DESCRIPTION_LENGTH);
+        assertThat(transaction.getDescription()).hasSize(Constants.TRANSACTION_DESCRIPTION_LENGTH);
         
         // Test constraint validation
         Set<ConstraintViolation<Transaction>> violations = validator.validate(transaction);

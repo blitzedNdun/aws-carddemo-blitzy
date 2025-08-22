@@ -135,10 +135,16 @@ public final class Constants {
     public static final int MERCHANT_NAME_LENGTH = 30;
 
     /**
-     * Maximum length for transaction type description fields.
-     * Maps to COBOL PIC X(60) specification from COTRN02 BMS map.
+     * Maximum length for transaction category type description fields.
+     * Maps to COBOL PIC X(50) specification from CVTRA04Y copybook TRAN-CAT-TYPE-DESC.
      */
-    public static final int DESCRIPTION_LENGTH = 100;
+    public static final int DESCRIPTION_LENGTH = 50;
+
+    /**
+     * Maximum length for transaction description fields.
+     * Maps to COBOL PIC X(100) specification for TRAN-DESC field.
+     */
+    public static final int TRANSACTION_DESCRIPTION_LENGTH = 100;
 
     /**
      * Maximum number of users displayed per page in list views.

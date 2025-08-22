@@ -52,9 +52,13 @@ public class TransactionCategoryTest {
     @ParameterizedTest
     @ValueSource(strings = {"01", "02", "03", "04", "05", "PU", "PA", "CA", "CR"})
     public void testTransactionTypeCodeValidation_ValidCodes(String typeCode) {
-        // Test valid 2-character type codes
+        // Test valid 2-character type codes (can be numeric or alphanumeric)
         assertThat(typeCode).hasSize(Constants.TYPE_CODE_LENGTH);
-        assertThat(ValidationUtil.validateNumericField(typeCode, Constants.TYPE_CODE_LENGTH)).isTrue();
+        
+        // TRAN-TYPE-CD PIC X(02) allows alphanumeric characters, not just numeric
+        boolean isValidLength = typeCode.length() == Constants.TYPE_CODE_LENGTH;
+        boolean isNotBlank = !typeCode.trim().isEmpty();
+        assertThat(isValidLength && isNotBlank).isTrue();
     }
 
     /**
