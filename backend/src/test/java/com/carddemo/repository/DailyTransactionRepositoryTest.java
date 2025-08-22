@@ -29,12 +29,15 @@ import static org.assertj.core.api.Assertions.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Comprehensive integration test class for DailyTransactionRepository validating batch processing operations,
@@ -140,7 +143,7 @@ public class DailyTransactionRepositoryTest extends AbstractBaseTest {
     @DisplayName("Bulk Insert Operations - Daily Batch Load Validation")
     public void testBulkInsertOperations_DailyBatchLoad() {
         // Given: Generate bulk test data matching COBOL DALYTRAN-RECORD structure
-        List<DailyTransaction> transactions = testDataGenerator.generateDailyTransactionBatch(BULK_INSERT_SIZE);
+        List<DailyTransaction> transactions = generateDailyTransactionBatch(BULK_INSERT_SIZE);
         
         // When: Perform bulk insert operation
         long startTime = System.currentTimeMillis();
@@ -156,8 +159,8 @@ public class DailyTransactionRepositoryTest extends AbstractBaseTest {
         // Verify all records have valid IDs assigned
         savedTransactions.forEach(transaction -> {
             assertThat(transaction.getTransactionId()).isNotNull();
-            assertThat(transaction.getAmount()).isNotNull();
-            assertThat(transaction.getTransactionType()).isNotNull();
+            assertThat(transaction.getTransactionAmount()).isNotNull();
+            assertThat(transaction.getTransactionTypeCode()).isNotNull();
         });
     }
 
@@ -169,7 +172,7 @@ public class DailyTransactionRepositoryTest extends AbstractBaseTest {
     @DisplayName("Save All Method - Transaction Batch Processing")
     public void testSaveAllMethod_TransactionBatchProcessing() {
         // Given: Create transaction batch with mixed processing status
-        List<DailyTransaction> batch = testDataGenerator.generateDailyTransactionBatch(100);
+        List<DailyTransaction> batch = generateDailyTransactionBatch(100);
         batch.forEach(tx -> tx.setProcessingStatus("PENDING"));
         
         // When: Save batch and verify transaction boundaries
@@ -207,7 +210,7 @@ public class DailyTransactionRepositoryTest extends AbstractBaseTest {
         
         // Calculate expected aggregations
         BigDecimal expectedSum = transactions.stream()
-                .map(DailyTransaction::getAmount)
+                .map(DailyTransaction::getTransactionAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         int expectedCount = transactions.size();
         BigDecimal expectedAvg = expectedSum.divide(BigDecimal.valueOf(expectedCount), 2, BigDecimal.ROUND_HALF_UP);
@@ -217,7 +220,7 @@ public class DailyTransactionRepositoryTest extends AbstractBaseTest {
                 .findByTransactionDateBetween(testDate, testDate);
         
         BigDecimal actualSum = dateTransactions.stream()
-                .map(DailyTransaction::getAmount)
+                .map(DailyTransaction::getTransactionAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         
         // Then: Validate aggregation results with COBOL precision
@@ -255,8 +258,8 @@ public class DailyTransactionRepositoryTest extends AbstractBaseTest {
         assertThat(result).hasSize(25);
         result.forEach(tx -> {
             assertThat(tx.getTransactionDate()).isEqualTo(reportDate);
-            assertThat(tx.getAmount()).isNotNull();
-            assertThat(tx.getTransactionType()).isNotNull();
+            assertThat(tx.getTransactionAmount()).isNotNull();
+            assertThat(tx.getTransactionTypeCode()).isNotNull();
         });
         
         // Verify excluded date transactions not included
@@ -330,7 +333,7 @@ public class DailyTransactionRepositoryTest extends AbstractBaseTest {
         // Mark archival transactions as completed
         archivalTransactions.forEach(tx -> {
             tx.setProcessingStatus("COMPLETED");
-            tx.setProcessedTimestamp(LocalDateTime.now().minusDays(90));
+            tx.setProcessingTimestamp(LocalDateTime.now().minusDays(90));
         });
         
         dailyTransactionRepository.saveAll(recentTransactions);
@@ -385,13 +388,13 @@ public class DailyTransactionRepositoryTest extends AbstractBaseTest {
         
         // Group by transaction type and validate counts
         long purchaseCount = allDayTransactions.stream()
-                .filter(tx -> "PURCHASE".equals(tx.getTransactionType()))
+                .filter(tx -> "PURCHASE".equals(tx.getTransactionTypeCode()))
                 .count();
         long paymentCount = allDayTransactions.stream()
-                .filter(tx -> "PAYMENT".equals(tx.getTransactionType()))
+                .filter(tx -> "PAYMENT".equals(tx.getTransactionTypeCode()))
                 .count();
         long refundCount = allDayTransactions.stream()
-                .filter(tx -> "REFUND".equals(tx.getTransactionType()))
+                .filter(tx -> "REFUND".equals(tx.getTransactionTypeCode()))
                 .count();
         
         assertThat(purchaseCount).isEqualTo(15);
@@ -408,9 +411,9 @@ public class DailyTransactionRepositoryTest extends AbstractBaseTest {
     public void testMerchantTotalsAggregation_MerchantAnalysis() {
         // Given: Create transactions for different merchants
         LocalDate analysisDate = LocalDate.now().minusDays(1);
-        String merchant1 = testDataGenerator.generateMerchantId();
-        String merchant2 = testDataGenerator.generateMerchantId();
-        String merchant3 = testDataGenerator.generateMerchantId();
+        Long merchant1 = testDataGenerator.generateMerchantId();
+        Long merchant2 = testDataGenerator.generateMerchantId();
+        Long merchant3 = testDataGenerator.generateMerchantId();
         
         List<DailyTransaction> merchant1Tx = createMerchantTransactions(analysisDate, merchant1, 10);
         List<DailyTransaction> merchant2Tx = createMerchantTransactions(analysisDate, merchant2, 15);
@@ -456,8 +459,8 @@ public class DailyTransactionRepositoryTest extends AbstractBaseTest {
     @DisplayName("Checkpoint and Restart Capabilities - Batch Job Recovery")
     public void testCheckpointAndRestartCapabilities_BatchJobRecovery() {
         // Given: Create partial batch processing scenario
-        List<DailyTransaction> batch1 = testDataGenerator.generateDailyTransactionBatch(50);
-        List<DailyTransaction> batch2 = testDataGenerator.generateDailyTransactionBatch(50);
+        List<DailyTransaction> batch1 = generateDailyTransactionBatch(50);
+        List<DailyTransaction> batch2 = generateDailyTransactionBatch(50);
         
         // Mark batch1 as processed, batch2 as pending (simulating restart scenario)
         batch1.forEach(tx -> tx.setProcessingStatus("COMPLETED"));
@@ -507,7 +510,7 @@ public class DailyTransactionRepositoryTest extends AbstractBaseTest {
         for (int i = 0; i < 4; i++) {
             final int batchId = i;
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                List<DailyTransaction> batch = testDataGenerator.generateDailyTransactionBatch(25);
+                List<DailyTransaction> batch = generateDailyTransactionBatch(25);
                 batch.forEach(tx -> tx.setCategoryCode("BATCH_" + batchId));
                 dailyTransactionRepository.saveAll(batch);
             }, executor);
@@ -524,8 +527,11 @@ public class DailyTransactionRepositoryTest extends AbstractBaseTest {
         
         // Verify data integrity across concurrent batches
         for (int i = 0; i < 4; i++) {
-            List<DailyTransaction> batchTransactions = dailyTransactionRepository
-                    .findByCategoryCode("BATCH_" + i);
+            final int batchId = i; // Make it effectively final for lambda
+            List<DailyTransaction> batchTransactions = dailyTransactionRepository.findAll()
+                    .stream()
+                    .filter(tx -> ("BATCH_" + batchId).equals(tx.getCategoryCode()))
+                    .collect(java.util.stream.Collectors.toList());
             assertThat(batchTransactions).hasSize(25);
         }
         
@@ -545,7 +551,7 @@ public class DailyTransactionRepositoryTest extends AbstractBaseTest {
     @DisplayName("Memory-Optimized Streaming Queries - Large Dataset Processing")
     public void testMemoryOptimizedStreamingQueries_LargeDatasetProcessing() {
         // Given: Create large dataset for streaming test
-        List<DailyTransaction> largeDataset = testDataGenerator.generateDailyTransactionBatch(LARGE_DATASET_SIZE);
+        List<DailyTransaction> largeDataset = generateDailyTransactionBatch(LARGE_DATASET_SIZE);
         
         // When: Process large dataset with memory constraints
         long startTime = System.currentTimeMillis();
@@ -576,7 +582,7 @@ public class DailyTransactionRepositoryTest extends AbstractBaseTest {
     public void testBatchPerformanceWithin4HourWindow_ProcessingWindowValidation() {
         // Given: Simulate realistic daily batch volume
         int dailyTransactionVolume = 50000; // Realistic daily volume
-        List<DailyTransaction> dailyBatch = testDataGenerator.generateDailyTransactionBatch(dailyTransactionVolume);
+        List<DailyTransaction> dailyBatch = generateDailyTransactionBatch(dailyTransactionVolume);
         
         // When: Process full daily batch
         long startTime = System.currentTimeMillis();
@@ -621,7 +627,7 @@ public class DailyTransactionRepositoryTest extends AbstractBaseTest {
     @DisplayName("Rollback on Batch Failures - Error Handling Validation")
     public void testRollbackOnBatchFailures_ErrorHandlingValidation() {
         // Given: Create batch with valid and invalid data
-        List<DailyTransaction> validBatch = testDataGenerator.generateDailyTransactionBatch(25);
+        List<DailyTransaction> validBatch = generateDailyTransactionBatch(25);
         
         // Insert valid data first
         dailyTransactionRepository.saveAll(validBatch);
@@ -631,7 +637,7 @@ public class DailyTransactionRepositoryTest extends AbstractBaseTest {
         
         // When: Attempt to save invalid data that should cause constraint violation
         try {
-            DailyTransaction invalidTransaction = testDataGenerator.generateDailyTransaction();
+            DailyTransaction invalidTransaction = generateDailyTransaction();
             // Create constraint violation scenario (e.g., null required field)
             invalidTransaction.setTransactionId(null); // This should cause violation
             dailyTransactionRepository.save(invalidTransaction);
@@ -656,7 +662,7 @@ public class DailyTransactionRepositoryTest extends AbstractBaseTest {
     private List<DailyTransaction> createTestTransactionsForDate(LocalDate date, int count) {
         List<DailyTransaction> transactions = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            DailyTransaction tx = testDataGenerator.generateDailyTransaction();
+            DailyTransaction tx = generateDailyTransaction();
             tx.setTransactionDate(date);
             tx.setOriginalTimestamp(date.atStartOfDay());
             transactions.add(tx);
@@ -670,7 +676,7 @@ public class DailyTransactionRepositoryTest extends AbstractBaseTest {
     private List<DailyTransaction> createCategorizedTransactions(LocalDate date, String category, int count) {
         List<DailyTransaction> transactions = createTestTransactionsForDate(date, count);
         transactions.forEach(tx -> {
-            tx.setTransactionType(category);
+            tx.setTransactionTypeCode(category);
             tx.setCategoryCode(category);
         });
         return transactions;
@@ -679,7 +685,7 @@ public class DailyTransactionRepositoryTest extends AbstractBaseTest {
     /**
      * Create merchant-specific transactions for testing.
      */
-    private List<DailyTransaction> createMerchantTransactions(LocalDate date, String merchantId, int count) {
+    private List<DailyTransaction> createMerchantTransactions(LocalDate date, Long merchantId, int count) {
         List<DailyTransaction> transactions = createTestTransactionsForDate(date, count);
         transactions.forEach(tx -> tx.setMerchantId(merchantId));
         return transactions;
@@ -690,5 +696,60 @@ public class DailyTransactionRepositoryTest extends AbstractBaseTest {
      */
     private void assertBigDecimalEquals(BigDecimal actual, BigDecimal expected, BigDecimal tolerance) {
         assertThat(actual).isCloseTo(expected, within(tolerance));
+    }
+
+    // ========================================
+    // HELPER METHODS FOR GENERATING DAILYTRANSACTION OBJECTS
+    // ========================================
+
+    /**
+     * Generate a single DailyTransaction for testing.
+     */
+    private DailyTransaction generateDailyTransaction() {
+        DailyTransaction tx = new DailyTransaction();
+        tx.setAccountId(1000L + (long)(Math.random() * 9000));
+        tx.setCardNumber(String.format("%016d", (long)(Math.random() * 1000000000000000L)));
+        tx.setTransactionDate(LocalDate.now().minusDays((int)(Math.random() * 30)));
+        tx.setTransactionTime(LocalTime.now());
+        tx.setTransactionAmount(BigDecimal.valueOf(Math.random() * 1000).setScale(2, BigDecimal.ROUND_HALF_UP));
+        tx.setTransactionTypeCode(getRandomTransactionTypeCode());
+        tx.setCategoryCode(getRandomCategoryCode());
+        tx.setDescription("Test Transaction " + System.currentTimeMillis());
+        tx.setMerchantName("Test Merchant");
+        tx.setMerchantId((long)(Math.random() * 10000));
+        tx.setTransactionId("TX" + System.currentTimeMillis() + (int)(Math.random() * 1000));
+        tx.setProcessingStatus("NEW");
+        tx.setBatchId("BATCH001");
+        tx.setRecordSequence((int)(Math.random() * 10000));
+        return tx;
+    }
+
+    /**
+     * Generate a batch of DailyTransaction objects for testing.
+     */
+    private List<DailyTransaction> generateDailyTransactionBatch(int count) {
+        List<DailyTransaction> transactions = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            DailyTransaction tx = generateDailyTransaction();
+            tx.setTransactionId("TX" + System.currentTimeMillis() + "_" + i); // Ensure unique IDs
+            transactions.add(tx);
+        }
+        return transactions;
+    }
+
+    /**
+     * Get random transaction type code for testing.
+     */
+    private String getRandomTransactionTypeCode() {
+        String[] types = {"01", "02", "03", "04", "05"};
+        return types[(int)(Math.random() * types.length)];
+    }
+
+    /**
+     * Get random category code for testing.
+     */
+    private String getRandomCategoryCode() {
+        String[] categories = {"PURC", "PAYM", "REFU", "WITD", "DEPO"};
+        return categories[(int)(Math.random() * categories.length)];
     }
 }
