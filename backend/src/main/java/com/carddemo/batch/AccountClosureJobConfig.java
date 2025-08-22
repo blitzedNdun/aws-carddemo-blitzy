@@ -418,7 +418,7 @@ public class AccountClosureJobConfig {
                     closure.setAccountId(rs.getLong("account_id"));
                     closure.setClosureReasonCode(rs.getString("closure_reason_code"));
                     closure.setClosureStatus("P"); // Pending
-                    closure.setRequestDate(rs.getDate("request_date").toLocalDate());
+                    closure.setRequestedDate(rs.getDate("request_date").toLocalDate());
                     return closure;
                 })
                 .build();
@@ -443,7 +443,7 @@ public class AccountClosureJobConfig {
                     closure.setAccountId(rs.getLong("account_id"));
                     closure.setClosureReasonCode(rs.getString("closure_reason_code"));
                     closure.setClosureStatus("V"); // Validated
-                    closure.setRequestDate(rs.getDate("request_date").toLocalDate());
+                    closure.setRequestedDate(rs.getDate("request_date").toLocalDate());
                     return closure;
                 })
                 .build();
@@ -468,7 +468,7 @@ public class AccountClosureJobConfig {
                     closure.setAccountId(rs.getLong("account_id"));
                     closure.setClosureReasonCode(rs.getString("closure_reason_code"));
                     closure.setClosureStatus("S"); // Statement completed
-                    closure.setRequestDate(rs.getDate("request_date").toLocalDate());
+                    closure.setRequestedDate(rs.getDate("request_date").toLocalDate());
                     return closure;
                 })
                 .build();
@@ -493,7 +493,7 @@ public class AccountClosureJobConfig {
                     closure.setAccountId(rs.getLong("account_id"));
                     closure.setClosureReasonCode(rs.getString("closure_reason_code"));
                     closure.setClosureStatus("A"); // Archived
-                    closure.setRequestDate(rs.getDate("request_date").toLocalDate());
+                    closure.setRequestedDate(rs.getDate("request_date").toLocalDate());
                     return closure;
                 })
                 .build();

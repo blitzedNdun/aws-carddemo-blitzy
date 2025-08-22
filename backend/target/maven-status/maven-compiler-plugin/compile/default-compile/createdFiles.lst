@@ -330,6 +330,7 @@ com/carddemo/dto/CreditCardDto.class
 com/carddemo/dto/BillDto$PaymentAllocation.class
 com/carddemo/batch/ReconciliationJobConfig$2.class
 com/carddemo/security/SessionConfig$SessionEventListener.class
+com/carddemo/batch/AccountClosureJobConfig.class
 com/carddemo/batch/ReconciliationJobConfig.class
 com/carddemo/controller/AuthController.class
 com/carddemo/exception/ErrorResponse.class
