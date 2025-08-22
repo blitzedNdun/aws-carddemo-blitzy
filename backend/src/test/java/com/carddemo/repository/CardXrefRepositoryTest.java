@@ -134,7 +134,7 @@ public class CardXrefRepositoryTest extends AbstractBaseTest implements Integrat
         // Create and persist account
         testAccount = testDataGenerator.generateAccount();
         testAccount.setAccountId(Long.parseLong(TestConstants.TEST_ACCOUNT_ID));
-        testAccount.setCustomerId(testCustomer.getCustomerId());
+        testAccount.setCustomer(testCustomer);
         testAccount = accountRepository.save(testAccount);
 
         // Create and persist card
@@ -152,7 +152,7 @@ public class CardXrefRepositoryTest extends AbstractBaseTest implements Integrat
         );
 
         // Create cross-reference entity
-        testCardXref = testDataGenerator.generateCardXref();
+        testCardXref = new CardXref();
         testCardXref.setId(testCardXrefId);
         testCardXref.setCard(testCard);
         testCardXref.setCustomer(testCustomer);
@@ -527,7 +527,7 @@ public class CardXrefRepositoryTest extends AbstractBaseTest implements Integrat
             // Create a new account for update testing
             Account newAccount = testDataGenerator.generateAccount();
             newAccount.setAccountId(Long.parseLong(TestConstants.TEST_ACCOUNT_ID) + 1);
-            newAccount.setCustomerId(testCustomer.getCustomerId());
+            newAccount.setCustomer(testCustomer);
             newAccount = accountRepository.save(newAccount);
             
             long startTime = System.currentTimeMillis();
@@ -692,7 +692,7 @@ public class CardXrefRepositoryTest extends AbstractBaseTest implements Integrat
                 
                 Account account = testDataGenerator.generateAccount();
                 account.setAccountId(testAccount.getAccountId() + i + 1);
-                account.setCustomerId(customer.getCustomerId());
+                account.setCustomer(customer);
                 account = accountRepository.save(account);
                 
                 Card card = testDataGenerator.generateCard();
@@ -707,7 +707,7 @@ public class CardXrefRepositoryTest extends AbstractBaseTest implements Integrat
                     account.getAccountId()
                 );
                 
-                CardXref cardXref = testDataGenerator.generateCardXref();
+                CardXref cardXref = new CardXref();
                 cardXref.setId(xrefId);
                 cardXref.setCard(card);
                 cardXref.setCustomer(customer);
