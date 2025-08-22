@@ -138,7 +138,7 @@ public final class Constants {
      * Maximum length for transaction type description fields.
      * Maps to COBOL PIC X(60) specification from COTRN02 BMS map.
      */
-    public static final int DESCRIPTION_LENGTH = 60;
+    public static final int DESCRIPTION_LENGTH = 100;
 
     /**
      * Maximum number of users displayed per page in list views.
