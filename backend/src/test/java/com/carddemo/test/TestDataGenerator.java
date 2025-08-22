@@ -148,12 +148,18 @@ public final class TestDataGenerator {
         double range = maxBalance.subtract(minBalance).doubleValue();
         double amount = minBalance.doubleValue() + (random.nextDouble() * range);
         account.setCurrentBalance(CobolDataConverter.toBigDecimal(amount, 2));
-        account.setCashCreditLimit(generateComp3BigDecimal(2, 10000.00));
         
-        // Generate dates
-        account.setOpenDate(generateCobolDate());
-        account.setExpirationDate(generateCobolDate().plusYears(3));
-        account.setReissueDate(generateCobolDate().plusMonths(6));
+        // Generate cash credit limit that cannot exceed credit limit (business rule)
+        double maxCashCreditLimit = Math.min(10000.00, creditLimit.doubleValue());
+        account.setCashCreditLimit(generateComp3BigDecimal(2, maxCashCreditLimit));
+        
+        // Generate dates with proper sequencing to avoid business rule violations
+        LocalDate openDate = generateCobolDate();
+        account.setOpenDate(openDate);
+        // Expiration date must be after open date
+        account.setExpirationDate(openDate.plusYears(3));
+        // Reissue date must be after open date  
+        account.setReissueDate(openDate.plusMonths(6));
         
         // Generate cycle amounts
         account.setCurrentCycleCredit(generateComp3BigDecimal(2, 5000.00));

@@ -79,7 +79,6 @@ public class Account {
      * Unique identifier for each account in the system.
      */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "account_id", nullable = false)
     private Long accountId;
     
@@ -186,7 +185,7 @@ public class Account {
      * Maps to ACCT-ADDR-ZIP field from COBOL copybook (PIC X(10)).
      * ZIP code associated with the account for billing address purposes.
      */
-    @Column(name = "zip_code", length = ZIP_CODE_LENGTH)
+    @Column(name = "address_zip", length = ZIP_CODE_LENGTH)
     @Size(max = ZIP_CODE_LENGTH, message = "ZIP code cannot exceed " + ZIP_CODE_LENGTH + " characters")
     private String addressZip;
     

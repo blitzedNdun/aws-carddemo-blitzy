@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS account_data (
     current_cycle_debit DECIMAL(15,2) DEFAULT 0.00,
     address_zip VARCHAR(10),
     group_id VARCHAR(10),
+    last_transaction_date DATE,
+    disclosure_group_id BIGINT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -30,20 +32,23 @@ CREATE TABLE IF NOT EXISTS customer_data (
     first_name VARCHAR(20) NOT NULL,
     middle_name VARCHAR(20),
     last_name VARCHAR(20) NOT NULL,
-    address_line1 VARCHAR(50),
-    address_line2 VARCHAR(50),
-    address_line3 VARCHAR(50),
+    address_line_1 VARCHAR(50),
+    address_line_2 VARCHAR(50),
+    address_line_3 VARCHAR(50),
     state_code VARCHAR(2),
     country_code VARCHAR(3),
     zip_code VARCHAR(10),
-    phone_number1 VARCHAR(15),
-    phone_number2 VARCHAR(15),
+    phone_number_1 VARCHAR(15),
+    phone_number_2 VARCHAR(15),
     ssn VARCHAR(11), -- Encrypted field
     government_issued_id VARCHAR(20),
     date_of_birth DATE,
     eft_account_id VARCHAR(20),
-    primary_cardholder_indicator CHAR(1) DEFAULT 'Y',
+    primary_card_holder_indicator CHAR(1) DEFAULT 'Y',
     fico_score INT,
+    credit_limit DECIMAL(15,2),
+    last_update_timestamp TIMESTAMP,
+    created_timestamp TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -117,7 +122,16 @@ CREATE TABLE IF NOT EXISTS disclosure_groups (
     interest_rate DECIMAL(6,4) NOT NULL,
     terms_text TEXT,
     disclosure_group_name VARCHAR(50),
-    promotional_rate DECIMAL(6,4)
+    promotional_rate DECIMAL(6,4),
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_by VARCHAR(50),
+    updated_by VARCHAR(50),
+    effective_date DATE,
+    expiration_date DATE,
+    description TEXT,
+    group_name VARCHAR(50)
 );
 
 -- Transaction data table - maps to Transaction entity (CVTRA05Y.cpy)

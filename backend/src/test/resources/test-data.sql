@@ -36,18 +36,19 @@ INSERT INTO configuration (environment, name, config_key, category, config_value
 ('TEST', 'Batch Processing Schedule', 'batch.processing.schedule', 'BATCH', '0 2 * * *', 'Cron expression for batch processing schedule', 1, true, false);
 
 -- Insert test customers
-INSERT INTO customer_data (customer_id, first_name, middle_name, last_name, address_line1, address_line2, 
-    state_code, country_code, zip_code, phone_number1, ssn, date_of_birth, fico_score) VALUES
+INSERT INTO customer_data (customer_id, first_name, middle_name, last_name, address_line_1, address_line_2, 
+    state_code, country_code, zip_code, phone_number_1, ssn, date_of_birth, fico_score, primary_card_holder_indicator, 
+    credit_limit, last_update_timestamp, created_timestamp) VALUES
 (1000000001, 'John', 'A', 'Doe', '123 Main Street', 'Apt 4B', 'NY', 'USA', '10001', '555-123-4567', 
-    '123-45-6789', '1985-06-15', 720),
+    '123-45-6789', '1985-06-15', 720, 'Y', 25000.00, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 (1000000002, 'Jane', 'B', 'Smith', '456 Oak Avenue', NULL, 'CA', 'USA', '90210', '555-987-6543', 
-    '987-65-4321', '1990-03-22', 680),
+    '987-65-4321', '1990-03-22', 680, 'Y', 30000.00, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 (1000000003, 'Robert', 'C', 'Johnson', '789 Pine Road', 'Unit 12', 'TX', 'USA', '75201', '555-456-7890', 
-    '456-78-9012', '1982-11-30', 750),
+    '456-78-9012', '1982-11-30', 750, 'Y', 20000.00, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 (1000000004, 'Mary', 'D', 'Williams', '321 Elm Street', NULL, 'FL', 'USA', '33101', '555-234-5678', 
-    '234-56-7890', '1988-09-07', 640),
+    '234-56-7890', '1988-09-07', 640, 'Y', 35000.00, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 (1000000005, 'Michael', 'E', 'Brown', '654 Maple Drive', 'Suite 200', 'IL', 'USA', '60601', '555-345-6789', 
-    '345-67-8901', '1975-12-14', 780);
+    '345-67-8901', '1975-12-14', 780, 'Y', 40000.00, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- Insert test accounts
 INSERT INTO account_data (account_id, customer_id, active_status, current_balance, credit_limit, 

@@ -5,6 +5,11 @@ spring:
   main:
     allow-bean-definition-overriding: true
     
+  # Disable Liquibase for tests - use DDL auto-generation instead
+  liquibase:
+    enabled: false
+    change-log: "classpath:db/changelog/db.changelog-master.xml"
+    
   datasource:
     url: jdbc:h2:mem:testdb;DB_CLOSE_ON_EXIT=FALSE;DATABASE_TO_UPPER=false
     username: sa
