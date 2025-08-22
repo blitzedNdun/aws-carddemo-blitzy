@@ -104,7 +104,7 @@ public class TransactionTypeTest extends AbstractBaseTest implements UnitTest {
         // Test that entity represents the complete 60-byte COBOL record structure
         // TRAN-TYPE (2) + TRAN-TYPE-DESC (50) + FILLER (8) = 60 bytes
         
-        TransactionType transactionType = new TransactionType("01", "Test Transaction Type Description 123456789012345", "D");
+        TransactionType transactionType = new TransactionType("01", "Test Transaction Type Description 1234567890123456", "D");
         
         // Validate TRAN-TYPE field mapping (PIC X(02))
         assertThat(transactionType.getTransactionTypeCode())
