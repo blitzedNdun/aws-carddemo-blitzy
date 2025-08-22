@@ -28,6 +28,7 @@ import jakarta.persistence.EmbeddedId;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 /**
  * Unit test class for DisclosureGroup JPA entity validating 50-byte DIS-GROUP-RECORD structure 
@@ -145,7 +146,8 @@ public class DisclosureGroupTest extends AbstractBaseTest implements UnitTest {
                 .as("Null account group ID should be handled appropriately")
                 .isNull();
 
-        validateCobolPrecision(validGroup.getAccountGroupId(), "account group ID validation");
+        // Account group ID is a string field, no COBOL precision validation needed
+        logTestExecution("account group ID validation completed", null);
     }
 
     /**
@@ -201,7 +203,8 @@ public class DisclosureGroupTest extends AbstractBaseTest implements UnitTest {
                 .isEqualTo(singleCharTypeCode)
                 .hasSizeLessThanOrEqualTo(Constants.TYPE_CODE_LENGTH);
 
-        validateCobolPrecision(exactLengthGroup.getTransactionTypeCode(), "transaction type code validation");
+        // Transaction type code is a string field, no COBOL precision validation needed
+        logTestExecution("transaction type code validation completed", null);
     }
 
     /**
@@ -262,7 +265,8 @@ public class DisclosureGroupTest extends AbstractBaseTest implements UnitTest {
                 .isEqualTo(leadingZerosCode)
                 .startsWith("0");
 
-        validateCobolPrecision(exactLengthGroup.getTransactionCategoryCode(), "transaction category code validation");
+        // Transaction category code is a string field, no COBOL precision validation needed
+        logTestExecution("transaction category code validation completed", null);
     }
 
     /**
@@ -403,7 +407,8 @@ public class DisclosureGroupTest extends AbstractBaseTest implements UnitTest {
                 .as("All composite key fields should be present in DisclosureGroup entity")
                 .isTrue();
 
-        validateCobolPrecision(group, "composite key mapping validation");
+        // Composite key validation completed - validate the BigDecimal interest rate
+        validateCobolPrecision(group.getInterestRate(), "composite key mapping validation");
     }
 
     /**
@@ -464,7 +469,8 @@ public class DisclosureGroupTest extends AbstractBaseTest implements UnitTest {
                 .as("Transaction category code length should not exceed COBOL limit")
                 .isLessThanOrEqualTo(Constants.CATEGORY_CODE_LENGTH);
 
-        validateCobolPrecision(lengthTestGroup, "field length validation");
+        // Field length validation completed - validate the BigDecimal interest rate
+        validateCobolPrecision(lengthTestGroup.getInterestRate(), "field length validation");
     }
 
     /**
@@ -534,7 +540,8 @@ public class DisclosureGroupTest extends AbstractBaseTest implements UnitTest {
                 .as("Entity should not be equal to different class")
                 .isFalse();
 
-        validateCobolPrecision(group1, "equals and hashCode validation");
+        // Equals and hashCode validation completed - validate the BigDecimal interest rate
+        validateCobolPrecision(group1.getInterestRate(), "equals and hashCode validation");
     }
 
     /**
@@ -592,7 +599,8 @@ public class DisclosureGroupTest extends AbstractBaseTest implements UnitTest {
                 .isNotNull()
                 .isNotBlank();
 
-        validateCobolPrecision(toStringResult, "toString validation");
+        // toString validation completed - validate the BigDecimal interest rate
+        validateCobolPrecision(group.getInterestRate(), "toString validation");
     }
 
     /**
@@ -676,7 +684,8 @@ public class DisclosureGroupTest extends AbstractBaseTest implements UnitTest {
                 .as("Group ID should be compatible with COBOL PIC X(10) conversion")
                 .isEqualTo(groupId.trim());
 
-        validateCobolPrecision(group.getAccountGroupId(), "parameterized group ID " + groupId);
+        // Group ID is string field - validate the BigDecimal interest rate instead
+        validateCobolPrecision(group.getInterestRate(), "parameterized group ID " + groupId);
     }
 
     /**
@@ -737,7 +746,8 @@ public class DisclosureGroupTest extends AbstractBaseTest implements UnitTest {
                 .as("Group name should utilize conceptual FILLER space")
                 .isEqualTo(VALID_GROUP_NAME);
 
-        validateCobolPrecision(group, "FILLER field handling validation");
+        // FILLER field handling validation completed - validate the BigDecimal interest rate
+        validateCobolPrecision(group.getInterestRate(), "FILLER field handling validation");
     }
 
     /**
@@ -885,7 +895,8 @@ public class DisclosureGroupTest extends AbstractBaseTest implements UnitTest {
                 .isNotNull()
                 .hasSize(Constants.GROUP_ID_LENGTH);
 
-        validateCobolPrecision(disclosureGroup.getAccountGroupId(), "account relationship mapping");
+        // Account relationship mapping validation completed - validate the BigDecimal interest rate
+        validateCobolPrecision(disclosureGroup.getInterestRate(), "account relationship mapping");
     }
 
     /**
