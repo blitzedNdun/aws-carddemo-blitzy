@@ -87,6 +87,24 @@ public final class Constants {
     public static final int ZIP_CODE_LENGTH = 5;
 
     /**
+     * Maximum length for group ID fields.
+     * Maps to COBOL PIC X(10) specification for account group identifiers.
+     */
+    public static final int GROUP_ID_LENGTH = 10;
+
+    /**
+     * Default country code for accounts.
+     * Standard two-character ISO country code for United States.
+     */
+    public static final String DEFAULT_COUNTRY_CODE = "US";
+
+    /**
+     * Default currency code for accounts.
+     * Standard three-character ISO currency code for US Dollar.
+     */
+    public static final String DEFAULT_CURRENCY_CODE = "USD";
+
+    /**
      * Maximum length for transaction ID fields.
      * Maps to COBOL PIC X(16) specification.
      */
