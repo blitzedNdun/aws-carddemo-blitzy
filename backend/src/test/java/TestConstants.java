@@ -97,9 +97,10 @@ public final class TestConstants {
     /**
      * Test user password for authentication testing.
      * Used for standard user authentication scenarios in integration tests.
+     * Length matches COBOL SEC-USR-PWD field from UserSecurity entity (8 characters).
      * Should be BCrypt encoded in actual test data setup.
      */
-    public static final String TEST_USER_PASSWORD = "testpass123";
+    public static final String TEST_USER_PASSWORD = "testpass";
 
     /**
      * Admin role authority for role-based access testing.

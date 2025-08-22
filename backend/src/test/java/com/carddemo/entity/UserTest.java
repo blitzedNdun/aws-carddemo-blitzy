@@ -32,6 +32,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.util.List;
 import java.util.Collection;
+import java.util.Map;
+import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -62,7 +64,7 @@ public class UserTest extends AbstractBaseTest implements UnitTest {
     @Override
     public void setUp() {
         super.setUp();
-        logTestExecution("Setting up UserSecurity test data");
+        logTestExecution("Setting up UserSecurity test data", null);
         
         // Create standard test user (type 'U') matching TestConstants
         testUser = createTestUserEntity(
@@ -70,7 +72,7 @@ public class UserTest extends AbstractBaseTest implements UnitTest {
             "JOHN", 
             "DOE",
             TestConstants.TEST_USER_PASSWORD,
-            TestConstants.TEST_USER_ROLE
+            "U"
         );
         
         // Create admin test user (type 'A') matching TestConstants  
@@ -79,7 +81,7 @@ public class UserTest extends AbstractBaseTest implements UnitTest {
             "JANE",
             "SMITH", 
             "ADMIN123",
-            TestConstants.TEST_ADMIN_ROLE
+            "A"
         );
     }
 
@@ -99,7 +101,8 @@ public class UserTest extends AbstractBaseTest implements UnitTest {
     private UserSecurity createTestUserEntity(String userId, String firstName, 
                                             String lastName, String password, String userType) {
         UserSecurity user = new UserSecurity();
-        user.setUserId(userId);           // SEC-USR-ID PIC X(08) 
+        user.setSecUsrId(userId);         // SEC-USR-ID PIC X(08)
+        user.setUsername(userId);         // Set username same as userId for Spring Security 
         user.setFirstName(firstName);     // SEC-USR-FNAME PIC X(20)
         user.setLastName(lastName);       // SEC-USR-LNAME PIC X(20)
         user.setPassword(password);       // SEC-USR-PWD PIC X(08)
@@ -114,6 +117,20 @@ public class UserTest extends AbstractBaseTest implements UnitTest {
     private UserSecurity createTestAdminEntity(String userId, String firstName,
                                              String lastName, String password, String userType) {
         return createTestUserEntity(userId, firstName, lastName, password, userType);
+    }
+    
+    /**
+     * Helper method to convert Map from AbstractBaseTest to UserSecurity entity
+     */
+    private UserSecurity createUserSecurityFromMap(Map<String, Object> userMap) {
+        UserSecurity user = new UserSecurity();
+        user.setSecUsrId((String) userMap.get("userId"));
+        user.setUsername((String) userMap.get("userId"));
+        user.setPassword((String) userMap.get("password"));
+        user.setFirstName((String) userMap.get("firstName"));
+        user.setLastName((String) userMap.get("lastName"));
+        user.setUserType((String) userMap.get("userType"));
+        return user;
     }
 
     @Nested
@@ -189,12 +206,12 @@ public class UserTest extends AbstractBaseTest implements UnitTest {
             // Validate 1-character user type field from COBOL PIC X(01)
             assertThat(testUser.getUserType())
                 .isNotNull()
-                .isEqualTo(TestConstants.TEST_USER_ROLE)
+                .isEqualTo("U")
                 .hasSize(1);
                 
             assertThat(testAdmin.getUserType())
                 .isNotNull() 
-                .isEqualTo(TestConstants.TEST_ADMIN_ROLE)
+                .isEqualTo("A")
                 .hasSize(1);
                 
             // Verify only valid user types
@@ -503,7 +520,9 @@ public class UserTest extends AbstractBaseTest implements UnitTest {
         @DisplayName("COBOL precision validation for numeric constraints")
         public void testCobolPrecisionValidation() {
             // Use AbstractBaseTest COBOL precision validation utilities
-            validateCobolPrecision();
+            // Create a test BigDecimal for validation
+            BigDecimal testValue = new BigDecimal("100.00");
+            validateCobolPrecision(testValue, "testValue");
             
             // Verify field lengths match COBOL copybook exactly
             assertThat(testUser.getUserId().length()).isEqualTo(8);
@@ -553,7 +572,8 @@ public class UserTest extends AbstractBaseTest implements UnitTest {
             assertThat(newUser).isNotNull();
             
             // Test field initialization
-            newUser.setUserId("NEWUSER1");
+            newUser.setSecUsrId("NEWUSER1");
+            newUser.setUsername("NEWUSER1");
             newUser.setFirstName("New");
             newUser.setLastName("User");
             newUser.setPassword("newpass1");
@@ -656,7 +676,8 @@ public class UserTest extends AbstractBaseTest implements UnitTest {
         @DisplayName("AbstractBaseTest integration - getTestUser()")
         public void testGetTestUserIntegration() {
             // Use AbstractBaseTest factory method
-            UserSecurity factoryUser = getTestUser();
+            Map<String, Object> testUserMap = getTestUser();
+            UserSecurity factoryUser = createUserSecurityFromMap(testUserMap);
             
             assertThat(factoryUser).isNotNull();
             assertThat(factoryUser.getUserId()).isNotEmpty();
@@ -670,7 +691,8 @@ public class UserTest extends AbstractBaseTest implements UnitTest {
         @DisplayName("AbstractBaseTest integration - getTestAdmin()")  
         public void testGetTestAdminIntegration() {
             // Use AbstractBaseTest factory method
-            UserSecurity factoryAdmin = getTestAdmin();
+            Map<String, Object> testAdminMap = getTestAdmin();
+            UserSecurity factoryAdmin = createUserSecurityFromMap(testAdminMap);
             
             assertThat(factoryAdmin).isNotNull();
             assertThat(factoryAdmin.getUserId()).isNotEmpty();
@@ -686,8 +708,9 @@ public class UserTest extends AbstractBaseTest implements UnitTest {
             // Verify test constants are properly used
             assertThat(TestConstants.TEST_USER_ID).isNotEmpty().hasSize(8);
             assertThat(TestConstants.TEST_USER_PASSWORD).isNotEmpty().hasSize(8);
-            assertThat(TestConstants.TEST_USER_ROLE).isEqualTo("U");
-            assertThat(TestConstants.TEST_ADMIN_ROLE).isEqualTo("A");
+            // Note: TestConstants role constants are SimpleGrantedAuthority objects
+            assertThat(TestConstants.TEST_USER_ROLE.getAuthority()).isEqualTo("ROLE_USER");
+            assertThat(TestConstants.TEST_ADMIN_ROLE.getAuthority()).isEqualTo("ROLE_ADMIN");
             
             // Verify COBOL precision constants
             assertThat(TestConstants.COBOL_DECIMAL_SCALE).isNotNull();
@@ -854,7 +877,7 @@ public class UserTest extends AbstractBaseTest implements UnitTest {
             String sessionUserType = testUser.getUserType();
             
             assertThat(sessionUserId).isEqualTo(TestConstants.TEST_USER_ID);
-            assertThat(sessionUserType).isEqualTo(TestConstants.TEST_USER_ROLE);
+            assertThat(sessionUserType).isEqualTo("U");
         }
     }
 
@@ -869,7 +892,7 @@ public class UserTest extends AbstractBaseTest implements UnitTest {
             assertThat(testUser)
                 .isNotNull()
                 .extracting(UserSecurity::getUserId, UserSecurity::getUserType)
-                .containsExactly(TestConstants.TEST_USER_ID, TestConstants.TEST_USER_ROLE);
+                .containsExactly(TestConstants.TEST_USER_ID, "U");
                 
             assertThat(testUser.getAuthorities())
                 .hasSize(1)
