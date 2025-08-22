@@ -80,7 +80,7 @@ public class CobolStringFormatterTest extends AbstractBaseTest implements UnitTe
         "'AB', 1, 'A'",               // Single character truncate
         "'   ', 5, '     '",          // Spaces only - extend with spaces
         "'Data', 8, 'Data    '",      // COCOM01Y.cpy pattern - 8 chars
-        "'Test User Name', 25, 'Test User Name          '", // COCOM01Y.cpy pattern - 25 chars
+        "'Test User Name', 25, 'Test User Name           '", // COCOM01Y.cpy pattern - 25 chars
         "'1234', 4, '1234'"           // Numeric in alphanumeric field
     })
     @DisplayName("PIC X Alphanumeric Field Formatting")
@@ -132,7 +132,7 @@ public class CobolStringFormatterTest extends AbstractBaseTest implements UnitTe
             .describedAs("PIC 9(%d) formatting of '%s'", length, input)
             .isEqualTo(expected)
             .hasSize(length)
-            .matches("\\d{" + length + "}", "Result must contain only digits");
+            .matches("\\d{" + length + "}");
             
         logTestExecution("PIC 9 formatting test passed for input: " + input, null);
     }
@@ -150,7 +150,7 @@ public class CobolStringFormatterTest extends AbstractBaseTest implements UnitTe
     @CsvSource({
         "'Hello', 10, '     Hello'",  // Right justify with left padding
         "'Test', 4, 'Test'",          // Exact length - no change
-        "'Testing123', 5, 'ing123'",  // Long string - truncate from left
+        "'Testing123', 5, 'ng123'",   // Long string - truncate from left, keep rightmost
         "'', 3, '   '",               // Empty string - all spaces
         "'A', 5, '    A'",            // Single character right justify
         "'123', 6, '   123'",         // Numeric right justify
@@ -322,7 +322,7 @@ public class CobolStringFormatterTest extends AbstractBaseTest implements UnitTe
         "'Very Long String', 8, 'Very Lon'", // Long string truncation
         "'1234567890', 7, '1234567'",      // Numeric truncation
         "'Special@#$', 6, 'Specia'",       // Special characters
-        "'Trailing Spaces   ', 10, 'Trailing '"  // Truncate with spaces
+        "'Trailing Spaces   ', 10, 'Trailing S'"  // Truncate with spaces - first 10 chars
     })
     @DisplayName("String Truncation Logic Validation")
     void testTruncateString(String input, int maxLength, String expected) {
@@ -353,7 +353,7 @@ public class CobolStringFormatterTest extends AbstractBaseTest implements UnitTe
     @CsvSource({
         "'123.45', 'ZZZ.99', '123.45'",       // Basic decimal formatting
         "'1000', 'Z,ZZZ', '1,000'",           // Thousands separator
-        "'0.50', 'Z.99', '0.50'",             // Zero suppression with decimal
+        "'0.50', 'Z.99', ' .50'",             // Zero suppression with decimal - leading zero becomes space
         "'', 'ZZZ.99', ''",                   // Empty input
         "'12345', 'ZZ,ZZZ', '12,345'",        // Standard thousands format
         "'100.00', 'ZZZ.99', '100.00'",       // Standard currency format
@@ -398,7 +398,7 @@ public class CobolStringFormatterTest extends AbstractBaseTest implements UnitTe
         "'Data     ', 12, 'Data        '",  // Extend existing trailing spaces
         "'', 5, '     '",                   // Empty string - all spaces
         "'Full      ', 6, 'Full  '",        // Truncate but preserve pattern
-        "'Short', 10, 'Short    '",         // Standard space padding
+        "'Short', 10, 'Short     '",        // Standard space padding - 5 chars + 5 spaces = 10
         "'X', 3, 'X  '",                    // Single character with spaces
         "'NoSpaces', 10, 'NoSpaces  '",     // Add spaces when none exist
         "'Exact', 5, 'Exact'",              // Exact length - no change
@@ -482,7 +482,7 @@ public class CobolStringFormatterTest extends AbstractBaseTest implements UnitTe
         "'Data', 8, 'Data    '",           // Standard padding
         "'X', 1, 'X'",                     // Single character exact
         "'Short', 12, 'Short       '",     // Extended padding
-        "'Numbers123', 10, 'Numbers12'",   // Numeric truncation
+        "'Numbers123', 10, 'Numbers123'",  // Exact length match
         "'Spaces   ', 8, 'Spaces  '",      // Preserve some trailing spaces
         "'Field', 6, 'Field '"             // Standard field conversion
     })
@@ -778,8 +778,7 @@ public class CobolStringFormatterTest extends AbstractBaseTest implements UnitTe
         String emptyField = CobolStringFormatter.handleFillerFields(0, ' ');
         assertThat(emptyField)
             .describedAs("Zero-length FILLER field")
-            .isEmpty()
-            .hasSize(0);
+            .isEmpty();
             
         // Test FILLER with single character
         String singleFiller = CobolStringFormatter.handleFillerFields(1, '*');
