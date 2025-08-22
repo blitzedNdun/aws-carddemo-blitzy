@@ -13,10 +13,6 @@ import com.carddemo.entity.AuditLog;
 import com.carddemo.repository.UserSecurityRepository;
 import com.carddemo.service.AuditService;
 import com.carddemo.service.AdminFunctionsService;
-import com.carddemo.batch.TestReconciliationJobConfig;
-import com.carddemo.config.TestDatabaseConfig;
-import com.carddemo.config.TestRedisConfig;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -25,10 +21,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.context.annotation.Import;
 
 import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.*;
@@ -70,10 +62,6 @@ import java.time.LocalDateTime;
  * @since 2024
  */
 @ExtendWith(MockitoExtension.class)
-@SpringBootTest
-@ActiveProfiles("test")
-@TestPropertySource(locations = "classpath:application-test.properties")
-@Import({TestDatabaseConfig.class, TestRedisConfig.class, TestReconciliationJobConfig.class})
 public class AdminFunctionsServiceTest {
 
     // Service under test - will be injected with mocked dependencies
