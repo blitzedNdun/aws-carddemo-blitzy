@@ -206,7 +206,7 @@ public class DateConverterTest extends AbstractBaseTest implements UnitTest {
         String actualInput = inputDate;
         if ("''".equals(inputDate)) {
             actualInput = "";
-        } else if ("    ".equals(inputDate.trim())) {
+        } else if (inputDate != null && "    ".equals(inputDate.trim())) {
             actualInput = "    ";
         }
         
@@ -242,11 +242,9 @@ public class DateConverterTest extends AbstractBaseTest implements UnitTest {
     @DisplayName("Parse Date - Null and Empty Input Exception Handling")
     void testParseDateWithNullInput(String inputDate, String description) {
         
-        // Convert test input to actual null or empty values
-        String actualInput = "null".equals(inputDate) ? null : inputDate.trim();
-        if (actualInput != null && actualInput.isEmpty()) {
-            actualInput = "";
-        }
+        // Convert test input to actual null or empty values - using final variable for lambda
+        final String actualInput = "null".equals(inputDate) ? null : 
+                                 (inputDate != null && inputDate.trim().isEmpty() ? "" : inputDate);
         
         // Validate that IllegalArgumentException is thrown for invalid inputs
         assertThatThrownBy(() -> DateConversionUtil.parseDate(actualInput))
@@ -279,10 +277,10 @@ public class DateConverterTest extends AbstractBaseTest implements UnitTest {
     @DisplayName("Parse Date - Malformed Input Exception Handling")
     void testParseDateWithMalformedInput(String inputDate, String description) {
         
-        // Validate that DateTimeParseException is thrown for malformed inputs
+        // Validate that IllegalArgumentException is thrown for malformed inputs
         assertThatThrownBy(() -> DateConversionUtil.parseDate(inputDate))
-            .describedAs("Parse date should throw DateTimeParseException for: " + description)
-            .isInstanceOf(DateTimeParseException.class);
+            .describedAs("Parse date should throw IllegalArgumentException for: " + description)
+            .isInstanceOf(IllegalArgumentException.class);
             
         logTestExecution("Malformed input validation test completed: " + description, null);
     }
@@ -419,11 +417,11 @@ public class DateConverterTest extends AbstractBaseTest implements UnitTest {
         "20240315, 0, '20240315', 'Add zero days - no change'",
         "20240315, 1, '20240316', 'Add one day - next day'",
         "20240315, 30, '20240414', 'Add 30 days - month rollover'",
-        "20240315, 365, '20250314', 'Add 365 days - year rollover'",
+        "20240315, 365, '20250315', 'Add 365 days - year rollover'",
         "20240229, 366, '20250301', 'Add 366 days from leap year date'",
         "20240315, -1, '20240314', 'Subtract one day - previous day'",
         "20240315, -31, '20240213', 'Subtract 31 days - month rollback'",
-        "20240315, -365, '20230315', 'Subtract 365 days - year rollback'",
+        "20240315, -365, '20230316', 'Subtract 365 days - year rollback'",
         "20240101, -1, '20231231', 'Subtract from January 1st - year boundary'",
         "20240301, -1, '20240229', 'Subtract to February 29th in leap year'"
     })
@@ -478,9 +476,10 @@ public class DateConverterTest extends AbstractBaseTest implements UnitTest {
         // Parse the input date to LocalDate for validation
         LocalDate birthDate = DateConversionUtil.parseDate(inputDate);
         
-        // Validate using current date comparison (future date check)
-        LocalDate currentDate = LocalDate.now();
-        boolean isNotFuture = !birthDate.isAfter(currentDate);
+        // Validate using fixed test reference date (2024-06-15) for consistent test results
+        // This prevents test failures due to running on different dates
+        LocalDate testCurrentDate = LocalDate.of(2024, 6, 15);
+        boolean isNotFuture = !birthDate.isAfter(testCurrentDate);
         
         long executionTime = System.currentTimeMillis() - startTime;
         
@@ -829,8 +828,8 @@ public class DateConverterTest extends AbstractBaseTest implements UnitTest {
         "20000101, -1, '19991231', 'Y2K transition backward'",
         
         // Century boundary testing within supported range
-        "19991231, 366, '20010101', 'Century transition with leap year'",
-        "20000101, -366, '19990101', 'Century transition backward with leap year'",
+        "19991231, 366, '20001231', 'Century transition with leap year'",
+        "20000101, -366, '19981231', 'Century transition backward with leap year'",
         
         // Large date arithmetic operations
         "20240315, 1000, '20261210', 'Add 1000 days - large positive arithmetic'",
@@ -1103,5 +1102,4 @@ public class DateConverterTest extends AbstractBaseTest implements UnitTest {
         logTestExecution("Performance validation test completed: " + description + 
                         " (avg: " + averageTimePerOperation + "ms per operation)", executionTime);
     }
-}
 }
