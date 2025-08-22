@@ -37,6 +37,8 @@
             
             <column name="reissue_date" type="DATE"/>
             
+            <column name="last_transaction_date" type="DATE"/>
+            
             <column name="current_cycle_credit" type="DECIMAL(12,2)">
                 <constraints nullable="false"/>
             </column>
@@ -45,7 +47,7 @@
                 <constraints nullable="false"/>
             </column>
             
-            <column name="zip_code" type="VARCHAR(10)"/>
+            <column name="address_zip" type="VARCHAR(10)"/>
             
             <column name="group_id" type="VARCHAR(10)"/>
             
@@ -82,11 +84,13 @@
                          remarks="Account expiration date, maps to ACCT-EXPIRAION-DATE (PIC X(10))"/>
         <setColumnRemarks tableName="account_data" columnName="reissue_date" 
                          remarks="Account reissue date, maps to ACCT-REISSUE-DATE (PIC X(10))"/>
+        <setColumnRemarks tableName="account_data" columnName="last_transaction_date" 
+                         remarks="Last transaction date for the account"/>
         <setColumnRemarks tableName="account_data" columnName="current_cycle_credit" 
                          remarks="Current cycle credit, maps to ACCT-CURR-CYC-CREDIT (PIC S9(10)V99)"/>
         <setColumnRemarks tableName="account_data" columnName="current_cycle_debit" 
                          remarks="Current cycle debit, maps to ACCT-CURR-CYC-DEBIT (PIC S9(10)V99)"/>
-        <setColumnRemarks tableName="account_data" columnName="zip_code" 
+        <setColumnRemarks tableName="account_data" columnName="address_zip" 
                          remarks="Account ZIP code, maps to ACCT-ADDR-ZIP (PIC X(10))"/>
         <setColumnRemarks tableName="account_data" columnName="group_id" 
                          remarks="Account group ID, maps to ACCT-GROUP-ID (PIC X(10))"/>
