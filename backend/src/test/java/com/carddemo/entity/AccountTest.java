@@ -520,10 +520,9 @@ public class AccountTest extends AbstractBaseTest implements UnitTest {
         Field accountIdField = Account.class.getDeclaredField("accountId");
         assertThat(accountIdField.isAnnotationPresent(jakarta.persistence.Id.class)).isTrue();
         
-        // Test @GeneratedValue annotation for auto-increment behavior
-        assertThat(accountIdField.isAnnotationPresent(jakarta.persistence.GeneratedValue.class)).isTrue();
-        jakarta.persistence.GeneratedValue generatedValue = accountIdField.getAnnotation(jakarta.persistence.GeneratedValue.class);
-        assertThat(generatedValue.strategy()).isEqualTo(jakarta.persistence.GenerationType.IDENTITY);
+        // Test that @GeneratedValue is NOT present - COBOL migration maintains manual ID assignment
+        // In COBOL systems, account IDs are typically assigned manually, not auto-generated
+        assertThat(accountIdField.isAnnotationPresent(jakarta.persistence.GeneratedValue.class)).isFalse();
         
         // Test @Column annotations with proper database mapping
         Field currentBalanceField = Account.class.getDeclaredField("currentBalance");

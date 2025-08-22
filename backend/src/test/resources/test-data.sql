@@ -68,12 +68,18 @@ INSERT INTO card_data (card_number, account_id, customer_id, cvv_code, embossed_
 ('4000123456789005', 12345678905, 1000000005, '345', 'MICHAEL E BROWN', '2026-08-31', 'Y');
 
 -- Insert test users for security
-INSERT INTO user_security (user_id, username, password_hash, first_name, last_name, user_type) VALUES
-(1, 'ADMIN01', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iYqiSfFe5KuEty6iXPLJ.T4RsKtS', 'System', 'Administrator', 'AD'),
-(2, 'USER001', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iYqiSfFe5KuEty6iXPLJ.T4RsKtS', 'Regular', 'User', 'RU'),
-(3, 'TELLER1', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iYqiSfFe5KuEty6iXPLJ.T4RsKtS', 'Bank', 'Teller', 'TE'),
-(4, 'MANAGER', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iYqiSfFe5KuEty6iXPLJ.T4RsKtS', 'Branch', 'Manager', 'MG'),
-(5, 'AUDITOR', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iYqiSfFe5KuEty6iXPLJ.T4RsKtS', 'Internal', 'Auditor', 'AU');
+INSERT INTO user_security (sec_usr_id, username, password_hash, first_name, last_name, sec_usr_type, 
+    enabled, account_non_expired, account_non_locked, credentials_non_expired, failed_login_attempts) VALUES
+('ADMIN01', 'ADMIN01', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iYqiSfFe5KuEty6iXPLJ.T4RsKtS', 'System', 'Administrator', 'A', 
+    true, true, true, true, 0),
+('USER001', 'USER001', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iYqiSfFe5KuEty6iXPLJ.T4RsKtS', 'Regular', 'User', 'U', 
+    true, true, true, true, 0),
+('TELLER1', 'TELLER1', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iYqiSfFe5KuEty6iXPLJ.T4RsKtS', 'Bank', 'Teller', 'U', 
+    true, true, true, true, 0),
+('MANAGER', 'MANAGER', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iYqiSfFe5KuEty6iXPLJ.T4RsKtS', 'Branch', 'Manager', 'A', 
+    true, true, true, true, 0),
+('AUDITOR', 'AUDITOR', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iYqiSfFe5KuEty6iXPLJ.T4RsKtS', 'Internal', 'Auditor', 'A', 
+    true, true, true, true, 0);
 
 -- Insert test business users
 INSERT INTO user_data (user_id, first_name, last_name, email, phone, status, user_type) VALUES
