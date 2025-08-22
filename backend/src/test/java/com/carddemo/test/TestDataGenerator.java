@@ -136,8 +136,18 @@ public final class TestDataGenerator {
         account.setActiveStatus(random.nextBoolean() ? "Y" : "N");
         
         // Generate monetary amounts with COBOL COMP-3 precision
-        account.setCurrentBalance(generateBalance());
-        account.setCreditLimit(generateCreditLimit());
+        // Ensure logical consistency: balance should be within credit limit bounds
+        BigDecimal creditLimit = generateCreditLimit();
+        account.setCreditLimit(creditLimit);
+        
+        // Generate balance that respects credit limit (can be negative for overpayments, 
+        // but shouldn't exceed credit limit for realistic test scenarios)
+        BigDecimal maxBalance = creditLimit;
+        BigDecimal minBalance = BigDecimal.valueOf(-10000.0); // Allow negative for overpayments
+        
+        double range = maxBalance.subtract(minBalance).doubleValue();
+        double amount = minBalance.doubleValue() + (random.nextDouble() * range);
+        account.setCurrentBalance(CobolDataConverter.toBigDecimal(amount, 2));
         account.setCashCreditLimit(generateComp3BigDecimal(2, 10000.00));
         
         // Generate dates
