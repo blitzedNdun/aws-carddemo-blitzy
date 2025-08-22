@@ -5,11 +5,9 @@ spring:
   main:
     allow-bean-definition-overriding: true
     
-  # Liquibase for tests - only run test context changesets
+  # Liquibase disabled for tests - using schema-test.sql instead
   liquibase:
-    enabled: true
-    contexts: "test"
-    change-log: "classpath:db/changelog/db.changelog-master.yaml"
+    enabled: false
     
   datasource:
     url: jdbc:h2:mem:testdb;DB_CLOSE_ON_EXIT=FALSE;DATABASE_TO_UPPER=false
@@ -23,7 +21,6 @@ spring:
       
   sql:
     init:
-      schema-locations: classpath:schema-test.sql
       data-locations: classpath:test-data.sql
       mode: always
       continue-on-error: false
@@ -33,7 +30,13 @@ spring:
     database: h2
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: none
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+        use_sql_comments: true
+    show-sql: true
       naming:
         physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
     properties:
