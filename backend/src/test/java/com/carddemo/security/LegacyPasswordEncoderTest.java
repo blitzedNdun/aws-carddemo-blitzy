@@ -148,14 +148,14 @@ public class LegacyPasswordEncoderTest extends AbstractBaseTest implements UnitT
      */
     @Test
     public void testMatchesWithDifferentCase() {
-        String originalPassword = "TestPass123";
+        String originalPassword = "TestPass"; // 8 characters - within COBOL field limit
         String encodedPassword = passwordEncoder.encode(originalPassword);
         
         // All these should match due to uppercase conversion
-        assertThat(passwordEncoder.matches("testpass123", encodedPassword)).isTrue();
-        assertThat(passwordEncoder.matches("TESTPASS123", encodedPassword)).isTrue();
-        assertThat(passwordEncoder.matches("TestPass123", encodedPassword)).isTrue();
-        assertThat(passwordEncoder.matches("tEstPaSs123", encodedPassword)).isTrue();
+        assertThat(passwordEncoder.matches("testpass", encodedPassword)).isTrue();
+        assertThat(passwordEncoder.matches("TESTPASS", encodedPassword)).isTrue();
+        assertThat(passwordEncoder.matches("TestPass", encodedPassword)).isTrue();
+        assertThat(passwordEncoder.matches("tEstPaSs", encodedPassword)).isTrue();
     }
 
     /**
@@ -297,11 +297,11 @@ public class LegacyPasswordEncoderTest extends AbstractBaseTest implements UnitT
         assertThat(passwordEncoder).isInstanceOf(PasswordEncoder.class);
         
         // Test that encoding preserves plain-text nature (like NoOpPasswordEncoder)
-        String plainPassword = "plaintext";
+        String plainPassword = "testpass"; // 8 characters - within COBOL field limit
         String encoded = passwordEncoder.encode(plainPassword);
         
         // Should be uppercase but still plain text (no hashing)
-        assertThat(encoded).isEqualTo("PLAINTEXT");
+        assertThat(encoded).isEqualTo("TESTPASS");
         assertThat(encoded).doesNotContain("$2a$"); // Not BCrypt
         assertThat(encoded).doesNotContain("{"); // Not DelegatingPasswordEncoder format
         
