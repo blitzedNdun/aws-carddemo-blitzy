@@ -5,7 +5,8 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
 
-    <changeSet id="008-create-data-validation-functions" author="CardDemo Migration Team" context="development,migration,production">
+    <changeSet id="008-create-data-validation-functions" author="CardDemo Migration Team" context="!test"
+               dbms="postgresql">
         <comment>Create PostgreSQL functions for data validation matching COBOL edit routines</comment>
         
         <!-- Function to validate US phone numbers -->
@@ -64,7 +65,8 @@
         </rollback>
     </changeSet>
 
-    <changeSet id="008-add-phone-validation-constraints" author="CardDemo Migration Team" context="development,migration,production">
+    <changeSet id="008-add-phone-validation-constraints" author="CardDemo Migration Team" context="!test"
+               dbms="postgresql">
         <comment>Add phone number validation constraints using custom function</comment>
         
         <sql>ALTER TABLE customer_data ADD CONSTRAINT chk_phone_number_1_format CHECK (validate_us_phone(phone_number_1));</sql>
@@ -76,7 +78,8 @@
         </rollback>
     </changeSet>
 
-    <changeSet id="008-add-zip-validation-constraints" author="CardDemo Migration Team" context="development,migration,production">
+    <changeSet id="008-add-zip-validation-constraints" author="CardDemo Migration Team" context="!test"
+               dbms="postgresql">
         <comment>Add ZIP code validation constraints using custom function</comment>
         
         <sql>ALTER TABLE customer_data ADD CONSTRAINT chk_zip_code_format CHECK (validate_us_zip(zip_code));</sql>
@@ -86,7 +89,8 @@
         </rollback>
     </changeSet>
 
-    <changeSet id="008-add-audit-triggers" author="CardDemo Migration Team" context="development,migration,production">
+    <changeSet id="008-add-audit-triggers" author="CardDemo Migration Team" context="!test"
+               dbms="postgresql">
         <comment>Add audit triggers for tracking data changes (COBOL audit trail equivalent)</comment>
         
         <!-- Create audit log table -->
@@ -140,7 +144,8 @@
         </rollback>
     </changeSet>
 
-    <changeSet id="008-create-audit-triggers" author="CardDemo Migration Team" context="development,migration,production">
+    <changeSet id="008-create-audit-triggers" author="CardDemo Migration Team" context="!test"
+               dbms="postgresql">
         <comment>Create audit triggers on main tables</comment>
         
         <sql>
