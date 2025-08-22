@@ -831,7 +831,7 @@ public class FileFormatConverterTest extends AbstractBaseTest implements UnitTes
      * @return Map containing field names and their COBOL PIC definitions
      */
     private Map<String, String> buildTransactionCopybook() {
-        Map<String, String> copybook = new HashMap<>();
+        Map<String, String> copybook = new LinkedHashMap<>();
         
         // Based on CVTRA05Y.cpy structure - TRAN-RECORD (RECLN = 350)
         copybook.put("TRAN-ID", "PIC X(16)");
@@ -859,7 +859,7 @@ public class FileFormatConverterTest extends AbstractBaseTest implements UnitTes
      * @return Map containing field names and their COBOL PIC definitions
      */
     private Map<String, String> buildAccountCopybook() {
-        Map<String, String> copybook = new HashMap<>();
+        Map<String, String> copybook = new LinkedHashMap<>();
         
         // Based on CVACT01Y.cpy structure - ACCOUNT-RECORD (RECLN = 300)
         copybook.put("ACCT-ID", "PIC 9(11) COMP");
@@ -1029,7 +1029,8 @@ public class FileFormatConverterTest extends AbstractBaseTest implements UnitTes
      * @param count Number of records to generate
      * @return List of test records as Map objects
      */
-    private List<Map<String, Object>> generateTestData(String entityType, int count) {
+    @Override
+    protected List<Map<String, Object>> generateTestData(String entityType, int count) {
         List<Map<String, Object>> testData = new ArrayList<>();
         
         for (int i = 1; i <= count; i++) {
