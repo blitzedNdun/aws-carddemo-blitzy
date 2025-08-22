@@ -266,12 +266,21 @@ public final class CobolStringFormatter {
             return value;
         }
         
-        // Basic implementation for common edit patterns
-        if (editPattern.contains("Z") && editPattern.contains(".")) {
-            // Zero suppression with decimal point
-            return formatZeroSuppressed(value, editPattern);
+        // Handle special case: single Z pattern for complete zero suppression
+        if (editPattern.equals("Z") && "0".equals(value.trim())) {
+            return "";
+        }
+        
+        // Handle Z patterns (zero suppression) - check for commas too
+        if (editPattern.contains("Z")) {
+            if (editPattern.contains(",")) {
+                // Handle Z pattern with commas
+                return formatZeroSuppressedWithCommas(value, editPattern);
+            } else {
+                return formatZeroSuppressed(value, editPattern);
+            }
         } else if (editPattern.contains(",")) {
-            // Thousands separator formatting
+            // Thousands separator formatting only
             return formatWithCommas(value);
         }
         
@@ -316,10 +325,10 @@ public final class CobolStringFormatter {
      * Converts COBOL string to Java string format.
      * 
      * @param value     the COBOL string to convert
-     * @return Java-compatible string (typically trimmed)
+     * @return Java-compatible string (with trailing spaces removed)
      */
     public static String convertToJavaString(String value) {
-        return value != null ? value.trim() : "";
+        return value != null ? value.replaceAll("\\s+$", "") : "";
     }
 
     /**
@@ -429,22 +438,56 @@ public final class CobolStringFormatter {
             return "";
         }
         
-        // Basic zero suppression - replace leading zeros with spaces
         String trimmed = value.trim();
-        StringBuilder result = new StringBuilder();
-        boolean foundNonZero = false;
         
-        for (int i = 0; i < trimmed.length(); i++) {
-            char ch = trimmed.charAt(i);
-            if (ch != '0' || foundNonZero || i == trimmed.length() - 1) {
-                foundNonZero = true;
-                result.append(ch);
-            } else {
-                result.append(' ');
+        // Handle decimal patterns like Z.99, ZZ.99, etc.
+        if (pattern.contains(".")) {
+            // Parse the decimal value
+            double numValue;
+            try {
+                numValue = Double.parseDouble(trimmed);
+            } catch (NumberFormatException e) {
+                return trimmed;
             }
+            
+            // Count decimal places from pattern
+            String[] patternParts = pattern.split("\\.");
+            int decimalPlaces = patternParts.length > 1 ? patternParts[1].length() : 0;
+            
+            // Format with proper decimal places
+            String formatted = String.format("%." + decimalPlaces + "f", numValue);
+            
+            // Apply zero suppression to integer part
+            String[] parts = formatted.split("\\.");
+            String integerPart = parts[0];
+            String decimalPart = parts.length > 1 ? parts[1] : "";
+            
+            // Count Z positions in integer part of pattern
+            int zCount = (int) patternParts[0].chars().filter(ch -> ch == 'Z' || ch == 'z').count();
+            
+            // Apply zero suppression only if integer part is zero and we have Z suppression
+            if ("0".equals(integerPart) && zCount > 0) {
+                return " ." + decimalPart;
+            } else {
+                return formatted;
+            }
+        } else {
+            // Non-decimal zero suppression - replace leading zeros with spaces
+            StringBuilder result = new StringBuilder();
+            boolean foundNonZero = false;
+            
+            for (int i = 0; i < trimmed.length(); i++) {
+                char ch = trimmed.charAt(i);
+                if (ch != '0' || foundNonZero || i == trimmed.length() - 1) {
+                    foundNonZero = true;
+                    result.append(ch);
+                } else {
+                    result.append(' ');
+                }
+            }
+            
+            return result.toString();
         }
-        
-        return result.toString();
     }
 
     /**
@@ -460,6 +503,31 @@ public final class CobolStringFormatter {
             return String.format("%,d", number);
         } catch (NumberFormatException e) {
             return value;
+        }
+    }
+    
+    /**
+     * Formats numeric value with both zero suppression and comma separators.
+     */
+    private static String formatZeroSuppressedWithCommas(String value, String pattern) {
+        if (value == null || value.trim().isEmpty()) {
+            return "";
+        }
+        
+        String trimmed = value.trim();
+        
+        try {
+            long number = Long.parseLong(trimmed);
+            
+            // For patterns like "Z,ZZZ" - if value is zero, suppress completely  
+            if (number == 0 && pattern.startsWith("Z")) {
+                return "";
+            }
+            
+            // Otherwise format with commas
+            return String.format("%,d", number);
+        } catch (NumberFormatException e) {
+            return trimmed;
         }
     }
 }
