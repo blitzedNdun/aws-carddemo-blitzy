@@ -702,7 +702,10 @@ public final class FileFormatConverter {
         var matcher = PIC_CLAUSE_PATTERN.matcher(fieldDefinition);
         if (matcher.find()) {
             String lengthGroup = matcher.group(2);
-            return lengthGroup != null ? Integer.parseInt(lengthGroup) : 1;
+            String decimalPart = matcher.group(3);
+            int baseLength = lengthGroup != null ? Integer.parseInt(lengthGroup) : 1;
+            int decimalLength = decimalPart != null ? decimalPart.length() : 0;
+            return baseLength + decimalLength;
         }
         return 0;
     }
