@@ -11,6 +11,7 @@ import com.carddemo.test.UnitTest;
 import com.carddemo.util.Constants;
 import com.carddemo.util.ValidationUtil;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -67,6 +68,7 @@ public class CardXrefTest extends AbstractBaseTest implements UnitTest {
 
     private Validator validator;
 
+    @BeforeEach
     @Override
     public void setUp() {
         super.setUp();
@@ -158,11 +160,11 @@ public class CardXrefTest extends AbstractBaseTest implements UnitTest {
             // Validate using ValidationUtil methods
             assertThatNoException()
                 .as("Card number should pass ValidationUtil validation")
-                .isThrownBy(() -> ValidationUtil.validateCardNumber(cardNumber));
+                .isThrownBy(() -> ValidationUtil.validateNumericField("cardNumber", cardNumber));
             
             assertThatNoException()
                 .as("Account ID should pass ValidationUtil validation")
-                .isThrownBy(() -> ValidationUtil.validateAccountId(String.valueOf(accountId)));
+                .isThrownBy(() -> ValidationUtil.validateNumericField("accountId", String.valueOf(accountId)));
             
             logTestExecution("Field combination validation passed: " + description, null);
         }
@@ -356,7 +358,7 @@ public class CardXrefTest extends AbstractBaseTest implements UnitTest {
             CardXref cardXref = new CardXref(cardNumber, customerId, accountId);
             
             // Create mock related entities
-            Card card = generateTestData("card", 1).stream()
+            Card card = generateTestData("cards", 1).stream()
                 .map(data -> {
                     Card c = new Card();
                     c.setCardNumber(cardNumber);
@@ -365,7 +367,7 @@ public class CardXrefTest extends AbstractBaseTest implements UnitTest {
                     return c;
                 }).findFirst().orElse(null);
             
-            Customer customer = generateTestData("customer", 1).stream()
+            Customer customer = generateTestData("customers", 1).stream()
                 .map(data -> {
                     Customer cust = new Customer();
                     cust.setCustomerId(customerId);
@@ -374,12 +376,12 @@ public class CardXrefTest extends AbstractBaseTest implements UnitTest {
                     return cust;
                 }).findFirst().orElse(null);
             
-            Account account = generateTestData("account", 1).stream()
+            Account account = generateTestData("accounts", 1).stream()
                 .map(data -> {
                     Account acc = new Account();
                     acc.setAccountId(accountId);
                     acc.setCurrentBalance(java.math.BigDecimal.valueOf(1000.00));
-                    acc.setCustomerId(customerId);
+                    acc.setCustomer(customer);
                     return acc;
                 }).findFirst().orElse(null);
             
@@ -469,23 +471,23 @@ public class CardXrefTest extends AbstractBaseTest implements UnitTest {
             
             // When/Then: Validate using ValidationUtil methods
             assertThatNoException()
-                .as("Valid card number should pass ValidationUtil.validateCardNumber")
-                .isThrownBy(() -> ValidationUtil.validateCardNumber(cardNumber));
+                .as("Valid card number should pass ValidationUtil.validateNumericField")
+                .isThrownBy(() -> ValidationUtil.validateNumericField("cardNumber", cardNumber));
             
             assertThatNoException()
-                .as("Valid account ID should pass ValidationUtil.validateAccountId")
-                .isThrownBy(() -> ValidationUtil.validateAccountId(accountIdStr));
+                .as("Valid account ID should pass ValidationUtil.validateNumericField")
+                .isThrownBy(() -> ValidationUtil.validateNumericField("accountId", accountIdStr));
             
             assertThatNoException()
                 .as("Valid customer ID should pass ValidationUtil.validateNumericField")
                 .isThrownBy(() -> ValidationUtil.validateNumericField("customerId", customerIdStr));
             
-            // Test invalid values
-            assertThatThrownBy(() -> ValidationUtil.validateCardNumber("123")) // Too short
+            // Test invalid values with proper length validation
+            assertThatThrownBy(() -> ValidationUtil.validateNumericField("123", "cardNumber", 16)) // Too short
                 .as("Short card number should fail validation")
                 .isInstanceOf(RuntimeException.class);
             
-            assertThatThrownBy(() -> ValidationUtil.validateCardNumber("12345678901234567")) // Too long
+            assertThatThrownBy(() -> ValidationUtil.validateNumericField("12345678901234567", "cardNumber", 16)) // Too long
                 .as("Long card number should fail validation")
                 .isInstanceOf(RuntimeException.class);
             
