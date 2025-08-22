@@ -65,7 +65,7 @@ import static org.mockito.Mockito.reset;
 @Transactional
 public abstract class AbstractBaseTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(AbstractBaseTest.class);
+    protected static final Logger logger = LoggerFactory.getLogger(AbstractBaseTest.class);
     
     private AutoCloseable mockitoCloseable;
     private ObjectMapper objectMapper;
