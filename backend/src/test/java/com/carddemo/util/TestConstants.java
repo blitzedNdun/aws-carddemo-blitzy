@@ -265,4 +265,86 @@ public final class TestConstants {
      * Matches ACCT-ID field definition (PIC 9(11)).
      */
     public static final int ACCOUNT_ID_LENGTH = 11;
+
+    // Additional Test Data Constants for AbstractBaseTest compatibility
+    /**
+     * Test customer ID for testing scenarios.
+     * Standard customer ID used across test cases.
+     */
+    public static final String TEST_CUSTOMER_ID = "1000000001";
+
+    /**
+     * Test user ID for authentication testing.
+     * Standard user ID used in authentication test scenarios.
+     */
+    public static final String TEST_USER_ID = "TESTUSER";
+
+    /**
+     * Test user password for authentication testing.
+     * Standard password used in authentication test scenarios.
+     */
+    public static final String TEST_USER_PASSWORD = "password123";
+
+    /**
+     * Test user role for role-based access control testing.
+     * Standard user role used in authorization test scenarios.
+     */
+    public static final String TEST_USER_ROLE = "USER";
+
+    /**
+     * Test admin role for administrative function testing.
+     * Standard admin role used in elevated permission test scenarios.
+     */
+    public static final String TEST_ADMIN_ROLE = "ADMIN";
+
+    /**
+     * Test card number for card-related testing.
+     * Standard card number used across card test scenarios.
+     */
+    public static final String TEST_CARD_NUMBER = "1234567890123456";
+
+    /**
+     * Test transaction type code for transaction testing.
+     * Standard transaction type code used in transaction test scenarios.
+     */
+    public static final String TEST_TRANSACTION_TYPE_CODE = "PUR";
+
+    /**
+     * Test transaction type description for transaction testing.
+     * Standard description used in transaction type test scenarios.
+     */
+    public static final String TEST_TRANSACTION_TYPE_DESC = "Purchase";
+
+    /**
+     * Test transaction category code for categorization testing.
+     * Standard category code used in transaction category test scenarios.
+     */
+    public static final String TEST_TRANSACTION_CATEGORY_CODE = "RETAIL";
+
+    // Validation Thresholds Map
+    /**
+     * Validation thresholds for various test scenarios.
+     * Contains decimal precision tolerance and other validation thresholds.
+     */
+    public static final java.util.Map<String, Object> VALIDATION_THRESHOLDS = 
+        java.util.Map.of(
+            "decimal_precision_tolerance", 0.01,
+            "response_time_ms", RESPONSE_TIME_THRESHOLD_MS,
+            "success_rate_threshold", 0.95,
+            "availability_threshold", 0.999
+        );
+
+    // COBOL COMP-3 Patterns Map
+    /**
+     * COBOL COMP-3 patterns and configuration for precision testing.
+     * Contains maximum precision, scale, and pattern definitions.
+     */
+    public static final java.util.Map<String, Object> COBOL_COMP3_PATTERNS = 
+        java.util.Map.of(
+            "max_precision", 18,
+            "default_scale", COBOL_DECIMAL_SCALE,
+            "rounding_mode", COBOL_ROUNDING_MODE.toString(),
+            "numeric_pattern", "^[0-9]{1,16}$",
+            "decimal_pattern", "^[0-9]{1,14}\\.[0-9]{2}$"
+        );
 }
