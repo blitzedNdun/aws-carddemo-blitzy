@@ -13,7 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.InjectMocks;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-import javax.servlet.FilterChain;
+import jakarta.servlet.FilterChain;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -28,7 +28,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.mockito.Mock;
 
-import javax.servlet.ServletException;
+import jakarta.servlet.ServletException;
 import java.io.IOException;
 
 /**
@@ -522,6 +522,7 @@ public class JwtAuthenticationFilterTest extends AbstractBaseTest implements Uni
         
         // Test Case 3: Filter chain continuation with existing security context
         reset(filterChain);
+        reset(jwtTokenService);
         
         // Set up existing authentication in security context
         UsernamePasswordAuthenticationToken existingAuth = 

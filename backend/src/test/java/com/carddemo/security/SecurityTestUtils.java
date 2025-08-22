@@ -147,23 +147,14 @@ public final class SecurityTestUtils {
     }
 
     /**
-     * Generates a valid JWT token for testing purposes using mock JwtTokenService.
+     * Generates a valid JWT token for testing purposes.
      * 
      * @param userDetails the user details to embed in the token
      * @return JWT token string for testing
      */
     public static String generateTestJwtToken(UserDetails userDetails) {
-        // Create a mock JwtTokenService for testing
-        JwtTokenService mockJwtService = Mockito.mock(JwtTokenService.class);
-        
         // Generate a test token (this would normally be done by the actual service)
-        String testToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0dXNlciIsImF1dGhvcml0aWVzIjpbIlJPTEVfVVNFUiJdLCJpYXQiOjE2MDAwMDAwMDAsImV4cCI6OTk5OTk5OTk5OX0.test_signature";
-        
-        Mockito.when(mockJwtService.generateToken(userDetails)).thenReturn(testToken);
-        Mockito.when(mockJwtService.validateToken(testToken)).thenReturn(true);
-        Mockito.when(mockJwtService.extractUsername(testToken)).thenReturn(userDetails.getUsername());
-        
-        return testToken;
+        return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0dXNlciIsImF1dGhvcml0aWVzIjpbIlJPTEVfVVNFUiJdLCJpYXQiOjE2MDAwMDAwMDAsImV4cCI6OTk5OTk5OTk5OX0.test_signature";
     }
 
     /**
@@ -174,13 +165,7 @@ public final class SecurityTestUtils {
      */
     public static String generateExpiredJwtToken(UserDetails userDetails) {
         // Return a token that represents an expired state
-        String expiredToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0dXNlciIsImF1dGhvcml0aWVzIjpbIlJPTEVfVVNFUiJdLCJpYXQiOjE2MDAwMDAwMDAsImV4cCI6MTYwMDAwMDAwMX0.expired_signature";
-        
-        JwtTokenService mockJwtService = Mockito.mock(JwtTokenService.class);
-        Mockito.when(mockJwtService.validateToken(expiredToken)).thenReturn(false);
-        Mockito.when(mockJwtService.isTokenExpired(expiredToken)).thenReturn(true);
-        
-        return expiredToken;
+        return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0dXNlciIsImF1dGhvcml0aWVzIjpbIlJPTEVfVVNFUiJdLCJpYXQiOjE2MDAwMDAwMDAsImV4cCI6MTYwMDAwMDAwMX0.expired_signature";
     }
 
     /**
@@ -191,12 +176,7 @@ public final class SecurityTestUtils {
      */
     public static String generateInvalidJwtToken(UserDetails userDetails) {
         // Return a malformed token
-        String invalidToken = "invalid.jwt.token.structure";
-        
-        JwtTokenService mockJwtService = Mockito.mock(JwtTokenService.class);
-        Mockito.when(mockJwtService.validateToken(invalidToken)).thenReturn(false);
-        
-        return invalidToken;
+        return "invalid.jwt.token.structure";
     }
 
     /**
