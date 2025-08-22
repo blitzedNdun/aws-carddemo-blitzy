@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -61,8 +62,8 @@ import java.util.Map;
  * @version 1.0
  * @since Spring Boot 3.2.x, Spring Batch 5.x
  */
+@Profile({"!test", "!unit-test"})
 @Configuration
-@org.springframework.context.annotation.Profile("!test")
 public class StatementGenerationJobConfigB {
 
     @Autowired

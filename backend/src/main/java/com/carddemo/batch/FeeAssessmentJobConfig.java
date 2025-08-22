@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Sort;
 import org.springframework.retry.annotation.Backoff;
@@ -60,8 +61,8 @@ import java.util.Map;
  * Translated from COBOL program CBACT04C.cbl, specifically focusing on
  * the fee computation logic (originally stubbed in COBOL as 1400-COMPUTE-FEES).
  */
+@Profile({"!test", "!unit-test"})
 @Configuration
-@org.springframework.context.annotation.Profile("!test")
 public class FeeAssessmentJobConfig {
     
     private final com.carddemo.repository.AccountRepository accountRepository;

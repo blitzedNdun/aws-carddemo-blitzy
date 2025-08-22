@@ -100,6 +100,53 @@ spring:
       - test-data
       - mock-external
 
+  # Main Configuration - disable banner for faster startup
+  main:
+    banner-mode: off
+    lazy-initialization: true
+    web-application-type: servlet
+
+  # Batch Job Configuration for Unit Tests
+  # Simplified configuration for testing Spring Batch components
+  batch:
+    # Use in-memory job repository for unit tests
+    job:
+      enabled: false  # Disable automatic job execution
+    jdbc:
+      initialize-schema: embedded
+      # Use H2 for batch metadata
+      platform: h2
+
+  # Validation Configuration
+  # Enable validation for testing input validation logic
+  validation:
+    enabled: true
+
+  # Cache Configuration - DISABLED for Unit Tests
+  cache:
+    type: none
+    cache-names: []
+
+  # JSON Configuration for Unit Tests
+  jackson:
+    # Configure Jackson for COBOL data compatibility
+    serialization:
+      write-dates-as-timestamps: false
+      write-date-timestamps-as-nanoseconds: false
+    deserialization:
+      fail-on-unknown-properties: false
+      accept-single-value-as-array: true
+    default-property-inclusion: non_null
+    # Configure BigDecimal handling for COMP-3 precision
+    parser:
+      allow-numeric-leading-zeros: true
+      allow-non-numeric-numbers: false
+
+  # Test Environment Variables
+  # Override any environment-specific configurations
+  config:
+    import: optional:classpath:test-override.properties
+
 # Logging Configuration for Unit Tests
 # Minimal logging to reduce test execution time
 logging:
@@ -215,46 +262,13 @@ server:
     whitelabel:
       enabled: false
 
-# Batch Job Configuration for Unit Tests
-# Simplified configuration for testing Spring Batch components
-spring.batch:
-  # Use in-memory job repository for unit tests
-  job:
-    enabled: false  # Disable automatic job execution
-  jdbc:
-    initialize-schema: embedded
-    # Use H2 for batch metadata
-    platform: h2
-    
-# Validation Configuration
-# Enable validation for testing input validation logic
-spring.validation:
-  enabled: true
 
-# Cache Configuration - DISABLED for Unit Tests
-spring.cache:
-  type: none
-  cache-names: []
 
-# JSON Configuration for Unit Tests
-spring.jackson:
-  # Configure Jackson for COBOL data compatibility
-  serialization:
-    write-dates-as-timestamps: false
-    write-date-timestamps-as-nanoseconds: false
-  deserialization:
-    fail-on-unknown-properties: false
-    accept-single-value-as-array: true
-  default-property-inclusion: non_null
-  # Configure BigDecimal handling for COMP-3 precision
-  parser:
-    allow-numeric-leading-zeros: true
-    allow-non-numeric-numbers: false
 
-# Test Environment Variables
-# Override any environment-specific configurations
-spring.config:
-  import: optional:classpath:test-override.properties
+
+
+
+
 
 # COBOL Compatibility Configuration for Unit Tests
 cobol:
@@ -282,11 +296,7 @@ cobol:
 debug: false
 trace: false
 
-# Disable banner for faster startup
-spring.main:
-  banner-mode: "off"
-  lazy-initialization: true
-  web-application-type: servlet
+# Spring main configuration moved to proper nested location under spring: section
 
 # Test-specific feature flags
 features:

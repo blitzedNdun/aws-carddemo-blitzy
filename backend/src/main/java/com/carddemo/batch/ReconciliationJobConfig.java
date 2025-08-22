@@ -20,6 +20,7 @@ import org.springframework.batch.item.file.builder.FlatFileItemWriterBuilder;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -44,8 +45,8 @@ import java.time.format.DateTimeFormatter;
  * into modern Spring Batch processing patterns while maintaining identical
  * validation rules and processing sequences.
  */
+@Profile({"!test", "!unit-test"})
 @Configuration
-@org.springframework.context.annotation.Profile("!test")
 public class ReconciliationJobConfig {
 
     private final JobRepository jobRepository;

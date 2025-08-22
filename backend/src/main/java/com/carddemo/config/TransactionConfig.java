@@ -7,6 +7,7 @@ package com.carddemo.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -56,6 +57,7 @@ import javax.sql.DataSource;
  */
 @Configuration
 @EnableTransactionManagement
+@Profile({"!test", "!unit-test"})
 public class TransactionConfig {
 
     /**

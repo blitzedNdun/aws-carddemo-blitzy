@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -50,8 +51,8 @@ import java.util.Map;
  * This replaces the COBOL batch reconciliation programs while preserving identical
  * business logic for balance verification and discrepancy identification.
  */
+@Profile({"!test", "!unit-test"})
 @Configuration
-@org.springframework.context.annotation.Profile("!test")
 public class BalanceReconciliationJobConfig {
 
     @Autowired

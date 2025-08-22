@@ -63,7 +63,7 @@ import java.util.Properties;
  */
 @Configuration
 @EnableAutoConfiguration
-@Profile("!test")
+@Profile({"!test", "!unit-test"})
 public class DatabaseConfig {
 
     // Database connection configuration constants

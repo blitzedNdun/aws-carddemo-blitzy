@@ -82,7 +82,7 @@ import org.slf4j.LoggerFactory;
  * @see Section 6.6 TESTING STRATEGY
  */
 @TestConfiguration
-@Import({DatabaseConfig.class, TestReconciliationJobConfig.class})
+@Import({TestReconciliationJobConfig.class})
 @TestPropertySource(locations = "classpath:application-test.yml")
 @ExtendWith(SpringExtension.class)
 public class BaseTestConfig {
@@ -257,7 +257,7 @@ public class BaseTestConfig {
      */
     @Bean
     @Primary
-    @Profile("unit")
+    @Profile({"unit", "unit-test"})
     public DataSource testDataSource() {
         logger.info("Configuring H2 in-memory test data source for unit testing");
         

@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 
@@ -57,8 +58,8 @@ import java.util.Map;
  * @version 1.0
  * @since 2024-01-01
  */
+@Profile({"!test", "!unit-test"})
 @Configuration
-@org.springframework.context.annotation.Profile("!test")
 public class ArchiveJobConfig {
 
     @Autowired

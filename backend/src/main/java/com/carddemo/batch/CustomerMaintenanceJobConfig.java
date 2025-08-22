@@ -19,6 +19,7 @@ import org.springframework.batch.item.support.builder.CompositeItemProcessorBuil
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -68,8 +69,8 @@ import java.util.regex.Matcher;
  * while leveraging Spring Batch capabilities for error handling, restart,
  * and monitoring.
  */
+@Profile({"!test", "!unit-test"})
 @Configuration
-@org.springframework.context.annotation.Profile("!test")
 public class CustomerMaintenanceJobConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomerMaintenanceJobConfig.class);

@@ -24,6 +24,7 @@ import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilde
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -108,6 +109,7 @@ import org.slf4j.LoggerFactory;
  * @see org.springframework.batch.core.Job
  * @see org.springframework.batch.core.Step
  */
+@Profile({"!test", "!unit-test"})
 @Configuration
 public class AccountClosureJobConfig {
 

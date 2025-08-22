@@ -17,6 +17,7 @@ import org.springframework.batch.core.explore.support.JobExplorerFactoryBean;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -65,6 +66,7 @@ import javax.sql.DataSource;
  */
 @Configuration
 @EnableBatchProcessing
+@Profile({"!test", "!unit-test"})
 public class BatchConfig {
 
     // Thread pool configuration constants for batch processing optimization
