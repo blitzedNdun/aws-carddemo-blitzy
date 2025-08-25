@@ -20,6 +20,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -33,6 +36,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -194,7 +198,8 @@ public class SecurityAuditRepositoryTest extends AbstractBaseTest implements Int
         assertThat(savedAudit.getActionPerformed()).isEqualTo("INVALID_CREDENTIALS");
 
         // Test failed authentication query functionality
-        List<AuditLog> failedAttempts = auditLogRepository.findByOutcome("FAILURE");
+        Page<AuditLog> failedAttemptsPage = auditLogRepository.findByOutcome("FAILURE", PageRequest.of(0, 100));
+        List<AuditLog> failedAttempts = failedAttemptsPage.getContent();
         assertThat(failedAttempts).isNotEmpty();
         assertThat(failedAttempts).anyMatch(audit -> audit.getUsername().equals("INVALIDUSER"));
 
@@ -279,14 +284,15 @@ public class SecurityAuditRepositoryTest extends AbstractBaseTest implements Int
         }
 
         // Test data access query functionality
-        List<AuditLog> dataAccessAudits = auditLogRepository.findByEventTypeAndTimestamp("DATA_ACCESS", 
-            LocalDateTime.now().minusMinutes(1), LocalDateTime.now().plusMinutes(1));
+        Page<AuditLog> dataAccessAuditsPage = auditLogRepository.findByEventTypeAndTimestampBetween("DATA_ACCESS", 
+            LocalDateTime.now().minusMinutes(1), LocalDateTime.now().plusMinutes(1), PageRequest.of(0, 100));
+        List<AuditLog> dataAccessAudits = dataAccessAuditsPage.getContent();
         assertThat(dataAccessAudits).hasSize(3);
 
         // Validate specific sensitive resource access
-        List<AuditLog> ssnAudits = auditLogRepository.findByUsernameAndTimestampBetween(
-            TestConstants.TEST_USER_ID, LocalDateTime.now().minusMinutes(1), LocalDateTime.now().plusMinutes(1))
-            .stream()
+        Page<AuditLog> ssnAuditsPage = auditLogRepository.findByUsernameAndTimestampBetween(
+            TestConstants.TEST_USER_ID, LocalDateTime.now().minusMinutes(1), LocalDateTime.now().plusMinutes(1), PageRequest.of(0, 100));
+        List<AuditLog> ssnAudits = ssnAuditsPage.getContent().stream()
             .filter(audit -> audit.getResourceAccessed().contains("/ssn"))
             .toList();
         assertThat(ssnAudits).hasSize(1);
@@ -381,11 +387,11 @@ public class SecurityAuditRepositoryTest extends AbstractBaseTest implements Int
         LocalDateTime searchStart = LocalDateTime.now().minusMinutes(1);
         LocalDateTime searchEnd = LocalDateTime.now().plusMinutes(1);
         
-        List<AuditLog> paymentAudits = auditLogRepository.findByEventTypeAndTimestamp("PAYMENT_PROCESSING", searchStart, searchEnd);
+        List<AuditLog> paymentAudits = auditLogRepository.findByEventTypeAndTimestampBetween("PAYMENT_PROCESSING", searchStart, searchEnd, PageRequest.of(0, 100)).getContent();
         assertThat(paymentAudits).hasSize(1);
         assertThat(paymentAudits.get(0).getActionPerformed()).isEqualTo("PROCESS_PAYMENT");
 
-        List<AuditLog> cardDataAudits = auditLogRepository.findByEventTypeAndTimestamp("CARD_DATA_ACCESS", searchStart, searchEnd);
+        List<AuditLog> cardDataAudits = auditLogRepository.findByEventTypeAndTimestampBetween("CARD_DATA_ACCESS", searchStart, searchEnd, PageRequest.of(0, 100)).getContent();
         assertThat(cardDataAudits).hasSize(1);
         assertThat(cardDataAudits.get(0).getResourceAccessed()).contains("/cards/");
 
@@ -457,8 +463,9 @@ public class SecurityAuditRepositoryTest extends AbstractBaseTest implements Int
         assertThat(deletedCount).isGreaterThanOrEqualTo(1);
 
         // Verify recent audit logs are preserved
-        List<AuditLog> remainingAudits = auditLogRepository.findAuditLogsByDateRange(
-            recentTimestamp.minusDays(1), currentTime.plusDays(1));
+        Page<AuditLog> remainingAuditsPage = auditLogRepository.findAuditLogsByDateRange(
+            recentTimestamp.minusDays(1), currentTime.plusDays(1), PageRequest.of(0, 100));
+        List<AuditLog> remainingAudits = remainingAuditsPage.getContent();
         assertThat(remainingAudits).isNotEmpty();
         assertThat(remainingAudits).anyMatch(audit -> audit.getCorrelationId().startsWith("RETENTION_RECENT_"));
 
@@ -531,18 +538,18 @@ public class SecurityAuditRepositoryTest extends AbstractBaseTest implements Int
         assertThat(savedRightsAudit.getActionPerformed()).isEqualTo("EXPORT_PERSONAL_DATA");
 
         // Test GDPR compliance query functionality
-        List<AuditLog> personalDataAudits = auditLogRepository.findByEventTypeAndTimestamp(
-            "PERSONAL_DATA_ACCESS", accessTime.minusMinutes(1), accessTime.plusMinutes(1));
+        List<AuditLog> personalDataAudits = auditLogRepository.findByEventTypeAndTimestampBetween(
+            "PERSONAL_DATA_ACCESS", accessTime.minusMinutes(1), accessTime.plusMinutes(1), PageRequest.of(0, 100)).getContent();
         assertThat(personalDataAudits).hasSize(1);
 
-        List<AuditLog> dataRightsAudits = auditLogRepository.findByEventTypeAndTimestamp(
-            "DATA_SUBJECT_RIGHTS", accessTime.minusMinutes(1), accessTime.plusMinutes(1));
+        List<AuditLog> dataRightsAudits = auditLogRepository.findByEventTypeAndTimestampBetween(
+            "DATA_SUBJECT_RIGHTS", accessTime.minusMinutes(1), accessTime.plusMinutes(1), PageRequest.of(0, 100)).getContent();
         assertThat(dataRightsAudits).hasSize(1);
 
         // Validate data subject access tracking
-        List<AuditLog> dataSubjectAudits = auditLogRepository.findAuditLogsByDateRange(
-            accessTime.minusMinutes(1), accessTime.plusMinutes(1))
-            .stream()
+        Page<AuditLog> dataSubjectAuditsPage = auditLogRepository.findAuditLogsByDateRange(
+            accessTime.minusMinutes(1), accessTime.plusMinutes(1), PageRequest.of(0, 100));
+        List<AuditLog> dataSubjectAudits = dataSubjectAuditsPage.getContent().stream()
             .filter(audit -> audit.getResourceAccessed().contains(dataSubjectId))
             .toList();
         assertThat(dataSubjectAudits).hasSize(2);
@@ -628,16 +635,19 @@ public class SecurityAuditRepositoryTest extends AbstractBaseTest implements Int
         assertThat(savedUserSuccessAudit.getOutcome()).isEqualTo("SUCCESS");
 
         // Test role-based access query functionality
-        List<AuditLog> adminAccessAudits = auditLogRepository.findByUsernameAndTimestampBetween(
-            "ADMIN001", auditTime.minusMinutes(1), auditTime.plusMinutes(1));
+        Page<AuditLog> adminAccessAuditsPage = auditLogRepository.findByUsernameAndTimestampBetween(
+            "ADMIN001", auditTime.minusMinutes(1), auditTime.plusMinutes(1), PageRequest.of(0, 100));
+        List<AuditLog> adminAccessAudits = adminAccessAuditsPage.getContent();
         assertThat(adminAccessAudits).hasSize(1);
         assertThat(adminAccessAudits.get(0).getResourceAccessed()).contains("/admin/");
 
-        List<AuditLog> userAccessAudits = auditLogRepository.findByUsernameAndTimestampBetween(
-            TestConstants.TEST_USER_ID, auditTime.minusMinutes(1), auditTime.plusMinutes(1));
+        Page<AuditLog> userAccessAuditsPage = auditLogRepository.findByUsernameAndTimestampBetween(
+            TestConstants.TEST_USER_ID, auditTime.minusMinutes(1), auditTime.plusMinutes(1), PageRequest.of(0, 100));
+        List<AuditLog> userAccessAudits = userAccessAuditsPage.getContent();
         assertThat(userAccessAudits).hasSize(2);
 
-        List<AuditLog> deniedAccessAudits = auditLogRepository.findByOutcome("FAILURE");
+        Page<AuditLog> deniedAccessAuditsPage = auditLogRepository.findByOutcome("FAILURE", PageRequest.of(0, 100));
+        List<AuditLog> deniedAccessAudits = deniedAccessAuditsPage.getContent();
         assertThat(deniedAccessAudits).isNotEmpty();
         assertThat(deniedAccessAudits).anyMatch(audit -> audit.getActionPerformed().equals("UNAUTHORIZED_ACCESS_ATTEMPT"));
 
@@ -789,8 +799,8 @@ public class SecurityAuditRepositoryTest extends AbstractBaseTest implements Int
         }
 
         // Test concurrent access query functionality
-        List<AuditLog> concurrentAudits = auditLogRepository.findByEventTypeAndTimestamp(
-            "CONCURRENT_WRITE", LocalDateTime.now().minusMinutes(1), LocalDateTime.now().plusMinutes(1));
+        List<AuditLog> concurrentAudits = auditLogRepository.findByEventTypeAndTimestampBetween(
+            "CONCURRENT_WRITE", LocalDateTime.now().minusMinutes(1), LocalDateTime.now().plusMinutes(1), PageRequest.of(0, 100)).getContent();
         assertThat(concurrentAudits).hasSize(threadCount * auditsPerThread);
 
         // Validate data consistency - check that all threads completed successfully
@@ -821,6 +831,8 @@ public class SecurityAuditRepositoryTest extends AbstractBaseTest implements Int
      */
     @Test
     public void testAuditQueryPerformance() {
+        long startTime = System.currentTimeMillis();
+        
         // Arrange - Create large dataset for performance testing
         List<AuditLog> performanceTestAudits = new ArrayList<>();
         LocalDateTime baseTime = LocalDateTime.now().minusHours(1);
@@ -849,19 +861,22 @@ public class SecurityAuditRepositoryTest extends AbstractBaseTest implements Int
 
         // Test 1: Username-based query performance
         long usernameQueryStart = System.currentTimeMillis();
-        List<AuditLog> usernameResults = auditLogRepository.findAuditLogsByUser("PERF_USER_5");
+        Page<AuditLog> usernameResultsPage = auditLogRepository.findAuditLogsByUser("PERF_USER_5", 
+            null, null, baseTime, LocalDateTime.now(), PageRequest.of(0, 100));
+        List<AuditLog> usernameResults = usernameResultsPage.getContent();
         long usernameQueryTime = System.currentTimeMillis() - usernameQueryStart;
 
         // Test 2: Date range query performance
         long dateRangeQueryStart = System.currentTimeMillis();
-        List<AuditLog> dateRangeResults = auditLogRepository.findAuditLogsByDateRange(
-            baseTime, LocalDateTime.now());
+        Page<AuditLog> dateRangeResultsPage = auditLogRepository.findAuditLogsByDateRange(
+            baseTime, LocalDateTime.now(), PageRequest.of(0, 100));
+        List<AuditLog> dateRangeResults = dateRangeResultsPage.getContent();
         long dateRangeQueryTime = System.currentTimeMillis() - dateRangeQueryStart;
 
         // Test 3: Event type query performance
         long eventTypeQueryStart = System.currentTimeMillis();
-        List<AuditLog> eventTypeResults = auditLogRepository.findByEventTypeAndTimestamp(
-            "PERFORMANCE_TEST", baseTime.minusMinutes(10), LocalDateTime.now().plusMinutes(10));
+        List<AuditLog> eventTypeResults = auditLogRepository.findByEventTypeAndTimestampBetween(
+            "PERFORMANCE_TEST", baseTime.minusMinutes(10), LocalDateTime.now().plusMinutes(10), PageRequest.of(0, 1000)).getContent();
         long eventTypeQueryTime = System.currentTimeMillis() - eventTypeQueryStart;
 
         // Test 4: Correlation ID query performance
@@ -889,6 +904,7 @@ public class SecurityAuditRepositoryTest extends AbstractBaseTest implements Int
         // Validate overall setup performance
         assertThat(setupTime).isLessThan(TestConstants.RESPONSE_TIME_THRESHOLD_MS * 10); // Allow 10x for bulk setup
 
+        long executionTime = System.currentTimeMillis() - startTime;
         logTestExecution("Audit query performance test completed - Setup: " + setupTime + "ms, Queries: " + 
             (usernameQueryTime + dateRangeQueryTime + eventTypeQueryTime + correlationQueryTime) + "ms", executionTime);
     }
@@ -944,12 +960,14 @@ public class SecurityAuditRepositoryTest extends AbstractBaseTest implements Int
 
         // Identify archival candidates (older than 3 months)
         LocalDateTime archivalCutoff = currentTime.minusMonths(3);
-        List<AuditLog> archivalCandidates = auditLogRepository.findAuditLogsByDateRange(
-            LocalDateTime.of(2020, 1, 1, 0, 0), archivalCutoff);
+        Page<AuditLog> archivalCandidatesPage = auditLogRepository.findAuditLogsByDateRange(
+            LocalDateTime.of(2020, 1, 1, 0, 0), archivalCutoff, PageRequest.of(0, 100));
+        List<AuditLog> archivalCandidates = archivalCandidatesPage.getContent();
         
         // Identify recent audits (should remain active)
-        List<AuditLog> activeAudits = auditLogRepository.findAuditLogsByDateRange(
-            archivalCutoff, currentTime.plusDays(1));
+        Page<AuditLog> activeAuditsPage = auditLogRepository.findAuditLogsByDateRange(
+            archivalCutoff, currentTime.plusDays(1), PageRequest.of(0, 100));
+        List<AuditLog> activeAudits = activeAuditsPage.getContent();
         
         long executionTime = System.currentTimeMillis() - startTime;
 
@@ -1043,17 +1061,18 @@ public class SecurityAuditRepositoryTest extends AbstractBaseTest implements Int
         }
 
         // Generate compliance reports using repository queries
-        List<AuditLog> pciComplianceReport = auditLogRepository.findByEventTypeAndTimestamp(
-            "PCI_COMPLIANCE", reportPeriodStart, reportPeriodEnd);
+        List<AuditLog> pciComplianceReport = auditLogRepository.findByEventTypeAndTimestampBetween(
+            "PCI_COMPLIANCE", reportPeriodStart, reportPeriodEnd, PageRequest.of(0, 100)).getContent();
         
-        List<AuditLog> gdprComplianceReport = auditLogRepository.findByEventTypeAndTimestamp(
-            "GDPR_COMPLIANCE", reportPeriodStart, reportPeriodEnd);
+        List<AuditLog> gdprComplianceReport = auditLogRepository.findByEventTypeAndTimestampBetween(
+            "GDPR_COMPLIANCE", reportPeriodStart, reportPeriodEnd, PageRequest.of(0, 100)).getContent();
         
-        List<AuditLog> securityIncidentReport = auditLogRepository.findByEventTypeAndTimestamp(
-            "SECURITY_INCIDENT", reportPeriodStart, reportPeriodEnd);
+        List<AuditLog> securityIncidentReport = auditLogRepository.findByEventTypeAndTimestampBetween(
+            "SECURITY_INCIDENT", reportPeriodStart, reportPeriodEnd, PageRequest.of(0, 100)).getContent();
         
-        List<AuditLog> comprehensiveReport = auditLogRepository.findAuditLogsByDateRange(
-            reportPeriodStart, reportPeriodEnd);
+        Page<AuditLog> comprehensiveReportPage = auditLogRepository.findAuditLogsByDateRange(
+            reportPeriodStart, reportPeriodEnd, PageRequest.of(0, 1000));
+        List<AuditLog> comprehensiveReport = comprehensiveReportPage.getContent();
         
         long executionTime = System.currentTimeMillis() - startTime;
 
@@ -1140,9 +1159,9 @@ public class SecurityAuditRepositoryTest extends AbstractBaseTest implements Int
         List<AuditLog> correlatedEvents = auditLogRepository.findByCorrelationId(sessionCorrelationId);
         
         // Test temporal correlation by user and IP
-        List<AuditLog> userIpEvents = auditLogRepository.findByUsernameAndTimestampBetween(
-            TestConstants.TEST_USER_ID, eventTime.minusMinutes(1), eventTime.plusMinutes(10))
-            .stream()
+        Page<AuditLog> userIpEventsPage = auditLogRepository.findByUsernameAndTimestampBetween(
+            TestConstants.TEST_USER_ID, eventTime.minusMinutes(1), eventTime.plusMinutes(10), PageRequest.of(0, 100));
+        List<AuditLog> userIpEvents = userIpEventsPage.getContent().stream()
             .filter(audit -> audit.getSourceIp().equals("192.168.1.100"))
             .toList();
         
@@ -1299,22 +1318,26 @@ public class SecurityAuditRepositoryTest extends AbstractBaseTest implements Int
         long totalCount = auditLogRepository.count();
         
         // Test username-based queries
-        List<AuditLog> userAudits = auditLogRepository.findAuditLogsByUser(TestConstants.TEST_USER_ID);
+        Page<AuditLog> userAuditsPage = auditLogRepository.findAuditLogsByUser(TestConstants.TEST_USER_ID, 
+            null, null, testStartTime, testEndTime, PageRequest.of(0, 100));
+        List<AuditLog> userAudits = userAuditsPage.getContent();
         
         // Test date range queries
-        List<AuditLog> dateRangeAudits = auditLogRepository.findAuditLogsByDateRange(testStartTime, testEndTime);
+        Page<AuditLog> dateRangeAuditsPage = auditLogRepository.findAuditLogsByDateRange(testStartTime, testEndTime, PageRequest.of(0, 100));
+        List<AuditLog> dateRangeAudits = dateRangeAuditsPage.getContent();
         
         // Test event type queries
-        List<AuditLog> loginAudits = auditLogRepository.findByEventTypeAndTimestamp(
-            "LOGIN_SUCCESS", testStartTime, testEndTime);
+        List<AuditLog> loginAudits = auditLogRepository.findByEventTypeAndTimestampBetween(
+            "LOGIN_SUCCESS", testStartTime, testEndTime, PageRequest.of(0, 100)).getContent();
         
         // Test outcome-based queries
-        List<AuditLog> successAudits = auditLogRepository.findByOutcome("SUCCESS");
-        List<AuditLog> failureAudits = auditLogRepository.findByOutcome("FAILURE");
+        Page<AuditLog> successAuditsPage = auditLogRepository.findByOutcome("SUCCESS", PageRequest.of(0, 100));
+        List<AuditLog> successAudits = successAuditsPage.getContent();
+        Page<AuditLog> failureAuditsPage = auditLogRepository.findByOutcome("FAILURE", PageRequest.of(0, 100));
+        List<AuditLog> failureAudits = failureAuditsPage.getContent();
         
         // Test source IP queries
-        List<AuditLog> ipAudits = auditLogRepository.findBySourceIpAndTimestamp(
-            "192.168.1.100", testStartTime, testEndTime);
+        List<AuditLog> ipAudits = auditLogRepository.findBySourceIpAndTimestampBetween("192.168.1.100", testStartTime, testEndTime, PageRequest.of(0, 100)).getContent();
         
         long executionTime = System.currentTimeMillis() - startTime;
 
@@ -1392,24 +1415,5 @@ public class SecurityAuditRepositoryTest extends AbstractBaseTest implements Int
         }
     }
 
-    /**
-     * Helper method to set up PostgreSQL container properties.
-     * 
-     * Configures Spring Boot application properties to use the Testcontainers
-     * PostgreSQL instance for integration testing. This method dynamically
-     * sets database connection properties based on the running container.
-     * 
-     * @param registry Dynamic property registry for Spring Boot configuration
-     */
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.jpa.database-platform", () -> "org.hibernate.dialect.PostgreSQLDialect");
-        registry.add("spring.jpa.show-sql", () -> "false");
-        registry.add("spring.jpa.properties.hibernate.format_sql", () -> "false");
-    }
+
 }
