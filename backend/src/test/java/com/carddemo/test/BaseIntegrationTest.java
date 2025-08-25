@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// No package declaration - this class is in the root test directory
+package com.carddemo.test;
 
 import com.carddemo.batch.TestReconciliationJobConfig;
 import com.carddemo.config.DatabaseConfig;

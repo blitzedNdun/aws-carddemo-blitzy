@@ -11,6 +11,7 @@ import com.carddemo.repository.CustomerRepository;
 import com.carddemo.entity.Account;
 import com.carddemo.entity.Customer;
 import com.carddemo.test.TestDataGenerator;
+import com.carddemo.test.TestConstants;
 
 import org.junit.jupiter.api.DisplayName;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -94,9 +95,9 @@ public class AccountRepositoryTest extends BaseIntegrationTest {
     private List<Account> createdTestAccounts = new ArrayList<>();
     private List<Customer> createdTestCustomers = new ArrayList<>();
     
-    // Performance testing constants - defined here since TestConstants may not exist
-    private static final long RESPONSE_TIME_THRESHOLD_MS = 200L;
-    private static final int COBOL_DECIMAL_SCALE = 2;
+    // Test constants for validation
+    private static final long RESPONSE_TIME_THRESHOLD_MS = TestConstants.EXPECTED_MAX_RESPONSE_TIME_MS;
+    private static final int COBOL_DECIMAL_SCALE = TestConstants.DECIMAL_SCALE;
     private static final RoundingMode COBOL_ROUNDING_MODE = RoundingMode.HALF_UP;
     private static final Long TEST_ACCOUNT_ID = 12345678901L;
     private static final Long TEST_CUSTOMER_ID = 123456789L;
@@ -938,14 +939,17 @@ public class AccountRepositoryTest extends BaseIntegrationTest {
     /**
      * Creates a test account using TestDataGenerator.
      */
-    private Account createTestAccount() {
-        return testDataGenerator.generateAccount();
+    @Override
+    protected Account createTestAccount() {
+        Customer customer = createTestCustomer();
+        return testDataGenerator.generateAccount(customer);
     }
     
     /**
      * Creates a test customer using TestDataGenerator.
      */
-    private Customer createTestCustomer() {
+    @Override
+    protected Customer createTestCustomer() {
         return testDataGenerator.generateCustomer();
     }
 }
