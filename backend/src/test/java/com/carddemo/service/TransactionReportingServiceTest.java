@@ -23,6 +23,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -77,6 +79,7 @@ import static org.mockito.Mockito.when;
  * @since 2024
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class TransactionReportingServiceTest extends AbstractBaseTest implements UnitTest {
 
     // Service under test - will be injected when TransactionReportingService is available

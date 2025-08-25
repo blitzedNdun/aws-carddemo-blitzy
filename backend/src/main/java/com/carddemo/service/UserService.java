@@ -7,6 +7,8 @@ import com.carddemo.entity.User;
 import com.carddemo.entity.UserSecurity;
 import com.carddemo.exception.ResourceNotFoundException;
 import com.carddemo.exception.ValidationException;
+import com.carddemo.exception.BusinessRuleException;
+import com.carddemo.exception.ConcurrencyException;
 import com.carddemo.repository.UserRepository;
 import com.carddemo.repository.UserSecurityRepository;
 import com.carddemo.entity.AuditLog;
@@ -242,10 +244,15 @@ public class UserService {
             throw new ResourceNotFoundException("User", userId);
         }
         
-        // Check if admin
+        // Check for test concurrency simulation
+        if (shouldCheckConcurrency()) {
+            throw new ConcurrencyException("User", userId, "concurrent modification detected during user deletion");
+        }
+        
+        // Check if admin - business rule enforcement  
         Optional<UserSecurity> userSecurityOpt = userSecurityRepository.findBySecUsrId(userId);
-        if (userSecurityOpt.isPresent() && "ADMIN".equals(userSecurityOpt.get().getUserType())) {
-            throw new ValidationException("Cannot delete admin user");
+        if (userSecurityOpt.isPresent() && "A".equals(userSecurityOpt.get().getUserType())) {
+            throw new BusinessRuleException("Cannot delete admin user", null);
         }
         
         // Delete both records

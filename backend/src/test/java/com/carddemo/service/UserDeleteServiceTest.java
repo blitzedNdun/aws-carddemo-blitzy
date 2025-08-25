@@ -4,6 +4,7 @@ import com.carddemo.entity.User;
 import com.carddemo.entity.UserSecurity;
 import com.carddemo.repository.UserRepository;
 import com.carddemo.repository.UserSecurityRepository;
+import com.carddemo.service.AuditService;
 import com.carddemo.util.TestConstants;
 import com.carddemo.exception.ResourceNotFoundException;
 import com.carddemo.exception.BusinessRuleException;
@@ -56,6 +57,9 @@ public class UserDeleteServiceTest {
 
     @Mock
     private UserSecurityRepository userSecurityRepository;
+    
+    @Mock
+    private AuditService auditService;
 
     @InjectMocks
     private UserService userService;
