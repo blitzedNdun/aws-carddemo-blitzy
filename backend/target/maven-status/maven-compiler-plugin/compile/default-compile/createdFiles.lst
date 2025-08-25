@@ -1,5 +1,6 @@
 com/carddemo/service/MonitoringService.class
 com/carddemo/batch/CustomerMaintenanceJobConfig$CustomerSegmentationProcessor.class
+com/carddemo/service/TransactionExtractBatchService.class
 com/carddemo/dto/UserListDto.class
 com/carddemo/repository/ConfigurationRepository.class
 com/carddemo/dto/UserListRequest.class
@@ -112,6 +113,7 @@ com/carddemo/dto/CardDeletionRequest.class
 com/carddemo/service/ChargebackProcessor$LifecycleTrackingRecord.class
 com/carddemo/service/UserListService.class
 com/carddemo/dto/BillDetailResponse.class
+com/carddemo/config/SecurityConfig.class
 com/carddemo/service/AccountClosureBatchService.class
 com/carddemo/dto/MenuResponse.class
 com/carddemo/client/EmailClient$BulkEmailResult$Builder.class
@@ -208,6 +210,7 @@ com/carddemo/config/DatabaseConfig.class
 com/carddemo/security/SessionConfig.class
 com/carddemo/service/CreditBureauService$CreditScoreRecord.class
 com/carddemo/dto/SessionContext.class
+com/carddemo/service/TransactionExtractBatchService$ExtractionStatus.class
 com/carddemo/dto/MenuDto.class
 com/carddemo/repository/StorageUtilization.class
 com/carddemo/service/ConfigurationService$ConfigurationChangeEvent.class
@@ -363,6 +366,7 @@ com/carddemo/controller/AuthController.class
 com/carddemo/exception/ErrorResponse.class
 com/carddemo/service/AdminFunctionsService.class
 com/carddemo/client/SMSProvider$BulkSMSResponse.class
+com/carddemo/service/AccountArchiveBatchService.class
 com/carddemo/dto/ReportMenuResponse.class
 com/carddemo/dto/CardDeletionResponse.class
 com/carddemo/exception/GlobalExceptionHandler.class
