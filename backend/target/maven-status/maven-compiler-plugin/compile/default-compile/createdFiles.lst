@@ -304,6 +304,7 @@ com/carddemo/service/PaymentService$BankSystemException.class
 com/carddemo/controller/PaymentController.class
 com/carddemo/batch/StatementGenerationJob$StatementStepExecutionListener.class
 com/carddemo/batch/BatchJobListener$ProcessingMetrics.class
+com/carddemo/service/AccountMaintenanceBatchService.class
 com/carddemo/dto/CreditCardUpdateResponse.class
 com/carddemo/batch/InterestCalculationJob$2.class
 com/carddemo/service/NotificationService.class

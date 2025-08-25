@@ -8,7 +8,7 @@ package com.carddemo.config;
 import com.carddemo.batch.BatchProperties;
 import com.carddemo.config.DatabaseConfig;
 
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
@@ -65,7 +65,6 @@ import javax.sql.DataSource;
  * @since 2024
  */
 @Configuration
-@EnableBatchProcessing
 @Profile({"!test", "!unit-test"})
 public class BatchConfig {
 
