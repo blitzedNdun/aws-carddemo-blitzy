@@ -10,6 +10,7 @@ import com.carddemo.util.FileFormatConverter;
 import com.carddemo.config.BatchConfig;
 import com.carddemo.entity.Transaction;
 import com.carddemo.entity.Card;
+import com.carddemo.entity.CardXref;
 import com.carddemo.entity.TransactionType;
 import com.carddemo.entity.TransactionCategory;
 import com.carddemo.repository.CardXrefRepository;
@@ -291,11 +292,11 @@ public class TransactionExtractBatchService {
                     enrichedTransactions.add(enrichedTransaction);
                     
                     // Calculate running totals (replicates COBOL total accumulation)
-                    BigDecimal amount = transaction.getTransactionAmount();
+                    BigDecimal amount = transaction.getAmount();
                     grandTotal = grandTotal.add(amount);
                     
                     // Track category totals
-                    String categoryCode = transaction.getTransactionCategoryCode();
+                    String categoryCode = transaction.getCategoryCode();
                     categoryTotals.merge(categoryCode, amount, BigDecimal::add);
                     
                     status.setProcessedRecords(status.getProcessedRecords() + 1);
@@ -458,7 +459,7 @@ public class TransactionExtractBatchService {
                     
                     if (isValid) {
                         validRecords++;
-                        totalAmount = totalAmount.add(transaction.getTransactionAmount());
+                        totalAmount = totalAmount.add(transaction.getAmount());
                     } else {
                         invalidRecords++;
                     }
@@ -916,20 +917,18 @@ public class TransactionExtractBatchService {
         enrichedTransaction.put("accountId", transaction.getAccountId());
         enrichedTransaction.put("cardNumber", transaction.getCardNumber());
         enrichedTransaction.put("transactionDate", transaction.getTransactionDate());
-        enrichedTransaction.put("amount", transaction.getTransactionAmount());
+        enrichedTransaction.put("amount", transaction.getAmount());
         enrichedTransaction.put("description", transaction.getDescription());
         enrichedTransaction.put("merchantName", transaction.getMerchantName());
         enrichedTransaction.put("merchantId", transaction.getMerchantId());
         
         // Card cross-reference lookup (1500-A-LOOKUP-XREF equivalent)
         try {
-            Optional<Card> cardOpt = cardXrefRepository.findByCardNumber(transaction.getCardNumber());
-            if (cardOpt.isPresent()) {
-                Card card = cardOpt.get();
-                enrichedTransaction.put("accountNumber", card.getAccount() != null ? 
-                                      card.getAccount().getAccountNumber() : null);
-                enrichedTransaction.put("customerName", card.getCustomer() != null ? 
-                                      card.getCustomer().getCustomerName() : null);
+            Optional<CardXref> cardXrefOpt = cardXrefRepository.findFirstByXrefCardNum(transaction.getCardNumber());
+            if (cardXrefOpt.isPresent()) {
+                CardXref cardXref = cardXrefOpt.get();
+                enrichedTransaction.put("accountId", cardXref.getXrefAcctId());
+                enrichedTransaction.put("customerId", cardXref.getXrefCustId());
             }
         } catch (Exception e) {
             logger.warn("Failed to lookup card xref for card {}: {}", transaction.getCardNumber(), e.getMessage());
@@ -937,10 +936,9 @@ public class TransactionExtractBatchService {
         
         // Transaction type lookup (1500-B-LOOKUP-TRANTYPE equivalent)
         try {
-            Optional<TransactionType> typeOpt = transactionTypeRepository.findByTransactionTypeCode(
+            TransactionType type = transactionTypeRepository.findByTransactionTypeCode(
                 transaction.getTransactionTypeCode());
-            if (typeOpt.isPresent()) {
-                TransactionType type = typeOpt.get();
+            if (type != null) {
                 enrichedTransaction.put("transactionTypeDescription", type.getTypeDescription());
                 enrichedTransaction.put("debitCreditFlag", type.getDebitCreditFlag());
             }
@@ -951,8 +949,8 @@ public class TransactionExtractBatchService {
         
         // Transaction category lookup (1500-C-LOOKUP-TRANCATG equivalent)
         try {
-            Optional<TransactionCategory> categoryOpt = transactionCategoryRepository.findByCategoryCodeAndSubcategoryCode(
-                transaction.getTransactionCategoryCode(), transaction.getSubcategoryCode());
+            Optional<TransactionCategory> categoryOpt = transactionCategoryRepository.findByIdCategoryCodeAndIdSubcategoryCode(
+                transaction.getCategoryCode(), transaction.getSubcategoryCode());
             if (categoryOpt.isPresent()) {
                 TransactionCategory category = categoryOpt.get();
                 enrichedTransaction.put("categoryDescription", category.getCategoryDescription());
@@ -960,7 +958,7 @@ public class TransactionExtractBatchService {
             }
         } catch (Exception e) {
             logger.warn("Failed to lookup transaction category for codes {}/{}: {}", 
-                       transaction.getTransactionCategoryCode(), transaction.getSubcategoryCode(), e.getMessage());
+                       transaction.getCategoryCode(), transaction.getSubcategoryCode(), e.getMessage());
         }
         
         return enrichedTransaction;
@@ -1091,7 +1089,7 @@ public class TransactionExtractBatchService {
         regulatoryRecord.put("TRANSACTION_ID", transaction.getTransactionId());
         regulatoryRecord.put("ACCOUNT_ID", transaction.getAccountId());
         regulatoryRecord.put("TRANSACTION_DATE", transaction.getTransactionDate());
-        regulatoryRecord.put("AMOUNT", transaction.getTransactionAmount());
+        regulatoryRecord.put("AMOUNT", transaction.getAmount());
         
         // Format-specific fields
         switch (regulatoryFormat) {
@@ -1150,7 +1148,7 @@ public class TransactionExtractBatchService {
         auditRecord.put("accountId", transaction.getAccountId());
         auditRecord.put("cardNumber", transaction.getCardNumber());
         auditRecord.put("transactionDate", transaction.getTransactionDate());
-        auditRecord.put("amount", transaction.getTransactionAmount());
+        auditRecord.put("amount", transaction.getAmount());
         auditRecord.put("merchantName", transaction.getMerchantName());
         auditRecord.put("auditTimestamp", LocalDate.now());
         
@@ -1168,12 +1166,12 @@ public class TransactionExtractBatchService {
         try {
             // Validate required fields
             if (transaction.getTransactionId() == null || transaction.getAccountId() == null ||
-                transaction.getTransactionDate() == null || transaction.getTransactionAmount() == null) {
+                transaction.getTransactionDate() == null || transaction.getAmount() == null) {
                 return false;
             }
             
             // Validate amount is not negative for certain transaction types
-            if (transaction.getTransactionAmount().compareTo(BigDecimal.ZERO) < 0) {
+            if (transaction.getAmount().compareTo(BigDecimal.ZERO) < 0) {
                 // Allow negative amounts for credit/refund transactions
                 if (!"CR".equals(transaction.getTransactionTypeCode()) && 
                     !"RF".equals(transaction.getTransactionTypeCode())) {
@@ -1245,7 +1243,7 @@ public class TransactionExtractBatchService {
         // Simplified ISO 8583 format
         return String.format("0200%016d%012.2f%s%s", 
                            transaction.getTransactionId(),
-                           transaction.getTransactionAmount(),
+                           transaction.getAmount(),
                            transaction.getCardNumber(),
                            transaction.getTransactionDate());
     }
@@ -1259,7 +1257,7 @@ public class TransactionExtractBatchService {
                            transaction.getTransactionTypeCode(),
                            transaction.getCardNumber(),
                            transaction.getAccountId(),
-                           transaction.getTransactionAmount(),
+                           transaction.getAmount(),
                            transaction.getTransactionDate());
     }
 
@@ -1271,7 +1269,7 @@ public class TransactionExtractBatchService {
         return String.format(":20:%016d:32A:%s%012.2fUSD:50K:%s", 
                            transaction.getTransactionId(),
                            transaction.getTransactionDate(),
-                           transaction.getTransactionAmount(),
+                           transaction.getAmount(),
                            transaction.getMerchantName());
     }
 
@@ -1283,7 +1281,7 @@ public class TransactionExtractBatchService {
                            transaction.getTransactionId(),
                            transaction.getAccountId(),
                            transaction.getCardNumber(),
-                           transaction.getTransactionAmount(),
+                           transaction.getAmount(),
                            transaction.getTransactionDate(),
                            transaction.getMerchantName());
     }
@@ -1310,7 +1308,7 @@ public class TransactionExtractBatchService {
      */
     private String generateInterchangeTrailer(String interchangeFormat, List<Transaction> transactions) {
         BigDecimal totalAmount = transactions.stream()
-                                          .map(Transaction::getTransactionAmount)
+                                          .map(Transaction::getAmount)
                                           .reduce(BigDecimal.ZERO, BigDecimal::add);
         
         switch (interchangeFormat) {
@@ -1361,7 +1359,7 @@ public class TransactionExtractBatchService {
                                    transaction.getTransactionId(),
                                    transaction.getAccountId(),
                                    transaction.getCardNumber(),
-                                   transaction.getTransactionAmount(),
+                                   transaction.getAmount(),
                                    transaction.getTransactionDate());
         
         return String.format("HASH_%08X", data.hashCode());
