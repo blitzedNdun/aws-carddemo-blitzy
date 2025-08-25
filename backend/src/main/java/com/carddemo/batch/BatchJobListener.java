@@ -7,6 +7,7 @@ package com.carddemo.batch;
 
 import com.carddemo.config.BatchConfig;
 import com.carddemo.service.NotificationService;
+import com.carddemo.exception.BatchProcessingException;
 
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
@@ -22,6 +23,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.Tags;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.time.Duration;
 import java.time.format.DateTimeFormatter;
+import java.time.ZoneOffset;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -110,7 +113,6 @@ public class BatchJobListener implements JobExecutionListener {
     private final Map<String, AtomicLong> jobFailureCounters = new ConcurrentHashMap<>();
     
     // Spring Batch infrastructure dependencies
-    private final BatchConfig batchConfig;
     private final NotificationService notificationService;
     private final MeterRegistry meterRegistry;
     private final JobRepository jobRepository;
@@ -123,29 +125,25 @@ public class BatchJobListener implements JobExecutionListener {
     /**
      * Constructor for BatchJobListener with dependency injection of required infrastructure components.
      * 
-     * @param batchConfig Spring Batch configuration providing job repository, explorer, and task executor
+     * @param jobRepository Spring Batch job repository for metadata operations
+     * @param jobExplorer Spring Batch job explorer for job execution queries
+     * @param taskExecutor Task executor for asynchronous operations
      * @param notificationService Service for sending error notifications and alerts
      * @param meterRegistry Micrometer metrics registry for publishing performance metrics
      */
     @Autowired
-    public BatchJobListener(BatchConfig batchConfig, 
+    public BatchJobListener(JobRepository jobRepository,
+                           JobExplorer jobExplorer,
+                           TaskExecutor taskExecutor,
                            NotificationService notificationService,
                            MeterRegistry meterRegistry) {
-        this.batchConfig = batchConfig;
+        this.jobRepository = jobRepository;
+        this.jobExplorer = jobExplorer;
+        this.taskExecutor = taskExecutor;
         this.notificationService = notificationService;
         this.meterRegistry = meterRegistry;
         
-        // Initialize infrastructure components from BatchConfig
-        try {
-            this.jobRepository = batchConfig.jobRepository();
-            this.jobExplorer = batchConfig.jobExplorer();
-            this.taskExecutor = batchConfig.taskExecutor();
-            
-            logger.info("BatchJobListener initialized successfully with infrastructure components");
-        } catch (Exception e) {
-            logger.error("Failed to initialize BatchJobListener infrastructure components", e);
-            throw new BatchProcessingException("BatchJobListener initialization failed", e);
-        }
+        logger.info("BatchJobListener initialized successfully with infrastructure components");
         
         // Initialize metrics counters
         initializeMetrics();
@@ -167,6 +165,11 @@ public class BatchJobListener implements JobExecutionListener {
      */
     @Override
     public void beforeJob(JobExecution jobExecution) {
+        if (jobExecution == null) {
+            logger.warn("JobExecution is null in beforeJob - skipping job monitoring");
+            return;
+        }
+        
         Long executionId = jobExecution.getId();
         String jobName = jobExecution.getJobInstance().getJobName();
         JobParameters jobParameters = jobExecution.getJobParameters();
@@ -217,6 +220,11 @@ public class BatchJobListener implements JobExecutionListener {
      */
     @Override
     public void afterJob(JobExecution jobExecution) {
+        if (jobExecution == null) {
+            logger.warn("JobExecution is null in afterJob - skipping job monitoring");
+            return;
+        }
+        
         Long executionId = jobExecution.getId();
         String jobName = jobExecution.getJobInstance().getJobName();
         
@@ -312,24 +320,28 @@ public class BatchJobListener implements JobExecutionListener {
         try {
             // Validate job repository accessibility
             if (jobRepository == null) {
-                throw new BatchProcessingException("JobRepository not available for job: " + jobName);
+                throw new BatchProcessingException(jobName, BatchProcessingException.ErrorType.RESOURCE_UNAVAILABLE, 
+                    "JobRepository not available for job: " + jobName);
             }
             
             // Validate job explorer accessibility
             if (jobExplorer == null) {
-                throw new BatchProcessingException("JobExplorer not available for job: " + jobName);
+                throw new BatchProcessingException(jobName, BatchProcessingException.ErrorType.RESOURCE_UNAVAILABLE,
+                    "JobExplorer not available for job: " + jobName);
             }
             
             // Validate task executor availability
             if (taskExecutor == null) {
-                throw new BatchProcessingException("TaskExecutor not available for job: " + jobName);
+                throw new BatchProcessingException(jobName, BatchProcessingException.ErrorType.RESOURCE_UNAVAILABLE,
+                    "TaskExecutor not available for job: " + jobName);
             }
             
             logger.debug("Execution environment validation passed for job: {}", jobName);
             
         } catch (Exception e) {
             logger.error("Execution environment validation failed for job: {}", jobName, e);
-            throw new BatchProcessingException("Environment validation failed for job: " + jobName, e);
+            throw new BatchProcessingException(jobName, BatchProcessingException.ErrorType.RESOURCE_UNAVAILABLE,
+                "Environment validation failed for job: " + jobName, e);
         }
     }
     
@@ -387,10 +399,10 @@ public class BatchJobListener implements JobExecutionListener {
         
         for (StepExecution stepExecution : jobExecution.getStepExecutions()) {
             String stepName = stepExecution.getStepName();
-            int readCount = stepExecution.getReadCount();
-            int writeCount = stepExecution.getWriteCount();
-            int skipCount = stepExecution.getSkipCount();
-            int commitCount = stepExecution.getCommitCount();
+            int readCount = (int) stepExecution.getReadCount();
+            int writeCount = (int) stepExecution.getWriteCount();
+            int skipCount = (int) stepExecution.getSkipCount();
+            int commitCount = (int) stepExecution.getCommitCount();
             
             logger.info("Step: {} - Read: {}, Write: {}, Skip: {}, Commit: {}", 
                        stepName, readCount, writeCount, skipCount, commitCount);
@@ -467,8 +479,8 @@ public class BatchJobListener implements JobExecutionListener {
             for (StepExecution stepExecution : jobExecution.getStepExecutions()) {
                 if (stepExecution.getStartTime() != null && stepExecution.getEndTime() != null) {
                     long stepDuration = Duration.between(
-                        stepExecution.getStartTime().toInstant(), 
-                        stepExecution.getEndTime().toInstant()
+                        stepExecution.getStartTime().toInstant(ZoneOffset.UTC), 
+                        stepExecution.getEndTime().toInstant(ZoneOffset.UTC)
                     ).getSeconds();
                     
                     Timer.builder(METRIC_STEP_DURATION)

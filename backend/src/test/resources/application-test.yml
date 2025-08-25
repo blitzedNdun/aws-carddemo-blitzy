@@ -31,18 +31,14 @@ spring:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: create-drop
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+    show-sql: true
     properties:
       hibernate:
         show_sql: true
         format_sql: true
         use_sql_comments: true
-    show-sql: true
-      naming:
-        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
-    properties:
-      hibernate:
-        format_sql: true
-        show_sql: false
         
   h2:
     console:
