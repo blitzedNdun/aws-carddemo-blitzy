@@ -370,7 +370,7 @@ public class CardXrefTest extends AbstractBaseTest implements UnitTest {
             Customer customer = generateTestData("customers", 1).stream()
                 .map(data -> {
                     Customer cust = new Customer();
-                    cust.setCustomerId(customerId);
+                    cust.setCustomerId(customerId.toString());
                     cust.setFirstName("John");
                     cust.setLastName("Doe");
                     return cust;

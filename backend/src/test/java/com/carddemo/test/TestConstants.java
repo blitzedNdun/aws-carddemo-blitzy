@@ -172,11 +172,38 @@ public final class TestConstants {
     public static final String TEST_CUSTOMER_ID = "CUST000001";
 
     /**
+     * Valid customer ID for testing scenarios (alias for TEST_CUSTOMER_ID).
+     * Used by legacy test methods for backward compatibility.
+     * Maintains COBOL customer ID format as String.
+     */
+    public static final String VALID_CUSTOMER_ID = TEST_CUSTOMER_ID;
+
+    /**
+     * Test customer ID as Long for database entity testing.
+     * Numeric representation of TEST_CUSTOMER_ID for Customer.customerId field.
+     * Used with Customer.setCustomerId() and repository operations that require Long.
+     */
+    public static final Long TEST_CUSTOMER_ID_LONG = 1L;
+
+    /**
+     * Valid customer ID as Long for testing scenarios (alias for TEST_CUSTOMER_ID_LONG).
+     * Used by legacy test methods requiring Long type for database operations.
+     */
+    public static final Long VALID_CUSTOMER_ID_LONG = TEST_CUSTOMER_ID_LONG;
+
+    /**
      * Test card number for card-related testing scenarios.
      * Length matches Constants.CARD_NUMBER_LENGTH (16 characters) from COBOL specification.
      * Used for card entity and transaction testing.
      */
     public static final String TEST_CARD_NUMBER = "1234567890123456";
+
+    /**
+     * Test account ID as Long for database entity testing.
+     * Numeric representation of TEST_ACCOUNT_ID for Account.accountId field.
+     * Used with Account.setAccountId() and repository operations that require Long.
+     */
+    public static final Long TEST_ACCOUNT_ID_LONG = 1L;
 
     // Validation Threshold Collections
 

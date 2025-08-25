@@ -121,7 +121,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
             Customer updateData = testDataGenerator.generateCustomer();
             updateData.setCustomerId("NONEXISTENT");
             
-            when(customerRepository.findById("NONEXISTENT"))
+            when(customerRepository.findById(999L))
                 .thenReturn(Optional.empty());
 
             // When/Then: Exception is thrown
@@ -129,7 +129,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("Customer not found: NONEXISTENT");
             
-            verify(customerRepository).findById("NONEXISTENT");
+            verify(customerRepository).findById(999L);
             verify(customerRepository, never()).save(any(Customer.class));
         }
 
@@ -141,7 +141,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
             invalidCustomer.setCustomerId(TestConstants.VALID_CUSTOMER_ID);
             invalidCustomer.setSSN("INVALID-SSN"); // Invalid SSN format
             
-            when(customerRepository.findById(TestConstants.VALID_CUSTOMER_ID))
+            when(customerRepository.findById(TestConstants.VALID_CUSTOMER_ID_LONG))
                 .thenReturn(Optional.of(testCustomer));
 
             // When/Then: Validation exception is thrown
@@ -149,7 +149,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Invalid SSN format");
             
-            verify(customerRepository).findById(TestConstants.VALID_CUSTOMER_ID);
+            verify(customerRepository).findById(TestConstants.VALID_CUSTOMER_ID_LONG);
             verify(customerRepository, never()).save(any(Customer.class));
         }
 
@@ -609,7 +609,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
             assertBigDecimalEquals(result.getCreditScore(), newCreditScore);
             validateCobolPrecision(result.getCreditScore(), TestConstants.COBOL_DECIMAL_SCALE);
             
-            verify(customerRepository).findById(TestConstants.VALID_CUSTOMER_ID);
+            verify(customerRepository).findById(TestConstants.VALID_CUSTOMER_ID_LONG);
             verify(customerRepository).save(any(Customer.class));
         }
 
@@ -635,7 +635,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Credit score must be between 300 and 850");
             
-            verify(customerRepository, times(2)).findById(TestConstants.VALID_CUSTOMER_ID);
+            verify(customerRepository, times(2)).findById(TestConstants.VALID_CUSTOMER_ID_LONG);
             verify(customerRepository, never()).save(any(Customer.class));
         }
 
@@ -669,7 +669,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
             BigDecimal preciseScore = new BigDecimal("723.45")
                 .setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE);
             
-            when(customerRepository.findById(TestConstants.VALID_CUSTOMER_ID))
+            when(customerRepository.findById(TestConstants.VALID_CUSTOMER_ID_LONG))
                 .thenReturn(Optional.of(existingCustomer));
             when(customerRepository.save(any(Customer.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -730,7 +730,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
             updateData.setVersion(1L);
             updateData.setFirstName("UPDATED");
             
-            when(customerRepository.findById(TestConstants.VALID_CUSTOMER_ID))
+            when(customerRepository.findById(TestConstants.VALID_CUSTOMER_ID_LONG))
                 .thenReturn(Optional.of(existingCustomer));
             when(customerRepository.save(any(Customer.class)))
                 .thenThrow(new org.springframework.orm.ObjectOptimisticLockingFailureException(Customer.class, TestConstants.VALID_CUSTOMER_ID));
@@ -889,7 +889,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
             Customer updateData = testDataGenerator.generateCustomer();
             updateData.setCustomerId(TestConstants.VALID_CUSTOMER_ID);
             
-            when(customerRepository.findById(TestConstants.VALID_CUSTOMER_ID))
+            when(customerRepository.findById(TestConstants.VALID_CUSTOMER_ID_LONG))
                 .thenReturn(Optional.of(existingCustomer));
             when(customerRepository.save(any(Customer.class)))
                 .thenReturn(updateData);
@@ -915,7 +915,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
             BigDecimal originalScore = new BigDecimal("750.123456");
             BigDecimal cobolCompatibleScore = originalScore.setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE);
             
-            when(customerRepository.findById(TestConstants.VALID_CUSTOMER_ID))
+            when(customerRepository.findById(TestConstants.VALID_CUSTOMER_ID_LONG))
                 .thenReturn(Optional.of(customer));
             when(customerRepository.save(any(Customer.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -983,7 +983,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
             BigDecimal originalBalance = BigDecimal.valueOf(750.00);
             BigDecimal updatedBalance = BigDecimal.valueOf(750.01);
             
-            when(customerRepository.findById(TestConstants.VALID_CUSTOMER_ID))
+            when(customerRepository.findById(TestConstants.VALID_CUSTOMER_ID_LONG))
                 .thenReturn(Optional.of(testCustomer));
             when(customerRepository.save(any(Customer.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -998,7 +998,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
             // Verify precision tolerance using AbstractBaseTest method
             assertBigDecimalWithinTolerance(originalBalance, updatedBalance, TestConstants.VALIDATION_THRESHOLDS);
             
-            verify(customerRepository).findById(TestConstants.VALID_CUSTOMER_ID);
+            verify(customerRepository).findById(TestConstants.VALID_CUSTOMER_ID_LONG);
             verify(customerRepository).save(testCustomer);
         }
 

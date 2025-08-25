@@ -128,7 +128,7 @@ public class CardXrefRepositoryTest extends AbstractBaseTest implements Integrat
     private void setupTestEntities() {
         // Create and persist customer
         testCustomer = testDataGenerator.generateCustomer();
-        testCustomer.setCustomerId(Long.parseLong(TestConstants.TEST_CUSTOMER_ID.replaceAll("[^0-9]", "")));
+        testCustomer.setCustomerId(TestConstants.TEST_CUSTOMER_ID_LONG.toString());
         testCustomer = customerRepository.save(testCustomer);
 
         // Create and persist account
@@ -141,13 +141,13 @@ public class CardXrefRepositoryTest extends AbstractBaseTest implements Integrat
         testCard = testDataGenerator.generateCard();
         testCard.setCardNumber(TestConstants.TEST_CARD_NUMBER);
         testCard.setAccountId(testAccount.getAccountId());
-        testCard.setCustomerId(testCustomer.getCustomerId());
+        testCard.setCustomerId(Long.valueOf(testCustomer.getCustomerId()));
         testCard = cardRepository.save(testCard);
 
         // Create composite key for cross-reference
         testCardXrefId = new CardXrefId(
             TestConstants.TEST_CARD_NUMBER,
-            testCustomer.getCustomerId(),
+            Long.valueOf(testCustomer.getCustomerId()),
             testAccount.getAccountId()
         );
 
@@ -309,7 +309,7 @@ public class CardXrefRepositoryTest extends AbstractBaseTest implements Integrat
             long startTime = System.currentTimeMillis();
 
             // When
-            List<CardXref> cardXrefs = cardXrefRepository.findByXrefCustId(testCustomer.getCustomerId());
+            List<CardXref> cardXrefs = cardXrefRepository.findByXrefCustId(Long.valueOf(testCustomer.getCustomerId()));
             long executionTime = System.currentTimeMillis() - startTime;
 
             // Then
@@ -698,12 +698,12 @@ public class CardXrefRepositoryTest extends AbstractBaseTest implements Integrat
                 Card card = testDataGenerator.generateCard();
                 card.setCardNumber(String.format("1234567890%06d", i + 1));
                 card.setAccountId(account.getAccountId());
-                card.setCustomerId(customer.getCustomerId());
+                card.setCustomerId(Long.valueOf(customer.getCustomerId()));
                 card = cardRepository.save(card);
                 
                 CardXrefId xrefId = new CardXrefId(
                     card.getCardNumber(),
-                    customer.getCustomerId(),
+                    Long.valueOf(customer.getCustomerId()),
                     account.getAccountId()
                 );
                 
@@ -842,7 +842,7 @@ public class CardXrefRepositoryTest extends AbstractBaseTest implements Integrat
 
             // When - Perform multiple concurrent reads
             List<CardXref> result1 = cardXrefRepository.findByXrefCardNum(TestConstants.TEST_CARD_NUMBER);
-            List<CardXref> result2 = cardXrefRepository.findByXrefCustId(testCustomer.getCustomerId());
+            List<CardXref> result2 = cardXrefRepository.findByXrefCustId(Long.valueOf(testCustomer.getCustomerId()));
             List<CardXref> result3 = cardXrefRepository.findByXrefAcctId(testAccount.getAccountId());
             Optional<CardXref> result4 = cardXrefRepository.findById(testCardXrefId);
             
@@ -885,7 +885,7 @@ public class CardXrefRepositoryTest extends AbstractBaseTest implements Integrat
         @DisplayName("Should handle empty string values in composite key")
         void testHandleEmptyStringValuesInCompositeKey() {
             // Given
-            CardXrefId invalidXrefId = new CardXrefId("", testCustomer.getCustomerId(), testAccount.getAccountId());
+            CardXrefId invalidXrefId = new CardXrefId("", Long.valueOf(testCustomer.getCustomerId()), testAccount.getAccountId());
             CardXref invalidCardXref = new CardXref();
             invalidCardXref.setId(invalidXrefId);
 

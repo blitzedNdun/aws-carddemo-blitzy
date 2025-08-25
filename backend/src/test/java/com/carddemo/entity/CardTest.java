@@ -89,7 +89,7 @@ public class CardTest extends AbstractBaseTest implements UnitTest {
         
         // Create test customer entity for relationship testing
         testCustomer = new Customer();
-        testCustomer.setCustomerId(Long.parseLong(TestConstants.TEST_CUSTOMER_ID.replaceAll("\\D", "")));
+        testCustomer.setCustomerId(TestConstants.TEST_CUSTOMER_ID_LONG.toString());
         testCustomer.setFirstName("John");
         testCustomer.setLastName("Doe");
         
@@ -103,7 +103,7 @@ public class CardTest extends AbstractBaseTest implements UnitTest {
         testCard = new Card();
         testCard.setCardNumber(TestConstants.TEST_CARD_NUMBER);
         testCard.setAccountId(Long.parseLong(TestConstants.TEST_ACCOUNT_ID));
-        testCard.setCustomerId(testCustomer.getCustomerId());
+        testCard.setCustomerId(Long.valueOf(testCustomer.getCustomerId()));
         testCard.setCvvCode("123");
         testCard.setEmbossedName("JOHN A DOE");
         testCard.setExpirationDate(LocalDate.now().plusYears(3));
@@ -165,7 +165,7 @@ public class CardTest extends AbstractBaseTest implements UnitTest {
     @Test
     public void testCustomerIdFieldMapping() {
         // Test valid customer ID relationship
-        Long customerId = testCustomer.getCustomerId();
+        Long customerId = Long.valueOf(testCustomer.getCustomerId());
         testCard.setCustomerId(customerId);
         assertThat(testCard.getCustomerId()).isEqualTo(customerId);
         
@@ -538,7 +538,7 @@ public class CardTest extends AbstractBaseTest implements UnitTest {
         // Test customer relationship setup
         testCard.setCustomer(testCustomer);
         assertThat(testCard.getCustomer()).isEqualTo(testCustomer);
-        assertThat(testCard.getCustomerId()).isEqualTo(testCustomer.getCustomerId());
+        assertThat(testCard.getCustomerId()).isEqualTo(Long.valueOf(testCustomer.getCustomerId()));
         
         // Test customer name access through relationship
         assertThat(testCard.getCustomer().getFirstName()).isEqualTo(testCustomer.getFirstName());
