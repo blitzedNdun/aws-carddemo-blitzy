@@ -9,13 +9,14 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.carddemo.entity.Account;
 import com.carddemo.entity.Transaction;
+import com.carddemo.entity.Customer;
 import com.carddemo.repository.AccountRepository;
 import com.carddemo.repository.TransactionRepository;
 import com.carddemo.config.DatabaseConfig;
 import com.carddemo.config.TestDatabaseConfig;
-import com.carddemo.util.TestConstants;
+import com.carddemo.test.TestConstants;
 import com.carddemo.test.AbstractBaseTest;
-import com.carddemo.test.TestDataGenerator;
+
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -101,7 +102,6 @@ public class DatabasePerformanceTest extends AbstractBaseTest {
 
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
-    private final TestDataGenerator testDataGenerator;
 
     // Performance measurement variables
     private long startTime;
@@ -128,7 +128,7 @@ public class DatabasePerformanceTest extends AbstractBaseTest {
                                  TransactionRepository transactionRepository) {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
-        this.testDataGenerator = new TestDataGenerator();
+        // TestDataGenerator methods will be called statically, no instance needed
     }
 
     /**
@@ -157,7 +157,7 @@ public class DatabasePerformanceTest extends AbstractBaseTest {
         loadTestFixtures();
         
         // Warm up connection pool to ensure consistent performance measurements
-        accountRepository.findById("1000000001");
+        accountRepository.findById(1000000001L);
         
         // Validate test environment readiness
         assertThat(postgresContainer.isRunning())
@@ -191,7 +191,7 @@ public class DatabasePerformanceTest extends AbstractBaseTest {
     @Rollback
     public void testAccountPrimaryKeyLookupPerformance() {
         // Generate test account with COBOL-compatible data
-        Account testAccount = testDataGenerator.generateAccount();
+        Account testAccount = new TestDataGenerator().generateAccount();
         accountRepository.save(testAccount);
         validateCobolPrecision(testAccount.getCurrentBalance());
         
@@ -217,9 +217,9 @@ public class DatabasePerformanceTest extends AbstractBaseTest {
             .isEqualTo(testAccount.getAccountId());
             
         // Validate COBOL precision preservation
-        assertBigDecimalEquals(retrievedAccount.getCurrentBalance(), testAccount.getCurrentBalance());
-        assertBigDecimalEquals(retrievedAccount.getCreditLimit(), testAccount.getCreditLimit());
-        assertBigDecimalEquals(retrievedAccount.getCashCreditLimit(), testAccount.getCashCreditLimit());
+        assertBigDecimalEquals(retrievedAccount.getCurrentBalance(), testAccount.getCurrentBalance(), "Current balance should match");
+        assertBigDecimalEquals(retrievedAccount.getCreditLimit(), testAccount.getCreditLimit(), "Credit limit should match");
+        assertBigDecimalEquals(retrievedAccount.getCashCreditLimit(), testAccount.getCashCreditLimit(), "Cash credit limit should match");
     }
 
     /**
@@ -243,7 +243,7 @@ public class DatabasePerformanceTest extends AbstractBaseTest {
     @Rollback
     public void testTransactionPrimaryKeyLookupPerformance() {
         // Generate test transaction with current date for active partition
-        Transaction testTransaction = testDataGenerator.generateTransaction();
+        Transaction testTransaction = new TestDataGenerator().generateTransaction();
         testTransaction.setTransactionDate(LocalDate.now());
         transactionRepository.save(testTransaction);
         
@@ -269,7 +269,7 @@ public class DatabasePerformanceTest extends AbstractBaseTest {
             .isEqualTo(testTransaction.getTransactionId());
             
         // Validate BigDecimal precision preservation in partitioned table
-        assertBigDecimalEquals(retrievedTransaction.getAmount(), testTransaction.getAmount());
+        assertBigDecimalEquals(retrievedTransaction.getAmount(), testTransaction.getAmount(), "Transaction amount should match");
     }
 
     /**
@@ -300,7 +300,7 @@ public class DatabasePerformanceTest extends AbstractBaseTest {
         // Measure customer-based account lookup performance
         startTime = System.nanoTime();
         
-        List<Account> retrievedAccounts = accountRepository.findByCustomerId(testCustomerId);
+        List<Account> retrievedAccounts = accountRepository.findByCustomerId(Long.parseLong(testCustomerId));
         
         endTime = System.nanoTime();
         long responseTime = (endTime - startTime) / 1_000_000;
@@ -362,7 +362,7 @@ public class DatabasePerformanceTest extends AbstractBaseTest {
             
             startTime = System.nanoTime();
             
-            Page<Transaction> transactionPage = transactionRepository.findByAccountId(testAccountId, pageable);
+            Page<Transaction> transactionPage = transactionRepository.findByAccountId(Long.parseLong(testAccountId), pageable);
             
             endTime = System.nanoTime();
             long pageResponseTime = (endTime - startTime) / 1_000_000;
@@ -473,8 +473,8 @@ public class DatabasePerformanceTest extends AbstractBaseTest {
                 long threadStartTime = System.nanoTime();
                 
                 // Perform typical database operations per thread
-                String accountId = String.format("100000000%d", threadIndex);
-                Account account = testDataGenerator.generateAccount();
+                Long accountId = Long.parseLong(String.format("100000000%d", threadIndex));
+                Account account = new TestDataGenerator().generateAccount();
                 account.setAccountId(accountId);
                 
                 // Save and retrieve account (connection pool utilization)
@@ -552,7 +552,11 @@ public class DatabasePerformanceTest extends AbstractBaseTest {
         // Test bulk query performance on large dataset
         startTime = System.nanoTime();
         
-        List<Transaction> largeResultSet = transactionRepository.findByAmountGreaterThan(BigDecimal.ZERO);
+        // Use date range covering all test data for bulk query
+        LocalDate startDate = LocalDate.now().minusYears(1);
+        LocalDate endDate = LocalDate.now();
+        List<Transaction> largeResultSet = transactionRepository.findByAmountGreaterThanAndTransactionDateBetween(
+            BigDecimal.ZERO, startDate, endDate);
         
         endTime = System.nanoTime();
         long bulkQueryTime = (endTime - startTime) / 1_000_000;
@@ -584,9 +588,11 @@ public class DatabasePerformanceTest extends AbstractBaseTest {
         List<Account> accounts = new ArrayList<>();
         
         for (int i = 0; i < count; i++) {
-            Account account = testDataGenerator.generateAccount();
-            account.setCustomerId(customerId);
-            account.setAccountId(String.format("%s%02d", customerId, i));
+            Account account = new TestDataGenerator().generateAccount();
+            // Create customer and set relationship instead of setCustomerId
+            Customer customer = Customer.builder().customerId(Long.parseLong(customerId)).build();
+            account.setCustomer(customer);
+            account.setAccountId(Long.parseLong(String.format("%s%02d", customerId, i)));
             accounts.add(account);
         }
         
@@ -604,8 +610,8 @@ public class DatabasePerformanceTest extends AbstractBaseTest {
         List<Transaction> transactions = new ArrayList<>();
         
         for (int i = 0; i < count; i++) {
-            Transaction transaction = testDataGenerator.generateTransaction();
-            transaction.setAccountId(accountId);
+            Transaction transaction = new TestDataGenerator().generateTransaction();
+            transaction.setAccountId(Long.parseLong(accountId));
             transaction.setTransactionDate(LocalDate.now().minusDays(i % 30)); // Spread across month
             transactions.add(transaction);
         }
@@ -626,7 +632,7 @@ public class DatabasePerformanceTest extends AbstractBaseTest {
         long daysBetween = startDate.until(endDate).getDays();
         
         for (int i = 0; i < count; i++) {
-            Transaction transaction = testDataGenerator.generateTransaction();
+            Transaction transaction = new TestDataGenerator().generateTransaction();
             // Distribute transactions evenly across the date range
             long randomDays = (long) (Math.random() * daysBetween);
             transaction.setTransactionDate(startDate.plusDays(randomDays));
@@ -644,7 +650,7 @@ public class DatabasePerformanceTest extends AbstractBaseTest {
      */
     private List<Transaction> generateTestTransactions(int count) {
         return IntStream.range(0, count)
-            .mapToObj(i -> testDataGenerator.generateTransaction())
+            .mapToObj(i -> new TestDataGenerator().generateTransaction())
             .toList();
     }
 
