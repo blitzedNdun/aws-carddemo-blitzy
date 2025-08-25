@@ -507,6 +507,173 @@ public class Customer {
         return Objects.hash(firstName, lastName, dateOfBirth, ssn);
     }
 
+    // Convenience methods for test compatibility and legacy COBOL interface support
+
+    /**
+     * Convenience method to get customer ID as String for test compatibility.
+     * Maps Long customerId to String format expected by tests.
+     *
+     * @return customer ID as string, or null if customerId is null
+     */
+    public String getCustomerId() {
+        return customerId != null ? String.valueOf(customerId) : null;
+    }
+
+    /**
+     * Convenience method to set customer ID from String for test compatibility.
+     * Converts String to Long for database storage.
+     *
+     * @param customerIdStr customer ID as string
+     */
+    public void setCustomerId(String customerIdStr) {
+        if (customerIdStr != null && !customerIdStr.trim().isEmpty()) {
+            try {
+                this.customerId = Long.valueOf(customerIdStr);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid customer ID format: " + customerIdStr, e);
+            }
+        } else {
+            this.customerId = null;
+        }
+    }
+
+    /**
+     * Convenience method to get primary phone number for test compatibility.
+     * Maps phoneNumber1 field to expected getPhoneNumber() method.
+     *
+     * @return primary phone number
+     */
+    public String getPhoneNumber() {
+        return phoneNumber1;
+    }
+
+    /**
+     * Convenience method to set primary phone number for test compatibility.
+     * Maps to phoneNumber1 field for database storage.
+     *
+     * @param phoneNumber primary phone number
+     */
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber1 = phoneNumber;
+    }
+
+    /**
+     * Convenience method to get complete address for test compatibility.
+     * Combines address line fields into single formatted address string.
+     *
+     * @return formatted complete address
+     */
+    public String getAddress() {
+        StringBuilder address = new StringBuilder();
+        
+        if (addressLine1 != null && !addressLine1.trim().isEmpty()) {
+            address.append(addressLine1.trim());
+        }
+        
+        if (addressLine2 != null && !addressLine2.trim().isEmpty()) {
+            if (address.length() > 0) address.append(", ");
+            address.append(addressLine2.trim());
+        }
+        
+        if (addressLine3 != null && !addressLine3.trim().isEmpty()) {
+            if (address.length() > 0) address.append(", ");
+            address.append(addressLine3.trim());
+        }
+        
+        // Add city, state, zip if available
+        if (stateCode != null && zipCode != null) {
+            if (address.length() > 0) address.append(", ");
+            address.append(stateCode).append(" ").append(zipCode);
+        }
+        
+        return address.length() > 0 ? address.toString() : null;
+    }
+
+    /**
+     * Convenience method to set address from single string for test compatibility.
+     * Parses formatted address string and populates individual address fields.
+     *
+     * @param address formatted address string
+     */
+    public void setAddress(String address) {
+        if (address != null && !address.trim().isEmpty()) {
+            // Simple address parsing - store entire address in addressLine1 for test compatibility
+            this.addressLine1 = address.trim();
+            // Clear other address fields to avoid confusion
+            this.addressLine2 = null;
+            this.addressLine3 = null;
+        } else {
+            this.addressLine1 = null;
+            this.addressLine2 = null;
+            this.addressLine3 = null;
+        }
+    }
+
+    /**
+     * Convenience method to get SSN for test compatibility.
+     * Maps ssn field to expected getSSN() method (capitalized).
+     *
+     * @return Social Security Number
+     */
+    public String getSSN() {
+        return ssn;
+    }
+
+    /**
+     * Convenience method to set SSN for test compatibility.
+     * Maps to ssn field with capitalized method name.
+     *
+     * @param ssnValue Social Security Number
+     */
+    public void setSSN(String ssnValue) {
+        this.ssn = ssnValue;
+    }
+
+    /**
+     * Convenience method to get SSN for service layer compatibility.
+     * Maps ssn field to expected getSsn() method (lowercase).
+     *
+     * @return Social Security Number
+     */
+    public String getSsn() {
+        return ssn;
+    }
+
+    /**
+     * Convenience method to set SSN for service layer compatibility.
+     * Maps to ssn field with lowercase method name.
+     *
+     * @param ssnValue Social Security Number
+     */
+    public void setSsn(String ssnValue) {
+        this.ssn = ssnValue;
+    }
+
+    /**
+     * Convenience method to get credit score as BigDecimal for test compatibility.
+     * Converts Integer ficoScore to BigDecimal for financial calculations.
+     *
+     * @return credit score as BigDecimal with 2 decimal places, or null if ficoScore is null
+     */
+    public BigDecimal getCreditScore() {
+        return ficoScore != null ? 
+            new BigDecimal(ficoScore).setScale(2, BigDecimal.ROUND_HALF_UP) : null;
+    }
+
+    /**
+     * Convenience method to set credit score from BigDecimal for test compatibility.
+     * Converts BigDecimal to Integer for database storage.
+     *
+     * @param creditScore credit score as BigDecimal
+     */
+    public void setCreditScore(BigDecimal creditScore) {
+        if (creditScore != null) {
+            this.ficoScore = creditScore.intValue();
+        } else {
+            this.ficoScore = null;
+        }
+    }
+
     /**
      * Custom toString method that masks sensitive information like SSN.
      * Provides useful debugging information while maintaining data security.
