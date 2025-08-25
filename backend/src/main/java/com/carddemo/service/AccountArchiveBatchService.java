@@ -876,7 +876,7 @@ public class AccountArchiveBatchService {
                 // Create archive entry for transaction
                 Archive transactionArchive = new Archive();
                 transactionArchive.setDataType("TRANSACTION");
-                transactionArchive.setArchiveDate(LocalDate.now());
+                transactionArchive.setArchiveDate(LocalDateTime.now());
                 transactionArchive.setRetentionDate(LocalDate.now().plusYears(DEFAULT_RETENTION_YEARS));
                 transactionArchive.setStorageLocation("ARCHIVE_SCHEMA");
                 transactionArchive.setMetadata("Account: " + account.getAccountId() + 
@@ -907,7 +907,7 @@ public class AccountArchiveBatchService {
         try {
             Archive accountArchive = new Archive();
             accountArchive.setDataType("ACCOUNT");
-            accountArchive.setArchiveDate(LocalDate.now());
+            accountArchive.setArchiveDate(LocalDateTime.now());
             accountArchive.setRetentionDate(LocalDate.now().plusYears(DEFAULT_RETENTION_YEARS));
             accountArchive.setStorageLocation("ARCHIVE_SCHEMA");
             accountArchive.setMetadata("Account ID: " + account.getAccountId() + 
@@ -1164,3 +1164,4 @@ public class AccountArchiveBatchService {
         currentMetrics.put("recoveryActions", 
                          (Integer) currentMetrics.getOrDefault("recoveryActions", 0) + successful + failed);
     }
+}
