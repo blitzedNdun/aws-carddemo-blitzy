@@ -24,11 +24,14 @@ import java.util.*;
 import java.io.*;
 
 import com.carddemo.service.TransactionReportService;
+import com.carddemo.service.TransactionReportService.TransactionRecord;
+import com.carddemo.service.TransactionReportService.EnrichedTransactionData;
 // Entity classes and repositories not directly used in this service layer test
 import com.carddemo.util.DateConversionUtil;
 import com.carddemo.util.ReportFormatter;
 import com.carddemo.util.CobolDataConverter;
-import com.carddemo.util.TestConstants;
+import com.carddemo.util.StringUtil;
+import com.carddemo.test.TestConstants;
 // Inner classes are accessed using fully qualified names
 
 /**
@@ -794,8 +797,8 @@ public class TransactionReportServiceTest {
      */
     private void createTestTransactionFile() throws IOException {
         StringBuilder content = new StringBuilder();
-        content.append("TXN00112345678901").append("01").append("1001").append("ATM       ").append("Purchase Transaction".padEnd(100, ' '));
-        content.append("   100.00").append("000000001").append("Test Merchant".padEnd(50, ' ')).append("Test City".padEnd(50, ' '));
+        content.append("TXN00112345678901").append("01").append("1001").append("ATM       ").append(StringUtil.padRight("Purchase Transaction", 100, ' '));
+        content.append("   100.00").append("000000001").append(StringUtil.padRight("Test Merchant", 50, ' ')).append(StringUtil.padRight("Test City", 50, ' '));
         content.append("12345     ").append(TEST_CARD_NUMBER).append("2024-01-15 09:30:00.000000").append("2024-01-15 10:30:00.000000");
         content.append("                    \n"); // Filler
         
@@ -835,10 +838,10 @@ public class TransactionReportServiceTest {
         
         for (int i = 1; i <= transactionCount; i++) {
             String txnId = String.format("TXN%08d", i);
-            content.append(txnId.padEnd(16, ' ')).append(TEST_TRANSACTION_TYPE).append(String.format("%04d", TEST_CATEGORY_CODE));
-            content.append("ATM       ").append("Test Transaction".padEnd(100, ' '));
-            content.append("     5.00").append("000000001").append("Test Merchant".padEnd(50, ' '));
-            content.append("Test City".padEnd(50, ' ')).append("12345     ").append(TEST_CARD_NUMBER);
+            content.append(StringUtil.padRight(txnId, 16, ' ')).append(TEST_TRANSACTION_TYPE).append(String.format("%04d", TEST_CATEGORY_CODE));
+            content.append("ATM       ").append(StringUtil.padRight("Test Transaction", 100, ' '));
+            content.append("     5.00").append("000000001").append(StringUtil.padRight("Test Merchant", 50, ' '));
+            content.append(StringUtil.padRight("Test City", 50, ' ')).append("12345     ").append(TEST_CARD_NUMBER);
             content.append("2024-01-15 09:30:00.000000").append("2024-01-15 10:30:00.000000");
             content.append("                    \n");
         }
