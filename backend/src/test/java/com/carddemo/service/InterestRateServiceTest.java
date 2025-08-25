@@ -5,9 +5,9 @@ import com.carddemo.entity.Account;
 import com.carddemo.repository.InterestRateRepository;
 import com.carddemo.service.InterestRateService;
 import com.carddemo.service.NotificationService;
-import AbstractBaseTest;
-import TestConstants;
-import UnitTest;
+import com.carddemo.test.AbstractBaseTest;
+import com.carddemo.test.TestConstants;
+import com.carddemo.test.UnitTest;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -726,5 +726,29 @@ public class InterestRateServiceTest extends AbstractBaseTest implements UnitTes
             .creditLimit(TEST_CREDIT_LIMIT)
             .groupId(TEST_ACCOUNT_GROUP)
             .build();
+    }
+    
+    // Helper methods for test assertions with proper method signatures
+    
+    /**
+     * Assert BigDecimal equality with COBOL precision (2-parameter version)
+     */
+    private void assertBigDecimalEquals(BigDecimal expected, BigDecimal actual) {
+        super.assertBigDecimalEquals(expected, actual, "BigDecimal values should be equal");
+    }
+    
+    /**
+     * Assert BigDecimal within tolerance with COBOL precision
+     */
+    private void assertBigDecimalWithinTolerance(BigDecimal expected, BigDecimal actual, Double tolerance) {
+        super.assertBigDecimalWithinTolerance(expected, actual, 
+            "BigDecimal values should be within tolerance: " + tolerance);
+    }
+    
+    /**
+     * Validate COBOL precision for financial calculations (1-parameter version)
+     */
+    private void validateCobolPrecision(BigDecimal value) {
+        super.validateCobolPrecision(value, "financial calculation result");
     }
 }
