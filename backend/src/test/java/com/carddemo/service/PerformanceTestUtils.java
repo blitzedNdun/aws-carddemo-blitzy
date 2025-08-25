@@ -568,4 +568,77 @@ public class PerformanceTestUtils {
         
         return sortedMeasurements.get(index).doubleValue();
     }
+    
+    /**
+     * Validates BigDecimal precision matches COBOL COMP-3 requirements during performance testing.
+     * Ensures financial calculations maintain identical precision to mainframe implementation.
+     * 
+     * @param actual Actual BigDecimal result from performance test
+     * @param expected Expected BigDecimal value for comparison
+     * @return true if precision matches COBOL requirements
+     */
+    public static boolean validateCobolDecimalPrecision(BigDecimal actual, BigDecimal expected) {
+        Assertions.assertNotNull(actual, "Actual BigDecimal cannot be null");
+        Assertions.assertNotNull(expected, "Expected BigDecimal cannot be null");
+
+        // Validate scale matches COBOL COMP-3 requirements
+        if (actual.scale() != expected.scale()) {
+            logger.warn("Scale mismatch - Actual: {}, Expected: {}", actual.scale(), expected.scale());
+            return false;
+        }
+
+        // Validate precision matches using COBOL comparison logic
+        int actualPrecision = actual.precision();
+        int expectedPrecision = expected.precision();
+        
+        if (actualPrecision != expectedPrecision) {
+            logger.warn("Precision mismatch - Actual: {}, Expected: {}", actualPrecision, expectedPrecision);
+            return false;
+        }
+
+        // Validate values match exactly using COBOL COMP-3 comparison
+        int comparison = actual.compareTo(expected);
+        boolean matches = (comparison == 0);
+        
+        if (!matches) {
+            logger.warn("Value mismatch - Actual: {}, Expected: {}", actual, expected);
+        } else {
+            logger.debug("COBOL precision validation passed - Value: {}, Scale: {}, Precision: {}", 
+                        actual, actual.scale(), actual.precision());
+        }
+
+        return matches;
+    }
+    
+    /**
+     * Compares BigDecimal values using COBOL rounding behavior for performance test validation.
+     * Applies HALF_UP rounding mode matching COBOL ROUNDED clause behavior.
+     * 
+     * @param value1 First BigDecimal value to compare
+     * @param value2 Second BigDecimal value to compare
+     * @param scale Target scale for rounding comparison
+     * @return true if values match after COBOL-equivalent rounding
+     */
+    public static boolean compareDecimalWithCobolRounding(BigDecimal value1, BigDecimal value2, int scale) {
+        Assertions.assertNotNull(value1, "First BigDecimal value cannot be null");
+        Assertions.assertNotNull(value2, "Second BigDecimal value cannot be null");
+        Assertions.assertTrue(scale >= 0, "Scale must be non-negative");
+
+        // Apply COBOL ROUNDED equivalent rounding (HALF_UP)
+        BigDecimal rounded1 = value1.setScale(scale, TestConstants.COBOL_ROUNDING_MODE);
+        BigDecimal rounded2 = value2.setScale(scale, TestConstants.COBOL_ROUNDING_MODE);
+
+        // Compare rounded values
+        boolean matches = rounded1.compareTo(rounded2) == 0;
+        
+        if (!matches) {
+            logger.warn("COBOL rounding comparison failed - Value1: {} -> {}, Value2: {} -> {}", 
+                       value1, rounded1, value2, rounded2);
+        } else {
+            logger.debug("COBOL rounding comparison passed - Rounded value: {} at scale {}", 
+                        rounded1, scale);
+        }
+
+        return matches;
+    }
 }

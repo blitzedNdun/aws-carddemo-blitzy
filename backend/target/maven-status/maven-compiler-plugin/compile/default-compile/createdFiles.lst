@@ -5,6 +5,7 @@ com/carddemo/repository/ConfigurationRepository.class
 com/carddemo/dto/UserListRequest.class
 com/carddemo/exception/GlobalExceptionHandler$MockHttpServletRequest.class
 com/carddemo/dto/MenuDto$MenuType.class
+com/carddemo/service/TransactionReportingService$SuspiciousTransaction.class
 com/carddemo/dto/BillInquiryRequest.class
 com/carddemo/service/StatementFileHandlerService$FileOperationResponse.class
 com/carddemo/controller/AccountController.class
@@ -26,6 +27,7 @@ com/carddemo/repository/NotificationRepository.class
 com/carddemo/batch/StatementGenerationJobConfigA$TransactionData.class
 com/carddemo/controller/DailyTransactionController.class
 com/carddemo/security/PlainTextPasswordEncoder.class
+com/carddemo/service/TransactionReportingService.class
 com/carddemo/service/CustomerMaintenanceService$PhoneFormattingResult.class
 com/carddemo/security/SecurityAuditService.class
 com/carddemo/batch/BalanceReconciliationJobConfig$1.class
@@ -42,6 +44,7 @@ com/carddemo/dto/FileExportResponse.class
 com/carddemo/service/FileGenerationService$BatchProcessingConfig.class
 com/carddemo/service/FeeAssessmentBatchService.class
 com/carddemo/service/AccountStatementsService.class
+com/carddemo/service/TransactionReportingService$FraudAlert.class
 com/carddemo/dto/AdminReportResponse$PaginationInfo.class
 com/carddemo/service/TransactionReportService$TransactionTypeData.class
 com/carddemo/service/AdminReportService.class
@@ -76,8 +79,10 @@ com/carddemo/dto/CardDeletionResponse$CardDeletionResponseBuilder.class
 com/carddemo/dto/ValidationError.class
 com/carddemo/dto/AddTransactionResponse.class
 com/carddemo/service/CategoryService.class
+com/carddemo/service/TransactionReportingService$MonthlyAggregationReportResult.class
 com/carddemo/config/LiquibaseConfig.class
 com/carddemo/controller/HealthController.class
+com/carddemo/service/TransactionReportingService$ReportDetailsResult.class
 com/carddemo/service/ChargebackProcessor$LiabilityDistribution.class
 com/carddemo/dto/CustomerRequest.class
 com/carddemo/service/AddressValidationService.class
@@ -121,6 +126,7 @@ com/carddemo/repository/UserRepository.class
 com/carddemo/client/DataQualityService$SSNValidationResult.class
 com/carddemo/service/SessionService.class
 com/carddemo/dto/MenuRequest.class
+com/carddemo/service/TransactionReportingService$RegulatoryComplianceReportResult.class
 com/carddemo/dto/InterestRateResponse.class
 com/carddemo/service/TransactionPostingService.class
 com/carddemo/batch/ReconciliationJobConfig$AuthorizationRecord.class
@@ -165,6 +171,7 @@ com/carddemo/security/PasswordPolicyValidator.class
 com/carddemo/dto/CreditCardListResponse.class
 com/carddemo/service/DailyTransactionService$DailyTransactionDetail.class
 com/carddemo/entity/AccountClosure.class
+com/carddemo/service/TransactionReportingService$DailyTransactionReportResult.class
 com/carddemo/service/TransactionProcessingService$MerchantValidationResult.class
 com/carddemo/config/ApplicationConfig$ProductionConfig.class
 com/carddemo/dto/StatementItemDto.class
@@ -296,6 +303,7 @@ com/carddemo/util/AmountCalculator.class
 com/carddemo/repository/DisputeRepository.class
 com/carddemo/service/TransactionProcessingService.class
 com/carddemo/batch/CustomerMaintenanceJobConfig$CustomerRepository.class
+com/carddemo/service/TransactionReportingService$FraudDetectionReportResult.class
 com/carddemo/service/CardDeletionService.class
 com/carddemo/service/CustomerMaintenanceBatchService.class
 com/carddemo/service/TransactionReportService$CardXrefData.class
@@ -313,11 +321,13 @@ com/carddemo/batch/ReconciliationJobConfig$UnmatchedTransactionRowMapper.class
 com/carddemo/batch/StatementGenerationJobConfigA$1.class
 com/carddemo/service/CustomerMaintenanceService$DuplicateCustomerMatch.class
 com/carddemo/client/DataQualityService$PhoneValidationResult.class
+com/carddemo/service/TransactionReportingService$DateParametersResult.class
 com/carddemo/exception/BusinessRuleException.class
 com/carddemo/dto/AccountViewResponse.class
 com/carddemo/service/StatementService.class
 com/carddemo/service/ReportMenuService.class
 com/carddemo/security/MethodSecurityConfig.class
+com/carddemo/service/TransactionReportingService$MerchantAnalysisReportResult.class
 com/carddemo/service/PaymentService$PaymentAuthorizationException.class
 com/carddemo/batch/CustomerMaintenanceJobConfig$Customer.class
 com/carddemo/service/CardDetailsService.class
@@ -444,6 +454,7 @@ com/carddemo/service/CreditBureauService.class
 com/carddemo/service/StatementGenerationService.class
 com/carddemo/util/CobolComparisonUtils$ComparisonResult.class
 com/carddemo/client/EmailClient$BounceEvent.class
+com/carddemo/service/TransactionReportingService$ReportHeadersResult.class
 com/carddemo/batch/CustomerMaintenanceJobConfig$PhoneSSNValidationProcessor.class
 com/carddemo/dto/TransactionTypeDto.class
 com/carddemo/security/SecurityConstants.class
@@ -488,6 +499,7 @@ com/carddemo/entity/FeeSchedule.class
 com/carddemo/entity/Archive$ArchiveBuilder.class
 com/carddemo/service/DailyTransactionService$ProcessingResult.class
 com/carddemo/dto/TransactionCategoryBalanceDto.class
+com/carddemo/service/TransactionReportingService$TransactionFileReadResult.class
 com/carddemo/controller/CardController.class
 com/carddemo/dto/CreditCardListRequest.class
 com/carddemo/client/SMSProvider$SMSResponse.class
@@ -572,6 +584,7 @@ com/carddemo/dto/AdminReportResponse$Builder.class
 com/carddemo/service/AccountBalanceBatchService.class
 com/carddemo/repository/TransactionTypeRepository.class
 com/carddemo/batch/ArchiveJobConfig$AccountArchiveRecord.class
+com/carddemo/service/TransactionReportingService$MerchantCategoryData.class
 com/carddemo/service/InterestRateService$RateHistoryEntry.class
 com/carddemo/dto/ResponseStatus.class
 com/carddemo/dto/ApiRequest.class
