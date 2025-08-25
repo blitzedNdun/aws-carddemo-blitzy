@@ -21,6 +21,7 @@ import org.mockito.MockitoAnnotations;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -65,7 +66,7 @@ public class InterestRateServiceTest extends AbstractBaseTest implements UnitTes
     private static final BigDecimal TEST_CREDIT_LIMIT = new BigDecimal("5000.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE);
     private static final String TEST_ACCOUNT_GROUP = "STANDARD";
     private static final Long TEST_RATE_ID = 1L;
-    private static final Long TEST_ACCOUNT_ID = TestConstants.TEST_ACCOUNT_ID;
+    private static final Long TEST_ACCOUNT_ID = Long.valueOf(TestConstants.TEST_ACCOUNT_ID);
     
     @BeforeEach
     @Override
@@ -173,7 +174,7 @@ public class InterestRateServiceTest extends AbstractBaseTest implements UnitTes
                 .build();
                 
             when(interestRateRepository.findByAccountGroupId(testAccount.getGroupId()))
-                .thenReturn(Optional.of(interestRate));
+                .thenReturn(List.of(interestRate));
             
             // When
             BigDecimal dailyRate = interestRateService.calculateDailyRate(testAccount);
@@ -191,10 +192,11 @@ public class InterestRateServiceTest extends AbstractBaseTest implements UnitTes
             // Given
             Account testAccount = createTestAccount();
             when(interestRateRepository.findByAccountGroupId(testAccount.getGroupId()))
-                .thenReturn(Optional.empty());
+                .thenReturn(Collections.emptyList());
             
             // When
-            BigDecimal dailyRate = interestRateService.calculateDailyRate(testAccount);
+            BigDecimal effectiveRate = interestRateService.getEffectiveRate(testAccount.getAccountId().toString(), LocalDate.now());
+            BigDecimal dailyRate = interestRateService.calculateDailyRate(effectiveRate);
             
             // Then
             assertThat(dailyRate).isEqualTo(BigDecimal.ZERO.setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
@@ -218,17 +220,16 @@ public class InterestRateServiceTest extends AbstractBaseTest implements UnitTes
                 .expirationDate(LocalDate.now().plusDays(60))
                 .build();
                 
-            when(interestRateRepository.findPromotionalRates(eq(testAccount.getGroupId()), any(LocalDate.class)))
+            when(interestRateRepository.findPromotionalRates())
                 .thenReturn(List.of(promotionalRate));
             
             // When
-            Optional<InterestRate> result = interestRateService.getPromotionalRate(testAccount);
+            BigDecimal result = interestRateService.getPromotionalRate(testAccount.getAccountId().toString(), "PROMO001", LocalDate.now());
             
             // Then
-            assertThat(result).isPresent();
-            assertThat(result.get().getPromotionalRate()).isEqualTo(TEST_PROMOTIONAL_RATE);
+            assertThat(result).isEqualTo(TEST_PROMOTIONAL_RATE);
             
-            verify(interestRateRepository).findPromotionalRates(eq(testAccount.getGroupId()), any(LocalDate.class));
+            verify(interestRateRepository).findPromotionalRates();
         }
         
         @Test
@@ -236,14 +237,14 @@ public class InterestRateServiceTest extends AbstractBaseTest implements UnitTes
         void shouldReturnEmptyWhenNoPromotionalRateAvailable() {
             // Given
             Account testAccount = createTestAccount();
-            when(interestRateRepository.findPromotionalRates(eq(testAccount.getGroupId()), any(LocalDate.class)))
+            when(interestRateRepository.findPromotionalRates())
                 .thenReturn(List.of());
             
             // When
-            Optional<InterestRate> result = interestRateService.getPromotionalRate(testAccount);
+            BigDecimal result = interestRateService.getPromotionalRate(testAccount.getAccountId().toString(), "PROMO001", LocalDate.now());
             
             // Then
-            assertThat(result).isEmpty();
+            assertThat(result).isEqualTo(BigDecimal.ZERO);
         }
         
         @Test
@@ -266,16 +267,14 @@ public class InterestRateServiceTest extends AbstractBaseTest implements UnitTes
                 .expirationDate(LocalDate.now().plusDays(90))
                 .build();
                 
-            when(interestRateRepository.findPromotionalRates(eq(testAccount.getGroupId()), any(LocalDate.class)))
+            when(interestRateRepository.findPromotionalRates())
                 .thenReturn(List.of(higherRate, lowerRate));
             
             // When
-            Optional<InterestRate> result = interestRateService.getPromotionalRate(testAccount);
+            BigDecimal result = interestRateService.getPromotionalRate(testAccount.getAccountId().toString(), "PROMO001", LocalDate.now());
             
             // Then
-            assertThat(result).isPresent();
-            assertThat(result.get().getPromotionalRate()).isEqualTo(TEST_PROMOTIONAL_RATE);
-            assertThat(result.get().getRateId()).isEqualTo(2L);
+            assertThat(result).isEqualTo(TEST_PROMOTIONAL_RATE);
         }
     }
     
@@ -331,7 +330,7 @@ public class InterestRateServiceTest extends AbstractBaseTest implements UnitTes
             LocalDate effectiveDate = LocalDate.now().plusDays(15);
             
             when(interestRateRepository.findByAccountGroupId(testAccount.getGroupId()))
-                .thenReturn(Optional.empty());
+                .thenReturn(Collections.emptyList());
             
             InterestRate newInterestRate = InterestRate.builder()
                 .accountGroupId(TEST_ACCOUNT_GROUP)

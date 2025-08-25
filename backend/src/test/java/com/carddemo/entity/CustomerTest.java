@@ -73,18 +73,18 @@ class CustomerTest {
         @DisplayName("Should validate customer ID is Long type matching COBOL PIC 9(09)")
         void testCustomerIdValidation() {
             // Test setting valid customer ID
-            customer.setCustomerId(VALID_CUSTOMER_ID);
-            assertThat(customer.getCustomerId()).isEqualTo(VALID_CUSTOMER_ID);
-            assertThat(customer.getCustomerId()).isInstanceOf(Long.class);
+            customer.setCustomerId(VALID_CUSTOMER_ID.toString());
+            assertThat(customer.getCustomerId()).isEqualTo(VALID_CUSTOMER_ID.toString());
+            assertThat(customer.getCustomerId()).isInstanceOf(String.class);
             
             // Test that customer ID should be within COBOL range (9 digits max)
             Long maxCustomerId = 999999999L;
-            customer.setCustomerId(maxCustomerId);
-            assertThat(customer.getCustomerId()).isEqualTo(maxCustomerId);
+            customer.setCustomerId(maxCustomerId.toString());
+            assertThat(customer.getCustomerId()).isEqualTo(maxCustomerId.toString());
             
             // Test minimum customer ID
-            customer.setCustomerId(1L);
-            assertThat(customer.getCustomerId()).isEqualTo(1L);
+            customer.setCustomerId("1");
+            assertThat(customer.getCustomerId()).isEqualTo("1");
         }
 
         @Test
@@ -289,17 +289,17 @@ class CustomerTest {
         @DisplayName("Should validate equals method for entity identity")
         void testEqualsMethod() {
             Customer customer1 = new Customer();
-            customer1.setCustomerId(123L);
+            customer1.setCustomerId("123");
             customer1.setFirstName("John");
             customer1.setLastName("Doe");
 
             Customer customer2 = new Customer();
-            customer2.setCustomerId(123L);
+            customer2.setCustomerId("123");
             customer2.setFirstName("John");
             customer2.setLastName("Doe");
 
             Customer customer3 = new Customer();
-            customer3.setCustomerId(456L);
+            customer3.setCustomerId("456");
             customer3.setFirstName("Jane");
             customer3.setLastName("Smith");
 
@@ -314,11 +314,11 @@ class CustomerTest {
         @DisplayName("Should validate hashCode consistency")
         void testHashCodeConsistency() {
             Customer customer1 = new Customer();
-            customer1.setCustomerId(123L);
+            customer1.setCustomerId("123");
             customer1.setFirstName("John");
 
             Customer customer2 = new Customer();
-            customer2.setCustomerId(123L);
+            customer2.setCustomerId("123");
             customer2.setFirstName("John");
 
             // Test hashCode consistency
@@ -370,16 +370,16 @@ class CustomerTest {
         @Test
         @DisplayName("Should validate customer ID matches COBOL PIC 9(09)")
         void testCustomerIdLength() {
-            customer.setCustomerId(123456789L);
-            assertThat(customer.getCustomerId().toString()).hasSize(9);
+            customer.setCustomerId("123456789");
+            assertThat(customer.getCustomerId()).hasSize(9);
             
             // Test maximum 9-digit customer ID
-            customer.setCustomerId(999999999L);
-            assertThat(customer.getCustomerId().toString()).hasSize(9);
+            customer.setCustomerId("999999999");
+            assertThat(customer.getCustomerId()).hasSize(9);
             
             // Test minimum customer ID
-            customer.setCustomerId(1L);
-            assertThat(customer.getCustomerId()).isEqualTo(1L);
+            customer.setCustomerId("1");
+            assertThat(customer.getCustomerId()).isEqualTo("1");
         }
 
         @Test
@@ -404,7 +404,7 @@ class CustomerTest {
         @Test
         @DisplayName("Should validate toString method for debugging")
         void testToStringMethod() {
-            customer.setCustomerId(VALID_CUSTOMER_ID);
+            customer.setCustomerId(VALID_CUSTOMER_ID.toString());
             customer.setFirstName(VALID_FIRST_NAME);
             customer.setLastName(VALID_LAST_NAME);
             customer.setAddressLine1(VALID_ADDRESS_LINE1);
@@ -433,7 +433,7 @@ class CustomerTest {
         @DisplayName("Should validate complete Customer entity setup matches COBOL CUSTREC")
         void testCompleteCustomerSetup() {
             // Setup customer with all COBOL-equivalent fields
-            customer.setCustomerId(VALID_CUSTOMER_ID);
+            customer.setCustomerId(VALID_CUSTOMER_ID.toString());
             customer.setFirstName(VALID_FIRST_NAME);
             customer.setLastName(VALID_LAST_NAME);
             customer.setAddressLine1(VALID_ADDRESS_LINE1);
@@ -445,7 +445,7 @@ class CustomerTest {
             customer.setDateOfBirth(VALID_DATE_OF_BIRTH);
             
             // Validate all fields are set correctly
-            assertThat(customer.getCustomerId()).isEqualTo(VALID_CUSTOMER_ID);
+            assertThat(customer.getCustomerId()).isEqualTo(VALID_CUSTOMER_ID.toString());
             assertThat(customer.getFirstName()).isEqualTo(VALID_FIRST_NAME);
             assertThat(customer.getLastName()).isEqualTo(VALID_LAST_NAME);
             assertThat(customer.getAddressLine1()).isEqualTo(VALID_ADDRESS_LINE1);

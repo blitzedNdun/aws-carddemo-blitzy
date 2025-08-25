@@ -251,7 +251,7 @@ public class TestDataBuilder {
         Customer customer = new Customer();
         
         // Set customer ID
-        customer.setCustomerId(customerId);
+        customer.setCustomerId(customerId != null ? customerId.toString() : null);
         
         // Set name fields matching COBOL PIC X(25) constraints (truncated to 20 for DB)
         customer.setFirstName(firstName != null ? firstName.substring(0, Math.min(firstName.length(), 20)) : "JOHN");

@@ -547,7 +547,7 @@ public class AccountUpdateServiceTest {
 
         org.mockito.Mockito.when(accountRepository.findByIdForUpdate(12345678901L))
             .thenReturn(Optional.of(account));
-        org.mockito.Mockito.when(customerRepository.findById(customer.getCustomerId()))
+        org.mockito.Mockito.when(customerRepository.findById(Long.valueOf(customer.getCustomerId())))
             .thenReturn(Optional.of(customer));
 
         // Modify request to attempt credit limit increase on closed account
@@ -785,7 +785,7 @@ public class AccountUpdateServiceTest {
 
         org.mockito.Mockito.when(accountRepository.findByIdForUpdate(12345678901L))
             .thenReturn(Optional.of(account));
-        org.mockito.Mockito.when(customerRepository.findById(customer.getCustomerId()))
+        org.mockito.Mockito.when(customerRepository.findById(Long.valueOf(customer.getCustomerId())))
             .thenReturn(Optional.of(customer));
         org.mockito.Mockito.when(accountRepository.save(org.mockito.Mockito.any(Account.class)))
             .thenReturn(account);

@@ -183,7 +183,7 @@ public final class TestDataGenerator {
         Customer customer = new Customer();
         
         // Generate customer ID (9 digits)
-        customer.setCustomerId(100000000L + (long)(random.nextDouble() * (999999999L - 100000000L)));
+        customer.setCustomerId(String.valueOf(100000000L + (long)(random.nextDouble() * (999999999L - 100000000L))));
         
         // Generate names with proper formatting
         customer.setFirstName(FIRST_NAMES[random.nextInt(FIRST_NAMES.length)]);

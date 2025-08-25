@@ -233,7 +233,7 @@ public class CustomerReportsServiceTest {
         when(customerRepository.findAll()).thenReturn(testCustomers);
         // Need to mock account repository for each customer
         for (Customer customer : testCustomers) {
-            when(accountRepository.findByCustomerId(customer.getCustomerId())).thenReturn(
+            when(accountRepository.findByCustomerId(Long.valueOf(customer.getCustomerId()))).thenReturn(
                 testAccounts.stream()
                     .filter(account -> account.getCustomer().getCustomerId().equals(customer.getCustomerId()))
                     .toList()
@@ -286,7 +286,7 @@ public class CustomerReportsServiceTest {
         
         // When: Calculating customer lifetime value
         BigDecimal customerLifetimeValue = customerReportsService.calculateCustomerLifetimeValue(
-            highValueCustomer.getCustomerId()
+            Long.valueOf(highValueCustomer.getCustomerId())
         );
         
         // Then: CLV should be calculated with COBOL-compatible precision
@@ -326,7 +326,7 @@ public class CustomerReportsServiceTest {
         when(accountRepository.findByCustomerId(999L)).thenReturn(Arrays.asList(account));
         
         // When: Calculating CLV for specific customer profile
-        BigDecimal actualCLV = customerReportsService.calculateCustomerLifetimeValue(customer.getCustomerId());
+        BigDecimal actualCLV = customerReportsService.calculateCustomerLifetimeValue(Long.valueOf(customer.getCustomerId()));
         
         // Then: CLV should meet minimum expected value for profile tier
         assertThat(actualCLV).isNotNull();
@@ -499,7 +499,7 @@ public class CustomerReportsServiceTest {
     
     private Customer createHighValueCustomer() {
         Customer customer = new Customer();
-        customer.setCustomerId(1L);
+        customer.setCustomerId("1");
         customer.setFirstName("JOHN                     "); // COBOL PIC X(25) format
         customer.setLastName("DOE                      "); // COBOL PIC X(25) format  
         customer.setFicoScore(800); // High FICO score
@@ -510,7 +510,7 @@ public class CustomerReportsServiceTest {
     
     private Customer createMediumValueCustomer() {
         Customer customer = new Customer();
-        customer.setCustomerId(2L);
+        customer.setCustomerId("2");
         customer.setFirstName("JANE                     ");
         customer.setLastName("SMITH                    ");
         customer.setFicoScore(700); // Medium FICO score
@@ -521,7 +521,7 @@ public class CustomerReportsServiceTest {
     
     private Customer createLowValueCustomer() {
         Customer customer = new Customer();
-        customer.setCustomerId(3L);
+        customer.setCustomerId("3");
         customer.setFirstName("BOB                      ");
         customer.setLastName("JONES                    ");
         customer.setFicoScore(600); // Low FICO score
@@ -571,7 +571,7 @@ public class CustomerReportsServiceTest {
     
     private Customer createCustomerWithAge(int age, String state) {
         Customer customer = new Customer();
-        customer.setCustomerId(Long.valueOf(age));
+        customer.setCustomerId(String.valueOf(age));
         customer.setFirstName("TEST                     ");
         customer.setLastName("CUSTOMER                 ");
         customer.setDateOfBirth(LocalDate.now().minusYears(age));
@@ -621,7 +621,7 @@ public class CustomerReportsServiceTest {
     
     private Customer createCustomerWithProfile(int ficoScore, BigDecimal creditLimit, BigDecimal currentBalance) {
         Customer customer = new Customer();
-        customer.setCustomerId(999L);
+        customer.setCustomerId("999");
         customer.setFirstName("PROFILE                  ");
         customer.setLastName("TEST                     ");
         customer.setFicoScore(ficoScore);
@@ -652,7 +652,7 @@ public class CustomerReportsServiceTest {
         return java.util.stream.IntStream.range(0, size)
                 .mapToObj(i -> {
                     Customer customer = new Customer();
-                    customer.setCustomerId(Long.valueOf(i));
+                    customer.setCustomerId(String.valueOf(i));
                     customer.setFirstName("CUSTOMER                 ");
                     customer.setLastName(String.format("%-25s", "TEST" + i));
                     customer.setFicoScore(600 + (i % 200)); // FICO scores 600-799
@@ -665,7 +665,7 @@ public class CustomerReportsServiceTest {
     
     private Customer createCobolFormattedCustomer() {
         Customer customer = new Customer();
-        customer.setCustomerId(1L);
+        customer.setCustomerId("1");
         // COBOL PIC X(25) fields - exactly 25 characters with padding
         customer.setFirstName("JOHN                     ");
         customer.setLastName("DOE                      ");

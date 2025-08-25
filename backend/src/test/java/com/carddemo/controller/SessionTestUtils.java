@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Assertions;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.io.IOException;
@@ -107,11 +108,9 @@ public class SessionTestUtils {
         MockHttpSession session = new MockHttpSession();
         
         // Configure session with CICS-equivalent timeout (30 minutes)
-        session.setMaxInactiveInterval(TestConstants.SESSION_TIMEOUT_MINUTES * 60);
+        session.setMaxInactiveInterval(TestRedisConfig.SESSION_TIMEOUT_MINUTES * 60);
         
-        // Set unique session ID for test isolation
-        String sessionId = "TEST-" + UUID.randomUUID().toString();
-        session.setId(sessionId);
+        // MockHttpSession generates its own ID, so we don't need to set it manually
         
         // Initialize with creation timestamp for timeout testing
         session.setAttribute("SESSION_CREATED_TIME", System.currentTimeMillis());
@@ -647,7 +646,7 @@ public class SessionTestUtils {
             redisTemplate.opsForHash().putAll(sessionKey, sessionData);
             
             // Set session expiration
-            redisTemplate.expire(sessionKey, Duration.ofMinutes(TestConstants.SESSION_TIMEOUT_MINUTES));
+            redisTemplate.expire(sessionKey, Duration.ofMinutes(TestRedisConfig.SESSION_TIMEOUT_MINUTES));
             
             // Validate session data was stored successfully
             if (!redisTemplate.hasKey(sessionKey)) {
@@ -981,7 +980,7 @@ public class SessionTestUtils {
             
         } catch (Exception e) {
             // Return conservative estimate if calculation fails
-            return TestConstants.MAX_SESSION_SIZE_KB;
+            return TestRedisConfig.MAX_SESSION_SIZE_KB;
         }
     }
 
@@ -1052,7 +1051,7 @@ public class SessionTestUtils {
             
             // Validate session size is within COMMAREA limits
             int sessionSizeKB = getSessionSize(session);
-            if (sessionSizeKB > TestConstants.MAX_SESSION_SIZE_KB) {
+            if (sessionSizeKB > TestRedisConfig.MAX_SESSION_SIZE_KB) {
                 return false;
             }
             
@@ -1397,14 +1396,9 @@ public class SessionTestUtils {
      * Validates required session attributes are present and correctly typed.
      */
     private static boolean validateRequiredAttributes(MockHttpSession session) {
-        // Check for core session attributes
-        if (!SessionAttributes.isActive(extractSessionAttributes(session))) {
-            return false;
-        }
-        
-        // Validate user context attributes
+        // Check for core session attributes - verify user ID exists indicating active session
         Object userId = session.getAttribute(SessionAttributes.SEC_USR_ID);
-        if (userId == null || !(userId instanceof String)) {
+        if (userId == null || !(userId instanceof String) || ((String) userId).trim().isEmpty()) {
             return false;
         }
         
@@ -2199,7 +2193,7 @@ public class SessionTestUtils {
             }
             
             // Set expiration
-            redisTemplate.expire(sessionKey, Duration.ofMinutes(TestConstants.SESSION_TIMEOUT_MINUTES));
+            redisTemplate.expire(sessionKey, Duration.ofMinutes(TestRedisConfig.SESSION_TIMEOUT_MINUTES));
             
             // Verify data was stored
             return redisTemplate.hasKey(sessionKey);

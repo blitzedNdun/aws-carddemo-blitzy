@@ -338,7 +338,7 @@ public class TestDataGenerator {
      */
     public Customer generateCustomer() {
         Customer customer = new Customer();
-        customer.setCustomerId(counter.incrementAndGet());
+        customer.setCustomerId(String.valueOf(counter.incrementAndGet()));
         customer.setFirstName("John");
         customer.setLastName("Smith");
         customer.setDateOfBirth(LocalDate.of(1980, 5, 15));
@@ -359,7 +359,7 @@ public class TestDataGenerator {
         
         // High value customer
         Customer highValue = generateCustomer();
-        highValue.setCustomerId(1L);
+        highValue.setCustomerId("1");
         highValue.setFicoScore(780);
         highValue.setFirstName("Alice");
         highValue.setLastName("Johnson");
@@ -367,7 +367,7 @@ public class TestDataGenerator {
         
         // Medium value customer  
         Customer mediumValue = generateCustomer();
-        mediumValue.setCustomerId(2L);
+        mediumValue.setCustomerId("2");
         mediumValue.setFicoScore(680);
         mediumValue.setFirstName("Bob");
         mediumValue.setLastName("Davis");
@@ -375,7 +375,7 @@ public class TestDataGenerator {
         
         // Low value customer
         Customer lowValue = generateCustomer();
-        lowValue.setCustomerId(3L);
+        lowValue.setCustomerId("3");
         lowValue.setFicoScore(580);
         lowValue.setFirstName("Carol");
         lowValue.setLastName("Wilson");
@@ -395,13 +395,13 @@ public class TestDataGenerator {
         
         // Create customers for the accounts
         Customer customer1 = generateCustomer();
-        customer1.setCustomerId(1L);
+        customer1.setCustomerId("1");
         
         Customer customer2 = generateCustomer();
-        customer2.setCustomerId(2L);
+        customer2.setCustomerId("2");
         
         Customer customer3 = generateCustomer();
-        customer3.setCustomerId(3L);
+        customer3.setCustomerId("3");
         
         // High utilization account
         Account highUtil = generateAccount();

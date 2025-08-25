@@ -341,7 +341,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         
         // Act - save and retrieve customer
         Customer savedCustomer = customerRepository.saveAndFlush(testCustomer);
-        Customer retrievedCustomer = customerRepository.findById(savedCustomer.getCustomerId()).orElse(null);
+        Customer retrievedCustomer = customerRepository.findById(Long.valueOf(savedCustomer.getCustomerId())).orElse(null);
         
         // Assert - validate customer data integrity
         assertThat(retrievedCustomer).isNotNull();
@@ -808,7 +808,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         dataChecksums.put("account_" + testAccount.getAccountId(), savedAccountChecksum);
         
         // Validate checksum consistency across multiple operations
-        Customer retrievedCustomer = customerRepository.findById(savedCustomer.getCustomerId()).orElse(null);
+        Customer retrievedCustomer = customerRepository.findById(Long.valueOf(savedCustomer.getCustomerId())).orElse(null);
         assertThat(retrievedCustomer).isNotNull();
         
         String retrievedData = retrievedCustomer.getCustomerId() + retrievedCustomer.getFirstName() + 
@@ -837,7 +837,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         Account savedAccount = accountRepository.saveAndFlush(testAccount);
         
         Card testCard = createTestCard(TestConstants.TEST_CARD_NUMBER);
-        testCard.setCustomerId(savedCustomer.getCustomerId());
+        testCard.setCustomerId(Long.valueOf(savedCustomer.getCustomerId()));
         testCard.setAccountId(savedAccount.getAccountId());
         Card savedCard = cardRepository.saveAndFlush(testCard);
         
@@ -850,7 +850,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         
         // Act & Assert - validate FK relationships
         // Test customer-account relationship
-        List<Account> customerAccounts = accountRepository.findByCustomerId(savedCustomer.getCustomerId());
+        List<Account> customerAccounts = accountRepository.findByCustomerId(Long.valueOf(savedCustomer.getCustomerId()));
         assertThat(customerAccounts).hasSize(1);
         assertThat(customerAccounts.get(0).getAccountId()).isEqualTo(savedAccount.getAccountId());
         
@@ -1283,7 +1283,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
      */
     private Customer createTestCustomer(String customerId) {
         Customer customer = new Customer();
-        customer.setCustomerId(Long.valueOf(customerId));
+        customer.setCustomerId(customerId);
         customer.setFirstName("TEST");
         customer.setLastName("CUSTOMER");
         customer.setAddressLine1("123 TEST STREET");
@@ -1446,7 +1446,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
             assertThat(savedAccount.getAccountId()).isEqualTo(1L);
             
             Card card = createTestCard(TestConstants.TEST_CARD_NUMBER);
-            card.setCustomerId(savedCustomer.getCustomerId());
+            card.setCustomerId(Long.valueOf(savedCustomer.getCustomerId()));
             card.setAccountId(savedAccount.getAccountId());
             Card savedCard = cardRepository.saveAndFlush(card);
             assertThat(savedCard.getCardNumber()).isEqualTo(TestConstants.TEST_CARD_NUMBER);
@@ -1478,7 +1478,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
             assertThat(cardXrefRepository.count()).isEqualTo(1L);
             
             // Validate relationships
-            List<Account> customerAccounts = accountRepository.findByCustomerId(savedCustomer.getCustomerId());
+            List<Account> customerAccounts = accountRepository.findByCustomerId(Long.valueOf(savedCustomer.getCustomerId()));
             assertThat(customerAccounts).hasSize(1);
             
             List<Transaction> accountTransactions = transactionRepository.findByAccountId(savedAccount.getAccountId());
