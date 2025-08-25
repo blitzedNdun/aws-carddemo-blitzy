@@ -172,7 +172,7 @@ public class CardTest extends AbstractBaseTest implements UnitTest {
         // Validate customer relationship
         testCard.setCustomer(testCustomer);
         assertThat(testCard.getCustomer()).isEqualTo(testCustomer);
-        assertThat(testCard.getCustomerId()).isEqualTo(testCustomer.getCustomerId());
+        assertThat(testCard.getCustomerId()).isEqualTo(Long.valueOf(testCustomer.getCustomerId()));
         
         logTestExecution("Customer ID relationship mapping validated", null);
     }

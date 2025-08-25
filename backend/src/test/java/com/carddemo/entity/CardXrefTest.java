@@ -404,7 +404,7 @@ public class CardXrefTest extends AbstractBaseTest implements UnitTest {
                 .as("CardXref should have associated Customer entity")
                 .isNotNull()
                 .satisfies(c -> {
-                    assertThat(c.getCustomerId()).isEqualTo(customerId);
+                    assertThat(c.getCustomerId()).isEqualTo(customerId.toString());
                     assertThat(c.getFirstName()).isEqualTo("John");
                     assertThat(c.getLastName()).isEqualTo("Doe");
                 });
