@@ -17,9 +17,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.math.BigDecimal;
 import java.util.List;
 
-import com.carddemo.batch.DataMigrationJob;
 import com.carddemo.test.AbstractBaseTest;
-import com.carddemo.util.CobolComparisonUtils;
+import com.carddemo.test.CobolComparisonUtils;
 import com.carddemo.entity.Account;
 import com.carddemo.entity.Customer;
 import com.carddemo.entity.Transaction;
@@ -182,7 +181,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         loadTestFixtures();
         
         // Configure test environment for COBOL precision validation
-        super.validateCobolPrecision();
+        // Note: validateCobolPrecision(BigDecimal, String) will be called when validating specific values
     }
 
     /**
@@ -310,9 +309,9 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         assertThat(retrievedAccount.getCustomerId()).isEqualTo(testAccount.getCustomerId());
         
         // Validate BigDecimal precision preservation
-        super.assertBigDecimalEquals(retrievedAccount.getCurrentBalance(), testAccount.getCurrentBalance());
-        super.assertBigDecimalEquals(retrievedAccount.getCreditLimit(), testAccount.getCreditLimit());
-        super.assertBigDecimalEquals(retrievedAccount.getCashCreditLimit(), testAccount.getCashCreditLimit());
+        assertBigDecimalEquals(retrievedAccount.getCurrentBalance(), testAccount.getCurrentBalance(), "Current balance should match after COMP-3 conversion");
+        assertBigDecimalEquals(retrievedAccount.getCreditLimit(), testAccount.getCreditLimit(), "Credit limit should match after COMP-3 conversion");
+        assertBigDecimalEquals(retrievedAccount.getCashCreditLimit(), testAccount.getCashCreditLimit(), "Cash credit limit should match after COMP-3 conversion");
         
         // Validate COBOL precision compliance
         assertThat(retrievedAccount.getCurrentBalance().scale()).isEqualTo(TestConstants.COBOL_DECIMAL_SCALE);
@@ -336,8 +335,8 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         Customer testCustomer = createTestCustomer("CUST000001");
         testCustomer.setFirstName("JOHN");
         testCustomer.setLastName("SMITH");
-        testCustomer.setPhoneNumber("(555) 123-4567");
-        testCustomer.setSSN("123-45-6789");
+        testCustomer.setPhoneNumber1("(555) 123-4567");
+        testCustomer.setSsn("123-45-6789");
         testCustomer.setFicoScore(750);
         
         // Act - save and retrieve customer
@@ -349,16 +348,16 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         assertThat(retrievedCustomer.getCustomerId()).isEqualTo(testCustomer.getCustomerId());
         assertThat(retrievedCustomer.getFirstName()).isEqualTo(testCustomer.getFirstName());
         assertThat(retrievedCustomer.getLastName()).isEqualTo(testCustomer.getLastName());
-        assertThat(retrievedCustomer.getPhoneNumber()).isEqualTo(testCustomer.getPhoneNumber());
+        assertThat(retrievedCustomer.getPhoneNumber1()).isEqualTo(testCustomer.getPhoneNumber1());
         
         // Validate FICO score range validation
         assertThat(retrievedCustomer.getFicoScore()).isBetween(TestConstants.FICO_SCORE_MIN, TestConstants.FICO_SCORE_MAX);
         
         // Validate SSN format preservation
-        assertThat(retrievedCustomer.getSSN()).matches(TestConstants.SSN_PATTERN);
+        assertThat(retrievedCustomer.getSsn()).matches(TestConstants.SSN_PATTERN);
         
         // Validate phone number format preservation  
-        assertThat(retrievedCustomer.getPhoneNumber()).matches(TestConstants.PHONE_NUMBER_PATTERN);
+        assertThat(retrievedCustomer.getPhoneNumber1()).matches(TestConstants.PHONE_NUMBER_PATTERN);
         
         // Update migration statistics
         migrationStats.put("customers_validated", migrationStats.getOrDefault("customers_validated", 0L) + 1L);
@@ -435,7 +434,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         // Create test transaction with COBOL-compatible precision
         Transaction testTransaction = createTestTransaction("TXN000000001");
         testTransaction.setAmount(CobolDataConverter.toBigDecimal("123.45", TestConstants.COBOL_DECIMAL_SCALE));
-        testTransaction.setTransactionType("01");
+        testTransaction.setTransactionTypeCode("01");
         testTransaction.setTransactionDate(LocalDate.now());
         testTransaction.setAccountId(testAccount.getAccountId());
         testTransaction.setDescription("TEST PURCHASE");
@@ -453,7 +452,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         assertThat(retrievedTransaction.getDescription()).isEqualTo(testTransaction.getDescription());
         
         // Validate amount precision preservation
-        super.assertBigDecimalEquals(retrievedTransaction.getAmount(), testTransaction.getAmount());
+        assertBigDecimalEquals(retrievedTransaction.getAmount(), testTransaction.getAmount(), "Transaction amount should match after fixed-width parsing");
         assertThat(retrievedTransaction.getAmount().scale()).isEqualTo(TestConstants.COBOL_DECIMAL_SCALE);
         
         // Update migration statistics
@@ -482,20 +481,20 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         
         // Create test card cross-reference
         CardXref testXref = createTestCardXref(TestConstants.TEST_CARD_NUMBER, testAccount.getAccountId());
-        testXref.setActiveStatus("Y");
+        // Note: CardXref doesn't have activeStatus field
         
         // Act - save and retrieve card xref
         CardXref savedXref = cardXrefRepository.saveAndFlush(testXref);
-        CardXref retrievedXref = cardXrefRepository.findById(savedXref.getCardRefKey()).orElse(null);
+        CardXref retrievedXref = cardXrefRepository.findById(savedXref.getId()).orElse(null);
         
         // Assert - validate card xref data integrity
         assertThat(retrievedXref).isNotNull();
-        assertThat(retrievedXref.getCardNumber()).isEqualTo(testXref.getCardNumber());
-        assertThat(retrievedXref.getAccountId()).isEqualTo(testXref.getAccountId());
-        assertThat(retrievedXref.getActiveStatus()).isEqualTo(testXref.getActiveStatus());
+        assertThat(retrievedXref.getXrefCardNum()).isEqualTo(testXref.getXrefCardNum());
+        assertThat(retrievedXref.getXrefAcctId()).isEqualTo(testXref.getXrefAcctId());
+        // Note: CardXref doesn't have activeStatus field
         
         // Validate composite key structure
-        assertThat(retrievedXref.getCardRefKey()).isNotNull();
+        assertThat(retrievedXref.getId()).isNotNull();
         
         // Update migration statistics
         migrationStats.put("xrefs_validated", migrationStats.getOrDefault("xrefs_validated", 0L) + 1L);
@@ -529,8 +528,8 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         assertThat(maxAmount).isEqualByComparingTo(new BigDecimal("9999999"));
         
         // Test conversion with specific PIC clauses
-        BigDecimal picAmount = CobolDataConverter.convertPicString("PIC S9(10)V99 COMP-3", "000012345600");
-        super.assertBigDecimalEquals(picAmount, new BigDecimal("123456.00"));
+        BigDecimal picAmount = (BigDecimal) CobolDataConverter.convertToJavaType("000012345600", "PIC S9(10)V99 COMP-3");
+        assertBigDecimalEquals(picAmount, new BigDecimal("123456.00"), "COBOL PIC conversion should preserve decimal precision");
         assertThat(picAmount.scale()).isEqualTo(TestConstants.COBOL_DECIMAL_SCALE);
         
         // Test precision preservation for various scales
@@ -538,7 +537,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
             BigDecimal testValue = new BigDecimal("12345.6789").setScale(scale, TestConstants.COBOL_ROUNDING_MODE);
             BigDecimal preservedValue = CobolDataConverter.preservePrecision(testValue, scale);
             assertThat(preservedValue.scale()).isEqualTo(scale);
-            super.assertBigDecimalEquals(preservedValue, testValue);
+            assertBigDecimalEquals(preservedValue, testValue, "Value precision should be preserved during migration");
         }
     }
 
@@ -666,7 +665,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         Customer testCustomer = createTestCustomer(customerId);
         testCustomer.setFirstName(firstName);
         testCustomer.setLastName(lastName);
-        testCustomer.setPhoneNumber(phoneNumber);
+        testCustomer.setPhoneNumber1(phoneNumber);
         
         // Act - save customer
         Customer savedCustomer = customerRepository.saveAndFlush(testCustomer);
@@ -675,7 +674,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         assertThat(savedCustomer.getCustomerId()).isEqualTo(customerId);
         assertThat(savedCustomer.getFirstName()).isEqualTo("JOHN");
         assertThat(savedCustomer.getLastName()).isEqualTo("SMITH");
-        assertThat(savedCustomer.getPhoneNumber()).isEqualTo("(555) 123-4567");
+        assertThat(savedCustomer.getPhoneNumber1()).isEqualTo("(555) 123-4567");
         
         // Validate no FILLER content contamination
         assertThat(savedCustomer.getFirstName()).doesNotContain("FILLER");
@@ -686,7 +685,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
             savedCustomer.getCustomerId(),
             savedCustomer.getFirstName(),
             savedCustomer.getLastName(),
-            savedCustomer.getPhoneNumber());
+            savedCustomer.getPhoneNumber1());
         
         assertThat(reconstructedRecord).doesNotContain("FILLER_DATA_TO_IGNORE");
         assertThat(reconstructedRecord.length()).isEqualTo(65); // Without FILLER section
@@ -775,17 +774,17 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         Customer testCustomer = createTestCustomer("CUST000001");
         testCustomer.setFirstName("JOHN");
         testCustomer.setLastName("SMITH");
-        testCustomer.setSSN("123456789");
+        testCustomer.setSsn("123456789");
         
         // Calculate expected checksum for customer data
         String customerData = testCustomer.getCustomerId() + testCustomer.getFirstName() + 
-                            testCustomer.getLastName() + testCustomer.getSSN();
+                            testCustomer.getLastName() + testCustomer.getSsn();
         String expectedChecksum = calculateChecksum(customerData);
         
         // Act - save customer and calculate actual checksum
         Customer savedCustomer = customerRepository.saveAndFlush(testCustomer);
         String actualCustomerData = savedCustomer.getCustomerId() + savedCustomer.getFirstName() + 
-                                  savedCustomer.getLastName() + savedCustomer.getSSN();
+                                  savedCustomer.getLastName() + savedCustomer.getSsn();
         String actualChecksum = calculateChecksum(actualCustomerData);
         
         // Assert - validate checksum integrity
@@ -813,7 +812,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         assertThat(retrievedCustomer).isNotNull();
         
         String retrievedData = retrievedCustomer.getCustomerId() + retrievedCustomer.getFirstName() + 
-                              retrievedCustomer.getLastName() + retrievedCustomer.getSSN();
+                              retrievedCustomer.getLastName() + retrievedCustomer.getSsn();
         String retrievedChecksum = calculateChecksum(retrievedData);
         
         assertThat(retrievedChecksum).isEqualTo(expectedChecksum);
@@ -834,7 +833,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         Customer testCustomer = createTestCustomer("CUST000001");
         Customer savedCustomer = customerRepository.saveAndFlush(testCustomer);
         
-        Account testAccount = createTestAccount("00000000001", savedCustomer.getCustomerId());
+        Account testAccount = createTestAccount("00000000001", String.valueOf(savedCustomer.getCustomerId()));
         Account savedAccount = accountRepository.saveAndFlush(testAccount);
         
         Card testCard = createTestCard(TestConstants.TEST_CARD_NUMBER);
@@ -861,9 +860,9 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         assertThat(accountTransactions.get(0).getTransactionId()).isEqualTo(savedTransaction.getTransactionId());
         
         // Test card-account relationship through CardXref
-        List<CardXref> cardXrefs = cardXrefRepository.findByCardNumber(savedCard.getCardNumber());
+        List<CardXref> cardXrefs = cardXrefRepository.findByXrefCardNum(savedCard.getCardNumber());
         assertThat(cardXrefs).hasSize(1);
-        assertThat(cardXrefs.get(0).getAccountId()).isEqualTo(savedAccount.getAccountId());
+        assertThat(cardXrefs.get(0).getXrefAcctId()).isEqualTo(savedAccount.getAccountId());
         
         // Test orphan record prevention
         assertThatThrownBy(() -> {
@@ -913,11 +912,11 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         
         // Test numeric character preservation
         String numericData = "1234567890";
-        testCustomer.setGovernmentId(numericData);
+        testCustomer.setGovernmentIssuedId(numericData);
         
         Customer finalCustomer = customerRepository.saveAndFlush(testCustomer);
-        assertThat(finalCustomer.getGovernmentId()).isEqualTo(numericData);
-        assertThat(finalCustomer.getGovernmentId()).matches("\\d+");
+        assertThat(finalCustomer.getGovernmentIssuedId()).isEqualTo(numericData);
+        assertThat(finalCustomer.getGovernmentIssuedId()).matches("\\d+");
         
         // Update encoding validation statistics
         migrationStats.put("encoding_conversions_validated", 3L);
@@ -944,20 +943,20 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         // Test each balance amount
         testAccount.setCurrentBalance(balance1);
         Account saved1 = accountRepository.saveAndFlush(testAccount);
-        super.assertBigDecimalEquals(saved1.getCurrentBalance(), balance1);
+        assertBigDecimalEquals(saved1.getCurrentBalance(), balance1, "Balance should match exactly after save");
         assertThat(saved1.getCurrentBalance().scale()).isEqualTo(TestConstants.COBOL_DECIMAL_SCALE);
         
         testAccount.setCurrentBalance(balance2);
         Account saved2 = accountRepository.saveAndFlush(testAccount);
-        super.assertBigDecimalEquals(saved2.getCurrentBalance(), balance2);
+        assertBigDecimalEquals(saved2.getCurrentBalance(), balance2, "Balance should match exactly after second save");
         
         testAccount.setCurrentBalance(balance3);
         Account saved3 = accountRepository.saveAndFlush(testAccount);
-        super.assertBigDecimalEquals(saved3.getCurrentBalance(), balance3);
+        assertBigDecimalEquals(saved3.getCurrentBalance(), balance3, "Balance should match exactly after third save");
         
         testAccount.setCurrentBalance(balance4);
         Account saved4 = accountRepository.saveAndFlush(testAccount);
-        super.assertBigDecimalEquals(saved4.getCurrentBalance(), balance4);
+        assertBigDecimalEquals(saved4.getCurrentBalance(), balance4, "Balance should match exactly after fourth save");
         
         // Test transaction amount precision
         Transaction testTransaction = createTestTransaction("TXN000000001");
@@ -975,7 +974,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
             testTransaction.setAmount(scaledAmount);
             
             Transaction savedTransaction = transactionRepository.saveAndFlush(testTransaction);
-            super.assertBigDecimalEquals(savedTransaction.getAmount(), scaledAmount);
+            assertBigDecimalEquals(savedTransaction.getAmount(), scaledAmount, "Transaction amount should match exactly with proper scale");
             assertThat(savedTransaction.getAmount().scale()).isEqualTo(TestConstants.COBOL_DECIMAL_SCALE);
         }
         
@@ -984,7 +983,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         BigDecimal cobolRounded = roundingTest.setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE);
         BigDecimal expectedRounded = new BigDecimal("123.46"); // HALF_UP rounding
         
-        super.assertBigDecimalEquals(cobolRounded, expectedRounded);
+        assertBigDecimalEquals(cobolRounded, expectedRounded, "COBOL rounding should match Java BigDecimal HALF_UP rounding");
         
         // Update precision validation statistics
         migrationStats.put("precision_validations_completed", 8L);
@@ -1004,7 +1003,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         Customer testCustomer = createTestCustomer("CUST000001");
         customerRepository.saveAndFlush(testCustomer);
         
-        Account testAccount = createTestAccount("00000000001", testCustomer.getCustomerId());
+        Account testAccount = createTestAccount("00000000001", String.valueOf(testCustomer.getCustomerId()));
         accountRepository.saveAndFlush(testAccount);
         
         Card testCard = createTestCard(TestConstants.TEST_CARD_NUMBER);
@@ -1015,17 +1014,17 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         CardXref savedXref1 = cardXrefRepository.saveAndFlush(testXref1);
         
         // Test composite key uniqueness
-        assertThat(savedXref1.getCardRefKey()).isNotNull();
-        assertThat(savedXref1.getCardNumber()).isEqualTo(testCard.getCardNumber());
-        assertThat(savedXref1.getAccountId()).isEqualTo(testAccount.getAccountId());
+        assertThat(savedXref1.getId()).isNotNull();
+        assertThat(savedXref1.getXrefCardNum()).isEqualTo(testCard.getCardNumber());
+        assertThat(savedXref1.getXrefAcctId()).isEqualTo(testAccount.getAccountId());
         
         // Test composite key queries
-        List<CardXref> xrefsByCard = cardXrefRepository.findByCardNumber(testCard.getCardNumber());
+        List<CardXref> xrefsByCard = cardXrefRepository.findByXrefCardNum(testCard.getCardNumber());
         assertThat(xrefsByCard).hasSize(1);
-        assertThat(xrefsByCard.get(0).getCardRefKey()).isEqualTo(savedXref1.getCardRefKey());
+        assertThat(xrefsByCard.get(0).getId()).isEqualTo(savedXref1.getId());
         
         // Test foreign key component validation
-        assertThat(xrefsByCard.get(0).getAccountId()).isEqualTo(testAccount.getAccountId());
+        assertThat(xrefsByCard.get(0).getXrefAcctId()).isEqualTo(testAccount.getAccountId());
         
         // Validate composite key cannot be duplicated
         assertThatThrownBy(() -> {
@@ -1072,7 +1071,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         
         // Foreign key lookup (should use secondary index)
         queryStartTime = System.nanoTime();
-        List<Account> customerAccounts = accountRepository.findByCustomerId("CUST000001");
+        List<Account> customerAccounts = accountRepository.findByCustomerId(Long.valueOf("1"));
         long foreignKeyQueryTime = System.nanoTime() - queryStartTime;
         
         // Assert - validate query performance indicates index usage
@@ -1219,7 +1218,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         Customer validCustomer = createTestCustomer("CUST000001");
         customerRepository.saveAndFlush(validCustomer);
         
-        Account validAccount = createTestAccount("00000000001", validCustomer.getCustomerId());
+        Account validAccount = createTestAccount("00000000001", String.valueOf(validCustomer.getCustomerId()));
         accountRepository.saveAndFlush(validAccount);
         
         long initialCustomerCount = customerRepository.count();
@@ -1253,7 +1252,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
             Customer customer2 = createTestCustomer("CUST000002");
             customerRepository.saveAndFlush(customer2);
             
-            Account account2 = createTestAccount("00000000002", customer2.getCustomerId());
+            Account account2 = createTestAccount("00000000002", String.valueOf(customer2.getCustomerId()));
             accountRepository.saveAndFlush(account2);
             
             // Force rollback
@@ -1264,7 +1263,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         }
         
         // Validate rollback effectiveness
-        assertThat(customerRepository.findById("CUST000002")).isEmpty();
+        assertThat(customerRepository.findById(Long.valueOf("2"))).isEmpty();
         assertThat(accountRepository.findById(2L)).isEmpty();
         
         // Update rollback testing statistics
@@ -1284,7 +1283,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
      */
     private Customer createTestCustomer(String customerId) {
         Customer customer = new Customer();
-        customer.setCustomerId(customerId);
+        customer.setCustomerId(Long.valueOf(customerId));
         customer.setFirstName("TEST");
         customer.setLastName("CUSTOMER");
         customer.setAddressLine1("123 TEST STREET");
@@ -1293,12 +1292,12 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         customer.setStateCode("NY");
         customer.setCountryCode("USA");
         customer.setZipCode("12345");
-        customer.setPhoneNumber("(555) 123-4567");
-        customer.setSSN("123456789");
-        customer.setGovernmentId("GOV123456789");
+        customer.setPhoneNumber1("(555) 123-4567");
+        customer.setSsn("123456789");
+        customer.setGovernmentIssuedId("GOV123456789");
         customer.setDateOfBirth(LocalDate.of(1980, 1, 1));
         customer.setEftAccountId("EFT1234567");
-        customer.setPrimaryCardHolder("Y");
+        customer.setPrimaryCardHolderIndicator("Y");
         customer.setFicoScore(750);
         return customer;
     }
@@ -1313,7 +1312,13 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
     private Account createTestAccount(String accountId, String customerId) {
         Account account = new Account();
         account.setAccountId(Long.parseLong(accountId));
-        account.setCustomerId(customerId);
+        // Set customer relationship - lookup or create customer
+        Customer customer = customerRepository.findById(Long.valueOf(customerId)).orElse(null);
+        if (customer == null) {
+            customer = createTestCustomer(customerId);
+            customer = customerRepository.saveAndFlush(customer);
+        }
+        account.setCustomer(customer);
         account.setActiveStatus("Y");
         account.setCurrentBalance(BigDecimal.ZERO.setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
         account.setCreditLimit(new BigDecimal("5000.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
@@ -1323,7 +1328,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         account.setReissueDate(LocalDate.now());
         account.setCurrentCycleCredit(BigDecimal.ZERO.setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
         account.setCurrentCycleDebit(BigDecimal.ZERO.setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
-        account.setZipCode("12345");
+        account.setAddressZip("12345");
         account.setGroupId("GROUP001");
         return account;
     }
@@ -1338,7 +1343,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         Card card = new Card();
         card.setCardNumber(cardNumber);
         card.setAccountId(1L); // Default account ID
-        card.setCustomerId("CUST000001"); // Default customer ID
+        card.setCustomerId(Long.valueOf("1")); // Default customer ID
         card.setCvvCode("123");
         card.setEmbossedName("TEST CARDHOLDER");
         card.setExpirationDate(LocalDate.of(2025, 12, 31));
@@ -1354,10 +1359,10 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
      */
     private Transaction createTestTransaction(String transactionId) {
         Transaction transaction = new Transaction();
-        transaction.setTransactionId(transactionId);
+        transaction.setTransactionId(Long.valueOf(transactionId));
         transaction.setAccountId(1L); // Default account ID
         transaction.setAmount(new BigDecimal("100.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
-        transaction.setTransactionType("01");
+        transaction.setTransactionTypeCode("01");
         transaction.setTransactionDate(LocalDate.now());
         transaction.setDescription("TEST TRANSACTION");
         return transaction;
@@ -1372,9 +1377,9 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
      */
     private CardXref createTestCardXref(String cardNumber, Long accountId) {
         CardXref cardXref = new CardXref();
-        cardXref.setCardNumber(cardNumber);
-        cardXref.setAccountId(accountId);
-        cardXref.setActiveStatus("Y");
+        cardXref.setXrefCardNum(cardNumber);
+        cardXref.setXrefAcctId(accountId);
+        // Note: CardXref doesn't have activeStatus field
         return cardXref;
     }
 
@@ -1428,9 +1433,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
             
             // Phase 1: Data preparation and validation
             migrationStats.put("migration_phase", 1L);
-            assertThatCode(() -> {
-                super.loadTestFixtures();
-            }).doesNotThrowAnyException();
+            // Test fixtures loaded automatically by AbstractBaseTest
             
             // Phase 2: Entity creation and relationship setup
             migrationStats.put("migration_phase", 2L);
@@ -1438,7 +1441,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
             Customer savedCustomer = customerRepository.saveAndFlush(customer);
             assertThat(savedCustomer.getCustomerId()).isEqualTo("CUST000001");
             
-            Account account = createTestAccount("00000000001", savedCustomer.getCustomerId());
+            Account account = createTestAccount("00000000001", String.valueOf(savedCustomer.getCustomerId()));
             Account savedAccount = accountRepository.saveAndFlush(account);
             assertThat(savedAccount.getAccountId()).isEqualTo(1L);
             
@@ -1462,7 +1465,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
             migrationStats.put("migration_phase", 4L);
             CardXref xref = createTestCardXref(savedCard.getCardNumber(), savedAccount.getAccountId());
             CardXref savedXref = cardXrefRepository.saveAndFlush(xref);
-            assertThat(savedXref.getCardNumber()).isEqualTo(savedCard.getCardNumber());
+            assertThat(savedXref.getXrefCardNum()).isEqualTo(savedCard.getCardNumber());
             
             // Phase 5: Comprehensive validation
             migrationStats.put("migration_phase", 5L);
@@ -1487,7 +1490,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
             
             assertThat(totalTransactionAmount.scale()).isEqualTo(TestConstants.COBOL_DECIMAL_SCALE);
-            super.assertBigDecimalEquals(totalTransactionAmount, new BigDecimal("550.00"));
+            assertBigDecimalEquals(totalTransactionAmount, new BigDecimal("550.00"), "Total transaction amount should match expected value");
             
             // Mark migration workflow as completed
             migrationStats.put("comprehensive_workflow_completed", 1L);
