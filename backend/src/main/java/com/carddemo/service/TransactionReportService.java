@@ -282,6 +282,17 @@ public class TransactionReportService {
         EnrichedTransactionData enriched = new EnrichedTransactionData();
         enriched.setTransaction(transaction);
         
+        // Initialize maps if null (for testing scenarios)
+        if (cardXrefMap == null) {
+            cardXrefMap = new HashMap<>();
+        }
+        if (transactionTypeMap == null) {
+            transactionTypeMap = new HashMap<>();
+        }
+        if (transactionCategoryMap == null) {
+            transactionCategoryMap = new HashMap<>();
+        }
+        
         // Cross-reference lookup for card/account information (equivalent to 1500-A-LOOKUP-XREF)
         CardXrefData cardXref = cardXrefMap.get(transaction.getCardNumber());
         if (cardXref == null) {
@@ -326,6 +337,11 @@ public class TransactionReportService {
             throw new IllegalArgumentException("Transaction amount cannot be null");
         }
         
+        // Initialize pageTotal if null (for testing scenarios)
+        if (pageTotal == null) {
+            pageTotal = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+        
         pageTotal = pageTotal.add(transactionAmount);
         logger.debug("Added {} to page total, new page total: {}", transactionAmount, pageTotal);
         
@@ -342,6 +358,11 @@ public class TransactionReportService {
     public BigDecimal calculateGrandTotals(BigDecimal pageAmount) {
         if (pageAmount == null) {
             throw new IllegalArgumentException("Page amount cannot be null");
+        }
+        
+        // Initialize grandTotal if null (for testing scenarios)
+        if (grandTotal == null) {
+            grandTotal = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         }
         
         grandTotal = grandTotal.add(pageAmount);

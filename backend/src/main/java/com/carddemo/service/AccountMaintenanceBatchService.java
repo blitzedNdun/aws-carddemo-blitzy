@@ -24,6 +24,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.persistence.EntityManagerFactory;
 import java.util.List;
+import java.util.Optional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import org.springframework.batch.core.job.builder.JobBuilder;
@@ -31,7 +32,7 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobRepository;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.launch.support.TaskExecutorJobLauncher;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.core.task.TaskExecutor;
@@ -236,8 +237,8 @@ public class AccountMaintenanceBatchService {
         logger.debug("Processing maintenance for account: {}", account.getAccountId());
         
         // Validate account data using COBOL-equivalent validation
-        ValidationUtil.validateRequiredField("accountId", account.getAccountId());
-        ValidationUtil.validateNumericField("accountId", account.getAccountId());
+        ValidationUtil.validateRequiredField("accountId", String.valueOf(account.getAccountId()));
+        ValidationUtil.validateNumericField("accountId", String.valueOf(account.getAccountId()));
         
         // Create a copy for processing to maintain transactional integrity
         Account processedAccount = new Account();
@@ -252,8 +253,7 @@ public class AccountMaintenanceBatchService {
         // Step 3: Reconcile account balance with recent transactions
         reconcileBalance(processedAccount);
         
-        // Step 4: Update account timestamps for audit trail
-        processedAccount.setCreatedTimestamp(java.time.LocalDateTime.now());
+        // Step 4: Account processing complete (timestamps handled by JPA lifecycle callbacks)
         
         logger.debug("Completed maintenance processing for account: {}", 
                     processedAccount.getAccountId());
@@ -277,8 +277,9 @@ public class AccountMaintenanceBatchService {
                 LocalDate.now(), -DORMANCY_THRESHOLD_DAYS);
             
             // Get the most recent transaction for this account
-            Transaction lastTransaction = transactionRepository
+            Optional<Transaction> lastTransactionOptional = transactionRepository
                 .findTopByAccountIdOrderByTransactionDateDesc(account.getAccountId());
+            Transaction lastTransaction = lastTransactionOptional.orElse(null);
             
             if (lastTransaction == null) {
                 // No transactions found - mark as dormant if account is old enough
@@ -503,7 +504,7 @@ public class AccountMaintenanceBatchService {
         target.setCurrentCycleCredit(source.getCurrentCycleCredit());
         target.setCurrentCycleDebit(source.getCurrentCycleDebit());
         target.setGroupId(source.getGroupId());
-        target.setCreatedTimestamp(source.getCreatedTimestamp());
+        // Note: timestamps are managed by JPA lifecycle callbacks
     }
 
     /**
