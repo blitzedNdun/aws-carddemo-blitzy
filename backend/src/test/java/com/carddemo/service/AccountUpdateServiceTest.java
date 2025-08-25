@@ -94,7 +94,7 @@ public class AccountUpdateServiceTest {
         org.mockito.Mockito.when(accountRepository.findByIdForUpdate(12345678901L))
             .thenReturn(Optional.of(existingAccount));
         
-        org.mockito.Mockito.when(customerRepository.findById(existingCustomer.getCustomerId()))
+        org.mockito.Mockito.when(customerRepository.findById(Long.valueOf(existingCustomer.getCustomerId())))
             .thenReturn(Optional.of(existingCustomer));
         
         org.mockito.Mockito.when(accountRepository.count()).thenReturn(1000L);
@@ -841,7 +841,7 @@ public class AccountUpdateServiceTest {
         // Mock all repository operations
         org.mockito.Mockito.when(accountRepository.findByIdForUpdate(12345678901L))
             .thenReturn(Optional.of(account));
-        org.mockito.Mockito.when(customerRepository.findById(customer.getCustomerId()))
+        org.mockito.Mockito.when(customerRepository.findById(Long.valueOf(customer.getCustomerId())))
             .thenReturn(Optional.of(customer));
         org.mockito.Mockito.when(accountRepository.save(org.mockito.Mockito.any(Account.class)))
             .thenReturn(account);
@@ -860,7 +860,7 @@ public class AccountUpdateServiceTest {
         // Verify all expected repository interactions occurred
         // Service calls findByIdForUpdate twice: initial read and concurrent modification check
         org.mockito.Mockito.verify(accountRepository, org.mockito.Mockito.times(2)).findByIdForUpdate(12345678901L);
-        org.mockito.Mockito.verify(customerRepository).findById(customer.getCustomerId());
+        org.mockito.Mockito.verify(customerRepository).findById(Long.valueOf(customer.getCustomerId()));
         org.mockito.Mockito.verify(accountRepository).save(org.mockito.Mockito.any(Account.class));
         org.mockito.Mockito.verify(customerRepository).save(org.mockito.Mockito.any(Customer.class));
     }
@@ -998,7 +998,7 @@ public class AccountUpdateServiceTest {
         // Mock repository operations
         org.mockito.Mockito.when(accountRepository.findByIdForUpdate(12345678901L))
             .thenReturn(Optional.of(account));
-        org.mockito.Mockito.when(customerRepository.findById(customer.getCustomerId()))
+        org.mockito.Mockito.when(customerRepository.findById(Long.valueOf(customer.getCustomerId())))
             .thenReturn(Optional.of(customer));
         org.mockito.Mockito.when(accountRepository.save(org.mockito.Mockito.any(Account.class)))
             .thenReturn(account);
@@ -1121,7 +1121,7 @@ public class AccountUpdateServiceTest {
      */
     private Customer createValidCustomer() {
         Customer customer = new Customer();
-        customer.setCustomerId(123456789L);
+        customer.setCustomerId("123456789");
         customer.setFirstName("John");
         customer.setMiddleName("Q");
         customer.setLastName("Doe");
