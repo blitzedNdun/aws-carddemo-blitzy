@@ -28,6 +28,8 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.session.data.redis.RedisIndexedSessionRepository;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -126,7 +128,7 @@ public class IntegrationTestConfiguration extends BaseTestConfig {
     private static final long INTEGRATION_MAX_LIFETIME = 600000;        // 10 minutes max lifetime
 
     // Session management constants matching CICS COMMAREA behavior
-    private static final int SESSION_TIMEOUT_SECONDS = TestConstants.SESSION_TIMEOUT_MINUTES * 60;
+    private static final int SESSION_TIMEOUT_SECONDS = (int) (TestConstants.SESSION_TIMEOUT_MINUTES * 60);
     private static final int MAX_SESSION_SIZE_BYTES = TestConstants.MAX_SESSION_SIZE_KB * 1024;
 
     // Static containers for test performance and resource management
@@ -374,7 +376,7 @@ public class IntegrationTestConfiguration extends BaseTestConfig {
         connectionFactory.setDatabase(0);
         
         // Configure connection timeouts for test performance
-        connectionFactory.setTimeout(Duration.ofSeconds(5));
+        connectionFactory.setTimeout(5000); // 5 seconds in milliseconds
         connectionFactory.setValidateConnection(true);
         
         // Initialize connection factory
@@ -420,8 +422,23 @@ public class IntegrationTestConfiguration extends BaseTestConfig {
     public RedisIndexedSessionRepository testSessionRepository(RedisConnectionFactory redisConnectionFactory) {
         logger.info("Configuring Redis session repository for COMMAREA testing");
         
+        // Create RedisTemplate for session operations
+        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setConnectionFactory(redisConnectionFactory);
+        
+        // Configure Jackson serialization for COBOL data type support
+        ObjectMapper objectMapper = testObjectMapper();
+        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(objectMapper);
+        
+        redisTemplate.setKeySerializer(jsonSerializer);
+        redisTemplate.setValueSerializer(jsonSerializer);
+        redisTemplate.setHashKeySerializer(jsonSerializer);
+        redisTemplate.setHashValueSerializer(jsonSerializer);
+        redisTemplate.afterPropertiesSet();
+        
+        // Create session repository with RedisTemplate
         RedisIndexedSessionRepository sessionRepository = 
-            new RedisIndexedSessionRepository(redisConnectionFactory);
+            new RedisIndexedSessionRepository(redisTemplate);
         
         // Configure session timeout matching CICS behavior
         sessionRepository.setDefaultMaxInactiveInterval(Duration.ofSeconds(SESSION_TIMEOUT_SECONDS));
@@ -524,7 +541,7 @@ public class IntegrationTestConfiguration extends BaseTestConfig {
      * 
      * @return Configuration object providing mock external service beans
      */
-    @MockBean
+    @Bean
     public Object mockExternalServices() {
         logger.info("Configuring mock external services for integration testing");
         
@@ -688,9 +705,9 @@ public class IntegrationTestConfiguration extends BaseTestConfig {
         // Configure mock web environment
         Object mockWeb = mockWebEnvironment();
         
-        // Load test fixtures
-        AbstractBaseTest baseTest = new AbstractBaseTest() {};
-        Object fixtures = baseTest.loadTestFixtures();
+        // Test fixtures configuration (loaded via AbstractBaseTest subclasses)
+        String fixturesStatus = "fixtures configured for test subclasses";
+        Object fixtures = fixturesStatus;
         
         // Configure test constants
         logger.info("Test environment configured with constants - Response threshold: {}ms, TPS target: {}, Decimal scale: {}", 
@@ -706,7 +723,7 @@ public class IntegrationTestConfiguration extends BaseTestConfig {
             }
             
             public int getResponseTimeThreshold() {
-                return TestConstants.RESPONSE_TIME_THRESHOLD_MS;
+                return (int) TestConstants.RESPONSE_TIME_THRESHOLD_MS;
             }
             
             public int getTargetTPS() {
@@ -718,7 +735,7 @@ public class IntegrationTestConfiguration extends BaseTestConfig {
             }
             
             public int getSessionTimeout() {
-                return TestConstants.SESSION_TIMEOUT_MINUTES;
+                return (int) TestConstants.SESSION_TIMEOUT_MINUTES;
             }
             
             public int getMaxSessionSize() {
