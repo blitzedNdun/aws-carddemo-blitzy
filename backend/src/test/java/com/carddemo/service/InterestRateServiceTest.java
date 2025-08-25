@@ -23,6 +23,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.mockito.Mockito.*;
@@ -177,7 +178,7 @@ public class InterestRateServiceTest extends AbstractBaseTest implements UnitTes
                 .thenReturn(List.of(interestRate));
             
             // When
-            BigDecimal dailyRate = interestRateService.calculateDailyRate(testAccount);
+            BigDecimal dailyRate = interestRateService.calculateDailyRate(TEST_APR_RATE);
             
             // Then
             BigDecimal expectedDailyRate = TEST_APR_RATE.divide(new BigDecimal("365"), TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE);
@@ -305,20 +306,30 @@ public class InterestRateServiceTest extends AbstractBaseTest implements UnitTes
                 .build();
             
             when(interestRateRepository.findByAccountGroupId(testAccount.getGroupId()))
-                .thenReturn(Optional.of(existingRate));
+                .thenReturn(List.of(existingRate));
             when(interestRateRepository.save(any(InterestRate.class)))
                 .thenReturn(updatedRate);
             
             // When
-            InterestRate result = interestRateService.adjustRateForAccount(testAccount, newRate, effectiveDate);
+            BigDecimal result = interestRateService.adjustRateForAccount(
+                testAccount.getAccountId(), 
+                testAccount.getGroupId(),
+                "PURCHASE",  // transaction type code
+                "STANDARD"   // category code
+            );
             
             // Then
-            assertThat(result.getCurrentApr()).isEqualTo(newRate);
-            assertThat(result.getEffectiveDate()).isEqualTo(effectiveDate);
+            assertThat(result).isEqualTo(newRate);
             
             verify(interestRateRepository).findByAccountGroupId(testAccount.getGroupId());
             verify(interestRateRepository).save(any(InterestRate.class));
-            verify(notificationService).sendRateChangeNotification(eq(testAccount), eq(TEST_APR_RATE), eq(newRate), eq(effectiveDate));
+            verify(notificationService).sendRateChangeNotification(
+                eq(String.valueOf(testAccount.getCustomerId())),
+                eq(String.valueOf(testAccount.getAccountId())),
+                eq(TEST_APR_RATE), 
+                eq(newRate), 
+                eq(effectiveDate.atStartOfDay())
+            );
         }
         
         @Test
@@ -342,15 +353,25 @@ public class InterestRateServiceTest extends AbstractBaseTest implements UnitTes
                 .thenReturn(newInterestRate);
             
             // When
-            InterestRate result = interestRateService.adjustRateForAccount(testAccount, newRate, effectiveDate);
+            BigDecimal result = interestRateService.adjustRateForAccount(
+                String.valueOf(testAccount.getAccountId()), 
+                testAccount.getGroupId(),
+                "PURCHASE",  // transaction type code
+                "STANDARD"   // category code
+            );
             
             // Then
-            assertThat(result.getCurrentApr()).isEqualTo(newRate);
-            assertThat(result.getEffectiveDate()).isEqualTo(effectiveDate);
+            assertThat(result).isEqualTo(newRate);
             
             verify(interestRateRepository).findByAccountGroupId(testAccount.getGroupId());
             verify(interestRateRepository).save(any(InterestRate.class));
-            verify(notificationService).sendRateChangeNotification(eq(testAccount), eq(BigDecimal.ZERO), eq(newRate), eq(effectiveDate));
+            verify(notificationService).sendRateChangeNotification(
+                eq(String.valueOf(testAccount.getCustomerId())),
+                eq(String.valueOf(testAccount.getAccountId())),
+                eq(BigDecimal.ZERO),
+                eq(newRate),
+                eq(effectiveDate.atStartOfDay())
+            );
         }
         
         @Test
@@ -362,7 +383,12 @@ public class InterestRateServiceTest extends AbstractBaseTest implements UnitTes
             LocalDate effectiveDate = LocalDate.now().plusDays(30);
             
             // When & Then
-            assertThatThrownBy(() -> interestRateService.validateRateChange(testAccount, invalidRate, effectiveDate))
+            assertThatThrownBy(() -> interestRateService.validateRateChange(
+                    String.valueOf(testAccount.getAccountId()),
+                    TEST_APR_RATE,
+                    invalidRate,
+                    "TEST_RATE_ADJUSTMENT"
+                ))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Interest rate exceeds maximum allowed");
         }
@@ -422,7 +448,7 @@ public class InterestRateServiceTest extends AbstractBaseTest implements UnitTes
             // Then
             // For daily compounding over a year, should be close to principal * APR
             BigDecimal approximateInterest = principal.multiply(TEST_APR_RATE.divide(new BigDecimal("100")));
-            assertBigDecimalWithinTolerance(approximateInterest, compoundInterest, TestConstants.VALIDATION_THRESHOLDS.get("INTEREST_TOLERANCE"));
+            assertBigDecimalWithinTolerance(approximateInterest, compoundInterest, (Double) TestConstants.VALIDATION_THRESHOLDS.get("INTEREST_TOLERANCE"));
         }
     }
     
@@ -449,8 +475,11 @@ public class InterestRateServiceTest extends AbstractBaseTest implements UnitTes
                 .build();
             
             // When
-            String lowBalanceTier = interestRateService.determineRateTier(lowBalanceAccount);
-            String highBalanceTier = interestRateService.determineRateTier(highBalanceAccount);
+            Map<String, Object> lowBalanceTierResult = interestRateService.determineRateTier(lowBalanceAccount.getCurrentBalance(), "STANDARD");
+            Map<String, Object> highBalanceTierResult = interestRateService.determineRateTier(highBalanceAccount.getCurrentBalance(), "PREMIUM");
+            
+            String lowBalanceTier = (String) lowBalanceTierResult.get("tier");
+            String highBalanceTier = (String) highBalanceTierResult.get("tier");
             
             // Then
             assertThat(lowBalanceTier).isEqualTo("STANDARD");
@@ -469,7 +498,8 @@ public class InterestRateServiceTest extends AbstractBaseTest implements UnitTes
                 .build();
             
             // When
-            String tier = interestRateService.determineRateTier(lowUtilizationAccount);
+            Map<String, Object> tierResult = interestRateService.determineRateTier(lowUtilizationAccount.getCurrentBalance(), "STANDARD");
+            String tier = (String) tierResult.get("tier");
             
             // Then
             assertThat(tier).isEqualTo("PREFERRED");
@@ -651,7 +681,7 @@ public class InterestRateServiceTest extends AbstractBaseTest implements UnitTes
                 .build();
                 
             when(interestRateRepository.findByAccountGroupId(testAccount.getGroupId()))
-                .thenReturn(Optional.of(existingRate));
+                .thenReturn(List.of(existingRate));
             
             // When & Then
             assertThatCode(() -> interestRateService.validateRateChange(testAccount, lowerRate, shortNoticeDate))
@@ -673,10 +703,16 @@ public class InterestRateServiceTest extends AbstractBaseTest implements UnitTes
             LocalDate effectiveDate = LocalDate.now().plusDays(45);
             
             // When
-            interestRateService.notifyRateChange(testAccount, oldRate, newRate, effectiveDate);
+            interestRateService.notifyRateChange(String.valueOf(testAccount.getAccountId()), oldRate, newRate, effectiveDate, "EMAIL");
             
             // Then
-            verify(notificationService).sendRateChangeNotification(testAccount, oldRate, newRate, effectiveDate);
+            verify(notificationService).sendRateChangeNotification(
+                eq(String.valueOf(testAccount.getCustomerId())),
+                eq(String.valueOf(testAccount.getAccountId())),
+                eq(oldRate),
+                eq(newRate),
+                eq(effectiveDate.atStartOfDay())
+            );
         }
         
         @Test
