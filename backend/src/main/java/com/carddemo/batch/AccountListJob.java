@@ -29,6 +29,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import jakarta.persistence.EntityManagerFactory;
 import java.io.IOException;
+import java.time.temporal.ChronoUnit;
 
 /**
  * Spring Batch job implementation for account listing replacing CBACT01C COBOL batch program.
@@ -120,7 +121,7 @@ public class AccountListJob {
      * @return Job configured for account listing with complete CBACT01C functionality
      */
     @Bean
-    public Job accountListJob() {
+    public Job accountListJob() throws Exception {
         return new JobBuilder(JOB_NAME, jobRepository)
             .start(accountListStep())
             .listener(accountListJobListener())
@@ -152,7 +153,7 @@ public class AccountListJob {
      * @return Step configured for account listing with chunk-oriented processing
      */
     @Bean
-    public Step accountListStep() {
+    public Step accountListStep() throws Exception {
         return new StepBuilder(STEP_NAME, jobRepository)
             .<Account, Account>chunk(CHUNK_SIZE, transactionManager)
             .reader(accountReader())
@@ -354,7 +355,7 @@ public class AccountListJob {
                     System.out.println("Accounts processed: " + readCount);
                     System.out.println("Records written: " + writeCount);
                     System.out.println("Job execution time: " + 
-                        (jobExecution.getEndTime().getTime() - jobExecution.getStartTime().getTime()) + "ms");
+                        ChronoUnit.MILLIS.between(jobExecution.getStartTime(), jobExecution.getEndTime()) + "ms");
                 }
             }
         };
