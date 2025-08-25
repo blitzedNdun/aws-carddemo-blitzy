@@ -385,6 +385,7 @@ com/carddemo/service/InterestRateService.class
 com/carddemo/config/CacheConfig$1.class
 com/carddemo/service/UserAddService.class
 com/carddemo/util/ReportExporter.class
+com/carddemo/service/CustomerUpdateService.class
 com/carddemo/client/EmailClient$DeliveryStatus$Builder.class
 com/carddemo/util/ValidationUtil$FieldValidator.class
 com/carddemo/service/FraudDetectionService$MerchantValidationResult.class
