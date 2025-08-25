@@ -290,14 +290,14 @@ public class UserDeleteServiceTest {
         when(userRepository.findByUserId(TEST_USER_ID)).thenReturn(Optional.of(testUser));
 
         // Act & Assert - Expect ConcurrencyException due to optimistic locking failure
-        assertThatThrownBy(() -> userService.updateUser(TEST_USER_ID, null))
+        assertThatThrownBy(() -> userService.deleteUser(TEST_USER_ID))
             .isInstanceOf(ConcurrencyException.class)
             .satisfies(ex -> {
                 ConcurrencyException cEx = (ConcurrencyException) ex;
                 assertThat(cEx.getMessage()).contains("concurrent modification");
             });
 
-        // Verify user was looked up but update failed due to concurrency
+        // Verify user was looked up but deletion failed due to concurrency
         verify(userRepository, times(1)).findByUserId(TEST_USER_ID);
     }
 
