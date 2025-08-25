@@ -86,9 +86,7 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
     @Mock
     private TransactionRepository transactionRepository;
     
-    // Test utilities from internal_imports schema
-    private TestDataGenerator testDataGenerator;
-    private CobolComparisonUtils cobolComparisonUtils;
+    // Note: TestDataGenerator and CobolComparisonUtils are utility classes with static methods only
     
     /**
      * Setup method executed before each test execution.
@@ -104,12 +102,8 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
     public void setUp() {
         super.setUp();
         
-        // Initialize test utilities - members_accessed from dependencies
-        testDataGenerator = new TestDataGenerator();
-        cobolComparisonUtils = new CobolComparisonUtils();
-        
-        // Reset random seed for consistent test data generation
-        testDataGenerator.resetRandomSeed();
+        // Reset random seed for consistent test data generation (using static method)
+        TestDataGenerator.resetRandomSeed(12345L);
         
         // Initialize service with mock dependencies
         transactionReportingService = new TransactionReportingService(transactionRepository);
@@ -145,7 +139,7 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
         LocalDate endDate = reportDate;
         
         // Generate COBOL-compatible transaction test data
-        List<Transaction> testTransactions = testDataGenerator.generateTransactionList();
+        List<Transaction> testTransactions = TestDataGenerator.generateTransactionList(50);
         testTransactions.forEach(txn -> {
             txn.setTransactionDate(reportDate);
             txn.setProcessedTimestamp(reportDate.atStartOfDay());
@@ -212,8 +206,8 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
         LocalDate monthEnd = monthStart.plusMonths(1).minusDays(1);
         
         // Generate diverse account transactions for aggregation testing
-        List<Account> testAccounts = testDataGenerator.generateAccountList();
-        List<Transaction> monthlyTransactions = testDataGenerator.generateDailyTransactionBatch();
+        List<Account> testAccounts = TestDataGenerator.generateAccountList(10);
+        List<Transaction> monthlyTransactions = TestDataGenerator.generateDailyTransactionBatch(100);
         
         // Configure transactions across multiple accounts in the test month
         for (int i = 0; i < monthlyTransactions.size(); i++) {
@@ -222,13 +216,13 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
             
             txn.setAccountId(account.getAccountId());
             txn.setTransactionDate(monthStart.plusDays(i % monthEnd.getDayOfMonth()));
-            txn.setAmount(testDataGenerator.generateValidTransactionAmount());
+            txn.setAmount(TestDataGenerator.generateValidTransactionAmount());
         }
         
         // Configure mock repository - members_accessed from TransactionRepository
         when(transactionRepository.findByAccountIdAndDateRange(Mockito.anyLong(), 
-            Mockito.eq(monthStart), Mockito.eq(monthEnd)))
-            .thenReturn(monthlyTransactions);
+            Mockito.eq(monthStart.atStartOfDay()), Mockito.eq(monthEnd.atTime(23, 59, 59)), Mockito.any()))
+            .thenReturn(new org.springframework.data.domain.PageImpl<>(monthlyTransactions));
         
         // Act - Generate monthly aggregation report
         long startTime = System.currentTimeMillis();
@@ -245,7 +239,7 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
             "Monthly aggregation grand total should match calculated sum with COBOL precision");
         
         // Validate account-level totals - members_accessed from service
-        var accountTotals = transactionReportingService.calculateAccountTotals(monthlyTransactions);
+        var accountTotals = aggregationResult.getAccountTotals();
         assertThat(accountTotals).isNotEmpty()
             .describedAs("Monthly aggregation should include account-level totals");
         
@@ -297,14 +291,14 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
         }
         
         // Generate comprehensive transaction data for compliance testing
-        List<Transaction> complianceTransactions = testDataGenerator.generateTransactionList();
+        List<Transaction> complianceTransactions = TestDataGenerator.generateTransactionList(75);
         
         // Configure transactions with regulatory-relevant data
         complianceTransactions.forEach(txn -> {
             txn.setTransactionDate(periodStart.plusDays(
-                testDataGenerator.generateRandomTransactionDate().getDayOfYear() % periodEnd.getDayOfMonth()));
-            txn.setMerchantId(testDataGenerator.generateMerchantId());
-            txn.setAmount(testDataGenerator.generateValidTransactionAmount());
+                TestDataGenerator.generateRandomTransactionDate().getDayOfYear() % periodEnd.getDayOfMonth()));
+            txn.setMerchantId(TestDataGenerator.generateMerchantId());
+            txn.setAmount(TestDataGenerator.generateValidTransactionAmount());
         });
         
         // Configure mock repository for compliance data retrieval
@@ -371,7 +365,7 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
     @ValueSource(strings = {"HIGH_VELOCITY", "UNUSUAL_MERCHANT", "LARGE_AMOUNT"})
     public void testGenerateFraudDetectionReport_SuspiciousPatterns_IdentifiesFraudRisks(String fraudPattern) {
         // Arrange - Create fraud detection test scenarios
-        List<Transaction> suspiciousTransactions = testDataGenerator.generateTransactionList();
+        List<Transaction> suspiciousTransactions = TestDataGenerator.generateTransactionList(30);
         
         // Configure transactions based on fraud pattern type
         switch (fraudPattern) {
@@ -380,7 +374,7 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
                 LocalDate velocityDate = LocalDate.now();
                 suspiciousTransactions.forEach(txn -> {
                     txn.setTransactionDate(velocityDate);
-                    txn.setAccountId(TestConstants.TEST_ACCOUNT_ID);
+                    txn.setAccountId(Long.parseLong(TestConstants.TEST_ACCOUNT_ID));
                     txn.setOriginalTimestamp(velocityDate.atTime(10, 0).plusMinutes(
                         suspiciousTransactions.indexOf(txn) * 2)); // 2-minute intervals
                 });
@@ -391,7 +385,7 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
                 suspiciousTransactions.forEach(txn -> {
                     txn.setMerchantName("SUSPICIOUS_MERCHANT_" + suspiciousTransactions.indexOf(txn));
                     txn.setMerchantCity("UNKNOWN_CITY");
-                    txn.setAmount(testDataGenerator.generateValidTransactionAmount());
+                    txn.setAmount(TestDataGenerator.generateValidTransactionAmount());
                 });
                 break;
                 
@@ -456,14 +450,14 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
     @ValueSource(strings = {"RETAIL", "RESTAURANT", "GAS_STATION", "ONLINE"})
     public void testGenerateMerchantAnalysisReport_MerchantCategories_ProvidesAccurateAnalysis(String merchantCategory) {
         // Arrange - Create merchant analysis test data
-        List<Transaction> merchantTransactions = testDataGenerator.generateTransactionList();
+        List<Transaction> merchantTransactions = TestDataGenerator.generateTransactionList(60);
         
         // Configure transactions for specific merchant category
         merchantTransactions.forEach(txn -> {
             txn.setMerchantName("TEST_" + merchantCategory + "_MERCHANT");
             txn.setCategoryCode(getCategoryCodeForMerchantType(merchantCategory));
-            txn.setMerchantId(testDataGenerator.generateMerchantId());
-            txn.setAmount(testDataGenerator.generateValidTransactionAmount());
+            txn.setMerchantId(TestDataGenerator.generateMerchantId());
+            txn.setAmount(TestDataGenerator.generateValidTransactionAmount());
         });
         
         // Configure mock repository for merchant queries
@@ -570,11 +564,11 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
     @ValueSource(ints = {100, 1000, 5000})
     public void testReadTransactionFiles_VariousVolumes_ProcessesEfficiently(int transactionCount) {
         // Arrange - Generate transaction test data of specified volume
-        List<Transaction> testTransactions = testDataGenerator.generateTransactionList();
+        List<Transaction> testTransactions = TestDataGenerator.generateTransactionList(50);
         
         // Ensure list has requested size for volume testing
         while (testTransactions.size() < transactionCount) {
-            testTransactions.addAll(testDataGenerator.generateTransactionList());
+            testTransactions.addAll(TestDataGenerator.generateTransactionList(50));
         }
         testTransactions = testTransactions.subList(0, transactionCount);
         
@@ -670,11 +664,11 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
     @ValueSource(ints = {1, 10, 50})
     public void testWriteReportDetails_VariousRecordCounts_FormatsConsistently(int recordCount) {
         // Arrange - Generate transaction details for report writing
-        List<Transaction> reportTransactions = testDataGenerator.generateTransactionList();
+        List<Transaction> reportTransactions = TestDataGenerator.generateTransactionList(25);
         
         // Ensure list has requested size
         while (reportTransactions.size() < recordCount) {
-            reportTransactions.add(testDataGenerator.generateTransaction());
+            reportTransactions.add(TestDataGenerator.generateTransaction());
         }
         reportTransactions = reportTransactions.subList(0, recordCount);
         
@@ -728,13 +722,13 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
     @ValueSource(strings = {"1000000001", "1000000002", "1000000003"})
     public void testCalculateAccountTotals_VariousAccounts_ProvidesAccurateTotals(String accountId) {
         // Arrange - Generate account-specific transaction data
-        List<Transaction> accountTransactions = testDataGenerator.generateTransactionList();
+        List<Transaction> accountTransactions = TestDataGenerator.generateTransactionList(30);
         Long testAccountId = Long.parseLong(accountId);
         
         // Configure transactions for specific account
         accountTransactions.forEach(txn -> {
             txn.setAccountId(testAccountId);
-            txn.setAmount(testDataGenerator.generateComp3BigDecimal());
+            txn.setAmount(TestDataGenerator.generateComp3BigDecimal(2, 10000.00));
         });
         
         // Act - Calculate account totals using service method
@@ -782,17 +776,17 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
     @ValueSource(ints = {100, 500, 1000})
     public void testCalculateGrandTotals_VariousVolumes_ProvidesAccurateTotals(int transactionVolume) {
         // Arrange - Generate high-volume transaction data for grand total testing
-        List<Transaction> allTransactions = testDataGenerator.generateTransactionList();
+        List<Transaction> allTransactions = TestDataGenerator.generateTransactionList(80);
         
         // Ensure sufficient volume for testing
         while (allTransactions.size() < transactionVolume) {
-            allTransactions.addAll(testDataGenerator.generateTransactionList());
+            allTransactions.addAll(TestDataGenerator.generateTransactionList(40));
         }
         allTransactions = allTransactions.subList(0, transactionVolume);
         
         // Configure transactions with COBOL-compatible amounts
         allTransactions.forEach(txn -> {
-            txn.setAmount(testDataGenerator.generateComp3BigDecimal());
+            txn.setAmount(TestDataGenerator.generateComp3BigDecimal(2, 10000.00));
         });
         
         // Act - Calculate grand totals using service method
@@ -845,7 +839,7 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
     @ValueSource(strings = {"COMPLETE", "MISSING_FIELDS", "INVALID_AMOUNTS", "INVALID_DATES"})
     public void testValidateReportData_VariousDataQuality_ValidatesCorrectly(String dataQuality) {
         // Arrange - Create test data based on quality scenario
-        List<Transaction> testData = testDataGenerator.generateTransactionList();
+        List<Transaction> testData = TestDataGenerator.generateTransactionList(50);
         
         // Configure data quality scenarios
         switch (dataQuality) {
