@@ -278,7 +278,13 @@ public class Notification {
      * @return the customer ID
      */
     public Long getCustomerId() {
-        return customer != null ? customer.getCustomerId() : null;
+        if (customer != null) {
+            String customerIdStr = customer.getCustomerId();
+            if (customerIdStr != null) {
+                return Long.valueOf(customerIdStr);
+            }
+        }
+        return null;
     }
 
     /**

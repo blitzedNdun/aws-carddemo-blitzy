@@ -415,7 +415,9 @@ public class CustomerMaintenanceBatchService {
                     Integer currentScore = customer.getFicoScore();
                     
                     // Update credit score using CreditBureauService
-                    Integer newScore = creditBureauService.updateCreditScore(customer.getCustomerId());
+                    String customerIdStr = customer.getCustomerId();
+                    Long customerIdLong = customerIdStr != null ? Long.valueOf(customerIdStr) : null;
+                    Integer newScore = creditBureauService.updateCreditScore(customerIdLong);
                     
                     // Validate new credit score
                     if (creditBureauService.validateCreditScore(newScore)) {

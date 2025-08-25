@@ -137,7 +137,9 @@ public class CustomerReportsService {
         utilizationAnalysis.put("LOW_UTILIZATION", new ArrayList<>());
         
         for (Customer customer : allCustomers) {
-            List<Account> customerAccounts = accountRepository.findByCustomerId(customer.getCustomerId());
+            String customerIdStr = customer.getCustomerId();
+            Long customerIdLong = customerIdStr != null ? Long.valueOf(customerIdStr) : null;
+            List<Account> customerAccounts = accountRepository.findByCustomerId(customerIdLong);
             
             if (!customerAccounts.isEmpty()) {
                 // Calculate average utilization across all customer accounts

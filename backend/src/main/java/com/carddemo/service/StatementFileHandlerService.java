@@ -623,8 +623,9 @@ public class StatementFileHandlerService {
                 case FILE_CUSTFILE:
                     Customer customer = parseCustomerRecord(fieldData);
                     // Ensure we're updating an existing record
-                    if (customer.getCustomerId() != null && 
-                        customerRepository.existsById(customer.getCustomerId())) {
+                    String customerIdStr = customer.getCustomerId();
+                    if (customerIdStr != null && 
+                        customerRepository.existsById(Long.valueOf(customerIdStr))) {
                         customer = customerRepository.save(customer);
                         response.setFieldData(formatCustomerRecord(customer));
                     } else {
@@ -804,7 +805,7 @@ public class StatementFileHandlerService {
         if (fieldData.length() >= 9) {
             String idStr = fieldData.substring(0, 9).trim();
             if (!idStr.isEmpty()) {
-                customer.setCustomerId(Long.parseLong(idStr));
+                customer.setCustomerId(idStr);
             }
         }
         

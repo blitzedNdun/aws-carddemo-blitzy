@@ -488,7 +488,7 @@ public class FileService {
             
             // Parse each field using COBOL record layout positions
             String customerId = extractField(fixedWidthLine, CUSTOMER_ID_START, CUSTOMER_ID_LENGTH).trim();
-            customer.setCustomerId(Long.parseLong(customerId));
+            customer.setCustomerId(customerId);
             
             customer.setFirstName(extractField(fixedWidthLine, FIRST_NAME_START, FIRST_NAME_LENGTH).trim());
             customer.setMiddleName(extractField(fixedWidthLine, MIDDLE_NAME_START, MIDDLE_NAME_LENGTH).trim());
@@ -744,7 +744,7 @@ public class FileService {
             Customer customer = new Customer();
             
             // Parse each field from CSV (trim and handle quotes)
-            customer.setCustomerId(Long.parseLong(cleanCSVField(fields[0])));
+            customer.setCustomerId(cleanCSVField(fields[0]));
             customer.setFirstName(cleanCSVField(fields[1]));
             customer.setMiddleName(cleanCSVField(fields[2]));
             customer.setLastName(cleanCSVField(fields[3]));

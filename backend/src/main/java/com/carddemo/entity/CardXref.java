@@ -220,7 +220,10 @@ public class CardXref {
     public void setCustomer(Customer customer) {
         this.customer = customer;
         if (customer != null) {
-            setXrefCustId(customer.getCustomerId());
+            String customerIdStr = customer.getCustomerId();
+            if (customerIdStr != null) {
+                setXrefCustId(Long.valueOf(customerIdStr));
+            }
         }
     }
 

@@ -122,7 +122,9 @@ public class AccountUpdateService {
             }
             
             // Verify customer exists in repository (additional validation)
-            Optional<Customer> customerOpt = customerRepository.findById(customer.getCustomerId());
+            String customerIdStr = customer.getCustomerId();
+            Long customerIdLong = customerIdStr != null ? Long.valueOf(customerIdStr) : null;
+            Optional<Customer> customerOpt = customerRepository.findById(customerIdLong);
             Customer verifiedCustomer = customerOpt.orElseThrow(() -> 
                 new RuntimeException("Customer record inconsistency detected: " + customer.getCustomerId()));
             

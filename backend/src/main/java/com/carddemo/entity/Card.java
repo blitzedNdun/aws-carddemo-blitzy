@@ -241,7 +241,10 @@ public class Card {
     public void setCustomer(Customer customer) {
         this.customer = customer;
         if (customer != null) {
-            this.customerId = customer.getCustomerId();
+            String customerIdStr = customer.getCustomerId();
+            if (customerIdStr != null) {
+                this.customerId = Long.valueOf(customerIdStr);
+            }
         }
     }
 

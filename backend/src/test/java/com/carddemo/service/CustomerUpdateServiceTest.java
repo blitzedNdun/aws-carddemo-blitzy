@@ -25,16 +25,19 @@ import java.time.LocalDate;
 import java.util.Optional;
 import java.util.List;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.ArrayList;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 // Test utility imports
-import backend.src.test.java.AbstractBaseTest;
-import backend.src.test.java.TestConstants;
-import backend.src.test.TestDataGenerator;
-import backend.src.test.java.UnitTest;
+import com.carddemo.test.AbstractBaseTest;
+import com.carddemo.test.TestConstants;
+import com.carddemo.test.TestDataGenerator;
+import com.carddemo.test.UnitTest;
 
 /**
  * Comprehensive unit test class for CustomerUpdateService validating COBOL CBCUS01C batch customer 

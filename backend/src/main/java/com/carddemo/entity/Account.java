@@ -366,7 +366,13 @@ public class Account {
      * @return customer ID if customer relationship exists, null otherwise
      */
     public Long getCustomerId() {
-        return (customer != null) ? customer.getCustomerId() : null;
+        if (customer != null) {
+            String customerIdStr = customer.getCustomerId();
+            if (customerIdStr != null) {
+                return Long.valueOf(customerIdStr);
+            }
+        }
+        return null;
     }
     
     /**
