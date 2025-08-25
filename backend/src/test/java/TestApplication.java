@@ -212,7 +212,7 @@ public class TestApplication {
      * 
      * @return Mock RestTemplate configured for external service testing
      */
-    @MockBean
+    @Bean
     @Primary
     public RestTemplate mockExternalRestTemplate() {
         logger.debug("Configuring mock RestTemplate for external service testing");
@@ -270,7 +270,7 @@ public class TestApplication {
      * 
      * @return Mock payment service for payment processing testing
      */
-    @MockBean
+    @Bean
     public Object mockPaymentService() {
         logger.debug("Configuring mock payment service for payment processing testing");
         return new Object(); // Placeholder - actual service interface would be injected
@@ -292,7 +292,7 @@ public class TestApplication {
      * 
      * @return Mock banking core service for account integration testing
      */
-    @MockBean
+    @Bean
     public Object mockBankingCoreService() {
         logger.debug("Configuring mock banking core service for account integration testing");
         return new Object(); // Placeholder - actual service interface would be injected
@@ -314,7 +314,7 @@ public class TestApplication {
      * 
      * @return Mock fraud detection service for security testing
      */
-    @MockBean
+    @Bean
     public Object mockFraudDetectionService() {
         logger.debug("Configuring mock fraud detection service for security testing");
         return new Object(); // Placeholder - actual service interface would be injected
