@@ -849,9 +849,9 @@ public class CardRepositoryTest extends AbstractBaseTest implements IntegrationT
 
         // Create multiple cards for batch operations
         List<Card> testCards = List.of(
-            createTestCard("1111111111111111", testAccount.getAccountId(), testCustomer.getCustomerId()),
-            createTestCard("2222222222222222", testAccount.getAccountId(), testCustomer.getCustomerId()),
-            createTestCard("3333333333333333", testAccount.getAccountId(), testCustomer.getCustomerId())
+            createTestCard("1111111111111111", testAccount.getAccountId(), Long.valueOf(testCustomer.getCustomerId())),
+            createTestCard("2222222222222222", testAccount.getAccountId(), Long.valueOf(testCustomer.getCustomerId())),
+            createTestCard("3333333333333333", testAccount.getAccountId(), Long.valueOf(testCustomer.getCustomerId()))
         );
 
         // When: Perform batch save operation

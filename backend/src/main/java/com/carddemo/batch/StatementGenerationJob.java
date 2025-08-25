@@ -26,8 +26,10 @@ import com.carddemo.util.Constants;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
-import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
+import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
@@ -126,10 +128,10 @@ public class StatementGenerationJob {
 
     // Injected dependencies
     @Autowired
-    private JobBuilderFactory jobBuilderFactory;
+    private JobRepository jobRepository;
 
     @Autowired
-    private StepBuilderFactory stepBuilderFactory;
+    private PlatformTransactionManager transactionManager;
 
     @Autowired
     private EntityManagerFactory entityManagerFactory;
@@ -196,7 +198,7 @@ public class StatementGenerationJob {
     public Job statementGenerationJob() {
         logger.info("Configuring statement generation job with chunk size: {}", chunkSize);
         
-        return jobBuilderFactory.get("statementGenerationJob")
+        return new JobBuilder("statementGenerationJob", jobRepository)
                 .incrementer(new RunIdIncrementer())
                 .listener(new StatementJobExecutionListener())
                 .start(statementGenerationStep())
@@ -214,8 +216,8 @@ public class StatementGenerationJob {
     public Step statementGenerationStep() {
         logger.info("Configuring statement generation step");
         
-        return stepBuilderFactory.get("statementGenerationStep")
-                .<Account, StatementDto>chunk(chunkSize)
+        return new StepBuilder("statementGenerationStep", jobRepository)
+                .<Account, StatementDto>chunk(chunkSize, transactionManager)
                 .reader(statementItemReader())
                 .processor(statementItemProcessor())
                 .writer(statementItemWriter())
@@ -359,8 +361,8 @@ public class StatementGenerationJob {
             return customer;
         }
         
-        // Retrieve from database
-        customer = customerRepository.findById(customerIdStr).orElse(null);
+        // Retrieve from database using Long ID
+        customer = customerRepository.findById(customerId).orElse(null);
         if (customer != null) {
             customerCache.put(customerIdStr, customer);
         }
@@ -479,20 +481,19 @@ public class StatementGenerationJob {
         List<StatementItemDto> statementItems = new ArrayList<>();
         
         for (Transaction transaction : transactions) {
-            StatementItemDto item = StatementItemDto.builder()
-                    .transactionId(String.valueOf(transaction.getTransactionId()))
-                    .transactionDate(transaction.getTransactionDate())
-                    .description(transaction.getDescription())
-                    .amount(transaction.getAmount())
-                    .merchantName(transaction.getMerchantName())
-                    .build();
+            StatementItemDto item = new StatementItemDto();
+            item.setTransactionId(String.valueOf(transaction.getTransactionId()));
+            item.setTransactionDate(transaction.getTransactionDate());
+            item.setDescription(transaction.getDescription());
+            item.setAmount(transaction.getAmount());
+            item.setMerchantName(transaction.getMerchantName());
             
             // Set transaction details matching COBOL ST-TRANDT formatting
             item.setDescription(formatTransactionDescription(transaction));
             
             // Ensure amount precision matches COBOL COMP-3 handling
             if (item.getAmount() != null) {
-                item.setAmount(cobolDataConverter.toBigDecimal(item.getAmount()));
+                item.setAmount(cobolDataConverter.toBigDecimal(item.getAmount(), 2));
             }
             
             statementItems.add(item);
@@ -558,10 +559,10 @@ public class StatementGenerationJob {
         }
         
         // Set calculated totals with proper precision
-        statementDto.setTotalDebits(cobolDataConverter.preservePrecision(totalDebits));
-        statementDto.setTotalCredits(cobolDataConverter.preservePrecision(totalCredits));
-        statementDto.setTotalFees(cobolDataConverter.preservePrecision(totalFees));
-        statementDto.setTotalInterest(cobolDataConverter.preservePrecision(totalInterest));
+        statementDto.setTotalDebits(cobolDataConverter.preservePrecision(totalDebits, 2));
+        statementDto.setTotalCredits(cobolDataConverter.preservePrecision(totalCredits, 2));
+        statementDto.setTotalFees(cobolDataConverter.preservePrecision(totalFees, 2));
+        statementDto.setTotalInterest(cobolDataConverter.preservePrecision(totalInterest, 2));
         
         // Calculate minimum payment (typically 2% of balance or $25, whichever is greater)
         BigDecimal currentBalance = statementDto.getCurrentBalance();
@@ -569,7 +570,7 @@ public class StatementGenerationJob {
             BigDecimal percentagePayment = currentBalance.multiply(new BigDecimal("0.02"));
             BigDecimal minimumFloor = new BigDecimal("25.00");
             BigDecimal minimumPayment = percentagePayment.max(minimumFloor);
-            statementDto.setMinimumPayment(cobolDataConverter.preservePrecision(minimumPayment));
+            statementDto.setMinimumPayment(cobolDataConverter.preservePrecision(minimumPayment, 2));
         }
     }
 
@@ -583,8 +584,8 @@ public class StatementGenerationJob {
     private ItemWriter<StatementDto> createPlainTextStatementWriter() {
         return new ItemWriter<StatementDto>() {
             @Override
-            public void write(List<? extends StatementDto> items) throws Exception {
-                for (StatementDto statement : items) {
+            public void write(org.springframework.batch.item.Chunk<? extends StatementDto> chunk) throws Exception {
+                for (StatementDto statement : chunk) {
                     if (statement.isGeneratePlainText()) {
                         generatePlainTextStatement(statement);
                     }
@@ -603,8 +604,8 @@ public class StatementGenerationJob {
     private ItemWriter<StatementDto> createHtmlStatementWriter() {
         return new ItemWriter<StatementDto>() {
             @Override
-            public void write(List<? extends StatementDto> items) throws Exception {
-                for (StatementDto statement : items) {
+            public void write(org.springframework.batch.item.Chunk<? extends StatementDto> chunk) throws Exception {
+                for (StatementDto statement : chunk) {
                     if (statement.isGenerateHtml()) {
                         generateHtmlStatement(statement);
                     }
@@ -731,7 +732,7 @@ public class StatementGenerationJob {
             for (StatementItemDto item : statement.getTransactionSummary()) {
                 String transactionLine = String.format("%-16s %-49s$%s",
                         item.getTransactionId() != null ? item.getTransactionId() : "",
-                        item.getDescription() != null ? item.getDescription() : "",
+                        item.getTransactionDescription() != null ? item.getTransactionDescription() : "",
                         formatUtil.formatCurrency(item.getAmount()));
                 lines.add(transactionLine);
             }

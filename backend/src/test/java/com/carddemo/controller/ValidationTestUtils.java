@@ -308,7 +308,7 @@ public final class ValidationTestUtils {
         // Validate customer and account relationship
         if (account != null && customer != null) {
             Long accountCustomerId = account.getCustomerId();
-            Long customerId = customer.getCustomerId();
+            Long customerId = Long.valueOf(customer.getCustomerId());
             
             if (accountCustomerId != null && customerId != null && !accountCustomerId.equals(customerId)) {
                 throw new BusinessRuleException("Account customer ID does not match customer ID", "9001");

@@ -917,7 +917,7 @@ public class TestDataBuilder {
          * @return this CustomerBuilder for method chaining
          */
         public CustomerBuilder withCustomerId(Long customerId) {
-            customer.setCustomerId(customerId);
+            customer.setCustomerId(String.valueOf(customerId));
             return this;
         }
 
@@ -1056,7 +1056,7 @@ public class TestDataBuilder {
         }
 
         private void setDefaults() {
-            customer.setCustomerId(ThreadLocalRandom.current().nextLong(100000000L, 999999999L));
+            customer.setCustomerId(String.valueOf(ThreadLocalRandom.current().nextLong(100000000L, 999999999L)));
             customer.setFirstName("JOHN");
             customer.setLastName("DOE");
             customer.setSsn(generateSSN());
