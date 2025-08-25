@@ -165,7 +165,7 @@ public class CardRepositoryTest extends AbstractBaseTest implements IntegrationT
         // Create test card using TestDataGenerator for COBOL compatibility
         Card testCard = TestDataGenerator.generateCard();
         testCard.setAccountId(testAccount.getAccountId());
-        testCard.setCustomerId(testCustomer.getCustomerId());
+        testCard.setCustomerId(Long.parseLong(testCustomer.getCustomerId()));
 
         // When: Save the card
         Card savedCard = cardRepository.save(testCard);
@@ -202,7 +202,7 @@ public class CardRepositoryTest extends AbstractBaseTest implements IntegrationT
 
         Card testCard = TestDataGenerator.generateCard();
         testCard.setAccountId(testAccount.getAccountId());
-        testCard.setCustomerId(testCustomer.getCustomerId());
+        testCard.setCustomerId(Long.parseLong(testCustomer.getCustomerId()));
         cardRepository.save(testCard);
 
         // When: Find by card number with performance timing
@@ -239,7 +239,7 @@ public class CardRepositoryTest extends AbstractBaseTest implements IntegrationT
 
         Card testCard = TestDataGenerator.generateCard();
         testCard.setAccountId(testAccount.getAccountId());
-        testCard.setCustomerId(testCustomer.getCustomerId());
+        testCard.setCustomerId(Long.parseLong(testCustomer.getCustomerId()));
         Card savedCard = cardRepository.save(testCard);
 
         // When: Update card fields
@@ -275,7 +275,7 @@ public class CardRepositoryTest extends AbstractBaseTest implements IntegrationT
 
         Card testCard = TestDataGenerator.generateCard();
         testCard.setAccountId(testAccount.getAccountId());
-        testCard.setCustomerId(testCustomer.getCustomerId());
+        testCard.setCustomerId(Long.parseLong(testCustomer.getCustomerId()));
         Card savedCard = cardRepository.save(testCard);
 
         // When: Delete the card
@@ -313,13 +313,13 @@ public class CardRepositoryTest extends AbstractBaseTest implements IntegrationT
         // Create multiple cards for the same account
         Card card1 = TestDataGenerator.generateCard();
         card1.setAccountId(testAccount.getAccountId());
-        card1.setCustomerId(testCustomer.getCustomerId());
+        card1.setCustomerId(Long.parseLong(testCustomer.getCustomerId()));
         card1.setCardNumber("1111111111111111");
         cardRepository.save(card1);
 
         Card card2 = TestDataGenerator.generateCard();
         card2.setAccountId(testAccount.getAccountId());
-        card2.setCustomerId(testCustomer.getCustomerId());
+        card2.setCustomerId(Long.parseLong(testCustomer.getCustomerId()));
         card2.setCardNumber("2222222222222222");
         cardRepository.save(card2);
 
@@ -366,23 +366,23 @@ public class CardRepositoryTest extends AbstractBaseTest implements IntegrationT
         // Create cards for both accounts
         Card card1 = TestDataGenerator.generateCard();
         card1.setAccountId(account1.getAccountId());
-        card1.setCustomerId(testCustomer.getCustomerId());
+        card1.setCustomerId(Long.parseLong(testCustomer.getCustomerId()));
         card1.setCardNumber("1111111111111111");
         cardRepository.save(card1);
 
         Card card2 = TestDataGenerator.generateCard();
         card2.setAccountId(account2.getAccountId());
-        card2.setCustomerId(testCustomer.getCustomerId());
+        card2.setCustomerId(Long.parseLong(testCustomer.getCustomerId()));
         card2.setCardNumber("2222222222222222");
         cardRepository.save(card2);
 
         // When: Find by customer ID
-        List<Card> customerCards = cardRepository.findByCustomerId(testCustomer.getCustomerId());
+        List<Card> customerCards = cardRepository.findByCustomerId(Long.parseLong(testCustomer.getCustomerId()));
 
         // Then: Validate customer card aggregation
         assertThat(customerCards).hasSize(2);
         assertThat(customerCards).extracting(Card::getCustomerId)
-            .containsOnly(testCustomer.getCustomerId());
+            .containsOnly(Long.parseLong(testCustomer.getCustomerId()));
         assertThat(customerCards).extracting(Card::getAccountId)
             .containsExactlyInAnyOrder(account1.getAccountId(), account2.getAccountId());
     }
@@ -412,7 +412,7 @@ public class CardRepositoryTest extends AbstractBaseTest implements IntegrationT
 
         Card testCard = TestDataGenerator.generateCard();
         testCard.setAccountId(testAccount.getAccountId());
-        testCard.setCustomerId(testCustomer.getCustomerId());
+        testCard.setCustomerId(Long.parseLong(testCustomer.getCustomerId()));
         testCard.setCvvCode("123");
 
         // When: Save card with valid CVV
@@ -449,7 +449,7 @@ public class CardRepositoryTest extends AbstractBaseTest implements IntegrationT
 
         Card testCard = TestDataGenerator.generateCard();
         testCard.setAccountId(testAccount.getAccountId());
-        testCard.setCustomerId(testCustomer.getCustomerId());
+        testCard.setCustomerId(Long.parseLong(testCustomer.getCustomerId()));
         
         // Test maximum length embossed name (50 characters)
         String maxLengthName = "JOHN SMITH CARDHOLDER NAME MAXIMUM LENGTH TEST";
@@ -491,14 +491,14 @@ public class CardRepositoryTest extends AbstractBaseTest implements IntegrationT
         // Create cards with different expiration dates
         Card expiredCard = TestDataGenerator.generateCard();
         expiredCard.setAccountId(testAccount.getAccountId());
-        expiredCard.setCustomerId(testCustomer.getCustomerId());
+        expiredCard.setCustomerId(Long.parseLong(testCustomer.getCustomerId()));
         expiredCard.setCardNumber("1111111111111111");
         expiredCard.setExpirationDate(LocalDate.now().minusDays(1));
         cardRepository.save(expiredCard);
 
         Card validCard = TestDataGenerator.generateCard();
         validCard.setAccountId(testAccount.getAccountId());
-        validCard.setCustomerId(testCustomer.getCustomerId());
+        validCard.setCustomerId(Long.parseLong(testCustomer.getCustomerId()));
         validCard.setCardNumber("2222222222222222");
         validCard.setExpirationDate(LocalDate.now().plusMonths(12));
         cardRepository.save(validCard);
@@ -545,14 +545,14 @@ public class CardRepositoryTest extends AbstractBaseTest implements IntegrationT
         // Create active and inactive cards
         Card activeCard = TestDataGenerator.generateCard();
         activeCard.setAccountId(testAccount.getAccountId());
-        activeCard.setCustomerId(testCustomer.getCustomerId());
+        activeCard.setCustomerId(Long.parseLong(testCustomer.getCustomerId()));
         activeCard.setCardNumber("1111111111111111");
         activeCard.setActiveStatus("Y");
         cardRepository.save(activeCard);
 
         Card inactiveCard = TestDataGenerator.generateCard();
         inactiveCard.setAccountId(testAccount.getAccountId());
-        inactiveCard.setCustomerId(testCustomer.getCustomerId());
+        inactiveCard.setCustomerId(Long.parseLong(testCustomer.getCustomerId()));
         inactiveCard.setCardNumber("2222222222222222");
         inactiveCard.setActiveStatus("N");
         cardRepository.save(inactiveCard);
@@ -605,21 +605,21 @@ public class CardRepositoryTest extends AbstractBaseTest implements IntegrationT
         // When: Issue multiple cards for the same account
         Card card1 = TestDataGenerator.generateCard();
         card1.setAccountId(testAccount.getAccountId());
-        card1.setCustomerId(testCustomer.getCustomerId());
+        card1.setCustomerId(Long.parseLong(testCustomer.getCustomerId()));
         card1.setExpirationDate(LocalDate.now().plusMonths(24));
         card1.setActiveStatus("Y");
         Card issuedCard1 = cardRepository.save(card1);
 
         Card card2 = TestDataGenerator.generateCard();
         card2.setAccountId(testAccount.getAccountId());
-        card2.setCustomerId(testCustomer.getCustomerId());
+        card2.setCustomerId(Long.parseLong(testCustomer.getCustomerId()));
         card2.setExpirationDate(LocalDate.now().plusMonths(24));
         card2.setActiveStatus("Y");
         // Ensure different card number
         while (card2.getCardNumber().equals(card1.getCardNumber())) {
             card2 = TestDataGenerator.generateCard();
             card2.setAccountId(testAccount.getAccountId());
-            card2.setCustomerId(testCustomer.getCustomerId());
+            card2.setCustomerId(Long.parseLong(testCustomer.getCustomerId()));
             card2.setExpirationDate(LocalDate.now().plusMonths(24));
             card2.setActiveStatus("Y");
         }
@@ -662,7 +662,7 @@ public class CardRepositoryTest extends AbstractBaseTest implements IntegrationT
 
         Card oldCard = TestDataGenerator.generateCard();
         oldCard.setAccountId(testAccount.getAccountId());
-        oldCard.setCustomerId(testCustomer.getCustomerId());
+        oldCard.setCustomerId(Long.parseLong(testCustomer.getCustomerId()));
         oldCard.setCardNumber("1111111111111111");
         oldCard.setActiveStatus("Y");
         Card savedOldCard = cardRepository.save(oldCard);
@@ -675,7 +675,7 @@ public class CardRepositoryTest extends AbstractBaseTest implements IntegrationT
         // Create new replacement card
         Card newCard = TestDataGenerator.generateCard();
         newCard.setAccountId(testAccount.getAccountId());
-        newCard.setCustomerId(testCustomer.getCustomerId());
+        newCard.setCustomerId(Long.parseLong(testCustomer.getCustomerId()));
         newCard.setCardNumber("2222222222222222");
         newCard.setActiveStatus("Y");
         newCard.setExpirationDate(LocalDate.now().plusMonths(24));
@@ -718,7 +718,7 @@ public class CardRepositoryTest extends AbstractBaseTest implements IntegrationT
 
         Card testCard = TestDataGenerator.generateCard();
         testCard.setAccountId(testAccount.getAccountId());
-        testCard.setCustomerId(testCustomer.getCustomerId());
+        testCard.setCustomerId(Long.parseLong(testCustomer.getCustomerId()));
         testCard.setActiveStatus("N");
         Card savedCard = cardRepository.save(testCard);
 
@@ -762,7 +762,7 @@ public class CardRepositoryTest extends AbstractBaseTest implements IntegrationT
 
         Card testCard = TestDataGenerator.generateCard();
         testCard.setAccountId(testAccount.getAccountId());
-        testCard.setCustomerId(testCustomer.getCustomerId());
+        testCard.setCustomerId(Long.parseLong(testCustomer.getCustomerId()));
         cardRepository.save(testCard);
 
         // When: Verify relationships exist
@@ -803,7 +803,7 @@ public class CardRepositoryTest extends AbstractBaseTest implements IntegrationT
 
         Card testCard = TestDataGenerator.generateCard();
         testCard.setAccountId(testAccount.getAccountId());
-        testCard.setCustomerId(testCustomer.getCustomerId());
+        testCard.setCustomerId(Long.parseLong(testCustomer.getCustomerId()));
         cardRepository.save(testCard);
 
         // When: Test existence and count operations
