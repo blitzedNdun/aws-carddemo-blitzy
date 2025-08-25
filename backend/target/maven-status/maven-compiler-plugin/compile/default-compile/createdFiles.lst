@@ -146,7 +146,9 @@ com/carddemo/service/FileService.class
 com/carddemo/service/TransactionValidationService$ValidationResult.class
 com/carddemo/entity/Statement.class
 com/carddemo/service/PaymentService$4.class
+com/carddemo/batch/BatchJobListener$JobExecutionContext.class
 com/carddemo/batch/FeeAssessmentJobConfig$FeeAssessmentException.class
+com/carddemo/batch/BatchJobListener.class
 com/carddemo/service/PaymentService$PaymentProcessingException.class
 com/carddemo/converter/BmsMessageConverter.class
 com/carddemo/service/DailyTransactionBatchService.class
@@ -301,6 +303,7 @@ com/carddemo/util/ReportFormatter.class
 com/carddemo/service/PaymentService$BankSystemException.class
 com/carddemo/controller/PaymentController.class
 com/carddemo/batch/StatementGenerationJob$StatementStepExecutionListener.class
+com/carddemo/batch/BatchJobListener$ProcessingMetrics.class
 com/carddemo/dto/CreditCardUpdateResponse.class
 com/carddemo/batch/InterestCalculationJob$2.class
 com/carddemo/service/NotificationService.class
@@ -489,6 +492,7 @@ com/carddemo/client/EmailClient$BounceData.class
 com/carddemo/dto/UserAddResponse$UserAddResponseBuilder.class
 com/carddemo/service/CreditBureauService$CreditScoreChangeAudit.class
 com/carddemo/service/PaymentService$3.class
+com/carddemo/batch/BatchJobListener$StepMetrics.class
 com/carddemo/client/EmailClient$EmailTemplate$Builder.class
 com/carddemo/client/SMSProvider$BulkSMSError.class
 com/carddemo/batch/FeeAssessmentJobConfig$FeeAssessmentProcessor.class
