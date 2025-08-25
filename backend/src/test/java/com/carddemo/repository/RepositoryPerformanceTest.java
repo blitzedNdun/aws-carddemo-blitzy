@@ -18,7 +18,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.containers.PostgreSQLContainer;
 import static org.assertj.core.api.Assertions.assertThat;
-import org.springframework.test.annotation.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.util.Random;
@@ -1159,3 +1159,4 @@ public class RepositoryPerformanceTest extends AbstractBaseTest implements Perfo
         
         return meetsThreshold;
     }
+}
