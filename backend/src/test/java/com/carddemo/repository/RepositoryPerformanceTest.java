@@ -7,17 +7,19 @@ package com.carddemo.repository;
 
 import com.carddemo.entity.Account;
 import com.carddemo.entity.Transaction;
-import AbstractBaseTest;
-import PerformanceTest;
-import TestConstants;
+import com.carddemo.test.AbstractBaseTest;
+import com.carddemo.test.PerformanceTest;
+import com.carddemo.test.TestConstants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.Transactional;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Pageable;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
@@ -61,7 +63,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @SpringBootTest
 @Testcontainers
-@PerformanceTest
+@Tag("performance")
 @Transactional
 public class RepositoryPerformanceTest extends AbstractBaseTest {
 
@@ -110,7 +112,7 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
         mockCommonDependencies();
         
         // Generate base test data for performance tests
-        generateTestData();
+        generateTestData("performanceTest", 10);
         
         // Initialize PostgreSQL container for isolated testing
         if (postgresContainer == null) {
@@ -122,7 +124,7 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
         }
         
         // Log test execution start
-        logTestExecution();
+        logTestExecution("RepositoryPerformanceTest setup completed", null);
     }
 
     /**
@@ -171,7 +173,7 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
     @Test
     public void testPrimaryKeyLookupPerformance() {
         // Arrange - Create test account for lookup
-        Account testAccount = createTestAccount();
+        Account testAccount = createTestAccountEntity();
         Account savedAccount = accountRepository.save(testAccount);
         Long accountId = savedAccount.getAccountId();
         
@@ -201,7 +203,7 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
             
         // Validate BigDecimal precision matches COBOL COMP-3
         Account retrievedAccount = accountRepository.findById(accountId).orElse(null);
-        assertBigDecimalEquals(testAccount.getCurrentBalance(), retrievedAccount.getCurrentBalance());
+        assertBigDecimalEquals(testAccount.getCurrentBalance(), retrievedAccount.getCurrentBalance(), "Account balance precision mismatch");
         
         // Log performance results
         System.out.printf("Primary key lookup average time: %.3f ms%n", averageTimeMs);
@@ -221,8 +223,7 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
         Long customerId = 12345L;
         
         for (int i = 0; i < 100; i++) {
-            Account account = createTestAccount();
-            account.setCustomerId(customerId);
+            Account account = createTestAccountEntity();
             accounts.add(account);
         }
         accountRepository.saveAll(accounts);
@@ -260,29 +261,29 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
     @Test
     public void testComplexJoinPerformance() {
         // Arrange - Create test data with relationships
-        Account testAccount = createTestAccount();
+        Account testAccount = createTestAccountEntity();
         Account savedAccount = accountRepository.save(testAccount);
         
         List<Transaction> transactions = new ArrayList<>();
         for (int i = 0; i < 50; i++) {
-            Transaction transaction = createTestTransaction();
+            Transaction transaction = createTestTransactionEntity();
             transaction.setAccountId(savedAccount.getAccountId());
             transaction.setTransactionDate(LocalDate.now().minusDays(i));
             transactions.add(transaction);
         }
         transactionRepository.saveAll(transactions);
         
-        LocalDate startDate = LocalDate.now().minusDays(30);
-        LocalDate endDate = LocalDate.now();
+        LocalDateTime startDate = LocalDateTime.now().minusDays(30);
+        LocalDateTime endDate = LocalDateTime.now();
         
         // Warm up join query cache
         for (int i = 0; i < 3; i++) {
-            transactionRepository.findByAccountIdAndDateRange(savedAccount.getAccountId(), startDate, endDate);
+            transactionRepository.findByAccountIdAndDateRange(savedAccount.getAccountId(), startDate, endDate, Pageable.unpaged());
         }
         
         // Act - Measure complex join query performance
         Duration responseTime = measureResponseTime(() -> {
-            return transactionRepository.findByAccountIdAndDateRange(savedAccount.getAccountId(), startDate, endDate);
+            return transactionRepository.findByAccountIdAndDateRange(savedAccount.getAccountId(), startDate, endDate, Pageable.unpaged());
         });
         
         // Assert - Validate <200ms performance requirement for complex joins
@@ -292,7 +293,7 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
             
         // Validate join returned expected results
         List<Transaction> results = transactionRepository.findByAccountIdAndDateRange(
-            savedAccount.getAccountId(), startDate, endDate);
+            savedAccount.getAccountId(), startDate, endDate, Pageable.unpaged()).getContent();
         assertThat(results).hasSizeGreaterThan(0);
         
         // Log performance results
@@ -309,7 +310,7 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
     @Test
     public void testHighVolumeTransactionInsertion() {
         // Arrange - Prepare test account and transaction data
-        Account testAccount = createTestAccount();
+        Account testAccount = createTestAccountEntity();
         Account savedAccount = accountRepository.save(testAccount);
         
         int targetTransactions = 10000; // Test full TPS requirement
@@ -317,7 +318,7 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
         
         // Generate test transactions with varied data
         for (int i = 0; i < targetTransactions; i++) {
-            Transaction transaction = createTestTransaction();
+            Transaction transaction = createTestTransactionEntity();
             transaction.setAccountId(savedAccount.getAccountId());
             transaction.setAmount(BigDecimal.valueOf(random.nextDouble() * 1000).setScale(2, BigDecimal.ROUND_HALF_UP));
             transaction.setTransactionDate(LocalDate.now());
@@ -362,7 +363,7 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
         List<Future<Duration>> futures = new ArrayList<>();
         
         // Create test account for concurrent access
-        Account testAccount = createTestAccount();
+        Account testAccount = createTestAccountEntity();
         Account savedAccount = accountRepository.save(testAccount);
         Long accountId = savedAccount.getAccountId();
         
@@ -427,7 +428,7 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
     @Test
     public void testQueryPlanOptimization() {
         // Arrange - Create test data for query analysis
-        Account testAccount = createTestAccount();
+        Account testAccount = createTestAccountEntity();
         Account savedAccount = accountRepository.save(testAccount);
         
         // Create transactions for date range analysis
@@ -435,7 +436,7 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
         LocalDate baseDate = LocalDate.now().minusDays(30);
         
         for (int i = 0; i < 1000; i++) {
-            Transaction transaction = createTestTransaction();
+            Transaction transaction = createTestTransactionEntity();
             transaction.setAccountId(savedAccount.getAccountId());
             transaction.setTransactionDate(baseDate.plusDays(i % 30));
             transactions.add(transaction);
@@ -443,8 +444,8 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
         transactionRepository.saveAll(transactions);
         
         // Act & Assert - Test various query patterns and their optimization
-        LocalDate startDate = LocalDate.now().minusDays(15);
-        LocalDate endDate = LocalDate.now().minusDays(5);
+        LocalDateTime startDate = LocalDate.now().minusDays(15).atStartOfDay();
+        LocalDateTime endDate = LocalDate.now().minusDays(5).atTime(23, 59, 59);
         
         // Test 1: Primary key access (should use unique index scan)
         Duration primaryKeyTime = measureResponseTime(() -> {
@@ -457,7 +458,7 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
             
         // Test 2: Foreign key join (should use nested loop with index)
         Duration foreignKeyTime = measureResponseTime(() -> {
-            return transactionRepository.findByAccountIdAndDateRange(savedAccount.getAccountId(), startDate, endDate);
+            return transactionRepository.findByAccountIdAndDateRange(savedAccount.getAccountId(), startDate, endDate, Pageable.unpaged());
         });
         
         assertThat(foreignKeyTime.toMillis())
@@ -466,7 +467,7 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
             
         // Test 3: Date range query (should use partition pruning)
         Duration dateRangeTime = measureResponseTime(() -> {
-            return transactionRepository.findByProcessingDateBetween(startDate, endDate);
+            return transactionRepository.findByProcessingDateBetween(startDate.toLocalDate(), endDate.toLocalDate());
         });
         
         assertThat(dateRangeTime.toMillis())
@@ -488,7 +489,7 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
     @Test
     public void testPartitionPruning() {
         // Arrange - Create transactions across multiple time periods
-        Account testAccount = createTestAccount();
+        Account testAccount = createTestAccountEntity();
         Account savedAccount = accountRepository.save(testAccount);
         
         List<Transaction> transactions = new ArrayList<>();
@@ -497,7 +498,7 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
         // Create transactions across 6 months (multiple partitions)
         for (int month = 0; month < 6; month++) {
             for (int day = 0; day < 30; day++) {
-                Transaction transaction = createTestTransaction();
+                Transaction transaction = createTestTransactionEntity();
                 transaction.setAccountId(savedAccount.getAccountId());
                 transaction.setTransactionDate(baseDate.plusMonths(month).plusDays(day));
                 transaction.setAmount(BigDecimal.valueOf(100.00 + month * 10).setScale(2, BigDecimal.ROUND_HALF_UP));
@@ -541,14 +542,14 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
     @Test
     public void testBulkInsertPerformance() {
         // Arrange - Prepare large batch of transactions
-        Account testAccount = createTestAccount();
+        Account testAccount = createTestAccountEntity();
         Account savedAccount = accountRepository.save(testAccount);
         
         int batchSize = 50000; // Large batch for performance testing
         List<Transaction> batchTransactions = new ArrayList<>(batchSize);
         
         for (int i = 0; i < batchSize; i++) {
-            Transaction transaction = createTestTransaction();
+            Transaction transaction = createTestTransactionEntity();
             transaction.setAccountId(savedAccount.getAccountId());
             transaction.setAmount(BigDecimal.valueOf(50.00 + i).setScale(2, BigDecimal.ROUND_HALF_UP));
             transaction.setTransactionDate(LocalDate.now().minusDays(i % 7));
@@ -600,8 +601,7 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
         // Create test accounts for concurrent access
         List<Account> userAccounts = new ArrayList<>();
         for (int i = 0; i < concurrentUsers; i++) {
-            Account account = createTestAccount();
-            account.setCustomerId((long) (100000 + i));
+            Account account = createTestAccountEntity();
             userAccounts.add(account);
         }
         accountRepository.saveAll(userAccounts);
@@ -703,8 +703,7 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
         // Arrange - Create reference data for cache testing
         List<Account> referenceAccounts = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
-            Account account = createTestAccount();
-            account.setCustomerId((long) (200000 + i));
+            Account account = createTestAccountEntity();
             referenceAccounts.add(account);
         }
         accountRepository.saveAll(referenceAccounts);
@@ -749,7 +748,7 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
     @Test
     public void testDatabaseFailoverResponse() {
         // Arrange - Create baseline test data
-        Account testAccount = createTestAccount();
+        Account testAccount = createTestAccountEntity();
         Account savedAccount = accountRepository.save(testAccount);
         Long accountId = savedAccount.getAccountId();
         
@@ -811,14 +810,14 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
     @Test
     public void testMemoryUsageDuringLargeQueries() {
         // Arrange - Create large dataset for memory testing
-        Account testAccount = createTestAccount();
+        Account testAccount = createTestAccountEntity();
         Account savedAccount = accountRepository.save(testAccount);
         
         int largeDatasetSize = 10000;
         List<Transaction> largeDataset = new ArrayList<>(largeDatasetSize);
         
         for (int i = 0; i < largeDatasetSize; i++) {
-            Transaction transaction = createTestTransaction();
+            Transaction transaction = createTestTransactionEntity();
             transaction.setAccountId(savedAccount.getAccountId());
             transaction.setAmount(BigDecimal.valueOf(10.00 + i).setScale(2, BigDecimal.ROUND_HALF_UP));
             transaction.setTransactionDate(LocalDate.now().minusDays(i % 365));
@@ -867,14 +866,14 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
     @Test
     public void testPaginationPerformance() {
         // Arrange - Create large dataset for pagination testing
-        Account testAccount = createTestAccount();
+        Account testAccount = createTestAccountEntity();
         Account savedAccount = accountRepository.save(testAccount);
         
         int totalRecords = 25000;
         List<Transaction> paginationDataset = new ArrayList<>(totalRecords);
         
         for (int i = 0; i < totalRecords; i++) {
-            Transaction transaction = createTestTransaction();
+            Transaction transaction = createTestTransactionEntity();
             transaction.setAccountId(savedAccount.getAccountId());
             transaction.setTransactionDate(LocalDate.now().minusDays(i % 100));
             paginationDataset.add(transaction);
@@ -929,8 +928,7 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
         // Arrange - Create test data optimized for index-only scans
         List<Account> indexTestAccounts = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
-            Account account = createTestAccount();
-            account.setCustomerId((long) (300000 + i));
+            Account account = createTestAccountEntity();
             indexTestAccounts.add(account);
         }
         accountRepository.saveAll(indexTestAccounts);
@@ -979,88 +977,42 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
      * connection failures and timeout scenarios within acceptable limits, ensuring
      * business continuity comparable to mainframe availability standards.
      */
-    @Test
-    public void testDatabaseFailoverResponse() {
-        // Arrange - Create test data for failover testing
-        Account testAccount = createTestAccount();
-        Account savedAccount = accountRepository.save(testAccount);
-        Long accountId = savedAccount.getAccountId();
-        
-        // Establish baseline performance
-        Duration baselineTime = measureResponseTime(() -> {
-            return accountRepository.findById(accountId);
-        });
-        
-        // Act - Test connection resilience with retry logic
-        List<Duration> failoverTimes = new ArrayList<>();
-        int failoverTests = 20;
-        
-        for (int i = 0; i < failoverTests; i++) {
-            try {
-                // Measure time including potential connection recovery
-                Duration failoverTime = measureResponseTime(() -> {
-                    try {
-                        // Simulate various access patterns during potential failover
-                        accountRepository.findById(accountId);
-                        accountRepository.count();
-                        return true;
-                    } catch (Exception e) {
-                        // Return false on failure, but operation completes
-                        return false;
-                    }
-                });
-                
-                failoverTimes.add(failoverTime);
-                
-                // Small delay between tests to allow connection state changes
-                Thread.sleep(50);
-                
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            }
-        }
-        
-        // Calculate failover performance statistics
-        double averageFailoverTime = failoverTimes.stream()
-            .mapToLong(Duration::toMillis)
-            .average()
-            .orElse(0.0);
-            
-        long maxFailoverTime = failoverTimes.stream()
-            .mapToLong(Duration::toMillis)
-            .max()
-            .orElse(0L);
-            
-        double failoverTimeVariance = failoverTimes.stream()
-            .mapToLong(Duration::toMillis)
-            .mapToDouble(time -> Math.pow(time - averageFailoverTime, 2))
-            .average()
-            .orElse(0.0);
-        
-        // Assert - Validate failover response performance
-        assertThat(averageFailoverTime)
-            .describedAs("Average failover response time should be reasonable")
-            .isLessThan(TestConstants.RESPONSE_TIME_THRESHOLD_MS * 3);
-            
-        assertThat(maxFailoverTime)
-            .describedAs("Maximum failover response time should not exceed 2 seconds")
-            .isLessThan(2000L);
-            
-        // Validate performance threshold compliance
-        boolean thresholdMet = validatePerformanceThreshold(
-            (long) averageFailoverTime, 
-            TestConstants.RESPONSE_TIME_THRESHOLD_MS * 2, 
-            "Database Failover Response"
-        );
-        
-        assertThat(thresholdMet)
-            .describedAs("Failover response should meet performance thresholds")
-            .isTrue();
-            
-        // Log comprehensive failover results
-        System.out.printf("Database failover analysis - Baseline: %d ms, Avg failover: %.2f ms, Max failover: %d ms, Variance: %.2f%n",
-                         baselineTime.toMillis(), averageFailoverTime, maxFailoverTime, Math.sqrt(failoverTimeVariance));
+
+    // Helper Methods - Entity Creation
+
+    /**
+     * Creates a test Account entity for performance testing.
+     * 
+     * @return Account entity with test data
+     */
+    private Account createTestAccountEntity() {
+        return Account.builder()
+            .accountId(Long.valueOf(TestConstants.TEST_ACCOUNT_ID))
+            .activeStatus("Y")
+            .currentBalance(new BigDecimal("1000.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE))
+            .creditLimit(new BigDecimal("5000.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE))
+            .cashCreditLimit(new BigDecimal("1000.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE))
+            .openDate(java.time.LocalDate.now())
+            .currentCycleCredit(BigDecimal.ZERO.setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE))
+            .currentCycleDebit(BigDecimal.ZERO.setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE))
+            .groupId("DEFAULT001")
+            .build();
+    }
+
+    /**
+     * Creates a test Transaction entity for performance testing.
+     * 
+     * @return Transaction entity with test data
+     */
+    private Transaction createTestTransactionEntity() {
+        return Transaction.builder()
+            .transactionId(Long.valueOf("1001"))
+            .accountId(Long.valueOf(TestConstants.TEST_ACCOUNT_ID))
+            .transactionTypeCode("01")
+            .categoryCode("0001")
+            .amount(new BigDecimal("100.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE))
+            .transactionDate(java.time.LocalDate.now())
+            .build();
     }
 
     // Utility Methods - Required by exports schema
@@ -1127,3 +1079,4 @@ public class RepositoryPerformanceTest extends AbstractBaseTest {
         
         return meetsThreshold;
     }
+}
