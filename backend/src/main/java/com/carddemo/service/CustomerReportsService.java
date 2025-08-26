@@ -39,8 +39,8 @@ public class CustomerReportsService {
     private AccountRepository accountRepository;
     
     // Constants matching COBOL COMP-3 precision requirements
-    private static final int HIGH_FICO_THRESHOLD = 750;
-    private static final int MEDIUM_FICO_THRESHOLD = 650;
+    private static final BigDecimal HIGH_FICO_THRESHOLD = new BigDecimal("750");
+    private static final BigDecimal MEDIUM_FICO_THRESHOLD = new BigDecimal("650");
     private static final BigDecimal HIGH_UTILIZATION_THRESHOLD = new BigDecimal("0.80");
     private static final BigDecimal MEDIUM_UTILIZATION_THRESHOLD = new BigDecimal("0.50");
     
@@ -59,9 +59,9 @@ public class CustomerReportsService {
         segments.put("LOW_VALUE", new ArrayList<>());
         
         for (Customer customer : allCustomers) {
-            if (customer.getFicoScore() >= HIGH_FICO_THRESHOLD) {
+            if (customer.getFicoScore() != null && customer.getFicoScore().compareTo(HIGH_FICO_THRESHOLD) >= 0) {
                 segments.get("HIGH_VALUE").add(customer);
-            } else if (customer.getFicoScore() >= MEDIUM_FICO_THRESHOLD) {
+            } else if (customer.getFicoScore() != null && customer.getFicoScore().compareTo(MEDIUM_FICO_THRESHOLD) >= 0) {
                 segments.get("MEDIUM_VALUE").add(customer);
             } else {
                 segments.get("LOW_VALUE").add(customer);
@@ -193,8 +193,9 @@ public class CustomerReportsService {
         BigDecimal clv = BigDecimal.ZERO;
         
         // Base CLV from FICO score (higher FICO = higher value)
-        BigDecimal ficoMultiplier = new BigDecimal(customer.getFicoScore()).divide(
-                new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+        BigDecimal ficoMultiplier = customer.getFicoScore() != null ? 
+            customer.getFicoScore().divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP) : 
+            BigDecimal.ZERO;
         
         for (Account account : customerAccounts) {
             // Add credit limit as potential value indicator
@@ -235,17 +236,17 @@ public class CustomerReportsService {
         
         for (Customer customer : allCustomers) {
             // Premium rewards campaign - high FICO customers
-            if (customer.getFicoScore() >= HIGH_FICO_THRESHOLD) {
+            if (customer.getFicoScore() != null && customer.getFicoScore().compareTo(HIGH_FICO_THRESHOLD) >= 0) {
                 campaignLists.get("PREMIUM_REWARDS").add(customer);
             }
             
             // Credit increase campaign - medium to high FICO customers
-            if (customer.getFicoScore() >= MEDIUM_FICO_THRESHOLD) {
+            if (customer.getFicoScore() != null && customer.getFicoScore().compareTo(MEDIUM_FICO_THRESHOLD) >= 0) {
                 campaignLists.get("CREDIT_INCREASE").add(customer);
             }
             
             // Risk mitigation campaign - low FICO customers
-            if (customer.getFicoScore() < MEDIUM_FICO_THRESHOLD) {
+            if (customer.getFicoScore() != null && customer.getFicoScore().compareTo(MEDIUM_FICO_THRESHOLD) < 0) {
                 campaignLists.get("RISK_MITIGATION").add(customer);
             }
         }

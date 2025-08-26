@@ -138,16 +138,17 @@ public class ReportMenuService {
             return "Start date and end date are required for custom reports";
         }
         
-        if (startDate.isAfter(endDate)) {
-            return "Start date cannot be after end date";
-        }
-        
+        // Check future dates first before comparing start and end dates
         if (startDate.isAfter(LocalDate.now())) {
             return "Start date cannot be in the future";
         }
         
         if (endDate.isAfter(LocalDate.now())) {
             return "End date cannot be in the future";
+        }
+        
+        if (startDate.isAfter(endDate)) {
+            return "Start date cannot be after end date";
         }
         
         // Check for maximum date range (e.g., 1 year)
@@ -171,6 +172,12 @@ public class ReportMenuService {
         Map<String, Object> result = new HashMap<>();
         
         try {
+            // Validate report type before processing
+            if (reportRequest.getReportType() == null || reportRequest.getReportType().trim().isEmpty()) {
+                result.put("error", "Report type is required for job submission");
+                return result;
+            }
+            
             // Generate unique job ID
             String jobId = generateJobId(reportRequest.getReportType());
             

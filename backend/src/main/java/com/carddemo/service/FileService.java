@@ -523,7 +523,7 @@ public class FileService {
             // Parse FICO score
             String ficoScoreString = extractField(fixedWidthLine, FICO_CREDIT_SCORE_START, FICO_CREDIT_SCORE_LENGTH).trim();
             if (!ficoScoreString.isEmpty()) {
-                customer.setFicoScore(Integer.parseInt(ficoScoreString));
+                customer.setFicoScore(new BigDecimal(ficoScoreString));
             }
             
             // Validate parsed customer data
@@ -771,7 +771,7 @@ public class FileService {
             // Parse FICO score
             String ficoString = cleanCSVField(fields[17]);
             if (!ficoString.isEmpty()) {
-                customer.setFicoScore(Integer.parseInt(ficoString));
+                customer.setFicoScore(new BigDecimal(ficoString));
             }
             
             return customer;

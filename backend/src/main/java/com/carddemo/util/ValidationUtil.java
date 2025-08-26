@@ -684,12 +684,12 @@ public final class ValidationUtil {
      * @param ficoScore the FICO score to validate
      * @throws ValidationException if the FICO score is invalid
      */
-    public static void validateFicoScore(String fieldName, Integer ficoScore) {
+    public static void validateFicoScore(String fieldName, BigDecimal ficoScore) {
         ValidationException validationException = new ValidationException("FICO score validation failed");
         
         if (ficoScore == null) {
             validationException.addFieldError(fieldName, fieldName + " must be supplied.");
-        } else if (ficoScore < FICO_SCORE_MIN || ficoScore > FICO_SCORE_MAX) {
+        } else if (ficoScore.compareTo(new BigDecimal(FICO_SCORE_MIN)) < 0 || ficoScore.compareTo(new BigDecimal(FICO_SCORE_MAX)) > 0) {
             validationException.addFieldError(fieldName, fieldName + " must be between " + FICO_SCORE_MIN + " and " + FICO_SCORE_MAX + ".");
         }
         

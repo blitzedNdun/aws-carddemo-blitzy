@@ -215,7 +215,7 @@ public class CustomerUpdateService {
 
         // Validate FICO score range
         if (customer.getFicoScore() != null) {
-            if (customer.getFicoScore() < 300 || customer.getFicoScore() > 850) {
+            if (customer.getFicoScore().compareTo(new BigDecimal("300")) < 0 || customer.getFicoScore().compareTo(new BigDecimal("850")) > 0) {
                 return false;
             }
         }

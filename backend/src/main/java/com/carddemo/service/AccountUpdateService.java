@@ -372,8 +372,8 @@ public class AccountUpdateService {
                 ValidationUtil.validateFieldLength("ficoScore", ficoString, 3); // FICO is 3 digits
                 
                 // Additional FICO range validation (300-850)
-                int ficoValue = customer.getFicoScore();
-                if (ficoValue < 300 || ficoValue > 850) {
+                BigDecimal ficoValue = customer.getFicoScore();
+                if (ficoValue.compareTo(new BigDecimal("300")) < 0 || ficoValue.compareTo(new BigDecimal("850")) > 0) {
                     validationException.addFieldError("ficoScore", "FICO score must be between 300 and 850");
                 }
             } catch (ValidationException ve) {

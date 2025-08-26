@@ -412,7 +412,7 @@ public class CustomerMaintenanceBatchService {
             for (Customer customer : customers) {
                 try {
                     // Retrieve current FICO score
-                    Integer currentScore = customer.getFicoScore();
+                    BigDecimal currentScore = customer.getFicoScore();
                     
                     // Update credit score using CreditBureauService
                     String customerIdStr = customer.getCustomerId();
@@ -422,7 +422,7 @@ public class CustomerMaintenanceBatchService {
                     // Validate new credit score
                     if (creditBureauService.validateCreditScore(newScore)) {
                         // Update customer with new score
-                        customer.setFicoScore(newScore);
+                        customer.setFicoScore(new BigDecimal(newScore));
                         customerRepository.save(customer);
                         
                         updatedCount++;
@@ -492,7 +492,7 @@ public class CustomerMaintenanceBatchService {
                 try {
                     // Extract customer attributes for segmentation
                     String customerId = customer.getCustomerId().toString();
-                    int ficoScore = customer.getFicoScore() != null ? customer.getFicoScore() : 0;
+                    BigDecimal ficoScore = customer.getFicoScore() != null ? customer.getFicoScore() : BigDecimal.ZERO;
                     BigDecimal accountBalance = customer.getCreditLimit() != null ? customer.getCreditLimit() : BigDecimal.ZERO;
                     LocalDate lastTransactionDate = customer.getLastUpdateTimestamp() != null ? 
                         customer.getLastUpdateTimestamp().toLocalDate() : LocalDate.now().minusYears(1);
@@ -500,7 +500,7 @@ public class CustomerMaintenanceBatchService {
                     
                     // Perform customer segmentation
                     String segment = customerSegmentationService.segmentCustomer(
-                        customerId, ficoScore, accountBalance, lastTransactionDate, accountAge
+                        customerId, ficoScore.intValue(), accountBalance, lastTransactionDate, accountAge
                     );
                     
                     // Update customer segment (assuming we add this field to Customer entity)

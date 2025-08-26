@@ -447,4 +447,14 @@ public class ReportService {
                REPORT_TYPE_YEARLY.equals(upperType) || 
                REPORT_TYPE_CUSTOM.equals(upperType);
     }
+    
+    /**
+     * Gets list of available report types for admin menu display.
+     * Used by AdminService to populate report options in admin menu.
+     * 
+     * @return List of available report type strings
+     */
+    public java.util.List<String> getAvailableReports() {
+        return java.util.List.of("MONTHLY", "YEARLY", "CUSTOM", "STATEMENT");
+    }
 }
