@@ -63,7 +63,10 @@ public class TransactionReportingService {
      * @return daily transaction report result
      */
     public DailyTransactionReportResult generateDailyTransactionReport(LocalDate startDate, LocalDate endDate) {
-        List<Transaction> transactions = transactionRepository.findByProcessingDateBetween(startDate, endDate);
+        List<Transaction> transactions = transactionRepository.findByProcessingDateBetween(
+            startDate.atStartOfDay(), 
+            endDate.atTime(23, 59, 59, 999999999)
+        );
         
         BigDecimal totalAmount = transactions.stream()
             .map(Transaction::getAmount)
@@ -86,7 +89,7 @@ public class TransactionReportingService {
      * @return monthly aggregation report result
      */
     public MonthlyAggregationReportResult generateMonthlyAggregationReport(LocalDate monthStart, LocalDate monthEnd) {
-        List<Transaction> transactions = transactionRepository.findByProcessingDateBetween(monthStart, monthEnd);
+        List<Transaction> transactions = transactionRepository.findByProcessingDateBetween(monthStart.atStartOfDay(), monthEnd.atTime(23, 59, 59));
         
         BigDecimal grandTotal = calculateGrandTotals(transactions);
         Map<String, Object> accountTotals = calculateAccountTotalsMap(transactions);
@@ -109,7 +112,7 @@ public class TransactionReportingService {
      * @return regulatory compliance report result
      */
     public RegulatoryComplianceReportResult generateRegulatoryComplianceReport(LocalDate periodStart, LocalDate periodEnd, String reportPeriod) {
-        List<Transaction> transactions = transactionRepository.findByProcessingDateBetween(periodStart, periodEnd);
+        List<Transaction> transactions = transactionRepository.findByProcessingDateBetween(periodStart.atStartOfDay(), periodEnd.atTime(23, 59, 59));
         
         BigDecimal totalAmount = transactions.stream()
             .map(Transaction::getAmount)
@@ -136,7 +139,7 @@ public class TransactionReportingService {
      * @return fraud detection report result
      */
     public FraudDetectionReportResult generateFraudDetectionReport(LocalDate startDate, LocalDate endDate) {
-        List<Transaction> transactions = transactionRepository.findByProcessingDateBetween(startDate, endDate);
+        List<Transaction> transactions = transactionRepository.findByProcessingDateBetween(startDate.atStartOfDay(), endDate.atTime(23, 59, 59));
         
         List<SuspiciousTransaction> suspiciousTransactions = transactions.stream()
             .map(this::analyzeSuspiciousTransaction)
@@ -160,7 +163,7 @@ public class TransactionReportingService {
      * @return merchant analysis report result
      */
     public MerchantAnalysisReportResult generateMerchantAnalysisReport(LocalDate startDate, LocalDate endDate) {
-        List<Transaction> transactions = transactionRepository.findByProcessingDateBetween(startDate, endDate);
+        List<Transaction> transactions = transactionRepository.findByProcessingDateBetween(startDate.atStartOfDay(), endDate.atTime(23, 59, 59));
         
         Map<String, MerchantCategoryData> merchantCategories = new HashMap<>();
         

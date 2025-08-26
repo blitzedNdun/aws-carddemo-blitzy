@@ -29,6 +29,7 @@ import org.mockito.quality.Strictness;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -151,7 +152,10 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
         });
         
         // Configure mock repository behavior - members_accessed from TransactionRepository
-        when(transactionRepository.findByProcessingDateBetween(startDate, endDate))
+        when(transactionRepository.findByProcessingDateBetween(
+            startDate.atStartOfDay(), 
+            endDate.atTime(23, 59, 59, 999999999)
+        ))
             .thenReturn(testTransactions);
         
         // Act - Generate daily transaction report
@@ -313,7 +317,10 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
         });
         
         // Configure mock repository for compliance data retrieval
-        when(transactionRepository.findByProcessingDateBetween(periodStart, periodEnd))
+        when(transactionRepository.findByProcessingDateBetween(
+            periodStart.atStartOfDay(), 
+            periodEnd.atTime(23, 59, 59, 999999999)
+        ))
             .thenReturn(complianceTransactions);
         
         // Act - Generate regulatory compliance report
@@ -472,7 +479,7 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
         });
         
         // Configure mock repository for merchant queries
-        when(transactionRepository.findByProcessingDateBetween(Mockito.any(LocalDate.class), Mockito.any(LocalDate.class)))
+        when(transactionRepository.findByProcessingDateBetween(Mockito.any(LocalDateTime.class), Mockito.any(LocalDateTime.class)))
             .thenReturn(merchantTransactions);
         
         // Act - Generate merchant analysis report

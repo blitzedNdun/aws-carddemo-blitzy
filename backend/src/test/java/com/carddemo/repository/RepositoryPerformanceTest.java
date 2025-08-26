@@ -621,7 +621,10 @@ public class RepositoryPerformanceTest extends AbstractBaseTest implements Perfo
         
         // Test actual data retrieval with partition pruning
         startTime = System.nanoTime();
-        List<Transaction> transactions = transactionRepository.findByProcessingDateBetween(startDate, endDate);
+        List<Transaction> transactions = transactionRepository.findByProcessingDateBetween(
+            startDate.atStartOfDay(), 
+            endDate.atTime(23, 59, 59, 999999999)
+        );
         endTime = System.nanoTime();
         
         long dataRetrievalTimeMs = (endTime - startTime) / 1_000_000;

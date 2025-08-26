@@ -278,7 +278,10 @@ public class TransactionReportJob {
         this.jobEndDate = endDate;
         
         // Retrieve transactions using repository method
-        List<Transaction> transactions = transactionRepository.findByProcessingDateBetween(startDate, endDate);
+        List<Transaction> transactions = transactionRepository.findByProcessingDateBetween(
+            startDate.atStartOfDay(), 
+            endDate.atTime(23, 59, 59, 999999999)
+        );
         
         // Create list-based ItemReader for the filtered transactions
         return new ListItemReader<>(transactions);

@@ -321,7 +321,7 @@ public class ReportGenerationService {
             }
             
             // Get processing date transactions for comparison - using findByProcessingDateBetween()
-            var processingDateTransactions = transactionRepository.findByProcessingDateBetween(startDate, endDate);
+            var processingDateTransactions = transactionRepository.findByProcessingDateBetween(startDate.atStartOfDay(), endDate.atTime(23, 59, 59));
             logger.info("Retrieved {} processing date transactions", processingDateTransactions.size());
             
             // Format the report using ReportFormatter - replaces COBOL formatting logic
