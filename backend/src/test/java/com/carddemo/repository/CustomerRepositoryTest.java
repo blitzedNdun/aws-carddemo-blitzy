@@ -383,7 +383,7 @@ public class CustomerRepositoryTest {
         void testFicoScoreRangeValidation_Enforces300To850BusinessRule() {
             // Given: Customer with valid FICO score
             Customer testCustomer = TestDataGenerator.generateCustomer();
-            int validFicoScore = 725; // Generate valid FICO score in 300-850 range
+            Integer validFicoScore = 725; // Generate valid FICO score in 300-850 range
             testCustomer.setFicoScore(validFicoScore);
             
             // When: Save customer with valid FICO score
@@ -395,7 +395,7 @@ public class CustomerRepositoryTest {
             assertThat(savedCustomer.getFicoScore()).isEqualTo(validFicoScore);
             
             // Validate COBOL COMP-3 precision equivalence
-            CobolComparisonUtils.validateFicoScorePrecision(savedCustomer.getFicoScore(), validFicoScore);
+            CobolComparisonUtils.validateFicoScorePrecision(savedCustomer.getFicoScore(), validFicoScore, savedCustomer.getCustomerId());
         }
 
         @Test
