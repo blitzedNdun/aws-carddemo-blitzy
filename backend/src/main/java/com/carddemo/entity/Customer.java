@@ -247,10 +247,8 @@ public class Customer {
      * Maps to CUST-FICO-CREDIT-SCORE field from COBOL copybook (PIC 9(3)).
      * Credit score ranging from 300 to 850.
      */
-    @Column(name = "fico_score")
-    @Min(value = FICO_SCORE_MIN, message = "FICO score must be at least " + FICO_SCORE_MIN)
-    @Max(value = FICO_SCORE_MAX, message = "FICO score cannot exceed " + FICO_SCORE_MAX)
-    private Integer ficoScore;
+    @Column(name = "fico_score", precision = 5, scale = 2)
+    private BigDecimal ficoScore;
 
     /**
      * Customer credit limit.
@@ -381,7 +379,8 @@ public class Customer {
 
         // Validate FICO score range (additional validation beyond @Min/@Max annotations)
         if (ficoScore != null) {
-            if (ficoScore < FICO_SCORE_MIN || ficoScore > FICO_SCORE_MAX) {
+            if (ficoScore.compareTo(new BigDecimal(FICO_SCORE_MIN)) < 0 || 
+                ficoScore.compareTo(new BigDecimal(FICO_SCORE_MAX)) > 0) {
                 validationException.addFieldError("ficoScore", 
                     "FICO score must be between " + FICO_SCORE_MIN + " and " + FICO_SCORE_MAX);
             }
@@ -650,25 +649,24 @@ public class Customer {
     }
 
     /**
-     * Convenience method to get credit score as BigDecimal for test compatibility.
-     * Converts Integer ficoScore to BigDecimal for financial calculations.
+     * Get credit score as BigDecimal for COBOL precision compatibility.
+     * Returns ficoScore with proper decimal scale for financial calculations.
      *
      * @return credit score as BigDecimal with 2 decimal places, or null if ficoScore is null
      */
     public BigDecimal getCreditScore() {
-        return ficoScore != null ? 
-            new BigDecimal(ficoScore).setScale(2, BigDecimal.ROUND_HALF_UP) : null;
+        return ficoScore;
     }
 
     /**
-     * Convenience method to set credit score from BigDecimal for test compatibility.
-     * Converts BigDecimal to Integer for database storage.
+     * Set credit score as BigDecimal for COBOL precision compatibility.
+     * Stores with proper scale to maintain COBOL COMP-3 equivalent precision.
      *
      * @param creditScore credit score as BigDecimal
      */
     public void setCreditScore(BigDecimal creditScore) {
         if (creditScore != null) {
-            this.ficoScore = creditScore.intValue();
+            this.ficoScore = creditScore.setScale(2, BigDecimal.ROUND_HALF_UP);
         } else {
             this.ficoScore = null;
         }

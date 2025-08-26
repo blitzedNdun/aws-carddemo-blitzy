@@ -235,9 +235,10 @@ public class AccountDto {
     /**
      * Customer FICO credit score.
      * Maps to CUST-FICO-CREDIT-SCORE from CVCUS01Y.cpy (PIC 9(03)).
+     * Uses BigDecimal for precise COBOL numeric handling.
      */
     @JsonProperty("customerFicoScore")
-    private Integer customerFicoScore;
+    private BigDecimal customerFicoScore;
 
     // ============ CALCULATED FIELDS ============
 

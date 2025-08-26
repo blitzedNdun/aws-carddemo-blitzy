@@ -14,6 +14,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
@@ -174,11 +175,10 @@ public class CustomerDto {
      * FICO credit score.
      * Maps to CUST-FICO-CREDIT-SCORE from CUSTOMER-RECORD (PIC 9(03)).
      * Valid range is 300-850 per industry standards.
+     * Now uses BigDecimal for precise COBOL numeric handling.
      */
-    @Min(value = FICO_SCORE_MIN, message = "FICO score must be at least 300")
-    @Max(value = FICO_SCORE_MAX, message = "FICO score must not exceed 850")
     @JsonProperty("ficoScore")
-    private Integer ficoScore;
+    private BigDecimal ficoScore;
 
     /**
      * Validates all customer fields using ValidationUtil methods.

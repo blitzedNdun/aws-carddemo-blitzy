@@ -24,6 +24,8 @@ import com.carddemo.dto.AccountDto;
 import com.carddemo.dto.CustomerDto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import java.math.BigDecimal;
+
 /**
  * Account View Response DTO
  * 
@@ -384,7 +386,7 @@ public class AccountViewResponse {
      * @return Customer FICO score if customer data is present, null otherwise
      */
     @com.fasterxml.jackson.annotation.JsonIgnore
-    public Integer getFicoScore() {
+    public BigDecimal getFicoScore() {
         return customerData != null ? customerData.getFicoScore() : null;
     }
     
