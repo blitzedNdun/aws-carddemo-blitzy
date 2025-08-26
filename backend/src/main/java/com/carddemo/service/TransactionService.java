@@ -5,6 +5,10 @@
 
 package com.carddemo.service;
 
+import com.carddemo.dto.TransactionDetailDto;
+import com.carddemo.dto.TransactionListRequest;
+import com.carddemo.dto.TransactionListResponse;
+import com.carddemo.dto.TransactionSummaryDto;
 import com.carddemo.entity.Account;
 import com.carddemo.entity.Card;
 import com.carddemo.entity.Transaction;
@@ -20,11 +24,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 /**
  * Unified Spring Boot service class implementing transaction business logic translated 
@@ -123,7 +130,7 @@ public class TransactionService {
      * @param transactionId the unique transaction ID to retrieve
      * @return Optional containing Transaction entity if found, empty otherwise
      */
-    public Optional<Transaction> getTransactionDetail(String transactionId) {
+    public Optional<Transaction> getTransactionDetailEntity(String transactionId) {
         clearErrorState();
         
         if (transactionId == null || transactionId.trim().isEmpty()) {
@@ -749,5 +756,149 @@ public class TransactionService {
      */
     public String getErrorMessage() {
         return errorMessage;
+    }
+
+    // DTO-aware methods for REST API support
+
+    /**
+     * Lists transactions with filtering and pagination using DTO request/response objects.
+     * This method provides the DTO-aware interface expected by TransactionController
+     * while leveraging the existing entity-based business logic.
+     * 
+     * @param request the transaction list request containing filters and pagination
+     * @return TransactionListResponse containing filtered transactions with pagination metadata
+     */
+    public TransactionListResponse listTransactions(TransactionListRequest request) {
+        clearErrorState();
+        
+        // Extract parameters from request DTO
+        String accountIdStr = request.getAccountId();
+        Long accountId = null;
+        if (accountIdStr != null && !accountIdStr.trim().isEmpty()) {
+            try {
+                accountId = Long.parseLong(accountIdStr.trim());
+            } catch (NumberFormatException e) {
+                // Handle invalid account ID format
+                accountId = null;
+            }
+        }
+        
+        int pageNumber = (request.getPageNumber() != null) ? request.getPageNumber() - 1 : 0; // Convert to 0-based
+        int pageSize = (request.getPageSize() != null) ? request.getPageSize() : 10;
+        
+        // Create pageable with sorting
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by("transactionId").ascending());
+        
+        // Get filtered transactions
+        Page<Transaction> transactionPage;
+        if (accountId != null) {
+            transactionPage = transactionRepository.findByAccountId(accountId, pageable);
+        } else {
+            transactionPage = transactionRepository.findAll(pageable);
+        }
+        
+        // Convert to DTO response
+        List<TransactionSummaryDto> transactionSummaries = transactionPage.getContent().stream()
+                .map(this::convertToTransactionSummary)
+                .collect(Collectors.toList());
+        
+        TransactionListResponse response = new TransactionListResponse();
+        response.setTransactions(transactionSummaries);
+        response.setTotalCount((int) transactionPage.getTotalElements());
+        response.setCurrentPage(pageNumber + 1); // Convert back to 1-based
+        response.setHasMorePages(transactionPage.hasNext());
+        response.setHasPreviousPages(transactionPage.hasPrevious());
+        
+        return response;
+    }
+
+    /**
+     * Retrieves detailed transaction information as DTO for REST API responses.
+     * This method provides the DTO-aware interface expected by TransactionController.
+     * 
+     * @param transactionId the unique transaction identifier
+     * @return TransactionDetailDto containing complete transaction information
+     */
+    public TransactionDetailDto getTransactionDetailDto(String transactionId) {
+        Optional<Transaction> transactionOpt = getTransactionDetailEntity(transactionId);
+        if (transactionOpt.isPresent()) {
+            return convertToTransactionDetailDto(transactionOpt.get());
+        }
+        return null;
+    }
+
+    /**
+     * Creates a new transaction from DTO input and returns DTO response.
+     * This method provides the DTO-aware interface expected by TransactionController.
+     * 
+     * @param transactionDetailDto the transaction details to create
+     * @return TransactionDetailDto containing the created transaction with generated ID
+     */
+    @Transactional
+    public TransactionDetailDto addTransactionFromDto(TransactionDetailDto transactionDetailDto) {
+        // Convert DTO to entity
+        Transaction transaction = convertToTransactionEntity(transactionDetailDto);
+        
+        // Use existing entity-based method
+        Transaction savedTransaction = addTransaction(transaction);
+        
+        // Convert back to DTO
+        return convertToTransactionDetailDto(savedTransaction);
+    }
+
+    /**
+     * Converts Transaction entity to TransactionSummaryDto for list responses.
+     * 
+     * @param transaction the Transaction entity to convert
+     * @return TransactionSummaryDto containing summary information
+     */
+    private TransactionSummaryDto convertToTransactionSummary(Transaction transaction) {
+        TransactionSummaryDto dto = new TransactionSummaryDto();
+        dto.setTransactionId(String.format("%016d", transaction.getTransactionId()));
+        dto.setDate(transaction.getTransactionDate());
+        dto.setDescription(transaction.getDescription());
+        dto.setAmount(transaction.getAmount());
+        dto.setSelected(false); // Default to not selected
+        return dto;
+    }
+
+    /**
+     * Converts Transaction entity to TransactionDetailDto for detail responses.
+     * 
+     * @param transaction the Transaction entity to convert
+     * @return TransactionDetailDto containing complete transaction information
+     */
+    private TransactionDetailDto convertToTransactionDetailDto(Transaction transaction) {
+        TransactionDetailDto dto = new TransactionDetailDto();
+        dto.setTransactionId(String.format("%016d", transaction.getTransactionId()));
+        dto.setAmount(transaction.getAmount());
+        dto.setDescription(transaction.getDescription());
+        dto.setMerchantName(transaction.getMerchantName());
+        dto.setMerchantCity(transaction.getMerchantCity());
+        dto.setMerchantZip(transaction.getMerchantZip());
+        dto.setOrigTimestamp(transaction.getOriginalTimestamp());
+        dto.setProcTimestamp(transaction.getProcessedTimestamp());
+        return dto;
+    }
+
+    /**
+     * Converts TransactionDetailDto to Transaction entity for persistence.
+     * 
+     * @param dto the TransactionDetailDto to convert
+     * @return Transaction entity ready for persistence
+     */
+    private Transaction convertToTransactionEntity(TransactionDetailDto dto) {
+        Transaction transaction = new Transaction();
+        // Don't set transaction ID - it will be generated
+        transaction.setAmount(dto.getAmount());
+        transaction.setDescription(dto.getDescription());
+        transaction.setMerchantName(dto.getMerchantName());
+        transaction.setMerchantCity(dto.getMerchantCity());
+        transaction.setMerchantZip(dto.getMerchantZip());
+        // Set timestamp to current time - will be updated in addTransaction method
+        if (dto.getOrigTimestamp() != null) {
+            transaction.setOriginalTimestamp(dto.getOrigTimestamp());
+        }
+        return transaction;
     }
 }
