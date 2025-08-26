@@ -127,10 +127,15 @@ public class TestDataGenerator {
         account.setActiveStatus("Y");
         
         // Set credit limit
-        account.setCreditLimit(generateCreditLimit());
+        BigDecimal creditLimit = generateCreditLimit();
+        account.setCreditLimit(creditLimit);
         
-        // Set cash credit limit  
-        account.setCashCreditLimit(generateCashCreditLimit());
+        // Set cash credit limit (ensure it doesn't exceed credit limit)
+        BigDecimal cashCreditLimit = generateCashCreditLimit();
+        if (cashCreditLimit.compareTo(creditLimit) > 0) {
+            cashCreditLimit = creditLimit.multiply(new BigDecimal("0.8")); // Set to 80% of credit limit
+        }
+        account.setCashCreditLimit(cashCreditLimit);
         
         // Set account dates
         account.setOpenDate(LocalDate.now().minusYears(random.nextInt(5) + 1));
@@ -316,8 +321,11 @@ public class TestDataGenerator {
         transaction.setTransactionId(Long.parseLong(TEST_TRANSACTION_ID.substring(3))); // Extract numeric part
         transaction.setAmount(generateComp3BigDecimal(7, 50000.0));
         transaction.setTransactionTypeCode(TEST_TRANSACTION_TYPE_CODE); // Use string setter instead
+        transaction.setCategoryCode("PUCH"); // Match the reference data we created
+        transaction.setSubcategoryCode("01"); // Match the reference data we created
         transaction.setTransactionDate(LocalDate.now());
         transaction.setAccountId(TEST_ACCOUNT_ID);
+        transaction.setCardNumber(TEST_CARD_NUMBER);
         transaction.setDescription("Test Transaction");
         return transaction;
     }
