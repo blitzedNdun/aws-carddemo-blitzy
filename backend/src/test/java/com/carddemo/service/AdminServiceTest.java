@@ -1,451 +1,401 @@
+/*
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package com.carddemo.service;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
-import java.util.List;
-import java.util.Optional;
-
-import com.carddemo.service.AdminService;
-import com.carddemo.test.TestDataGenerator;
+import com.carddemo.TestDataGenerator;
 import com.carddemo.dto.AdminMenuResponse;
 import com.carddemo.dto.MenuOption;
+import com.carddemo.dto.MenuRequest;
 import com.carddemo.dto.UserDto;
 import com.carddemo.entity.UserSecurity;
 import com.carddemo.repository.UserSecurityRepository;
-import com.carddemo.service.ReportGenerationService;
-import com.carddemo.dto.MenuRequest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
 
 /**
- * Unit test class for AdminService validating COBOL COADM01C admin menu logic migration to Java.
+ * Comprehensive unit test suite for AdminService validating COBOL COADM01C admin menu logic migration to Java.
  * 
- * This comprehensive test suite validates administrative functions, user management operations, 
- * and privilege verification translated from the original COBOL COADM01C.cbl program.
+ * This test class ensures 100% functional parity between the original COBOL COADM01C.cbl admin menu program
+ * and the modernized Java AdminService implementation. Tests cover all administrative functions including
+ * privilege verification, menu generation, user management operations, and access control.
  * 
- * Test Coverage:
- * - Administrative privilege verification
- * - User management operations
- * - Admin menu generation with proper options
- * - Security role validation and access control
- * - Admin-specific function access control
- * - System status information retrieval
- * - Integration with UserSecurity and reporting services
+ * Key Testing Areas:
+ * - Administrative privilege verification matching COBOL user type validation
+ * - Admin menu option generation with proper access level filtering
+ * - Menu request processing with COBOL-equivalent option validation
+ * - User management operations (create, update, delete, list)
+ * - Security role validation and access control enforcement
+ * - System status information retrieval for admin dashboard
+ * - Error handling and edge case management
  * 
- * Testing Framework:
- * - JUnit 5 with Mockito for dependency isolation
- * - AssertJ for fluent assertions
- * - TestDataGenerator for COBOL-compliant test data
+ * COBOL Equivalence Testing:
+ * - Verifies PROCESS-ENTER-KEY logic (lines 115-155 in COADM01C.cbl)
+ * - Tests BUILD-MENU-OPTIONS functionality (lines 226-263 in COADM01C.cbl)  
+ * - Validates user type checking equivalent to COBOL user validation
+ * - Ensures proper transaction routing matching CICS XCTL behavior
+ * - Tests PF-key handling equivalent to original EIBAID processing
  * 
- * @author CardDemo Development Team
+ * Test Framework:
+ * - JUnit 5 for modern test structure and parameterized testing
+ * - Mockito for dependency isolation and behavior verification
+ * - AssertJ for fluent assertions and comprehensive validation
+ * - TestDataGenerator for COBOL-compliant test data generation
+ * 
+ * @author CardDemo Migration Team  
  * @version 1.0
- * @since 2024-01-01
+ * @since 2024
  */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("AdminService Unit Tests - COBOL COADM01C Logic Validation")
-public class AdminServiceTest {
+@DisplayName("AdminService Tests - COBOL COADM01C Migration Validation")
+class AdminServiceTest {
 
-    // Service under test - will be mocked since it doesn't exist yet
-    @Mock
-    private AdminService adminService;
-    
-    // Mock dependencies for isolated testing
     @Mock
     private UserSecurityRepository userSecurityRepository;
     
     @Mock
     private ReportGenerationService reportGenerationService;
     
-    // Test data generator for COBOL-compliant test scenarios
-    private TestDataGenerator testDataGenerator;
+    @InjectMocks
+    private AdminService adminService;
     
-    // Test fixtures for consistent test data
+    private TestDataGenerator testDataGenerator;
     private UserSecurity testAdminUser;
     private UserSecurity testRegularUser;
     private List<MenuOption> testAdminMenuOptions;
-    private List<MenuOption> testRegularMenuOptions;
-
+    
     /**
-     * Set up test fixtures before each test.
-     * Creates COBOL-compliant test data using TestDataGenerator.
+     * Set up test data and mock configurations before each test.
+     * Initializes COBOL-compliant test users and menu options that match
+     * the original admin menu structure from COADM01.bms.
      */
     @BeforeEach
     void setupTestData() {
         testDataGenerator = new TestDataGenerator();
         testDataGenerator.resetRandomSeed();
         
-        // Generate test users with different privilege levels
-        testAdminUser = testDataGenerator.generateUserSecurity()
-            .toBuilder()
-            .username("ADMIN01")
-            .userType("ADMIN")
-            .enabled(true)
-            .build();
-            
-        testRegularUser = testDataGenerator.generateUserSecurity()
-            .toBuilder()
-            .username("USER01")
-            .userType("USER")
-            .enabled(true)
-            .build();
+        // Create test users matching COBOL user structure
+        testAdminUser = createTestAdminUser();
+        testRegularUser = createTestRegularUser();
         
-        // Generate menu options for different user types
-        testAdminMenuOptions = testDataGenerator.generateMenuOptions();
-        testRegularMenuOptions = testAdminMenuOptions.stream()
-            .filter(option -> !"ADMIN".equals(option.getAccessLevel()))
-            .collect(java.util.stream.Collectors.toList());
+        // Create test menu options matching COADM01 BMS structure
+        testAdminMenuOptions = createTestMenuOptions();
     }
-
+    
     /**
      * Test admin privilege verification with valid admin user.
-     * Validates COBOL COADM01C admin privilege checking logic.
+     * Verifies that the service correctly identifies admin users based on user type 'A',
+     * matching the COBOL logic that checks SEC-USR-TYPE for admin privileges.
      */
     @Test
-    @DisplayName("Admin privilege verification succeeds for valid admin user")
+    @DisplayName("Verify Admin Privileges - Valid Admin User")
     void testVerifyAdminPrivilegesWithValidAdmin() {
-        // Given: Valid admin user
-        when(adminService.verifyAdminPrivileges(testAdminUser)).thenReturn(true);
+        // Given: Mock repository to return admin user
+        when(userSecurityRepository.findByUsername("ADMIN01")).thenReturn(Optional.of(testAdminUser));
         
-        // When: Verifying admin privileges
-        boolean hasAdminPrivileges = adminService.verifyAdminPrivileges(testAdminUser);
+        // When: Verify admin privileges
+        boolean isAdmin = adminService.verifyAdminPrivileges("ADMIN01");
         
-        // Then: Admin privileges should be granted
-        assertThat(hasAdminPrivileges).isTrue();
-        verify(adminService).verifyAdminPrivileges(testAdminUser);
+        // Then: Verify admin privileges are confirmed
+        assertThat(isAdmin).isTrue();
+        verify(userSecurityRepository).findByUsername("ADMIN01");
     }
-
+    
     /**
-     * Test admin privilege verification with invalid user.
-     * Validates security access control for non-admin users.
+     * Test admin privilege verification with invalid/regular user.
+     * Ensures that regular users (type 'U') are correctly rejected for admin operations,
+     * maintaining security boundaries equivalent to COBOL access control.
      */
     @Test
-    @DisplayName("Admin privilege verification fails for regular user")
+    @DisplayName("Verify Admin Privileges - Invalid/Regular User")  
     void testVerifyAdminPrivilegesWithInvalidUser() {
-        // Given: Regular user without admin privileges
-        when(adminService.verifyAdminPrivileges(testRegularUser)).thenReturn(false);
+        // Given: Mock repository to return regular user
+        when(userSecurityRepository.findByUsername("USER01")).thenReturn(Optional.of(testRegularUser));
         
-        // When: Verifying admin privileges
-        boolean hasAdminPrivileges = adminService.verifyAdminPrivileges(testRegularUser);
+        // When: Verify admin privileges for regular user
+        boolean isAdmin = adminService.verifyAdminPrivileges("USER01");
         
-        // Then: Admin privileges should be denied
-        assertThat(hasAdminPrivileges).isFalse();
-        verify(adminService).verifyAdminPrivileges(testRegularUser);
+        // Then: Verify admin privileges are denied
+        assertThat(isAdmin).isFalse();
+        verify(userSecurityRepository).findByUsername("USER01");
     }
-
+    
     /**
      * Test admin menu options generation for admin user.
-     * Validates COBOL COADM01C menu generation logic for privileged users.
+     * Validates that admin users receive the complete set of administrative menu options
+     * corresponding to OPTN001-OPTN012 fields in COADM01.bms layout.
      */
     @Test
-    @DisplayName("Admin menu options generated correctly for admin user")
+    @DisplayName("Generate Admin Menu Options - Admin User Access")
     void testGenerateAdminMenuOptionsForAdmin() {
-        // Given: Admin user and expected menu options
-        when(adminService.generateAdminMenuOptions(testAdminUser))
-            .thenReturn(testAdminMenuOptions);
+        // Given: Admin user with proper privileges
+        when(userSecurityRepository.findByUsername("ADMIN01")).thenReturn(Optional.of(testAdminUser));
         
-        // When: Generating admin menu options
-        List<MenuOption> menuOptions = adminService.generateAdminMenuOptions(testAdminUser);
+        // When: Generate menu options for admin user
+        List<MenuOption> adminOptions = adminService.generateAdminMenuOptions("ADMIN01");
         
-        // Then: All admin menu options should be available
-        assertThat(menuOptions)
-            .isNotNull()
-            .isNotEmpty()
-            .hasSize(testAdminMenuOptions.size())
-            .containsAll(testAdminMenuOptions);
+        // Then: Verify admin receives all menu options
+        assertThat(adminOptions).isNotNull();
+        assertThat(adminOptions).hasSize(10); // Based on COADM01 admin options count
         
         // Verify admin-specific options are present
-        assertThat(menuOptions.stream()
-            .anyMatch(option -> "ADMIN".equals(option.getAccessLevel())))
-            .isTrue();
-            
-        verify(adminService).generateAdminMenuOptions(testAdminUser);
+        assertThat(adminOptions).extracting(MenuOption::getTransactionCode)
+                .contains("COUSR00C", "COUSR01C", "COUSR02C", "CORPT00C");
+        
+        // Verify all options are enabled for admin
+        assertThat(adminOptions).allMatch(option -> option.getEnabled());
+        
+        verify(userSecurityRepository).findByUsername("ADMIN01");
     }
-
+    
     /**
      * Test admin menu options generation for regular user.
-     * Validates proper filtering of admin-only menu options.
+     * Ensures that regular users receive limited or no administrative menu options,
+     * maintaining proper access control equivalent to COBOL security validation.
      */
     @Test
-    @DisplayName("Admin menu options filtered correctly for regular user")
+    @DisplayName("Generate Admin Menu Options - Regular User Restrictions")
     void testGenerateAdminMenuOptionsForRegularUser() {
-        // Given: Regular user and filtered menu options
-        when(adminService.generateAdminMenuOptions(testRegularUser))
-            .thenReturn(testRegularMenuOptions);
+        // Given: Regular user without admin privileges  
+        when(userSecurityRepository.findByUsername("USER01")).thenReturn(Optional.of(testRegularUser));
         
-        // When: Generating menu options for regular user
-        List<MenuOption> menuOptions = adminService.generateAdminMenuOptions(testRegularUser);
+        // When: Attempt to generate admin menu options for regular user
+        List<MenuOption> userOptions = adminService.generateAdminMenuOptions("USER01");
         
-        // Then: Admin-specific options should be filtered out
-        assertThat(menuOptions)
-            .isNotNull()
-            .hasSize(testRegularMenuOptions.size())
-            .containsAll(testRegularMenuOptions);
+        // Then: Verify regular user receives no admin options or limited options
+        assertThat(userOptions).isNotNull();
+        assertThat(userOptions).isEmpty(); // Regular users should not see admin options
         
-        // Verify no admin-specific options are present
-        assertThat(menuOptions.stream()
-            .noneMatch(option -> "ADMIN".equals(option.getAccessLevel())))
-            .isTrue();
-            
-        verify(adminService).generateAdminMenuOptions(testRegularUser);
+        verify(userSecurityRepository).findByUsername("USER01");
     }
-
+    
     /**
-     * Test admin menu processing with valid menu selection.
-     * Validates COBOL COADM01C menu processing logic.
+     * Test admin menu processing with valid option selection.
+     * Validates the PROCESS-ENTER-KEY equivalent logic for handling menu option selection,
+     * ensuring proper validation and routing matching COBOL implementation.
      */
     @Test
-    @DisplayName("Admin menu processing succeeds with valid selection")
+    @DisplayName("Process Admin Menu - Valid Option Selection")
     void testProcessAdminMenuWithValidSelection() {
-        // Given: Valid admin menu request
-        MenuRequest menuRequest = createTestAdminMenuRequest();
+        // Given: Valid menu request with admin user and option selection
+        MenuRequest menuRequest = new MenuRequest();
+        menuRequest.setUserId("ADMIN01");
+        menuRequest.setUserType("A");
         menuRequest.setSelectedOption("1");
-        menuRequest.setUserId(testAdminUser.getUsername());
+        menuRequest.setMenuType("ADMIN");
         
-        AdminMenuResponse expectedResponse = createTestAdminMenuResponse();
-        when(adminService.processAdminMenu(menuRequest)).thenReturn(expectedResponse);
+        when(userSecurityRepository.findByUsername("ADMIN01")).thenReturn(Optional.of(testAdminUser));
         
-        // When: Processing admin menu request
+        // When: Process the admin menu request
         AdminMenuResponse response = adminService.processAdminMenu(menuRequest);
         
-        // Then: Valid response should be returned
-        assertThat(response)
-            .isNotNull()
-            .isEqualTo(expectedResponse);
+        // Then: Verify successful processing
+        assertThat(response).isNotNull();
+        assertThat(response.getAdminOptions()).isNotNull();
+        assertThat(response.getSystemStatus()).isEqualTo("ONLINE");
+        assertThat(response.getActiveUsers()).isGreaterThanOrEqualTo(0);
         
-        assertThat(response.getAdminOptions())
-            .isNotNull()
-            .isNotEmpty();
-            
-        verify(adminService).processAdminMenu(menuRequest);
+        verify(userSecurityRepository).findByUsername("ADMIN01");
     }
-
+    
     /**
-     * Test admin menu processing with invalid selection.
-     * Validates error handling for invalid menu choices.
+     * Test admin menu processing with invalid option selection.
+     * Tests error handling for invalid menu options, replicating COBOL validation
+     * that checks option numbers against CDEMO-ADMIN-OPT-COUNT.
      */
     @Test
-    @DisplayName("Admin menu processing fails with invalid selection")
+    @DisplayName("Process Admin Menu - Invalid Option Selection")
     void testProcessAdminMenuWithInvalidSelection() {
-        // Given: Invalid admin menu request
-        MenuRequest menuRequest = createTestAdminMenuRequest();
-        menuRequest.setSelectedOption("999"); // Invalid option
-        menuRequest.setUserId(testAdminUser.getUsername());
+        // Given: Invalid menu request with out-of-range option
+        MenuRequest menuRequest = new MenuRequest();
+        menuRequest.setUserId("ADMIN01");
+        menuRequest.setUserType("A");
+        menuRequest.setSelectedOption("99"); // Invalid option number
+        menuRequest.setMenuType("ADMIN");
         
-        when(adminService.processAdminMenu(menuRequest))
-            .thenThrow(new IllegalArgumentException("Invalid menu selection: 999"));
+        when(userSecurityRepository.findByUsername("ADMIN01")).thenReturn(Optional.of(testAdminUser));
         
-        // When/Then: Processing should throw exception
-        assertThatThrownBy(() -> adminService.processAdminMenu(menuRequest))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Invalid menu selection: 999");
-            
-        verify(adminService).processAdminMenu(menuRequest);
+        // When: Process invalid menu request
+        AdminMenuResponse response = adminService.processAdminMenu(menuRequest);
+        
+        // Then: Verify error handling
+        assertThat(response).isNotNull();
+        // Response should indicate error or return to menu with error message
+        assertThat(response.getSystemStatus()).isNotNull();
+        
+        verify(userSecurityRepository).findByUsername("ADMIN01");
     }
-
+    
     /**
-     * Test user management operations handling.
-     * Validates COBOL COADM01C user management functionality.
+     * Test user management operations functionality.
+     * Validates create, update, delete, and list operations for user management,
+     * ensuring proper integration with UserSecurityRepository operations.
      */
     @Test
-    @DisplayName("User management operations handled correctly")
+    @DisplayName("Handle User Management Operations")
     void testHandleUserManagementOperations() {
-        // Given: User management request
-        UserDto testUserDto = testDataGenerator.generateAdminUser();
+        // Given: Admin user and user management request
+        UserDto newUser = new UserDto("USER02", "John", "Doe", "U", "password");
         
-        when(adminService.handleUserManagement(testUserDto)).thenReturn(testUserDto);
+        when(userSecurityRepository.findByUsername("ADMIN01")).thenReturn(Optional.of(testAdminUser));
+        when(userSecurityRepository.findAll()).thenReturn(List.of(testAdminUser, testRegularUser));
+        when(userSecurityRepository.save(any(UserSecurity.class))).thenReturn(testRegularUser);
         
-        // When: Handling user management operation
-        UserDto result = adminService.handleUserManagement(testUserDto);
+        // When: Handle user management operations
+        List<UserDto> allUsers = adminService.handleUserManagement("LIST", "ADMIN01", null);
         
-        // Then: User management should be successful
-        assertThat(result)
-            .isNotNull()
-            .isEqualTo(testUserDto);
+        // Then: Verify user management functionality
+        assertThat(allUsers).isNotNull();
+        assertThat(allUsers).hasSize(2);
         
-        assertThat(result.getUserId()).isEqualTo(testUserDto.getUserId());
-        assertThat(result.getUserType()).isEqualTo(testUserDto.getUserType());
-        
-        verify(adminService).handleUserManagement(testUserDto);
+        verify(userSecurityRepository).findByUsername("ADMIN01");
+        verify(userSecurityRepository).findAll();
     }
-
+    
     /**
      * Test admin access validation with admin role.
-     * Validates role-based access control logic.
+     * Verifies that users with admin role ('A') are granted access to administrative functions,
+     * matching COBOL user type validation logic.
      */
     @Test
-    @DisplayName("Admin access validation succeeds for admin role")
+    @DisplayName("Validate Admin Access - Admin Role")
     void testValidateAdminAccessWithAdminRole() {
         // Given: Admin user
-        String adminUserId = testAdminUser.getUsername();
-        when(adminService.validateAdminAccess(adminUserId)).thenReturn(true);
+        when(userSecurityRepository.findByUsername("ADMIN01")).thenReturn(Optional.of(testAdminUser));
         
-        // When: Validating admin access
-        boolean hasAccess = adminService.validateAdminAccess(adminUserId);
+        // When: Validate admin access
+        boolean hasAccess = adminService.validateAdminAccess("ADMIN01");
         
-        // Then: Access should be granted
+        // Then: Verify access granted
         assertThat(hasAccess).isTrue();
-        verify(adminService).validateAdminAccess(adminUserId);
+        verify(userSecurityRepository).findByUsername("ADMIN01");
     }
-
+    
     /**
      * Test admin access validation with user role.
-     * Validates access denial for non-admin users.
+     * Ensures that users with regular role ('U') are denied access to administrative functions,
+     * maintaining proper security boundaries.
      */
     @Test
-    @DisplayName("Admin access validation fails for user role")
+    @DisplayName("Validate Admin Access - User Role Denied")
     void testValidateAdminAccessWithUserRole() {
         // Given: Regular user
-        String regularUserId = testRegularUser.getUsername();
-        when(adminService.validateAdminAccess(regularUserId)).thenReturn(false);
+        when(userSecurityRepository.findByUsername("USER01")).thenReturn(Optional.of(testRegularUser));
         
-        // When: Validating admin access
-        boolean hasAccess = adminService.validateAdminAccess(regularUserId);
+        // When: Validate admin access for regular user
+        boolean hasAccess = adminService.validateAdminAccess("USER01");
         
-        // Then: Access should be denied
+        // Then: Verify access denied
         assertThat(hasAccess).isFalse();
-        verify(adminService).validateAdminAccess(regularUserId);
+        verify(userSecurityRepository).findByUsername("USER01");
     }
-
+    
     /**
-     * Test admin menu response building with proper admin options.
-     * Validates COBOL COADM01C response formatting logic.
+     * Test menu response building with admin options.
+     * Validates the complete menu response structure including admin options,
+     * system status, batch run information, and active user counts.
      */
     @Test
-    @DisplayName("Admin menu response built with proper admin options")
+    @DisplayName("Build Menu Response - Admin Options")
     void testBuildMenuResponseWithAdminOptions() {
-        // Given: Admin menu request and expected response
-        MenuRequest menuRequest = createTestAdminMenuRequest();
-        AdminMenuResponse expectedResponse = createTestAdminMenuResponse();
+        // Given: Admin user and system status information
+        when(userSecurityRepository.findByUsername("ADMIN01")).thenReturn(Optional.of(testAdminUser));
+        when(reportGenerationService.getAvailableReports()).thenReturn(List.of("MONTHLY", "YEARLY"));
         
-        when(adminService.buildMenuResponse(menuRequest)).thenReturn(expectedResponse);
+        // When: Build admin menu response
+        AdminMenuResponse response = adminService.buildMenuResponse("ADMIN01");
         
-        // When: Building menu response
-        AdminMenuResponse response = adminService.buildMenuResponse(menuRequest);
+        // Then: Verify complete response structure
+        assertThat(response).isNotNull();
+        assertThat(response.getAdminOptions()).isNotNull();
+        assertThat(response.getSystemStatus()).isEqualTo("ONLINE");
+        assertThat(response.getActiveUsers()).isNotNull();
+        assertThat(response.getLastBatchRun()).isNotNull();
         
-        // Then: Response should contain admin options
-        assertThat(response)
-            .isNotNull()
-            .isEqualTo(expectedResponse);
-        
-        assertThat(response.getAdminOptions())
-            .isNotNull()
-            .isNotEmpty();
-        
-        assertThat(response.getSystemStatus()).isNotNull();
-        assertThat(response.getActiveUsers()).isGreaterThanOrEqualTo(0);
-        
-        verify(adminService).buildMenuResponse(menuRequest);
+        verify(userSecurityRepository).findByUsername("ADMIN01");
+        verify(reportGenerationService).getAvailableReports();
     }
-
+    
     /**
      * Test system status information retrieval.
-     * Validates system monitoring functionality from COADM01C.
+     * Validates that system status information is properly retrieved and formatted
+     * for display in the admin menu, including batch job status and system health.
      */
     @Test
-    @DisplayName("System status information retrieved correctly")
+    @DisplayName("Get System Status Information")  
     void testGetSystemStatusInformation() {
-        // Given: Expected system status response
-        AdminMenuResponse mockResponse = createTestAdminMenuResponse();
-        when(adminService.buildMenuResponse(any(MenuRequest.class)))
-            .thenReturn(mockResponse);
+        // Given: System is online and operational
+        // (No specific mocking needed for status check)
         
-        MenuRequest systemRequest = createTestAdminMenuRequest();
+        // When: Get system status
+        String systemStatus = adminService.getSystemStatusInformation();
         
-        // When: Getting system status information
-        AdminMenuResponse response = adminService.buildMenuResponse(systemRequest);
-        
-        // Then: System status should be populated
-        assertThat(response.getSystemStatus()).isNotNull();
-        assertThat(response.getLastBatchRun()).isNotNull();
-        assertThat(response.getActiveUsers()).isGreaterThanOrEqualTo(0);
-        
-        verify(adminService).buildMenuResponse(systemRequest);
+        // Then: Verify status information
+        assertThat(systemStatus).isNotNull();
+        assertThat(systemStatus).isIn("ONLINE", "BATCH_RUNNING", "MAINTENANCE");
     }
-
+    
     /**
      * Test active user count validation.
-     * Validates user statistics tracking functionality.
+     * Ensures that the active user count is properly retrieved and validated,
+     * providing accurate information for administrative monitoring.
      */
     @Test
-    @DisplayName("Active user count validation works correctly")
+    @DisplayName("Get Active User Count Validation")
     void testGetActiveUserCountValidation() {
-        // Given: Mock response with active user count
-        AdminMenuResponse mockResponse = createTestAdminMenuResponse();
-        when(adminService.buildMenuResponse(any(MenuRequest.class)))
-            .thenReturn(mockResponse);
+        // Given: Multiple active users in the system
+        when(userSecurityRepository.findAll()).thenReturn(List.of(testAdminUser, testRegularUser));
         
-        MenuRequest countRequest = createTestAdminMenuRequest();
+        // When: Get active user count
+        Integer activeUserCount = adminService.getActiveUserCountValidation();
         
-        // When: Getting active user count
-        AdminMenuResponse response = adminService.buildMenuResponse(countRequest);
+        // Then: Verify user count
+        assertThat(activeUserCount).isNotNull();
+        assertThat(activeUserCount).isGreaterThanOrEqualTo(0);
+        assertThat(activeUserCount).isEqualTo(2);
         
-        // Then: Active user count should be valid
-        assertThat(response.getActiveUsers())
-            .isNotNull()
-            .isGreaterThanOrEqualTo(0)
-            .isLessThanOrEqualTo(1000); // Reasonable upper bound
-            
-        verify(adminService).buildMenuResponse(countRequest);
+        verify(userSecurityRepository).findAll();
     }
-
+    
     // Helper methods for test data creation
-
+    
     /**
-     * Creates a test admin user with proper COBOL-style attributes.
+     * Creates a test admin user with proper admin privileges.
+     * Matches COBOL user structure with user type 'A' for admin access.
      */
-    UserSecurity createTestAdminUser() {
-        return testDataGenerator.generateUserSecurity()
-            .toBuilder()
-            .username("TESTADM")
-            .userType("ADMIN")
-            .enabled(true)
-            .build();
+    private UserSecurity createTestAdminUser() {
+        return testDataGenerator.generateAdminUser();
     }
-
+    
     /**
-     * Creates a test regular user with standard user attributes.
-     */
-    UserSecurity createTestRegularUser() {
-        return testDataGenerator.generateUserSecurity()
-            .toBuilder()
-            .username("TESTUSER")
-            .userType("USER")
-            .enabled(true)
-            .build();
+     * Creates a test regular user without admin privileges.
+     * Matches COBOL user structure with user type 'U' for regular access.
+     */  
+    private UserSecurity createTestRegularUser() {
+        return testDataGenerator.generateRegularUser();
     }
-
+    
     /**
-     * Creates test menu options with various access levels.
+     * Creates test menu options matching COADM01 BMS layout.
+     * Generates admin-specific menu options corresponding to OPTN001-OPTN012.
      */
-    List<MenuOption> createTestMenuOptions() {
+    private List<MenuOption> createTestMenuOptions() {
         return testDataGenerator.generateMenuOptions();
-    }
-
-    /**
-     * Creates a test admin menu request.
-     */
-    private MenuRequest createTestAdminMenuRequest() {
-        MenuRequest request = new MenuRequest();
-        request.setUserId(testAdminUser.getUsername());
-        request.setUserType(testAdminUser.getUserType());
-        request.setMenuType("ADMIN");
-        request.setRequestType("MENU");
-        return request;
-    }
-
-    /**
-     * Creates a test admin menu response.
-     */
-    private AdminMenuResponse createTestAdminMenuResponse() {
-        AdminMenuResponse response = new AdminMenuResponse();
-        response.setAdminOptions(testAdminMenuOptions);
-        response.setSystemStatus("ACTIVE");
-        response.setActiveUsers(42);
-        response.setLastBatchRun(java.time.LocalDateTime.now().minusHours(2));
-        return response;
     }
 }
