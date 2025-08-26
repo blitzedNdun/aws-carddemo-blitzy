@@ -4,8 +4,6 @@
  */
 
 package com.carddemo.repository;
-
-import com.carddemo.test.BaseIntegrationTest;
 import com.carddemo.repository.AccountRepository;
 import com.carddemo.repository.CustomerRepository;
 import com.carddemo.entity.Account;
@@ -15,6 +13,7 @@ import com.carddemo.test.TestConstants;
 
 import org.junit.jupiter.api.DisplayName;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.PageRequest;
@@ -42,7 +41,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
-import org.springframework.test.context.TestPropertySource;
 
 /**
  * Integration test class for AccountRepository validating VSAM ACCTDAT access pattern replication 
@@ -80,8 +78,8 @@ import org.springframework.test.context.TestPropertySource;
  */
 @DataJpaTest
 @TestPropertySource(locations = "classpath:application-test.properties")
-@DisplayName("AccountRepository Integration Tests - VSAM ACCTDAT Access Pattern Validation")
-public class AccountRepositoryTest extends BaseIntegrationTest {
+@DisplayName("AccountRepository Integration Tests - VSAM ACCTDAT Access Pattern Validation")  
+public class AccountRepositoryTest {
     
     @Autowired
     private AccountRepository accountRepository;
@@ -940,7 +938,6 @@ public class AccountRepositoryTest extends BaseIntegrationTest {
     /**
      * Creates a test account using TestDataGenerator.
      */
-    @Override
     protected Account createTestAccount() {
         Customer customer = createTestCustomer();
         return testDataGenerator.generateAccount(customer);
@@ -949,8 +946,47 @@ public class AccountRepositoryTest extends BaseIntegrationTest {
     /**
      * Creates a test customer using TestDataGenerator.
      */
-    @Override
     protected Customer createTestCustomer() {
         return testDataGenerator.generateCustomer();
+    }
+    
+    /**
+     * Set up test data - simplified version for @DataJpaTest.
+     */
+    protected void setupTestData() {
+        // For @DataJpaTest, we rely on @Transactional rollback for cleanup
+        // No special setup needed as each test creates its own data
+    }
+    
+    /**
+     * Clean up test data - simplified version for @DataJpaTest.
+     */
+    protected void cleanupTestData() {
+        // For @DataJpaTest, @Transactional handles cleanup automatically
+        // No explicit cleanup needed
+    }
+    
+    /**
+     * Assert BigDecimal equality with COBOL precision matching.
+     */
+    protected void assertBigDecimalEquals(BigDecimal expected, BigDecimal actual) {
+        // COBOL precision constants
+        int MONETARY_SCALE = 2;
+        RoundingMode COBOL_ROUNDING = RoundingMode.HALF_UP;
+        
+        // Handle null values
+        BigDecimal normalizedExpected = expected != null ? 
+            expected.setScale(MONETARY_SCALE, COBOL_ROUNDING) : 
+            BigDecimal.ZERO.setScale(MONETARY_SCALE, COBOL_ROUNDING);
+            
+        BigDecimal normalizedActual = actual != null ? 
+            actual.setScale(MONETARY_SCALE, COBOL_ROUNDING) : 
+            BigDecimal.ZERO.setScale(MONETARY_SCALE, COBOL_ROUNDING);
+        
+        // Perform comparison with detailed error message
+        assertThat(normalizedActual)
+            .as("BigDecimal values should be equal with COBOL precision (scale=%d, rounding=%s)", 
+                MONETARY_SCALE, COBOL_ROUNDING)
+            .isEqualByComparingTo(normalizedExpected);
     }
 }
