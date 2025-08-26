@@ -85,7 +85,6 @@ import static org.hamcrest.Matchers.containsString;
  * @version 1.0
  * @since 2024
  */
-@WebMvcTest(UserController.class)
 @ActiveProfiles("test")
 public class UserControllerTest extends BaseControllerTest {
 
@@ -116,7 +115,7 @@ public class UserControllerTest extends BaseControllerTest {
      * Sets up MockMvc configuration, test data builders, session management, and password encoder.
      */
     @BeforeEach
-    void setUp() {
+    protected void setUp() {
         super.setUp();
         this.passwordEncoder = new BCryptPasswordEncoder();
         
@@ -129,7 +128,7 @@ public class UserControllerTest extends BaseControllerTest {
      * Ensures test isolation by clearing mock interactions and resetting session state.
      */
     @AfterEach
-    void tearDown() {
+    protected void tearDown() {
         super.tearDown();
         reset(userService);
     }
