@@ -409,11 +409,20 @@ public class MockServiceFactory {
             ArgumentMatchers.anyInt()
         )).thenReturn(configurePaginatedResponse(Arrays.asList(createSampleTransaction()), 0));
         
-        // Configure getTransactionDetail() method
-        when(mock.getTransactionDetail(ArgumentMatchers.anyString())).thenReturn(Optional.of(createSampleTransaction()));
+        // Configure getTransactionDetailEntity() method (original entity-based method)
+        when(mock.getTransactionDetailEntity(ArgumentMatchers.anyString())).thenReturn(Optional.of(createSampleTransaction()));
         
-        // Configure addTransaction() method
-        when(mock.addTransaction(ArgumentMatchers.any())).thenReturn(createSampleTransaction());
+        // Configure getTransactionDetailDto() method (new DTO-based method)
+        when(mock.getTransactionDetailDto(ArgumentMatchers.anyString())).thenReturn(createSampleTransactionDetailDto());
+        
+        // Configure addTransaction() method (original entity-based method)
+        when(mock.addTransaction(ArgumentMatchers.any(Transaction.class))).thenReturn(createSampleTransaction());
+        
+        // Configure addTransactionFromDto() method (new DTO-based method)
+        when(mock.addTransactionFromDto(ArgumentMatchers.any())).thenReturn(createSampleTransactionDetailDto());
+        
+        // Configure listTransactions() method with DTO request
+        when(mock.listTransactions(ArgumentMatchers.any(TransactionListRequest.class))).thenReturn(createSampleTransactionListResponse());
         
         // Configure validateTransaction() method - no-op for valid requests
         doNothing().when(mock).validateTransaction(ArgumentMatchers.any());
@@ -593,6 +602,56 @@ public class MockServiceFactory {
         transaction.setMerchantName("Sample Merchant");
         transaction.setDescription("Sample Transaction");
         return transaction;
+    }
+
+    /**
+     * Creates a sample TransactionDetailDto with realistic transaction data for API responses.
+     * 
+     * @return TransactionDetailDto with pre-populated fields matching API response structures
+     */
+    public TransactionDetailDto createSampleTransactionDetailDto() {
+        TransactionDetailDto dto = new TransactionDetailDto();
+        dto.setTransactionId(String.format("%016d", ID_GENERATOR.incrementAndGet()));
+        dto.setAmount(new BigDecimal("125.50"));
+        dto.setDescription("Sample Transaction");
+        dto.setMerchantName("Sample Merchant");
+        dto.setMerchantCity("Sample City");
+        dto.setMerchantZip("12345");
+        dto.setOrigTimestamp(LocalDateTime.now());
+        dto.setProcTimestamp(LocalDateTime.now());
+        return dto;
+    }
+
+    /**
+     * Creates a sample TransactionListResponse with pagination data for list API responses.
+     * 
+     * @return TransactionListResponse with sample transaction summaries and pagination
+     */
+    public TransactionListResponse createSampleTransactionListResponse() {
+        TransactionListResponse response = new TransactionListResponse();
+        
+        // Create sample transaction summaries
+        TransactionSummaryDto summary1 = new TransactionSummaryDto();
+        summary1.setTransactionId(String.format("%016d", ID_GENERATOR.incrementAndGet()));
+        summary1.setAmount(new BigDecimal("125.50"));
+        summary1.setDescription("Sample Transaction 1");
+        summary1.setDate(LocalDate.now());
+        summary1.setSelected(false);
+        
+        TransactionSummaryDto summary2 = new TransactionSummaryDto();
+        summary2.setTransactionId(String.format("%016d", ID_GENERATOR.incrementAndGet()));
+        summary2.setAmount(new BigDecimal("75.25"));
+        summary2.setDescription("Sample Transaction 2");
+        summary2.setDate(LocalDate.now().minusDays(1));
+        summary2.setSelected(false);
+        
+        response.setTransactions(Arrays.asList(summary1, summary2));
+        response.setTotalCount(2);
+        response.setCurrentPage(1);
+        response.setHasMorePages(false);
+        response.setHasPreviousPages(false);
+        
+        return response;
     }
 
     /**
