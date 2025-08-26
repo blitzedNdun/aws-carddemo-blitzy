@@ -8,7 +8,7 @@ import com.carddemo.repository.AccountRepository;
 import com.carddemo.repository.CustomerRepository;
 import com.carddemo.entity.Account;
 import com.carddemo.entity.Customer;
-import com.carddemo.test.TestDataGenerator;
+import com.carddemo.service.TestDataGenerator;
 import com.carddemo.test.TestConstants;
 
 import org.junit.jupiter.api.DisplayName;
@@ -87,8 +87,7 @@ public class AccountRepositoryTest {
     @Autowired
     private CustomerRepository customerRepository;
     
-    @Autowired 
-    private TestDataGenerator testDataGenerator;
+    private TestDataGenerator testDataGenerator = new TestDataGenerator();
     
     // Test data storage for cleanup
     private List<Account> createdTestAccounts = new ArrayList<>();
@@ -940,7 +939,9 @@ public class AccountRepositoryTest {
      */
     protected Account createTestAccount() {
         Customer customer = createTestCustomer();
-        return testDataGenerator.generateAccount(customer);
+        Account account = testDataGenerator.generateAccount();
+        account.setCustomer(customer);
+        return account;
     }
     
     /**
