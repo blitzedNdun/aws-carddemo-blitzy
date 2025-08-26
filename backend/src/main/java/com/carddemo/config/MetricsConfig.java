@@ -11,6 +11,7 @@ import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.actuate.health.Status;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +40,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * while maintaining identical operational visibility and SLA compliance.
  */
 @Configuration
+@Profile("!test")
 public class MetricsConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(MetricsConfig.class);

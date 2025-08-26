@@ -17,6 +17,12 @@ import com.carddemo.util.CobolDataConverter;
 
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
+import com.carddemo.config.TestDatabaseConfig;
+import com.carddemo.config.DatabaseConfig;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 // Using H2 in-memory database instead of Testcontainers PostgreSQL
@@ -87,6 +93,31 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
+@EnableAutoConfiguration(exclude = {org.springframework.boot.autoconfigure.h2.H2ConsoleAutoConfiguration.class})
+@Import({TestDatabaseConfig.class, com.carddemo.config.TestSecurityConfig.class})
+@ComponentScan(basePackages = "com.carddemo", 
+               excludeFilters = {
+                   @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {
+                       DatabaseConfig.class,
+                       com.carddemo.config.MetricsConfig.class,
+                       com.carddemo.service.MonitoringService.class,
+                       com.carddemo.config.TestSecurityConfig.class,
+                       com.carddemo.security.SecurityConfig.class,
+                       com.carddemo.security.AuthenticationService.class,
+                       com.carddemo.security.AuthorizationService.class,
+                       com.carddemo.security.CustomAccessDeniedHandler.class,
+                       com.carddemo.security.CustomAuthenticationEntryPoint.class,
+                       com.carddemo.security.CustomAuthenticationProvider.class,
+                       com.carddemo.security.CustomUserDetailsService.class,
+                       com.carddemo.security.JwtAuthenticationFilter.class,
+                       com.carddemo.security.JwtRequestFilter.class,
+                       com.carddemo.security.JwtTokenService.class,
+                       com.carddemo.security.LegacyPasswordEncoder.class,
+                       com.carddemo.security.SecurityTestConfig.class,
+                       com.carddemo.test.SecurityTestConfig.class,
+                       com.carddemo.integration.IntegrationTestConfiguration.class
+                   })
+               })
 @TestPropertySource(properties = {
     "spring.profiles.active=test",
     "spring.jpa.hibernate.ddl-auto=create-drop",

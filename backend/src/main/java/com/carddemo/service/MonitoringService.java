@@ -11,6 +11,7 @@ import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.actuate.health.Status;
 import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Profile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +48,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * - Prometheus metrics export with cardinality management
  */
 @Service
+@Profile("!test")
 public class MonitoringService {
 
     private static final Logger logger = LoggerFactory.getLogger(MonitoringService.class);

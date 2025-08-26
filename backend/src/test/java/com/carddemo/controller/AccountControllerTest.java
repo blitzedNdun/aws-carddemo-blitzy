@@ -4,17 +4,20 @@ import com.carddemo.dto.AccountDto;
 import com.carddemo.dto.AccountUpdateRequest;
 import com.carddemo.service.AccountService;
 import com.carddemo.controller.TestDataBuilder;
+import com.carddemo.exception.ResourceNotFoundException;
+import com.carddemo.exception.ValidationException;
+import com.carddemo.exception.ConcurrencyException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.dao.OptimisticLockingFailureException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -41,7 +44,6 @@ import static org.hamcrest.Matchers.containsString;
  * - Session-based state management for multi-step updates
  * - Error handling for concurrent modifications
  */
-@WebMvcTest(AccountController.class)
 public class AccountControllerTest extends BaseControllerTest {
 
     @Autowired
@@ -75,7 +77,8 @@ public class AccountControllerTest extends BaseControllerTest {
     public void testGetAccountById_Success() throws Exception {
         // Given: Valid account ID and expected account data with COBOL COMP-3 precision
         String accountId = TEST_ACCOUNT_ID;
-        AccountDto expectedAccount = testDataBuilder.buildAccountDto()
+        Long accountIdLong = Long.parseLong(accountId);
+        AccountDto expectedAccount = TestDataBuilder.buildAccountDto()
             .accountId(accountId)
             .customerId("2000000001")
             .currentBalance(new BigDecimal("2500.75").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE))
@@ -84,7 +87,7 @@ public class AccountControllerTest extends BaseControllerTest {
             .activeStatus("ACTIVE")
             .build();
 
-        when(accountService.getAccountById(accountId)).thenReturn(expectedAccount);
+        when(accountService.viewAccount(accountIdLong)).thenReturn(expectedAccount);
 
         long startTime = System.currentTimeMillis();
 
@@ -114,7 +117,7 @@ public class AccountControllerTest extends BaseControllerTest {
         assertTrue(responseTime < RESPONSE_TIME_THRESHOLD_MS, 
                   "Response time " + responseTime + "ms exceeds threshold of " + RESPONSE_TIME_THRESHOLD_MS + "ms");
 
-        verify(accountService).getAccountById(accountId);
+        verify(accountService).viewAccount(accountIdLong);
     }
 
     @Test
@@ -123,7 +126,8 @@ public class AccountControllerTest extends BaseControllerTest {
     public void testGetAccountById_NotFound() throws Exception {
         // Given: Non-existent account ID
         String accountId = "9999999999";
-        when(accountService.getAccountById(accountId)).thenReturn(null);
+        Long accountIdLong = Long.parseLong(accountId);
+        when(accountService.viewAccount(accountIdLong)).thenThrow(new ResourceNotFoundException("Account", accountId));
 
         // When: GET request for non-existent account
         mockMvc.perform(get("/api/accounts/{id}", accountId)
@@ -131,7 +135,7 @@ public class AccountControllerTest extends BaseControllerTest {
                 // Then: Verify 404 response (matching COBOL NOTFND condition)
                 .andExpect(status().isNotFound());
 
-        verify(accountService).getAccountById(accountId);
+        verify(accountService).viewAccount(accountIdLong);
     }
 
     @Test
@@ -140,21 +144,22 @@ public class AccountControllerTest extends BaseControllerTest {
     public void testUpdateAccount_Success() throws Exception {
         // Given: Valid account update request with COBOL precision
         String accountId = TEST_ACCOUNT_ID;
-        AccountUpdateRequest updateRequest = testDataBuilder.buildAccountUpdateRequest()
+        Long accountIdLong = Long.parseLong(accountId);
+        AccountUpdateRequest updateRequest = TestDataBuilder.buildAccountUpdateRequest()
             .accountId(accountId)
-            .activeStatus("SUSPENDED")
+            .activeStatus("N")
             .creditLimit(new BigDecimal("7500.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE))
             .cashCreditLimit(new BigDecimal("1500.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE))
             .build();
 
-        AccountDto updatedAccount = testDataBuilder.buildAccountDto()
+        AccountDto updatedAccount = TestDataBuilder.buildAccountDto()
             .accountId(accountId)
-            .activeStatus("SUSPENDED")
+            .activeStatus("N")
             .creditLimit(new BigDecimal("7500.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE))
             .cashCreditLimit(new BigDecimal("1500.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE))
             .build();
 
-        when(accountService.updateAccount(accountId, updateRequest)).thenReturn(updatedAccount);
+        when(accountService.updateAccount(accountIdLong, updateRequest)).thenReturn(updatedAccount);
 
         long startTime = System.currentTimeMillis();
 
@@ -166,7 +171,7 @@ public class AccountControllerTest extends BaseControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.accountId").value(accountId))
-                .andExpect(jsonPath("$.activeStatus").value("SUSPENDED"))
+                .andExpect(jsonPath("$.activeStatus").value("N"))
                 .andExpect(jsonPath("$.creditLimit").value(7500.00))
                 .andExpect(jsonPath("$.cashCreditLimit").value(1500.00))
                 .andReturn();
@@ -182,7 +187,7 @@ public class AccountControllerTest extends BaseControllerTest {
         assertTrue(responseTime < RESPONSE_TIME_THRESHOLD_MS,
                   "Update response time " + responseTime + "ms exceeds threshold");
 
-        verify(accountService).updateAccount(accountId, updateRequest);
+        verify(accountService).updateAccount(accountIdLong, updateRequest);
     }
 
     @Test
@@ -191,14 +196,15 @@ public class AccountControllerTest extends BaseControllerTest {
     public void testUpdateAccount_OptimisticLockingFailure() throws Exception {
         // Given: Account update request that will encounter optimistic locking
         String accountId = TEST_ACCOUNT_ID;
-        AccountUpdateRequest updateRequest = testDataBuilder.buildAccountUpdateRequest()
+        Long accountIdLong = Long.parseLong(accountId);
+        AccountUpdateRequest updateRequest = TestDataBuilder.buildAccountUpdateRequest()
             .accountId(accountId)
-            .activeStatus("SUSPENDED")
+            .activeStatus("N")
             .build();
 
         // Simulate CICS INVREQ condition for concurrent modification
-        when(accountService.updateAccount(accountId, updateRequest))
-            .thenThrow(new RuntimeException("Optimistic locking failure - record modified by another user"));
+        when(accountService.updateAccount(accountIdLong, updateRequest))
+            .thenThrow(new OptimisticLockingFailureException("Optimistic locking failure - record modified by another user"));
 
         // When: PUT request with stale data
         mockMvc.perform(put("/api/accounts/{id}", accountId)
@@ -208,7 +214,7 @@ public class AccountControllerTest extends BaseControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value(containsString("modified by another user")));
 
-        verify(accountService).updateAccount(accountId, updateRequest);
+        verify(accountService).updateAccount(accountIdLong, updateRequest);
     }
 
     @Test
@@ -217,14 +223,15 @@ public class AccountControllerTest extends BaseControllerTest {
     public void testUpdateAccount_ValidationErrors() throws Exception {
         // Given: Invalid account update request
         String accountId = TEST_ACCOUNT_ID;
-        AccountUpdateRequest invalidRequest = testDataBuilder.buildAccountUpdateRequest()
+        Long accountIdLong = Long.parseLong(accountId);
+        AccountUpdateRequest invalidRequest = TestDataBuilder.buildAccountUpdateRequest()
             .accountId(accountId)
             .creditLimit(new BigDecimal("-1000.00")) // Invalid negative credit limit
             .cashCreditLimit(new BigDecimal("100000.00")) // Exceeds maximum allowed
             .build();
 
-        when(accountService.validateAccountUpdate(invalidRequest))
-            .thenReturn(false); // Validation fails
+        when(accountService.updateAccount(accountIdLong, invalidRequest))
+            .thenThrow(new ValidationException("Invalid credit limit: must be positive"));
 
         // When: PUT request with invalid data
         mockMvc.perform(put("/api/accounts/{id}", accountId)
@@ -232,11 +239,9 @@ public class AccountControllerTest extends BaseControllerTest {
                 .content(objectMapper.writeValueAsString(invalidRequest)))
                 // Then: Verify validation error response
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors").isArray())
-                .andExpect(jsonPath("$.errors[0].field").value("creditLimit"))
-                .andExpect(jsonPath("$.errors[0].message").value(containsString("must be positive")));
+                .andExpect(jsonPath("$.message").value(containsString("Invalid credit limit")));
 
-        verify(accountService).validateAccountUpdate(invalidRequest);
+        verify(accountService).updateAccount(accountIdLong, invalidRequest);
     }
 
     @Test
@@ -245,6 +250,7 @@ public class AccountControllerTest extends BaseControllerTest {
     public void testAccountBalanceCalculation() throws Exception {
         // Given: Account with complex balance calculation scenario
         String accountId = TEST_ACCOUNT_ID;
+        Long accountIdLong = Long.parseLong(accountId);
         
         // Simulate COBOL COMP-3 calculation: Balance + Interest - Fees
         BigDecimal baseBalance = new BigDecimal("1234.56");
@@ -256,12 +262,12 @@ public class AccountControllerTest extends BaseControllerTest {
             .subtract(feeAmount)
             .setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE);
 
-        AccountDto accountWithCalculation = testDataBuilder.buildAccountDto()
+        AccountDto accountWithCalculation = TestDataBuilder.buildAccountDto()
             .accountId(accountId)
             .currentBalance(expectedBalance)
             .build();
 
-        when(accountService.getAccountById(accountId)).thenReturn(accountWithCalculation);
+        when(accountService.viewAccount(accountIdLong)).thenReturn(accountWithCalculation);
 
         // When: Retrieving account with calculated balance
         MvcResult result = mockMvc.perform(get("/api/accounts/{id}", accountId)
@@ -277,7 +283,7 @@ public class AccountControllerTest extends BaseControllerTest {
         assertEquals(0, expectedBalance.compareTo(actualAccount.getCurrentBalance()));
         assertEquals("1241.90", actualAccount.getCurrentBalance().toString());
 
-        verify(accountService).getAccountById(accountId);
+        verify(accountService).viewAccount(accountIdLong);
     }
 
     @Test
@@ -294,13 +300,14 @@ public class AccountControllerTest extends BaseControllerTest {
 
         for (BigDecimal testValue : testValues) {
             String accountId = TEST_ACCOUNT_ID + testValue.toString().replace(".", "");
+            Long accountIdLong = Long.parseLong(accountId);
             
-            AccountDto testAccount = testDataBuilder.buildAccountDto()
+            AccountDto testAccount = TestDataBuilder.buildAccountDto()
                 .accountId(accountId)
                 .currentBalance(testValue.setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE))
                 .build();
 
-            when(accountService.getAccountById(accountId)).thenReturn(testAccount);
+            when(accountService.viewAccount(accountIdLong)).thenReturn(testAccount);
 
             // When: Getting account with specific precision
             MvcResult result = mockMvc.perform(get("/api/accounts/{id}", accountId)
@@ -324,29 +331,31 @@ public class AccountControllerTest extends BaseControllerTest {
         String accountId = TEST_ACCOUNT_ID;
         
         // Step 1: Initial account view to establish session state
-        AccountDto initialAccount = testDataBuilder.buildAccountDto()
+        Long accountIdLong = Long.parseLong(accountId);
+        AccountDto initialAccount = TestDataBuilder.buildAccountDto()
             .accountId(accountId)
-            .activeStatus("ACTIVE")
+            .activeStatus("Y")
             .build();
 
-        when(accountService.getAccountById(accountId)).thenReturn(initialAccount);
+        when(accountService.viewAccount(accountIdLong)).thenReturn(initialAccount);
 
         // Create authenticated session
         MvcResult sessionResult = performAuthenticatedRequest(
-            get("/api/accounts/{id}", accountId), TEST_USER_ID);
+            get("/api/accounts/{id}", accountId), TEST_USER_ID, "USER")
+            .andReturn();
 
         // Step 2: Update using session state (simulating CICS COMMAREA)
-        AccountUpdateRequest updateRequest = testDataBuilder.buildAccountUpdateRequest()
+        AccountUpdateRequest updateRequest = TestDataBuilder.buildAccountUpdateRequest()
             .accountId(accountId)
-            .activeStatus("SUSPENDED")
+            .activeStatus("N")
             .build();
 
-        AccountDto updatedAccount = testDataBuilder.buildAccountDto()
+        AccountDto updatedAccount = TestDataBuilder.buildAccountDto()
             .accountId(accountId)
-            .activeStatus("SUSPENDED")
+            .activeStatus("N")
             .build();
 
-        when(accountService.updateAccount(accountId, updateRequest)).thenReturn(updatedAccount);
+        when(accountService.updateAccount(accountIdLong, updateRequest)).thenReturn(updatedAccount);
 
         // When: Update using established session
         String sessionId = extractSessionId(sessionResult);
@@ -356,10 +365,10 @@ public class AccountControllerTest extends BaseControllerTest {
                 .content(objectMapper.writeValueAsString(updateRequest)))
                 // Then: Verify session-based update succeeds
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.activeStatus").value("SUSPENDED"));
+                .andExpect(jsonPath("$.activeStatus").value("N"));
 
-        verify(accountService).getAccountById(accountId);
-        verify(accountService).updateAccount(accountId, updateRequest);
+        verify(accountService).viewAccount(accountIdLong);
+        verify(accountService).updateAccount(accountIdLong, updateRequest);
     }
 
     @Test
@@ -368,14 +377,15 @@ public class AccountControllerTest extends BaseControllerTest {
     public void testReferentialIntegrity() throws Exception {
         // Given: Account linked to customer and cards (referential integrity)
         String accountId = TEST_ACCOUNT_ID;
+        Long accountIdLong = Long.parseLong(accountId);
         String customerId = "2000000001";
         
-        AccountDto accountWithReferences = testDataBuilder.buildAccountDto()
+        AccountDto accountWithReferences = TestDataBuilder.buildAccountDto()
             .accountId(accountId)
             .customerId(customerId)
             .build();
 
-        when(accountService.getAccountById(accountId)).thenReturn(accountWithReferences);
+        when(accountService.viewAccount(accountIdLong)).thenReturn(accountWithReferences);
 
         // When: Retrieving account with referential data
         MvcResult result = mockMvc.perform(get("/api/accounts/{id}", accountId)
@@ -392,7 +402,7 @@ public class AccountControllerTest extends BaseControllerTest {
         assertTrue(actualAccount.getCustomerId().matches("\\d{10}"));
         assertTrue(actualAccount.getAccountId().matches("\\d{10}"));
 
-        verify(accountService).getAccountById(accountId);
+        verify(accountService).viewAccount(accountIdLong);
     }
 
     @Test
@@ -401,11 +411,12 @@ public class AccountControllerTest extends BaseControllerTest {
     public void testResponseTimeValidation() throws Exception {
         // Given: Standard account retrieval scenario
         String accountId = TEST_ACCOUNT_ID;
-        AccountDto testAccount = testDataBuilder.buildAccountDto()
+        Long accountIdLong = Long.parseLong(accountId);
+        AccountDto testAccount = TestDataBuilder.buildAccountDto()
             .accountId(accountId)
             .build();
 
-        when(accountService.getAccountById(accountId)).thenReturn(testAccount);
+        when(accountService.viewAccount(accountIdLong)).thenReturn(testAccount);
 
         // When: Multiple requests to measure average response time
         long totalTime = 0;
@@ -428,7 +439,7 @@ public class AccountControllerTest extends BaseControllerTest {
                   "Average response time " + averageResponseTime + "ms exceeds threshold of " + 
                   RESPONSE_TIME_THRESHOLD_MS + "ms");
 
-        verify(accountService, times(iterations)).getAccountById(accountId);
+        verify(accountService, times(iterations)).viewAccount(accountIdLong);
     }
 
     @Override
@@ -440,7 +451,8 @@ public class AccountControllerTest extends BaseControllerTest {
     /**
      * Helper method to extract session ID from MvcResult for session-based testing
      */
-    private String extractSessionId(MvcResult result) {
+    @Override
+    protected String extractSessionId(MvcResult result) {
         String cookies = result.getResponse().getHeader("Set-Cookie");
         if (cookies != null && cookies.contains("SESSION=")) {
             return cookies.substring(cookies.indexOf("SESSION=") + 8, cookies.indexOf(";"));

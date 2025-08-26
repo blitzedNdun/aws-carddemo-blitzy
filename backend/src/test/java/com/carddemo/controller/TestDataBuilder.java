@@ -12,8 +12,11 @@ import com.carddemo.entity.Customer;
 import com.carddemo.entity.User;
 import com.carddemo.entity.UserSecurity;
 import com.carddemo.entity.CardXref;
+import com.carddemo.dto.AccountDto;
+import com.carddemo.dto.AccountUpdateRequest;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import java.util.Random;
@@ -800,5 +803,131 @@ public class TestDataBuilder {
         testDataSet.add(cardXref);
         
         return testDataSet;
+    }
+
+    // ============ DTO BUILDER METHODS ============
+
+    /**
+     * Creates an AccountDto builder with fluent interface.
+     * Returns a builder that allows chaining setters for test data configuration.
+     * 
+     * @return AccountDtoBuilder for fluent configuration
+     */
+    public static AccountDtoBuilder buildAccountDto() {
+        return new AccountDtoBuilder();
+    }
+
+    /**
+     * Creates an AccountUpdateRequest builder with fluent interface.
+     * Returns a builder that allows chaining setters for test data configuration.
+     * 
+     * @return AccountUpdateRequestBuilder for fluent configuration
+     */
+    public static AccountUpdateRequestBuilder buildAccountUpdateRequest() {
+        return new AccountUpdateRequestBuilder();
+    }
+
+    /**
+     * Fluent builder for AccountDto test objects.
+     */
+    public static class AccountDtoBuilder {
+        private AccountDto accountDto = new AccountDto();
+        
+        public AccountDtoBuilder accountId(String accountId) {
+            accountDto.setAccountId(accountId);
+            return this;
+        }
+        
+        public AccountDtoBuilder customerId(String customerId) {
+            accountDto.setCustomerId(customerId);
+            return this;
+        }
+        
+        public AccountDtoBuilder currentBalance(BigDecimal currentBalance) {
+            accountDto.setCurrentBalance(currentBalance);
+            return this;
+        }
+        
+        public AccountDtoBuilder creditLimit(BigDecimal creditLimit) {
+            accountDto.setCreditLimit(creditLimit);
+            return this;
+        }
+        
+        public AccountDtoBuilder cashCreditLimit(BigDecimal cashCreditLimit) {
+            accountDto.setCashCreditLimit(cashCreditLimit);
+            return this;
+        }
+        
+        public AccountDtoBuilder activeStatus(String activeStatus) {
+            accountDto.setActiveStatus(activeStatus);
+            return this;
+        }
+        
+        public AccountDto build() {
+            // Set defaults if not specified
+            if (accountDto.getAccountId() == null) {
+                accountDto.setAccountId(String.format("%011d", generateRandomAccountId()));
+            }
+            if (accountDto.getCustomerId() == null) {
+                accountDto.setCustomerId(String.format("%09d", generateRandomCustomerId()));
+            }
+            if (accountDto.getCurrentBalance() == null) {
+                accountDto.setCurrentBalance(BigDecimal.valueOf(1000.00).setScale(2, RoundingMode.HALF_UP));
+            }
+            if (accountDto.getCreditLimit() == null) {
+                accountDto.setCreditLimit(BigDecimal.valueOf(5000.00).setScale(2, RoundingMode.HALF_UP));
+            }
+            if (accountDto.getCashCreditLimit() == null) {
+                accountDto.setCashCreditLimit(BigDecimal.valueOf(1000.00).setScale(2, RoundingMode.HALF_UP));
+            }
+            if (accountDto.getActiveStatus() == null) {
+                accountDto.setActiveStatus("Y");
+            }
+            return accountDto;
+        }
+    }
+
+    /**
+     * Fluent builder for AccountUpdateRequest test objects.
+     */
+    public static class AccountUpdateRequestBuilder {
+        private AccountUpdateRequest request = new AccountUpdateRequest();
+        
+        public AccountUpdateRequestBuilder accountId(String accountId) {
+            request.setAccountId(accountId);
+            return this;
+        }
+        
+        public AccountUpdateRequestBuilder activeStatus(String activeStatus) {
+            request.setActiveStatus(activeStatus);
+            return this;
+        }
+        
+        public AccountUpdateRequestBuilder creditLimit(BigDecimal creditLimit) {
+            request.setCreditLimit(creditLimit);
+            return this;
+        }
+        
+        public AccountUpdateRequestBuilder cashCreditLimit(BigDecimal cashCreditLimit) {
+            request.setCashCreditLimit(cashCreditLimit);
+            return this;
+        }
+        
+        public AccountUpdateRequest build() {
+            // Set defaults if not specified
+            if (request.getAccountId() == null) {
+                request.setAccountId(String.format("%011d", generateRandomAccountId()));
+            }
+            if (request.getActiveStatus() == null) {
+                request.setActiveStatus("Y");
+            }
+            if (request.getCreditLimit() == null) {
+                request.setCreditLimit(BigDecimal.valueOf(5000.00).setScale(2, RoundingMode.HALF_UP));
+            }
+            if (request.getCashCreditLimit() == null) {
+                request.setCashCreditLimit(BigDecimal.valueOf(1000.00).setScale(2, RoundingMode.HALF_UP));
+            }
+            return request;
+        }
     }
 }
