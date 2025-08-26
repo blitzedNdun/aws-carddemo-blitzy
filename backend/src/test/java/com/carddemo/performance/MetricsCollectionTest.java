@@ -1,5 +1,6 @@
 package com.carddemo.performance;
 
+import com.carddemo.CardDemoApplication;
 import com.carddemo.batch.TestReconciliationJobConfig;
 import com.carddemo.config.MetricsConfig;
 import com.carddemo.config.TestDatabaseConfig;
@@ -16,6 +17,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.context.annotation.Import;
 
 import io.micrometer.core.instrument.Counter;
@@ -66,10 +68,19 @@ import java.util.regex.Pattern;
  * @version 1.0
  * @since CardDemo v1.0
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    classes = {CardDemoApplication.class, TestDatabaseConfig.class, TestRedisConfig.class, TestReconciliationJobConfig.class})
 @ActiveProfiles("test") 
+@TestPropertySource(properties = {
+    "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL",
+    "spring.datasource.username=sa",
+    "spring.datasource.password=",
+    "spring.datasource.driver-class-name=org.h2.Driver",
+    "spring.jpa.hibernate.ddl-auto=create-drop",
+    "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
+    "spring.batch.jdbc.initialize-schema=embedded"
+})
 @Tag("performance")
-@Import({TestDatabaseConfig.class, TestRedisConfig.class, TestReconciliationJobConfig.class})
 public class MetricsCollectionTest implements PerformanceTest {
 
     @Autowired
