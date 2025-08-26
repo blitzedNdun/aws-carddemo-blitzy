@@ -16,11 +16,15 @@ import com.carddemo.service.AccountService;
 import com.carddemo.service.TransactionService;
 import com.carddemo.service.UserService;
 import com.carddemo.config.RedisConfig;
+import com.carddemo.entity.*;
+import com.carddemo.dto.*;
 
 import org.mockito.ArgumentMatchers;
 import org.mockito.stubbing.Answer;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.core.HashOperations;
 
 import java.util.Arrays;
 import java.math.BigDecimal;
@@ -261,8 +265,8 @@ public class MockServiceFactory {
             return card;
         });
         
-        // Configure findById() method
-        when(mock.findById(ArgumentMatchers.anyLong())).thenReturn(Optional.of(createSampleCard()));
+        // Configure findById() method - Card ID is String (cardNumber)
+        when(mock.findById(ArgumentMatchers.anyString())).thenReturn(Optional.of(createSampleCard()));
         
         // Configure findByAccountId() method
         when(mock.findByAccountId(ArgumentMatchers.anyLong())).thenReturn(Arrays.asList(createSampleCard()));
@@ -271,7 +275,7 @@ public class MockServiceFactory {
         when(mock.findAll()).thenReturn(Arrays.asList(createSampleCard(), createSampleCard()));
         
         // Configure deleteById() method - no-op
-        doNothing().when(mock).deleteById(ArgumentMatchers.anyLong());
+        doNothing().when(mock).deleteById(ArgumentMatchers.anyString());
         
         return mock;
     }
@@ -336,21 +340,24 @@ public class MockServiceFactory {
         // Configure findById() method
         when(mock.findById(ArgumentMatchers.anyLong())).thenReturn(Optional.of(createSampleAuditLog()));
         
-        // Configure findByUsernameAndTimestampBetween() method
+        // Configure findByUsernameAndTimestampBetween() method - returns Page
         when(mock.findByUsernameAndTimestampBetween(
             ArgumentMatchers.anyString(),
             ArgumentMatchers.any(LocalDateTime.class),
-            ArgumentMatchers.any(LocalDateTime.class)
-        )).thenReturn(Arrays.asList(createSampleAuditLog()));
+            ArgumentMatchers.any(LocalDateTime.class),
+            ArgumentMatchers.any(Pageable.class)
+        )).thenReturn(configurePaginatedResponse(Arrays.asList(createSampleAuditLog()), 0));
         
-        // Configure findByEventTypeAndTimestamp() method  
-        when(mock.findByEventTypeAndTimestamp(
+        // Configure findByEventTypeAndTimestampBetween() method - returns Page
+        when(mock.findByEventTypeAndTimestampBetween(
             ArgumentMatchers.anyString(),
-            ArgumentMatchers.any(LocalDateTime.class)
-        )).thenReturn(Arrays.asList(createSampleAuditLog()));
+            ArgumentMatchers.any(LocalDateTime.class),
+            ArgumentMatchers.any(LocalDateTime.class),
+            ArgumentMatchers.any(Pageable.class)
+        )).thenReturn(configurePaginatedResponse(Arrays.asList(createSampleAuditLog()), 0));
         
-        // Configure deleteByTimestampBefore() method - no-op
-        doNothing().when(mock).deleteByTimestampBefore(ArgumentMatchers.any(LocalDateTime.class));
+        // Configure deleteByTimestampBefore() method - returns count
+        when(mock.deleteByTimestampBefore(ArgumentMatchers.any(LocalDateTime.class))).thenReturn(0);
         
         return mock;
     }
@@ -373,19 +380,9 @@ public class MockServiceFactory {
         // Configure viewAccount() method
         when(mock.viewAccount(ArgumentMatchers.anyLong())).thenReturn(createSampleAccountDto());
         
-        // Configure getAccountById() method - returns AccountDto
-        when(mock.getAccountById(ArgumentMatchers.anyLong())).thenReturn(createSampleAccountDto());
-        
         // Configure updateAccount() method
         when(mock.updateAccount(ArgumentMatchers.anyLong(), ArgumentMatchers.any()))
             .thenReturn(createSampleAccountDto());
-        
-        // Configure validateAccountUpdate() method - no-op for valid requests
-        doNothing().when(mock).validateAccountUpdate(ArgumentMatchers.any(), ArgumentMatchers.any());
-        
-        // Configure calculateBalanceUpdate() method
-        when(mock.calculateBalanceUpdate(ArgumentMatchers.any(), ArgumentMatchers.any()))
-            .thenReturn(new BigDecimal("100.00"));
         
         return mock;
     }
@@ -413,7 +410,7 @@ public class MockServiceFactory {
         )).thenReturn(configurePaginatedResponse(Arrays.asList(createSampleTransaction()), 0));
         
         // Configure getTransactionDetail() method
-        when(mock.getTransactionDetail(ArgumentMatchers.anyLong())).thenReturn(createSampleTransactionDto());
+        when(mock.getTransactionDetail(ArgumentMatchers.anyString())).thenReturn(Optional.of(createSampleTransaction()));
         
         // Configure addTransaction() method
         when(mock.addTransaction(ArgumentMatchers.any())).thenReturn(createSampleTransaction());
@@ -422,7 +419,10 @@ public class MockServiceFactory {
         doNothing().when(mock).validateTransaction(ArgumentMatchers.any());
         
         // Configure processPageNavigation() method
-        when(mock.processPageNavigation(ArgumentMatchers.anyString()))
+        when(mock.processPageNavigation(
+            ArgumentMatchers.anyString(), 
+            ArgumentMatchers.anyLong(), 
+            ArgumentMatchers.anyString()))
             .thenReturn(configurePaginatedResponse(Arrays.asList(createSampleTransaction()), 0));
         
         return mock;
@@ -447,22 +447,22 @@ public class MockServiceFactory {
         // Configure listUsers() method with Pageable
         when(mock.listUsers(ArgumentMatchers.any(Pageable.class))).thenReturn(createSampleUserListResponse());
         
-        // Configure getUserById() method
-        when(mock.getUserById(ArgumentMatchers.anyLong())).thenReturn(createSampleUserDto());
+        // Configure findUserById() method
+        when(mock.findUserById(ArgumentMatchers.anyString())).thenReturn(createSampleUserDto());
         
         // Configure createUser() method
-        when(mock.createUser(ArgumentMatchers.any())).thenReturn(createSampleUser());
+        when(mock.createUser(ArgumentMatchers.any())).thenReturn(createSampleUserDto());
         
         // Configure updateUser() method
-        when(mock.updateUser(ArgumentMatchers.anyLong(), ArgumentMatchers.any()))
+        when(mock.updateUser(ArgumentMatchers.anyString(), ArgumentMatchers.any()))
             .thenReturn(createSampleUserDto());
         
         // Configure deleteUser() method - no-op
-        doNothing().when(mock).deleteUser(ArgumentMatchers.anyLong());
+        doNothing().when(mock).deleteUser(ArgumentMatchers.anyString());
         
-        // Configure validateUserPermissions() method
-        when(mock.validateUserPermissions(ArgumentMatchers.anyString(), ArgumentMatchers.anyString()))
-            .thenReturn(true);
+        // Configure listUsers() method
+        when(mock.listUsers(ArgumentMatchers.any(Pageable.class)))
+            .thenReturn(createSampleUserListResponse());
         
         return mock;
     }
@@ -483,8 +483,8 @@ public class MockServiceFactory {
         RedisTemplate<String, Object> mock = mock(RedisTemplate.class);
         
         // Create mocks for operations
-        var valueOps = mock(RedisTemplate.ValueOperations.class);
-        var hashOps = mock(RedisTemplate.HashOperations.class);
+        var valueOps = mock(ValueOperations.class);
+        var hashOps = mock(HashOperations.class);
         
         // Configure opsForValue() method
         when(mock.opsForValue()).thenReturn(valueOps);
@@ -543,8 +543,9 @@ public class MockServiceFactory {
             case "VALIDATION_ERROR":
                 // Configure validation errors  
                 if (mock instanceof AccountService) {
-                    doThrow(new RuntimeException("Validation failed"))
-                        .when(((AccountService) mock)).validateAccountUpdate(ArgumentMatchers.any(), ArgumentMatchers.any());
+                    // Configure service to throw validation error on update
+                    when(((AccountService) mock).updateAccount(ArgumentMatchers.anyLong(), ArgumentMatchers.any()))
+                        .thenThrow(new RuntimeException("Validation failed"));
                 }
                 break;
             case "NOT_FOUND_ERROR":
@@ -564,18 +565,17 @@ public class MockServiceFactory {
      * 
      * @return Account entity with pre-populated fields matching COBOL data structures
      */
-    public Object createSampleAccount() {
-        // Since we don't have direct access to Account entity class,
-        // we'll create a generic object that represents typical account data
-        // In a real implementation, this would return an actual Account entity
-        return new Object() {
-            public Long getAccountId() { return ID_GENERATOR.incrementAndGet(); }
-            public String getActiveStatus() { return DEFAULT_ACTIVE_STATUS; }
-            public BigDecimal getCurrentBalance() { return DEFAULT_BALANCE; }
-            public BigDecimal getCreditLimit() { return DEFAULT_CREDIT_LIMIT; }
-            public LocalDate getOpenDate() { return LocalDate.now().minusYears(2); }
-            public Long getCustomerId() { return 1001L; }
-        };
+    public Account createSampleAccount() {
+        Account account = new Account();
+        account.setAccountId(ID_GENERATOR.incrementAndGet());
+        account.setActiveStatus(DEFAULT_ACTIVE_STATUS);
+        account.setCurrentBalance(DEFAULT_BALANCE);
+        account.setCreditLimit(DEFAULT_CREDIT_LIMIT);
+        account.setOpenDate(LocalDate.now().minusYears(2));
+        // Set customer relationship instead of customerId directly
+        Customer customer = createSampleCustomer();
+        account.setCustomer(customer);
+        return account;
     }
 
     /**
@@ -583,16 +583,16 @@ public class MockServiceFactory {
      * 
      * @return Transaction entity with pre-populated fields matching COBOL transaction structures
      */
-    public Object createSampleTransaction() {
-        return new Object() {
-            public Long getTransactionId() { return ID_GENERATOR.incrementAndGet(); }
-            public Long getAccountId() { return 1001L; }
-            public BigDecimal getAmount() { return new BigDecimal("125.50"); }
-            public String getTransactionTypeCode() { return "PU"; }
-            public LocalDate getTransactionDate() { return LocalDate.now(); }
-            public String getMerchantName() { return "Sample Merchant"; }
-            public String getDescription() { return "Sample Transaction"; }
-        };
+    public Transaction createSampleTransaction() {
+        Transaction transaction = new Transaction();
+        transaction.setTransactionId(ID_GENERATOR.incrementAndGet());
+        transaction.setAccountId(1001L);
+        transaction.setAmount(new BigDecimal("125.50"));
+        transaction.setTransactionTypeCode("PU");
+        transaction.setTransactionDate(LocalDate.now());
+        transaction.setMerchantName("Sample Merchant");
+        transaction.setDescription("Sample Transaction");
+        return transaction;
     }
 
     /**
@@ -600,16 +600,16 @@ public class MockServiceFactory {
      * 
      * @return User entity with pre-populated fields matching COBOL user structures
      */
-    public Object createSampleUser() {
-        return new Object() {
-            public Long getId() { return ID_GENERATOR.incrementAndGet(); }
-            public String getUserId() { return "USER001"; }
-            public String getFirstName() { return "John"; }
-            public String getLastName() { return "Doe"; }
-            public String getEmail() { return "john.doe@carddemo.com"; }
-            public String getDepartment() { return "ADMIN"; }
-            public String getUserType() { return "ADMIN"; }
-        };
+    public User createSampleUser() {
+        User user = new User();
+        user.setId(ID_GENERATOR.incrementAndGet());
+        user.setUserId("USER001");
+        user.setFirstName("John");
+        user.setLastName("Doe");
+        user.setEmail("john.doe@carddemo.com");
+        user.setDepartment("ADMIN");
+        user.setUserType("ADMIN");
+        return user;
     }
 
     /**
@@ -617,15 +617,15 @@ public class MockServiceFactory {
      * 
      * @return Customer entity with pre-populated fields
      */
-    public Object createSampleCustomer() {
-        return new Object() {
-            public Long getCustomerId() { return ID_GENERATOR.incrementAndGet(); }
-            public String getFirstName() { return "Jane"; }
-            public String getLastName() { return "Smith"; }
-            public String getSsn() { return "***-**-1234"; }
-            public String getPhoneNumber1() { return "555-0123"; }
-            public LocalDate getDateOfBirth() { return LocalDate.of(1985, 5, 15); }
-        };
+    public Customer createSampleCustomer() {
+        Customer customer = new Customer();
+        customer.setCustomerId(String.format("%09d", ID_GENERATOR.incrementAndGet()));
+        customer.setFirstName("Jane");
+        customer.setLastName("Smith");
+        customer.setSsn("***-**-1234");
+        customer.setPhoneNumber1("555-0123");
+        customer.setDateOfBirth(LocalDate.of(1985, 5, 15));
+        return customer;
     }
 
     /**
@@ -633,14 +633,13 @@ public class MockServiceFactory {
      * 
      * @return Card entity with pre-populated fields
      */
-    public Object createSampleCard() {
-        return new Object() {
-            public Long getCardId() { return ID_GENERATOR.incrementAndGet(); }
-            public String getCardNumber() { return "4***-****-****-1234"; }
-            public Long getAccountId() { return 1001L; }
-            public String getCardStatus() { return "ACTIVE"; }
-            public LocalDate getExpirationDate() { return LocalDate.now().plusYears(3); }
-        };
+    public Card createSampleCard() {
+        Card card = new Card();
+        card.setCardNumber("4***-****-****-1234");
+        card.setAccountId(1001L);
+        card.setActiveStatus("Y");
+        card.setExpirationDate(LocalDate.now().plusYears(3));
+        return card;
     }
 
     /**
@@ -648,14 +647,15 @@ public class MockServiceFactory {
      * 
      * @return UserSecurity entity with pre-populated fields
      */
-    public Object createSampleUserSecurity() {
-        return new Object() {
-            public Long getId() { return ID_GENERATOR.incrementAndGet(); }
-            public String getUsername() { return "testuser"; }
-            public String getPassword() { return "$2a$10$encoded.password.hash"; }
-            public boolean isEnabled() { return true; }
-            public String getRole() { return "USER"; }
-        };
+    public UserSecurity createSampleUserSecurity() {
+        UserSecurity userSecurity = new UserSecurity();
+        userSecurity.setId(ID_GENERATOR.incrementAndGet());
+        userSecurity.setUsername("testuser");
+        userSecurity.setPassword("$2a$10$encoded.password.hash");
+        userSecurity.setSecUsrId("USER001");
+        userSecurity.setFirstName("John");
+        userSecurity.setLastName("Doe");
+        return userSecurity;
     }
 
     /**
@@ -663,14 +663,14 @@ public class MockServiceFactory {
      * 
      * @return AuditLog entity with pre-populated fields
      */
-    public Object createSampleAuditLog() {
-        return new Object() {
-            public Long getId() { return ID_GENERATOR.incrementAndGet(); }
-            public String getUsername() { return "testuser"; }
-            public String getEventType() { return "LOGIN"; }
-            public LocalDateTime getTimestamp() { return LocalDateTime.now(); }
-            public String getDescription() { return "User login successful"; }
-        };
+    public AuditLog createSampleAuditLog() {
+        AuditLog auditLog = new AuditLog();
+        auditLog.setId(ID_GENERATOR.incrementAndGet());
+        auditLog.setUsername("testuser");
+        auditLog.setEventType("LOGIN");
+        auditLog.setTimestamp(LocalDateTime.now());
+        auditLog.setDetails("User login successful");
+        return auditLog;
     }
 
     /**
@@ -678,15 +678,20 @@ public class MockServiceFactory {
      * 
      * @return AccountDto with pre-populated fields
      */
-    public Object createSampleAccountDto() {
-        return new Object() {
-            public String getAccountId() { return String.format("%011d", ID_GENERATOR.incrementAndGet()); }
-            public String getActiveStatus() { return DEFAULT_ACTIVE_STATUS; }
-            public BigDecimal getCurrentBalance() { return DEFAULT_BALANCE; }
-            public BigDecimal getCreditLimit() { return DEFAULT_CREDIT_LIMIT; }
-            public String getCustomerFirstName() { return "John"; }
-            public String getCustomerLastName() { return "Doe"; }
-        };
+    public AccountDto createSampleAccountDto() {
+        AccountDto accountDto = new AccountDto();
+        accountDto.setAccountId(String.format("%011d", ID_GENERATOR.incrementAndGet()));
+        accountDto.setActiveStatus(DEFAULT_ACTIVE_STATUS);
+        accountDto.setCurrentBalance(DEFAULT_BALANCE);
+        accountDto.setCreditLimit(DEFAULT_CREDIT_LIMIT);
+        accountDto.setCashCreditLimit(new BigDecimal("500.00"));
+        accountDto.setOpenDate(LocalDate.now().minusYears(2));
+        accountDto.setExpirationDate(LocalDate.now().plusYears(2));
+        accountDto.setCustomerId(String.format("%09d", ID_GENERATOR.incrementAndGet()));
+        accountDto.setCustomerFirstName("John");
+        accountDto.setCustomerLastName("Doe");
+        accountDto.calculateDerivedFields();
+        return accountDto;
     }
 
     /**
@@ -694,14 +699,22 @@ public class MockServiceFactory {
      * 
      * @return TransactionDto with pre-populated fields
      */
-    public Object createSampleTransactionDto() {
-        return new Object() {
-            public Long getTransactionId() { return ID_GENERATOR.incrementAndGet(); }
-            public Long getAccountId() { return 1001L; }
-            public BigDecimal getAmount() { return new BigDecimal("75.25"); }
-            public String getMerchantName() { return "Test Merchant"; }
-            public LocalDate getTransactionDate() { return LocalDate.now(); }
-        };
+    public TransactionDto createSampleTransactionDto() {
+        return TransactionDto.builder()
+            .transactionId(ID_GENERATOR.incrementAndGet())
+            .accountId(1001L)
+            .amount(new BigDecimal("75.25"))
+            .typeCode("PU")
+            .categoryCode("RETAIL")
+            .description("Sample purchase transaction")
+            .merchantName("Test Merchant")
+            .transactionDate(LocalDate.now())
+            .originalTimestamp(LocalDateTime.now())
+            .processedTimestamp(LocalDateTime.now())
+            .referenceNumber("REF" + ID_GENERATOR.incrementAndGet())
+            .authorizationCode("AUTH123")
+            .isReversed(false)
+            .build();
     }
 
     /**
@@ -709,14 +722,13 @@ public class MockServiceFactory {
      * 
      * @return UserDto with pre-populated fields
      */
-    public Object createSampleUserDto() {
-        return new Object() {
-            public String getUserId() { return "USER001"; }
-            public String getFirstName() { return "John"; }
-            public String getLastName() { return "Doe"; }
-            public String getEmail() { return "john.doe@carddemo.com"; }
-            public String getUserType() { return "ADMIN"; }
-        };
+    public UserDto createSampleUserDto() {
+        UserDto userDto = new UserDto();
+        userDto.setUserId("USER001");
+        userDto.setFirstName("John");
+        userDto.setLastName("Doe");
+        userDto.setUserType("A"); // A=Admin, U=User
+        return userDto;
     }
 
     /**
@@ -724,19 +736,28 @@ public class MockServiceFactory {
      * 
      * @return UserListResponse with pre-populated user list and pagination
      */
-    public Object createSampleUserListResponse() {
-        return new Object() {
-            public List<Object> getUsers() { 
-                List<Object> users = new ArrayList<>();
-                users.add(createSampleUser());
-                users.add(createSampleUser());
-                return users;
-            }
-            public int getPageNumber() { return 1; }
-            public long getTotalCount() { return 25L; }
-            public boolean isHasNextPage() { return true; }
-            public boolean isHasPreviousPage() { return false; }
-        };
+    public UserListResponse createSampleUserListResponse() {
+        List<UserListDto> userListDtos = new ArrayList<>();
+        
+        // Create first sample user
+        UserListDto user1 = new UserListDto();
+        user1.setUserId("USER001");
+        user1.setFirstName("John");
+        user1.setLastName("Doe");
+        user1.setUserType("A");
+        user1.setSelectionFlag(" ");
+        userListDtos.add(user1);
+        
+        // Create second sample user
+        UserListDto user2 = new UserListDto();
+        user2.setUserId("USER002");
+        user2.setFirstName("Jane");
+        user2.setLastName("Smith");
+        user2.setUserType("U");
+        user2.setSelectionFlag(" ");
+        userListDtos.add(user2);
+        
+        return new UserListResponse(userListDtos, 1, 25L, true, false);
     }
 
     /**
