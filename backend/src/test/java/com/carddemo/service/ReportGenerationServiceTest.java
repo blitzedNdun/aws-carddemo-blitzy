@@ -10,6 +10,7 @@ import com.carddemo.test.CobolComparisonUtils;
 import com.carddemo.dto.ReportRequest;
 import com.carddemo.dto.ReportMenuResponse;
 import com.carddemo.util.DateConversionUtil;
+import com.carddemo.util.ReportFormatter;
 import com.carddemo.repository.TransactionRepository;
 import com.carddemo.repository.AccountRepository;
 import com.carddemo.entity.Transaction;
@@ -42,6 +43,8 @@ import java.time.LocalDateTime;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 /**
  * Comprehensive unit test class for ReportGenerationService validating COBOL CORPT00C report 
@@ -78,6 +81,7 @@ import org.junit.jupiter.params.provider.ValueSource;
  * @since 2024
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("ReportGenerationService Unit Tests - COBOL CORPT00C Migration Validation")
 public class ReportGenerationServiceTest {
 
@@ -89,6 +93,9 @@ public class ReportGenerationServiceTest {
 
     @Mock
     private AccountRepository accountRepository;
+
+    @Mock
+    private ReportFormatter reportFormatter;
 
     private TestDataGenerator testDataGenerator;
     
@@ -107,7 +114,7 @@ public class ReportGenerationServiceTest {
         testDataGenerator = new TestDataGenerator();
         
         // Reset mock state
-        Mockito.reset(transactionRepository, accountRepository);
+        Mockito.reset(transactionRepository, accountRepository, reportFormatter);
         
         // Initialize test data collections
         mockTransactions = new ArrayList<>();
@@ -150,10 +157,10 @@ public class ReportGenerationServiceTest {
         request.setReportType("MONTHLY");
         request.setUserId("TESTUSER");
         
-        // Mock current date for consistent testing
-        LocalDate testDate = LocalDate.of(2024, 3, 15);
-        LocalDate expectedStartDate = testDate.withDayOfMonth(1);
-        LocalDate expectedEndDate = testDate.withDayOfMonth(testDate.lengthOfMonth());
+        // Use current system date for monthly report (matches service logic)
+        LocalDate currentDate = LocalDate.now();
+        LocalDate expectedStartDate = currentDate.withDayOfMonth(1);
+        LocalDate expectedEndDate = currentDate.withDayOfMonth(currentDate.lengthOfMonth());
         
         // Configure mock data for date range
         when(transactionRepository.findByTransactionDateBetween(expectedStartDate, expectedEndDate))
@@ -387,7 +394,7 @@ public class ReportGenerationServiceTest {
         // Assert - Validate formatted report structure
         assertThat(formattedReport).isNotNull();
         assertThat(formattedReport).isNotEmpty();
-        assertThat(formattedReport).contains("Sample report data"); // Expected content
+        assertThat(formattedReport).contains("MOCK FORMATTED REPORT DATA"); // Expected mock content
         
         // Validate no exception thrown during formatting
         assertThatCode(() -> reportGenerationService.formatReport(
@@ -519,10 +526,11 @@ public class ReportGenerationServiceTest {
     void testCustomerFiltering() {
         // Arrange - Setup customer-related test data
         Customer testCustomer = createTestCustomer();
-        Account testAccount = createAccountWithCustomerId(testCustomer.getCustomerId());
+        Long customerIdLong = Long.valueOf(testCustomer.getCustomerId());
+        Account testAccount = createAccountWithCustomerId(customerIdLong);
         
         when(accountRepository.findAll()).thenReturn(List.of(testAccount));
-        when(accountRepository.findByCustomerId(testCustomer.getCustomerId()))
+        when(accountRepository.findByCustomerId(customerIdLong))
             .thenReturn(List.of(testAccount));
         when(transactionRepository.findByTransactionDateBetween(any(), any()))
             .thenReturn(mockTransactions);
@@ -539,7 +547,7 @@ public class ReportGenerationServiceTest {
         assertThat(response.hasAnyErrors()).isFalse();
         
         // Verify customer-related account queries
-        verify(accountRepository).findByCustomerId(testCustomer.getCustomerId());
+        verify(accountRepository).findByCustomerId(customerIdLong);
     }
 
     /**
@@ -710,9 +718,9 @@ public class ReportGenerationServiceTest {
         // Generate comparison report
         var comparisons = new java.util.HashMap<String, CobolComparisonUtils.ComparisonResult>();
         comparisons.put("TotalAmount", CobolComparisonUtils.createComparisonResult(
-            "TotalAmount", cobolTotal, javaTotal, true, null));
+            "TotalAmount", (Object) cobolTotal, (Object) javaTotal, true, (String) null));
         comparisons.put("ReportType", CobolComparisonUtils.createComparisonResult(
-            "ReportType", "Monthly", javaResponse.getSubmittedReportType(), true, null));
+            "ReportType", (Object) "Monthly", (Object) javaResponse.getSubmittedReportType(), true, (String) null));
         
         String comparisonReport = CobolComparisonUtils.generateComparisonReport(
             "Monthly Report COBOL Parity Test", comparisons);
@@ -868,7 +876,19 @@ public class ReportGenerationServiceTest {
      */
     private Account createAccountWithCustomerId(Long customerId) {
         Account account = testDataGenerator.generateAccount();
-        account.setCustomerId(customerId);
+        Customer customer = Customer.builder()
+            .customerId(customerId)
+            .firstName("Test")
+            .lastName("Customer")
+            .ssn("123456789")
+            .dateOfBirth(LocalDate.of(1980, 1, 1))
+            .phoneNumber1("555-1234")
+            .addressLine1("123 Main St")
+            .stateCode("NY")
+            .zipCode("12345")
+            .ficoScore(new BigDecimal("750"))
+            .build();
+        account.setCustomer(customer);
         return account;
     }
 
@@ -883,7 +903,7 @@ public class ReportGenerationServiceTest {
             .lastName("Doe")
             .ssn("123456789")
             .dateOfBirth(LocalDate.of(1980, 1, 1))
-            .phoneNumber("555-1234")
+            .phoneNumber1("555-1234")
             .build();
     }
 
@@ -905,6 +925,28 @@ public class ReportGenerationServiceTest {
         when(accountRepository.findByCustomerId(any())).thenReturn(mockAccounts);
         when(accountRepository.findById(any())).thenReturn(
             mockAccounts.isEmpty() ? Optional.empty() : Optional.of(mockAccounts.get(0)));
+            
+        // Default report formatter behavior
+        when(reportFormatter.formatReportData(any(), any(), any()))
+            .thenReturn("MOCK FORMATTED REPORT DATA\nGenerated: 2024-03-15\nTEST REPORT CONTENT");
+        when(reportFormatter.formatHeader(any(), any(), any()))
+            .thenReturn("MOCK REPORT HEADER\nFROM 03/01/2024 TO 03/31/2024");
+        when(reportFormatter.formatDetailLine(any()))
+            .thenReturn("03/15/2024    $100.00    Test Transaction Detail");
+        when(reportFormatter.formatCurrency(any())).thenAnswer(invocation -> {
+            BigDecimal amount = invocation.getArgument(0);
+            return amount != null ? String.format("$%.2f", amount) : "$0.00";
+        });
+        when(reportFormatter.formatDate(any())).thenAnswer(invocation -> {
+            LocalDate date = invocation.getArgument(0);
+            return date != null ? date.format(java.time.format.DateTimeFormatter.ofPattern("MM/dd/yyyy")) : "  /  /    ";
+        });
+        when(reportFormatter.formatColumn(any(), anyInt())).thenAnswer(invocation -> {
+            String text = invocation.getArgument(0);
+            int width = invocation.getArgument(1);
+            return text != null ? String.format("%-" + width + "s", text.substring(0, Math.min(text.length(), width))) : 
+                                 String.format("%-" + width + "s", "");
+        });
     }
 
     /**

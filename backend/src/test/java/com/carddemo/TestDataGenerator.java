@@ -6,6 +6,7 @@
 package com.carddemo;
 
 import com.carddemo.entity.Account;
+import com.carddemo.entity.Customer;
 import com.carddemo.entity.Transaction;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -59,6 +60,13 @@ public class TestDataGenerator {
 
     private static final Random random = new Random();
     
+    /**
+     * Reset the random seed for predictable test data generation.
+     */
+    public void resetRandomSeed() {
+        random.setSeed(12345L);
+    }
+    
     // COBOL COMP-3 precision constants matching original system
     private static final int ACCOUNT_ID_LENGTH = 11;
     private static final int TRANSACTION_ID_LENGTH = 16;
@@ -93,22 +101,18 @@ public class TestDataGenerator {
         
         return Account.builder()
             .accountId(accountId)
-            .customerId(generateCustomerId())
-            .accountType("CC") // Credit Card account type
-            .accountStatus(ACCOUNT_STATUSES[random.nextInt(ACCOUNT_STATUSES.length)])
+            .customer(generateCustomerForAccount())
+            .activeStatus("Y")
             .currentBalance(currentBalance)
             .creditLimit(creditLimit)
-            .availableCredit(creditLimit.subtract(currentBalance))
-            .lastStatementDate(LocalDate.now().minusDays(random.nextInt(30) + 1))
-            .nextStatementDate(LocalDate.now().plusDays(random.nextInt(30) + 1))
-            .lastPaymentDate(LocalDate.now().minusDays(random.nextInt(15) + 1))
-            .lastPaymentAmount(generateValidTransactionAmount())
-            .minimumPaymentDue(generateMinimumPayment(currentBalance))
-            .paymentDueDate(LocalDate.now().plusDays(random.nextInt(30) + 1))
-            .interestRate(generateInterestRate())
-            .cashAdvanceLimit(creditLimit.multiply(new BigDecimal("0.5")))
+            .cashCreditLimit(creditLimit.multiply(new BigDecimal("0.5")))
             .openDate(LocalDate.now().minusDays(random.nextInt(3650) + 365)) // 1-10 years ago
             .expirationDate(LocalDate.now().plusDays(random.nextInt(1825) + 365)) // 1-5 years from now
+            .reissueDate(LocalDate.now().minusDays(random.nextInt(365) + 30)) // Last 1-2 years
+            .currentCycleCredit(generateCurrentCycleCredit())
+            .currentCycleDebit(generateCurrentCycleDebit())
+            .addressZip(generateZipCode())
+            .groupId(generateGroupId())
             .build();
     }
 
@@ -126,19 +130,13 @@ public class TestDataGenerator {
         return Transaction.builder()
             .transactionId(generateTransactionId())
             .accountId(accountId)
-            .cardNumber(generateCardNumber(accountId))
             .transactionDate(LocalDate.now().minusDays(random.nextInt(30)))
             .amount(amount)
-            .typeCode(typeCode)
+            .transactionTypeCode(typeCode)
             .categoryCode(CATEGORY_CODES[random.nextInt(CATEGORY_CODES.length)])
             .description(generateTransactionDescription(typeCode))
             .merchantName(generateMerchantName())
-            .originalTimestamp(LocalDateTime.now().minusDays(random.nextInt(30)))
-            .processedTimestamp(LocalDateTime.now().minusHours(random.nextInt(24)))
-            .referenceNumber(generateReferenceNumber())
-            .authorizationCode(generateAuthorizationCode())
-            .isReversed(false)
-            .notes(null)
+            .processedTimestamp(LocalDateTime.now().minusDays(random.nextInt(30)))
             .build();
     }
 
@@ -221,16 +219,16 @@ public class TestDataGenerator {
             .cardNumber(generateCardNumber(accountId))
             .transactionDate(LocalDate.now())
             .amount(amount.negate()) // Bill payments are negative amounts (credits)
-            .typeCode("BP")
+            .transactionTypeCode("BP")
             .categoryCode("BILLPAY")
             .description("Bill Payment - Online")
             .merchantName("CARDDEMO BILL PAYMENT")
             .originalTimestamp(LocalDateTime.now())
             .processedTimestamp(LocalDateTime.now())
-            .referenceNumber(generateReferenceNumber())
+
             .authorizationCode(generateAuthorizationCode())
-            .isReversed(false)
-            .notes("Generated for bill payment testing")
+
+
             .build();
     }
 
@@ -244,10 +242,21 @@ public class TestDataGenerator {
         BigDecimal lowCreditLimit = attemptedPayment.subtract(new BigDecimal("100.00"));
         BigDecimal highBalance = lowCreditLimit.subtract(new BigDecimal("50.00"));
         
-        return generateAccount().toBuilder()
+        Long accountId = generateAccountId();
+        return Account.builder()
+            .accountId(accountId)
+            .customer(generateCustomerForAccount())
+            .activeStatus("Y")
             .creditLimit(lowCreditLimit)
             .currentBalance(highBalance)
-            .availableCredit(lowCreditLimit.subtract(highBalance))
+            .cashCreditLimit(lowCreditLimit.multiply(new BigDecimal("0.5")))
+            .openDate(LocalDate.now().minusDays(random.nextInt(3650) + 365))
+            .expirationDate(LocalDate.now().plusDays(random.nextInt(1825) + 365))
+            .reissueDate(LocalDate.now().minusDays(random.nextInt(365) + 30))
+            .currentCycleCredit(generateCurrentCycleCredit())
+            .currentCycleDebit(generateCurrentCycleDebit())
+            .addressZip(generateZipCode())
+            .groupId(generateGroupId())
             .build();
     }
 
@@ -259,22 +268,18 @@ public class TestDataGenerator {
     public Account generateEdgeCaseAccount() {
         return Account.builder()
             .accountId(generateAccountId())
-            .customerId(generateCustomerId())
-            .accountType("CC")
-            .accountStatus("A")
+            .customer(generateCustomerForAccount())
+            .activeStatus("Y")
             .currentBalance(new BigDecimal("0.01")) // Minimum balance
             .creditLimit(new BigDecimal("99999.99")) // Maximum credit limit
-            .availableCredit(new BigDecimal("99999.98"))
-            .lastStatementDate(LocalDate.now().minusDays(30))
-            .nextStatementDate(LocalDate.now())
-            .lastPaymentDate(LocalDate.now().minusDays(1))
-            .lastPaymentAmount(new BigDecimal("0.01"))
-            .minimumPaymentDue(new BigDecimal("25.00"))
-            .paymentDueDate(LocalDate.now().plusDays(1))
-            .interestRate(new BigDecimal("29.99"))
-            .cashAdvanceLimit(new BigDecimal("49999.99"))
+            .cashCreditLimit(new BigDecimal("49999.99"))
             .openDate(LocalDate.now().minusYears(10))
             .expirationDate(LocalDate.now().plusYears(5))
+            .reissueDate(LocalDate.now().minusDays(30))
+            .currentCycleCredit(new BigDecimal("0.00"))
+            .currentCycleDebit(new BigDecimal("0.01"))
+            .addressZip("12345")
+            .groupId("EDGE")
             .build();
     }
 
@@ -335,9 +340,6 @@ public class TestDataGenerator {
         return merchants[random.nextInt(merchants.length)];
     }
 
-    private String generateReferenceNumber() {
-        return String.format("REF%012d", ThreadLocalRandom.current().nextLong(1L, 1000000000000L));
-    }
 
     private String generateAuthorizationCode() {
         // Generate 6-character authorization code (alphanumeric)
@@ -361,5 +363,64 @@ public class TestDataGenerator {
             sum += digit;
         }
         return (10 - (sum % 10)) % 10;
+    }
+
+    /**
+     * Generates a Customer entity for account relationships.
+     * 
+     * @return a fully populated Customer entity
+     */
+    private Customer generateCustomerForAccount() {
+        Long customerId = generateCustomerId();
+        return Customer.builder()
+            .customerId(customerId)
+            .firstName("John")
+            .lastName("Doe")
+            .ssn("123456789")
+            .dateOfBirth(LocalDate.of(1980, 1, 1))
+            .phoneNumber1("555-1234")
+            .addressLine1("123 Main St")
+            .addressLine2("Anytown")
+            .stateCode("NY")
+            .zipCode("12345")
+            .ficoScore(new BigDecimal("750"))
+            .build();
+    }
+
+    /**
+     * Generates current cycle credit amount.
+     * 
+     * @return BigDecimal representing current cycle credit
+     */
+    private BigDecimal generateCurrentCycleCredit() {
+        return new BigDecimal(random.nextInt(500000) + 10000).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Generates current cycle debit amount.
+     * 
+     * @return BigDecimal representing current cycle debit
+     */
+    private BigDecimal generateCurrentCycleDebit() {
+        return new BigDecimal(random.nextInt(300000) + 5000).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Generates a random ZIP code.
+     * 
+     * @return String representing ZIP code
+     */
+    private String generateZipCode() {
+        return String.format("%05d", random.nextInt(99999));
+    }
+
+    /**
+     * Generates a random group ID.
+     * 
+     * @return String representing group ID
+     */
+    private String generateGroupId() {
+        String[] groups = {"GOLD", "SILVER", "BRONZE", "PLATINUM", "BASIC"};
+        return groups[random.nextInt(groups.length)];
     }
 }
