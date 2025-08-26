@@ -151,7 +151,7 @@ class CobolComparisonUtilsTest {
         @DisplayName("Should validate exact COBOL COMP-3 to BigDecimal precision matching")
         void testComp3ToBigDecimalPrecisionMatching() {
             // Given: COBOL COMP-3 packed decimal values
-            BigDecimal cobolAmount = TestDataGenerator.generateComp3BigDecimal(2, 1000.00);
+            BigDecimal cobolAmount = mockTestDataGenerator.generateComp3BigDecimal(2, 1000.00);
             BigDecimal javaAmount = CobolDataConverter.toBigDecimal(cobolAmount.doubleValue(), 2);
             
             // When: Comparing precision and scale
@@ -181,7 +181,7 @@ class CobolComparisonUtilsTest {
         @DisplayName("Should validate interest calculation precision matches COBOL")
         void testInterestCalculationPrecisionValidation() {
             // Given: Interest calculation test data matching COBOL CBACT04C logic
-            BigDecimal principal = TestDataGenerator.generateComp3BigDecimal(2, 10000.00);
+            BigDecimal principal = mockTestDataGenerator.generateComp3BigDecimal(2, 10000.00);
             BigDecimal interestRate = CobolDataConverter.toBigDecimal(0.0525, 4); // 5.25% rate
             
             // COBOL formula: COMPUTE WS-MONTHLY-INT = ( TRAN-CAT-BAL * DIS-INT-RATE) / 1200
@@ -280,7 +280,7 @@ class CobolComparisonUtilsTest {
         @DisplayName("Should handle PIC X string comparisons accurately")
         void testPicXStringComparisons() {
             // Given: COBOL PIC X strings with padding
-            String cobolString = TestDataGenerator.generatePicString(10, false);
+            String cobolString = mockTestDataGenerator.generatePicString(10, false);
             String javaString = cobolString; // Same content
             
             // When: Comparing PIC X strings
@@ -294,7 +294,7 @@ class CobolComparisonUtilsTest {
         @DisplayName("Should handle PIC 9 numeric field comparisons")
         void testPic9NumericComparisons() {
             // Given: COBOL PIC 9 numeric fields
-            String cobolNumeric = TestDataGenerator.generatePicString(8, true); // 8-digit numeric
+            String cobolNumeric = mockTestDataGenerator.generatePicString(8, true); // 8-digit numeric
             String javaNumeric = cobolNumeric;
             
             // When: Comparing numeric fields
@@ -309,7 +309,7 @@ class CobolComparisonUtilsTest {
         void testVsamKeyStructureComparisons() {
             // Given: VSAM composite key structures
             int[] keyFields = {11, 2, 4}; // Account ID (11) + Type (2) + Category (4)
-            String cobolKey = TestDataGenerator.generateVsamKey(keyFields);
+            String cobolKey = mockTestDataGenerator.generateVsamKey(keyFields);
             String javaKey = cobolKey;
             
             // When: Comparing VSAM keys
@@ -324,7 +324,7 @@ class CobolComparisonUtilsTest {
         @DisplayName("Should handle COBOL date format comparisons")
         void testCobolDateFormatComparisons() {
             // Given: COBOL date in CCYYMMDD format
-            java.time.LocalDate testDate = TestDataGenerator.generateCobolDate();
+            java.time.LocalDate testDate = mockTestDataGenerator.generateDateOfBirth();
             String cobolDateString = testDate.format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
             String javaDateString = testDate.format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
             

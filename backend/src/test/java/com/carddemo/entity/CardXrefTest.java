@@ -184,7 +184,7 @@ public class CardXrefTest extends AbstractBaseTest implements UnitTest {
             // Given: Valid composite key components
             String cardNumber = TestConstants.TEST_CARD_NUMBER;
             Long customerId = Long.parseLong(TestConstants.TEST_CUSTOMER_ID.replaceAll("\\D", "")); // Extract numeric part
-            Long accountId = Long.parseLong(TestConstants.TEST_ACCOUNT_ID);
+            Long accountId = TestConstants.TEST_ACCOUNT_ID;
             
             // When: Creating CardXref with composite key
             CardXrefId compositeKey = new CardXrefId(cardNumber, customerId, accountId);
@@ -566,7 +566,7 @@ public class CardXrefTest extends AbstractBaseTest implements UnitTest {
             CardXref cardXref = new CardXref(
                 TestConstants.TEST_CARD_NUMBER,
                 Long.parseLong(TestConstants.TEST_CUSTOMER_ID.replaceAll("\\D", "")),
-                Long.parseLong(TestConstants.TEST_ACCOUNT_ID)
+                TestConstants.TEST_ACCOUNT_ID
             );
             
             // Then: Validate against functional parity rules

@@ -188,7 +188,7 @@ public class UserSecurityRepositoryTest extends AbstractBaseTest {
             assertThat(foundUser.get().getAuthorities())
                 .hasSize(1)
                 .extracting("authority")
-                .contains(TestConstants.TEST_USER_ROLE.getAuthority());
+                .contains("ROLE_" + TestConstants.TEST_USER_ROLE);
             assertThat(foundUser.get().isAccountNonExpired()).isTrue();
             assertThat(foundUser.get().isAccountNonLocked()).isTrue();
             assertThat(foundUser.get().isCredentialsNonExpired()).isTrue();
@@ -328,7 +328,7 @@ public class UserSecurityRepositoryTest extends AbstractBaseTest {
             assertThat(retrievedAdmin.get().getAuthorities())
                 .hasSize(1)
                 .extracting("authority")
-                .contains(TestConstants.TEST_ADMIN_ROLE.getAuthority());
+                .contains("ROLE_" + TestConstants.TEST_ADMIN_ROLE);
             assertThat(retrievedAdmin.get().getAuthorities()).hasSize(1);
         }
 
@@ -348,7 +348,7 @@ public class UserSecurityRepositoryTest extends AbstractBaseTest {
             assertThat(retrievedUser.get().getAuthorities())
                 .hasSize(1)
                 .extracting("authority")
-                .contains(TestConstants.TEST_USER_ROLE.getAuthority());
+                .contains("ROLE_" + TestConstants.TEST_USER_ROLE);
             assertThat(retrievedUser.get().getAuthorities()).hasSize(1);
         }
 
@@ -527,7 +527,7 @@ public class UserSecurityRepositoryTest extends AbstractBaseTest {
             assertThat(updatedUser.getAuthorities())
                 .hasSize(1)
                 .extracting("authority")
-                .contains(TestConstants.TEST_ADMIN_ROLE.getAuthority());
+                .contains("ROLE_" + TestConstants.TEST_ADMIN_ROLE);
         }
 
         @Test
@@ -760,14 +760,14 @@ public class UserSecurityRepositoryTest extends AbstractBaseTest {
             assertThat(regularUser.get().getAuthorities())
                 .hasSize(1)
                 .extracting("authority")
-                .contains(TestConstants.TEST_USER_ROLE.getAuthority());
+                .contains("ROLE_" + TestConstants.TEST_USER_ROLE);
             assertThat(regularUser.get().getAuthorities()).hasSize(1);
             
             assertThat(adminUser).isPresent();
             assertThat(adminUser.get().getAuthorities())
                 .hasSize(1)
                 .extracting("authority")
-                .contains(TestConstants.TEST_ADMIN_ROLE.getAuthority());
+                .contains("ROLE_" + TestConstants.TEST_ADMIN_ROLE);
             assertThat(adminUser.get().getAuthorities()).hasSize(1);
         }
 

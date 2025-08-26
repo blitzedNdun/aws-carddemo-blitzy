@@ -142,7 +142,7 @@ public abstract class BaseIntegrationTest extends AbstractBaseTest {
      */
     public Account createIntegrationTestAccount() {
         return Account.builder()
-                .accountId(Long.parseLong(TestConstants.TEST_ACCOUNT_ID))
+                .accountId(TestConstants.TEST_ACCOUNT_ID)
                 .activeStatus("Y")
                 .currentBalance(new BigDecimal("1500.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE))
                 .creditLimit(new BigDecimal("5000.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE))
@@ -162,7 +162,7 @@ public abstract class BaseIntegrationTest extends AbstractBaseTest {
      */
     public Transaction createIntegrationTestTransaction() {
         return Transaction.builder()
-                .accountId(Long.parseLong(TestConstants.TEST_ACCOUNT_ID))
+                .accountId(TestConstants.TEST_ACCOUNT_ID)
                 .amount(new BigDecimal("100.50").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE))
                 .transactionTypeCode("PU")
                 .categoryCode("5411")

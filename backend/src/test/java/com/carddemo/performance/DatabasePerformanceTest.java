@@ -348,7 +348,7 @@ public class DatabasePerformanceTest extends AbstractBaseTest {
     @Rollback
     public void testCursorBasedPaginationPerformance() {
         // Generate large transaction dataset for pagination testing
-        String testAccountId = TestConstants.TEST_ACCOUNT_ID;
+        String testAccountId = TestConstants.TEST_ACCOUNT_ID_STRING;
         List<Transaction> transactions = generateTestTransactionsForAccount(testAccountId, MEDIUM_DATASET_SIZE);
         transactionRepository.saveAll(transactions);
         

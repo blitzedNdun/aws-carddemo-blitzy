@@ -49,12 +49,15 @@ import org.junit.jupiter.api.Tag;
 @DisplayName("TestDataGenerator - COBOL-Compliant Test Data Generation")
 public class TestDataGeneratorTest extends AbstractBaseTest {
 
+    private TestDataGenerator testDataGenerator;
+
     @BeforeEach
     @Override
     public void setUp() {
         super.setUp();
-        // Reset random seed for consistent test results
-        TestDataGenerator.resetRandomSeed(12345L);
+        // Create TestDataGenerator instance and reset random seed for consistent test results
+        testDataGenerator = new TestDataGenerator();
+        testDataGenerator.resetRandomSeed(12345L);
     }
 
     /**
@@ -70,7 +73,7 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("generateComp3BigDecimal - generates monetary amounts with 2 decimal places")
         public void testGenerateComp3BigDecimal_GeneratesMonetaryAmounts() {
             // When: Generating monetary amount with COBOL COMP-3 precision
-            BigDecimal result = TestDataGenerator.generateComp3BigDecimal(
+            BigDecimal result = testDataGenerator.generateComp3BigDecimal(
                 TestConstants.COBOL_DECIMAL_SCALE, 10000.0);
 
             // Then: Validate BigDecimal properties match COBOL COMP-3 requirements
@@ -96,7 +99,7 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
             
             for (int scale : testScales) {
                 // When: Generating value with specific scale
-                BigDecimal result = TestDataGenerator.generateComp3BigDecimal(scale, 10000.0);
+                BigDecimal result = testDataGenerator.generateComp3BigDecimal(scale, 10000.0);
                 
                 // Then: Validate scale is preserved exactly
                 Assertions.assertThat(result.scale())
@@ -115,13 +118,13 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("generateComp3BigDecimal - produces consistent results with same seed")
         public void testGenerateComp3BigDecimal_ProducesConsistentResults() {
             // Given: Reset to known seed state
-            TestDataGenerator.resetRandomSeed(12345L);
+            testDataGenerator.resetRandomSeed(12345L);
             
             // When: Generating same value twice with reset seed
-            BigDecimal first = TestDataGenerator.generateComp3BigDecimal(2, 10000.0);
+            BigDecimal first = testDataGenerator.generateComp3BigDecimal(2, 10000.0);
             
-            TestDataGenerator.resetRandomSeed(12345L);
-            BigDecimal second = TestDataGenerator.generateComp3BigDecimal(2, 10000.0);
+            testDataGenerator.resetRandomSeed(12345L);
+            BigDecimal second = testDataGenerator.generateComp3BigDecimal(2, 10000.0);
             
             // Then: Results should be identical for deterministic testing
             assertBigDecimalEquals(first, second, "Generated values must be deterministic with same seed");
@@ -131,9 +134,9 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("generateComp3BigDecimal - validates COBOL precision boundaries")
         public void testGenerateComp3BigDecimal_ValidatesCobolPrecisionBoundaries() {
             // When: Generating values with various COBOL-typical precisions
-            BigDecimal currency = TestDataGenerator.generateComp3BigDecimal(2, 10000.0);
-            BigDecimal interestRate = TestDataGenerator.generateComp3BigDecimal(4, 1000.0);
-            BigDecimal percentage = TestDataGenerator.generateComp3BigDecimal(6, 100.0);
+            BigDecimal currency = testDataGenerator.generateComp3BigDecimal(2, 10000.0);
+            BigDecimal interestRate = testDataGenerator.generateComp3BigDecimal(4, 1000.0);
+            BigDecimal percentage = testDataGenerator.generateComp3BigDecimal(6, 100.0);
             
             // Then: All values must maintain COBOL precision requirements
             validateCobolPrecision(currency, "currency");
@@ -155,7 +158,7 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("generatePicString - generates alphanumeric strings matching PIC X patterns")
         public void testGeneratePicString_GeneratesAlphanumericStrings() {
             // When: Generating PIC X(8) string for user ID field
-            String result = TestDataGenerator.generatePicString(8, false);
+            String result = testDataGenerator.generatePicString(8, false);
             
             // Then: Validate string properties match PIC X(8) specification
             Assertions.assertThat(result).isNotNull();
@@ -171,7 +174,7 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("generatePicString - generates numeric strings matching PIC 9 patterns")
         public void testGeneratePicString_GeneratesNumericStrings() {
             // When: Generating PIC 9(10) string for account ID
-            String result = TestDataGenerator.generatePicString(10, true);
+            String result = testDataGenerator.generatePicString(10, true);
             
             // Then: Validate numeric string properties
             Assertions.assertThat(result).isNotNull();
@@ -187,7 +190,7 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("generatePicString - handles PIC S9 signed numeric patterns")
         public void testGeneratePicString_HandlesSignedNumericPatterns() {
             // When: Generating PIC S9(7)V99 for monetary amount
-            String result = TestDataGenerator.generatePicString(9, true);
+            String result = testDataGenerator.generatePicString(9, true);
             
             // Then: Validate signed decimal string properties
             Assertions.assertThat(result).isNotNull();
@@ -215,7 +218,7 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
                 // When: Generating string for each PIC clause type
                 int length = (Integer) spec[0];
                 boolean numeric = (Boolean) spec[1];
-                String result = TestDataGenerator.generatePicString(length, numeric);
+                String result = testDataGenerator.generatePicString(length, numeric);
                 
                 // Then: Validate basic string properties
                 Assertions.assertThat(result).isNotNull();
@@ -241,7 +244,7 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("generateVsamKey - creates account composite keys matching VSAM KSDS structure")
         public void testGenerateVsamKey_CreatesAccountCompositeKeys() {
             // When: Generating VSAM-style composite key for account
-            String result = TestDataGenerator.generateVsamKey(new int[]{10});
+            String result = testDataGenerator.generateVsamKey(new int[]{10});
             
             // Then: Validate key structure matches VSAM KSDS requirements
             Assertions.assertThat(result).isNotNull();
@@ -257,7 +260,7 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("generateVsamKey - creates transaction composite keys")
         public void testGenerateVsamKey_CreatesTransactionCompositeKeys() {
             // When: Generating VSAM-style composite key for transaction
-            String result = TestDataGenerator.generateVsamKey(new int[]{11, 16});
+            String result = testDataGenerator.generateVsamKey(new int[]{11, 16});
             
             // Then: Validate transaction key structure
             Assertions.assertThat(result).isNotNull();
@@ -275,9 +278,9 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("generateVsamKey - ensures key uniqueness across generation calls")
         public void testGenerateVsamKey_EnsuresKeyUniqueness() {
             // When: Generating multiple keys of same type
-            String key1 = TestDataGenerator.generateVsamKey(new int[]{10});
-            String key2 = TestDataGenerator.generateVsamKey(new int[]{10});
-            String key3 = TestDataGenerator.generateVsamKey(new int[]{10});
+            String key1 = testDataGenerator.generateVsamKey(new int[]{10});
+            String key2 = testDataGenerator.generateVsamKey(new int[]{10});
+            String key3 = testDataGenerator.generateVsamKey(new int[]{10});
             
             // Then: All keys should be unique
             Assertions.assertThat(key1).isNotEqualTo(key2);
@@ -289,7 +292,7 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("generateVsamKey - handles customer key generation")
         public void testGenerateVsamKey_HandlesCustomerKeyGeneration() {
             // When: Generating customer primary key
-            String result = TestDataGenerator.generateVsamKey(new int[]{9});
+            String result = testDataGenerator.generateVsamKey(new int[]{9});
             
             // Then: Validate customer key meets COBOL requirements
             Assertions.assertThat(result).isNotNull();
@@ -315,8 +318,11 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @Test
         @DisplayName("generateAccount - creates account entities with COBOL-compatible fields")
         public void testGenerateAccount_CreatesAccountWithCobolCompatibleFields() {
+            // Given: Generate customer for account relationship
+            Customer testCustomer = testDataGenerator.generateCustomer();
+            
             // When: Generating account test entity
-            Account result = TestDataGenerator.generateAccount();
+            Account result = testDataGenerator.generateAccount(testCustomer);
 
             // Then: Validate account structure matches entity requirements
             Assertions.assertThat(result).isNotNull();
@@ -340,7 +346,7 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("generateCustomer - creates customer entities with proper personal information formats")
         public void testGenerateCustomer_CreatesCustomerWithProperFormats() {
             // When: Generating customer test entity
-            Customer result = TestDataGenerator.generateCustomer();
+            Customer result = testDataGenerator.generateCustomer();
 
             // Then: Validate customer structure and field formats
             Assertions.assertThat(result).isNotNull();
@@ -375,7 +381,7 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("generateTransaction - creates transaction entities with proper amount precision")
         public void testGenerateTransaction_CreatesTransactionWithProperPrecision() {
             // When: Generating transaction test entity
-            Transaction result = TestDataGenerator.generateTransaction();
+            Transaction result = (Transaction) testDataGenerator.generateTransaction();
 
             // Then: Validate transaction structure and precision
             Assertions.assertThat(result).isNotNull();
@@ -406,7 +412,7 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("generateCard - creates card entities with PCI DSS compliant formatting")
         public void testGenerateCard_CreatesCardWithPciCompliantFormatting() {
             // When: Generating card test entity
-            Card result = TestDataGenerator.generateCard();
+            Card result = (Card) testDataGenerator.generateCard();
 
             // Then: Validate card structure and security requirements
             Assertions.assertThat(result).isNotNull();
@@ -438,9 +444,13 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @Test
         @DisplayName("generateAccount - produces valid account data relationships")
         public void testGenerateAccount_ProducesValidDataRelationships() {
+            // Given: Generate customers for account relationships
+            Customer customer1 = testDataGenerator.generateCustomer();
+            Customer customer2 = testDataGenerator.generateCustomer();
+            
             // When: Generating multiple accounts
-            Account account1 = TestDataGenerator.generateAccount();
-            Account account2 = TestDataGenerator.generateAccount();
+            Account account1 = testDataGenerator.generateAccount(customer1);
+            Account account2 = testDataGenerator.generateAccount(customer2);
             
             // Then: Validate data relationship constraints
             Assertions.assertThat(account1.getAccountId())
@@ -466,17 +476,20 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @Test
         @DisplayName("bulk generation - creates lists of entities with unique identifiers")
         public void testBulkGeneration_CreatesListsWithUniqueIdentifiers() {
+            // Given: Generate customer for account relationships
+            Customer testCustomer = testDataGenerator.generateCustomer();
+            
             // When: Generating lists of different entity types
             List<Account> accounts = List.of(
-                TestDataGenerator.generateAccount(),
-                TestDataGenerator.generateAccount(),
-                TestDataGenerator.generateAccount()
+                testDataGenerator.generateAccount(testCustomer),
+                testDataGenerator.generateAccount(testCustomer),
+                testDataGenerator.generateAccount(testCustomer)
             );
             
             List<Customer> customers = List.of(
-                TestDataGenerator.generateCustomer(),
-                TestDataGenerator.generateCustomer(),
-                TestDataGenerator.generateCustomer()
+                testDataGenerator.generateCustomer(),
+                testDataGenerator.generateCustomer(),
+                testDataGenerator.generateCustomer()
             );
 
             // Then: Validate uniqueness across all generated entities
@@ -493,10 +506,10 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("bulk generation - maintains data consistency across related entities")
         public void testBulkGeneration_MaintainsDataConsistencyAcrossEntities() {
             // When: Generating related entities
-            Customer customer = TestDataGenerator.generateCustomer();
-            Account account = TestDataGenerator.generateAccount();
-            Card card = TestDataGenerator.generateCard();
-            Transaction transaction = TestDataGenerator.generateTransaction();
+            Customer customer = testDataGenerator.generateCustomer();
+            Account account = testDataGenerator.generateAccount(customer);
+            Card card = (Card) testDataGenerator.generateCard();
+            Transaction transaction = (Transaction) testDataGenerator.generateTransaction();
 
             // Then: Validate all entities have properly formatted identifiers
             Assertions.assertThat(customer.getCustomerId().toString()).matches("\\d{9}");
@@ -525,10 +538,10 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("edge cases - handles invalid length inputs gracefully")
         public void testEdgeCases_HandlesInvalidLengthInputs() {
             // When/Then: Invalid lengths should return empty or minimal strings
-            String negativeResult = TestDataGenerator.generatePicString(-1, false);
+            String negativeResult = testDataGenerator.generatePicString(-1, false);
             Assertions.assertThat(negativeResult).isEmpty(); // Negative length produces empty string
                 
-            String zeroResult = TestDataGenerator.generatePicString(0, false);
+            String zeroResult = testDataGenerator.generatePicString(0, false);
             Assertions.assertThat(zeroResult).isEmpty(); // Zero length produces empty string
         }
 
@@ -536,11 +549,11 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("edge cases - handles invalid VSAM key types")
         public void testEdgeCases_HandlesInvalidVsamKeyTypes() {
             // When/Then: Invalid key types should be handled gracefully
-            String emptyKeyResult = TestDataGenerator.generateVsamKey(new int[]{});
+            String emptyKeyResult = testDataGenerator.generateVsamKey(new int[]{});
             Assertions.assertThat(emptyKeyResult).isEmpty(); // Empty array produces empty key
                 
             // Test with zero-length key fields
-            String zeroLengthResult = TestDataGenerator.generateVsamKey(new int[]{0, 0});
+            String zeroLengthResult = testDataGenerator.generateVsamKey(new int[]{0, 0});
             Assertions.assertThat(zeroLengthResult).isEmpty(); // Zero-length fields produce empty key
         }
 
@@ -552,7 +565,7 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
             
             for (int scale : boundaryScales) {
                 // When: Generating with boundary scale values
-                BigDecimal result = TestDataGenerator.generateComp3BigDecimal(
+                BigDecimal result = testDataGenerator.generateComp3BigDecimal(
                     scale, 10000.0);
                     
                 // Then: Should handle all scales properly
@@ -577,7 +590,7 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
                 boolean isNumeric = picClause.contains("9");
                 // Extract length from PIC clause (e.g., "PIC X(1)" -> 1, "PIC 9(18)" -> 18)
                 int length = extractLengthFromPicClause(picClause);
-                String result = TestDataGenerator.generatePicString(length, isNumeric);
+                String result = testDataGenerator.generatePicString(length, isNumeric);
                 
                 // Then: Should handle all boundary lengths
                 Assertions.assertThat(result).isNotNull();
@@ -606,16 +619,18 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("resetRandomSeed - produces deterministic test data generation")
         public void testResetRandomSeed_ProducesDeterministicGeneration() {
             // Given: Generate initial values
-            TestDataGenerator.resetRandomSeed(12345L);
-            Account account1 = TestDataGenerator.generateAccount();
-            BigDecimal decimal1 = TestDataGenerator.generateComp3BigDecimal(2, 10000.0);
-            String pic1 = TestDataGenerator.generatePicString(10, false);
+            testDataGenerator.resetRandomSeed(12345L);
+            Customer customer1 = testDataGenerator.generateCustomer();
+            Account account1 = testDataGenerator.generateAccount(customer1);
+            BigDecimal decimal1 = testDataGenerator.generateComp3BigDecimal(2, 10000.0);
+            String pic1 = testDataGenerator.generatePicString(10, false);
 
             // When: Reset seed and generate again
-            TestDataGenerator.resetRandomSeed(12345L);
-            Account account2 = TestDataGenerator.generateAccount();
-            BigDecimal decimal2 = TestDataGenerator.generateComp3BigDecimal(2, 10000.0);
-            String pic2 = TestDataGenerator.generatePicString(10, false);
+            testDataGenerator.resetRandomSeed(12345L);
+            Customer customer2 = testDataGenerator.generateCustomer();
+            Account account2 = testDataGenerator.generateAccount(customer2);
+            BigDecimal decimal2 = testDataGenerator.generateComp3BigDecimal(2, 10000.0);
+            String pic2 = testDataGenerator.generatePicString(10, false);
 
             // Then: Results should be identical with same seed
             Assertions.assertThat(account2.getAccountId()).isEqualTo(account1.getAccountId());
@@ -628,10 +643,10 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("resetRandomSeed - ensures different sequences without reset")
         public void testResetRandomSeed_EnsuresDifferentSequencesWithoutReset() {
             // When: Generating without seed reset between calls
-            TestDataGenerator.resetRandomSeed(12345L);
-            String key1 = TestDataGenerator.generateVsamKey(new int[]{11});
-            String key2 = TestDataGenerator.generateVsamKey(new int[]{11}); // No reset
-            String key3 = TestDataGenerator.generateVsamKey(new int[]{11}); // No reset
+            testDataGenerator.resetRandomSeed(12345L);
+            String key1 = testDataGenerator.generateVsamKey(new int[]{11});
+            String key2 = testDataGenerator.generateVsamKey(new int[]{11}); // No reset
+            String key3 = testDataGenerator.generateVsamKey(new int[]{11}); // No reset
 
             // Then: Keys should be different (not using reset)
             Assertions.assertThat(key1).isNotEqualTo(key2);
@@ -653,10 +668,11 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("CSV conversion - generates valid CSV format from entity data")
         public void testCsvConversion_GeneratesValidCsvFromEntityData() {
             // Given: Generated test entities
+            Customer testCustomer = testDataGenerator.generateCustomer();
             List<Account> accounts = List.of(
-                TestDataGenerator.generateAccount(),
-                TestDataGenerator.generateAccount(),
-                TestDataGenerator.generateAccount()
+                testDataGenerator.generateAccount(testCustomer),
+                testDataGenerator.generateAccount(testCustomer),
+                testDataGenerator.generateAccount(testCustomer)
             );
 
             // When: Converting to CSV format (simulated - TestDataGenerator should provide this)
@@ -675,8 +691,8 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("JSON conversion - generates valid JSON test fixtures")
         public void testJsonConversion_GeneratesValidJsonTestFixtures() {
             // Given: Generated test entities
-            Customer customer = TestDataGenerator.generateCustomer();
-            Transaction transaction = TestDataGenerator.generateTransaction();
+            Customer customer = testDataGenerator.generateCustomer();
+            Transaction transaction = (Transaction) testDataGenerator.generateTransaction();
 
             // When/Then: Validate entities have JSON-serializable properties
             Assertions.assertThat(customer.getCustomerId()).isNotNull();
@@ -696,8 +712,8 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("fixed-width conversion - validates COBOL record layout compatibility")
         public void testFixedWidthConversion_ValidatesCobolRecordLayouts() {
             // Given: Generated entities with COBOL-compatible field formats
-            Account account = TestDataGenerator.generateAccount();
-            Customer customer = TestDataGenerator.generateCustomer();
+            Customer customer = testDataGenerator.generateCustomer();
+            Account account = testDataGenerator.generateAccount(customer);
 
             // When/Then: Validate fields match fixed-width COBOL record expectations
             
@@ -730,8 +746,8 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("AbstractBaseTest integration - validates BigDecimal assertion helpers")
         public void testAbstractBaseTestIntegration_ValidatesBigDecimalHelpers() {
             // Given: Generated monetary values
-            BigDecimal amount1 = TestDataGenerator.generateComp3BigDecimal(2, 10000.0);
-            BigDecimal amount2 = TestDataGenerator.generateComp3BigDecimal(2, 10000.0);
+            BigDecimal amount1 = testDataGenerator.generateComp3BigDecimal(2, 10000.0);
+            BigDecimal amount2 = testDataGenerator.generateComp3BigDecimal(2, 10000.0);
 
             // When/Then: AbstractBaseTest helpers should work with generated data
             assertBigDecimalEquals(amount1, amount1, "Generated value should equal itself");
@@ -749,14 +765,14 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("TestConstants integration - uses shared constants for validation")
         public void testTestConstantsIntegration_UsesSharedConstants() {
             // When: Generating data using TestConstants
-            BigDecimal testAmount = TestDataGenerator.generateComp3BigDecimal(
+            BigDecimal testAmount = testDataGenerator.generateComp3BigDecimal(
                 TestConstants.COBOL_DECIMAL_SCALE, 10000.0);
             
             // Then: Validate integration with test constants
             Assertions.assertThat(testAmount.scale()).isEqualTo(TestConstants.COBOL_DECIMAL_SCALE);
             
             // Test against known test IDs from TestConstants
-            String generatedAccountId = TestDataGenerator.generateVsamKey(new int[]{11});
+            String generatedAccountId = testDataGenerator.generateVsamKey(new int[]{11});
             Assertions.assertThat(generatedAccountId)
                 .matches("\\d{11}") // Should match 11-digit pattern as specified in generateVsamKey
                 .isNotEqualTo(TestConstants.TEST_ACCOUNT_ID); // But should be unique
@@ -773,9 +789,9 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
             long startTime = System.currentTimeMillis();
             
             // Perform data generation operations
-            TestDataGenerator.generateAccount();
-            TestDataGenerator.generateCustomer();
-            TestDataGenerator.generateComp3BigDecimal(2, 10000.0);
+            Customer testCustomer = testDataGenerator.generateCustomer();
+            testDataGenerator.generateAccount(testCustomer);
+            testDataGenerator.generateComp3BigDecimal(2, 10000.0);
             
             long executionTime = System.currentTimeMillis() - startTime;
             
@@ -799,9 +815,9 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("COBOL compatibility - validates generated data with CobolDataConverter")
         public void testCobolCompatibility_ValidatesGeneratedDataWithConverter() {
             // When: Generating various data types
-            BigDecimal monetary = TestDataGenerator.generateComp3BigDecimal(2, 10000.0);
-            String alphanumeric = TestDataGenerator.generatePicString(20, false);
-            String numeric = TestDataGenerator.generatePicString(10, true);
+            BigDecimal monetary = testDataGenerator.generateComp3BigDecimal(2, 10000.0);
+            String alphanumeric = testDataGenerator.generatePicString(20, false);
+            String numeric = testDataGenerator.generatePicString(10, true);
 
             // Then: All should be compatible with CobolDataConverter
             
@@ -826,7 +842,7 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
                 String pattern = entry.getKey();
                 try {
                     // Generate and validate each COBOL pattern
-                    String testValue = TestDataGenerator.generatePicString(10, false);
+                    String testValue = testDataGenerator.generatePicString(10, false);
                     
                     // Then: Should be compatible with COBOL conversion
                     boolean isValid = CobolDataConverter.validateCobolField(testValue, "PIC X(10)");
@@ -844,9 +860,9 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("COBOL compatibility - validates monetary precision with validation thresholds")
         public void testCobolCompatibility_ValidatesMonetaryPrecisionWithThresholds() {
             // When: Generating monetary amounts
-            BigDecimal balance = TestDataGenerator.generateComp3BigDecimal(
+            BigDecimal balance = testDataGenerator.generateComp3BigDecimal(
                 TestConstants.COBOL_DECIMAL_SCALE, 10000.0);
-            BigDecimal creditLimit = TestDataGenerator.generateComp3BigDecimal(
+            BigDecimal creditLimit = testDataGenerator.generateComp3BigDecimal(
                 TestConstants.COBOL_DECIMAL_SCALE, 10000.0);
 
             // Then: Validate against TestConstants validation thresholds
@@ -875,11 +891,11 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         public void testBusinessScenarios_GeneratesDataForAllTransactionTypes() {
             // When: Generating multiple transactions
             List<Transaction> transactions = List.of(
-                TestDataGenerator.generateTransaction(),
-                TestDataGenerator.generateTransaction(),
-                TestDataGenerator.generateTransaction(),
-                TestDataGenerator.generateTransaction(),
-                TestDataGenerator.generateTransaction()
+                (Transaction) testDataGenerator.generateTransaction(),
+                (Transaction) testDataGenerator.generateTransaction(),
+                (Transaction) testDataGenerator.generateTransaction(),
+                (Transaction) testDataGenerator.generateTransaction(),
+                (Transaction) testDataGenerator.generateTransaction()
             );
 
             // Then: Should cover different transaction types
@@ -903,12 +919,13 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("business scenarios - generates data covering boundary financial conditions")
         public void testBusinessScenarios_GeneratesDataCoveringBoundaryConditions() {
             // When: Generating accounts multiple times to get variety
+            Customer testCustomer = testDataGenerator.generateCustomer();
             List<Account> accounts = List.of(
-                TestDataGenerator.generateAccount(),
-                TestDataGenerator.generateAccount(),
-                TestDataGenerator.generateAccount(),
-                TestDataGenerator.generateAccount(),
-                TestDataGenerator.generateAccount()
+                testDataGenerator.generateAccount(testCustomer),
+                testDataGenerator.generateAccount(testCustomer),
+                testDataGenerator.generateAccount(testCustomer),
+                testDataGenerator.generateAccount(testCustomer),
+                testDataGenerator.generateAccount(testCustomer)
             );
 
             // Then: Should cover various financial conditions
@@ -939,9 +956,9 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         public void testBusinessScenarios_GeneratesCompleteCustomerProfiles() {
             // When: Generating customer profiles
             List<Customer> customers = List.of(
-                TestDataGenerator.generateCustomer(),
-                TestDataGenerator.generateCustomer(),
-                TestDataGenerator.generateCustomer()
+                testDataGenerator.generateCustomer(),
+                testDataGenerator.generateCustomer(),
+                testDataGenerator.generateCustomer()
             );
 
             // Then: All customers should have complete, valid profiles
@@ -971,9 +988,9 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         public void testBusinessScenarios_GeneratesCardDataWithSecurityCompliance() {
             // When: Generating card test data
             List<Card> cards = List.of(
-                TestDataGenerator.generateCard(),
-                TestDataGenerator.generateCard(),
-                TestDataGenerator.generateCard()
+                (Card) testDataGenerator.generateCard(),
+                (Card) testDataGenerator.generateCard(),
+                (Card) testDataGenerator.generateCard()
             );
 
             // Then: All cards should have proper security characteristics

@@ -1,7 +1,9 @@
 package com.carddemo.test;
 
 import com.carddemo.entity.Account;
+import com.carddemo.entity.Card;
 import com.carddemo.entity.Customer;
+import com.carddemo.entity.Transaction;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -21,7 +23,7 @@ import static com.carddemo.test.TestConstants.*;
  */
 public class TestDataGenerator {
     
-    private Random random = new Random(12345L);
+    private static Random random = new Random(12345L);
     
     // COBOL-style data patterns for realistic test generation
     private static final String[] FIRST_NAMES = {
@@ -55,32 +57,54 @@ public class TestDataGenerator {
      *
      * @return a fully populated Customer entity for testing
      */
-    public Customer generateCustomer() {
+    public static Customer generateCustomer() {
         Customer customer = new Customer();
         
-        // Generate customer ID in COBOL format (10 digits)
-        customer.setCustomerId(String.format("%010d", 1000000000L + random.nextInt(999999999)));
+        // Generate customer ID as String (setCustomerId expects String parameter)
+        customer.setCustomerId(String.valueOf(1000000000L + random.nextInt(999999999)));
         
         // Set names with COBOL field length constraints
         customer.setFirstName(getRandomElement(FIRST_NAMES));
         customer.setLastName(getRandomElement(LAST_NAMES));
         
-        // Generate SSN in standard format
-        customer.setSSN(generateSSN());
+        // Generate SSN in standard format (lowercase 's' to match entity)
+        customer.setSsn(generateSSN());
         
-        // Generate phone number
-        customer.setPhoneNumber(generatePhoneNumber());
+        // Generate phone number (using phoneNumber1 field)
+        customer.setPhoneNumber1(generatePhoneNumber());
         
-        // Generate address components
-        customer.setAddress(generateAddress());
+        // Generate address components (separate address lines)
+        String[] addressParts = generateAddress().split(" ", 2);
+        customer.setAddressLine1(addressParts.length > 0 ? addressParts[0] : "123 MAIN ST");
+        if (addressParts.length > 1) {
+            customer.setAddressLine2(addressParts[1]);
+        }
+        
+        // Set state code
+        customer.setStateCode(getRandomElement(STATE_CODES));
         
         // Set date of birth
         customer.setDateOfBirth(generateDateOfBirth());
         
-        // Set credit score as BigDecimal matching COBOL COMP-3 precision
-        customer.setCreditScore(generateCreditScore());
+        // Set FICO score as Integer (matching Customer entity)
+        customer.setFicoScore(generateFicoScore());
         
         return customer;
+    }
+    
+    /**
+     * Generates a list of Customer entities with COBOL-compatible data patterns.
+     * Creates the specified number of customer records with realistic test data.
+     *
+     * @param count the number of customers to generate
+     * @return List of Customer entities with realistic test data
+     */
+    public static List<Customer> generateCustomerList(int count) {
+        List<Customer> customers = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            customers.add(generateCustomer());
+        }
+        return customers;
     }
     
     /**
@@ -90,7 +114,7 @@ public class TestDataGenerator {
      * @param customer the customer to associate with this account
      * @return Account entity with realistic test data
      */
-    public Account generateAccount(Customer customer) {
+    public static Account generateAccount(Customer customer) {
         Account account = new Account();
         
         // Generate 11-digit account number in COBOL format (PIC 9(11))
@@ -125,7 +149,7 @@ public class TestDataGenerator {
      * @param customer the customer to associate with all accounts
      * @return list of Account entities with realistic test data
      */
-    public List<Account> generateAccountList(Customer customer) {
+    public static List<Account> generateAccountList(Customer customer) {
         List<Account> accounts = new ArrayList<>();
         int numAccounts = 1 + random.nextInt(3); // 1-3 accounts per customer
         
@@ -143,43 +167,63 @@ public class TestDataGenerator {
      *
      * @return list of Account entities with realistic test data
      */
-    public List<Account> generateAccountList() {
+    public static List<Account> generateAccountList() {
         Customer testCustomer = generateCustomer();
         return generateAccountList(testCustomer);
     }
     
     /**
      * Generates a valid Social Security Number in standard format.
-     * Creates SSNs that pass basic validation rules but are not real SSNs.
+     * Creates SSNs that pass all validation rules but are not real SSNs.
+     * Follows ValidationUtil rules: area != 0,666,900-999; group != 00; serial != 0000
      *
-     * @return formatted SSN string (XXX-XX-XXXX)
+     * @return formatted SSN string (9 digits)
      */
-    public String generateSSN() {
-        // Generate valid SSN format avoiding invalid patterns
-        int area = 100 + random.nextInt(899);  // 100-999, avoiding 000
-        int group = 1 + random.nextInt(99);    // 01-99, avoiding 00
-        int serial = 1 + random.nextInt(9999); // 0001-9999, avoiding 0000
+    public static String generateSSN() {
+        // Generate valid SSN area (001-899, excluding 666)
+        int area;
+        do {
+            area = 1 + random.nextInt(899);  // 1-899
+        } while (area == 666);  // Exclude 666
         
-        return String.format("%03d-%02d-%04d", area, group, serial);
+        // Generate valid group (01-99, avoiding 00)
+        int group = 1 + random.nextInt(99);    // 1-99, avoiding 00
+        
+        // Generate valid serial (0001-9999, avoiding 0000)
+        int serial = 1 + random.nextInt(9999); // 1-9999, avoiding 0000
+        
+        return String.format("%03d%02d%04d", area, group, serial);
     }
     
     /**
      * Generates a valid US phone number in standard format.
-     * Creates phone numbers with valid area codes and exchange codes.
+     * Uses ValidationUtil to ensure area code validity and avoid validation errors.
      *
-     * @return formatted phone number string (XXX) XXX-XXXX
+     * @return formatted phone number string XXX-XXX-XXXX
      */
-    public String generatePhoneNumber() {
-        // Generate valid area code (not starting with 0 or 1)
-        int areaCode = 200 + random.nextInt(800); // 200-999
+    public static String generatePhoneNumber() {
+        // Generate area code by trying random values until we get a valid one
+        String areaCode;
+        int attempts = 0;
+        do {
+            // Generate area code from 200-999 (avoid 0xx and 1xx)
+            int areaCodeInt = 200 + random.nextInt(800);
+            areaCode = String.format("%03d", areaCodeInt);
+            attempts++;
+            // Safety valve to prevent infinite loop
+            if (attempts > 100) {
+                areaCode = "555"; // Use a known valid area code as fallback
+                break;
+            }
+        } while (!com.carddemo.util.ValidationUtil.isValidPhoneAreaCode(areaCode));
         
-        // Generate valid exchange code (not starting with 0 or 1)
-        int exchange = 200 + random.nextInt(800);  // 200-999
+        // Generate valid exchange code (200-999, not starting with 0 or 1)
+        int exchange = 200 + random.nextInt(800);
         
         // Generate subscriber number
-        int subscriber = random.nextInt(10000);    // 0000-9999
+        int subscriber = random.nextInt(10000);
         
-        return String.format("(%03d) %03d-%04d", areaCode, exchange, subscriber);
+        return String.format("%s-%03d-%04d", areaCode, exchange, subscriber);
     }
     
     /**
@@ -188,8 +232,8 @@ public class TestDataGenerator {
      *
      * @param seed the seed value for the random number generator
      */
-    public void resetRandomSeed(long seed) {
-        this.random = new Random(seed);
+    public static void resetRandomSeed(long seed) {
+        random = new Random(seed);
     }
     
     /**
@@ -198,7 +242,7 @@ public class TestDataGenerator {
      *
      * @return formatted merchant ID string
      */
-    public String generateMerchantId() {
+    public static String generateMerchantId() {
         // Generate merchant ID in format MRCXXXXXXX (7-digit numeric)
         return String.format("MRC%07d", random.nextInt(10000000));
     }
@@ -211,7 +255,7 @@ public class TestDataGenerator {
      * @param maxValue maximum value for generation
      * @return BigDecimal with COBOL-compatible precision
      */
-    public BigDecimal generateComp3BigDecimal(int precision, double maxValue) {
+    public static BigDecimal generateComp3BigDecimal(int precision, double maxValue) {
         double value = random.nextDouble() * maxValue;
         if (random.nextBoolean() && value > 0) {
             value = -value; // Sometimes generate negative values
@@ -227,7 +271,7 @@ public class TestDataGenerator {
      * @param alphaOnly true for alphabetic only, false for alphanumeric
      * @return formatted string matching PIC clause requirements
      */
-    public String generatePicString(int length, boolean alphaOnly) {
+    public static String generatePicString(int length, boolean alphaOnly) {
         StringBuilder sb = new StringBuilder();
         String chars = alphaOnly ? "ABCDEFGHIJKLMNOPQRSTUVWXYZ" : "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         
@@ -245,7 +289,7 @@ public class TestDataGenerator {
      * @param keyLengths array of lengths for each key component
      * @return formatted VSAM key string
      */
-    public String generateVsamKey(int[] keyLengths) {
+    public static String generateVsamKey(int[] keyLengths) {
         StringBuilder keyBuilder = new StringBuilder();
         
         for (int i = 0; i < keyLengths.length; i++) {
@@ -267,17 +311,68 @@ public class TestDataGenerator {
      *
      * @return Transaction entity with realistic test data
      */
-    public Object generateTransaction() {
-        // Return a generic object since Transaction entity structure is not visible
-        // In a real implementation, this would return a properly populated Transaction
-        return new Object() {
-            public String toString() {
-                return String.format("Transaction[id=%s, amount=%s, type=%s]", 
-                    TEST_TRANSACTION_ID,
-                    generateComp3BigDecimal(7, 50000.0),
-                    TEST_TRANSACTION_TYPE_CODE);
-            }
-        };
+    public static Transaction generateTransaction() {
+        Transaction transaction = new Transaction();
+        transaction.setTransactionId(Long.parseLong(TEST_TRANSACTION_ID.substring(3))); // Extract numeric part
+        transaction.setAmount(generateComp3BigDecimal(7, 50000.0));
+        transaction.setTransactionTypeCode(TEST_TRANSACTION_TYPE_CODE); // Use string setter instead
+        transaction.setTransactionDate(LocalDate.now());
+        transaction.setAccountId(TEST_ACCOUNT_ID);
+        transaction.setDescription("Test Transaction");
+        return transaction;
+    }
+    
+    /**
+     * Generates a list of Transaction entities for testing.
+     * Creates multiple transactions with COBOL-compatible field values.
+     *
+     * @param count number of transactions to generate
+     * @return List of Transaction entities with realistic test data
+     */
+    public static List<Transaction> generateTransactionList(int count) {
+        List<Transaction> transactions = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            transactions.add(generateTransaction());
+        }
+        return transactions;
+    }
+    
+    /**
+     * Generates a valid transaction amount with COBOL COMP-3 precision.
+     * Creates amounts in the valid range for credit card transactions.
+     *
+     * @return BigDecimal transaction amount with 2 decimal places
+     */
+    public static BigDecimal generateValidTransactionAmount() {
+        // Generate transaction amount between $1.00 and $10,000.00
+        double amount = 1.0 + (random.nextDouble() * 9999.0);
+        return new BigDecimal(amount).setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE);
+    }
+    
+    /**
+     * Generates a batch of daily transactions for batch processing tests.
+     * Creates multiple transaction objects for bulk testing scenarios.
+     *
+     * @param count Number of transactions to generate
+     * @return List of transaction objects
+     */
+    public static List<Transaction> generateDailyTransactionBatch(int count) {
+        List<Transaction> transactions = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            transactions.add(generateTransaction());
+        }
+        return transactions;
+    }
+    
+    /**
+     * Generates a random transaction date within the last 30 days.
+     * Used for creating realistic date ranges in transaction testing.
+     *
+     * @return LocalDate within the past 30 days
+     */
+    public static LocalDate generateRandomTransactionDate() {
+        int daysAgo = random.nextInt(30);
+        return LocalDate.now().minusDays(daysAgo);
     }
     
     /**
@@ -286,17 +381,16 @@ public class TestDataGenerator {
      *
      * @return Card entity with realistic test data
      */
-    public Object generateCard() {
-        // Return a generic object since Card entity structure is not visible
-        // In a real implementation, this would return a properly populated Card
-        return new Object() {
-            public String toString() {
-                return String.format("Card[number=%s, accountId=%s, customerId=%s]",
-                    TEST_CARD_NUMBER,
-                    TEST_ACCOUNT_ID,
-                    TEST_CUSTOMER_ID);
-            }
-        };
+    public static Card generateCard() {
+        Card card = new Card();
+        card.setCardNumber(TEST_CARD_NUMBER);
+        card.setAccountId(TEST_ACCOUNT_ID);
+        card.setCustomerId(TEST_CUSTOMER_ID_LONG);
+        card.setCvvCode("123");
+        card.setEmbossedName("TEST CARDHOLDER");
+        card.setExpirationDate(LocalDate.now().plusYears(3));
+        card.setActiveStatus("Y");
+        return card;
     }
     
     /**
@@ -305,7 +399,7 @@ public class TestDataGenerator {
      *
      * @return formatted address string
      */
-    public String generateAddress() {
+    public static String generateAddress() {
         int streetNumber = 1 + random.nextInt(9999);
         String streetName = getRandomElement(STREET_NAMES);
         String city = getRandomElement(CITY_NAMES);
@@ -322,7 +416,7 @@ public class TestDataGenerator {
      *
      * @return LocalDate representing date of birth
      */
-    public LocalDate generateDateOfBirth() {
+    public static LocalDate generateDateOfBirth() {
         // Generate age between 18 and 80 years
         int age = 18 + random.nextInt(63);
         LocalDate today = LocalDate.now();
@@ -334,15 +428,14 @@ public class TestDataGenerator {
     }
     
     /**
-     * Generates a credit score as BigDecimal with COBOL COMP-3 precision.
-     * Creates scores in the standard range (300-850) with appropriate scaling.
+     * Generates a FICO score as Integer.
+     * Creates scores in the standard range (300-850).
      *
-     * @return BigDecimal credit score with 2 decimal places
+     * @return Integer FICO score between 300 and 850
      */
-    private BigDecimal generateCreditScore() {
-        // Generate credit score between 300 and 850
-        int score = 300 + random.nextInt(551);
-        return new BigDecimal(score).setScale(2, RoundingMode.HALF_UP);
+    private static Integer generateFicoScore() {
+        // Generate FICO score between 300 and 850
+        return 300 + random.nextInt(551);
     }
     
     /**
@@ -351,7 +444,7 @@ public class TestDataGenerator {
      *
      * @return BigDecimal balance with 2 decimal places
      */
-    private BigDecimal generateAccountBalance() {
+    private static BigDecimal generateAccountBalance() {
         // Generate balance between $10.00 and $50,000.00
         double balance = 10.0 + (random.nextDouble() * 49990.0);
         return new BigDecimal(balance).setScale(2, RoundingMode.HALF_UP);
@@ -363,7 +456,7 @@ public class TestDataGenerator {
      *
      * @return BigDecimal credit limit with 2 decimal places
      */
-    private BigDecimal generateCreditLimit() {
+    private static BigDecimal generateCreditLimit() {
         // Generate credit limit between $500.00 and $25,000.00
         double creditLimit = 500.0 + (random.nextDouble() * 24500.0);
         return new BigDecimal(creditLimit).setScale(2, RoundingMode.HALF_UP);
@@ -375,7 +468,7 @@ public class TestDataGenerator {
      *
      * @return BigDecimal cash credit limit with 2 decimal places
      */
-    private BigDecimal generateCashCreditLimit() {
+    private static BigDecimal generateCashCreditLimit() {
         // Generate cash credit limit between $100.00 and $5,000.00
         double cashLimit = 100.0 + (random.nextDouble() * 4900.0);
         return new BigDecimal(cashLimit).setScale(2, RoundingMode.HALF_UP);
@@ -387,7 +480,7 @@ public class TestDataGenerator {
      * @param array the array to select from
      * @return randomly selected element
      */
-    private String getRandomElement(String[] array) {
+    private static String getRandomElement(String[] array) {
         return array[random.nextInt(array.length)];
     }
 }

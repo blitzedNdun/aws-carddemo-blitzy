@@ -7,6 +7,7 @@ package com.carddemo.service;
 
 import com.carddemo.entity.Account;
 import com.carddemo.entity.CardXref;
+import com.carddemo.entity.Customer;
 import com.carddemo.entity.Transaction;
 import com.carddemo.repository.TransactionRepository;
 import com.carddemo.test.AbstractBaseTest;
@@ -28,6 +29,7 @@ import org.mockito.quality.Strictness;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -209,7 +211,13 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
         LocalDate monthEnd = monthStart.plusMonths(1).minusDays(1);
         
         // Generate diverse account transactions for aggregation testing
-        List<Account> testAccounts = TestDataGenerator.generateAccountList(10);
+        // Generate 10 accounts for aggregation testing
+        List<Account> testAccounts = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            Customer customer = testDataGenerator.generateCustomer();
+            Account account = testDataGenerator.generateAccount(customer);
+            testAccounts.add(account);
+        }
         List<Transaction> monthlyTransactions = TestDataGenerator.generateDailyTransactionBatch(100);
         
         // Configure transactions across multiple accounts in the test month
@@ -300,7 +308,7 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
         complianceTransactions.forEach(txn -> {
             txn.setTransactionDate(periodStart.plusDays(
                 TestDataGenerator.generateRandomTransactionDate().getDayOfYear() % periodEnd.getDayOfMonth()));
-            txn.setMerchantId(TestDataGenerator.generateMerchantId());
+            txn.setMerchantId(Long.parseLong(TestDataGenerator.generateMerchantId().substring(3)));
             txn.setAmount(TestDataGenerator.generateValidTransactionAmount());
         });
         
@@ -459,7 +467,7 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
         merchantTransactions.forEach(txn -> {
             txn.setMerchantName("TEST_" + merchantCategory + "_MERCHANT");
             txn.setCategoryCode(getCategoryCodeForMerchantType(merchantCategory));
-            txn.setMerchantId(TestDataGenerator.generateMerchantId());
+            txn.setMerchantId(Long.parseLong(TestDataGenerator.generateMerchantId().substring(3)));
             txn.setAmount(TestDataGenerator.generateValidTransactionAmount());
         });
         
@@ -671,7 +679,7 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
         
         // Ensure list has requested size
         while (reportTransactions.size() < recordCount) {
-            reportTransactions.add(TestDataGenerator.generateTransaction());
+            reportTransactions.add((Transaction) TestDataGenerator.generateTransaction());
         }
         reportTransactions = reportTransactions.subList(0, recordCount);
         

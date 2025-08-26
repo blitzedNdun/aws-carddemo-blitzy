@@ -708,9 +708,9 @@ public class UserTest extends AbstractBaseTest implements UnitTest {
             // Verify test constants are properly used
             assertThat(TestConstants.TEST_USER_ID).isNotEmpty().hasSize(8);
             assertThat(TestConstants.TEST_USER_PASSWORD).isNotEmpty().hasSize(8);
-            // Note: TestConstants role constants are SimpleGrantedAuthority objects
-            assertThat(TestConstants.TEST_USER_ROLE.getAuthority()).isEqualTo("ROLE_USER");
-            assertThat(TestConstants.TEST_ADMIN_ROLE.getAuthority()).isEqualTo("ROLE_ADMIN");
+            // Note: TestConstants role constants are String objects
+            assertThat(TestConstants.TEST_USER_ROLE).isEqualTo("USER");
+            assertThat(TestConstants.TEST_ADMIN_ROLE).isEqualTo("ADMIN");
             
             // Verify COBOL precision constants
             assertThat(TestConstants.COBOL_DECIMAL_SCALE).isNotNull();

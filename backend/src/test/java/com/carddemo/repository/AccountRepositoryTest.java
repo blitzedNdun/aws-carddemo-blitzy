@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -702,7 +703,7 @@ public class AccountRepositoryTest extends BaseIntegrationTest {
         
         @Test
         @DisplayName("Concurrent Read Operations - Connection pool stress test")
-        void testConcurrentReads() throws InterruptedException {
+        void testConcurrentReads() throws InterruptedException, ExecutionException {
             // Given: An account for concurrent access
             Customer testCustomer = createTestCustomer();
             Customer savedCustomer = customerRepository.save(testCustomer);

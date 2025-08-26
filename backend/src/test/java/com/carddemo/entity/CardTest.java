@@ -95,14 +95,14 @@ public class CardTest extends AbstractBaseTest implements UnitTest {
         
         // Create test account entity for relationship testing
         testAccount = new Account();
-        testAccount.setAccountId(Long.parseLong(TestConstants.TEST_ACCOUNT_ID));
+        testAccount.setAccountId(TestConstants.TEST_ACCOUNT_ID);
         testAccount.setCustomer(testCustomer); // Set customer relationship instead of customerId
         testAccount.setCurrentBalance(new java.math.BigDecimal("1500.00"));
         
         // Create test Card entity with COBOL-compatible data
         testCard = new Card();
         testCard.setCardNumber(TestConstants.TEST_CARD_NUMBER);
-        testCard.setAccountId(Long.parseLong(TestConstants.TEST_ACCOUNT_ID));
+        testCard.setAccountId(TestConstants.TEST_ACCOUNT_ID);
         testCard.setCustomerId(Long.valueOf(testCustomer.getCustomerId()));
         testCard.setCvvCode("123");
         testCard.setEmbossedName("JOHN A DOE");
@@ -146,13 +146,13 @@ public class CardTest extends AbstractBaseTest implements UnitTest {
     @Test
     public void testAccountIdFieldMapping() {
         // Test valid 11-digit account ID
-        Long accountId = Long.parseLong(TestConstants.TEST_ACCOUNT_ID);
+        Long accountId = TestConstants.TEST_ACCOUNT_ID;
         testCard.setAccountId(accountId);
         assertThat(testCard.getAccountId()).isEqualTo(accountId);
         
         // Validate field length matches COBOL PIC 9(11) specification  
         assertThat(Constants.ACCOUNT_ID_LENGTH).isEqualTo(11);
-        assertThat(TestConstants.TEST_ACCOUNT_ID.length()).isEqualTo(Constants.ACCOUNT_ID_LENGTH);
+        assertThat(TestConstants.TEST_ACCOUNT_ID.toString().length()).isEqualTo(Constants.ACCOUNT_ID_LENGTH);
         
         logTestExecution("Account ID field mapping validated", null);
     }
@@ -370,7 +370,7 @@ public class CardTest extends AbstractBaseTest implements UnitTest {
     @Test
     public void testValidAccountIdValidation() {
         // Test valid account ID patterns
-        String validAccountId = TestConstants.TEST_ACCOUNT_ID;
+        String validAccountId = TestConstants.TEST_ACCOUNT_ID.toString();
         ValidationUtil.FieldValidator validator = new ValidationUtil.FieldValidator();
         assertThatNoException().isThrownBy(() -> validator.validateAccountId(validAccountId));
         
@@ -621,7 +621,7 @@ public class CardTest extends AbstractBaseTest implements UnitTest {
             .hasMessageContaining("accountId");
         
         // Reset and test validation with expired date
-        testCard.setAccountId(Long.parseLong(TestConstants.TEST_ACCOUNT_ID));
+        testCard.setAccountId(TestConstants.TEST_ACCOUNT_ID);
         testCard.setExpirationDate(LocalDate.now().minusYears(1));
         assertThatThrownBy(() -> testCard.validateCard())
             .isInstanceOf(RuntimeException.class)

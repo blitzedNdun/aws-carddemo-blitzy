@@ -128,14 +128,14 @@ public class TransactionTest extends AbstractBaseTest implements UnitTest {
     private void setupMockObjects() {
         // Mock Account entity with required getter methods
         mockAccount = mock(Account.class);
-        when(mockAccount.getAccountId()).thenReturn(Long.parseLong(TestConstants.TEST_ACCOUNT_ID));
+        when(mockAccount.getAccountId()).thenReturn(TestConstants.TEST_ACCOUNT_ID);
         when(mockAccount.getCurrentBalance()).thenReturn(new BigDecimal("1500.00"));
         when(mockAccount.getCustomerId()).thenReturn(12345L);
         
         // Mock Card entity with required getter methods  
         mockCard = mock(Card.class);
         when(mockCard.getCardNumber()).thenReturn(TestConstants.TEST_CARD_NUMBER);
-        when(mockCard.getAccountId()).thenReturn(Long.parseLong(TestConstants.TEST_ACCOUNT_ID));
+        when(mockCard.getAccountId()).thenReturn(TestConstants.TEST_ACCOUNT_ID);
         when(mockCard.getActiveStatus()).thenReturn("Y");
         
         // Mock TransactionType entity
@@ -156,7 +156,7 @@ public class TransactionTest extends AbstractBaseTest implements UnitTest {
     private void setupBaseTransactionData() {
         // transactionId is auto-generated, no need to set manually
         transaction.setAmount(new BigDecimal("123.45"));
-        transaction.setAccountId(Long.parseLong(TestConstants.TEST_ACCOUNT_ID));
+        transaction.setAccountId(TestConstants.TEST_ACCOUNT_ID);
         transaction.setTransactionDate(LocalDate.now());
         transaction.setDescription("Test transaction");
         transaction.setMerchantId(987654321L);
@@ -603,7 +603,7 @@ public class TransactionTest extends AbstractBaseTest implements UnitTest {
         assertThat(transaction.getAccount()).isEqualTo(mockAccount);
         
         // Verify members_accessed from Account are properly used
-        assertThat(transaction.getAccount().getAccountId()).isEqualTo(Long.parseLong(TestConstants.TEST_ACCOUNT_ID));
+        assertThat(transaction.getAccount().getAccountId()).isEqualTo(TestConstants.TEST_ACCOUNT_ID);
         assertThat(transaction.getAccount().getCurrentBalance()).isNotNull();
         assertThat(transaction.getAccount().getCustomerId()).isNotNull();
         
@@ -623,7 +623,7 @@ public class TransactionTest extends AbstractBaseTest implements UnitTest {
         
         // Verify members_accessed from Card are properly used
         assertThat(transaction.getCard().getCardNumber()).isEqualTo(TestConstants.TEST_CARD_NUMBER);
-        assertThat(transaction.getCard().getAccountId()).isEqualTo(Long.parseLong(TestConstants.TEST_ACCOUNT_ID));
+        assertThat(transaction.getCard().getAccountId()).isEqualTo(TestConstants.TEST_ACCOUNT_ID);
         assertThat(transaction.getCard().getActiveStatus()).isEqualTo("Y");
         
         // Verify relationship method calls (called once in setter, once in assertion)
@@ -833,7 +833,7 @@ public class TransactionTest extends AbstractBaseTest implements UnitTest {
     private Transaction createTestTransactionEntity() {
         Transaction transaction = new Transaction();
         transaction.setAmount(new BigDecimal("123.45"));
-        transaction.setAccountId(Long.parseLong(TestConstants.TEST_ACCOUNT_ID));
+        transaction.setAccountId(TestConstants.TEST_ACCOUNT_ID);
         transaction.setTransactionDate(LocalDate.now());
         transaction.setDescription("Test transaction");
         transaction.setMerchantId(987654321L);

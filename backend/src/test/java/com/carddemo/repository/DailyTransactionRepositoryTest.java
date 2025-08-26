@@ -411,9 +411,9 @@ public class DailyTransactionRepositoryTest extends AbstractBaseTest {
     public void testMerchantTotalsAggregation_MerchantAnalysis() {
         // Given: Create transactions for different merchants
         LocalDate analysisDate = LocalDate.now().minusDays(1);
-        Long merchant1 = testDataGenerator.generateMerchantId();
-        Long merchant2 = testDataGenerator.generateMerchantId();
-        Long merchant3 = testDataGenerator.generateMerchantId();
+        Long merchant1 = Long.parseLong(testDataGenerator.generateMerchantId());
+        Long merchant2 = Long.parseLong(testDataGenerator.generateMerchantId());
+        Long merchant3 = Long.parseLong(testDataGenerator.generateMerchantId());
         
         List<DailyTransaction> merchant1Tx = createMerchantTransactions(analysisDate, merchant1, 10);
         List<DailyTransaction> merchant2Tx = createMerchantTransactions(analysisDate, merchant2, 15);

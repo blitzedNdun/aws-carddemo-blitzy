@@ -75,7 +75,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
     @BeforeEach
     public void setUp() {
         // Generate test customer matching COBOL CUSTOMER-RECORD structure
-        testCustomer = TestDataGenerator.generateCustomer();
+        testCustomer = testDataGenerator.generateCustomer();
     }
 
     @Nested
@@ -86,10 +86,10 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @DisplayName("updateCustomer() - successful customer information update")
         void updateCustomer_ValidData_ReturnsUpdatedCustomer() {
             // Given: Valid customer with updates
-            Customer existingCustomer = TestDataGenerator.generateCustomer();
+            Customer existingCustomer = testDataGenerator.generateCustomer();
             existingCustomer.setCustomerId(String.valueOf(TestConstants.VALID_CUSTOMER_ID_LONG));
             
-            Customer updateData = TestDataGenerator.generateCustomer();
+            Customer updateData = testDataGenerator.generateCustomer();
             updateData.setCustomerId(String.valueOf(TestConstants.VALID_CUSTOMER_ID_LONG));
             updateData.setFirstName("UPDATED");
             updateData.setLastName("CUSTOMER");
@@ -116,7 +116,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @DisplayName("updateCustomer() - customer not found throws exception")
         void updateCustomer_CustomerNotFound_ThrowsException() {
             // Given: Non-existent customer ID
-            Customer updateData = TestDataGenerator.generateCustomer();
+            Customer updateData = testDataGenerator.generateCustomer();
             updateData.setCustomerId("NONEXISTENT");
             
             when(customerRepository.findById(999L))
@@ -135,7 +135,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @DisplayName("updateCustomer() - invalid data validation failure")
         void updateCustomer_InvalidData_ThrowsValidationException() {
             // Given: Customer with invalid data
-            Customer invalidCustomer = TestDataGenerator.generateCustomer();
+            Customer invalidCustomer = testDataGenerator.generateCustomer();
             invalidCustomer.setCustomerId(String.valueOf(TestConstants.VALID_CUSTOMER_ID_LONG));
             invalidCustomer.setSSN("INVALID-SSN"); // Invalid SSN format
             
@@ -155,12 +155,12 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @DisplayName("updateCustomer() - maintains COBOL data precision for financial fields")
         void updateCustomer_FinancialFields_MaintainsCobolPrecision() {
             // Given: Customer with financial data requiring COBOL precision
-            Customer existingCustomer = TestDataGenerator.generateCustomer();
+            Customer existingCustomer = testDataGenerator.generateCustomer();
             existingCustomer.setCustomerId(String.valueOf(TestConstants.VALID_CUSTOMER_ID_LONG));
             
             // Credit score should be handled as BigDecimal with COBOL precision
             BigDecimal creditScore = new BigDecimal("750.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE);
-            Customer updateData = TestDataGenerator.generateCustomer();
+            Customer updateData = testDataGenerator.generateCustomer();
             updateData.setCustomerId(String.valueOf(TestConstants.VALID_CUSTOMER_ID_LONG));
             updateData.setCreditScore(creditScore);
             
@@ -187,9 +187,9 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @DisplayName("standardizeAddress() - US address standardization")
         void standardizeAddress_UsAddress_ReturnsStandardizedFormat() {
             // Given: Customer with non-standardized address
-            Customer customer = TestDataGenerator.generateCustomer();
+            Customer customer = testDataGenerator.generateCustomer();
             String originalAddress = "123 main street apt 4b";
-            customer.setAddress(TestDataGenerator.generateAddress());
+            customer.setAddress(testDataGenerator.generateAddress());
 
             // When: Standardizing address
             String standardizedAddress = customerUpdateService.standardizeAddress(originalAddress);
@@ -270,7 +270,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
             String phone1 = "(555) 123-4567";
             String phone2 = "555-123-4567";
             String phone3 = "5551234567";
-            String phone4 = TestDataGenerator.generatePhoneNumber();
+            String phone4 = testDataGenerator.generatePhoneNumber();
 
             // When: Validating phone numbers
             boolean result1 = customerUpdateService.validatePhoneNumber(phone1);
@@ -337,11 +337,11 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @DisplayName("validateCustomerData() - complete customer record validation")
         void validateCustomerData_CompleteRecord_ReturnsTrue() {
             // Given: Complete valid customer record
-            Customer validCustomer = TestDataGenerator.generateCustomer();
+            Customer validCustomer = testDataGenerator.generateCustomer();
             validCustomer.setCustomerId(String.valueOf(TestConstants.VALID_CUSTOMER_ID_LONG));
-            validCustomer.setSSN(TestDataGenerator.generateSSN());
-            validCustomer.setDateOfBirth(TestDataGenerator.generateDateOfBirth());
-            validCustomer.setPhoneNumber(TestDataGenerator.generatePhoneNumber());
+            validCustomer.setSSN(testDataGenerator.generateSSN());
+            validCustomer.setDateOfBirth(testDataGenerator.generateDateOfBirth());
+            validCustomer.setPhoneNumber(testDataGenerator.generatePhoneNumber());
 
             // When: Validating complete customer data
             boolean result = customerUpdateService.validateCustomerData(validCustomer);
@@ -354,13 +354,13 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @DisplayName("validateCustomerData() - SSN validation using ValidationUtil")
         void validateCustomerData_SsnValidation_UsesValidationUtil() {
             // Given: Customer with various SSN formats
-            Customer customer1 = TestDataGenerator.generateCustomer();
+            Customer customer1 = testDataGenerator.generateCustomer();
             customer1.setSSN("123-45-6789");
             
-            Customer customer2 = TestDataGenerator.generateCustomer();
+            Customer customer2 = testDataGenerator.generateCustomer();
             customer2.setSSN("123456789");
             
-            Customer customer3 = TestDataGenerator.generateCustomer();
+            Customer customer3 = testDataGenerator.generateCustomer();
             customer3.setSSN("123-45-67890"); // Invalid - too long
 
             // When: Validating customers with different SSN formats
@@ -384,13 +384,13 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @DisplayName("validateCustomerData() - date of birth validation using DateConversionUtil")
         void validateCustomerData_DateOfBirthValidation_UsesDateConversionUtil() {
             // Given: Customers with various birth dates
-            Customer customer1 = TestDataGenerator.generateCustomer();
+            Customer customer1 = testDataGenerator.generateCustomer();
             customer1.setDateOfBirth(LocalDate.of(1990, 5, 15)); // Valid past date
             
-            Customer customer2 = TestDataGenerator.generateCustomer();
+            Customer customer2 = testDataGenerator.generateCustomer();
             customer2.setDateOfBirth(LocalDate.now().plusDays(1)); // Invalid future date
             
-            Customer customer3 = TestDataGenerator.generateCustomer();
+            Customer customer3 = testDataGenerator.generateCustomer();
             customer3.setDateOfBirth(LocalDate.of(1850, 1, 1)); // Invalid - before 1900
 
             // When: Validating customers with different birth dates
@@ -413,13 +413,13 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @DisplayName("validateCustomerData() - required field validation")
         void validateCustomerData_RequiredFields_ValidatesPresence() {
             // Given: Customers with missing required fields
-            Customer customerNoName = TestDataGenerator.generateCustomer();
+            Customer customerNoName = testDataGenerator.generateCustomer();
             customerNoName.setFirstName(null);
             
-            Customer customerNoSSN = TestDataGenerator.generateCustomer();
+            Customer customerNoSSN = testDataGenerator.generateCustomer();
             customerNoSSN.setSSN(null);
             
-            Customer customerNoId = TestDataGenerator.generateCustomer();
+            Customer customerNoId = testDataGenerator.generateCustomer();
             customerNoId.setCustomerId(null);
 
             // When: Validating customers with missing fields
@@ -437,16 +437,16 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @DisplayName("validateCustomerData() - credit score validation within FICO range")
         void validateCustomerData_CreditScore_ValidatesFicoRange() {
             // Given: Customers with various credit scores
-            Customer validCreditCustomer = TestDataGenerator.generateCustomer();
+            Customer validCreditCustomer = testDataGenerator.generateCustomer();
             validCreditCustomer.setCreditScore(new BigDecimal("750.00"));
             
-            Customer lowCreditCustomer = TestDataGenerator.generateCustomer();
+            Customer lowCreditCustomer = testDataGenerator.generateCustomer();
             lowCreditCustomer.setCreditScore(new BigDecimal("300.00")); // Minimum FICO
             
-            Customer highCreditCustomer = TestDataGenerator.generateCustomer();
+            Customer highCreditCustomer = testDataGenerator.generateCustomer();
             highCreditCustomer.setCreditScore(new BigDecimal("850.00")); // Maximum FICO
             
-            Customer invalidCreditCustomer = TestDataGenerator.generateCustomer();
+            Customer invalidCreditCustomer = testDataGenerator.generateCustomer();
             invalidCreditCustomer.setCreditScore(new BigDecimal("900.00")); // Above FICO range
 
             // When: Validating customers with different credit scores
@@ -472,9 +472,9 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         void processCustomerBatch_ValidRecords_ProcessesSuccessfully() {
             // Given: List of valid customers for batch processing
             List<Customer> customerBatch = Arrays.asList(
-                TestDataGenerator.generateCustomer(),
-                TestDataGenerator.generateCustomer(),
-                TestDataGenerator.generateCustomer()
+                testDataGenerator.generateCustomer(),
+                testDataGenerator.generateCustomer(),
+                testDataGenerator.generateCustomer()
             );
             
             // Set unique IDs for each customer
@@ -503,14 +503,14 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @DisplayName("processCustomerBatch() - mixed valid and invalid records")
         void processCustomerBatch_MixedRecords_ProcessesValidRejectsInvalid() {
             // Given: Batch with valid and invalid customers
-            Customer validCustomer = TestDataGenerator.generateCustomer();
+            Customer validCustomer = testDataGenerator.generateCustomer();
             validCustomer.setCustomerId(String.valueOf(1L));
             
-            Customer invalidCustomer = TestDataGenerator.generateCustomer();
+            Customer invalidCustomer = testDataGenerator.generateCustomer();
             invalidCustomer.setCustomerId(String.valueOf(2L));
             invalidCustomer.setSSN("INVALID-SSN");
             
-            Customer anotherValidCustomer = TestDataGenerator.generateCustomer();
+            Customer anotherValidCustomer = testDataGenerator.generateCustomer();
             anotherValidCustomer.setCustomerId(String.valueOf(3L));
             
             List<Customer> customerBatch = Arrays.asList(validCustomer, invalidCustomer, anotherValidCustomer);
@@ -590,7 +590,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @DisplayName("updateCreditScore() - valid credit score update")
         void updateCreditScore_ValidScore_UpdatesSuccessfully() {
             // Given: Customer with existing credit score
-            Customer existingCustomer = TestDataGenerator.generateCustomer();
+            Customer existingCustomer = testDataGenerator.generateCustomer();
             existingCustomer.setCustomerId(String.valueOf(TestConstants.VALID_CUSTOMER_ID_LONG));
             existingCustomer.setCreditScore(new BigDecimal("700.00"));
             
@@ -618,7 +618,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @DisplayName("updateCreditScore() - invalid credit score range")
         void updateCreditScore_InvalidRange_ThrowsException() {
             // Given: Customer and invalid credit scores
-            Customer existingCustomer = TestDataGenerator.generateCustomer();
+            Customer existingCustomer = testDataGenerator.generateCustomer();
             existingCustomer.setCustomerId(String.valueOf(TestConstants.VALID_CUSTOMER_ID_LONG));
             
             BigDecimal tooLow = new BigDecimal("200.00");  // Below FICO minimum
@@ -663,7 +663,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @DisplayName("updateCreditScore() - BigDecimal precision preservation")
         void updateCreditScore_BigDecimalPrecision_PreservesCobolCompatibility() {
             // Given: Customer and credit score with specific precision
-            Customer existingCustomer = TestDataGenerator.generateCustomer();
+            Customer existingCustomer = testDataGenerator.generateCustomer();
             existingCustomer.setCustomerId(String.valueOf(TestConstants.VALID_CUSTOMER_ID_LONG));
             
             // Create BigDecimal with COBOL-compatible precision
@@ -706,7 +706,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @DisplayName("Error handling - repository exception handling")
         void errorHandling_RepositoryException_HandlesGracefully() {
             // Given: Repository throws exception
-            Customer testCustomer = TestDataGenerator.generateCustomer();
+            Customer testCustomer = testDataGenerator.generateCustomer();
             testCustomer.setCustomerId(String.valueOf(TestConstants.VALID_CUSTOMER_ID_LONG));
             
             when(customerRepository.findById(TestConstants.VALID_CUSTOMER_ID_LONG))
@@ -722,11 +722,11 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @DisplayName("Error handling - concurrent modification detection")
         void errorHandling_ConcurrentModification_DetectsAndHandles() {
             // Given: Customer being updated concurrently
-            Customer existingCustomer = TestDataGenerator.generateCustomer();
+            Customer existingCustomer = testDataGenerator.generateCustomer();
             existingCustomer.setCustomerId(String.valueOf(TestConstants.VALID_CUSTOMER_ID_LONG));
             // existingCustomer.setVersion(1L); // Version for optimistic locking - commented out due to missing method
             
-            Customer updateData = TestDataGenerator.generateCustomer();
+            Customer updateData = testDataGenerator.generateCustomer();
             updateData.setCustomerId(String.valueOf(TestConstants.VALID_CUSTOMER_ID_LONG));
             // updateData.setVersion(1L); // Version for optimistic locking - commented out due to missing method
             updateData.setFirstName("UPDATED");
@@ -765,10 +765,10 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @DisplayName("Error handling - transaction rollback on batch failure")
         void errorHandling_BatchFailure_RollsBackTransaction() {
             // Given: Batch with one customer that will cause save failure
-            Customer validCustomer = TestDataGenerator.generateCustomer();
+            Customer validCustomer = testDataGenerator.generateCustomer();
             validCustomer.setCustomerId(String.valueOf(1L));
             
-            Customer failingCustomer = TestDataGenerator.generateCustomer();
+            Customer failingCustomer = testDataGenerator.generateCustomer();
             failingCustomer.setCustomerId(String.valueOf(2L));
             
             List<Customer> customerBatch = Arrays.asList(validCustomer, failingCustomer);
@@ -805,7 +805,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @DisplayName("ValidationUtil integration - comprehensive data validation")
         void validationUtilIntegration_ComprehensiveValidation_ValidatesAllFields() {
             // Given: Customer requiring comprehensive validation
-            Customer customer = TestDataGenerator.generateCustomer();
+            Customer customer = testDataGenerator.generateCustomer();
             customer.setSSN("123-45-6789");
             customer.setPhoneNumber("(214) 555-1234");
             customer.setDateOfBirth(LocalDate.of(1990, 5, 15));
@@ -830,10 +830,10 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
             LocalDate validDate = LocalDate.of(1985, 12, 25);
             LocalDate invalidFutureDate = LocalDate.now().plusYears(1);
             
-            Customer validCustomer = TestDataGenerator.generateCustomer();
+            Customer validCustomer = testDataGenerator.generateCustomer();
             validCustomer.setDateOfBirth(validDate);
             
-            Customer invalidCustomer = TestDataGenerator.generateCustomer();
+            Customer invalidCustomer = testDataGenerator.generateCustomer();
             invalidCustomer.setDateOfBirth(invalidFutureDate);
 
             // When: Validating customers with different dates
@@ -854,11 +854,11 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @DisplayName("TestDataGenerator integration - generates COBOL-compatible test data")
         void testDataGeneratorIntegration_GeneratesCobolCompatibleData_ValidatesCorrectly() {
             // When: Generating test data using TestDataGenerator
-            Customer generatedCustomer = TestDataGenerator.generateCustomer();
-            String generatedSSN = TestDataGenerator.generateSSN();
-            String generatedPhone = TestDataGenerator.generatePhoneNumber();
-            LocalDate generatedDob = TestDataGenerator.generateDateOfBirth();
-            String generatedAddress = TestDataGenerator.generateAddress();
+            Customer generatedCustomer = testDataGenerator.generateCustomer();
+            String generatedSSN = testDataGenerator.generateSSN();
+            String generatedPhone = testDataGenerator.generatePhoneNumber();
+            LocalDate generatedDob = testDataGenerator.generateDateOfBirth();
+            String generatedAddress = testDataGenerator.generateAddress();
 
             // Then: Generated data passes all validation rules  
             // TODO: ValidationUtil method signatures need verification
@@ -886,10 +886,10 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @DisplayName("Performance - single customer update within threshold")
         void performance_SingleCustomerUpdate_CompletesWithinThreshold() {
             // Given: Customer for performance testing
-            Customer existingCustomer = TestDataGenerator.generateCustomer();
+            Customer existingCustomer = testDataGenerator.generateCustomer();
             existingCustomer.setCustomerId(String.valueOf(TestConstants.VALID_CUSTOMER_ID_LONG));
             
-            Customer updateData = TestDataGenerator.generateCustomer();
+            Customer updateData = testDataGenerator.generateCustomer();
             updateData.setCustomerId(String.valueOf(TestConstants.VALID_CUSTOMER_ID_LONG));
             
             when(customerRepository.findById(TestConstants.VALID_CUSTOMER_ID_LONG))
@@ -911,7 +911,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @DisplayName("Precision - BigDecimal operations maintain COBOL compatibility")
         void precision_BigDecimalOperations_MaintainCobolCompatibility() {
             // Given: Customer with financial data requiring precise calculations
-            Customer customer = TestDataGenerator.generateCustomer();
+            Customer customer = testDataGenerator.generateCustomer();
             customer.setCustomerId(String.valueOf(TestConstants.VALID_CUSTOMER_ID_LONG));
             
             // Test various BigDecimal operations that should maintain COBOL precision
@@ -941,7 +941,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @DisplayName("updateCustomer - validates customer phone number and address access")
         void testUpdateCustomer_ValidatesCustomerPhoneNumberAndAddressAccess() {
             // Given: Customer with existing phone number and address
-            testCustomer = TestDataGenerator.generateCustomer();
+            testCustomer = testDataGenerator.generateCustomer();
             String originalPhone = testCustomer.getPhoneNumber();
             String originalAddress = testCustomer.getAddress();
             
@@ -963,7 +963,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @DisplayName("validateCustomerData - validates SSN lookup functionality")
         void testValidateCustomerData_ValidatesSsnLookupFunctionality() {
             // Given: Customer with SSN for duplicate checking
-            testCustomer = TestDataGenerator.generateCustomer();
+            testCustomer = testDataGenerator.generateCustomer();
             String testSSN = testCustomer.getSSN();
             
             // when(customerRepository.findBySSN(testSSN)).thenReturn(Optional.empty()); // TODO: findBySSN method not found
@@ -981,7 +981,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @DisplayName("updateCreditScore - validates precision tolerance checking")
         void testUpdateCreditScore_ValidatesPrecisionToleranceChecking() {
             // Given: Customer update with financial data requiring precision validation
-            testCustomer = TestDataGenerator.generateCustomer();
+            testCustomer = testDataGenerator.generateCustomer();
             testCustomer.setCustomerId(String.valueOf(TestConstants.VALID_CUSTOMER_ID_LONG));
             BigDecimal originalBalance = BigDecimal.valueOf(750.00);
             BigDecimal updatedBalance = BigDecimal.valueOf(750.01);
@@ -1010,8 +1010,8 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         void testProcessCustomerBatch_ValidatesWithValidationThresholds() {
             // Given: Multiple customers for batch processing with threshold validation
             List<Customer> customers = Arrays.asList(
-                TestDataGenerator.generateCustomer(),
-                TestDataGenerator.generateCustomer()
+                testDataGenerator.generateCustomer(),
+                testDataGenerator.generateCustomer()
             );
             
             // Set up customers with phone numbers and addresses to ensure access
@@ -1061,11 +1061,10 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
      * @return list of generated customers
      */
     private List<Customer> generateLargeBatch(int size) {
-        return TestDataGenerator.generateAccountList(size)
+        return testDataGenerator.generateCustomerList(size)
             .stream()
-            .map(account -> {
-                Customer customer = TestDataGenerator.generateCustomer();
-                Long customerId = (long) (Math.abs(account.hashCode()) % 1000000 + 1);
+            .map(customer -> {
+                Long customerId = (long) (Math.abs(customer.hashCode()) % 1000000 + 1);
                 customer.setCustomerId(String.valueOf(customerId));
                 return customer;
             })

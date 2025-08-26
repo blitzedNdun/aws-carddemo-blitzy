@@ -71,6 +71,7 @@ public abstract class AbstractBaseTest {
     private ObjectMapper objectMapper;
     private Map<String, Object> testFixtures;
     private long testStartTime;
+    protected TestDataGenerator testDataGenerator;
 
     /**
      * Setup method executed before each test execution.
@@ -97,6 +98,9 @@ public abstract class AbstractBaseTest {
         // Configure ObjectMapper for JSON parsing with COBOL precision requirements
         objectMapper = new ObjectMapper();
         objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
+        
+        // Initialize TestDataGenerator instance for all test subclasses
+        testDataGenerator = new TestDataGenerator();
         
         // Load test fixtures for data-driven testing
         loadTestFixtures();
@@ -532,10 +536,9 @@ public abstract class AbstractBaseTest {
         }
         
         // Validate precision requirements from COBOL_COMP3_PATTERNS
-        Integer maxPrecision = (Integer) TestConstants.COBOL_COMP3_PATTERNS.get("max_precision");
-        if (value.precision() > maxPrecision) {
+        if (value.precision() > TestConstants.COBOL_MAX_PRECISION) {
             logger.warn("Precision exceeded for field {}: {} > {}", 
-                fieldName, value.precision(), maxPrecision);
+                fieldName, value.precision(), TestConstants.COBOL_MAX_PRECISION);
             return false;
         }
         

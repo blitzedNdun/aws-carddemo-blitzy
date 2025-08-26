@@ -78,12 +78,12 @@ public class JwtTokenProviderTest implements UnitTest {
         // Initialize test user data using SecurityTestUtils
         testUser = SecurityTestUtils.createTestUserDetails(
             TestConstants.TEST_USER_ID, 
-            Collections.singletonList(TestConstants.TEST_USER_ROLE)
+            Collections.singletonList(new SimpleGrantedAuthority(TestConstants.TEST_USER_ROLE))
         );
         
         testAdmin = SecurityTestUtils.createTestUserDetails(
             TestConstants.TEST_USER_ID + "_ADMIN", 
-            Collections.singletonList(TestConstants.TEST_ADMIN_ROLE)
+            Collections.singletonList(new SimpleGrantedAuthority(TestConstants.TEST_ADMIN_ROLE))
         );
         
         // Setup test tokens
@@ -590,8 +590,8 @@ public class JwtTokenProviderTest implements UnitTest {
                 .contains("USER");
             
             // Verify test roles match security constants
-            assertThat(TestConstants.TEST_ADMIN_ROLE.getAuthority()).isEqualTo(adminRole);
-            assertThat(TestConstants.TEST_USER_ROLE.getAuthority()).isEqualTo(userRole);
+            assertThat("ROLE_" + TestConstants.TEST_ADMIN_ROLE).isEqualTo(adminRole);
+            assertThat("ROLE_" + TestConstants.TEST_USER_ROLE).isEqualTo(userRole);
         }
         
         @Test

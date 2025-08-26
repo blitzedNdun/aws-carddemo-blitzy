@@ -118,7 +118,7 @@ public class AccountTest extends AbstractBaseTest implements UnitTest {
         // Initialize test Account with COBOL-compatible field values
         // Uses CobolDataConverter.toBigDecimal() for monetary field precision
         testAccount = Account.builder()
-                .accountId(Long.parseLong(TestConstants.TEST_ACCOUNT_ID))
+                .accountId(TestConstants.TEST_ACCOUNT_ID)
                 .activeStatus("Y")
                 .currentBalance(CobolDataConverter.toBigDecimal("1234.56", TestConstants.COBOL_DECIMAL_SCALE))
                 .creditLimit(CobolDataConverter.toBigDecimal("5000.00", TestConstants.COBOL_DECIMAL_SCALE))
@@ -155,7 +155,7 @@ public class AccountTest extends AbstractBaseTest implements UnitTest {
     public void testAccountFieldMappingsFromCobolCopybook() throws Exception {
         // Test ACCT-ID field mapping (PIC 9(11))
         assertThat(testAccount.getAccountId()).isNotNull();
-        assertThat(testAccount.getAccountId()).isEqualTo(Long.parseLong(TestConstants.TEST_ACCOUNT_ID));
+        assertThat(testAccount.getAccountId()).isEqualTo(TestConstants.TEST_ACCOUNT_ID);
         
         // Validate @Id annotation on accountId field
         Field accountIdField = Account.class.getDeclaredField("accountId");

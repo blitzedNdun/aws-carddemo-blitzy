@@ -25,10 +25,12 @@ public final class TestConstants {
     public static final int CONCURRENT_USERS = 10;
     public static final int THREAD_POOL_SIZE = 20;
     public static final long TIMEOUT_SECONDS = 30L;
+    public static final int MAX_SESSION_SIZE_KB = 32; // CICS COMMAREA equivalent (32KB)
     
     // COBOL compatibility constants - matching COMP-3 precision
     public static final int COBOL_DECIMAL_SCALE = 2;
     public static final RoundingMode COBOL_ROUNDING_MODE = RoundingMode.HALF_UP;
+    public static final int COBOL_MAX_PRECISION = 11; // Max from S9(9)V99 pattern
     
     // Data validation constants
     public static final int DECIMAL_SCALE = 2;
@@ -38,6 +40,9 @@ public final class TestConstants {
     
     // Test data ID constants - compatible with both String and Long usage
     public static final String TEST_CUSTOMER_ID = "100000001";
+    public static final Long TEST_CUSTOMER_ID_LONG = 100000001L;
+    public static final Long VALID_CUSTOMER_ID_LONG = TEST_CUSTOMER_ID_LONG; // Alias for validation tests
+    public static final String VALID_CUSTOMER_ID = TEST_CUSTOMER_ID; // Alias for service tests
     public static final Long TEST_ACCOUNT_ID = 4000000000000001L;
     public static final String TEST_ACCOUNT_ID_STRING = "40000000001";
     public static final String TEST_TRANSACTION_ID = "TXN0000001";
@@ -80,12 +85,20 @@ public final class TestConstants {
     public static final String TEST_USER_ROLE = "USER";
     public static final int SESSION_TIMEOUT_MINUTES = 30;
     
+    // FICO score validation constants (COBOL business rule: 300-850 range)
+    public static final int FICO_SCORE_MIN = 300;
+    public static final int FICO_SCORE_MAX = 850;
+    
+    // Data format validation patterns
+    public static final String SSN_PATTERN = "^\\d{9}$";
+    public static final String PHONE_NUMBER_PATTERN = "^\\d{3}-\\d{3}-\\d{4}$";
+    
     // Batch processing constants
     public static final int BATCH_CHUNK_SIZE = 1000;
     public static final long BATCH_PROCESSING_WINDOW_HOURS = 4L;
     
     // COBOL COMP-3 patterns for data validation
-    public static final Map<String, String> COBOL_COMP3_PATTERNS = new HashMap<String, String>() {{
+    public static final Map<String, Object> COBOL_COMP3_PATTERNS = new HashMap<String, Object>() {{
         put("BALANCE", "S9(9)V99");
         put("CREDIT_LIMIT", "S9(9)V99");
         put("CASH_LIMIT", "S9(7)V99");
@@ -116,6 +129,22 @@ public final class TestConstants {
     // Performance testing additional constants
     public static final int TARGET_TPS = 1000;
     public static final long CACHE_PERFORMANCE_THRESHOLD_MS = 50L;
+    
+    // Performance test data settings
+    public static final Map<String, Object> PERFORMANCE_TEST_DATA = new HashMap<String, Object>() {{
+        put("TEST_ITERATIONS", 1000);
+        put("CONCURRENT_THREADS", 10);
+        put("WARM_UP_ITERATIONS", 100);
+        put("MAX_RESPONSE_TIME_MS", 200L);
+        put("MIN_TPS", 100);
+        put("MAX_MEMORY_MB", 512);
+        put("CONNECTION_POOL_SIZE", 20);
+    }};
+    
+    // Date format constants
+    public static final String JSON_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+    public static final String COBOL_DATE_FORMAT = "yyyyMMdd";
+    public static final String ISO_DATE_FORMAT = "yyyy-MM-dd";
     
     // Compliance and regulatory constants
     public static final int GDPR_RETENTION_YEARS = 7;

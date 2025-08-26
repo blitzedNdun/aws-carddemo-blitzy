@@ -132,13 +132,13 @@ public class CardXrefRepositoryTest extends AbstractBaseTest implements Integrat
         testCustomer = customerRepository.save(testCustomer);
 
         // Create and persist account
-        testAccount = testDataGenerator.generateAccount();
-        testAccount.setAccountId(Long.parseLong(TestConstants.TEST_ACCOUNT_ID));
+        testAccount = testDataGenerator.generateAccount(testCustomer);
+        testAccount.setAccountId(TestConstants.TEST_ACCOUNT_ID);
         testAccount.setCustomer(testCustomer);
         testAccount = accountRepository.save(testAccount);
 
         // Create and persist card
-        testCard = testDataGenerator.generateCard();
+        testCard = (Card) testDataGenerator.generateCard();
         testCard.setCardNumber(TestConstants.TEST_CARD_NUMBER);
         testCard.setAccountId(testAccount.getAccountId());
         testCard.setCustomerId(Long.valueOf(testCustomer.getCustomerId()));
@@ -525,8 +525,8 @@ public class CardXrefRepositoryTest extends AbstractBaseTest implements Integrat
             cardXrefRepository.flush();
             
             // Create a new account for update testing
-            Account newAccount = testDataGenerator.generateAccount();
-            newAccount.setAccountId(Long.parseLong(TestConstants.TEST_ACCOUNT_ID) + 1);
+            Account newAccount = testDataGenerator.generateAccount(testCustomer);
+            newAccount.setAccountId(TestConstants.TEST_ACCOUNT_ID + 1);
             newAccount.setCustomer(testCustomer);
             newAccount = accountRepository.save(newAccount);
             
@@ -690,12 +690,12 @@ public class CardXrefRepositoryTest extends AbstractBaseTest implements Integrat
                 customer.setCustomerId(testCustomer.getCustomerId() + i + 1);
                 customer = customerRepository.save(customer);
                 
-                Account account = testDataGenerator.generateAccount();
+                Account account = testDataGenerator.generateAccount(customer);
                 account.setAccountId(testAccount.getAccountId() + i + 1);
                 account.setCustomer(customer);
                 account = accountRepository.save(account);
                 
-                Card card = testDataGenerator.generateCard();
+                Card card = (Card) testDataGenerator.generateCard();
                 card.setCardNumber(String.format("1234567890%06d", i + 1));
                 card.setAccountId(account.getAccountId());
                 card.setCustomerId(Long.valueOf(customer.getCustomerId()));
