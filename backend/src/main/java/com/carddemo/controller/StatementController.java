@@ -103,8 +103,9 @@ public class StatementController {
                 return ResponseEntity.badRequest().build();
             }
             
-            // Retrieve current statement using service layer
-            StatementDto currentStatement = statementService.getCurrentStatement(accountId);
+            // Convert accountId to Long and retrieve current statement using service layer
+            Long accountIdLong = Long.parseLong(accountId);
+            StatementDto currentStatement = statementService.getCurrentStatement(accountIdLong);
             
             // Handle case where no current statement exists
             if (currentStatement == null) {
@@ -207,9 +208,10 @@ public class StatementController {
                 offset = 0;
             }
             
-            // Retrieve statement history using service layer
+            // Convert accountId to Long and retrieve statement history using service layer
+            Long accountIdLong = Long.parseLong(accountId);
             List<StatementDto> statementHistory = statementService.getStatementHistory(
-                accountId, parsedStartDate, parsedEndDate, limit, offset);
+                accountIdLong, parsedStartDate, parsedEndDate, Integer.valueOf(limit));
             
             // Return successful response with statement history
             return ResponseEntity.ok(statementHistory);
@@ -304,9 +306,10 @@ public class StatementController {
             
             for (String accountId : accountIds) {
                 try {
-                    // Generate statement for individual account
+                    // Convert accountId to Long and generate statement for individual account
+                    Long accountIdLong = Long.parseLong(accountId);
                     StatementDto generatedStatement = statementService.generateStatement(
-                        accountId, statementDate, outputFormat);
+                        accountIdLong, statementDate);
                     
                     if (generatedStatement != null) {
                         successCount++;
@@ -361,33 +364,54 @@ public class StatementController {
     }
 
     /**
-     * Retrieves a summary of statement processing status and metrics.
+     * Retrieves a summary of statement processing status and metrics for a specific account.
      * 
-     * Provides operational insights into statement generation activities,
-     * including processing statistics, performance metrics, and system status.
+     * Provides account-specific insights into statement generation activities,
+     * including processing statistics, performance metrics, and account status.
      * This endpoint supports monitoring and administrative functions for the
      * statement processing system.
      * 
      * Response includes:
-     * - Total statements processed today
+     * - Account statement information
      * - Processing success/failure rates
-     * - Average processing time
-     * - System resource utilization
+     * - Statement generation history
+     * - Account-specific metrics
      * - Recent error summaries
      * 
+     * @param accountId the account identifier for summary retrieval
      * @return ResponseEntity containing statement processing summary
      * @since CardDemo v1.0
      */
-    @GetMapping("/summary")
-    public ResponseEntity<Map<String, Object>> getStatementSummary() {
+    @GetMapping("/summary/{accountId}")
+    public ResponseEntity<Map<String, Object>> getStatementSummary(@PathVariable String accountId) {
         
         try {
-            // Retrieve summary information using service layer
-            Map<String, Object> summaryData = statementService.getStatementSummary();
+            // Validate account ID format
+            if (accountId == null || accountId.trim().isEmpty()) {
+                Map<String, String> error = new HashMap<>();
+                error.put("error", "Account ID is required");
+                error.put("errorCode", "ACCOUNT_ID_MISSING");
+                return ResponseEntity.badRequest().body(Map.of("errors", List.of(error)));
+            }
             
-            if (summaryData == null) {
+            // Convert accountId to Long and retrieve summary information using service layer
+            Long accountIdLong = Long.parseLong(accountId);
+            BillDto summaryDto = statementService.getStatementSummary(accountIdLong);
+            
+            // Convert BillDto to response map
+            Map<String, Object> summaryData = new HashMap<>();
+            if (summaryDto != null) {
+                summaryData.put("accountId", accountId);
+                summaryData.put("statementDate", summaryDto.getStatementDate());
+                summaryData.put("statementBalance", summaryDto.getStatementBalance());
+                summaryData.put("minimumPayment", summaryDto.getMinimumPayment());
+                summaryData.put("dueDate", summaryDto.getDueDate());
+                summaryData.put("previousBalance", summaryDto.getPreviousBalance());
+                summaryData.put("fees", summaryDto.getFees());
+                summaryData.put("interest", summaryDto.getInterest());
+            } else {
                 // Return empty summary if no data available
-                summaryData = new HashMap<>();
+                summaryData.put("accountId", accountId);
                 summaryData.put("totalProcessedToday", 0);
                 summaryData.put("successRate", 100.0);
                 summaryData.put("averageProcessingTime", 0);
@@ -395,6 +419,12 @@ public class StatementController {
             
             return ResponseEntity.ok(summaryData);
             
+        } catch (NumberFormatException e) {
+            // Invalid account ID format
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Invalid account ID format");
+            error.put("errorCode", "INVALID_ACCOUNT_ID");
+            return ResponseEntity.badRequest().body(Map.of("errors", List.of(error)));
         } catch (Exception e) {
             // Internal server error during summary retrieval
             Map<String, Object> errorResponse = new HashMap<>();
