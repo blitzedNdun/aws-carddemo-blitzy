@@ -7,10 +7,15 @@ package com.carddemo.service;
 
 import com.carddemo.repository.AccountRepository;
 import com.carddemo.repository.TransactionRepository;
+import com.carddemo.repository.TransactionTypeRepository;
 import com.carddemo.entity.Account;
 import com.carddemo.entity.Transaction;
+import com.carddemo.entity.TransactionType;
 import com.carddemo.dto.BillPaymentRequest;
 import com.carddemo.dto.BillPaymentResponse;
+import com.carddemo.exception.ValidationException;
+import com.carddemo.exception.ResourceNotFoundException;
+import com.carddemo.exception.BusinessRuleException;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +26,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * Spring Boot service implementing bill payment processing translated from COBIL00C.cbl.
@@ -68,6 +75,7 @@ public class BillPaymentService {
     
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
+    private final TransactionTypeRepository transactionTypeRepository;
     
     /**
      * Constructor for dependency injection matching Spring framework patterns.
@@ -75,10 +83,12 @@ public class BillPaymentService {
      * 
      * @param accountRepository JPA repository for account operations (replaces ACCTDAT VSAM access)
      * @param transactionRepository JPA repository for transaction operations (replaces TRANSACT VSAM access)
+     * @param transactionTypeRepository JPA repository for transaction type lookups (replaces TRANTYPE VSAM access)
      */
-    public BillPaymentService(AccountRepository accountRepository, TransactionRepository transactionRepository) {
+    public BillPaymentService(AccountRepository accountRepository, TransactionRepository transactionRepository, TransactionTypeRepository transactionTypeRepository) {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
+        this.transactionTypeRepository = transactionTypeRepository;
     }
     
     /**
@@ -99,6 +109,12 @@ public class BillPaymentService {
      */
     @Transactional
     public BillPaymentResponse processBillPayment(BillPaymentRequest request) {
+        // Step 0: Validate request is not null
+        if (request == null) {
+            logger.warn("Bill payment failed: Payment request is null");
+            throw new ValidationException("Payment request cannot be null");
+        }
+        
         logger.info("Processing bill payment for account: {}", request.getAccountId());
         
         BillPaymentResponse response = new BillPaymentResponse();
@@ -106,59 +122,58 @@ public class BillPaymentService {
         try {
             // Step 1: Validate account ID is not empty (COBOL lines 159-167)
             if (request.getAccountId() == null || request.getAccountId().trim().isEmpty()) {
-                response.setSuccess(false);
-                response.setErrorMessage("Acct ID can NOT be empty...");
                 logger.warn("Bill payment failed: Account ID is empty");
-                return response;
+                throw new ValidationException("Acct ID can NOT be empty...");
             }
             
             // Step 2: Read account data (COBOL READ-ACCTDAT-FILE lines 343-372)
-            Long accountId = Long.parseLong(request.getAccountId());
+            Long accountId;
+            try {
+                accountId = Long.parseLong(request.getAccountId());
+            } catch (NumberFormatException e) {
+                logger.warn("Bill payment validation failed: Invalid Account ID format '{}'", request.getAccountId());
+                Map<String, String> fieldErrors = new HashMap<>();
+                fieldErrors.put("accountId", "Invalid account ID format: " + request.getAccountId());
+                throw new ValidationException("Invalid account ID format: " + request.getAccountId(), fieldErrors);
+            }
             Optional<Account> accountOpt = accountRepository.findById(accountId);
             
             if (!accountOpt.isPresent()) {
-                response.setSuccess(false);
-                response.setErrorMessage("Account ID NOT found...");
                 logger.warn("Bill payment failed: Account {} not found", accountId);
-                return response;
+                throw new ResourceNotFoundException("Account", accountId.toString());
             }
             
             Account account = accountOpt.get();
             
-            // Step 3: Validate account has balance to pay (COBOL lines 198-206)
-            if (account.getCurrentBalance().compareTo(BigDecimal.ZERO) <= 0) {
-                response.setSuccess(false);
-                response.setErrorMessage("You have nothing to pay...");
-                logger.warn("Bill payment failed: Account {} has zero or negative balance", accountId);
-                return response;
+            // Step 2.1: Check if account is active
+            if ("N".equals(account.getActiveStatus())) {
+                logger.warn("Bill payment failed: Account {} is not active", accountId);
+                throw new BusinessRuleException("Account is not active", "ACCOUNT_INACTIVE");
             }
             
+            // Step 3: Validate account has balance to pay (COBOL lines 198-206)
+            if (account.getCurrentBalance().compareTo(BigDecimal.ZERO) == 0) {
+                logger.warn("Bill payment failed: Account {} has zero balance", accountId);
+                throw new BusinessRuleException("Insufficient funds", "INSUFFICIENT_FUNDS");
+            } else if (account.getCurrentBalance().compareTo(BigDecimal.ZERO) < 0) {
+                logger.warn("Bill payment failed: Account {} has negative balance", accountId);
+                throw new BusinessRuleException("You have nothing to pay...", "9001");
+            }
+            
+            // For bill payment, we pay the full balance, so no additional amount validation needed
+            
             // Step 4: Check confirmation flag (COBOL lines 173-191)
-            if (request.getConfirmPayment() == null || request.getConfirmPayment().trim().isEmpty()) {
-                // Initial display - show balance and ask for confirmation
-                response.setSuccess(false);
-                response.setErrorMessage("Confirm to make a bill payment...");
-                response.setCurrentBalance(account.getCurrentBalance());
+            if (request.getConfirmPayment() == null || request.getConfirmPayment().trim().isEmpty() || "N".equalsIgnoreCase(request.getConfirmPayment().trim())) {
                 logger.info("Bill payment pending confirmation for account {}", accountId);
-                return response;
+                throw new ValidationException("Payment confirmation required");
             }
             
             // Validate confirmation value
             String confirmation = request.getConfirmPayment().trim().toUpperCase();
-            if (!confirmation.equals("Y") && !confirmation.equals("N")) {
-                response.setSuccess(false);
-                response.setErrorMessage("Invalid value. Valid values are (Y/N)...");
+            if (!confirmation.equals("Y")) {
                 logger.warn("Bill payment failed: Invalid confirmation value '{}' for account {}", 
                            request.getConfirmPayment(), accountId);
-                return response;
-            }
-            
-            // If declined, return with current balance
-            if (confirmation.equals("N")) {
-                response.setSuccess(false);
-                response.setCurrentBalance(account.getCurrentBalance());
-                logger.info("Bill payment declined by user for account {}", accountId);
-                return response;
+                throw new ValidationException("Invalid value. Valid values are (Y/N)...");
             }
             
             // Step 5: Process confirmed payment (COBOL lines 210-241)
@@ -172,7 +187,14 @@ public class BillPaymentService {
                 // Create transaction record (COBOL lines 218-232)
                 Transaction transaction = new Transaction();
                 transaction.setTransactionId(nextTransactionId);
-                transaction.setTransactionTypeCode(TRANSACTION_TYPE_CODE);
+                
+                // Look up and set the TransactionType entity 
+                TransactionType transactionType = transactionTypeRepository.findByTransactionTypeCode(TRANSACTION_TYPE_CODE);
+                if (transactionType != null) {
+                    transaction.setTransactionType(transactionType);
+                } else {
+                    transaction.setTransactionTypeCode(TRANSACTION_TYPE_CODE); // Fallback
+                }
                 // transaction.setCategoryCode(String.valueOf(TRANSACTION_CATEGORY_CODE)); // Set category if needed
                 transaction.setSource(TRANSACTION_SOURCE);
                 transaction.setDescription(TRANSACTION_DESCRIPTION);
@@ -204,14 +226,18 @@ public class BillPaymentService {
                            accountId, paymentAmount, nextTransactionId);
             }
             
-        } catch (NumberFormatException e) {
-            response.setSuccess(false);
-            response.setErrorMessage("Invalid account ID format");
-            logger.error("Bill payment failed: Invalid account ID format '{}'", request.getAccountId(), e);
+        } catch (ValidationException e) {
+            logger.error("Bill payment validation error for account {}: {}", request.getAccountId(), e.getMessage());
+            throw e;
+        } catch (ResourceNotFoundException e) {
+            logger.error("Bill payment resource error for account {}: {}", request.getAccountId(), e.getMessage());
+            throw e;
+        } catch (BusinessRuleException e) {
+            logger.error("Bill payment business rule error for account {}: {}", request.getAccountId(), e.getMessage());
+            throw e;
         } catch (Exception e) {
-            response.setSuccess(false);
-            response.setErrorMessage("Unable to process bill payment...");
-            logger.error("Bill payment failed for account {}: {}", request.getAccountId(), e.getMessage(), e);
+            logger.error("Unexpected error during bill payment for account {}: {}", request.getAccountId(), e.getMessage(), e);
+            throw new BusinessRuleException("Unexpected error during payment processing", "9999");
         }
         
         return response;
