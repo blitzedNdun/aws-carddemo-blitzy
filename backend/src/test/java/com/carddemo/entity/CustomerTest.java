@@ -57,7 +57,7 @@ class CustomerTest {
     private static final String VALID_STATE_CODE = "CA";
     private static final String VALID_ZIP_CODE = "12345";
     private static final String VALID_PHONE_NUMBER1 = "2125551234";
-    private static final Integer VALID_FICO_SCORE = 750;
+    private static final BigDecimal VALID_FICO_SCORE = BigDecimal.valueOf(750);
     private static final LocalDate VALID_DATE_OF_BIRTH = LocalDate.of(1980, 5, 15);
 
     @BeforeEach
@@ -162,29 +162,29 @@ class CustomerTest {
     class FicoScorePrecisionTests {
 
         @Test
-        @DisplayName("Should validate FICO score as Integer matching COBOL numeric fields")
-        void testFicoScoreIntegerPrecision() {
-            Integer ficoScore = 750;
+        @DisplayName("Should validate FICO score as BigDecimal matching COBOL numeric fields")
+        void testFicoScoreBigDecimalPrecision() {
+            BigDecimal ficoScore = BigDecimal.valueOf(750);
             customer.setFicoScore(ficoScore);
             
             assertThat(customer.getFicoScore()).isEqualTo(ficoScore);
-            assertThat(customer.getFicoScore()).isInstanceOf(Integer.class);
+            assertThat(customer.getFicoScore()).isInstanceOf(BigDecimal.class);
         }
 
         @Test
         @DisplayName("Should handle FICO score boundary values")
         void testFicoScoreBoundaryValues() {
             // Test minimum FICO score
-            customer.setFicoScore(300);
-            assertThat(customer.getFicoScore()).isEqualTo(300);
+            customer.setFicoScore(BigDecimal.valueOf(300));
+            assertThat(customer.getFicoScore()).isEqualTo(BigDecimal.valueOf(300));
             
             // Test maximum FICO score
-            customer.setFicoScore(850);
-            assertThat(customer.getFicoScore()).isEqualTo(850);
+            customer.setFicoScore(BigDecimal.valueOf(850));
+            assertThat(customer.getFicoScore()).isEqualTo(BigDecimal.valueOf(850));
             
             // Test typical FICO score
-            customer.setFicoScore(720);
-            assertThat(customer.getFicoScore()).isEqualTo(720);
+            customer.setFicoScore(BigDecimal.valueOf(720));
+            assertThat(customer.getFicoScore()).isEqualTo(BigDecimal.valueOf(720));
         }
 
         @Test
@@ -192,10 +192,9 @@ class CustomerTest {
         void testFicoScoreCobolConversion() {
             // Test conversion using CobolDataConverter
             BigDecimal cobolValue = new BigDecimal("750");
-            Integer convertedScore = cobolValue.intValue();
             
-            customer.setFicoScore(convertedScore);
-            assertThat(customer.getFicoScore()).isEqualTo(750);
+            customer.setFicoScore(cobolValue);
+            assertThat(customer.getFicoScore()).isEqualTo(BigDecimal.valueOf(750));
         }
     }
 

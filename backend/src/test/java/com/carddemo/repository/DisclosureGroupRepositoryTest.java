@@ -815,7 +815,7 @@ public class DisclosureGroupRepositoryTest extends AbstractBaseTest implements I
             .phoneNumber1("555-123-4567")
             .ssn("123456789")
             .dateOfBirth(java.time.LocalDate.of(1980, 1, 1))
-            .ficoScore(750)
+            .ficoScore(BigDecimal.valueOf(750))
             .primaryCardHolderIndicator("Y")
             .build();
     }

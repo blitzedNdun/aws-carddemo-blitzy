@@ -337,7 +337,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         testCustomer.setLastName("SMITH");
         testCustomer.setPhoneNumber1("(555) 123-4567");
         testCustomer.setSsn("123-45-6789");
-        testCustomer.setFicoScore(750);
+        testCustomer.setFicoScore(BigDecimal.valueOf(750));
         
         // Act - save and retrieve customer
         Customer savedCustomer = customerRepository.saveAndFlush(testCustomer);
@@ -351,7 +351,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         assertThat(retrievedCustomer.getPhoneNumber1()).isEqualTo(testCustomer.getPhoneNumber1());
         
         // Validate FICO score range validation
-        assertThat(retrievedCustomer.getFicoScore()).isBetween(TestConstants.FICO_SCORE_MIN, TestConstants.FICO_SCORE_MAX);
+        assertThat(retrievedCustomer.getFicoScore()).isBetween(BigDecimal.valueOf(TestConstants.FICO_SCORE_MIN), BigDecimal.valueOf(TestConstants.FICO_SCORE_MAX));
         
         // Validate SSN format preservation
         assertThat(retrievedCustomer.getSsn()).matches(TestConstants.SSN_PATTERN);
@@ -1298,7 +1298,7 @@ public class DataMigrationRepositoryTest extends AbstractBaseTest implements Int
         customer.setDateOfBirth(LocalDate.of(1980, 1, 1));
         customer.setEftAccountId("EFT1234567");
         customer.setPrimaryCardHolderIndicator("Y");
-        customer.setFicoScore(750);
+        customer.setFicoScore(BigDecimal.valueOf(750));
         return customer;
     }
 

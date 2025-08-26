@@ -78,8 +78,8 @@ public class CustomerRepositoryTest {
     private static final long RESPONSE_TIME_THRESHOLD_MS = TestConstants.RESPONSE_TIME_THRESHOLD_MS;
     private static final String SSN_PATTERN = TestConstants.SSN_PATTERN;
     private static final String PHONE_NUMBER_PATTERN = TestConstants.PHONE_NUMBER_PATTERN;
-    private static final int FICO_SCORE_MIN = TestConstants.FICO_SCORE_MIN;
-    private static final int FICO_SCORE_MAX = TestConstants.FICO_SCORE_MAX;
+    private static final java.math.BigDecimal FICO_SCORE_MIN = java.math.BigDecimal.valueOf(TestConstants.FICO_SCORE_MIN);
+    private static final java.math.BigDecimal FICO_SCORE_MAX = java.math.BigDecimal.valueOf(TestConstants.FICO_SCORE_MAX);
     private static final int GDPR_RETENTION_YEARS = TestConstants.GDPR_RETENTION_YEARS;
 
     @BeforeEach
@@ -103,7 +103,7 @@ public class CustomerRepositoryTest {
             testCustomer.setLastName("SMITH"); // PIC X(25) uppercase format
             testCustomer.setSsn(TestDataGenerator.generateSSN()); // Encrypted SSN storage
             testCustomer.setDateOfBirth(LocalDate.of(1980, 5, 15));
-            testCustomer.setFicoScore(750); // 300-850 range - generate valid FICO score
+            testCustomer.setFicoScore(java.math.BigDecimal.valueOf(750)); // 300-850 range - generate valid FICO score
             testCustomer.setPrimaryCardHolderIndicator("Y"); // PIC X(1) flag
             testCustomer.setEftAccountId("EFT1234567"); // PIC X(10) format
             
@@ -383,7 +383,7 @@ public class CustomerRepositoryTest {
         void testFicoScoreRangeValidation_Enforces300To850BusinessRule() {
             // Given: Customer with valid FICO score
             Customer testCustomer = TestDataGenerator.generateCustomer();
-            Integer validFicoScore = 725; // Generate valid FICO score in 300-850 range
+            java.math.BigDecimal validFicoScore = java.math.BigDecimal.valueOf(725); // Generate valid FICO score in 300-850 range
             testCustomer.setFicoScore(validFicoScore);
             
             // When: Save customer with valid FICO score
@@ -404,7 +404,7 @@ public class CustomerRepositoryTest {
         void testFicoScoreUpdate_ValidatesBusinessRuleCompliance() {
             // Given: Existing customer
             Customer testCustomer = TestDataGenerator.generateCustomer();
-            testCustomer.setFicoScore(650); // Initial valid score
+            testCustomer.setFicoScore(java.math.BigDecimal.valueOf(650)); // Initial valid score
             Customer savedCustomer = testEntityManager.persistAndFlush(testCustomer);
             testEntityManager.clear();
             
@@ -412,12 +412,12 @@ public class CustomerRepositoryTest {
             Optional<Customer> customerToUpdate = customerRepository.findById(Long.valueOf(savedCustomer.getCustomerId()));
             assertThat(customerToUpdate).isPresent();
             
-            customerToUpdate.get().setFicoScore(750); // New valid score
+            customerToUpdate.get().setFicoScore(java.math.BigDecimal.valueOf(750)); // New valid score
             Customer updatedCustomer = customerRepository.save(customerToUpdate.get());
             testEntityManager.flush();
             
             // Then: Validate successful update
-            assertThat(updatedCustomer.getFicoScore()).isEqualTo(750);
+            assertThat(updatedCustomer.getFicoScore()).isEqualTo(java.math.BigDecimal.valueOf(750));
             assertThat(updatedCustomer.getFicoScore()).isBetween(FICO_SCORE_MIN, FICO_SCORE_MAX);
         }
 
@@ -431,7 +431,7 @@ public class CustomerRepositoryTest {
             int[] invalidScores = {299, 851, 0, -100, 1000};
             
             for (int invalidScore : invalidScores) {
-                testCustomer.setFicoScore(invalidScore);
+                testCustomer.setFicoScore(java.math.BigDecimal.valueOf(invalidScore));
                 
                 // When/Then: Attempt to save should fail with constraint violation
                 assertThatThrownBy(() -> {
