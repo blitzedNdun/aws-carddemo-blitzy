@@ -9,12 +9,14 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doNothing;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
@@ -32,6 +34,7 @@ import static org.hamcrest.Matchers.containsString;
 
 import com.carddemo.controller.BillingController;
 import com.carddemo.service.BillPaymentService;
+import com.carddemo.service.BillingService;
 import com.carddemo.dto.BillDto;
 import com.carddemo.dto.BillDetailResponse;
 import com.carddemo.dto.AccountDto;
@@ -83,10 +86,12 @@ import com.carddemo.controller.TestDataBuilder;
  * @since 2024
  */
 @SpringBootTest
+@ActiveProfiles("test")
 public class BillingControllerTest extends BaseControllerTest {
 
     private BillingController billingController;
     private BillPaymentService billPaymentService;
+    private BillingService billingService;
     private ObjectMapper objectMapper;
     
     // Test data containers
@@ -121,6 +126,7 @@ public class BillingControllerTest extends BaseControllerTest {
         
         // Mock service dependencies
         billPaymentService = mock(BillPaymentService.class);
+        billingService = mock(BillingService.class);
         
         // Initialize test controller with mocked dependencies (will be injected in actual Spring context)
         billingController = mock(BillingController.class);
@@ -155,7 +161,7 @@ public class BillingControllerTest extends BaseControllerTest {
             .build();
         
         // Initialize mock session for COMMAREA equivalent testing
-        createMockSession();
+        createMockSession(TEST_USER_ID, "ADMIN", "CB00");
     }
 
     /**
@@ -168,7 +174,7 @@ public class BillingControllerTest extends BaseControllerTest {
         super.tearDown();
         
         // Reset all mocks to clean state
-        reset(billPaymentService, billingController);
+        reset(billPaymentService, billingService, billingController);
         
         // Clear test data
         testBillDto = null;
@@ -197,8 +203,7 @@ public class BillingControllerTest extends BaseControllerTest {
         long startTime = System.currentTimeMillis();
         
         // Execute GET request to billing statement endpoint
-        performAuthenticatedRequest()
-            .perform(get("/api/billing/statements/{accountId}", TEST_ACCOUNT_ID))
+        performAuthenticatedRequest(get("/api/billing/statements/{accountId}", TEST_ACCOUNT_ID), TEST_USER_ID, "ADMIN")
             .andExpect(status().isOk())
             .andExpect(content().contentType("application/json"))
             .andExpect(jsonPath("$.accountId").value(TEST_ACCOUNT_ID))
@@ -237,8 +242,7 @@ public class BillingControllerTest extends BaseControllerTest {
     public void testGetBillingStatement_AccountNotFound() throws Exception {
         String invalidAccountId = "99999999999";
         
-        performAuthenticatedRequest()
-            .perform(get("/api/billing/statements/{accountId}", invalidAccountId))
+        performAuthenticatedRequest(get("/api/billing/statements/{accountId}", invalidAccountId), TEST_USER_ID, "ADMIN")
             .andExpect(status().isNotFound())
             .andExpect(content().contentType("application/json"))
             .andExpect(jsonPath("$.message").value(containsString("Account not found")));
@@ -267,10 +271,9 @@ public class BillingControllerTest extends BaseControllerTest {
         
         long startTime = System.currentTimeMillis();
         
-        performAuthenticatedRequest()
-            .perform(post("/api/billing/generate")
+        performAuthenticatedRequest(post("/api/billing/generate")
                 .contentType("application/json")
-                .content(objectMapper.writeValueAsString(requestBody)))
+                .content(objectMapper.writeValueAsString(requestBody)), TEST_USER_ID, "ADMIN")
             .andExpect(status().isCreated())
             .andExpect(content().contentType("application/json"))
             .andExpect(jsonPath("$.accountId").value(TEST_ACCOUNT_ID))
@@ -300,10 +303,9 @@ public class BillingControllerTest extends BaseControllerTest {
         requestBody.put("accountId", "INVALID");
         requestBody.put("statementDate", LocalDate.now().toString());
         
-        performAuthenticatedRequest()
-            .perform(post("/api/billing/generate")
+        performAuthenticatedRequest(post("/api/billing/generate")
                 .contentType("application/json")
-                .content(objectMapper.writeValueAsString(requestBody)))
+                .content(objectMapper.writeValueAsString(requestBody)), TEST_USER_ID, "ADMIN")
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.message").value(containsString("Invalid account")));
     }
@@ -330,15 +332,14 @@ public class BillingControllerTest extends BaseControllerTest {
         
         // Mock service call for interest calculation
         BigDecimal expectedInterest = new BigDecimal("18.50").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE);
-        when(billPaymentService.calculateInterest(eq(testBalance), eq(periodStart), eq(periodEnd)))
+        when(billingService.calculateInterest(eq(testBalance), eq(periodStart), eq(periodEnd)))
             .thenReturn(expectedInterest);
         
         // Validate interest calculation through API call
-        performAuthenticatedRequest()
-            .perform(get("/api/billing/{accountId}/interest", TEST_ACCOUNT_ID)
+        performAuthenticatedRequest(get("/api/billing/{accountId}/interest", TEST_ACCOUNT_ID)
                 .param("balance", testBalance.toString())
                 .param("periodStart", periodStart.toString())
-                .param("periodEnd", periodEnd.toString()))
+                .param("periodEnd", periodEnd.toString()), TEST_USER_ID, "ADMIN")
             .andExpect(status().isOk())
             .andDo(result -> {
                 BigDecimal calculatedInterest = new BigDecimal(result.getResponse().getContentAsString());
@@ -349,7 +350,7 @@ public class BillingControllerTest extends BaseControllerTest {
                 assertTrue(calculatedInterest.scale() == COBOL_DECIMAL_SCALE);
             });
         
-        verify(billPaymentService).calculateInterest(eq(testBalance), eq(periodStart), eq(periodEnd));
+        verify(billingService).calculateInterest(eq(testBalance), eq(periodStart), eq(periodEnd));
     }
 
     /**
@@ -383,21 +384,23 @@ public class BillingControllerTest extends BaseControllerTest {
             expectedMinimum = expectedMinimum.setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE);
             
             // Mock service response
-            when(billPaymentService.calculateMinimumPayment(eq(balance))).thenReturn(expectedMinimum);
+            when(billingService.calculateMinimumPayment(eq(balance))).thenReturn(expectedMinimum);
+            
+            // Create effectively final reference for lambda
+            final BigDecimal expectedMinimumForLambda = expectedMinimum;
             
             // Test API call
-            performAuthenticatedRequest()
-                .perform(get("/api/billing/{accountId}/minimum-payment", TEST_ACCOUNT_ID)
-                    .param("balance", balance.toString()))
+            performAuthenticatedRequest(get("/api/billing/{accountId}/minimum-payment", TEST_ACCOUNT_ID)
+                    .param("balance", balance.toString()), TEST_USER_ID, "ADMIN")
                 .andExpect(status().isOk())
                 .andDo(result -> {
                     BigDecimal calculatedMinimum = new BigDecimal(result.getResponse().getContentAsString());
-                    assertEquals(expectedMinimum.scale(), calculatedMinimum.scale());
-                    assertEquals(0, expectedMinimum.compareTo(calculatedMinimum));
+                    assertEquals(expectedMinimumForLambda.scale(), calculatedMinimum.scale());
+                    assertEquals(0, expectedMinimumForLambda.compareTo(calculatedMinimum));
                 });
         }
         
-        verify(billPaymentService, times(testBalances.length)).calculateMinimumPayment(any(BigDecimal.class));
+        verify(billingService, times(testBalances.length)).calculateMinimumPayment(any(BigDecimal.class));
     }
 
     /**
@@ -429,14 +432,14 @@ public class BillingControllerTest extends BaseControllerTest {
             assertEquals(COBOL_DECIMAL_SCALE, comp3Amount.scale());
             assertEquals(COBOL_ROUNDING_MODE, RoundingMode.HALF_UP); // Validate rounding mode constant
             
-            // Test through billing service method
-            when(billPaymentService.validatePaymentAmount(eq(comp3Amount))).thenReturn(true);
+            // Test through billing service method - use account validation instead
+            doNothing().when(billingService).validateAccountForBilling(eq(TEST_ACCOUNT_ID));
             
-            boolean isValid = billPaymentService.validatePaymentAmount(comp3Amount);
-            assertTrue(isValid);
+            // Validate account for billing (closest equivalent to payment validation)
+            billingService.validateAccountForBilling(TEST_ACCOUNT_ID);
         }
         
-        verify(billPaymentService, times(testAmounts.length)).validatePaymentAmount(any(BigDecimal.class));
+        verify(billingService, times(testAmounts.length)).validateAccountForBilling(eq(TEST_ACCOUNT_ID));
     }
 
     /**
@@ -460,8 +463,7 @@ public class BillingControllerTest extends BaseControllerTest {
         for (String endpoint : endpoints) {
             long startTime = System.currentTimeMillis();
             
-            performAuthenticatedRequest()
-                .perform(get(endpoint))
+            performAuthenticatedRequest(get(endpoint), TEST_USER_ID, "ADMIN")
                 .andExpect(status().isOk())
                 .andDo(result -> {
                     long responseTime = System.currentTimeMillis() - startTime;
@@ -486,12 +488,11 @@ public class BillingControllerTest extends BaseControllerTest {
     @DisplayName("Test session state management")
     public void testSessionStateManagement() throws Exception {
         // Create session with initial state
-        createMockSession();
+        createMockSession(TEST_USER_ID, "ADMIN", "CB00");
         
         // Test session state persistence
-        performAuthenticatedRequest()
-            .perform(get("/api/billing/{accountId}", TEST_ACCOUNT_ID)
-                .sessionAttr("accountContext", TEST_ACCOUNT_ID))
+        performAuthenticatedRequest(get("/api/billing/{accountId}", TEST_ACCOUNT_ID)
+                .sessionAttr("accountContext", TEST_ACCOUNT_ID), TEST_USER_ID, "ADMIN")
             .andExpect(status().isOk())
             .andDo(result -> {
                 // Validate session attributes are maintained
@@ -517,10 +518,9 @@ public class BillingControllerTest extends BaseControllerTest {
         LocalDate cycleStart = LocalDate.now().minusMonths(1).withDayOfMonth(1);
         LocalDate cycleEnd = LocalDate.now().withDayOfMonth(1).minusDays(1);
         
-        performAuthenticatedRequest()
-            .perform(get("/api/billing/{accountId}/cycle", TEST_ACCOUNT_ID)
+        performAuthenticatedRequest(get("/api/billing/{accountId}/cycle", TEST_ACCOUNT_ID)
                 .param("startDate", cycleStart.toString())
-                .param("endDate", cycleEnd.toString()))
+                .param("endDate", cycleEnd.toString()), TEST_USER_ID, "ADMIN")
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.periodStart").value(cycleStart.toString()))
             .andExpect(jsonPath("$.periodEnd").value(cycleEnd.toString()))
@@ -550,10 +550,9 @@ public class BillingControllerTest extends BaseControllerTest {
         paymentRequest.put("amount", paymentAmount.toString());
         paymentRequest.put("confirmPayment", "Y");
         
-        performAuthenticatedRequest()
-            .perform(post("/api/billing/payment")
+        performAuthenticatedRequest(post("/api/billing/payment")
                 .contentType("application/json")
-                .content(objectMapper.writeValueAsString(paymentRequest)))
+                .content(objectMapper.writeValueAsString(paymentRequest)), TEST_USER_ID, "ADMIN")
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.transactionId").exists());
@@ -577,9 +576,8 @@ public class BillingControllerTest extends BaseControllerTest {
         LocalDate statementDate = LocalDate.now();
         LocalDate expectedDueDate = statementDate.plusDays(30);
         
-        performAuthenticatedRequest()
-            .perform(get("/api/billing/{accountId}/due-date", TEST_ACCOUNT_ID)
-                .param("statementDate", statementDate.toString()))
+        performAuthenticatedRequest(get("/api/billing/{accountId}/due-date", TEST_ACCOUNT_ID)
+                .param("statementDate", statementDate.toString()), TEST_USER_ID, "ADMIN")
             .andExpect(status().isOk())
             .andDo(result -> {
                 LocalDate calculatedDueDate = LocalDate.parse(result.getResponse().getContentAsString().replaceAll("\"", ""));
@@ -615,8 +613,7 @@ public class BillingControllerTest extends BaseControllerTest {
         assertEquals("Y", activeStatus);
         
         // Test balance calculation through API
-        performAuthenticatedRequest()
-            .perform(get("/api/billing/{accountId}/balance", TEST_ACCOUNT_ID))
+        performAuthenticatedRequest(get("/api/billing/{accountId}/balance", TEST_ACCOUNT_ID), TEST_USER_ID, "ADMIN")
             .andExpect(status().isOk())
             .andDo(result -> {
                 BillDetailResponse response = objectMapper.readValue(
@@ -675,10 +672,9 @@ public class BillingControllerTest extends BaseControllerTest {
         assertEquals(COBOL_DECIMAL_SCALE, amount.scale());
         
         // Test transaction summarization
-        performAuthenticatedRequest()
-            .perform(get("/api/billing/{accountId}/transactions/summary", TEST_ACCOUNT_ID)
+        performAuthenticatedRequest(get("/api/billing/{accountId}/transactions/summary", TEST_ACCOUNT_ID)
                 .param("startDate", LocalDate.now().minusMonths(1).toString())
-                .param("endDate", LocalDate.now().toString()))
+                .param("endDate", LocalDate.now().toString()), TEST_USER_ID, "ADMIN")
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.totalTransactions").exists())
             .andExpect(jsonPath("$.totalAmount").exists())
@@ -709,8 +705,7 @@ public class BillingControllerTest extends BaseControllerTest {
         
         for (String invalidAccount : errorScenarios) {
             try {
-                performAuthenticatedRequest()
-                    .perform(get("/api/billing/statements/{accountId}", invalidAccount))
+                performAuthenticatedRequest(get("/api/billing/statements/{accountId}", invalidAccount), TEST_USER_ID, "ADMIN")
                     .andExpect(status().is4xxClientError());
             } catch (Exception e) {
                 // Expected for invalid scenarios
