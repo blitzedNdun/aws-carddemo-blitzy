@@ -141,6 +141,51 @@ public class TransactionDetailDto {
     private LocalDateTime procTimestamp;
 
     /**
+     * Card number associated with the transaction for identification and verification.
+     * Maps to TRAN-CARD-NUM field (PIC X(16)) from CVTRA05Y copybook.
+     * Used for transaction correlation and customer service reference.
+     */
+    @JsonProperty("cardNumber")
+    @Size(max = 16, message = "Card number cannot exceed 16 characters")
+    private String cardNumber;
+
+    /**
+     * Alias method for getting original timestamp to support legacy test compatibility.
+     * 
+     * @return original transaction timestamp
+     */
+    public LocalDateTime getOriginalTimestamp() {
+        return this.origTimestamp;
+    }
+
+    /**
+     * Alias method for setting original timestamp to support legacy test compatibility.
+     * 
+     * @param originalTimestamp the original timestamp to set
+     */
+    public void setOriginalTimestamp(LocalDateTime originalTimestamp) {
+        this.origTimestamp = originalTimestamp;
+    }
+
+    /**
+     * Alias method for getting processed timestamp to support legacy test compatibility.
+     * 
+     * @return processed transaction timestamp
+     */
+    public LocalDateTime getProcessedTimestamp() {
+        return this.procTimestamp;
+    }
+
+    /**
+     * Alias method for setting processed timestamp to support legacy test compatibility.
+     * 
+     * @param processedTimestamp the processed timestamp to set
+     */
+    public void setProcessedTimestamp(LocalDateTime processedTimestamp) {
+        this.procTimestamp = processedTimestamp;
+    }
+
+    /**
      * Sets the transaction amount with proper scale for exact financial precision.
      * 
      * Ensures the amount is set with exactly 2 decimal places matching COBOL

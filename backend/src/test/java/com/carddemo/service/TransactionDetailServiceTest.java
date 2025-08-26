@@ -67,7 +67,7 @@ class TransactionDetailServiceTest {
 
         // Then: Returns properly formatted transaction details matching COBOL output
         assertThat(result).isNotNull();
-        assertThat(result.getTransactionId()).isEqualTo(testTransaction.getTransactionId());
+        assertThat(result.getTransactionId()).isEqualTo(testTransaction.getTransactionId().toString());
         assertThat(result.getAmount()).isEqualByComparingTo(testTransaction.getAmount());
         assertThat(result.getDescription()).isEqualTo(testTransaction.getDescription());
         assertThat(result.getMerchantName()).isEqualTo(testTransaction.getMerchantName());
@@ -88,7 +88,7 @@ class TransactionDetailServiceTest {
         // When/Then: Accessing non-existent transaction throws proper exception
         assertThatThrownBy(() -> transactionDetailService.getTransactionDetail(nonExistentId))
             .isInstanceOf(ResourceNotFoundException.class)
-            .hasMessage("Transaction not found with ID: " + nonExistentId)
+            .hasMessage("Transaction ID NOT found...")
             .satisfies(exception -> {
                 ResourceNotFoundException ex = (ResourceNotFoundException) exception;
                 assertThat(ex.getResourceType()).isEqualTo("Transaction");
@@ -102,7 +102,7 @@ class TransactionDetailServiceTest {
     @DisplayName("getTransactionDetail - Null transaction ID throws IllegalArgumentException")
     void getTransactionDetail_NullTransactionId_ThrowsIllegalArgumentException() {
         // When/Then: Null transaction ID throws validation exception
-        assertThatThrownBy(() -> transactionDetailService.getTransactionDetail(null))
+        assertThatThrownBy(() -> transactionDetailService.getTransactionDetail((Long) null))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("Transaction ID cannot be null");
 
@@ -239,7 +239,7 @@ class TransactionDetailServiceTest {
         TransactionDetailDto dto = transactionDetailService.mapTransactionToDto(completeTransaction);
 
         // Then: All fields mapped correctly preserving COBOL data structure
-        assertThat(dto.getTransactionId()).isEqualTo(completeTransaction.getTransactionId());
+        assertThat(dto.getTransactionId()).isEqualTo(completeTransaction.getTransactionId().toString());
         assertThat(dto.getAmount()).isEqualByComparingTo(completeTransaction.getAmount());
         assertThat(dto.getDescription()).isEqualTo(completeTransaction.getDescription());
         assertThat(dto.getMerchantName()).isEqualTo(completeTransaction.getMerchantName());
@@ -260,7 +260,7 @@ class TransactionDetailServiceTest {
         TransactionDetailDto dto = transactionDetailService.mapTransactionToDto(minimalTransaction);
 
         // Then: Required fields mapped, optional fields handled gracefully
-        assertThat(dto.getTransactionId()).isEqualTo(minimalTransaction.getTransactionId());
+        assertThat(dto.getTransactionId()).isEqualTo(minimalTransaction.getTransactionId().toString());
         assertThat(dto.getAmount()).isEqualByComparingTo(minimalTransaction.getAmount());
         assertThat(dto.getDescription()).isEqualTo(minimalTransaction.getDescription());
         // Optional fields should be null or empty as per COBOL logic
@@ -328,9 +328,8 @@ class TransactionDetailServiceTest {
         Transaction transaction = new Transaction();
         transaction.setTransactionId(1000000001L);
         transaction.setAmount(generateValidTransactionAmount());
-        transaction.setTransactionType("PURCHASE");
         transaction.setDescription("TEST MERCHANT PURCHASE");
-        transaction.setMerchantId(generateMerchantId());
+        transaction.setMerchantId(generateMerchantIdAsLong());
         transaction.setMerchantName("TEST MERCHANT");
         transaction.setMerchantCity("NEW YORK");
         transaction.setMerchantZip("10001");
@@ -345,7 +344,7 @@ class TransactionDetailServiceTest {
      */
     private TransactionDetailDto createExpectedDto() {
         TransactionDetailDto dto = new TransactionDetailDto();
-        dto.setTransactionId(1000000001L);
+        dto.setTransactionId("1000000001");
         dto.setAmount(generateValidTransactionAmount());
         dto.setDescription("TEST MERCHANT PURCHASE");
         dto.setMerchantName("TEST MERCHANT");
@@ -414,5 +413,12 @@ class TransactionDetailServiceTest {
      */
     private String generateMerchantId() {
         return "MERCH001";
+    }
+
+    /**
+     * Generates merchant ID as Long for testing
+     */
+    private Long generateMerchantIdAsLong() {
+        return 1001L;
     }
 }

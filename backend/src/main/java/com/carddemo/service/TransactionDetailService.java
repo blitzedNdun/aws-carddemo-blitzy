@@ -14,6 +14,11 @@ import java.util.Optional;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import java.lang.RuntimeException;
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import com.carddemo.exception.ResourceNotFoundException;
 
 /**
  * Spring Boot service implementing individual transaction detail retrieval translated from COTRN01C.cbl.
@@ -124,7 +129,7 @@ public class TransactionDetailService {
             // Handle transaction not found condition (matching CICS RESP(NOTFND) logic)
             if (!transactionOptional.isPresent()) {
                 log.warn("Transaction not found for ID: {}", transactionId);
-                throw new RuntimeException("Transaction ID NOT found...");
+                throw new ResourceNotFoundException("Transaction", transactionId, "Transaction ID NOT found...");
             }
             
             Transaction transaction = transactionOptional.orElse(null);
@@ -136,18 +141,21 @@ public class TransactionDetailService {
             log.info("Transaction detail retrieval completed successfully for ID: {}", transactionId);
             return transactionDetail;
             
+        } catch (ResourceNotFoundException e) {
+            // Re-throw ResourceNotFoundException as-is
+            log.error("Business logic error during transaction detail retrieval for ID {}: {}", transactionId, e.getMessage());
+            throw e;
         } catch (RuntimeException e) {
             // Check if this is one of our expected business logic exceptions
             String message = e.getMessage();
-            if (message != null && (message.equals("Transaction ID NOT found...") || 
-                                   message.equals("Tran ID can NOT be empty..."))) {
-                // Re-throw our business logic exceptions as-is
+            if (message != null && message.equals("Tran ID can NOT be empty...")) {
+                // Re-throw validation exceptions as-is
                 log.error("Business logic error during transaction detail retrieval for ID {}: {}", transactionId, e.getMessage());
                 throw e;
             } else {
-                // Convert unexpected runtime exceptions to generic error message
-                log.error("Unexpected runtime error during transaction detail retrieval for ID {}: {}", transactionId, e.getMessage(), e);
-                throw new RuntimeException("Unable to lookup Transaction...");
+                // For repository exceptions, propagate the original exception
+                log.error("Repository error during transaction detail retrieval for ID {}: {}", transactionId, e.getMessage(), e);
+                throw e;
             }
         } catch (Exception e) {
             log.error("Unexpected error during transaction detail retrieval for ID {}: {}", transactionId, e.getMessage(), e);
@@ -235,13 +243,16 @@ public class TransactionDetailService {
                            transaction.getMerchantName() : "");
         
         // Map merchant city (TRAN-MERCHANT-CITY → MCITYI)
-        dto.setMerchantCity(transaction.getMerchantCity() != null ? 
-                           transaction.getMerchantCity() : "");
+        dto.setMerchantCity(transaction.getMerchantCity());
         
         // Map merchant ZIP (TRAN-MERCHANT-ZIP → MZIPI)
-        dto.setMerchantZip(transaction.getMerchantZip() != null ? 
-                          transaction.getMerchantZip() : "");
+        dto.setMerchantZip(transaction.getMerchantZip()); 
+
         
+        
+        // Map card number (TRAN-CARD-NUM → CARDNOI)
+        dto.setCardNumber(transaction.getCardNumber() != null ? 
+                         transaction.getCardNumber() : "");
         // Map original timestamp preserving COBOL format (TRAN-ORIG-TS → TORIGDTI)
         dto.setOrigTimestamp(transaction.getOriginalTimestamp());
         
@@ -250,5 +261,99 @@ public class TransactionDetailService {
         
         log.debug("Successfully mapped transaction entity to DTO with {} fields populated", 8);
         return dto;
+    }
+
+    /**
+     * Overloaded method for retrieving transaction details by Long ID.
+     * Converts Long to String and delegates to main method.
+     * 
+     * @param transactionId the transaction ID as Long to retrieve details for
+     * @return TransactionDetailDto containing complete transaction information
+     * @throws IllegalArgumentException if transaction ID is null or not positive
+     * @throws ResourceNotFoundException if transaction not found
+     */
+    @Transactional(readOnly = true)
+    public TransactionDetailDto getTransactionDetail(Long transactionId) {
+        log.debug("Processing transaction detail request for Long ID: {}", transactionId);
+        
+        // Validate Long ID
+        validateTransactionId(transactionId);
+        
+        // Convert to String and delegate
+        return getTransactionDetail(transactionId.toString());
+    }
+
+    /**
+     * Validates transaction ID input for Long type.
+     * 
+     * @param transactionId the Long transaction ID to validate
+     * @throws IllegalArgumentException if transaction ID is null or not positive
+     */
+    public void validateTransactionId(Long transactionId) {
+        log.debug("Validating Long transaction ID: {}", transactionId);
+        
+        if (transactionId == null) {
+            log.warn("Transaction ID validation failed - null ID provided");
+            throw new IllegalArgumentException("Transaction ID cannot be null");
+        }
+        
+        if (transactionId <= 0) {
+            log.warn("Transaction ID validation failed - non-positive ID: {}", transactionId);
+            throw new IllegalArgumentException("Transaction ID must be positive");
+        }
+        
+        log.debug("Transaction ID validation passed for Long: {}", transactionId);
+    }
+
+    /**
+     * Formats transaction amount for display matching COBOL COMP-3 precision.
+     * 
+     * This method replicates COBOL amount formatting logic, preserving exact
+     * decimal precision and currency display patterns from the original implementation.
+     * 
+     * @param amount the transaction amount to format
+     * @return formatted amount string with currency symbol and proper precision
+     * @throws IllegalArgumentException if amount is null
+     */
+    public String formatTransactionAmount(BigDecimal amount) {
+        log.debug("Formatting transaction amount: {}", amount);
+        
+        if (amount == null) {
+            log.warn("Amount formatting failed - null amount provided");
+            throw new IllegalArgumentException("Transaction amount cannot be null");
+        }
+        
+        // Use DecimalFormat to match COBOL display formatting
+        DecimalFormat formatter = new DecimalFormat("$#,##0.00");
+        String formatted = formatter.format(amount);
+        
+        log.debug("Successfully formatted amount {} to {}", amount, formatted);
+        return formatted;
+    }
+
+    /**
+     * Formats transaction date/timestamp for display matching COBOL format.
+     * 
+     * This method replicates COBOL timestamp formatting logic, maintaining
+     * the exact date/time display patterns from the original implementation.
+     * 
+     * @param dateTime the LocalDateTime to format
+     * @return formatted date string matching COBOL timestamp display
+     * @throws IllegalArgumentException if dateTime is null
+     */
+    public String formatTransactionDate(LocalDateTime dateTime) {
+        log.debug("Formatting transaction date: {}", dateTime);
+        
+        if (dateTime == null) {
+            log.warn("Date formatting failed - null date provided");
+            throw new IllegalArgumentException("Transaction date cannot be null");
+        }
+        
+        // Format to match COBOL timestamp pattern: MM/dd/yyyy HH:mm:ss
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss");
+        String formatted = dateTime.format(formatter);
+        
+        log.debug("Successfully formatted date {} to {}", dateTime, formatted);
+        return formatted;
     }
 }
