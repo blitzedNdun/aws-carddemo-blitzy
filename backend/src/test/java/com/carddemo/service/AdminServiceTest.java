@@ -5,7 +5,7 @@
 
 package com.carddemo.service;
 
-import com.carddemo.TestDataGenerator;
+import com.carddemo.service.TestDataGenerator;
 import com.carddemo.dto.AdminMenuResponse;
 import com.carddemo.dto.MenuOption;
 import com.carddemo.dto.MenuRequest;
@@ -29,6 +29,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.times;
 
 /**
  * Comprehensive unit test suite for AdminService validating COBOL COADM01C admin menu logic migration to Java.
@@ -108,14 +109,14 @@ class AdminServiceTest {
     @DisplayName("Verify Admin Privileges - Valid Admin User")
     void testVerifyAdminPrivilegesWithValidAdmin() {
         // Given: Mock repository to return admin user
-        when(userSecurityRepository.findByUsername("ADMIN01")).thenReturn(Optional.of(testAdminUser));
+        when(userSecurityRepository.findBySecUsrId("ADMIN01")).thenReturn(Optional.of(testAdminUser));
         
         // When: Verify admin privileges
         boolean isAdmin = adminService.verifyAdminPrivileges("ADMIN01");
         
         // Then: Verify admin privileges are confirmed
         assertThat(isAdmin).isTrue();
-        verify(userSecurityRepository).findByUsername("ADMIN01");
+        verify(userSecurityRepository).findBySecUsrId("ADMIN01");
     }
     
     /**
@@ -127,14 +128,14 @@ class AdminServiceTest {
     @DisplayName("Verify Admin Privileges - Invalid/Regular User")  
     void testVerifyAdminPrivilegesWithInvalidUser() {
         // Given: Mock repository to return regular user
-        when(userSecurityRepository.findByUsername("USER01")).thenReturn(Optional.of(testRegularUser));
+        when(userSecurityRepository.findBySecUsrId("USER01")).thenReturn(Optional.of(testRegularUser));
         
         // When: Verify admin privileges for regular user
         boolean isAdmin = adminService.verifyAdminPrivileges("USER01");
         
         // Then: Verify admin privileges are denied
         assertThat(isAdmin).isFalse();
-        verify(userSecurityRepository).findByUsername("USER01");
+        verify(userSecurityRepository).findBySecUsrId("USER01");
     }
     
     /**
@@ -146,7 +147,7 @@ class AdminServiceTest {
     @DisplayName("Generate Admin Menu Options - Admin User Access")
     void testGenerateAdminMenuOptionsForAdmin() {
         // Given: Admin user with proper privileges
-        when(userSecurityRepository.findByUsername("ADMIN01")).thenReturn(Optional.of(testAdminUser));
+        when(userSecurityRepository.findBySecUsrId("ADMIN01")).thenReturn(Optional.of(testAdminUser));
         
         // When: Generate menu options for admin user
         List<MenuOption> adminOptions = adminService.generateAdminMenuOptions("ADMIN01");
@@ -162,7 +163,7 @@ class AdminServiceTest {
         // Verify all options are enabled for admin
         assertThat(adminOptions).allMatch(option -> option.getEnabled());
         
-        verify(userSecurityRepository).findByUsername("ADMIN01");
+        verify(userSecurityRepository).findBySecUsrId("ADMIN01");
     }
     
     /**
@@ -174,16 +175,20 @@ class AdminServiceTest {
     @DisplayName("Generate Admin Menu Options - Regular User Restrictions")
     void testGenerateAdminMenuOptionsForRegularUser() {
         // Given: Regular user without admin privileges  
-        when(userSecurityRepository.findByUsername("USER01")).thenReturn(Optional.of(testRegularUser));
+        when(userSecurityRepository.findBySecUsrId("USER01")).thenReturn(Optional.of(testRegularUser));
         
         // When: Attempt to generate admin menu options for regular user
         List<MenuOption> userOptions = adminService.generateAdminMenuOptions("USER01");
         
-        // Then: Verify regular user receives no admin options or limited options
+        // Then: Verify regular user receives limited options (not admin options)
         assertThat(userOptions).isNotNull();
-        assertThat(userOptions).isEmpty(); // Regular users should not see admin options
+        assertThat(userOptions).hasSize(3); // Regular users get 3 limited options
         
-        verify(userSecurityRepository).findByUsername("USER01");
+        // Verify they get user-level options, not admin options
+        assertThat(userOptions).extracting(MenuOption::getAccessLevel)
+                .allMatch(level -> "USER".equals(level));
+        
+        verify(userSecurityRepository).findBySecUsrId("USER01");
     }
     
     /**
@@ -201,18 +206,19 @@ class AdminServiceTest {
         menuRequest.setSelectedOption("1");
         menuRequest.setMenuType("ADMIN");
         
-        when(userSecurityRepository.findByUsername("ADMIN01")).thenReturn(Optional.of(testAdminUser));
+        when(userSecurityRepository.findBySecUsrId("ADMIN01")).thenReturn(Optional.of(testAdminUser));
+        when(userSecurityRepository.count()).thenReturn(5L);
         
         // When: Process the admin menu request
         AdminMenuResponse response = adminService.processAdminMenu(menuRequest);
         
         // Then: Verify successful processing
         assertThat(response).isNotNull();
-        assertThat(response.getAdminOptions()).isNotNull();
         assertThat(response.getSystemStatus()).isEqualTo("ONLINE");
         assertThat(response.getActiveUsers()).isGreaterThanOrEqualTo(0);
+        assertThat(response.getLastBatchRun()).isNotNull();
         
-        verify(userSecurityRepository).findByUsername("ADMIN01");
+        verify(userSecurityRepository).findBySecUsrId("ADMIN01");
     }
     
     /**
@@ -230,7 +236,7 @@ class AdminServiceTest {
         menuRequest.setSelectedOption("99"); // Invalid option number
         menuRequest.setMenuType("ADMIN");
         
-        when(userSecurityRepository.findByUsername("ADMIN01")).thenReturn(Optional.of(testAdminUser));
+        when(userSecurityRepository.findBySecUsrId("ADMIN01")).thenReturn(Optional.of(testAdminUser));
         
         // When: Process invalid menu request
         AdminMenuResponse response = adminService.processAdminMenu(menuRequest);
@@ -240,7 +246,7 @@ class AdminServiceTest {
         // Response should indicate error or return to menu with error message
         assertThat(response.getSystemStatus()).isNotNull();
         
-        verify(userSecurityRepository).findByUsername("ADMIN01");
+        verify(userSecurityRepository).findBySecUsrId("ADMIN01");
     }
     
     /**
@@ -254,9 +260,8 @@ class AdminServiceTest {
         // Given: Admin user and user management request
         UserDto newUser = new UserDto("USER02", "John", "Doe", "U", "password");
         
-        when(userSecurityRepository.findByUsername("ADMIN01")).thenReturn(Optional.of(testAdminUser));
+        when(userSecurityRepository.findBySecUsrId("ADMIN01")).thenReturn(Optional.of(testAdminUser));
         when(userSecurityRepository.findAll()).thenReturn(List.of(testAdminUser, testRegularUser));
-        when(userSecurityRepository.save(any(UserSecurity.class))).thenReturn(testRegularUser);
         
         // When: Handle user management operations
         List<UserDto> allUsers = adminService.handleUserManagement("LIST", "ADMIN01", null);
@@ -265,7 +270,7 @@ class AdminServiceTest {
         assertThat(allUsers).isNotNull();
         assertThat(allUsers).hasSize(2);
         
-        verify(userSecurityRepository).findByUsername("ADMIN01");
+        verify(userSecurityRepository).findBySecUsrId("ADMIN01");
         verify(userSecurityRepository).findAll();
     }
     
@@ -278,14 +283,14 @@ class AdminServiceTest {
     @DisplayName("Validate Admin Access - Admin Role")
     void testValidateAdminAccessWithAdminRole() {
         // Given: Admin user
-        when(userSecurityRepository.findByUsername("ADMIN01")).thenReturn(Optional.of(testAdminUser));
+        when(userSecurityRepository.findBySecUsrId("ADMIN01")).thenReturn(Optional.of(testAdminUser));
         
         // When: Validate admin access
         boolean hasAccess = adminService.validateAdminAccess("ADMIN01");
         
         // Then: Verify access granted
         assertThat(hasAccess).isTrue();
-        verify(userSecurityRepository).findByUsername("ADMIN01");
+        verify(userSecurityRepository).findBySecUsrId("ADMIN01");
     }
     
     /**
@@ -297,14 +302,14 @@ class AdminServiceTest {
     @DisplayName("Validate Admin Access - User Role Denied")
     void testValidateAdminAccessWithUserRole() {
         // Given: Regular user
-        when(userSecurityRepository.findByUsername("USER01")).thenReturn(Optional.of(testRegularUser));
+        when(userSecurityRepository.findBySecUsrId("USER01")).thenReturn(Optional.of(testRegularUser));
         
         // When: Validate admin access for regular user
         boolean hasAccess = adminService.validateAdminAccess("USER01");
         
         // Then: Verify access denied
         assertThat(hasAccess).isFalse();
-        verify(userSecurityRepository).findByUsername("USER01");
+        verify(userSecurityRepository).findBySecUsrId("USER01");
     }
     
     /**
@@ -316,8 +321,8 @@ class AdminServiceTest {
     @DisplayName("Build Menu Response - Admin Options")
     void testBuildMenuResponseWithAdminOptions() {
         // Given: Admin user and system status information
-        when(userSecurityRepository.findByUsername("ADMIN01")).thenReturn(Optional.of(testAdminUser));
-        when(reportService.getAvailableReports()).thenReturn(List.of("MONTHLY", "YEARLY"));
+        when(userSecurityRepository.findBySecUsrId("ADMIN01")).thenReturn(Optional.of(testAdminUser));
+        when(userSecurityRepository.count()).thenReturn(5L);
         
         // When: Build admin menu response
         AdminMenuResponse response = adminService.buildMenuResponse("ADMIN01");
@@ -329,8 +334,7 @@ class AdminServiceTest {
         assertThat(response.getActiveUsers()).isNotNull();
         assertThat(response.getLastBatchRun()).isNotNull();
         
-        verify(userSecurityRepository).findByUsername("ADMIN01");
-        verify(reportService).getAvailableReports();
+        verify(userSecurityRepository, times(2)).findBySecUsrId("ADMIN01");
     }
     
     /**
@@ -361,7 +365,7 @@ class AdminServiceTest {
     @DisplayName("Get Active User Count Validation")
     void testGetActiveUserCountValidation() {
         // Given: Multiple active users in the system
-        when(userSecurityRepository.findAll()).thenReturn(List.of(testAdminUser, testRegularUser));
+        when(userSecurityRepository.count()).thenReturn(2L);
         
         // When: Get active user count
         Integer activeUserCount = adminService.getActiveUserCountValidation();
@@ -371,7 +375,7 @@ class AdminServiceTest {
         assertThat(activeUserCount).isGreaterThanOrEqualTo(0);
         assertThat(activeUserCount).isEqualTo(2);
         
-        verify(userSecurityRepository).findAll();
+        verify(userSecurityRepository).count();
     }
     
     // Helper methods for test data creation

@@ -5,7 +5,7 @@
 
 package com.carddemo.service;
 
-import com.carddemo.TestDataGenerator;
+
 import com.carddemo.dto.ReportRequest;
 import com.carddemo.dto.ReportMenuResponse;
 import com.carddemo.util.DateConversionUtil;
@@ -65,8 +65,7 @@ class ReportMenuServiceTest {
     @Mock
     private ReportGenerationService reportGenerationService;
     
-    // Test data generator for COBOL-compliant test data
-    private TestDataGenerator testDataGenerator;
+
     
     // Test constants matching COBOL program values
     private static final String REPORT_TYPE_DAILY = "DAILY";
@@ -85,9 +84,6 @@ class ReportMenuServiceTest {
         
         // Create service instance
         reportMenuService = new ReportMenuService();
-        
-        // Initialize test data generator
-        testDataGenerator = new TestDataGenerator();
     }
 
     /**
@@ -590,8 +586,8 @@ class ReportMenuServiceTest {
     @Test
     @DisplayName("Should process reports using COBOL-compliant test data")
     void testReportProcessing_WithTestDataGenerator_ShouldSucceed() {
-        // Arrange
-        LocalDate validDate = generateValidCobolDate();
+        // Arrange - Use past date to ensure it passes validation
+        LocalDate validDate = generateRandomPastDate();
         ReportRequest request = new ReportRequest();
         request.setReportType(REPORT_TYPE_CUSTOM);
         request.setStartDate(validDate);

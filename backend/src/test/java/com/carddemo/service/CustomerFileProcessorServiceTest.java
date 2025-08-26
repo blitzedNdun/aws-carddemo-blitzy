@@ -119,9 +119,9 @@ public class CustomerFileProcessorServiceTest {
     public void testProcessCustomerFile_WithValidData() {
         // Arrange: Create test customer data (use immutable list to prevent clearing by service)
         List<Customer> testCustomers = List.of(
-            createTestCustomer(1L, "John", "Doe", "555-123-4567", 750),
-            createTestCustomer(2L, "Jane", "Smith", "555-987-6543", 720),
-            createTestCustomer(3L, "Bob", "Johnson", "555-555-5555", 680)
+            createTestCustomer(1L, "John", "Doe", "555-123-4567", BigDecimal.valueOf(750)),
+            createTestCustomer(2L, "Jane", "Smith", "555-987-6543", BigDecimal.valueOf(720)),
+            createTestCustomer(3L, "Bob", "Johnson", "555-555-5555", BigDecimal.valueOf(680))
         );
         when(customerRepository.findAll()).thenReturn(testCustomers);
         
@@ -349,7 +349,7 @@ public class CustomerFileProcessorServiceTest {
     @Test
     public void testDisplayCustomerRecord_ValidRecord() {
         // Arrange: Create test customer with complete data
-        Customer testCustomer = createTestCustomer(1L, "John", "Doe", "555-123-4567", 750);
+        Customer testCustomer = createTestCustomer(1L, "John", "Doe", "555-123-4567", BigDecimal.valueOf(750));
         List<Customer> customerList = List.of(testCustomer);
         when(customerRepository.findAll()).thenReturn(customerList);
         
@@ -437,9 +437,9 @@ public class CustomerFileProcessorServiceTest {
     @Test
     public void testSequentialProcessing_OrderPreserved() {
         // Arrange: Create ordered test customer list
-        Customer customer1 = createTestCustomer(1L, "Alice", "Smith", "555-111-1111", 700);
-        Customer customer2 = createTestCustomer(2L, "Bob", "Jones", "555-222-2222", 750);
-        Customer customer3 = createTestCustomer(3L, "Carol", "Brown", "555-333-3333", 800);
+        Customer customer1 = createTestCustomer(1L, "Alice", "Smith", "555-111-1111", BigDecimal.valueOf(700));
+        Customer customer2 = createTestCustomer(2L, "Bob", "Jones", "555-222-2222", BigDecimal.valueOf(750));
+        Customer customer3 = createTestCustomer(3L, "Carol", "Brown", "555-333-3333", BigDecimal.valueOf(800));
         
         List<Customer> orderedCustomers = List.of(customer1, customer2, customer3);
         when(customerRepository.findAll()).thenReturn(orderedCustomers);
@@ -494,9 +494,9 @@ public class CustomerFileProcessorServiceTest {
     private List<Customer> createTestCustomerList() {
         List<Customer> customers = new ArrayList<>();
         
-        customers.add(createTestCustomer(1L, "John", "Doe", "555-123-4567", 750));
-        customers.add(createTestCustomer(2L, "Jane", "Smith", "555-987-6543", 720));
-        customers.add(createTestCustomer(3L, "Bob", "Johnson", "555-555-5555", 680));
+        customers.add(createTestCustomer(1L, "John", "Doe", "555-123-4567", BigDecimal.valueOf(750)));
+        customers.add(createTestCustomer(2L, "Jane", "Smith", "555-987-6543", BigDecimal.valueOf(720)));
+        customers.add(createTestCustomer(3L, "Bob", "Johnson", "555-555-5555", BigDecimal.valueOf(680)));
         
         return customers;
     }
@@ -513,7 +513,7 @@ public class CustomerFileProcessorServiceTest {
      * @return Customer entity with specified attributes
      */
     private Customer createTestCustomer(Long customerId, String firstName, String lastName, 
-                                      String phoneNumber, Integer ficoScore) {
+                                      String phoneNumber, BigDecimal ficoScore) {
         return Customer.builder()
             .customerId(customerId)
             .firstName(firstName)

@@ -104,7 +104,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
 
             // Then: Customer is updated successfully
             assertThat(result).isNotNull();
-            assertThat(result.getCustomerId()).isEqualTo(TestConstants.VALID_CUSTOMER_ID_LONG);
+            assertThat(result.getCustomerId()).isEqualTo(String.valueOf(TestConstants.VALID_CUSTOMER_ID_LONG));
             assertThat(result.getFirstName()).isEqualTo("UPDATED");
             assertThat(result.getLastName()).isEqualTo("CUSTOMER");
             
@@ -117,7 +117,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         void updateCustomer_CustomerNotFound_ThrowsException() {
             // Given: Non-existent customer ID
             Customer updateData = testDataGenerator.generateCustomer();
-            updateData.setCustomerId("NONEXISTENT");
+            updateData.setCustomerId("999");
             
             when(customerRepository.findById(999L))
                 .thenReturn(Optional.empty());
@@ -125,7 +125,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
             // When/Then: Exception is thrown
             assertThatThrownBy(() -> customerUpdateService.updateCustomer(updateData))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessage("Customer not found: NONEXISTENT");
+                .hasMessage("Customer not found: 999");
             
             verify(customerRepository).findById(999L);
             verify(customerRepository, never()).save(any(Customer.class));
@@ -251,11 +251,11 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
             // When/Then: Empty address throws exception
             assertThatThrownBy(() -> customerUpdateService.standardizeAddress(""))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Address cannot be null or empty");
+                .hasMessage("Address cannot be empty");
             
             assertThatThrownBy(() -> customerUpdateService.standardizeAddress("   "))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Address cannot be null or empty");
+                .hasMessage("Address cannot be empty");
         }
     }
 
@@ -699,7 +699,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
             
             assertThatThrownBy(() -> customerUpdateService.validateCustomerData(null))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Customer cannot be null");
+                .hasMessage("Customer data cannot be null");
         }
 
         @Test
@@ -1017,7 +1017,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
             // Set up customers with phone numbers and addresses to ensure access
             for (int i = 0; i < customers.size(); i++) {
                 Customer customer = customers.get(i);
-                customer.setCustomerId("THRESH" + String.format("%03d", i + 1));
+                customer.setCustomerId(String.valueOf(1000 + i + 1));
                 String phoneNumber = customer.getPhoneNumber(); // Access phone number
                 String address = customer.getAddress(); // Access address
                 

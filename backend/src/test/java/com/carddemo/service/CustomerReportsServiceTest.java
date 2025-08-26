@@ -56,8 +56,8 @@ public class CustomerReportsServiceTest {
     private static final BigDecimal HIGH_CREDIT_LIMIT = new BigDecimal("10000.00");
     private static final BigDecimal MEDIUM_CREDIT_LIMIT = new BigDecimal("5000.00"); 
     private static final BigDecimal LOW_CREDIT_LIMIT = new BigDecimal("1000.00");
-    private static final int HIGH_FICO_THRESHOLD = 750;
-    private static final int MEDIUM_FICO_THRESHOLD = 650;
+    private static final BigDecimal HIGH_FICO_THRESHOLD = BigDecimal.valueOf(750);
+    private static final BigDecimal MEDIUM_FICO_THRESHOLD = BigDecimal.valueOf(650);
     private static final BigDecimal HIGH_UTILIZATION_THRESHOLD = new BigDecimal("0.80");
     private static final BigDecimal MEDIUM_UTILIZATION_THRESHOLD = new BigDecimal("0.50");
     
@@ -82,7 +82,7 @@ public class CustomerReportsServiceTest {
     void testGenerateCustomerSegments_HighValueCustomers() {
         // Given: Customers with high credit limits and FICO scores
         List<Customer> highValueCustomers = testCustomers.stream()
-                .filter(customer -> customer.getFicoScore() >= HIGH_FICO_THRESHOLD)
+                .filter(customer -> customer.getFicoScore() != null && customer.getFicoScore().compareTo(HIGH_FICO_THRESHOLD) >= 0)
                 .toList();
         
         // Setup repository mocks for customer segmentation test
@@ -312,7 +312,7 @@ public class CustomerReportsServiceTest {
             BigDecimal expectedMinValue) {
         
         // Given: Customer with specific credit profile parameters
-        Customer customer = createCustomerWithProfile(ficoScore, creditLimit, currentBalance);
+        Customer customer = createCustomerWithProfile(BigDecimal.valueOf(ficoScore), creditLimit, currentBalance);
         
         // Create matching account for the customer
         Account account = testDataGenerator.generateAccount();
@@ -502,7 +502,7 @@ public class CustomerReportsServiceTest {
         customer.setCustomerId("1");
         customer.setFirstName("JOHN                     "); // COBOL PIC X(25) format
         customer.setLastName("DOE                      "); // COBOL PIC X(25) format  
-        customer.setFicoScore(800); // High FICO score
+        customer.setFicoScore(BigDecimal.valueOf(800)); // High FICO score
         customer.setDateOfBirth(LocalDate.of(1980, 1, 1));
         customer.setSsn("123456789");
         return customer;
@@ -513,7 +513,7 @@ public class CustomerReportsServiceTest {
         customer.setCustomerId("2");
         customer.setFirstName("JANE                     ");
         customer.setLastName("SMITH                    ");
-        customer.setFicoScore(700); // Medium FICO score
+        customer.setFicoScore(BigDecimal.valueOf(700)); // Medium FICO score
         customer.setDateOfBirth(LocalDate.of(1985, 5, 15));
         customer.setSsn("987654321");
         return customer;
@@ -524,7 +524,7 @@ public class CustomerReportsServiceTest {
         customer.setCustomerId("3");
         customer.setFirstName("BOB                      ");
         customer.setLastName("JONES                    ");
-        customer.setFicoScore(600); // Low FICO score
+        customer.setFicoScore(BigDecimal.valueOf(600)); // Low FICO score
         customer.setDateOfBirth(LocalDate.of(1990, 12, 31));
         customer.setSsn("555666777");
         return customer;
@@ -575,7 +575,7 @@ public class CustomerReportsServiceTest {
         customer.setFirstName("TEST                     ");
         customer.setLastName("CUSTOMER                 ");
         customer.setDateOfBirth(LocalDate.now().minusYears(age));
-        customer.setFicoScore(700);
+        customer.setFicoScore(BigDecimal.valueOf(700));
         customer.setSsn("123456789");
         return customer;
     }
@@ -619,7 +619,7 @@ public class CustomerReportsServiceTest {
         );
     }
     
-    private Customer createCustomerWithProfile(int ficoScore, BigDecimal creditLimit, BigDecimal currentBalance) {
+    private Customer createCustomerWithProfile(BigDecimal ficoScore, BigDecimal creditLimit, BigDecimal currentBalance) {
         Customer customer = new Customer();
         customer.setCustomerId("999");
         customer.setFirstName("PROFILE                  ");
@@ -638,13 +638,13 @@ public class CustomerReportsServiceTest {
     
     private List<Customer> createCreditIncreaseTargets() {
         Customer customer = createMediumValueCustomer();
-        customer.setFicoScore(720); // Good FICO for credit increase
+        customer.setFicoScore(BigDecimal.valueOf(720)); // Good FICO for credit increase
         return Arrays.asList(customer);
     }
     
     private List<Customer> createRiskMitigationTargets() {
         Customer riskCustomer = createLowValueCustomer();
-        riskCustomer.setFicoScore(550); // High risk FICO
+        riskCustomer.setFicoScore(BigDecimal.valueOf(550)); // High risk FICO
         return Arrays.asList(riskCustomer);
     }
     
@@ -655,7 +655,7 @@ public class CustomerReportsServiceTest {
                     customer.setCustomerId(String.valueOf(i));
                     customer.setFirstName("CUSTOMER                 ");
                     customer.setLastName(String.format("%-25s", "TEST" + i));
-                    customer.setFicoScore(600 + (i % 200)); // FICO scores 600-799
+                    customer.setFicoScore(BigDecimal.valueOf(600 + (i % 200))); // FICO scores 600-799
                     customer.setDateOfBirth(LocalDate.of(1970 + (i % 30), 1, 1));
                     customer.setSsn(String.format("%09d", 100000000 + i));
                     return customer;
@@ -669,7 +669,7 @@ public class CustomerReportsServiceTest {
         // COBOL PIC X(25) fields - exactly 25 characters with padding
         customer.setFirstName("JOHN                     ");
         customer.setLastName("DOE                      ");
-        customer.setFicoScore(750);
+        customer.setFicoScore(BigDecimal.valueOf(750));
         customer.setDateOfBirth(LocalDate.of(1980, 1, 1));
         customer.setSsn("123456789"); // COBOL PIC 9(09)
         return customer;

@@ -71,7 +71,7 @@ public class AccountUpdateServiceTest {
     private static final String VALID_PHONE = "555-123-4567";
     private static final String VALID_STATE_CODE = "CA";
     private static final String VALID_ZIP_CODE = "90210";
-    private static final Integer VALID_FICO_SCORE = 750;
+    private static final BigDecimal VALID_FICO_SCORE = BigDecimal.valueOf(750);
     private static final BigDecimal VALID_CREDIT_LIMIT = new BigDecimal("5000.00");
     private static final BigDecimal VALID_CASH_LIMIT = new BigDecimal("1000.00");
 
@@ -363,7 +363,7 @@ public class AccountUpdateServiceTest {
         Customer customer = createValidCustomer();
         
         // Test FICO score below minimum
-        customer.setFicoScore(250);
+        customer.setFicoScore(BigDecimal.valueOf(250));
         
         // Act & Assert
         Assertions.assertThatThrownBy(() -> service.validateCustomerData(customer))
@@ -371,7 +371,7 @@ public class AccountUpdateServiceTest {
             .hasMessageContaining("FICO score must be between 300 and 850");
 
         // Test FICO score above maximum
-        customer.setFicoScore(900);
+        customer.setFicoScore(BigDecimal.valueOf(900));
         Assertions.assertThatThrownBy(() -> service.validateCustomerData(customer))
             .isInstanceOf(ValidationException.class)
             .hasMessageContaining("FICO score must be between 300 and 850");
