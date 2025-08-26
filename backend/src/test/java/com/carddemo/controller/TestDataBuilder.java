@@ -246,7 +246,7 @@ public class TestDataBuilder {
      * @return configured Customer object with proper field constraints
      */
     public static Customer buildCustomer(Long customerId, String firstName, String lastName, 
-                                       String phoneNumber, String ssn, Integer ficoScore, 
+                                       String phoneNumber, String ssn, BigDecimal ficoScore, 
                                        LocalDate dateOfBirth) {
         Customer customer = new Customer();
         
@@ -264,10 +264,10 @@ public class TestDataBuilder {
         customer.setSsn(ssn != null ? ssn : generateRandomSSN());
         
         // Set FICO score matching COBOL PIC 9(03) constraints (300-850 range)
-        if (ficoScore != null && ficoScore >= 300 && ficoScore <= 850) {
+        if (ficoScore != null && ficoScore.compareTo(BigDecimal.valueOf(300)) >= 0 && ficoScore.compareTo(BigDecimal.valueOf(850)) <= 0) {
             customer.setFicoScore(ficoScore);
         } else {
-            customer.setFicoScore(650 + random.nextInt(200)); // 650-849 range
+            customer.setFicoScore(BigDecimal.valueOf(650 + random.nextInt(200))); // 650-849 range
         }
         
         // Set date of birth
@@ -456,7 +456,7 @@ public class TestDataBuilder {
             LAST_NAMES[random.nextInt(LAST_NAMES.length)],
             generateRandomPhoneNumber(),
             generateRandomSSN(),
-            650 + random.nextInt(200),
+            BigDecimal.valueOf(650 + random.nextInt(200)),
             generateRandomDate().minusYears(25 + random.nextInt(40))
         );
     }
@@ -742,7 +742,7 @@ public class TestDataBuilder {
             "JOHNSON",
             "555-123-4567",
             "123456789",
-            720,
+            BigDecimal.valueOf(720),
             LocalDate.of(1985, 6, 15)
         );
         testDataSet.add(customer);

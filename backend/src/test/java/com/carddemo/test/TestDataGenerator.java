@@ -436,14 +436,15 @@ public class TestDataGenerator {
     }
     
     /**
-     * Generates a FICO score as Integer.
+     * Generates a FICO score as BigDecimal.
      * Creates scores in the standard range (300-850).
+     * Uses BigDecimal for precise COBOL numeric handling.
      *
-     * @return Integer FICO score between 300 and 850
+     * @return BigDecimal FICO score between 300 and 850
      */
-    private static Integer generateFicoScore() {
+    private static BigDecimal generateFicoScore() {
         // Generate FICO score between 300 and 850
-        return 300 + random.nextInt(551);
+        return BigDecimal.valueOf(300 + random.nextInt(551));
     }
     
     /**

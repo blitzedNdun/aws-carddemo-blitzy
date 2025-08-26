@@ -195,7 +195,7 @@ public abstract class BaseIntegrationTest extends AbstractBaseTest {
                 .phoneNumber1("555-123-4567")
                 .ssn("999999999")
                 .dateOfBirth(LocalDate.of(1990, 1, 1))
-                .ficoScore(750)
+                .ficoScore(BigDecimal.valueOf(750))
                 .build();
     }
 

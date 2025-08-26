@@ -977,7 +977,7 @@ public class TestDataBuilder {
          * @param ficoScore the customer FICO score to set
          * @return this CustomerBuilder for method chaining
          */
-        public CustomerBuilder withFicoScore(Integer ficoScore) {
+        public CustomerBuilder withFicoScore(BigDecimal ficoScore) {
             customer.setFicoScore(ficoScore);
             return this;
         }
@@ -1042,7 +1042,7 @@ public class TestDataBuilder {
          * @return this CustomerBuilder for method chaining
          */
         public CustomerBuilder withRandomFicoScore() {
-            customer.setFicoScore(ThreadLocalRandom.current().nextInt(300, 851));
+            customer.setFicoScore(BigDecimal.valueOf(ThreadLocalRandom.current().nextInt(300, 851)));
             return this;
         }
 
@@ -1060,7 +1060,7 @@ public class TestDataBuilder {
             customer.setFirstName("JOHN");
             customer.setLastName("DOE");
             customer.setSsn(generateSSN());
-            customer.setFicoScore(720);
+            customer.setFicoScore(BigDecimal.valueOf(720));
             customer.setDateOfBirth(generateDateOfBirth());
             customer.setAddressLine1("123 MAIN ST");
             customer.setStateCode("CA");
@@ -1103,7 +1103,7 @@ public class TestDataBuilder {
          */
         public Customer getCustomerWithMinimumValues() {
             return createCustomer()
-                .withFicoScore(300)
+                .withFicoScore(BigDecimal.valueOf(300))
                 .withName("A B")
                 .build();
         }
@@ -1131,7 +1131,7 @@ public class TestDataBuilder {
          */
         public Customer getCustomerWithInvalidValues() {
             Customer customer = new Customer();
-            customer.setFicoScore(1000); // Invalid FICO score (max is 850)
+            customer.setFicoScore(BigDecimal.valueOf(1000)); // Invalid FICO score (max is 850)
             customer.setFirstName(""); // Invalid empty name
             return customer;
         }

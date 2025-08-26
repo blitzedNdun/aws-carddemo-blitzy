@@ -598,25 +598,25 @@ public class TestDataGenerator {
      * 
      * @return Integer FICO score between 300-850
      */
-    public Integer generateFicoScore() {
+    public java.math.BigDecimal generateFicoScore() {
         // Generate scores with realistic distribution
         int scoreType = random.nextInt(100);
         
         if (scoreType < 10) {
             // 10% poor credit (300-579)
-            return random.nextInt(280) + 300;
+            return java.math.BigDecimal.valueOf(random.nextInt(280) + 300);
         } else if (scoreType < 25) {
             // 15% fair credit (580-669)
-            return random.nextInt(90) + 580;
+            return java.math.BigDecimal.valueOf(random.nextInt(90) + 580);
         } else if (scoreType < 50) {
             // 25% good credit (670-739)
-            return random.nextInt(70) + 670;
+            return java.math.BigDecimal.valueOf(random.nextInt(70) + 670);
         } else if (scoreType < 80) {
             // 30% very good credit (740-799)
-            return random.nextInt(60) + 740;
+            return java.math.BigDecimal.valueOf(random.nextInt(60) + 740);
         } else {
             // 20% excellent credit (800-850)
-            return random.nextInt(51) + 800;
+            return java.math.BigDecimal.valueOf(random.nextInt(51) + 800);
         }
     }
 

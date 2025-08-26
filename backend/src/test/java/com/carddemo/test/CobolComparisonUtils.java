@@ -395,7 +395,7 @@ public class CobolComparisonUtils {
      * @param customerId Customer identifier for error reporting
      * @throws AssertionError if precision does not match COBOL equivalent
      */
-    public static void validateFicoScorePrecision(Integer actualFicoScore, Integer expectedFicoScore, String customerId) {
+    public static void validateFicoScorePrecision(java.math.BigDecimal actualFicoScore, java.math.BigDecimal expectedFicoScore, String customerId) {
         log.info("Validating FICO score precision for customer: {}", customerId);
         
         if (actualFicoScore == null && expectedFicoScore == null) {
@@ -415,18 +415,18 @@ public class CobolComparisonUtils {
         // FICO scores are integer values in COBOL, typically PIC 9(3) format (range 300-850)
         if (!actualFicoScore.equals(expectedFicoScore)) {
             String errorMsg = String.format(
-                "FICO score precision validation failed for customer %s: actual value %d does not match expected value %d",
-                customerId, actualFicoScore, expectedFicoScore
+                "FICO score precision validation failed for customer %s: actual value %s does not match expected value %s",
+                customerId, actualFicoScore.toString(), expectedFicoScore.toString()
             );
             log.error(errorMsg);
             throw new AssertionError(errorMsg);
         }
         
         // Validate FICO score range (300-850 is standard range)
-        if (actualFicoScore < 300 || actualFicoScore > 850) {
+        if (actualFicoScore.compareTo(java.math.BigDecimal.valueOf(300)) < 0 || actualFicoScore.compareTo(java.math.BigDecimal.valueOf(850)) > 0) {
             String errorMsg = String.format(
-                "FICO score validation failed for customer %s: value %d is outside valid range (300-850)",
-                customerId, actualFicoScore
+                "FICO score validation failed for customer %s: value %s is outside valid range (300-850)",
+                customerId, actualFicoScore.toString()
             );
             log.error(errorMsg);
             throw new AssertionError(errorMsg);

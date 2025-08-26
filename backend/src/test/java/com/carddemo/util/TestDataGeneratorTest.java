@@ -374,7 +374,7 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
             
             // Validate FICO score range
             Assertions.assertThat(result.getFicoScore())
-                .isBetween(300, 850); // Valid FICO score range
+                .isBetween(BigDecimal.valueOf(300), BigDecimal.valueOf(850)); // Valid FICO score range
         }
 
         @Test
@@ -972,7 +972,7 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
                 
                 // Validate FICO score in valid range
                 Assertions.assertThat(customer.getFicoScore())
-                    .isBetween(300, 850);
+                    .isBetween(BigDecimal.valueOf(300), BigDecimal.valueOf(850));
             }
             
             // Validate uniqueness across customers

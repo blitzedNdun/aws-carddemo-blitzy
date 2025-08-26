@@ -343,7 +343,7 @@ public class TestDataGenerator {
         customer.setLastName("Smith");
         customer.setDateOfBirth(LocalDate.of(1980, 5, 15));
         customer.setSsn("123456789");
-        customer.setFicoScore(750); // Default high FICO for testing
+        customer.setFicoScore(BigDecimal.valueOf(750)); // Default high FICO for testing
         customer.setPhoneNumber1("555-123-4567");
         return customer;
     }
@@ -360,7 +360,7 @@ public class TestDataGenerator {
         // High value customer
         Customer highValue = generateCustomer();
         highValue.setCustomerId("1");
-        highValue.setFicoScore(780);
+        highValue.setFicoScore(BigDecimal.valueOf(780));
         highValue.setFirstName("Alice");
         highValue.setLastName("Johnson");
         customers.add(highValue);
@@ -368,7 +368,7 @@ public class TestDataGenerator {
         // Medium value customer  
         Customer mediumValue = generateCustomer();
         mediumValue.setCustomerId("2");
-        mediumValue.setFicoScore(680);
+        mediumValue.setFicoScore(BigDecimal.valueOf(680));
         mediumValue.setFirstName("Bob");
         mediumValue.setLastName("Davis");
         customers.add(mediumValue);
@@ -376,7 +376,7 @@ public class TestDataGenerator {
         // Low value customer
         Customer lowValue = generateCustomer();
         lowValue.setCustomerId("3");
-        lowValue.setFicoScore(580);
+        lowValue.setFicoScore(BigDecimal.valueOf(580));
         lowValue.setFirstName("Carol");
         lowValue.setLastName("Wilson");
         customers.add(lowValue);
@@ -428,5 +428,62 @@ public class TestDataGenerator {
         accounts.add(lowUtil);
         
         return accounts;
+    }
+
+    /**
+     * Resets the random seed for consistent test data generation.
+     * Used in test setup methods to ensure reproducible test results.
+     */
+    public void resetRandomSeed() {
+        // Reset counter for consistent test data
+        counter.set(1);
+    }
+
+    /**
+     * Generates a test admin user for admin functionality testing.
+     * Creates a UserSecurity entity with admin privileges.
+     * 
+     * @return UserSecurity with admin user type
+     */
+    public com.carddemo.entity.UserSecurity generateAdminUser() {
+        com.carddemo.entity.UserSecurity user = new com.carddemo.entity.UserSecurity();
+        user.setSecUsrId("ADMIN01");
+        user.setUsername("ADMIN01");
+        user.setFirstName("Admin");
+        user.setLastName("User");
+        user.setUserType("A"); // Admin type
+        user.setPassword("password"); // Default password for testing
+        return user;
+    }
+
+    /**
+     * Generates a test regular user for user functionality testing.
+     * Creates a UserSecurity entity with regular user privileges.
+     * 
+     * @return UserSecurity with regular user type
+     */
+    public com.carddemo.entity.UserSecurity generateRegularUser() {
+        com.carddemo.entity.UserSecurity user = new com.carddemo.entity.UserSecurity();
+        user.setSecUsrId("USER01");
+        user.setUsername("USER01");
+        user.setFirstName("Regular");
+        user.setLastName("User");
+        user.setUserType("U"); // Regular user type
+        user.setPassword("password"); // Default password for testing
+        return user;
+    }
+
+    /**
+     * Generates test menu options for admin menu testing.
+     * Creates a list of MenuOption objects for test scenarios.
+     * 
+     * @return List of MenuOption for testing
+     */
+    public java.util.List<com.carddemo.dto.MenuOption> generateMenuOptions() {
+        java.util.List<com.carddemo.dto.MenuOption> options = new java.util.ArrayList<>();
+        options.add(new com.carddemo.dto.MenuOption(1, "User Management", "COUSR00C", true, "ADMIN"));
+        options.add(new com.carddemo.dto.MenuOption(2, "Reports", "CORPT00C", true, "ADMIN"));
+        options.add(new com.carddemo.dto.MenuOption(3, "Exit", "EXIT", true, "ADMIN"));
+        return options;
     }
 }

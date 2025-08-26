@@ -421,7 +421,7 @@ public abstract class BaseControllerTest {
             "DOE",                               // lastName
             "123 Main St",                       // address
             "Anytown",                           // city
-            750,                                 // ficoScore
+            java.math.BigDecimal.valueOf(750),   // ficoScore
             java.time.LocalDate.of(1980, 1, 1)  // dateOfBirth
         );
         

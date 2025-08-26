@@ -502,9 +502,9 @@ public final class ValidationTestUtils {
      * 
      * @return valid FICO score integer between 300-850
      */
-    public static Integer generateValidFicoScore() {
+    public static java.math.BigDecimal generateValidFicoScore() {
         // Generate FICO score in valid range (300-850)
-        return FICO_SCORE_MIN + (int)(Math.random() * (FICO_SCORE_MAX - FICO_SCORE_MIN + 1));
+        return java.math.BigDecimal.valueOf(FICO_SCORE_MIN + (int)(Math.random() * (FICO_SCORE_MAX - FICO_SCORE_MIN + 1)));
     }
 
     /**
