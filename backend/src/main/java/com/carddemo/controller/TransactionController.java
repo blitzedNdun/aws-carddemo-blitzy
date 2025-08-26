@@ -277,7 +277,7 @@ public class TransactionController {
             validateTransactionId(transactionId);
             
             // Execute service layer transaction detail query
-            TransactionDetailDto transactionDetail = transactionService.getTransactionDetail(transactionId.trim());
+            TransactionDetailDto transactionDetail = transactionService.getTransactionDetailDto(transactionId.trim());
             
             logger.info("Transaction detail request completed successfully - transactionId: {}", transactionId);
             
@@ -354,7 +354,7 @@ public class TransactionController {
 
         try {
             // Execute service layer transaction creation with comprehensive validation
-            TransactionDetailDto createdTransaction = transactionService.addTransaction(transactionDetail);
+            TransactionDetailDto createdTransaction = transactionService.addTransactionFromDto(transactionDetail);
             
             logger.info("Transaction creation completed successfully - transactionId: {}, amount: {}", 
                        createdTransaction.getTransactionId(), 
