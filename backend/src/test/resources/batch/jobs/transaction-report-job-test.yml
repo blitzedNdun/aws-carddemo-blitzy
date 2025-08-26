@@ -10,7 +10,7 @@ spring:
     
 # Test configuration for TransactionReportJob - CBTRN02C COBOL program migration
 transaction-report-job-test:
-  job-name: "transactionReportJob"
+  job-name: "transactionReportBatchJob"
   
   # Test job parameters matching CBTRN02C functionality
   job-parameters:

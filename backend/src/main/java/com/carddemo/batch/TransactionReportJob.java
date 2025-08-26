@@ -19,6 +19,7 @@ import org.springframework.batch.core.Step;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
@@ -99,6 +100,7 @@ import java.util.Optional;
  * @version 1.0
  * @since 2024
  */
+@Profile({"!test", "!unit-test"})
 @Configuration
 public class TransactionReportJob {
 
@@ -168,14 +170,14 @@ public class TransactionReportJob {
      * 
      * @return Job configured transaction report job for execution by Spring Batch infrastructure
      */
-    @Bean("transactionReportJob")
-    public Job transactionReportJob() {
+    @Bean("transactionReportBatchJob")
+    public Job transactionBatchJob() {
         try {
             // Initialize report state variables
             initializeReportState();
             
             // Create job using Spring Batch JobBuilder
-            return new JobBuilder("transactionReportJob", jobRepository)
+            return new JobBuilder("transactionReportBatchJob", jobRepository)
                 .incrementer(new RunIdIncrementer())
                 .start(transactionReportStep())
                 .build();

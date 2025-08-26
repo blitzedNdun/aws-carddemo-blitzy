@@ -23,6 +23,7 @@ import org.springframework.batch.item.support.PassThroughItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -70,11 +71,12 @@ import java.time.temporal.ChronoUnit;
  * @version 1.0
  * @since 2024
  */
+@Profile({"!test", "!unit-test"})
 @Configuration
 public class AccountListJob {
 
     // Batch processing constants matching COBOL program behavior
-    private static final String JOB_NAME = "accountListJob";
+    private static final String JOB_NAME = "accountListBatchJob";
     private static final String STEP_NAME = "accountListStep";
     private static final int CHUNK_SIZE = 100;                          // Optimal chunk size for account processing
     private static final int PAGE_SIZE = 100;                           // Database page size for JPA reader
@@ -121,7 +123,7 @@ public class AccountListJob {
      * @return Job configured for account listing with complete CBACT01C functionality
      */
     @Bean
-    public Job accountListJob() throws Exception {
+    public Job accountBatchJob() throws Exception {
         return new JobBuilder(JOB_NAME, jobRepository)
             .start(accountListStep())
             .listener(accountListJobListener())

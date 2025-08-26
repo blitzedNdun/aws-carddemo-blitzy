@@ -43,7 +43,7 @@ public final class TestConstants {
     public static final Long TEST_CUSTOMER_ID_LONG = 100000001L;
     public static final Long VALID_CUSTOMER_ID_LONG = TEST_CUSTOMER_ID_LONG; // Alias for validation tests
     public static final String VALID_CUSTOMER_ID = TEST_CUSTOMER_ID; // Alias for service tests
-    public static final Long TEST_ACCOUNT_ID = 4000000000000001L;
+    public static final Long TEST_ACCOUNT_ID = 40000000001L; // Fixed to 11 digits to match COBOL PIC X(11)
     public static final String TEST_ACCOUNT_ID_STRING = "40000000001";
     public static final String TEST_TRANSACTION_ID = "TXN0000001";
     public static final String TEST_CARD_NUMBER = "4000000000000001";
@@ -114,6 +114,7 @@ public final class TestConstants {
         put("MAX_TRANSACTION_AMOUNT", new BigDecimal("50000.00"));
         put("ACCOUNT_NUMBER_LENGTH", 11);
         put("CUSTOMER_ID_LENGTH", 9);
+        put("decimal_precision_tolerance", 0.01); // Added missing tolerance for BigDecimal assertions
     }};
     
     // Functional parity rules for COBOL-to-Java validation
@@ -124,6 +125,12 @@ public final class TestConstants {
         put("VALIDATE_COMP3_FORMAT", true);
         put("CHECK_SIGN_HANDLING", true);
         put("VERIFY_PADDING_BEHAVIOR", true);
+        // Additional keys for CardXrefTest compatibility  
+        put("validate_field_lengths", true);
+        put("check_overflow_handling", true);
+        put("verify_error_messages", true);
+        // Additional keys for TransactionTypeTest compatibility
+        put("preserve_decimal_precision", true);
     }};
     
     // Performance testing additional constants
@@ -139,6 +146,9 @@ public final class TestConstants {
         put("MIN_TPS", 100);
         put("MAX_MEMORY_MB", 512);
         put("CONNECTION_POOL_SIZE", 20);
+        // Additional keys for MainframeBenchmarkTest compatibility
+        put("concurrent_users", 50); // Minimum viable concurrent users for testing
+        put("test_duration_minutes", 5L);
     }};
     
     // Date format constants

@@ -99,7 +99,7 @@ public class AccountTest extends AbstractBaseTest implements UnitTest {
         // Create test Card entity for Account-Card relationship validation
         testCard = new Card(
                 "4111111111111111",  // Valid VISA test card number
-                1L,  // accountId
+                TestConstants.TEST_ACCOUNT_ID,  // accountId - matches test account
                 1L,  // customerId 
                 "123",  // cvvCode
                 "TEST CARDHOLDER",  // embossedName

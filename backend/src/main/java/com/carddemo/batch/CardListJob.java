@@ -26,6 +26,7 @@ import org.springframework.batch.item.support.PassThroughItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -90,6 +91,7 @@ import java.time.format.DateTimeFormatter;
  * @version 1.0
  * @since CardDemo v1.0
  */
+@Profile({"!test", "!unit-test"})
 @Configuration
 @Component
 public class CardListJob {
@@ -152,7 +154,7 @@ public class CardListJob {
      * @return configured Job for card listing batch processing
      */
     @Bean
-    public Job cardListJob() {
+    public Job cardBatchJob() {
         logger.info("Configuring cardListJob - replacing CBACT02C COBOL program");
         
         return new JobBuilder("cardListJob", jobRepository)

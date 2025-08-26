@@ -25,11 +25,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.*;
@@ -63,8 +62,7 @@ import java.util.ArrayList;
  * @version 1.0
  * @since 2024
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@ExtendWith(MockitoExtension.class)
 class TransactionPostingServiceTest {
 
     @Mock
@@ -108,8 +106,6 @@ class TransactionPostingServiceTest {
      */
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-        
         // Clear all data before each test
         transactionPostingService.clearAllData();
         

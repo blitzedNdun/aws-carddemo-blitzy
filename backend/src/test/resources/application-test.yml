@@ -4,6 +4,20 @@
 spring:
   main:
     allow-bean-definition-overriding: true
+  
+  # Completely disable config server imports for test environment
+  config:
+    import: ""  # Empty string to override main config
+    
+  # Disable cloud config completely for tests  
+  cloud:
+    config:
+      enabled: false
+      discovery:
+        enabled: false
+      import-check:
+        enabled: false
+      fail-fast: false
     
   # Liquibase disabled for tests - using schema-test.sql instead
   liquibase:

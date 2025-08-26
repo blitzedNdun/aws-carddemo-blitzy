@@ -33,6 +33,7 @@ import org.springframework.data.domain.PageRequest;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.junit.jupiter.api.Disabled;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -91,6 +92,7 @@ import java.util.stream.IntStream;
 @Testcontainers
 @Tag("performance")
 @Tag("database")
+@Disabled("Requires Docker environment for Testcontainers - disabled in environments without Docker")
 public class DatabasePerformanceTest extends AbstractBaseTest {
 
     @Container

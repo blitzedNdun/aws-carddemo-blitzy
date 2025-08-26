@@ -1,7 +1,7 @@
 package com.carddemo.security;
 
 // BaseIntegrationTest in default package - cannot import from com.carddemo.security package
-import com.carddemo.config.SecurityConfig;
+import com.carddemo.config.TestSecurityConfig;
 import com.carddemo.config.DatabaseConfig;
 import com.carddemo.config.RedisConfig;
 // TestConstants in default package - cannot import from com.carddemo.security package

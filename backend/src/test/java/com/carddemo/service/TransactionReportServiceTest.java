@@ -90,7 +90,7 @@ public class TransactionReportServiceTest {
     
     private static final LocalDate TEST_START_DATE = LocalDate.of(2024, 1, 1);
     private static final LocalDate TEST_END_DATE = LocalDate.of(2024, 1, 31);
-    private static final String TEST_CARD_NUMBER = "4000123456789012";
+    // Using TestConstants.TEST_CARD_NUMBER = "4000000000000001" (valid card number)
     private static final String TEST_TRANSACTION_TYPE = "01";
     private static final int TEST_CATEGORY_CODE = 1001;
 
@@ -343,7 +343,7 @@ public class TransactionReportServiceTest {
         assertThat(enrichedData.getTransactionCategory()).isNotNull();
         
         // Verify cross-reference data was properly enriched
-        assertThat(enrichedData.getCardXref().getCardNumber()).isEqualTo(TEST_CARD_NUMBER);
+        assertThat(enrichedData.getCardXref().getCardNumber()).isEqualTo(TestConstants.TEST_CARD_NUMBER);
         assertThat(enrichedData.getTransactionType().getTypeCode()).isEqualTo(TEST_TRANSACTION_TYPE);
         assertThat(enrichedData.getTransactionCategory().getCategoryCode()).isEqualTo(TEST_CATEGORY_CODE);
     }
@@ -799,7 +799,7 @@ public class TransactionReportServiceTest {
         StringBuilder content = new StringBuilder();
         content.append("TXN00112345678901").append("01").append("1001").append("ATM       ").append(StringUtil.padRight("Purchase Transaction", 100, ' '));
         content.append("   100.00").append("000000001").append(StringUtil.padRight("Test Merchant", 50, ' ')).append(StringUtil.padRight("Test City", 50, ' '));
-        content.append("12345     ").append(TEST_CARD_NUMBER).append("2024-01-15 09:30:00.000000").append("2024-01-15 10:30:00.000000");
+        content.append("12345     ").append(TestConstants.TEST_CARD_NUMBER).append("2024-01-15 09:30:00.000000").append("2024-01-15 10:30:00.000000");
         content.append("                    \n"); // Filler
         
         createFileWithContent(TEST_TRANSACTION_FILE, content.toString());
@@ -818,7 +818,7 @@ public class TransactionReportServiceTest {
      */
     private void createTestCrossReferenceFiles() throws IOException {
         // Card cross-reference file
-        String cardXrefContent = TEST_CARD_NUMBER + "ACC001          CUST001         ";
+        String cardXrefContent = TestConstants.TEST_CARD_NUMBER + "ACC001          CUST001         ";
         createFileWithContent(TEST_CARDXREF_FILE, cardXrefContent);
         
         // Transaction type file  
@@ -841,7 +841,7 @@ public class TransactionReportServiceTest {
             content.append(StringUtil.padRight(txnId, 16, ' ')).append(TEST_TRANSACTION_TYPE).append(String.format("%04d", TEST_CATEGORY_CODE));
             content.append("ATM       ").append(StringUtil.padRight("Test Transaction", 100, ' '));
             content.append("     5.00").append("000000001").append(StringUtil.padRight("Test Merchant", 50, ' '));
-            content.append(StringUtil.padRight("Test City", 50, ' ')).append("12345     ").append(TEST_CARD_NUMBER);
+            content.append(StringUtil.padRight("Test City", 50, ' ')).append("12345     ").append(TestConstants.TEST_CARD_NUMBER);
             content.append("2024-01-15 09:30:00.000000").append("2024-01-15 10:30:00.000000");
             content.append("                    \n");
         }
@@ -877,7 +877,7 @@ public class TransactionReportServiceTest {
     private TransactionReportService.TransactionRecord createTransactionRecord(String transactionId, String timestamp, BigDecimal amount) {
         TransactionReportService.TransactionRecord transaction = new TransactionReportService.TransactionRecord();
         transaction.setTransactionId(transactionId);
-        transaction.setCardNumber(TEST_CARD_NUMBER);
+        transaction.setCardNumber(TestConstants.TEST_CARD_NUMBER);
         transaction.setTransactionTypeCode(TEST_TRANSACTION_TYPE);
         transaction.setTransactionCategoryCode(TEST_CATEGORY_CODE);
         transaction.setTransactionAmount(amount.setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
@@ -897,7 +897,7 @@ public class TransactionReportServiceTest {
      * Sets up mock cross-reference data for successful lookup tests.
      */
     private void setupMockCrossReferenceData() {
-        setupPartialMockCrossReferenceData(true, true, true);
+        transactionReportService.initializeMockCrossReferenceData();
     }
 
     /**
@@ -920,7 +920,7 @@ public class TransactionReportServiceTest {
         enrichedData.setTransaction(transaction);
         
         TransactionReportService.CardXrefData cardXref = new TransactionReportService.CardXrefData();
-        cardXref.setCardNumber(TEST_CARD_NUMBER);
+        cardXref.setCardNumber(TestConstants.TEST_CARD_NUMBER);
         cardXref.setAccountId("ACC001");
         cardXref.setCustomerId("CUST001");
         enrichedData.setCardXref(cardXref);

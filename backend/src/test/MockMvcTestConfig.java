@@ -16,7 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 
-import com.carddemo.config.SecurityConfig;
+import com.carddemo.config.TestSecurityConfig;
 import com.carddemo.config.WebConfig;
 import com.carddemo.config.RedisConfig;
 import com.carddemo.test.TestConstants;
