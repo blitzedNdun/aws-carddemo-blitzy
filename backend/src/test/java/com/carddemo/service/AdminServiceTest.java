@@ -12,6 +12,7 @@ import com.carddemo.dto.MenuRequest;
 import com.carddemo.dto.UserDto;
 import com.carddemo.entity.UserSecurity;
 import com.carddemo.repository.UserSecurityRepository;
+import com.carddemo.service.ReportService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -70,7 +71,7 @@ class AdminServiceTest {
     private UserSecurityRepository userSecurityRepository;
     
     @Mock
-    private ReportGenerationService reportGenerationService;
+    private ReportService reportService;
     
     @InjectMocks
     private AdminService adminService;
@@ -316,7 +317,7 @@ class AdminServiceTest {
     void testBuildMenuResponseWithAdminOptions() {
         // Given: Admin user and system status information
         when(userSecurityRepository.findByUsername("ADMIN01")).thenReturn(Optional.of(testAdminUser));
-        when(reportGenerationService.getAvailableReports()).thenReturn(List.of("MONTHLY", "YEARLY"));
+        when(reportService.getAvailableReports()).thenReturn(List.of("MONTHLY", "YEARLY"));
         
         // When: Build admin menu response
         AdminMenuResponse response = adminService.buildMenuResponse("ADMIN01");
@@ -329,7 +330,7 @@ class AdminServiceTest {
         assertThat(response.getLastBatchRun()).isNotNull();
         
         verify(userSecurityRepository).findByUsername("ADMIN01");
-        verify(reportGenerationService).getAvailableReports();
+        verify(reportService).getAvailableReports();
     }
     
     /**
