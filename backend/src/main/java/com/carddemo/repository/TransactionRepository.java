@@ -208,8 +208,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
      */
     @Query("SELECT t FROM Transaction t WHERE t.processedTimestamp >= :startDate AND t.processedTimestamp <= :endDate")
     List<Transaction> findByProcessingDateBetween(
-        @Param("startDate") LocalDate startDate, 
-        @Param("endDate") LocalDate endDate
+        @Param("startDate") LocalDateTime startDate, 
+        @Param("endDate") LocalDateTime endDate
     );
 
     // Transaction type and category-based queries
