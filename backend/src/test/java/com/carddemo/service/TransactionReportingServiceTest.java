@@ -392,7 +392,7 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
                 LocalDate velocityDate = LocalDate.now();
                 suspiciousTransactions.forEach(txn -> {
                     txn.setTransactionDate(velocityDate);
-                    txn.setAccountId(Long.parseLong(TestConstants.TEST_ACCOUNT_ID));
+                    txn.setAccountId(TestConstants.TEST_ACCOUNT_ID);
                     txn.setOriginalTimestamp(velocityDate.atTime(10, 0).plusMinutes(
                         suspiciousTransactions.indexOf(txn) * 2)); // 2-minute intervals
                 });
