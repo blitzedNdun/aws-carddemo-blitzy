@@ -15,7 +15,7 @@ import com.carddemo.repository.TransactionCategoryRepository;
 import com.carddemo.repository.TransactionCategoryBalanceRepository;
 import com.carddemo.test.IntegrationTest;
 import com.carddemo.test.TestDataGenerator;
-import com.carddemo.controller.TestConstants;
+import com.carddemo.test.TestConstants;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -119,7 +119,7 @@ public class TransactionCategoryBalanceRepositoryTest extends BaseIntegrationTes
 
         // Create test accounts with COBOL-compatible precision
         testAccount1 = testDataGenerator.generateAccount();
-        testAccount1.setAccountId(Long.parseLong(TestConstants.PERFORMANCE_TEST_DATA.ACCOUNT_ID));
+        testAccount1.setAccountId(TestConstants.TEST_ACCOUNT_ID);
         testAccount1.setCurrentBalance(new BigDecimal("1500.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
         testAccount1 = accountRepository.save(testAccount1);
 
@@ -130,7 +130,7 @@ public class TransactionCategoryBalanceRepositoryTest extends BaseIntegrationTes
 
         // Create test transaction categories  
         testCategory1 = testDataGenerator.generateTransactionCategory();
-        testCategory1.setCategoryCode(TestConstants.PERFORMANCE_TEST_DATA.TRANSACTION_CATEGORY_CODE);
+        testCategory1.setCategoryCode(TestConstants.TEST_TRANSACTION_CATEGORY_CODE);
         testCategory1 = transactionCategoryRepository.save(testCategory1);
 
         testCategory2 = testDataGenerator.generateTransactionCategory();
