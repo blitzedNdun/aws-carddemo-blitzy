@@ -701,7 +701,9 @@ public class StatementFileHandlerService {
      */
     private String formatCustomerRecord(Customer customer) {
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("%09d", customer.getCustomerId() != null ? customer.getCustomerId() : 0L));
+        // Convert String customerId back to Long for formatting since getCustomerId() returns String
+        Long customerIdLong = customer.getCustomerId() != null ? Long.valueOf(customer.getCustomerId()) : 0L;
+        sb.append(String.format("%09d", customerIdLong));
         
         // Use getCustomerData() method as required by schema
         String customerData = customer.getFirstName() + "|" + customer.getLastName() + "|" + customer.getSsn();

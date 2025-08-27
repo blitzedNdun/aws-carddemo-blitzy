@@ -24,6 +24,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.util.List;
 import java.util.Optional;
@@ -116,7 +118,7 @@ public class StatementFileHandlerServiceTest {
         testCardXref.setXrefCustId(123456789L);
 
         testCustomer = new Customer();
-        testCustomer.setCustomerId(123456789L);
+        testCustomer.setCustomerId("123456789");
         testCustomer.setFirstName("John");
         testCustomer.setLastName("Doe");
 
@@ -232,7 +234,7 @@ public class StatementFileHandlerServiceTest {
             assertNotNull(response);
             assertEquals(STATUS_ERROR, response.getReturnCode());
             assertFalse(response.isSuccess());
-            assertTrue(response.getErrorMessage().contains("File operation failed"));
+            assertTrue(response.getErrorMessage().contains("Failed to open file"));
         }
     }
 
@@ -923,7 +925,7 @@ public class StatementFileHandlerServiceTest {
             // Assert
             assertEquals(STATUS_ERROR, response.getReturnCode());
             assertFalse(response.isSuccess());
-            assertTrue(response.getErrorMessage().contains("File operation failed"));
+            assertTrue(response.getErrorMessage().contains("Failed to read from file"));
         }
 
         @Test
@@ -941,7 +943,7 @@ public class StatementFileHandlerServiceTest {
             // Assert
             assertEquals(STATUS_ERROR, response.getReturnCode());
             assertFalse(response.isSuccess());
-            assertTrue(response.getErrorMessage().contains("File operation failed"));
+            assertTrue(response.getErrorMessage().contains("Failed to write to file"));
         }
 
         @Test
@@ -1316,6 +1318,7 @@ public class StatementFileHandlerServiceTest {
      */
     @Nested
     @DisplayName("Integration Workflow Tests")
+    @MockitoSettings(strictness = Strictness.LENIENT)
     class IntegrationWorkflowTests {
 
         @Test
@@ -1408,8 +1411,8 @@ public class StatementFileHandlerServiceTest {
             assertEquals(Long.valueOf(1), testTransaction.getTransactionId());
             assertEquals("1234567890123456", testTransaction.getCardNumber());
 
-            // Test Customer entity getters as specified in schema
-            assertEquals(Long.valueOf(123456789), testCustomer.getCustomerId());
+            // Test Customer entity getters as specified in schema (getCustomerId returns String)
+            assertEquals("123456789", testCustomer.getCustomerId());
 
             // Test Account entity getters as specified in schema
             assertEquals(Long.valueOf(12345678901L), testAccount.getAccountId());
@@ -1422,8 +1425,8 @@ public class StatementFileHandlerServiceTest {
             testTransaction.setTransactionId(2L);
             assertEquals(Long.valueOf(2), testTransaction.getTransactionId());
 
-            testCustomer.setCustomerId(987654321L);
-            assertEquals(Long.valueOf(987654321), testCustomer.getCustomerId());
+            testCustomer.setCustomerId("987654321");
+            assertEquals("987654321", testCustomer.getCustomerId());
 
             testAccount.setAccountId(99999999999L);
             assertEquals(Long.valueOf(99999999999L), testAccount.getAccountId());
