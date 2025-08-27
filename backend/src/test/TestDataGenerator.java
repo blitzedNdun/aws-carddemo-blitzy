@@ -2,11 +2,16 @@ package com.carddemo.test;
 
 import com.carddemo.entity.Account;
 import com.carddemo.entity.Transaction;
+import com.carddemo.entity.TransactionCategory;
+import com.carddemo.entity.TransactionCategoryBalance;
+import com.carddemo.entity.TransactionCategoryBalance.TransactionCategoryBalanceKey;
 import com.carddemo.dto.AddTransactionRequest;
+import com.carddemo.controller.TestConstants;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -210,5 +215,95 @@ public class TestDataGenerator {
 
     private String generateTransactionId() {
         return String.format("TXN%010d", RANDOM.nextInt(Integer.MAX_VALUE));
+    }
+
+    /**
+     * Generates a test Account entity with COBOL-compatible data patterns.
+     * Uses proper BigDecimal precision matching COBOL COMP-3 requirements.
+     */
+    public Account generateAccount() {
+        Account account = new Account();
+        account.setAccountId(generateAccountNumber());
+        account.setActiveStatus("Y");
+        account.setCurrentBalance(generateComp3BigDecimal("1000.00"));
+        account.setCreditLimit(generateComp3BigDecimal("5000.00"));
+        account.setCashCreditLimit(generateComp3BigDecimal("1000.00"));
+        account.setOpenDate(LocalDate.now().minusYears(1));
+        account.setCurrentCycleCredit(generateComp3BigDecimal("0.00"));
+        account.setCurrentCycleDebit(generateComp3BigDecimal("0.00"));
+        account.setGroupId("DEFAULT");
+        return account;
+    }
+
+    /**
+     * Generates a test TransactionCategory entity with proper category code formatting.
+     */
+    public TransactionCategory generateTransactionCategory() {
+        TransactionCategory category = new TransactionCategory();
+        category.setCategoryCode(String.format("%04d", RANDOM.nextInt(9999)));
+        category.setCategoryDescription("TEST CATEGORY " + category.getCategoryCode());
+        return category;
+    }
+
+    /**
+     * Generates a TransactionCategoryBalance with COBOL-compatible precision.
+     */
+    public TransactionCategoryBalance generateTransactionCategoryBalance() {
+        TransactionCategoryBalanceKey key = new TransactionCategoryBalanceKey(
+                generateAccountNumber(),
+                String.format("%04d", RANDOM.nextInt(9999)),
+                generateBalanceDate()
+        );
+        TransactionCategoryBalance balance = new TransactionCategoryBalance(key);
+        balance.setBalance(generateComp3BigDecimal(String.valueOf(RANDOM.nextDouble() * 1000)));
+        return balance;
+    }
+
+    /**
+     * Generates a list of TransactionCategoryBalance records for testing.
+     */
+    public List<TransactionCategoryBalance> generateTransactionCategoryBalanceList(Long accountId, String categoryCode, int count) {
+        List<TransactionCategoryBalance> balances = new ArrayList<>();
+        LocalDate baseDate = LocalDate.now();
+        
+        for (int i = 0; i < count; i++) {
+            TransactionCategoryBalanceKey key = new TransactionCategoryBalanceKey(
+                    accountId,
+                    categoryCode,
+                    baseDate.minusDays(i)
+            );
+            TransactionCategoryBalance balance = new TransactionCategoryBalance(key);
+            balance.setBalance(generateComp3BigDecimal(String.valueOf(100.00 + (i * 10.25))));
+            balances.add(balance);
+        }
+        return balances;
+    }
+
+    /**
+     * Generates BigDecimal with COBOL COMP-3 equivalent precision (scale=2, HALF_UP rounding).
+     */
+    public BigDecimal generateComp3BigDecimal(String amount) {
+        return new BigDecimal(amount).setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE);
+    }
+
+    /**
+     * Generates a balance date for testing, typically recent past dates.
+     */
+    public LocalDate generateBalanceDate() {
+        return LocalDate.now().minusDays(RANDOM.nextInt(365));
+    }
+
+    /**
+     * Resets the random seed for reproducible test data generation.
+     */
+    public void resetRandomSeed() {
+        RANDOM.setSeed(System.currentTimeMillis());
+    }
+
+    // Private helper method overrides for better type safety
+    private Long generateAccountNumber() {
+        String prefix = VALID_ACCOUNT_PREFIXES[RANDOM.nextInt(VALID_ACCOUNT_PREFIXES.length)];
+        String accountStr = prefix + String.format("%06d", RANDOM.nextInt(1000000));
+        return Long.parseLong(accountStr);
     }
 }

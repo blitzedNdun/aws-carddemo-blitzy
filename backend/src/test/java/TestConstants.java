@@ -77,6 +77,7 @@ public final class TestConstants {
         public static final String CARD_NUMBER = "4532123456789012";
         public static final String CUSTOMER_ID = "0000000001";
         public static final String TRANSACTION_ID = "T000000001";
+        public static final String TRANSACTION_CATEGORY_CODE = "5411";
         public static final double DEFAULT_AMOUNT = 100.00;
         
         private PERFORMANCE_TEST_DATA() {}
