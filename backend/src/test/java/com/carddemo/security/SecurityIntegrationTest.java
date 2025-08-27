@@ -11,7 +11,7 @@ import com.carddemo.security.JwtTokenService;
 import com.carddemo.security.SessionConfig;
 import com.carddemo.integration.BaseIntegrationTest;
 import com.carddemo.security.SecurityTestUtils;
-import com.carddemo.TestConstants;
+import com.carddemo.controller.TestConstants;
 
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
@@ -34,7 +34,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSession;
 
 import static org.hamcrest.Matchers.containsString;
 
@@ -277,7 +277,7 @@ public class SecurityIntegrationTest extends BaseIntegrationTest {
         }
         
         // Validate session timeout configuration (30 minutes)
-        long sessionTimeout = sessionConfig.sessionTimeout();
+        long sessionTimeout = sessionConfig.getSessionTimeout();
         assertThat(sessionTimeout).isEqualTo(30 * 60); // 30 minutes in seconds
         
         // Test session isolation with different user
@@ -545,28 +545,28 @@ public class SecurityIntegrationTest extends BaseIntegrationTest {
                 .contentType("application/json")
                 .content("{\"username\":\"test\",\"password\":\"test\"}"))
                 .andExpect(header().string("X-Content-Type-Options", "nosniff"))
-                .andExpected(header().string("X-Frame-Options", "DENY"))
-                .andExpected(header().string("X-XSS-Protection", "1; mode=block"))
-                .andExpected(header().exists("Strict-Transport-Security"))
-                .andExpected(header().exists("Content-Security-Policy"))
-                .andExpected(header().string("Referrer-Policy", "strict-origin-when-cross-origin"));
+                .andExpect(header().string("X-Frame-Options", "DENY"))
+                .andExpect(header().string("X-XSS-Protection", "1; mode=block"))
+                .andExpect(header().exists("Strict-Transport-Security"))
+                .andExpect(header().exists("Content-Security-Policy"))
+                .andExpect(header().string("Referrer-Policy", "strict-origin-when-cross-origin"));
         
         // Test security headers on protected endpoints
         String validToken = generateUserToken();
         
         mockMvc.perform(get("/api/accounts")
                 .header("Authorization", "Bearer " + validToken))
-                .andExpected(header().string("X-Content-Type-Options", "nosniff"))
-                .andExpected(header().string("X-Frame-Options", "DENY"))
-                .andExpected(header().string("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate"));
+                .andExpect(header().string("X-Content-Type-Options", "nosniff"))
+                .andExpect(header().string("X-Frame-Options", "DENY"))
+                .andExpect(header().string("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate"));
         
         // Test security headers on administrative endpoints
         String adminToken = generateAdminToken();
         
         mockMvc.perform(get("/api/admin/users")
                 .header("Authorization", "Bearer " + adminToken))
-                .andExpected(header().string("X-Content-Type-Options", "nosniff"))
-                .andExpected(header().string("X-Frame-Options", "DENY"));
+                .andExpect(header().string("X-Content-Type-Options", "nosniff"))
+                .andExpect(header().string("X-Frame-Options", "DENY"));
     }
     
     /**
@@ -678,7 +678,7 @@ public class SecurityIntegrationTest extends BaseIntegrationTest {
      * Generates admin JWT token for testing admin access.
      */
     private String generateAdminToken() {
-        return SecurityTestUtils.generateTestJwtToken(SecurityTestUtils.createTestAuthentication());
+        return SecurityTestUtils.generateTestJwtToken(SecurityTestUtils.createTestAdmin());
     }
     
     /**
