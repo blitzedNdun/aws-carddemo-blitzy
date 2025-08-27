@@ -68,12 +68,26 @@ public class SessionConfig {
     private String redisNamespace;
     
     /**
+     * Session timeout in seconds (30 minutes = CICS timeout)
+     */
+    private static final int SESSION_TIMEOUT_SECONDS = 1800;
+    
+    /**
      * Track active sessions per user for concurrent session control
      */
     private final Map<String, Integer> userSessionCount = new ConcurrentHashMap<>();
     
     @Autowired
     private RedisConnectionFactory redisConnectionFactory;
+    
+    /**
+     * Returns the configured session timeout in seconds.
+     * 
+     * @return session timeout in seconds (1800 = 30 minutes matching CICS)
+     */
+    public int getSessionTimeout() {
+        return SESSION_TIMEOUT_SECONDS;
+    }
 
     /**
      * Configures RedisTemplate for session data storage with JSON serialization.
