@@ -213,6 +213,41 @@ public class CrossReferenceService {
     }
 
     /**
+     * Finds all cards associated with a specific customer ID.
+     * 
+     * This method implements customer-centric cross-reference lookup functionality,
+     * allowing retrieval of all cards linked to a specific customer. This supports
+     * business operations such as customer service inquiries, account management,
+     * and reporting functions where all cards owned by a customer need to be identified.
+     * 
+     * The method replicates COBOL logic that performed VSAM keyed access on 
+     * alternate indexes to find all cards for a customer ID.
+     * 
+     * @param customerId the customer ID to find cards for
+     * @return list of card numbers associated with the customer (empty list if none found)
+     * @throws IllegalArgumentException if customerId is invalid
+     * @throws RuntimeException if database access fails
+     */
+    public List<String> findCardsByCustomerId(Long customerId) {
+        if (customerId == null || customerId <= 0) {
+            throw new IllegalArgumentException("Customer ID must be a positive number");
+        }
+
+        try {
+            List<CardXref> crossRefs = cardXrefRepository.findByXrefCustId(customerId);
+            
+            return crossRefs.stream()
+                    .map(CardXref::getXrefCardNum)
+                    .distinct()
+                    .sorted()
+                    .collect(Collectors.toList());
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to find cards for customer ID: " + customerId, e);
+        }
+    }
+
+    /**
      * Finds the account ID associated with a specific card number.
      * 
      * This method implements card-centric cross-reference lookup functionality,

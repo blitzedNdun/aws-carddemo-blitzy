@@ -181,11 +181,12 @@ public class CrossReferenceController {
             // Create CardCrossReferenceDto with masked card number for security
             CardCrossReferenceDto crossRef = new CardCrossReferenceDto();
             crossRef.setCardNumber(cleanCardNumber); // Service layer will handle masking as needed
-            crossRef.setAccountId(accountId.toString());
+            crossRef.setAccountId(String.format("%011d", accountId));
             
             // Note: In a complete implementation, we would retrieve customer ID from the cross-reference
             // For now, we'll use the account ID as a placeholder for the relationship
-            crossRef.setCustomerId(accountId.toString().substring(0, Math.min(9, accountId.toString().length())));
+            String accountIdFormatted = String.format("%011d", accountId);
+            crossRef.setCustomerId(accountIdFormatted.substring(0, Math.min(9, accountIdFormatted.length())));
             
             response.put("crossReference", crossRef);
             response.put("accountId", crossRef.getAccountId());
@@ -299,7 +300,7 @@ public class CrossReferenceController {
                     // Find account ID for this card to complete the relationship
                     Long accountId = crossReferenceService.findAccountByCardNumber(cardNumber);
                     if (accountId != null) {
-                        cardDto.setAccountId(accountId.toString());
+                        cardDto.setAccountId(String.format("%011d", accountId));
                         
                         // Validate the cross-reference relationship
                         boolean isValid = crossReferenceService.validateCardToAccountLink(cardNumber, accountId);
