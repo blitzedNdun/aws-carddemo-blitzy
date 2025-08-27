@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -170,8 +171,8 @@ public class CrossReferenceProcessorService {
             // Get count of all records (equivalent to file availability check)
             totalRecords = cardXrefRepository.count();
             
-            // Get all records for sequential processing
-            allRecords = cardXrefRepository.findAll();
+            // Get all records for sequential processing (wrap in mutable list)
+            allRecords = new ArrayList<>(cardXrefRepository.findAll());
             
             // Initialize iterator for sequential processing
             recordIterator = allRecords.iterator();
@@ -390,12 +391,29 @@ public class CrossReferenceProcessorService {
     public void abendProgram() {
         logger.error("ABENDING PROGRAM");
         
-        // Cleanup any open resources
+        // Cleanup any open resources - but avoid recursive calls during close errors
         if (fileOpen) {
             try {
-                closeCrossReferenceFile();
+                // Direct cleanup without calling closeCrossReferenceFile to avoid recursion
+                if (recordIterator != null) {
+                    recordIterator = null;
+                }
+                
+                if (allRecords != null) {
+                    try {
+                        allRecords.clear();
+                    } catch (UnsupportedOperationException e) {
+                        // Handle immutable list case
+                        logger.debug("Cannot clear immutable list, setting to null");
+                    }
+                    allRecords = null;
+                }
+                
+                fileOpen = false;
+                logger.debug("Emergency file cleanup completed during abend");
+                
             } catch (Exception e) {
-                logger.error("Error during cleanup in abend", e);
+                logger.error("Error during emergency cleanup in abend", e);
             }
         }
         
