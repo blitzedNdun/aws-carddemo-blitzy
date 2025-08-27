@@ -8,7 +8,7 @@ package com.carddemo.security;
 import com.carddemo.config.RedisConfig;
 import com.carddemo.integration.BaseIntegrationTest;
 import com.carddemo.security.SessionAttributes;
-import TestConstants;
+import com.carddemo.test.TestConstants;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +24,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -70,6 +73,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 )
 @TestPropertySource(locations = "classpath:application-integration.yml")
 public class SessionManagementTest extends BaseIntegrationTest {
+
+    private static final Logger logger = LoggerFactory.getLogger(SessionManagementTest.class);
 
     @Autowired
     private SessionRepository<Session> sessionRepository;
@@ -140,11 +145,11 @@ public class SessionManagementTest extends BaseIntegrationTest {
         // Retrieve session from Redis and validate persistence
         Session retrievedSession = sessionRepository.findById(newSession.getId());
         assertThat(retrievedSession).isNotNull();
-        assertThat(retrievedSession.getAttribute(SessionAttributes.SEC_USR_ID))
+        assertThat((String) retrievedSession.getAttribute(SessionAttributes.SEC_USR_ID))
             .isEqualTo(TEST_USER_ID);
-        assertThat(retrievedSession.getAttribute(SessionAttributes.SEC_USR_TYPE))
+        assertThat((String) retrievedSession.getAttribute(SessionAttributes.SEC_USR_TYPE))
             .isEqualTo(TEST_USER_ROLE);
-        assertThat(retrievedSession.getAttribute(SessionAttributes.SEC_USR_NAME))
+        assertThat((String) retrievedSession.getAttribute(SessionAttributes.SEC_USR_NAME))
             .isEqualTo("Test User");
             
         logger.info("Spring Session Redis integration validated successfully");
@@ -233,19 +238,19 @@ public class SessionManagementTest extends BaseIntegrationTest {
         assertThat(retrievedSession.getId()).isEqualTo(createdSession.getId());
         
         // Validate all attributes are correctly persisted and retrieved
-        assertThat(retrievedSession.getAttribute(SessionAttributes.SEC_USR_ID))
+        assertThat((String) retrievedSession.getAttribute(SessionAttributes.SEC_USR_ID))
             .isEqualTo(TEST_USER_ID);
-        assertThat(retrievedSession.getAttribute(SessionAttributes.SEC_USR_TYPE))
+        assertThat((String) retrievedSession.getAttribute(SessionAttributes.SEC_USR_TYPE))
             .isEqualTo(TEST_ADMIN_ROLE);
-        assertThat(retrievedSession.getAttribute(SessionAttributes.SEC_USR_NAME))
+        assertThat((String) retrievedSession.getAttribute(SessionAttributes.SEC_USR_NAME))
             .isEqualTo("Admin User");
-        assertThat(retrievedSession.getAttribute(SessionAttributes.NAVIGATION_STATE))
+        assertThat((String) retrievedSession.getAttribute(SessionAttributes.NAVIGATION_STATE))
             .isEqualTo("ADMIN");
-        assertThat(retrievedSession.getAttribute(SessionAttributes.TRANSACTION_STATE))
+        assertThat((String) retrievedSession.getAttribute(SessionAttributes.TRANSACTION_STATE))
             .isEqualTo("PENDING");
-        assertThat(retrievedSession.getAttribute(SessionAttributes.LAST_PAGE))
+        assertThat((String) retrievedSession.getAttribute(SessionAttributes.LAST_PAGE))
             .isEqualTo("MENU");
-        assertThat(retrievedSession.getAttribute(SessionAttributes.CURRENT_PAGE))
+        assertThat((String) retrievedSession.getAttribute(SessionAttributes.CURRENT_PAGE))
             .isEqualTo("ADMIN");
         
         // Test session attribute enumeration
@@ -342,7 +347,7 @@ public class SessionManagementTest extends BaseIntegrationTest {
                         
                         // Verify attribute was saved correctly
                         Session verificationSession = sessionRepository.findById(sessionId);
-                        assertThat(verificationSession.getAttribute(attributeKey))
+                        assertThat((String) verificationSession.getAttribute(attributeKey))
                             .isEqualTo(attributeValue);
                     }
                 } catch (Exception e) {
@@ -358,11 +363,11 @@ public class SessionManagementTest extends BaseIntegrationTest {
         // Validate final session state
         Session finalSession = sessionRepository.findById(sessionId);
         assertThat(finalSession).isNotNull();
-        assertThat(finalSession.getAttribute(SessionAttributes.SEC_USR_ID))
+        assertThat((String) finalSession.getAttribute(SessionAttributes.SEC_USR_ID))
             .isEqualTo(TEST_USER_ID);
-        assertThat(finalSession.getAttribute(SessionAttributes.SEC_USR_TYPE))
+        assertThat((String) finalSession.getAttribute(SessionAttributes.SEC_USR_TYPE))
             .isEqualTo(TEST_USER_ROLE);
-        assertThat(finalSession.getAttribute(SessionAttributes.NAVIGATION_STATE))
+        assertThat((String) finalSession.getAttribute(SessionAttributes.NAVIGATION_STATE))
             .isEqualTo("MENU");
         
         // Verify all concurrent attributes were saved
@@ -447,9 +452,9 @@ public class SessionManagementTest extends BaseIntegrationTest {
         // Simulate second request - navigate to transaction screen
         Session secondRequestSession = sessionRepository.findById(sessionId);
         assertThat(secondRequestSession).isNotNull();
-        assertThat(secondRequestSession.getAttribute(SessionAttributes.SEC_USR_ID))
+        assertThat((String) secondRequestSession.getAttribute(SessionAttributes.SEC_USR_ID))
             .isEqualTo(TEST_USER_ID);
-        assertThat(secondRequestSession.getAttribute(SessionAttributes.SEC_USR_NAME))
+        assertThat((String) secondRequestSession.getAttribute(SessionAttributes.SEC_USR_NAME))
             .isEqualTo("John Doe");
         
         // Update navigation state for transaction screen
@@ -461,9 +466,9 @@ public class SessionManagementTest extends BaseIntegrationTest {
         // Simulate third request - process transaction
         Session thirdRequestSession = sessionRepository.findById(sessionId);
         assertThat(thirdRequestSession).isNotNull();
-        assertThat(thirdRequestSession.getAttribute(SessionAttributes.CURRENT_PAGE))
+        assertThat((String) thirdRequestSession.getAttribute(SessionAttributes.CURRENT_PAGE))
             .isEqualTo("TRANSACTION");
-        assertThat(thirdRequestSession.getAttribute(SessionAttributes.LAST_PAGE))
+        assertThat((String) thirdRequestSession.getAttribute(SessionAttributes.LAST_PAGE))
             .isEqualTo("MENU");
         
         // Update transaction state
@@ -474,9 +479,9 @@ public class SessionManagementTest extends BaseIntegrationTest {
         // Simulate fourth request - complete transaction
         Session fourthRequestSession = sessionRepository.findById(sessionId);
         assertThat(fourthRequestSession).isNotNull();
-        assertThat(fourthRequestSession.getAttribute(SessionAttributes.TRANSACTION_STATE))
+        assertThat((String) fourthRequestSession.getAttribute(SessionAttributes.TRANSACTION_STATE))
             .isEqualTo("PROCESSING");
-        assertThat(fourthRequestSession.getAttribute(SessionAttributes.ERROR_MESSAGE))
+        assertThat((String) fourthRequestSession.getAttribute(SessionAttributes.ERROR_MESSAGE))
             .isNull();
         
         // Complete transaction
@@ -488,19 +493,19 @@ public class SessionManagementTest extends BaseIntegrationTest {
         // Final validation - verify complete session history is maintained
         Session finalSession = sessionRepository.findById(sessionId);
         assertThat(finalSession).isNotNull();
-        assertThat(finalSession.getAttribute(SessionAttributes.SEC_USR_ID))
+        assertThat((String) finalSession.getAttribute(SessionAttributes.SEC_USR_ID))
             .as("User ID should be maintained throughout session")
             .isEqualTo(TEST_USER_ID);
-        assertThat(finalSession.getAttribute(SessionAttributes.SEC_USR_NAME))
+        assertThat((String) finalSession.getAttribute(SessionAttributes.SEC_USR_NAME))
             .as("User name should be maintained throughout session")
             .isEqualTo("John Doe");
-        assertThat(finalSession.getAttribute(SessionAttributes.TRANSACTION_STATE))
+        assertThat((String) finalSession.getAttribute(SessionAttributes.TRANSACTION_STATE))
             .as("Final transaction state should be COMPLETE")
             .isEqualTo("COMPLETE");
-        assertThat(finalSession.getAttribute(SessionAttributes.CURRENT_PAGE))
+        assertThat((String) finalSession.getAttribute(SessionAttributes.CURRENT_PAGE))
             .as("Current page should be CONFIRMATION")
             .isEqualTo("CONFIRMATION");
-        assertThat(finalSession.getAttribute(SessionAttributes.LAST_PAGE))
+        assertThat((String) finalSession.getAttribute(SessionAttributes.LAST_PAGE))
             .as("Last page should be TRANSACTION")
             .isEqualTo("TRANSACTION");
             
