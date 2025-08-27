@@ -6,6 +6,7 @@
 package com.carddemo.integration;
 
 import com.carddemo.entity.Account;
+import com.carddemo.entity.Card;
 import com.carddemo.entity.Customer;
 import com.carddemo.entity.Transaction;
 import com.carddemo.entity.UserSecurity;
@@ -215,6 +216,24 @@ public abstract class BaseIntegrationTest extends AbstractBaseTest {
                 "U" // Regular user
         );
         return user;
+    }
+
+    /**
+     * Creates a test Card instance with COBOL-compatible field values for integration testing.
+     * Provides proper card data with valid expiration dates and industry-standard card numbers.
+     * 
+     * @return Card entity configured with test data matching COBOL record layout
+     */
+    public Card createIntegrationTestCard() {
+        return new Card(
+                TestConstants.TEST_CARD_NUMBER,
+                TestConstants.TEST_ACCOUNT_ID, 
+                1L, // customerId - will match created test customer
+                "123", // cvvCode
+                "TEST USER",
+                LocalDate.now().plusYears(2), // Future expiration date
+                "Y" // Active status
+        );
     }
 
     /**
