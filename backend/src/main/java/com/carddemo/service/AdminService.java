@@ -42,9 +42,6 @@ public class AdminService {
 
     @Autowired
     private UserSecurityRepository userSecurityRepository;
-    
-    @Autowired
-    private ReportService reportService;
 
     /**
      * Verifies if a user has administrative privileges.

@@ -13,7 +13,6 @@ import com.carddemo.entity.Archive;
 import com.carddemo.entity.Transaction;
 import com.carddemo.repository.TransactionRepository;
 import com.carddemo.util.DateConversionUtil;
-import com.carddemo.util.ValidationUtil;
 import com.carddemo.config.BatchConfig;
 
 import org.springframework.stereotype.Service;
@@ -100,12 +99,6 @@ public class AccountArchiveBatchService {
 
     @Autowired
     private TransactionRepository transactionRepository;
-
-    @Autowired
-    private DateConversionUtil dateConversionUtil;
-
-    @Autowired
-    private ValidationUtil validationUtil;
 
     @Autowired
     private BatchConfig batchConfig;

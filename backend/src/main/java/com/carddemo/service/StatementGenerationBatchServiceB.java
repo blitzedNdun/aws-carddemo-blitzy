@@ -82,9 +82,6 @@ public class StatementGenerationBatchServiceB {
     private StatementFormatter statementFormatter;
 
     @Autowired
-    private AmountCalculator amountCalculator;
-
-    @Autowired
     private JobLauncher jobLauncher;
 
     // Constants for COBOL business logic replication
@@ -271,7 +268,7 @@ public class StatementGenerationBatchServiceB {
                     );
                     
                     // Calculate monthly finance charge using AmountCalculator
-                    BigDecimal financeCharge = amountCalculator.calculateMonthlyInterest(
+                    BigDecimal financeCharge = AmountCalculator.calculateMonthlyInterest(
                         averageDailyBalance, 
                         ANNUAL_PERCENTAGE_RATE
                     );
@@ -405,13 +402,13 @@ public class StatementGenerationBatchServiceB {
                         // Apply late fee if no payment received and grace period expired
                         if (!paymentReceived) {
                             // Calculate late fee using AmountCalculator
-                            BigDecimal lateFee = amountCalculator.calculateFee(
+                            BigDecimal lateFee = AmountCalculator.calculateFee(
                                 account.getCurrentBalance(), 
                                 STANDARD_LATE_FEE
                             );
                             
                             // Update account balance with late fee
-                            BigDecimal newBalance = amountCalculator.calculateBalance(
+                            BigDecimal newBalance = AmountCalculator.calculateBalance(
                                 account.getCurrentBalance(), 
                                 lateFee
                             );
@@ -874,7 +871,7 @@ public class StatementGenerationBatchServiceB {
             .reduce(BigDecimal.ZERO, BigDecimal::add);
         
         // Apply rounding to preserve COBOL precision
-        return amountCalculator.applyRounding(currentBalance.subtract(totalTransactionAmount.divide(
+        return AmountCalculator.applyRounding(currentBalance.subtract(totalTransactionAmount.divide(
             BigDecimal.valueOf(daysBetween), 2, java.math.RoundingMode.HALF_UP)));
     }
 
@@ -907,7 +904,7 @@ public class StatementGenerationBatchServiceB {
             statement.setInterestCharges(financeCharge);
             
             // Calculate new balance with finance charge
-            BigDecimal newBalance = amountCalculator.calculateBalance(
+            BigDecimal newBalance = AmountCalculator.calculateBalance(
                 account.getCurrentBalance(), financeCharge);
             statement.setCurrentBalance(newBalance);
             
@@ -949,7 +946,7 @@ public class StatementGenerationBatchServiceB {
             statement.setFees(lateFee);
             
             // Update current balance with late fee
-            BigDecimal newBalance = amountCalculator.calculateBalance(
+            BigDecimal newBalance = AmountCalculator.calculateBalance(
                 statement.getCurrentBalance(), lateFee);
             statement.setCurrentBalance(newBalance);
             

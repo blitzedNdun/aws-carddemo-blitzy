@@ -132,15 +132,6 @@ public class InterestCalculationJob {
     private CardXrefRepository cardXrefRepository;
     
     @Autowired
-    private CobolDataConverter cobolDataConverter;
-    
-    @Autowired
-    private DateConversionUtil dateConversionUtil;
-    
-    @Autowired
-    private AmountCalculator amountCalculator;
-    
-    @Autowired
     private TransactionIdGenerator transactionIdGenerator;
 
     // Account processing state tracking

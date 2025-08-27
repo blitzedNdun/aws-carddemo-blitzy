@@ -155,18 +155,6 @@ public class StatementGenerationJob {
     private ReportFormatter reportFormatter;
 
     @Autowired
-    private CobolDataConverter cobolDataConverter;
-
-    @Autowired
-    private DateConversionUtil dateConversionUtil;
-
-    @Autowired
-    private FormatUtil formatUtil;
-
-    @Autowired
-    private Constants constants;
-
-    @Autowired
     private BatchConfig batchConfig;
 
     // Configuration properties
@@ -493,7 +481,7 @@ public class StatementGenerationJob {
             
             // Ensure amount precision matches COBOL COMP-3 handling
             if (item.getAmount() != null) {
-                item.setAmount(cobolDataConverter.toBigDecimal(item.getAmount(), 2));
+                item.setAmount(CobolDataConverter.toBigDecimal(item.getAmount(), 2));
             }
             
             statementItems.add(item);
@@ -559,10 +547,10 @@ public class StatementGenerationJob {
         }
         
         // Set calculated totals with proper precision
-        statementDto.setTotalDebits(cobolDataConverter.preservePrecision(totalDebits, 2));
-        statementDto.setTotalCredits(cobolDataConverter.preservePrecision(totalCredits, 2));
-        statementDto.setTotalFees(cobolDataConverter.preservePrecision(totalFees, 2));
-        statementDto.setTotalInterest(cobolDataConverter.preservePrecision(totalInterest, 2));
+        statementDto.setTotalDebits(CobolDataConverter.preservePrecision(totalDebits, 2));
+        statementDto.setTotalCredits(CobolDataConverter.preservePrecision(totalCredits, 2));
+        statementDto.setTotalFees(CobolDataConverter.preservePrecision(totalFees, 2));
+        statementDto.setTotalInterest(CobolDataConverter.preservePrecision(totalInterest, 2));
         
         // Calculate minimum payment (typically 2% of balance or $25, whichever is greater)
         BigDecimal currentBalance = statementDto.getCurrentBalance();
@@ -570,7 +558,7 @@ public class StatementGenerationJob {
             BigDecimal percentagePayment = currentBalance.multiply(new BigDecimal("0.02"));
             BigDecimal minimumFloor = new BigDecimal("25.00");
             BigDecimal minimumPayment = percentagePayment.max(minimumFloor);
-            statementDto.setMinimumPayment(cobolDataConverter.preservePrecision(minimumPayment, 2));
+            statementDto.setMinimumPayment(CobolDataConverter.preservePrecision(minimumPayment, 2));
         }
     }
 
@@ -715,7 +703,7 @@ public class StatementGenerationJob {
         // Account details matching COBOL ST-LINE7, ST-LINE8, ST-LINE9
         lines.add(String.format("Account ID         : %-20s%40s", statement.getAccountId(), ""));
         
-        String balanceStr = formatUtil.formatCurrency(statement.getCurrentBalance());
+        String balanceStr = FormatUtil.formatCurrency(statement.getCurrentBalance());
         lines.add(String.format("Current Balance    : %s%7s%40s", balanceStr, "", ""));
         
         lines.add(String.format("FICO Score         : %-20s%40s", statement.getFicoScore() != null ? statement.getFicoScore() : "", ""));
@@ -733,13 +721,13 @@ public class StatementGenerationJob {
                 String transactionLine = String.format("%-16s %-49s$%s",
                         item.getTransactionId() != null ? item.getTransactionId() : "",
                         item.getTransactionDescription() != null ? item.getTransactionDescription() : "",
-                        formatUtil.formatCurrency(item.getAmount()));
+                        FormatUtil.formatCurrency(item.getAmount()));
                 lines.add(transactionLine);
             }
         }
         
         // Total line matching COBOL ST-LINE14A
-        String totalStr = formatUtil.formatCurrency(statement.getTotalDebits());
+        String totalStr = FormatUtil.formatCurrency(statement.getTotalDebits());
         lines.add("--------------------------------------------------------------------------------");
         lines.add(String.format("Total EXP:%56s$%s", "", totalStr));
         
@@ -773,7 +761,7 @@ public class StatementGenerationJob {
         context.setVariable("transactions", statement.getTransactionSummary());
         context.setVariable("totalDebits", statement.getTotalDebits());
         context.setVariable("statementDate", statement.getStatementDate());
-        context.setVariable("formatUtil", formatUtil);
+        context.setVariable("formatUtil", FormatUtil.class);
         context.setVariable("dateFormatter", DateTimeFormatter.ofPattern("MM/dd/yyyy"));
         
         return context;

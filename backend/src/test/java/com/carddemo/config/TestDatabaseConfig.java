@@ -147,7 +147,7 @@ public class TestDatabaseConfig {
      */
     @Bean("dataSource")
     @Primary
-    @Profile({"test", "unit-test"})
+    @Profile({"test", "unit-test", "contract-test"})
     public DataSource h2DataSource() {
         HikariConfig config = new HikariConfig();
         

@@ -19,10 +19,10 @@ import com.carddemo.repository.TransactionCategoryRepository;
 import com.carddemo.util.CobolDataConverter;
 import com.carddemo.util.DateConversionUtil;
 import com.carddemo.util.FormatUtil;
-import com.carddemo.util.ValidationUtil;
+
 import com.carddemo.exception.BusinessRuleException;
 import com.carddemo.exception.FileProcessingException;
-import com.carddemo.config.ExtractJobConfig;
+
 
 import org.springframework.stereotype.Service;
 import org.springframework.batch.core.JobParametersBuilder;
@@ -115,9 +115,6 @@ public class TransactionExtractBatchService {
     private TransactionRepository transactionRepository;
     
     @Autowired
-    private FileFormatConverter fileFormatConverter;
-    
-    @Autowired
     private BatchConfig batchConfig;
     
     @Autowired
@@ -128,21 +125,6 @@ public class TransactionExtractBatchService {
     
     @Autowired
     private TransactionCategoryRepository transactionCategoryRepository;
-    
-    @Autowired
-    private CobolDataConverter cobolDataConverter;
-    
-    @Autowired
-    private DateConversionUtil dateConversionUtil;
-    
-    @Autowired
-    private FormatUtil formatUtil;
-    
-    @Autowired
-    private ValidationUtil validationUtil;
-    
-    @Autowired
-    private ExtractJobConfig extractJobConfig;
     
     @Autowired
     private JobLauncher jobLauncher;
@@ -392,7 +374,7 @@ public class TransactionExtractBatchService {
             reportData.put("totalRecords", transactions.size());
             
             // Generate regulatory report using FileFormatConverter
-            String regulatoryOutput = fileFormatConverter.formatRegulatory(reportData, regulatoryFormat);
+            String regulatoryOutput = FileFormatConverter.formatRegulatory(reportData, regulatoryFormat);
             
             // Write regulatory report to file
             String reportFileName = String.format("%s/regulatory_report_%s_%s_to_%s.txt", 
@@ -485,7 +467,7 @@ public class TransactionExtractBatchService {
             auditSummary.put("auditRecords", auditRecords);
             
             // Generate audit extract file
-            String auditJson = fileFormatConverter.convertToJson(List.of(auditSummary));
+            String auditJson = FileFormatConverter.convertToJson(List.of(auditSummary));
             String auditFileName = String.format("%s/audit_extract_%s_%s_to_%s.json", 
                                                 outputPath, auditType, startDate, endDate);
             
@@ -1001,7 +983,7 @@ public class TransactionExtractBatchService {
                                         "amount", "description", "merchantName", "transactionTypeDescription", 
                                         "categoryDescription");
         
-        String csvContent = fileFormatConverter.convertToCsv(transactions, fieldNames);
+        String csvContent = FileFormatConverter.convertToCsv(transactions, fieldNames);
         String fileName = String.format("%s/transactions_%s.csv", outputPath, extractionId);
         
         // In real implementation, would write to actual file system
@@ -1012,7 +994,7 @@ public class TransactionExtractBatchService {
      * Generates JSON format file.
      */
     private void generateJSONFile(List<Map<String, Object>> transactions, String outputPath, String extractionId) {
-        String jsonContent = fileFormatConverter.convertToJson(transactions);
+        String jsonContent = FileFormatConverter.convertToJson(transactions);
         String fileName = String.format("%s/transactions_%s.json", outputPath, extractionId);
         
         // In real implementation, would write to actual file system
@@ -1034,7 +1016,7 @@ public class TransactionExtractBatchService {
         
         StringBuilder fixedWidthContent = new StringBuilder();
         for (Map<String, Object> transaction : transactions) {
-            String fixedWidthRecord = fileFormatConverter.convertToFixedWidth(transaction, copybookDef);
+            String fixedWidthRecord = FileFormatConverter.convertToFixedWidth(transaction, copybookDef);
             fixedWidthContent.append(fixedWidthRecord).append("\n");
         }
         
@@ -1378,10 +1360,10 @@ public class TransactionExtractBatchService {
             case "CSV":
                 List<String> fieldNames = List.of("transactionId", "accountId", "cardNumber", "transactionDate", 
                                                 "amount", "description", "merchantName");
-                String csvContent = fileFormatConverter.convertToCsv(transactions, fieldNames);
+                String csvContent = FileFormatConverter.convertToCsv(transactions, fieldNames);
                 break;
             case "JSON":
-                String jsonContent = fileFormatConverter.convertToJson(transactions);
+                String jsonContent = FileFormatConverter.convertToJson(transactions);
                 break;
             case "XML":
                 generateXMLFile(transactions, outputPath, "multi_" + System.currentTimeMillis());
