@@ -81,6 +81,7 @@ public final class TestConstants {
         public static final int MIN_REQUESTS_FOR_VALID_TEST = 100;
         public static final double MEMORY_PRESSURE_THRESHOLD = 0.85;
         public static final double CONNECTION_PRESSURE_THRESHOLD = 0.80;
+        public static final int DEFAULT_TEST_DURATION = 300; // 5 minutes for test transactions
         
         private VALIDATION_THRESHOLDS() {}
     }
