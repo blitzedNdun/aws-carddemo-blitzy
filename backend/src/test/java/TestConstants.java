@@ -55,6 +55,18 @@ public final class TestConstants {
      */
     public static final String TEST_USER_PASSWORD = "password123";
     
+    /**
+     * Standard test user role for security testing scenarios
+     * 'U' represents regular user matching COBOL SEC-USR-TYPE logic
+     */
+    public static final String TEST_USER_ROLE = "U";
+    
+    /**
+     * Standard test admin role for security testing scenarios  
+     * 'A' represents admin user matching COBOL SEC-USR-TYPE logic
+     */
+    public static final String TEST_ADMIN_ROLE = "A";
+    
     // Performance Test Data Constants
     
     /**
