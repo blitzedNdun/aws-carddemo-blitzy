@@ -14,9 +14,13 @@ import com.carddemo.dto.SessionContext;
 
 import org.springframework.boot.test.context.SpringBootTest;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.MethodOrderer;
 import org.testcontainers.containers.GenericContainer;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.session.data.redis.RedisIndexedSessionRepository;
+import org.springframework.session.SessionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.assertj.core.api.Assertions.assertThat;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,6 +87,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     "spring.session.redis.namespace=carddemo:session",
     "spring.session.timeout=30m"
 })
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class SessionStateIntegrationTest extends BaseIntegrationTest {
 
     private static final Logger logger = LoggerFactory.getLogger(SessionStateIntegrationTest.class);
@@ -100,7 +105,7 @@ public class SessionStateIntegrationTest extends BaseIntegrationTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private RedisIndexedSessionRepository sessionRepository;
+    private SessionRepository<org.springframework.session.Session> sessionRepository;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -148,6 +153,8 @@ public class SessionStateIntegrationTest extends BaseIntegrationTest {
      * and retrieved with identical data integrity. Tests the core session CRUD operations
      * that replace CICS COMMAREA functionality.
      */
+    @Test
+    @Order(1)
     public void testSessionCreationAndRetrieval() {
         logger.info("Testing session creation and retrieval through Redis backend");
         
@@ -179,7 +186,7 @@ public class SessionStateIntegrationTest extends BaseIntegrationTest {
             assertThat(retrievedContext).isNotNull();
             assertThat(retrievedContext.getUserId()).isEqualTo(sessionContext.getUserId());
             assertThat(retrievedContext.getUserRole()).isEqualTo(sessionContext.getUserRole());
-            assertThat(retrievedContext.getLastTransactionCode()).isEqualTo(sessionContext.getUserRole());
+            assertThat(retrievedContext.getLastTransactionCode()).isEqualTo(sessionContext.getLastTransactionCode());
             
             // Validate performance requirement (under 50ms)
             long elapsedTime = Duration.between(startTime, Instant.now()).toMillis();
@@ -200,6 +207,8 @@ public class SessionStateIntegrationTest extends BaseIntegrationTest {
      * ensuring proper session continuity for multi-step business transactions
      * that span multiple request/response cycles.
      */
+    @Test
+    @Order(2)
     public void testSessionPersistenceAcrossRequests() {
         logger.info("Testing session persistence across multiple HTTP requests");
         
@@ -215,8 +224,8 @@ public class SessionStateIntegrationTest extends BaseIntegrationTest {
             String sessionId = mockMvc.perform(MockMvcRequestBuilders.post("/api/tx/CC00")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestBody))
-                    .andExpected(status().isOk())
-                    .andExpected(jsonPath("$.status").value("SUCCESS"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("SUCCESS"))
                     .andReturn()
                     .getResponse()
                     .getHeader("Set-Cookie");
@@ -268,6 +277,8 @@ public class SessionStateIntegrationTest extends BaseIntegrationTest {
      * CICS COMMAREA size constraints, ensuring compatibility with mainframe session
      * management patterns.
      */
+    @Test
+    @Order(3)
     public void test32KBPayloadLimit() {
         logger.info("Testing 32KB session payload limit enforcement");
         
@@ -325,6 +336,8 @@ public class SessionStateIntegrationTest extends BaseIntegrationTest {
      * ensuring proper session lifecycle management equivalent to CICS session timeout
      * behavior.
      */
+    @Test
+    @Order(4)
     public void testSessionExpirationAndTTL() {
         logger.info("Testing session expiration and TTL management");
         
@@ -364,6 +377,8 @@ public class SessionStateIntegrationTest extends BaseIntegrationTest {
      * Validates that sessions survive container restarts when stored in Redis,
      * ensuring high availability and fault tolerance for distributed deployments.
      */
+    @Test
+    @Order(5)
     public void testSessionPersistenceDuringPodRestart() {
         logger.info("Testing session persistence during pod restart simulation");
         
@@ -378,7 +393,7 @@ public class SessionStateIntegrationTest extends BaseIntegrationTest {
             
             // Simulate application restart by creating new repository instance
             // In real scenario, this would be a pod restart with Redis persistence
-            RedisIndexedSessionRepository newRepository = sessionRepository;
+            SessionRepository<org.springframework.session.Session> newRepository = sessionRepository;
             
             // Validate session persists after "restart"
             Session postRestartSession = newRepository.findById(sessionId);
@@ -405,6 +420,8 @@ public class SessionStateIntegrationTest extends BaseIntegrationTest {
      * with appropriate locking mechanisms to prevent data corruption during
      * simultaneous updates from multiple application instances.
      */
+    @Test
+    @Order(6)
     public void testConcurrentSessionAccessWithLocking() {
         logger.info("Testing concurrent session access with distributed locking");
         
@@ -486,6 +503,8 @@ public class SessionStateIntegrationTest extends BaseIntegrationTest {
      * within the 50ms performance threshold to meet response time requirements
      * for high-throughput transaction processing.
      */
+    @Test
+    @Order(7)
     public void testSessionOperationPerformanceUnder50ms() {
         logger.info("Testing session operation performance under 50ms requirement");
         
@@ -545,6 +564,8 @@ public class SessionStateIntegrationTest extends BaseIntegrationTest {
      * through shared Redis backend, enabling horizontal scaling and load balancing
      * scenarios.
      */
+    @Test
+    @Order(8)
     public void testDistributedSessionClustering() {
         logger.info("Testing distributed session clustering");
         
@@ -559,7 +580,7 @@ public class SessionStateIntegrationTest extends BaseIntegrationTest {
             
             // Simulate "instance 2" accessing the same session
             // In real scenario, this would be a different pod/container
-            RedisIndexedSessionRepository instance2Repository = sessionRepository;
+            SessionRepository<org.springframework.session.Session> instance2Repository = sessionRepository;
             
             Session instance2Session = instance2Repository.findById(sessionId);
             assertThat(instance2Session).isNotNull();
@@ -595,6 +616,8 @@ public class SessionStateIntegrationTest extends BaseIntegrationTest {
      * with correct handling of complex data types including BigDecimal precision
      * for COBOL data type compatibility.
      */
+    @Test
+    @Order(9)
     public void testRedisSessionSerialization() {
         logger.info("Testing Redis session JSON serialization");
         
@@ -661,6 +684,8 @@ public class SessionStateIntegrationTest extends BaseIntegrationTest {
      * temporarily unavailable, ensuring graceful degradation and recovery
      * capabilities for production resilience.
      */
+    @Test
+    @Order(10)
     public void testSessionRecoveryAfterFailure() {
         logger.info("Testing session recovery after Redis failure scenarios");
         
