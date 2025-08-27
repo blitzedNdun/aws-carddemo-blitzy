@@ -4,6 +4,8 @@ import com.carddemo.entity.Account;
 import com.carddemo.entity.Card;
 import com.carddemo.entity.Customer;
 import com.carddemo.entity.Transaction;
+import com.carddemo.entity.TransactionCategory;
+import com.carddemo.entity.TransactionCategoryBalance;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -491,5 +493,54 @@ public class TestDataGenerator {
      */
     private static String getRandomElement(String[] array) {
         return array[random.nextInt(array.length)];
+    }
+
+    /**
+     * Generates an Account without requiring a Customer parameter.
+     * Creates a test customer internally for compatibility with existing generateAccount(Customer) method.
+     */
+    public static Account generateAccount() {
+        Customer testCustomer = generateCustomer();
+        return generateAccount(testCustomer);
+    }
+
+    /**
+     * Generates a TransactionCategory entity for testing.
+     */
+    public static TransactionCategory generateTransactionCategory() {
+        TransactionCategory category = new TransactionCategory();
+        category.setCategoryCode(String.format("%04d", random.nextInt(9999) + 1));
+        category.setCategoryDescription("TEST CATEGORY " + category.getCategoryCode());
+        return category;
+    }
+
+    /**
+     * Generates a list of TransactionCategoryBalance records for testing.
+     */
+    public static java.util.List<com.carddemo.entity.TransactionCategoryBalance> generateTransactionCategoryBalanceList(
+            Long accountId, String categoryCode, int count) {
+        java.util.List<com.carddemo.entity.TransactionCategoryBalance> balances = new java.util.ArrayList<>();
+        LocalDate baseDate = LocalDate.now();
+        
+        for (int i = 0; i < count; i++) {
+            com.carddemo.entity.TransactionCategoryBalance.TransactionCategoryBalanceKey key = 
+                    new com.carddemo.entity.TransactionCategoryBalance.TransactionCategoryBalanceKey(
+                            accountId,
+                            categoryCode,
+                            baseDate.minusDays(i)
+                    );
+            com.carddemo.entity.TransactionCategoryBalance balance = 
+                    new com.carddemo.entity.TransactionCategoryBalance(key);
+            balance.setBalance(generateComp3BigDecimal(String.valueOf(100.00 + (i * 10.25))));
+            balances.add(balance);
+        }
+        return balances;
+    }
+
+    /**
+     * Generates BigDecimal with COBOL COMP-3 equivalent precision.
+     */
+    private static BigDecimal generateComp3BigDecimal(String amount) {
+        return new BigDecimal(amount).setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE);
     }
 }
