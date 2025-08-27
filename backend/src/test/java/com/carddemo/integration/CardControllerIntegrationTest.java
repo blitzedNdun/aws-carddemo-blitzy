@@ -13,21 +13,40 @@ import com.carddemo.repository.CardRepository;
 import com.carddemo.entity.Card;
 import com.carddemo.entity.CardXref;
 import com.carddemo.dto.CardDto;
+import com.carddemo.dto.ApiResponse;
+import com.carddemo.dto.PageResponse;
+import com.carddemo.dto.CardRequest;
+import com.carddemo.dto.CardResponse;
 
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.autoconfigure.orm.jpa.AutoConfigureTestDatabase;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.assertj.core.api.Assertions;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.ArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.within;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
 /**
  * Integration test class for CardController validating credit card operations 
@@ -65,11 +84,36 @@ import static org.assertj.core.api.Assertions.within;
  * @since CardDemo v1.0
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@AutoConfigureWebMvc
 @Testcontainers
 public class CardControllerIntegrationTest extends BaseIntegrationTest {
 
+    @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private CardRepository cardRepository;
+
+    @Autowired
+    private CreditCardListService creditCardListService;
+
+    @Autowired
+    private CreditCardDetailService creditCardDetailService;
+
+    @Autowired
+    private CreditCardUpdateService creditCardUpdateService;
+
+    @BeforeEach
+    public void setUp() {
+        // Call parent setup for BaseIntegrationTest initialization
+        super.setupTestContainers();
+        
+        // Additional setup for CardController integration tests
+        setupCardTestData();
+    }
 
     /**
      * Test card listing pagination functionality replicating COCRDLIC.cbl behavior.
@@ -310,23 +354,23 @@ public class CardControllerIntegrationTest extends BaseIntegrationTest {
         
         try {
             // Test cross-reference retrieval
-            CardXref retrievedXref = performCardXrefLookup(testCard.getCardNumber(), testCard.getCustomerId(), testCard.getAccountId());
+            CardXref retrievedXref = performCardXrefLookup(testCard.getCardNumber(), testCard.getCustomerId(), String.valueOf(testCard.getAccountId()));
             
             // Validate cross-reference data integrity
-            assertThat(retrievedXref.getCardNumber())
+            assertThat(retrievedXref.getXrefCardNum())
                 .as("Cross-reference card number should match")
                 .isEqualTo(testCard.getCardNumber());
             
-            assertThat(retrievedXref.getCustomerId())
+            assertThat(retrievedXref.getXrefCustId())
                 .as("Cross-reference customer ID should match")
                 .isEqualTo(testCard.getCustomerId());
             
-            assertThat(retrievedXref.getAccountId())
+            assertThat(retrievedXref.getXrefAcctId())
                 .as("Cross-reference account ID should match")
                 .isEqualTo(testCard.getAccountId());
             
             // Test referential integrity - card lookup should validate cross-reference
-            CardDto cardWithXref = performCardDetailsWithXrefValidation(testCard.getCardNumber(), testCard.getAccountId());
+            CardDto cardWithXref = performCardDetailsWithXrefValidation(testCard.getCardNumber(), String.valueOf(testCard.getAccountId()));
             
             assertThat(cardWithXref)
                 .as("Card details with cross-reference should be retrieved")
@@ -653,7 +697,7 @@ public class CardControllerIntegrationTest extends BaseIntegrationTest {
         // Create and return a test Card entity
         Card card = new Card();
         card.setCardNumber(cardNumber);
-        card.setAccountId("12345678901");
+        card.setAccountId(12345678901L);
         card.setCustomerId(1L);
         card.setEmbossedName("TEST CARDHOLDER");
         card.setExpirationDate(LocalDate.now().plusYears(3));
@@ -663,9 +707,9 @@ public class CardControllerIntegrationTest extends BaseIntegrationTest {
 
     private CardXref createTestCardXref(Card card) {
         CardXref xref = new CardXref();
-        xref.setCardNumber(card.getCardNumber());
-        xref.setCustomerId(card.getCustomerId());
-        xref.setAccountId(card.getAccountId());
+        xref.setXrefCardNum(card.getCardNumber());
+        xref.setXrefCustId(card.getCustomerId());
+        xref.setXrefAcctId(card.getAccountId());
         return xref;
     }
 
@@ -678,26 +722,107 @@ public class CardControllerIntegrationTest extends BaseIntegrationTest {
     }
 
     private Page<CardDto> performCardListRequest(String accountId, String cardNumber, int page, int size) {
-        // Mock implementation - would use MockMvc in actual integration test
-        return null; // Placeholder for actual MockMvc call
+        try {
+            // Build request URL with parameters
+            String url = "/api/cards?page=" + page + "&size=" + size;
+            if (accountId != null) {
+                url += "&accountId=" + accountId;
+            }
+            if (cardNumber != null) {
+                url += "&cardNumber=" + cardNumber;
+            }
+
+            // Perform MockMvc request
+            MvcResult result = mockMvc.perform(get(url)
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andReturn();
+
+            // Parse response
+            String responseContent = result.getResponse().getContentAsString();
+            ApiResponse<PageResponse<CardDto>> apiResponse = objectMapper.readValue(
+                responseContent, 
+                objectMapper.getTypeFactory().constructParametricType(
+                    ApiResponse.class, 
+                    objectMapper.getTypeFactory().constructParametricType(PageResponse.class, CardDto.class)
+                )
+            );
+
+            // Convert PageResponse to Page for compatibility
+            PageResponse<CardDto> pageResponse = apiResponse.getResponseData();
+            return new PageImpl<>(
+                pageResponse.getData(),
+                PageRequest.of(page, size),
+                pageResponse.getTotalElements()
+            );
+
+        } catch (Exception e) {
+            fail("Failed to perform card list request: " + e.getMessage());
+            return null;
+        }
     }
 
     private CardDto performCardDetailsRequest(String cardNumber) {
-        // Mock implementation - would use MockMvc in actual integration test
-        return new CardDto(); // Placeholder for actual MockMvc call
+        try {
+            // Perform MockMvc request
+            MvcResult result = mockMvc.perform(get("/api/cards/" + cardNumber)
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andReturn();
+
+            // Parse response
+            String responseContent = result.getResponse().getContentAsString();
+            ApiResponse<CardResponse> apiResponse = objectMapper.readValue(
+                responseContent, 
+                objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, CardResponse.class)
+            );
+
+            // Convert CardResponse to CardDto for compatibility
+            CardResponse cardResponse = apiResponse.getResponseData();
+            return convertToCardDto(cardResponse);
+
+        } catch (Exception e) {
+            fail("Failed to perform card details request: " + e.getMessage());
+            return null;
+        }
     }
 
     private CardDto performCardUpdateRequest(String cardNumber, CardDto updateRequest) {
-        // Mock implementation - would use MockMvc in actual integration test
-        return updateRequest; // Placeholder for actual MockMvc call
+        try {
+            // Convert CardDto to CardRequest for the API
+            CardRequest cardRequest = convertToCardRequest(updateRequest);
+            String requestBody = objectMapper.writeValueAsString(cardRequest);
+
+            // Perform MockMvc request
+            MvcResult result = mockMvc.perform(put("/api/cards/" + cardNumber)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestBody))
+                    .andExpect(status().isOk())
+                    .andReturn();
+
+            // Parse response
+            String responseContent = result.getResponse().getContentAsString();
+            ApiResponse<CardResponse> apiResponse = objectMapper.readValue(
+                responseContent, 
+                objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, CardResponse.class)
+            );
+
+            // Convert CardResponse to CardDto for compatibility
+            CardResponse cardResponse = apiResponse.getResponseData();
+            return convertToCardDto(cardResponse);
+
+        } catch (Exception e) {
+            fail("Failed to perform card update request: " + e.getMessage());
+            return null;
+        }
     }
 
     private CardXref performCardXrefLookup(String cardNumber, Long customerId, String accountId) {
         // Mock implementation - would use repository in actual integration test
         CardXref xref = new CardXref();
-        xref.setCardNumber(cardNumber);
-        xref.setCustomerId(customerId);
-        xref.setAccountId(accountId);
+        xref.setXrefCardNum(cardNumber);
+        xref.setXrefCustId(customerId);
+        xref.setXrefAcctId(Long.parseLong(accountId));
         return xref;
     }
 
@@ -734,5 +859,46 @@ public class CardControllerIntegrationTest extends BaseIntegrationTest {
         }
         String lastFour = cardNumber.substring(cardNumber.length() - 4);
         return "****-****-****-" + lastFour;
+    }
+
+    // Additional helper methods for test setup and data conversion
+
+    /**
+     * Sets up test data specific to CardController integration tests.
+     */
+    private void setupCardTestData() {
+        // Setup base test data using parent methods
+        createIntegrationTestAccount();
+        createIntegrationTestCustomer();
+        // Additional card-specific test data setup would go here
+    }
+
+    /**
+     * Converts CardResponse DTO to CardDto for test compatibility.
+     */
+    private CardDto convertToCardDto(CardResponse cardResponse) {
+        if (cardResponse == null) return null;
+        
+        CardDto cardDto = new CardDto();
+        cardDto.setCardNumber(cardResponse.getCardNumber());
+        cardDto.setAccountId(cardResponse.getAccountId());
+        // Note: CardResponse doesn't have customerId, we'll omit this field
+        cardDto.setEmbossedName(cardResponse.getEmbossedName());
+        cardDto.setExpirationDate(cardResponse.getExpirationDate());
+        cardDto.setActiveStatus(cardResponse.getActiveStatus());
+        return cardDto;
+    }
+
+    /**
+     * Converts CardDto to CardRequest for API calls.
+     */
+    private CardRequest convertToCardRequest(CardDto cardDto) {
+        if (cardDto == null) return null;
+        
+        CardRequest cardRequest = new CardRequest();
+        cardRequest.setEmbossedName(cardDto.getEmbossedName());
+        cardRequest.setExpirationDate(cardDto.getExpirationDate());
+        cardRequest.setActiveStatus(cardDto.getActiveStatus());
+        return cardRequest;
     }
 }
