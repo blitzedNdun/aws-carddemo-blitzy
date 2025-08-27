@@ -6,6 +6,7 @@
 package com.carddemo.integration;
 
 import com.carddemo.client.PaymentGatewayClient;
+import com.carddemo.config.MinimalContractTestConfig;
 import com.carddemo.entity.Account;
 import com.carddemo.entity.Transaction;
 import com.carddemo.dto.TransactionRequest;
