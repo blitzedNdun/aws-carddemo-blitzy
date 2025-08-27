@@ -54,7 +54,7 @@ public class TestDataGenerator {
         // Configure transaction with valid test data
         transaction.setTransactionId(1001L);
         transaction.setAmount(TestConstants.DEFAULT_TRANSACTION_AMOUNT);
-        transaction.setAccountId(Long.parseLong(TestConstants.TEST_ACCOUNT_ID));
+        transaction.setAccountId(TestConstants.TEST_ACCOUNT_ID);
         transaction.setTransactionTypeCode(TestConstants.TXN_TYPE_PURCHASE);
         transaction.setMerchantId(12345L);
         transaction.setMerchantName("TEST MERCHANT");
@@ -114,7 +114,7 @@ public class TestDataGenerator {
         // Configure transaction as duplicate (same key fields as standard transaction)
         transaction.setTransactionId(1001L); // Same as generateTransaction()
         transaction.setAmount(TestConstants.DEFAULT_TRANSACTION_AMOUNT);
-        transaction.setAccountId(Long.parseLong(TestConstants.TEST_ACCOUNT_ID));
+        transaction.setAccountId(TestConstants.TEST_ACCOUNT_ID);
         transaction.setTransactionTypeCode(TestConstants.TXN_TYPE_PURCHASE);
         transaction.setMerchantId(12345L);
         transaction.setMerchantName("TEST MERCHANT");
@@ -142,7 +142,7 @@ public class TestDataGenerator {
         Account account = new Account();
         
         // Configure account with valid test data
-        account.setAccountId(Long.parseLong(TestConstants.TEST_ACCOUNT_ID));
+        account.setAccountId(TestConstants.TEST_ACCOUNT_ID);
         account.setActiveStatus(TestConstants.ACCOUNT_STATUS_ACTIVE);
         account.setCurrentBalance(TestConstants.DEFAULT_ACCOUNT_BALANCE);
         account.setCreditLimit(TestConstants.DEFAULT_CREDIT_LIMIT);
@@ -194,7 +194,7 @@ public class TestDataGenerator {
             // Simple configuration to avoid any potential recursion
             transaction.setTransactionId((long) (1001 + i));
             transaction.setAmount(TestConstants.DEFAULT_TRANSACTION_AMOUNT);
-            transaction.setAccountId(Long.parseLong(TestConstants.TEST_ACCOUNT_ID));
+            transaction.setAccountId(TestConstants.TEST_ACCOUNT_ID);
             transaction.setTransactionTypeCode(TestConstants.TXN_TYPE_PURCHASE);
             transaction.setMerchantId(12345L);
             transaction.setMerchantName("TEST MERCHANT");
