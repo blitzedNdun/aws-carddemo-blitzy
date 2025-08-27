@@ -128,21 +128,9 @@ public class TestTransactionConfig {
             transactionManager.setValidateExistingTransaction(true);
             transactionManager.setGlobalRollbackOnParticipationFailure(true);
             
-            // Inherit rollback rules from production configuration if available
-            if (productionTransactionConfig != null) {
-                try {
-                    // Get production transaction manager for reference
-                    PlatformTransactionManager productionManager = productionTransactionConfig.platformTransactionManager(null);
-                    if (productionManager instanceof DataSourceTransactionManager) {
-                        DataSourceTransactionManager prodDsManager = (DataSourceTransactionManager) productionManager;
-                        // Inherit timeout settings if available
-                        transactionManager.setDefaultTimeout(prodDsManager.getDefaultTimeout());
-                    }
-                } catch (Exception e) {
-                    // Log warning but continue with default configuration
-                    System.err.println("Warning: Could not inherit production transaction configuration: " + e.getMessage());
-                }
-            }
+            // Configure default timeout using TestConstants
+            // Production configuration inheritance is not needed for test environment
+            // as we have specific test requirements and timeout values
             
             // Use test constants for timeout configuration
             int sessionTimeoutMinutes = TestConstants.VALIDATION_THRESHOLDS.DEFAULT_TEST_DURATION;
@@ -225,19 +213,8 @@ public class TestTransactionConfig {
             template.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRED);
             template.setIsolationLevel(TransactionTemplate.ISOLATION_READ_COMMITTED);
             
-            // Use production transaction template configuration as reference
-            if (productionTransactionConfig != null) {
-                try {
-                    TransactionTemplate productionTemplate = productionTransactionConfig.transactionTemplate(testTransactionManager);
-                    if (productionTemplate != null) {
-                        // Inherit production settings but override for test behavior
-                        template.setPropagationBehavior(productionTemplate.getPropagationBehavior());
-                        template.setIsolationLevel(productionTemplate.getIsolationLevel());
-                    }
-                } catch (Exception e) {
-                    System.err.println("Warning: Could not inherit production template configuration: " + e.getMessage());
-                }
-            }
+            // Configure test-specific settings - no need to inherit from production
+            // as test environment has specific requirements for transaction behavior
             
             // Configure timeout based on test constants
             long responseTimeThresholdMs = TestConstants.RESPONSE_TIME_THRESHOLD_MS;
@@ -424,8 +401,8 @@ public class TestTransactionConfig {
         // Enable nested transaction support for complex testing scenarios
         transactionManager.setNestedTransactionAllowed(true);
         
-        // Configure savepoint support for partial rollback testing
-        transactionManager.setSavepointAllowed(true);
+        // Note: Savepoint support is automatically enabled for DataSourceTransactionManager
+        // when the underlying JDBC driver supports it (PostgreSQL does)
         
         // Additional configuration for nested transaction testing
         transactionManager.setValidateExistingTransaction(true);
@@ -494,39 +471,34 @@ public class TestTransactionConfig {
     }
     
     /**
-     * Validates test configuration against production configuration for consistency.
-     * This method uses TransactionConfig.transactionManager() and rollbackRules() methods
-     * to ensure test configuration maintains compatibility with production behavior.
+     * Validates test configuration for proper setup and service availability.
+     * This method validates that all required services and configuration components
+     * are properly initialized for transaction testing scenarios.
      * 
      * @param dataSource DataSource for validation testing
      * @return true if configuration is valid, false otherwise
      */
     public boolean validateConfigurationConsistency(DataSource dataSource) {
         try {
-            if (productionTransactionConfig == null) {
-                System.err.println("Warning: Production configuration not available for validation");
+            // Validate that required services are available for transaction testing
+            if (transactionAddService == null) {
+                System.err.println("Warning: TransactionAddService not available for transaction testing");
                 return false;
             }
             
-            // Test production transactionManager() method access
-            PlatformTransactionManager prodManager = productionTransactionConfig.transactionManager(null);
-            
-            // Test production transactionTemplate() method access  
-            if (prodManager != null) {
-                TransactionTemplate prodTemplate = productionTransactionConfig.transactionTemplate(prodManager);
-                if (prodTemplate != null) {
-                    // Validation successful
-                    return true;
-                }
+            if (accountUpdateService == null) {
+                System.err.println("Warning: AccountUpdateService not available for transaction testing");
+                return false;
             }
             
-            // Test service methods for transaction boundary validation
-            if (transactionAddService != null && accountUpdateService != null) {
-                // Services are available for testing transaction boundaries
-                return true;
+            // Validate that DataSource is properly configured
+            if (dataSource == null) {
+                System.err.println("Warning: DataSource not available for transaction testing");
+                return false;
             }
             
-            return false;
+            // All validation checks passed
+            return true;
             
         } catch (Exception e) {
             System.err.println("Configuration validation failed: " + e.getMessage());
