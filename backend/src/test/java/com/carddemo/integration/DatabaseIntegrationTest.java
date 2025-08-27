@@ -20,11 +20,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -153,29 +154,29 @@ public class DatabaseIntegrationTest extends BaseIntegrationTest {
     @DisplayName("Test Referential Integrity - Foreign Key Constraints")
     public void testReferentialIntegrity() {
         // Create test customer first (parent record)
-        Customer testCustomer = createTestCustomer();
+        Customer testCustomer = createIntegrationTestCustomer();
         testCustomer.setCustomerId(TEST_CUSTOMER_ID);
         testCustomer.setFirstName("John");
         testCustomer.setLastName("Doe");
         Customer savedCustomer = customerRepository.save(testCustomer);
         
         // Create test account linked to customer
-        Account testAccount = createTestAccount();
+        Account testAccount = createIntegrationTestAccount();
         testAccount.setAccountId(TEST_ACCOUNT_ID);
-        testAccount.setCustomerId(savedCustomer.getCustomerId());
+        testAccount.setCustomer(savedCustomer);
         testAccount.setCurrentBalance(BigDecimal.valueOf(1000.00));
         testAccount.setCreditLimit(BigDecimal.valueOf(5000.00));
         Account savedAccount = accountRepository.save(testAccount);
         
         // Create test card linked to account
-        Card testCard = createTestCard();
+        Card testCard = createIntegrationTestCard();
         testCard.setCardNumber("4111111111111111");
         testCard.setAccountId(savedAccount.getAccountId());
-        testCard.setCustomerId(savedCustomer.getCustomerId());
+        testCard.setCustomerId(Long.valueOf(savedCustomer.getCustomerId()));
         Card savedCard = cardRepository.save(testCard);
         
         // Validate relationships exist
-        assertThat(savedAccount.getCustomerId()).isEqualTo(savedCustomer.getCustomerId());
+        assertThat(savedAccount.getCustomer().getCustomerId()).isEqualTo(savedCustomer.getCustomerId());
         assertThat(savedCard.getAccountId()).isEqualTo(savedAccount.getAccountId());
         assertThat(savedCard.getCustomerId()).isEqualTo(savedCustomer.getCustomerId());
         
@@ -200,7 +201,7 @@ public class DatabaseIntegrationTest extends BaseIntegrationTest {
     @Transactional
     public void testTransactionIsolation() {
         // Create test account for concurrent access
-        Account account = createTestAccount();
+        Account account = createIntegrationTestAccount();
         account.setAccountId(TEST_ACCOUNT_ID);
         account.setCurrentBalance(BigDecimal.valueOf(1000.00));
         account.setCreditLimit(BigDecimal.valueOf(5000.00));
@@ -247,7 +248,7 @@ public class DatabaseIntegrationTest extends BaseIntegrationTest {
     @DisplayName("Test Partition Pruning - Transaction Table Performance")
     public void testPartitionPruning() {
         // Create test account first
-        Account account = createTestAccount();
+        Account account = createIntegrationTestAccount();
         account.setAccountId(TEST_ACCOUNT_ID);
         account.setCurrentBalance(BigDecimal.valueOf(1000.00));
         accountRepository.save(account);
@@ -256,11 +257,11 @@ public class DatabaseIntegrationTest extends BaseIntegrationTest {
         LocalDateTime baseDate = LocalDateTime.now().minusDays(30);
         
         for (int i = 0; i < 10; i++) {
-            Transaction transaction = createTestTransaction();
-            transaction.setTransactionId(TEST_TRANSACTION_ID + "_" + i);
+            Transaction transaction = createIntegrationTestTransaction();
+            transaction.setTransactionId(1000L + i); // Use numeric transaction ID
             transaction.setAccountId(account.getAccountId());
             transaction.setAmount(BigDecimal.valueOf(100.00 + i));
-            transaction.setTransactionDate(baseDate.plusDays(i * 3));
+            transaction.setTransactionDate(baseDate.plusDays(i * 3).toLocalDate());
             transactionRepository.save(transaction);
         }
         
@@ -270,7 +271,7 @@ public class DatabaseIntegrationTest extends BaseIntegrationTest {
         
         long startTime = System.currentTimeMillis();
         List<Transaction> transactions = transactionRepository.findByAccountIdAndDateRange(
-            account.getAccountId(), startDate, endDate);
+            account.getAccountId(), startDate, endDate, org.springframework.data.domain.Pageable.unpaged()).getContent();
         long duration = System.currentTimeMillis() - startTime;
         
         // Verify query executed efficiently 
@@ -290,13 +291,13 @@ public class DatabaseIntegrationTest extends BaseIntegrationTest {
     @DisplayName("Test Bulk Operations - Batch Processing Performance")
     public void testBulkOperations() {
         // Create base customer and account
-        Customer customer = createTestCustomer();
+        Customer customer = createIntegrationTestCustomer();
         customer.setCustomerId(TEST_CUSTOMER_ID);
         customerRepository.save(customer);
         
-        Account account = createTestAccount();
+        Account account = createIntegrationTestAccount();
         account.setAccountId(TEST_ACCOUNT_ID);
-        account.setCustomerId(customer.getCustomerId());
+        account.setCustomer(customer);
         accountRepository.save(account);
         
         // Test bulk transaction insert (simulating daily batch processing)
@@ -304,11 +305,11 @@ public class DatabaseIntegrationTest extends BaseIntegrationTest {
         long startTime = System.currentTimeMillis();
         
         for (int i = 0; i < batchSize; i++) {
-            Transaction transaction = createTestTransaction();
-            transaction.setTransactionId(TEST_TRANSACTION_ID + "_bulk_" + i);
+            Transaction transaction = createIntegrationTestTransaction();
+            transaction.setTransactionId(2000L + i); // Use numeric bulk transaction ID
             transaction.setAccountId(account.getAccountId());
             transaction.setAmount(BigDecimal.valueOf(10.00 + (i * 0.50)));
-            transaction.setTransactionDate(LocalDateTime.now().minusHours(i));
+            transaction.setTransactionDate(LocalDateTime.now().minusHours(i).toLocalDate());
             transactionRepository.save(transaction);
             
             // Flush periodically for memory management
@@ -339,7 +340,7 @@ public class DatabaseIntegrationTest extends BaseIntegrationTest {
     @DisplayName("Test Query Performance - Primary Key Lookups")
     public void testQueryPerformance() {
         // Create test data
-        Account account = createTestAccount();
+        Account account = createIntegrationTestAccount();
         account.setAccountId(TEST_ACCOUNT_ID);
         account.setCurrentBalance(BigDecimal.valueOf(2500.00));
         account.setCreditLimit(BigDecimal.valueOf(10000.00));
@@ -358,8 +359,8 @@ public class DatabaseIntegrationTest extends BaseIntegrationTest {
         assertThat(retrievedAccount.getAccountId()).isEqualTo(savedAccount.getAccountId());
         
         // Test composite key performance for transactions
-        Transaction transaction = createTestTransaction();
-        transaction.setTransactionId(TEST_TRANSACTION_ID);
+        Transaction transaction = createIntegrationTestTransaction();
+        transaction.setTransactionId(4000L); // Use numeric transaction ID
         transaction.setAccountId(account.getAccountId());
         transaction.setAmount(BigDecimal.valueOf(150.00));
         Transaction savedTransaction = transactionRepository.save(transaction);
@@ -390,7 +391,7 @@ public class DatabaseIntegrationTest extends BaseIntegrationTest {
         // is properly configured for recovery scenarios
         
         // Create test account
-        Account account = createTestAccount();
+        Account account = createIntegrationTestAccount();
         account.setAccountId(TEST_ACCOUNT_ID);
         account.setCurrentBalance(BigDecimal.valueOf(1000.00));
         Account savedAccount = accountRepository.save(account);
@@ -439,15 +440,15 @@ public class DatabaseIntegrationTest extends BaseIntegrationTest {
     @DisplayName("Test Composite Keys - Complex Key Structures")  
     public void testCompositeKeys() {
         // Create test data with composite relationships
-        Customer customer = createTestCustomer();
+        Customer customer = createIntegrationTestCustomer();
         customer.setCustomerId(TEST_CUSTOMER_ID);
         customer.setFirstName("Jane");
         customer.setLastName("Smith");
         customerRepository.save(customer);
         
-        Account account = createTestAccount();
+        Account account = createIntegrationTestAccount();
         account.setAccountId(TEST_ACCOUNT_ID);
-        account.setCustomerId(customer.getCustomerId());
+        account.setCustomer(customer);
         accountRepository.save(account);
         
         // Test composite key searches (customer name-based lookup)
@@ -458,7 +459,7 @@ public class DatabaseIntegrationTest extends BaseIntegrationTest {
         assertThat(customersByName.get(0).getCustomerId()).isEqualTo(customer.getCustomerId());
         
         // Test account lookups by customer (foreign key index)
-        List<Account> accountsByCustomer = accountRepository.findByCustomerId(customer.getCustomerId());
+        List<Account> accountsByCustomer = accountRepository.findByCustomerId(Long.valueOf(customer.getCustomerId()));
         assertThat(accountsByCustomer).hasSize(1);
         assertThat(accountsByCustomer.get(0).getAccountId()).isEqualTo(account.getAccountId());
         
@@ -474,11 +475,11 @@ public class DatabaseIntegrationTest extends BaseIntegrationTest {
     @DisplayName("Test Index Performance - Alternate Key Searches")
     public void testIndexPerformance() {
         // Create test account and card data
-        Account account = createTestAccount();
+        Account account = createIntegrationTestAccount();
         account.setAccountId(TEST_ACCOUNT_ID);
         accountRepository.save(account);
         
-        Card card = createTestCard();
+        Card card = createIntegrationTestCard();
         card.setCardNumber("4111111111111111");
         card.setAccountId(account.getAccountId());
         cardRepository.save(card);
@@ -512,7 +513,7 @@ public class DatabaseIntegrationTest extends BaseIntegrationTest {
         assertBigDecimalEquals(cobolAmount, BigDecimal.valueOf(123.45));
         
         // Validate precision preservation in database operations
-        Account account = createTestAccount();
+        Account account = createIntegrationTestAccount();
         account.setAccountId(TEST_ACCOUNT_ID);
         account.setCurrentBalance(cobolAmount);
         account.setCreditLimit(CobolDataConverter.preservePrecision(BigDecimal.valueOf(5000.00), COBOL_DECIMAL_SCALE));
@@ -520,14 +521,14 @@ public class DatabaseIntegrationTest extends BaseIntegrationTest {
         
         // Retrieve and verify precision maintained
         Account retrievedAccount = accountRepository.findById(savedAccount.getAccountId()).orElseThrow();
-        validateCobolPrecision(retrievedAccount.getCurrentBalance(), cobolAmount);
+        validateCobolPrecision(retrievedAccount.getCurrentBalance());
         assertThat(retrievedAccount.getCurrentBalance().scale()).isEqualTo(COBOL_DECIMAL_SCALE);
         
         // Test transaction amount precision
-        Transaction transaction = createTestTransaction();
-        transaction.setTransactionId(TEST_TRANSACTION_ID);
+        Transaction transaction = createIntegrationTestTransaction();
+        transaction.setTransactionId(3000L); // Use numeric transaction ID
         transaction.setAccountId(account.getAccountId());
-        transaction.setAmount(CobolDataConverter.toBigDecimal("999.99", COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
+        transaction.setAmount(CobolDataConverter.toBigDecimal(BigDecimal.valueOf(999.99), COBOL_DECIMAL_SCALE));
         Transaction savedTransaction = transactionRepository.save(transaction);
         
         Transaction retrievedTransaction = transactionRepository.findById(savedTransaction.getTransactionId()).orElseThrow();
@@ -549,13 +550,13 @@ public class DatabaseIntegrationTest extends BaseIntegrationTest {
         
         try {
             // Create base test data
-            Customer customer = createTestCustomer();
+            Customer customer = createIntegrationTestCustomer();
             customer.setCustomerId(TEST_CUSTOMER_ID);
             customerRepository.save(customer);
             
-            Account account = createTestAccount();
+            Account account = createIntegrationTestAccount();
             account.setAccountId(TEST_ACCOUNT_ID);
-            account.setCustomerId(customer.getCustomerId());
+            account.setCustomer(customer);
             account.setCurrentBalance(BigDecimal.valueOf(10000.00));
             accountRepository.save(account);
             
@@ -567,8 +568,8 @@ public class DatabaseIntegrationTest extends BaseIntegrationTest {
                 futures[i] = CompletableFuture.runAsync(() -> {
                     // Each thread creates transactions
                     for (int j = 0; j < 10; j++) {
-                        Transaction transaction = createTestTransaction();
-                        transaction.setTransactionId(TEST_TRANSACTION_ID + "_thread_" + threadId + "_" + j);
+                        Transaction transaction = createIntegrationTestTransaction();
+                        transaction.setTransactionId(5000L + threadId * 100 + j); // Use numeric thread-based ID
                         transaction.setAccountId(account.getAccountId());
                         transaction.setAmount(BigDecimal.valueOf(10.00 + threadId + j));
                         transactionRepository.save(transaction);
@@ -601,21 +602,21 @@ public class DatabaseIntegrationTest extends BaseIntegrationTest {
     public void testConstraintValidation() {
         // Test NOT NULL constraints
         assertThatThrownBy(() -> {
-            Account account = createTestAccount();
+            Account account = createIntegrationTestAccount();
             account.setAccountId(null); // Should fail NOT NULL constraint
             accountRepository.save(account);
             entityManager.flush();
         }).isInstanceOf(Exception.class);
         
         // Test positive amount constraints for transactions
-        Account validAccount = createTestAccount();
+        Account validAccount = createIntegrationTestAccount();
         validAccount.setAccountId(TEST_ACCOUNT_ID);
         validAccount.setCurrentBalance(BigDecimal.valueOf(1000.00));
         accountRepository.save(validAccount);
         
         // Test valid transaction
-        Transaction validTransaction = createTestTransaction();
-        validTransaction.setTransactionId(TEST_TRANSACTION_ID);
+        Transaction validTransaction = createIntegrationTestTransaction();
+        validTransaction.setTransactionId(6000L); // Use numeric transaction ID
         validTransaction.setAccountId(validAccount.getAccountId());
         validTransaction.setAmount(BigDecimal.valueOf(100.00));
         Transaction saved = transactionRepository.save(validTransaction);
@@ -635,10 +636,10 @@ public class DatabaseIntegrationTest extends BaseIntegrationTest {
     @DisplayName("Test Transaction Type Operations - Entity and Repository")
     public void testTransactionTypeOperations() {
         // Create test transaction type using all required entity methods
-        TransactionType testType = createTestTransactionType();
+        TransactionType testType = createIntegrationTestTransactionType();
         
         // Use all TransactionType entity methods as required by schema
-        String typeCode = testType.getTypeCode();
+        String typeCode = testType.getTransactionTypeCode();
         String typeDescription = testType.getTypeDescription();
         String debitCreditFlag = testType.getDebitCreditFlag();
         
@@ -652,7 +653,7 @@ public class DatabaseIntegrationTest extends BaseIntegrationTest {
         // Test save() operation
         TransactionType savedType = transactionTypeRepository.save(testType);
         assertThat(savedType).isNotNull();
-        assertThat(savedType.getTypeCode()).isEqualTo(typeCode);
+        assertThat(savedType.getTransactionTypeCode()).isEqualTo(typeCode);
         
         // Test findById() operation
         Optional<TransactionType> foundType = transactionTypeRepository.findById(typeCode);
@@ -664,7 +665,7 @@ public class DatabaseIntegrationTest extends BaseIntegrationTest {
         List<TransactionType> allTypes = transactionTypeRepository.findAll();
         assertThat(allTypes).isNotEmpty();
         assertThat(allTypes).hasSize(1);
-        assertThat(allTypes.get(0).getTypeCode()).isEqualTo(typeCode);
+        assertThat(allTypes.get(0).getTransactionTypeCode()).isEqualTo(typeCode);
         
         // Test delete() operation
         transactionTypeRepository.delete(savedType);
@@ -684,10 +685,10 @@ public class DatabaseIntegrationTest extends BaseIntegrationTest {
      * Helper method to create test TransactionType entity.
      * Creates a representative transaction type for testing purposes.
      */
-    private TransactionType createTestTransactionType() {
+    protected TransactionType createIntegrationTestTransactionType() {
         TransactionType transactionType = new TransactionType();
         // Set sample transaction type data for testing
-        transactionType.setTypeCode("01");
+        transactionType.setTransactionTypeCode("01");
         transactionType.setTypeDescription("Purchase Transaction");
         transactionType.setDebitCreditFlag("D"); // Debit transaction
         return transactionType;
@@ -696,7 +697,7 @@ public class DatabaseIntegrationTest extends BaseIntegrationTest {
     /**
      * Helper method to create test Card entity.
      */
-    private Card createTestCard() {
+    protected Card createIntegrationTestCardLocal() {
         Card card = new Card();
         card.setCardNumber("4000000000000000");
         return card;
