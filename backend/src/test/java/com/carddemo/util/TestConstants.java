@@ -172,6 +172,55 @@ public final class TestConstants {
         "3782########"  // American Express test cards
     };
 
+    // ===== TEST DATA CONSTANTS =====
+    
+    /**
+     * Test account ID for unit testing
+     */
+    public static final Long TEST_ACCOUNT_ID = 1000000001L;
+    
+    /**
+     * Test customer ID for unit testing
+     */
+    public static final String TEST_CUSTOMER_ID = "TESTCUST01";
+    
+    /**
+     * Test card number for unit testing
+     */
+    public static final String TEST_CARD_NUMBER = "4532123456789012";
+    
+    /**
+     * Monetary tolerance for financial calculations (alias for COBOL_PRECISION_TOLERANCE)
+     */
+    public static final BigDecimal MONETARY_TOLERANCE = COBOL_PRECISION_TOLERANCE;
+
+    // ===== TRANSACTION TYPE CODES =====
+    
+    /**
+     * Purchase transaction type code
+     */
+    public static final String TXN_TYPE_PURCHASE = "PUR";
+    
+    /**
+     * Credit transaction type code
+     */
+    public static final String TXN_TYPE_CREDIT = "CRD";
+    
+    /**
+     * Debit transaction type code
+     */
+    public static final String TXN_TYPE_DEBIT = "DEB";
+    
+    /**
+     * Payment transaction type code
+     */
+    public static final String TXN_TYPE_PAYMENT = "PAY";
+    
+    /**
+     * Refund transaction type code
+     */
+    public static final String TXN_TYPE_REFUND = "REF";
+
     // ===== ERROR CODES =====
     
     /**
@@ -286,4 +335,45 @@ public final class TestConstants {
     public static BigDecimal createCobolDecimal(String value, int scale) {
         return new BigDecimal(value).setScale(scale, COBOL_ROUNDING_MODE);
     }
+
+    // ===== ADDITIONAL TEST CONSTANTS =====
+    
+    /**
+     * Additional test constants for various test scenarios
+     */
+    public static final String TEST_DESCRIPTION = "Test Description";
+    public static final String TEST_MERCHANT_NAME = "Test Merchant";
+    public static final String TEST_MERCHANT_CITY = "Test City";
+    public static final String TEST_MERCHANT_ZIP = "12345";
+    
+    // Account and user constants
+    public static final String ACCOUNT_STATUS_ACTIVE = "Y";
+    public static final BigDecimal DEFAULT_ACCOUNT_BALANCE = new BigDecimal("1000.00");
+    public static final String TEST_USER_ID = "TESTUSER";
+    
+    // Field length constants
+    public static final int TRANSACTION_ID_MAX_LENGTH = 16;
+    public static final int TRANSACTION_DESC_MAX_LENGTH = 26;
+    public static final int MERCHANT_NAME_MAX_LENGTH = 25;
+    
+    // Batch processing constants
+    public static final int DEFAULT_BATCH_SIZE = 100;
+    public static final long BATCH_PROCESSING_TIMEOUT_MS = 300000L; // 5 minutes
+    public static final long MAX_MEMORY_USAGE_MB = 512L;
+    
+    // Additional validation constants
+    public static final String INVALID_CARD_NUMBER = "0000000000000000";
+    public static final String EXPIRED_CARD_NUMBER = "4532999999999999";
+    public static final BigDecimal ZERO_AMOUNT = BigDecimal.ZERO;
+    public static final BigDecimal NEGATIVE_AMOUNT = new BigDecimal("-50.00");
+    
+    // Category and type codes
+    public static final String CATEGORY_CODE_GAS = "GAS";
+    public static final String CATEGORY_CODE_GROCERY = "GRO";
+    public static final String CATEGORY_CODE_RESTAURANT = "RST";
+    
+    // Additional test data
+    public static final String TEST_TRANSACTION_ID = "TXN123456789";
+    public static final String TEST_AUTH_CODE = "AUTH123";
+    public static final String TEST_REFERENCE_NUMBER = "REF123456";
 }
