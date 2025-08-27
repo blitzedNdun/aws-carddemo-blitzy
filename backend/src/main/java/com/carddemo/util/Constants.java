@@ -222,6 +222,13 @@ public final class Constants {
     public static final int REPORT_WIDTH = 132;
     
     /**
+     * Default maximum connections for connection pool configuration.
+     * Used in performance testing and database connection pool setup.
+     * Matches typical CICS region connection limits from mainframe environment.
+     */
+    public static final int MAX_CONNECTIONS_DEFAULT = 20;
+    
+    /**
      * Field length mappings for batch report formatting.
      * Maps field names to their corresponding lengths from COBOL copybooks.
      */
