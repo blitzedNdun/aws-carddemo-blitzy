@@ -30,6 +30,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -623,6 +624,73 @@ public class DatabaseIntegrationTest extends BaseIntegrationTest {
         assertThat(saved.getAmount()).isPositive();
         
         cleanupTestData();
+    }
+
+    /**
+     * Test TransactionType entity methods and repository operations.
+     * Ensures all schema-required members are properly used and tested.
+     */
+    @Test
+    @Order(13)
+    @DisplayName("Test Transaction Type Operations - Entity and Repository")
+    public void testTransactionTypeOperations() {
+        // Create test transaction type using all required entity methods
+        TransactionType testType = createTestTransactionType();
+        
+        // Use all TransactionType entity methods as required by schema
+        String typeCode = testType.getTypeCode();
+        String typeDescription = testType.getTypeDescription();
+        String debitCreditFlag = testType.getDebitCreditFlag();
+        
+        // Verify entity field access works correctly
+        assertThat(typeCode).isNotNull().isEqualTo("01");
+        assertThat(typeDescription).isNotNull().isEqualTo("Purchase Transaction");
+        assertThat(debitCreditFlag).isNotNull().isEqualTo("D");
+        
+        // Test all TransactionTypeRepository methods as required by schema
+        
+        // Test save() operation
+        TransactionType savedType = transactionTypeRepository.save(testType);
+        assertThat(savedType).isNotNull();
+        assertThat(savedType.getTypeCode()).isEqualTo(typeCode);
+        
+        // Test findById() operation
+        Optional<TransactionType> foundType = transactionTypeRepository.findById(typeCode);
+        assertThat(foundType).isPresent();
+        assertThat(foundType.get().getTypeDescription()).isEqualTo(typeDescription);
+        assertThat(foundType.get().getDebitCreditFlag()).isEqualTo(debitCreditFlag);
+        
+        // Test findAll() operation
+        List<TransactionType> allTypes = transactionTypeRepository.findAll();
+        assertThat(allTypes).isNotEmpty();
+        assertThat(allTypes).hasSize(1);
+        assertThat(allTypes.get(0).getTypeCode()).isEqualTo(typeCode);
+        
+        // Test delete() operation
+        transactionTypeRepository.delete(savedType);
+        
+        // Verify deletion succeeded
+        Optional<TransactionType> deletedType = transactionTypeRepository.findById(typeCode);
+        assertThat(deletedType).isEmpty();
+        
+        // Verify findAll() returns empty list after deletion
+        List<TransactionType> emptyList = transactionTypeRepository.findAll();
+        assertThat(emptyList).isEmpty();
+        
+        cleanupTestData();
+    }
+
+    /**
+     * Helper method to create test TransactionType entity.
+     * Creates a representative transaction type for testing purposes.
+     */
+    private TransactionType createTestTransactionType() {
+        TransactionType transactionType = new TransactionType();
+        // Set sample transaction type data for testing
+        transactionType.setTypeCode("01");
+        transactionType.setTypeDescription("Purchase Transaction");
+        transactionType.setDebitCreditFlag("D"); // Debit transaction
+        return transactionType;
     }
 
     /**
