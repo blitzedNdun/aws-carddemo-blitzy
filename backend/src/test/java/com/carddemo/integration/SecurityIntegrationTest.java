@@ -5,7 +5,7 @@
 
 package com.carddemo.integration;
 
-import com.carddemo.config.SecurityConfig;
+import com.carddemo.security.SecurityConfig;
 import com.carddemo.controller.AuthController;
 import com.carddemo.controller.UserController;
 import com.carddemo.dto.SignOnRequest;
@@ -117,29 +117,29 @@ public class SecurityIntegrationTest extends BaseIntegrationTest {
      * Creates test users with different roles for comprehensive security testing.
      */
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         // Clean up existing test data
         userSecurityRepository.deleteAll();
         
         // Create test admin user matching COBOL user structure
-        testAdminUser = createTestUser();
+        testAdminUser = createIntegrationTestUser();
         testAdminUser.setSecUsrId("TESTADM");
         testAdminUser.setUsername("TESTADM");  
-        testAdminUser.setSecUsrFname("Test");
-        testAdminUser.setSecUsrLname("Admin");
-        testAdminUser.setSecUsrPwd(passwordEncoder.encode("ADMIN123"));
-        testAdminUser.setSecUsrType("A"); // Admin type
+        testAdminUser.setFirstName("Test");
+        testAdminUser.setLastName("Admin");
+        testAdminUser.setPassword(passwordEncoder.encode("ADMIN123"));
+        testAdminUser.setUserType("A"); // Admin type
         testAdminUser.setEnabled(true);
         testAdminUser = userSecurityRepository.save(testAdminUser);
         
         // Create test regular user matching COBOL user structure  
-        testRegularUser = createTestUser();
+        testRegularUser = createIntegrationTestUser();
         testRegularUser.setSecUsrId("TESTUSER");
         testRegularUser.setUsername("TESTUSER");
-        testRegularUser.setSecUsrFname("Test");
-        testRegularUser.setSecUsrLname("User"); 
-        testRegularUser.setSecUsrPwd(passwordEncoder.encode("USER123"));
-        testRegularUser.setSecUsrType("U"); // User type
+        testRegularUser.setFirstName("Test");
+        testRegularUser.setLastName("User"); 
+        testRegularUser.setPassword(passwordEncoder.encode("USER123"));
+        testRegularUser.setUserType("U"); // User type
         testRegularUser.setEnabled(true);
         testRegularUser = userSecurityRepository.save(testRegularUser);
     }
@@ -287,7 +287,7 @@ public class SecurityIntegrationTest extends BaseIntegrationTest {
         @DisplayName("Should generate valid JWT token with correct claims")
         void testJwtTokenGeneration() {
             // Act
-            String token = jwtTokenService.generateToken(testAdminUser.getUsername());
+            String token = jwtTokenService.generateToken(testAdminUser);
             
             // Assert
             assertNotNull(token);
@@ -304,7 +304,7 @@ public class SecurityIntegrationTest extends BaseIntegrationTest {
         @DisplayName("Should validate correct JWT tokens")
         void testJwtTokenValidation() {
             // Arrange
-            String token = jwtTokenService.generateToken(testRegularUser.getUsername());
+            String token = jwtTokenService.generateToken(testRegularUser);
             
             // Act & Assert
             assertTrue(jwtTokenService.validateToken(token));
@@ -645,7 +645,7 @@ public class SecurityIntegrationTest extends BaseIntegrationTest {
         
         @Test
         @DisplayName("Should handle concurrent authentication attempts safely")
-        void testConcurrentAuthentication() throws InterruptedException {
+        void testConcurrentAuthentication() throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException {
             // Arrange
             int numberOfThreads = 10;
             ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
@@ -688,10 +688,10 @@ public class SecurityIntegrationTest extends BaseIntegrationTest {
         
         @Test
         @DisplayName("Should handle concurrent token validation efficiently")
-        void testConcurrentTokenValidation() throws InterruptedException {
+        void testConcurrentTokenValidation() throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException {
             // Arrange - Generate test tokens
-            String adminToken = jwtTokenService.generateToken("TESTADM");
-            String userToken = jwtTokenService.generateToken("TESTUSER");
+            String adminToken = jwtTokenService.generateToken(testAdminUser);
+            String userToken = jwtTokenService.generateToken(testRegularUser);
             
             int numberOfValidations = 20;
             ExecutorService executorService = Executors.newFixedThreadPool(10);
