@@ -10,6 +10,9 @@ import com.carddemo.controller.PaymentController;
 import com.carddemo.controller.TransactionController;
 import com.carddemo.batch.DailyTransactionJob;
 import com.carddemo.batch.InterestCalculationJob;
+import com.carddemo.dto.TransactionRequest;
+import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.JobParameters;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -34,6 +37,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -50,7 +55,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.carddemo.TestConstants.*;
+import static com.carddemo.util.TestConstants.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -111,6 +116,9 @@ public class PerformanceValidationTest extends BaseIntegrationTest {
     
     @Autowired
     private InterestCalculationJob interestCalculationJob;
+    
+    @Autowired
+    private JobLauncher jobLauncher;
     
     @Autowired
     private ObjectMapper objectMapper;
@@ -193,24 +201,23 @@ public class PerformanceValidationTest extends BaseIntegrationTest {
         for (int i = 0; i < numberOfRequests; i++) {
             // Test authentication endpoint
             Duration authResponseTime = measureResponseTime(() -> {
-                return authController.getLoginStatus();
+                authController.getAuthenticationStatus(null);
             });
             responseTimes.add(authResponseTime);
             
             // Test transaction listing endpoint  
             Duration transactionResponseTime = measureResponseTime(() -> {
-                return transactionController.getTransactions();
+                transactionController.getTransactions(null, null, null, null, null, null, 10, 0);
             });
             responseTimes.add(transactionResponseTime);
             
             // Test payment processing endpoint
             Duration paymentResponseTime = measureResponseTime(() -> {
-                Map<String, Object> paymentRequest = Map.of(
-                    "amount", TEST_TRANSACTION_AMOUNT,
-                    "cardNumber", "4532123456789012",
-                    "merchantId", "MERCHANT001"
-                );
-                return paymentController.authorizePayment(paymentRequest);
+                TransactionRequest paymentRequest = new TransactionRequest();
+                paymentRequest.setAmount(TEST_TRANSACTION_AMOUNT);
+                paymentRequest.setCardNumber("4532123456789012");
+                paymentRequest.setMerchantId("MERCHANT001");
+                paymentController.authorizePayment(paymentRequest);
             });
             responseTimes.add(paymentResponseTime);
             
@@ -367,7 +374,7 @@ public class PerformanceValidationTest extends BaseIntegrationTest {
         
         // Test Daily Transaction Job performance
         LocalDateTime dailyJobStart = LocalDateTime.now();
-        JobExecution dailyJobExecution = dailyTransactionJob.executeJob(LocalDate.now());
+        JobExecution dailyJobExecution = jobLauncher.run(dailyTransactionJob.dailyTransactionJob(), new JobParameters());
         Duration dailyJobDuration = Duration.between(dailyJobStart, LocalDateTime.now());
         
         logger.info("Daily transaction job completed in: {}ms", dailyJobDuration.toMillis());
@@ -382,7 +389,7 @@ public class PerformanceValidationTest extends BaseIntegrationTest {
         
         // Test Interest Calculation Job performance  
         LocalDateTime interestJobStart = LocalDateTime.now();
-        JobExecution interestJobExecution = interestCalculationJob.executeJob(LocalDate.now());
+        JobExecution interestJobExecution = jobLauncher.run(interestCalculationJob.interestCalculationJob(), new JobParameters());
         Duration interestJobDuration = Duration.between(interestJobStart, LocalDateTime.now());
         
         logger.info("Interest calculation job completed in: {}ms", interestJobDuration.toMillis());
@@ -848,7 +855,7 @@ public class PerformanceValidationTest extends BaseIntegrationTest {
         int testRecordCount = 10000; // Simulate processing 10K records
         
         LocalDateTime dailyJobStart = LocalDateTime.now();
-        JobExecution dailyJobExecution = dailyTransactionJob.executeJob(LocalDate.now());
+        JobExecution dailyJobExecution = jobLauncher.run(dailyTransactionJob.dailyTransactionJob(), new JobParameters());
         LocalDateTime dailyJobEnd = LocalDateTime.now();
         
         Duration dailyJobTime = Duration.between(dailyJobStart, dailyJobEnd);
@@ -866,7 +873,7 @@ public class PerformanceValidationTest extends BaseIntegrationTest {
         
         // Test interest calculation job throughput
         LocalDateTime interestJobStart = LocalDateTime.now();
-        JobExecution interestJobExecution = interestCalculationJob.executeJob(LocalDate.now());
+        JobExecution interestJobExecution = jobLauncher.run(interestCalculationJob.interestCalculationJob(), new JobParameters());
         LocalDateTime interestJobEnd = LocalDateTime.now();
         
         Duration interestJobTime = Duration.between(interestJobStart, interestJobEnd);
