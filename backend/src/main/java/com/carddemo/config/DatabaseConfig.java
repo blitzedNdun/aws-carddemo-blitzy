@@ -63,7 +63,7 @@ import java.util.Properties;
  */
 @Configuration
 @EnableAutoConfiguration
-@Profile({"!test", "!unit-test", "!integration-test", "!contract-test"})
+@Profile({"production", "development", "staging"}) // Only active in non-test profiles
 public class DatabaseConfig {
 
     // Database connection configuration constants
