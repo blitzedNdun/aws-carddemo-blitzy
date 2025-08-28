@@ -7,20 +7,21 @@ package com.carddemo.service;
 
 import com.carddemo.entity.Account;
 import com.carddemo.repository.AccountRepository;
+import com.carddemo.service.AccountMaintenanceBatchService;
 import com.carddemo.test.CobolComparisonUtils;
 import com.carddemo.test.TestDataGenerator;
+import com.carddemo.controller.TestConstants;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -62,13 +63,14 @@ import static org.mockito.Mockito.*;
  * @version 1.0
  * @since 2024
  */
-@SpringBootTest
-@ActiveProfiles("test")
-@Transactional
+@ExtendWith(MockitoExtension.class)
 public class AccountProcessingServiceTest {
 
     @Mock
     private AccountRepository accountRepository;
+    
+    @Mock
+    private AccountMaintenanceBatchService accountMaintenanceBatchService;
 
     @InjectMocks
     private AccountProcessingService accountProcessingService;
@@ -112,8 +114,8 @@ public class AccountProcessingServiceTest {
             // Given: Create test account with COBOL-compatible data
             Account testAccount = testDataGenerator.generateAccount();
             testAccount.setAccountId(1000001L);
-            testAccount.setCurrentBalance(testDataGenerator.generateComp3BigDecimal("1000.00"));
-            testAccount.setCreditLimit(testDataGenerator.generateComp3BigDecimal("5000.00"));
+            testAccount.setCurrentBalance(new BigDecimal("1000.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
+            testAccount.setCreditLimit(new BigDecimal("5000.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
             
             Map<String, Object> updates = new HashMap<>();
             updates.put("currentBalance", new BigDecimal("1250.75"));
@@ -136,7 +138,7 @@ public class AccountProcessingServiceTest {
             // Verify BigDecimal precision matches COBOL COMP-3 behavior
             BigDecimal expectedBalance = new BigDecimal("1250.75");
             boolean precisionMatch = CobolComparisonUtils.compareBigDecimals(
-                result.getCurrentBalance(), expectedBalance);
+                result.getCurrentBalance(), expectedBalance, "Balance precision check");
             assertThat(precisionMatch).isTrue();
             
             // Verify repository interactions
@@ -211,12 +213,12 @@ public class AccountProcessingServiceTest {
         public void testCalculateAccountBalanceWithComp3Precision() {
             // Given: Account with COBOL-precision monetary values
             Account testAccount = testDataGenerator.generateAccount();
-            testAccount.setCurrentBalance(testDataGenerator.generateComp3BigDecimal("1000.00"));
-            testAccount.setCurrentCycleCredit(testDataGenerator.generateComp3BigDecimal("250.50"));
-            testAccount.setCurrentCycleDebit(testDataGenerator.generateComp3BigDecimal("175.25"));
+            testAccount.setCurrentBalance(new BigDecimal("1000.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
+            testAccount.setCurrentCycleCredit(new BigDecimal("250.50").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
+            testAccount.setCurrentCycleDebit(new BigDecimal("175.25").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
 
             // Expected calculation: 1000.00 + 250.50 - 175.25 = 1075.25
-            BigDecimal expectedBalance = testDataGenerator.generateComp3BigDecimal("1075.25");
+            BigDecimal expectedBalance = new BigDecimal("1075.25").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE);
 
             // When: Calculate balance using service method
             BigDecimal calculatedBalance = accountProcessingService.calculateAccountBalance(testAccount);
@@ -226,7 +228,7 @@ public class AccountProcessingServiceTest {
             assertThat(calculatedBalance.scale()).isEqualTo(2); // COBOL COMP-3 scale
             
             boolean precisionMatch = CobolComparisonUtils.compareBigDecimals(
-                calculatedBalance, expectedBalance);
+                calculatedBalance, expectedBalance, "balance precision");
             assertThat(precisionMatch).isTrue();
 
             // Verify rounding mode matches COBOL HALF_UP behavior
@@ -256,19 +258,19 @@ public class AccountProcessingServiceTest {
         public void testCalculateAccountBalanceNegativeAmounts() {
             // Given: Account with negative balance (debt situation)
             Account testAccount = testDataGenerator.generateAccount();
-            testAccount.setCurrentBalance(testDataGenerator.generateComp3BigDecimal("-500.00"));
-            testAccount.setCurrentCycleCredit(testDataGenerator.generateComp3BigDecimal("100.00"));
-            testAccount.setCurrentCycleDebit(testDataGenerator.generateComp3BigDecimal("200.00"));
+            testAccount.setCurrentBalance(new BigDecimal("-500.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
+            testAccount.setCurrentCycleCredit(new BigDecimal("100.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
+            testAccount.setCurrentCycleDebit(new BigDecimal("200.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
 
             // Expected: -500.00 + 100.00 - 200.00 = -600.00
-            BigDecimal expectedBalance = testDataGenerator.generateComp3BigDecimal("-600.00");
+            BigDecimal expectedBalance = new BigDecimal("-600.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE);
 
             // When: Calculate balance
             BigDecimal calculatedBalance = accountProcessingService.calculateAccountBalance(testAccount);
 
             // Then: Verify negative balance handled correctly
             boolean precisionMatch = CobolComparisonUtils.compareBigDecimals(
-                calculatedBalance, expectedBalance);
+                calculatedBalance, expectedBalance, "Balance recalculation precision check");
             assertThat(precisionMatch).isTrue();
             assertThat(calculatedBalance.signum()).isEqualTo(-1); // Negative
         }
@@ -393,8 +395,8 @@ public class AccountProcessingServiceTest {
             Account testAccount = testDataGenerator.generateAccount();
             testAccount.setAccountId(1000001L);
             testAccount.setActiveStatus("Y");
-            testAccount.setCurrentBalance(testDataGenerator.generateComp3BigDecimal("500.00")); // Below $1000 threshold
-            testAccount.setCreditLimit(testDataGenerator.generateComp3BigDecimal("2000.00"));
+            testAccount.setCurrentBalance(new BigDecimal("500.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE)); // Below $1000 threshold
+            testAccount.setCreditLimit(new BigDecimal("2000.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
 
             when(accountRepository.findById(1000001L)).thenReturn(Optional.of(testAccount));
             when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -408,7 +410,7 @@ public class AccountProcessingServiceTest {
             assertThat(feeResults).containsKey("totalFees");
             
             BigDecimal maintenanceFee = feeResults.get("maintenanceFee");
-            boolean feeMatch = CobolComparisonUtils.compareBigDecimals(maintenanceFee, TEST_MONTHLY_FEE);
+            boolean feeMatch = CobolComparisonUtils.compareBigDecimals(maintenanceFee, TEST_MONTHLY_FEE, "Maintenance fee calculation check");
             assertThat(feeMatch).isTrue();
 
             verify(accountRepository).findById(1000001L);
@@ -422,8 +424,8 @@ public class AccountProcessingServiceTest {
             Account testAccount = testDataGenerator.generateAccount();
             testAccount.setAccountId(1000002L);
             testAccount.setActiveStatus("Y");
-            testAccount.setCurrentBalance(testDataGenerator.generateComp3BigDecimal("5500.00")); // Over $5000 limit
-            testAccount.setCreditLimit(testDataGenerator.generateComp3BigDecimal("5000.00"));
+            testAccount.setCurrentBalance(new BigDecimal("5500.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE)); // Over $5000 limit
+            testAccount.setCreditLimit(new BigDecimal("5000.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
 
             when(accountRepository.findById(1000002L)).thenReturn(Optional.of(testAccount));
             when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -435,7 +437,7 @@ public class AccountProcessingServiceTest {
             assertThat(feeResults).containsKey("overlimitFee");
             
             BigDecimal overlimitFee = feeResults.get("overlimitFee");
-            boolean feeMatch = CobolComparisonUtils.compareBigDecimals(overlimitFee, TEST_OVERLIMIT_FEE);
+            boolean feeMatch = CobolComparisonUtils.compareBigDecimals(overlimitFee, TEST_OVERLIMIT_FEE, "Overlimit fee calculation check");
             assertThat(feeMatch).isTrue();
 
             verify(accountRepository).findById(1000002L);
@@ -469,10 +471,10 @@ public class AccountProcessingServiceTest {
             Account testAccount = testDataGenerator.generateAccount();
             testAccount.setAccountId(1000001L);
             testAccount.setActiveStatus("Y");
-            testAccount.setCurrentBalance(testDataGenerator.generateComp3BigDecimal("1000.00"));
-            testAccount.setCreditLimit(testDataGenerator.generateComp3BigDecimal("5000.00"));
+            testAccount.setCurrentBalance(new BigDecimal("1000.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
+            testAccount.setCreditLimit(new BigDecimal("5000.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
             
-            BigDecimal requestedLimit = testDataGenerator.generateComp3BigDecimal("5500.00"); // 10% increase
+            BigDecimal requestedLimit = new BigDecimal("5500.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE); // 10% increase
 
             when(accountRepository.findById(1000001L)).thenReturn(Optional.of(testAccount));
             when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -497,10 +499,10 @@ public class AccountProcessingServiceTest {
             Account testAccount = testDataGenerator.generateAccount();
             testAccount.setAccountId(1000001L);
             testAccount.setActiveStatus("Y");
-            testAccount.setCurrentBalance(testDataGenerator.generateComp3BigDecimal("1000.00"));
-            testAccount.setCreditLimit(testDataGenerator.generateComp3BigDecimal("5000.00"));
+            testAccount.setCurrentBalance(new BigDecimal("1000.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
+            testAccount.setCreditLimit(new BigDecimal("5000.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
             
-            BigDecimal requestedLimit = testDataGenerator.generateComp3BigDecimal("7000.00"); // 40% increase
+            BigDecimal requestedLimit = new BigDecimal("7000.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE); // 40% increase
 
             when(accountRepository.findById(1000001L)).thenReturn(Optional.of(testAccount));
 
@@ -522,9 +524,9 @@ public class AccountProcessingServiceTest {
             Account testAccount = testDataGenerator.generateAccount();
             testAccount.setAccountId(1000001L);
             testAccount.setActiveStatus("N"); // Inactive
-            testAccount.setCreditLimit(testDataGenerator.generateComp3BigDecimal("5000.00"));
+            testAccount.setCreditLimit(new BigDecimal("5000.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
             
-            BigDecimal requestedLimit = testDataGenerator.generateComp3BigDecimal("5500.00");
+            BigDecimal requestedLimit = new BigDecimal("5500.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE);
 
             when(accountRepository.findById(1000001L)).thenReturn(Optional.of(testAccount));
 
@@ -555,9 +557,9 @@ public class AccountProcessingServiceTest {
             Account testAccount = testDataGenerator.generateAccount();
             testAccount.setAccountId(1000001L);
             testAccount.setActiveStatus("Y");
-            testAccount.setCurrentBalance(testDataGenerator.generateComp3BigDecimal("1500.00"));
-            testAccount.setCreditLimit(testDataGenerator.generateComp3BigDecimal("5000.00"));
-            testAccount.setCashCreditLimit(testDataGenerator.generateComp3BigDecimal("1000.00"));
+            testAccount.setCurrentBalance(new BigDecimal("1500.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
+            testAccount.setCreditLimit(new BigDecimal("5000.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
+            testAccount.setCashCreditLimit(new BigDecimal("1000.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
 
             // When: Validate account data
             Map<String, Object> validationResult = accountProcessingService.validateAccountData(testAccount);
@@ -596,8 +598,8 @@ public class AccountProcessingServiceTest {
         public void testValidateAccountDataCashLimitExceedsCredit() {
             // Given: Account with cash limit exceeding credit limit
             Account testAccount = testDataGenerator.generateAccount();
-            testAccount.setCreditLimit(testDataGenerator.generateComp3BigDecimal("2000.00"));
-            testAccount.setCashCreditLimit(testDataGenerator.generateComp3BigDecimal("3000.00")); // Exceeds credit limit
+            testAccount.setCreditLimit(new BigDecimal("2000.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
+            testAccount.setCashCreditLimit(new BigDecimal("3000.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE)); // Exceeds credit limit
 
             // When: Validate account data
             Map<String, Object> validationResult = accountProcessingService.validateAccountData(testAccount);
@@ -767,8 +769,8 @@ public class AccountProcessingServiceTest {
         for (int i = 0; i < count; i++) {
             Account account = testDataGenerator.generateAccount();
             account.setAccountId(1000000L + i);
-            account.setCurrentBalance(testDataGenerator.generateBalance());
-            account.setCreditLimit(testDataGenerator.generateCreditLimit());
+            account.setCurrentBalance(new BigDecimal("1000.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
+            account.setCreditLimit(new BigDecimal("5000.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
             accounts.add(account);
         }
         return accounts;
@@ -780,7 +782,7 @@ public class AccountProcessingServiceTest {
      */
     private void setupTestData() {
         // Initialize test data generators with consistent seed for reproducible tests
-        testDataGenerator.resetRandomSeed();
+        testDataGenerator.resetRandomSeed(12345L);
     }
 
     /**
@@ -817,7 +819,7 @@ public class AccountProcessingServiceTest {
      * @param expected the expected BigDecimal value
      */
     private void assertBigDecimalEquals(BigDecimal actual, BigDecimal expected) {
-        boolean match = CobolComparisonUtils.compareBigDecimals(actual, expected);
+        boolean match = CobolComparisonUtils.compareBigDecimals(actual, expected, "BigDecimal equality check");
         assertThat(match)
             .as("BigDecimal comparison failed: actual=%s, expected=%s", actual, expected)
             .isTrue();
