@@ -26,6 +26,7 @@ import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.core.step.tasklet.TaskletStep;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -126,15 +127,18 @@ public class AccountProcessingJob {
     @Autowired
     private PlatformTransactionManager transactionManager;
     
-    // Individual job components to orchestrate
+    // Individual job components to orchestrate - inject the actual Job beans with qualifiers
     @Autowired
-    private AccountListJob accountListJob;
+    @Qualifier("accountBatchJob")
+    private Job accountBatchJob;
     
     @Autowired
-    private CardListJob cardListJob;
+    @Qualifier("cardBatchJob") 
+    private Job cardBatchJob;
     
     @Autowired
-    private CrossReferenceListJob crossReferenceListJob;
+    @Qualifier("crossReferenceJob")
+    private Job crossReferenceJob;
 
     /**
      * Configures the main composite account processing job.
@@ -233,9 +237,8 @@ public class AccountProcessingJob {
                             // Get job parameters from step execution context
                             JobParameters jobParameters = stepExecution.getJobExecution().getJobParameters();
                             
-                            // Create and launch the AccountListJob
-                            Job accountJob = accountListJob.accountBatchJob();
-                            JobExecution accountJobExecution = jobLauncher.run(accountJob, jobParameters);
+                            // Launch the AccountListJob using injected bean
+                            JobExecution accountJobExecution = jobLauncher.run(accountBatchJob, jobParameters);
                             
                             // Check execution status
                             if (accountJobExecution.getStatus().isUnsuccessful()) {
@@ -341,9 +344,8 @@ public class AccountProcessingJob {
                             // Get job parameters from step execution context
                             JobParameters jobParameters = stepExecution.getJobExecution().getJobParameters();
                             
-                            // Create and launch the CardListJob
-                            Job cardJob = cardListJob.cardBatchJob();
-                            JobExecution cardJobExecution = jobLauncher.run(cardJob, jobParameters);
+                            // Launch the CardListJob using injected bean
+                            JobExecution cardJobExecution = jobLauncher.run(cardBatchJob, jobParameters);
                             
                             // Check execution status
                             if (cardJobExecution.getStatus().isUnsuccessful()) {
@@ -455,9 +457,8 @@ public class AccountProcessingJob {
                             // Get job parameters from step execution context
                             JobParameters jobParameters = stepExecution.getJobExecution().getJobParameters();
                             
-                            // Create and launch the CrossReferenceListJob
-                            Job xrefJob = crossReferenceListJob.crossReferenceListJob();
-                            JobExecution xrefJobExecution = jobLauncher.run(xrefJob, jobParameters);
+                            // Launch the CrossReferenceListJob using injected bean
+                            JobExecution xrefJobExecution = jobLauncher.run(crossReferenceJob, jobParameters);
                             
                             // Check execution status
                             if (xrefJobExecution.getStatus().isUnsuccessful()) {
@@ -729,43 +730,7 @@ public class AccountProcessingJob {
 
     // Exported functionality for external access and testing
 
-    /**
-     * Returns the configured composite Job instance.
-     * 
-     * This method provides external access to the configured composite job for
-     * job launcher integration, testing, and operational management purposes.
-     * The returned job includes all configured steps, listeners, and flow control
-     * necessary for complete composite batch processing execution.
-     * 
-     * @return Job the configured composite account processing job
-     */
-    public Job getJob() {
-        return accountProcessingJob();
-    }
 
-    /**
-     * Returns the configured Step instance for the specified step name.
-     * 
-     * This method provides external access to individual step configurations
-     * for testing, monitoring, and operational management purposes. Steps can
-     * be accessed individually for unit testing or selective execution scenarios.
-     * 
-     * @param stepName the name of the step to retrieve
-     * @return Step the configured step instance, or null if step name not found
-     */
-    public Step getStep(String stepName) {
-        switch (stepName) {
-            case ACCOUNT_STEP_NAME:
-                return executeAccountListStep();
-            case CARD_STEP_NAME:
-                return executeCardListStep();
-            case XREF_STEP_NAME:
-                return executeCrossReferenceListStep();
-            default:
-                logger.warn("Unknown step name requested: {}", stepName);
-                return null;
-        }
-    }
 
     /**
      * Returns the current execution status for monitoring purposes.
