@@ -36,6 +36,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -73,7 +74,7 @@ public class TransactionListServiceTest {
     private List<Transaction> sampleTransactions;
     
     private static final int DEFAULT_PAGE_SIZE = 10;
-    private static final String SAMPLE_ACCOUNT_ID = "1000000001";
+    private static final String SAMPLE_ACCOUNT_ID = "10000000001";
     private static final String SAMPLE_CARD_NUMBER = "4532123456789012";
 
     @BeforeEach
@@ -94,12 +95,12 @@ public class TransactionListServiceTest {
         for (int i = 1; i <= 25; i++) {
             Transaction transaction = new Transaction();
             transaction.setTransactionId((long) i);
-            transaction.setAccountId(SAMPLE_ACCOUNT_ID);
+            transaction.setAccountId(Long.parseLong(SAMPLE_ACCOUNT_ID));
             transaction.setAmount(new BigDecimal("100.00").multiply(new BigDecimal(i % 10 + 1)));
             transaction.setTransactionDate(LocalDate.now().minusDays(i));
             transaction.setDescription("Test Transaction " + i);
             transaction.setMerchantName("Test Merchant " + i);
-            transaction.setTransactionType("PURCHASE");
+            transaction.setCategoryCode("PURCHASE");
             transactions.add(transaction);
         }
         
@@ -123,7 +124,7 @@ public class TransactionListServiceTest {
             Page<Transaction> mockPage = new PageImpl<>(pageTransactions, 
                 PageRequest.of(0, DEFAULT_PAGE_SIZE), sampleTransactions.size());
             
-            when(transactionRepository.findByAccountId(eq(SAMPLE_ACCOUNT_ID), any(Pageable.class)))
+            when(transactionRepository.findByAccountId(eq(Long.parseLong(SAMPLE_ACCOUNT_ID)), any(Pageable.class)))
                 .thenReturn(mockPage);
             
             // When: Listing transactions
@@ -133,13 +134,13 @@ public class TransactionListServiceTest {
             assertThat(response).isNotNull();
             assertThat(response.getTransactions()).hasSize(DEFAULT_PAGE_SIZE);
             assertThat(response.getCurrentPage()).isEqualTo(1);
-            assertThat(response.getTotalPages()).isGreaterThan(0);
-            assertThat(response.hasNextPage()).isTrue(); // More pages available
-            assertThat(response.hasPreviousPage()).isFalse(); // First page
+            assertThat(response.getTotalCount()).isGreaterThan(0);
+            assertThat(response.getHasMorePages()).isTrue(); // More pages available
+            assertThat(response.getHasPreviousPages()).isFalse(); // First page
             
             // Verify repository interaction
             verify(transactionRepository, times(1))
-                .findByAccountId(eq(SAMPLE_ACCOUNT_ID), any(Pageable.class));
+                .findByAccountId(eq(Long.parseLong(SAMPLE_ACCOUNT_ID)), any(Pageable.class));
         }
 
         @Test
@@ -147,14 +148,14 @@ public class TransactionListServiceTest {
         void testListTransactions_NoTransactions_ReturnsEmptyList() {
             // Given: Request for account with no transactions
             TransactionListRequest request = new TransactionListRequest();
-            request.setAccountId("9999999999");
+            request.setAccountId("99999999999");
             request.setPageNumber(1);
             request.setPageSize(DEFAULT_PAGE_SIZE);
             
             Page<Transaction> emptyPage = new PageImpl<>(new ArrayList<>(), 
                 PageRequest.of(0, DEFAULT_PAGE_SIZE), 0);
             
-            when(transactionRepository.findAll(any(Pageable.class)))
+            when(transactionRepository.findByAccountId(eq(99999999999L), any(Pageable.class)))
                 .thenReturn(emptyPage);
             
             // When: Listing transactions for empty account
@@ -162,10 +163,10 @@ public class TransactionListServiceTest {
             
             // Then: Verify empty response handling
             assertThat(response.getTransactions()).isEmpty();
-            assertThat(response.getTotalRecords()).isEqualTo(0);
+            assertThat(response.getTotalCount()).isEqualTo(0);
             assertThat(response.getCurrentPage()).isEqualTo(1);
-            assertThat(response.hasNextPage()).isFalse();
-            assertThat(response.hasPreviousPage()).isFalse();
+            assertThat(response.getHasMorePages()).isFalse();
+            assertThat(response.getHasPreviousPages()).isFalse();
         }
 
         @Test
@@ -189,7 +190,7 @@ public class TransactionListServiceTest {
                 PageRequest.of(0, DEFAULT_PAGE_SIZE), filteredTransactions.size());
             
             when(transactionRepository.findByAccountIdAndTransactionDateBetween(
-                eq(SAMPLE_ACCOUNT_ID), 
+                eq(Long.parseLong(SAMPLE_ACCOUNT_ID)), 
                 eq(request.getStartDate()), 
                 eq(request.getEndDate()), 
                 any(Pageable.class)))
@@ -200,11 +201,11 @@ public class TransactionListServiceTest {
             
             // Then: Verify filtered results
             assertThat(response.getTransactions()).hasSizeLessThanOrEqualTo(DEFAULT_PAGE_SIZE);
-            assertThat(response.getTotalRecords()).isEqualTo(filteredTransactions.size());
+            assertThat(response.getTotalCount()).isEqualTo(filteredTransactions.size());
             
             // Verify repository called with correct date parameters
             verify(transactionRepository, times(1))
-                .findByAccountIdAndTransactionDateBetween(eq(SAMPLE_ACCOUNT_ID), eq(request.getStartDate()), 
+                .findByAccountIdAndTransactionDateBetween(eq(Long.parseLong(SAMPLE_ACCOUNT_ID)), eq(request.getStartDate()), 
                                eq(request.getEndDate()), any(Pageable.class));
         }
     }
@@ -227,7 +228,7 @@ public class TransactionListServiceTest {
             Page<Transaction> firstPage = new PageImpl<>(firstPageTransactions, 
                 PageRequest.of(0, DEFAULT_PAGE_SIZE), sampleTransactions.size());
             
-            when(transactionRepository.findByAccountId(eq(SAMPLE_ACCOUNT_ID), any(Pageable.class)))
+            when(transactionRepository.findByAccountId(eq(Long.parseLong(SAMPLE_ACCOUNT_ID)), any(Pageable.class)))
                 .thenReturn(firstPage);
             
             transactionListService.listTransactions(initialRequest);
@@ -238,55 +239,49 @@ public class TransactionListServiceTest {
             Page<Transaction> nextPage = new PageImpl<>(secondPageTransactions, 
                 PageRequest.of(1, DEFAULT_PAGE_SIZE), sampleTransactions.size());
             
-            when(transactionRepository.findAll(any(Pageable.class)))
-                .thenReturn(nextPage);
+            // The nextPage method will call applyFilters with the new request, so mock the repository call
+            when(transactionRepository.findByAccountId(eq(Long.parseLong(SAMPLE_ACCOUNT_ID)), any(Pageable.class)))
+                .thenReturn(firstPage)  // First call for initial state check
+                .thenReturn(nextPage);  // Second call for actual next page
             
             // When: Navigating to next page
-            TransactionListResponse response = transactionListService.nextPage();
+            TransactionListResponse response = transactionListService.nextPage(initialRequest);
             
             // Then: Verify next page navigation
             assertThat(response).isNotNull();
             assertThat(response.getTransactions()).hasSize(secondPageTransactions.size());
-            assertThat(response.hasPreviousPage()).isTrue(); // Can go back
-            assertThat(response.hasNextPage()).isTrue(); // More pages exist
+            assertThat(response.getHasPreviousPages()).isTrue(); // Can go back
+            assertThat(response.getHasMorePages()).isTrue(); // More pages exist
         }
 
         @Test
         @DisplayName("previousPage() - should navigate to previous page correctly")
         void testPreviousPage_ValidNavigation_ReturnsPreviousPageData() {
-            // Given: Service initialized on page 2
-            TransactionListRequest initialRequest = new TransactionListRequest();
-            initialRequest.setAccountId(SAMPLE_ACCOUNT_ID);
-            initialRequest.setPageNumber(2);
-            initialRequest.setPageSize(DEFAULT_PAGE_SIZE);
+            // Given: Request for page 2 (to navigate back to page 1)
+            TransactionListRequest pageRequest = new TransactionListRequest();
+            pageRequest.setAccountId(SAMPLE_ACCOUNT_ID);
+            pageRequest.setPageNumber(2);
+            pageRequest.setPageSize(DEFAULT_PAGE_SIZE);
             
-            // Initialize service state with second page call
-            List<Transaction> secondPageTransactions = sampleTransactions.subList(
-                DEFAULT_PAGE_SIZE, Math.min(DEFAULT_PAGE_SIZE * 2, sampleTransactions.size()));
-            Page<Transaction> secondPage = new PageImpl<>(secondPageTransactions, 
-                PageRequest.of(1, DEFAULT_PAGE_SIZE), sampleTransactions.size());
-            
-            when(transactionRepository.findByAccountId(eq(SAMPLE_ACCOUNT_ID), any(Pageable.class)))
-                .thenReturn(secondPage);
-            
-            transactionListService.listTransactions(initialRequest);
-            
-            // Mock first page data for previousPage call
+            // Mock first page data (where we should land after previous page call)
             List<Transaction> firstPageTransactions = sampleTransactions.subList(0, DEFAULT_PAGE_SIZE);
-            Page<Transaction> previousPage = new PageImpl<>(firstPageTransactions, 
+            Page<Transaction> firstPage = new PageImpl<>(firstPageTransactions, 
                 PageRequest.of(0, DEFAULT_PAGE_SIZE), sampleTransactions.size());
             
-            when(transactionRepository.findAll(any(Pageable.class)))
-                .thenReturn(previousPage);
+            // The previousPage method will decrement the page number to 1, then call getTransactionPage
+            // which calls applyFilters with a pageable for page 0 (0-based indexing)
+            when(transactionRepository.findByAccountId(eq(Long.parseLong(SAMPLE_ACCOUNT_ID)), any(Pageable.class)))
+                .thenReturn(firstPage);
             
-            // When: Navigating to previous page
-            TransactionListResponse response = transactionListService.previousPage();
+            // When: Navigating to previous page (from page 2 to page 1)
+            TransactionListResponse response = transactionListService.previousPage(pageRequest);
             
-            // Then: Verify previous page navigation
+            // Then: Verify we're now on page 1 (first page)
             assertThat(response).isNotNull();
             assertThat(response.getTransactions()).hasSize(DEFAULT_PAGE_SIZE);
-            assertThat(response.hasPreviousPage()).isFalse(); // First page
-            assertThat(response.hasNextPage()).isTrue(); // More pages exist
+            assertThat(response.getCurrentPage()).isEqualTo(1);
+            assertThat(response.getHasPreviousPages()).isFalse(); // First page - no previous pages
+            assertThat(response.getHasMorePages()).isTrue(); // More pages exist (pages 2, 3)
         }
 
         @Test
@@ -307,20 +302,20 @@ public class TransactionListServiceTest {
             Page<Transaction> targetPage = new PageImpl<>(pageThreeTransactions, 
                 pageable, sampleTransactions.size());
             
-            when(transactionRepository.findByAccountId(eq(SAMPLE_ACCOUNT_ID), eq(pageable)))
+            when(transactionRepository.findByAccountId(eq(Long.parseLong(SAMPLE_ACCOUNT_ID)), eq(pageable)))
                 .thenReturn(targetPage);
             
             // When: Getting specific page
-            Page<Transaction> result = transactionListService.getTransactionPage(pageable, request);
+            TransactionListResponse result = transactionListService.getTransactionPage(request, 3, DEFAULT_PAGE_SIZE);
             
             // Then: Verify page positioning
             assertThat(result).isNotNull();
-            assertThat(result.getContent()).hasSize(pageThreeTransactions.size());
-            assertThat(result.getNumber()).isEqualTo(2); // Zero-based page number
+            assertThat(result.getTransactions()).hasSize(pageThreeTransactions.size());
+            assertThat(result.getCurrentPage()).isEqualTo(3); // One-based page number
             
             // Verify repository called with correct parameters
             verify(transactionRepository, times(1))
-                .findByAccountId(eq(SAMPLE_ACCOUNT_ID), eq(pageable));
+                .findByAccountId(eq(Long.parseLong(SAMPLE_ACCOUNT_ID)), eq(pageable));
         }
     }
 
@@ -339,11 +334,11 @@ public class TransactionListServiceTest {
             Page<Transaction> mockPage = new PageImpl<>(sampleTransactions.subList(0, DEFAULT_PAGE_SIZE), 
                 pageable, sampleTransactions.size());
             
-            when(transactionRepository.findByAccountId(eq(SAMPLE_ACCOUNT_ID), eq(pageable)))
+            when(transactionRepository.findByAccountId(eq(Long.parseLong(SAMPLE_ACCOUNT_ID)), eq(pageable)))
                 .thenReturn(mockPage);
             
             // When: Applying account ID filter
-            Page<Transaction> result = transactionListService.applyFilters(pageable, request);
+            Page<Transaction> result = transactionListService.applyFilters(request, pageable);
             
             // Then: Verify filtered results
             assertThat(result).isNotNull();
@@ -351,7 +346,7 @@ public class TransactionListServiceTest {
             
             // Verify repository interaction
             verify(transactionRepository, times(1))
-                .findByAccountId(eq(SAMPLE_ACCOUNT_ID), eq(pageable));
+                .findByAccountId(eq(Long.parseLong(SAMPLE_ACCOUNT_ID)), eq(pageable));
         }
 
         @Test
@@ -378,7 +373,7 @@ public class TransactionListServiceTest {
                 .thenReturn(mockPage);
             
             // When: Applying date range filter
-            Page<Transaction> result = transactionListService.applyFilters(pageable, request);
+            Page<Transaction> result = transactionListService.applyFilters(request, pageable);
             
             // Then: Verify filtered results
             assertThat(result).isNotNull();
@@ -400,7 +395,7 @@ public class TransactionListServiceTest {
             request.setEndDate(LocalDate.now().minusDays(1));
             
             List<Transaction> filteredTransactions = sampleTransactions.stream()
-                .filter(t -> SAMPLE_ACCOUNT_ID.equals(t.getAccountId()) &&
+                .filter(t -> Objects.equals(Long.parseLong(SAMPLE_ACCOUNT_ID), t.getAccountId()) &&
                            !t.getTransactionDate().isBefore(request.getStartDate()) && 
                            !t.getTransactionDate().isAfter(request.getEndDate()))
                 .toList();
@@ -409,21 +404,21 @@ public class TransactionListServiceTest {
                 pageable, filteredTransactions.size());
             
             when(transactionRepository.findByAccountIdAndTransactionDateBetween(
-                eq(SAMPLE_ACCOUNT_ID),
+                eq(Long.parseLong(SAMPLE_ACCOUNT_ID)),
                 eq(request.getStartDate()), 
                 eq(request.getEndDate()), 
                 eq(pageable)))
                 .thenReturn(mockPage);
             
             // When: Applying combined filters
-            Page<Transaction> result = transactionListService.applyFilters(pageable, request);
+            Page<Transaction> result = transactionListService.applyFilters(request, pageable);
             
             // Then: Verify combined filtering
             assertThat(result).isNotNull();
             
             // Verify repository called with combined filter parameters
             verify(transactionRepository, times(1))
-                .findByAccountIdAndTransactionDateBetween(eq(SAMPLE_ACCOUNT_ID),
+                .findByAccountIdAndTransactionDateBetween(eq(Long.parseLong(SAMPLE_ACCOUNT_ID)),
                     eq(request.getStartDate()), eq(request.getEndDate()), eq(pageable));
         }
     }
@@ -444,14 +439,14 @@ public class TransactionListServiceTest {
             Page<Transaction> mockPage = new PageImpl<>(sampleTransactions.subList(0, DEFAULT_PAGE_SIZE), 
                 PageRequest.of(0, DEFAULT_PAGE_SIZE), sampleTransactions.size());
             
-            when(transactionRepository.findByAccountId(eq(SAMPLE_ACCOUNT_ID), any(Pageable.class)))
+            when(transactionRepository.findByAccountId(eq(Long.parseLong(SAMPLE_ACCOUNT_ID)), any(Pageable.class)))
                 .thenReturn(mockPage);
             
             // Initialize pagination state
             transactionListService.listTransactions(request);
             
             // When: Getting page count
-            int pageCount = transactionListService.getPageCount();
+            int pageCount = transactionListService.getPageCount(request);
             
             // Then: Verify page count calculation
             int expectedPages = (int) Math.ceil((double) sampleTransactions.size() / DEFAULT_PAGE_SIZE);
@@ -472,14 +467,14 @@ public class TransactionListServiceTest {
             Page<Transaction> mockPage = new PageImpl<>(secondPageTransactions, 
                 PageRequest.of(1, DEFAULT_PAGE_SIZE), sampleTransactions.size());
             
-            when(transactionRepository.findByAccountId(eq(SAMPLE_ACCOUNT_ID), any(Pageable.class)))
+            when(transactionRepository.findByAccountId(eq(Long.parseLong(SAMPLE_ACCOUNT_ID)), any(Pageable.class)))
                 .thenReturn(mockPage);
             
             // Initialize pagination state
             transactionListService.listTransactions(request);
             
             // When: Getting current page number
-            int currentPage = transactionListService.getCurrentPageNumber();
+            int currentPage = transactionListService.getCurrentPageNumber(request);
             
             // Then: Verify current page number
             assertThat(currentPage).isEqualTo(2);
@@ -505,7 +500,7 @@ public class TransactionListServiceTest {
                 largeDataset.subList(0, Math.min(DEFAULT_PAGE_SIZE, largeDataset.size())), 
                 PageRequest.of(0, DEFAULT_PAGE_SIZE), largeDataset.size());
             
-            when(transactionRepository.findByAccountId(eq(SAMPLE_ACCOUNT_ID), any(Pageable.class)))
+            when(transactionRepository.findByAccountId(eq(Long.parseLong(SAMPLE_ACCOUNT_ID)), any(Pageable.class)))
                 .thenReturn(largePage);
             
             // When: Processing large dataset with performance measurement
@@ -516,7 +511,7 @@ public class TransactionListServiceTest {
             // Then: Verify performance requirements (< 200ms per Section 0.5.1)
             assertThat(executionTime).isLessThan(200L);
             assertThat(response.getTransactions()).hasSize(DEFAULT_PAGE_SIZE);
-            assertThat(response.getTotalRecords()).isEqualTo(largeDataset.size());
+            assertThat(response.getTotalCount()).isEqualTo(largeDataset.size());
         }
     }
 
@@ -538,7 +533,7 @@ public class TransactionListServiceTest {
             Page<Transaction> mockPage = new PageImpl<>(precisionTransactions, 
                 PageRequest.of(0, DEFAULT_PAGE_SIZE), precisionTransactions.size());
             
-            when(transactionRepository.findByAccountId(eq(SAMPLE_ACCOUNT_ID), any(Pageable.class)))
+            when(transactionRepository.findByAccountId(eq(Long.parseLong(SAMPLE_ACCOUNT_ID)), any(Pageable.class)))
                 .thenReturn(mockPage);
             
             // When: Processing transactions with financial amounts
@@ -570,10 +565,10 @@ public class TransactionListServiceTest {
             transaction.setTransactionId((long) i);
             transaction.setAmount(new BigDecimal("50.00").add(new BigDecimal(i % 100)));
             transaction.setTransactionDate(LocalDate.now().minusDays(i % 365));
-            transaction.setAccountId(SAMPLE_ACCOUNT_ID);
+            transaction.setAccountId(Long.parseLong(SAMPLE_ACCOUNT_ID));
             transaction.setDescription("Perf Test Transaction " + i);
             transaction.setMerchantName("Merchant " + (i % 100));
-            transaction.setTransactionType("PURCHASE");
+            transaction.setCategoryCode("PURCHASE");
             transactions.add(transaction);
         }
         
@@ -601,10 +596,10 @@ public class TransactionListServiceTest {
             transaction.setTransactionId((long) (i + 1));
             transaction.setAmount(testAmounts[i].setScale(2, BigDecimal.ROUND_HALF_UP));
             transaction.setTransactionDate(LocalDate.now().minusDays(i + 1));
-            transaction.setAccountId(SAMPLE_ACCOUNT_ID);
+            transaction.setAccountId(Long.parseLong(SAMPLE_ACCOUNT_ID));
             transaction.setDescription("Precision Test Transaction " + (i + 1));
             transaction.setMerchantName("Precision Test Merchant " + (i + 1));
-            transaction.setTransactionType("PURCHASE");
+            transaction.setCategoryCode("PURCHASE");
             transactions.add(transaction);
         }
         
