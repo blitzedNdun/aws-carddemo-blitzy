@@ -35,7 +35,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.MethodOrderer;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
@@ -85,6 +86,7 @@ import static org.assertj.core.api.Assertions.within;
  * @since 1.0
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureMockMvc
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
 @TestPropertySource(locations = "classpath:application-test.properties")
@@ -117,7 +119,7 @@ public class EndToEndWorkflowTest extends BaseIntegrationTest {
      * mainframe test region initialization.
      */
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         // Initialize MockMvc with full Spring context
         mockMvc = MockMvcBuilders
             .webAppContextSetup(webApplicationContext)
@@ -144,7 +146,7 @@ public class EndToEndWorkflowTest extends BaseIntegrationTest {
      * test isolation and prevent data contamination between test runs.
      */
     @AfterEach
-    void tearDown() {
+    public void tearDown() {
         clearSessionState();
         if (userSession != null) {
             userSession.invalidate();
@@ -242,7 +244,7 @@ public class EndToEndWorkflowTest extends BaseIntegrationTest {
                 .header("Content-Type", MediaType.APPLICATION_JSON_VALUE))
                 
         // Then: Main menu is returned with proper options
-                .andExpected(status().isOk())
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.menuOptions").isArray())
                 .andExpect(jsonPath("$.menuOptions").isNotEmpty())
                 .andExpect(jsonPath("$.userName").exists())
@@ -315,7 +317,7 @@ public class EndToEndWorkflowTest extends BaseIntegrationTest {
                 
         // Then: Transaction list is returned with pagination metadata
                 .andExpect(status().isOk())
-                .andExpected(jsonPath("$.transactions").isArray())
+                .andExpect(jsonPath("$.transactions").isArray())
                 .andExpect(jsonPath("$.totalCount").isNumber())
                 .andExpect(jsonPath("$.currentPage").value(0))
                 .andReturn();
@@ -397,7 +399,7 @@ public class EndToEndWorkflowTest extends BaseIntegrationTest {
                 
         // Then: Account details are returned with complete information
                 .andExpect(status().isOk())
-                .andExpected(jsonPath("$.accountId").value(TEST_ACCOUNT_ID))
+                .andExpect(jsonPath("$.accountId").value(TEST_ACCOUNT_ID))
                 .andExpect(jsonPath("$.currentBalance").exists())
                 .andExpect(jsonPath("$.creditLimit").exists())
                 .andExpect(jsonPath("$.availableCredit").exists())
@@ -572,7 +574,7 @@ public class EndToEndWorkflowTest extends BaseIntegrationTest {
                 .session(userSession)
                 .header("Content-Type", MediaType.APPLICATION_JSON_VALUE))
                 
-                .andExpected(status().isOk())
+                .andExpect(status().isOk())
                 .andReturn();
                 
         assertThat(recoveryResult.getResponse().getStatus())
@@ -614,7 +616,7 @@ public class EndToEndWorkflowTest extends BaseIntegrationTest {
                 .header("Content-Type", MediaType.APPLICATION_JSON_VALUE))
                 
         // Then: Navigation succeeds with proper context
-                .andExpected(status().isOk())
+                .andExpect(status().isOk())
                 .andReturn();
 
         // Validate F12 navigation timing
@@ -635,7 +637,7 @@ public class EndToEndWorkflowTest extends BaseIntegrationTest {
                 .header("X-Navigation-Action", "F3")
                 .header("Content-Type", MediaType.APPLICATION_JSON_VALUE))
                 
-                .andExpected(status().isOk())
+                .andExpect(status().isOk())
                 .andReturn();
 
         // Validate F3 navigation timing  
