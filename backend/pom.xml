@@ -214,6 +214,13 @@
             <version>${jakarta-validation.version}</version>
         </dependency>
 
+        <!-- SpringDoc OpenAPI for API documentation -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.3.0</version>
+        </dependency>
+
         <!-- Resilience4j for fault tolerance patterns -->
         <dependency>
             <groupId>io.github.resilience4j</groupId>
