@@ -117,7 +117,7 @@ public class ResponseTimeValidationTest extends AbstractBaseTest implements Perf
         createTestTransaction();
         
         // Log test execution for performance tracking
-        logTestExecution();
+        logTestExecution("ResponseTimeValidationTest setup completed", null);
         
         // Perform system warmup to eliminate cold-start effects
         performSystemWarmup();
