@@ -600,9 +600,9 @@ public class InterestCalculationBatchService {
             // Extract processing metrics from job execution
             if (jobExecution.getStepExecutions() != null && !jobExecution.getStepExecutions().isEmpty()) {
                 var stepExecution = jobExecution.getStepExecutions().iterator().next();
-                summary.setRecordsProcessed(stepExecution.getReadCount());
-                summary.setRecordsWritten(stepExecution.getWriteCount());
-                summary.setRecordsSkipped(stepExecution.getSkipCount());
+                summary.setRecordsProcessed((int) stepExecution.getReadCount());
+                summary.setRecordsWritten((int) stepExecution.getWriteCount());
+                summary.setRecordsSkipped((int) stepExecution.getSkipCount());
                 summary.setProcessingErrors(stepExecution.getFailureExceptions());
             }
 
