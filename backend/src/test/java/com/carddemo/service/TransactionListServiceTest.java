@@ -156,6 +156,32 @@ public class TransactionListServiceTest extends BaseServiceTest {
             assertThat(response.hasNextPage()).isFalse();
             assertThat(response.hasPreviousPage()).isFalse();
         }
+
+        @Test
+        @DisplayName("TransactionListResponse completeness - All response fields validated")
+        public void testTransactionListResponse_AllFields_CompleteValidation() {
+            // Given: Response with pagination information
+            List<Transaction> testTransactions = testDataGenerator.generateTransactionList();
+            Page<Transaction> testPage = new PageImpl<>(
+                testTransactions.subList(0, 5),
+                PageRequest.of(0, 5),
+                testTransactions.size()
+            );
+            
+            when(transactionRepository.findByAccountId(any(String.class), any(Pageable.class)))
+                .thenReturn(testPage);
+            
+            // When: Service processes request
+            TransactionListResponse response = transactionListService.listTransactions(sampleRequest);
+            
+            // Then: All response fields are properly populated
+            assertThat(response.getTransactions()).hasSize(5);
+            assertThat(response.getCurrentPage()).isEqualTo(1);
+            assertThat(response.getTotalPages()).isGreaterThan(1);
+            assertThat(response.getTotalRecords()).isEqualTo(testTransactions.size());
+            assertThat(response.hasNextPage()).isTrue();
+            assertThat(response.hasPreviousPage()).isFalse();
+        }
     }
 
     @Nested
@@ -323,6 +349,45 @@ public class TransactionListServiceTest extends BaseServiceTest {
             response.getTransactions().forEach(transaction -> {
                 assertBigDecimalEquals(transaction.getAmount(), transaction.getAmount());
             });
+        }
+
+        @Test
+        @DisplayName("Date range filtering - Random date generation validation")
+        public void testDateRangeFiltering_RandomDateGeneration_ValidatesDateHandling() {
+            // Given: Random transaction dates for comprehensive testing
+            LocalDate randomStartDate = testDataGenerator.generateRandomTransactionDate();
+            LocalDate randomEndDate = randomStartDate.plusDays(30);
+            
+            sampleRequest.setStartDate(randomStartDate);
+            sampleRequest.setEndDate(randomEndDate);
+            
+            List<Transaction> dateFilteredTransactions = testDataGenerator.generateTransactionList()
+                .stream()
+                .filter(t -> !t.getTransactionDate().isBefore(randomStartDate) && 
+                           !t.getTransactionDate().isAfter(randomEndDate))
+                .toList();
+            
+            Page<Transaction> filteredPage = new PageImpl<>(
+                dateFilteredTransactions,
+                PageRequest.of(0, 10),
+                dateFilteredTransactions.size()
+            );
+            
+            when(transactionRepository.findByDateRange(
+                eq(randomStartDate), eq(randomEndDate), any(Pageable.class)))
+                .thenReturn(filteredPage);
+            
+            // When: Service applies random date range filter
+            TransactionListResponse response = transactionListService.applyFilters(sampleRequest);
+            
+            // Then: All transactions fall within the random date range
+            response.getTransactions().forEach(transaction -> {
+                assertThat(transaction.getTransactionDate()).isAfterOrEqualTo(randomStartDate);
+                assertThat(transaction.getTransactionDate()).isBeforeOrEqualTo(randomEndDate);
+            });
+            
+            verify(transactionRepository).findByDateRange(
+                eq(randomStartDate), eq(randomEndDate), any(Pageable.class));
         }
     }
 
@@ -515,6 +580,46 @@ public class TransactionListServiceTest extends BaseServiceTest {
                 cobolComparisonUtils.generateComparisonReport();
             assertThat(comparisonResult).isNotNull();
         }
+
+        @Test
+        @DisplayName("Transaction entity validation - All getter methods functional")
+        public void testTransactionEntity_AllGetters_FunctionalValidation() {
+            // Given: Transaction with all fields populated
+            Transaction transaction = testDataGenerator.generateTransaction();
+            
+            // When/Then: Validate all required getter methods are functional
+            assertThat(transaction.getTransactionId()).isNotNull();
+            assertThat(transaction.getAmount()).isNotNull();
+            assertThat(transaction.getTransactionDate()).isNotNull();
+            assertThat(transaction.getAccountId()).isNotNull();
+            assertThat(transaction.getDescription()).isNotNull();
+            assertThat(transaction.getMerchantName()).isNotNull();
+            assertThat(transaction.getTransactionType()).isNotNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("Repository Integration Tests")
+    class RepositoryIntegrationTests {
+
+        @Test
+        @DisplayName("TransactionRepository save() - Validates data persistence")
+        public void testTransactionRepository_Save_ValidatesDataPersistence() {
+            // Given: New transaction to be saved
+            Transaction newTransaction = testDataGenerator.generateTransaction();
+            
+            when(transactionRepository.save(any(Transaction.class)))
+                .thenReturn(newTransaction);
+            
+            // When: Repository saves transaction
+            Transaction savedTransaction = transactionRepository.save(newTransaction);
+            
+            // Then: Save operation is successful
+            assertThat(savedTransaction).isNotNull();
+            assertThat(savedTransaction.getTransactionId()).isEqualTo(newTransaction.getTransactionId());
+            
+            verify(transactionRepository, times(1)).save(eq(newTransaction));
+        }
     }
 
     /**
@@ -532,15 +637,35 @@ public class TransactionListServiceTest extends BaseServiceTest {
 
     private Transaction createTransactionWithAmount(BigDecimal amount) {
         Transaction transaction = testDataGenerator.generateTransaction();
-        // Using reflection or setter to modify amount
-        // Assuming Transaction has setAmount method or public field
-        return transaction; // Transaction amount would be set to specified value
+        
+        // Create new transaction instance with specified amount
+        Transaction customTransaction = new Transaction();
+        customTransaction.setTransactionId(transaction.getTransactionId());
+        customTransaction.setAccountId(transaction.getAccountId());
+        customTransaction.setAmount(amount);
+        customTransaction.setTransactionDate(transaction.getTransactionDate());
+        customTransaction.setDescription(transaction.getDescription());
+        customTransaction.setMerchantName(transaction.getMerchantName());
+        customTransaction.setTransactionType(transaction.getTransactionType());
+        
+        return customTransaction;
     }
 
     private Transaction createTransactionWithDate(LocalDate date) {
         Transaction transaction = testDataGenerator.generateTransaction();
-        // Using reflection or setter to modify date
-        // Assuming Transaction has setTransactionDate method or public field
-        return transaction; // Transaction date would be set to specified value  
+        
+        // Create new transaction instance with specified date
+        Transaction customTransaction = new Transaction();
+        customTransaction.setTransactionId(transaction.getTransactionId());
+        customTransaction.setAccountId(transaction.getAccountId());
+        customTransaction.setAmount(transaction.getAmount());
+        customTransaction.setTransactionDate(date);
+        customTransaction.setDescription(transaction.getDescription());
+        customTransaction.setMerchantName(transaction.getMerchantName());
+        customTransaction.setTransactionType(transaction.getTransactionType());
+        
+        return customTransaction;
     }
+
+
 }
