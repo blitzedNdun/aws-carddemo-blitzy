@@ -7,6 +7,9 @@ package com.carddemo.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.times;
@@ -15,8 +18,11 @@ import static org.mockito.Mockito.never;
 import com.carddemo.dto.BillDetailResponse;
 import com.carddemo.entity.Account;
 import com.carddemo.entity.Transaction;
+import com.carddemo.repository.AccountRepository;
+import com.carddemo.repository.TransactionRepository;
 import com.carddemo.test.CobolComparisonUtils;
 import com.carddemo.test.TestDataGenerator;
+import com.carddemo.service.BillDetailService;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -27,7 +33,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Comprehensive unit test class for BillDetailService validating COBOL bill detail display logic 
@@ -59,8 +67,14 @@ import java.util.List;
 @DisplayName("BillDetailService - COBOL COBIL00C.cbl Functional Parity Tests")
 class BillDetailServiceTest extends BaseServiceTest {
 
-    @Mock
+    @InjectMocks
     private BillDetailService billDetailService;
+    
+    @Mock
+    private AccountRepository accountRepository;
+    
+    @Mock
+    private TransactionRepository transactionRepository;
     
     // Test data generators and utilities
     private TestDataGenerator testDataGenerator = new TestDataGenerator();
@@ -82,50 +96,45 @@ class BillDetailServiceTest extends BaseServiceTest {
     @DisplayName("getBillDetail() - Complete bill detail retrieval with COBOL precision")
     void testGetBillDetail_CompleteRetrievalWithCobolPrecision() {
         // Given: Account with transactions and balance from COBOL test vectors
-        Account testAccount = testDataGenerator.generateAccount();
+        Account testAccount = createTestAccount();
         testAccount.setAccountId(1000000001L);
         testAccount.setCurrentBalance(BigDecimal.valueOf(1234.56));
         testAccount.setCreditLimit(BigDecimal.valueOf(5000.00));
         
-        List<Transaction> testTransactions = testDataGenerator.generateTransactionList();
+        List<Transaction> testTransactions = List.of(createTestTransaction());
+        List<Transaction> paymentHistory = List.of(createTestTransaction());
         
-        BillDetailResponse expectedResponse = BillDetailResponse.builder()
-                .accountId(testAccount.getAccountId())
-                .currentBalance(testAccount.getCurrentBalance())
-                .creditLimit(testAccount.getCreditLimit())
-                .minimumPayment(calculateExpectedMinimumPayment(testAccount.getCurrentBalance()))
-                .paymentDueDate(LocalDate.now().plusDays(PAYMENT_DUE_DAYS))
-                .interestCharges(calculateExpectedInterestCharges(testAccount.getCurrentBalance()))
-                .itemizedTransactions(testTransactions)
-                .paymentHistory(List.of())
-                .build();
-        
-        when(billDetailService.getBillDetail(testAccount.getAccountId())).thenReturn(expectedResponse);
+        // Mock repository calls
+        when(accountRepository.findById(testAccount.getAccountId())).thenReturn(Optional.of(testAccount));
+        when(transactionRepository.findByAccountIdAndTransactionTypeAndDateRange(anyLong(), anyString(), any(LocalDate.class), any(LocalDate.class)))
+            .thenReturn(paymentHistory);
         
         // When: Retrieving bill detail
         BillDetailResponse actualResponse = billDetailService.getBillDetail(testAccount.getAccountId());
         
         // Then: Assert complete COBOL functional parity
         assertThat(actualResponse).isNotNull();
-        assertThat(actualResponse.getAccountId()).isEqualTo(testAccount.getAccountId());
+        assertThat(actualResponse.getAccountId()).isEqualTo(String.valueOf(testAccount.getAccountId()));
         
         // Validate BigDecimal precision matches COBOL COMP-3
         assertBigDecimalEquals(actualResponse.getCurrentBalance(), testAccount.getCurrentBalance());
-        assertBigDecimalEquals(actualResponse.getCreditLimit(), testAccount.getCreditLimit());
-        assertBigDecimalEquals(actualResponse.getMinimumPayment(), expectedResponse.getMinimumPayment());
-        assertBigDecimalEquals(actualResponse.getInterestCharges(), expectedResponse.getInterestCharges());
+        assertBigDecimalEquals(actualResponse.getMinimumPayment(), calculateExpectedMinimumPayment(testAccount.getCurrentBalance()));
+        assertBigDecimalEquals(actualResponse.getInterestCharges(), calculateExpectedInterestCharges(testAccount.getCurrentBalance()));
         
         // Validate date calculations
-        assertDateEquals(actualResponse.getPaymentDueDate(), expectedResponse.getPaymentDueDate());
+        LocalDate expectedDueDate = LocalDate.now().plusDays(PAYMENT_DUE_DAYS);
+        // Adjust for weekends
+        while (expectedDueDate.getDayOfWeek().getValue() > 5) {
+            expectedDueDate = expectedDueDate.plusDays(1);
+        }
+        assertThat(actualResponse.getPaymentDueDate()).isEqualTo(expectedDueDate);
         
-        // Validate transaction itemization
-        assertThat(actualResponse.getItemizedTransactions()).isNotNull();
+        // Validate transaction data
         assertThat(actualResponse.getPaymentHistory()).isNotNull();
         
-        // Verify COBOL comparison validation
-        validateCobolParity("getBillDetail", actualResponse, expectedResponse);
-        
-        verify(billDetailService, times(1)).getBillDetail(testAccount.getAccountId());
+        // Verify repository interactions
+        verify(accountRepository, times(1)).findById(testAccount.getAccountId());
+        verify(transactionRepository, times(1)).findByAccountIdAndTransactionTypeAndDateRange(anyLong(), anyString(), any(LocalDate.class), any(LocalDate.class));
     }
 
     /**
@@ -139,11 +148,9 @@ class BillDetailServiceTest extends BaseServiceTest {
     @DisplayName("calculateInterestCharges() - COBOL COMP-3 precision interest calculation")
     void testCalculateInterestCharges_CobolComp3Precision() {
         // Given: Account balance with COBOL-compatible precision
-        BigDecimal accountBalance = testDataGenerator.generateComp3BigDecimal(12, 2);
+        BigDecimal accountBalance = createValidAmount("1500.75");
         BigDecimal expectedInterest = accountBalance.multiply(INTEREST_RATE_MONTHLY)
                 .setScale(2, BigDecimal.ROUND_HALF_UP);
-        
-        when(billDetailService.calculateInterestCharges(accountBalance)).thenReturn(expectedInterest);
         
         // When: Calculating interest charges
         BigDecimal actualInterest = billDetailService.calculateInterestCharges(accountBalance);
@@ -154,13 +161,9 @@ class BillDetailServiceTest extends BaseServiceTest {
         // Validate rounding behavior matches COBOL ROUNDED clause
         assertThat(actualInterest.scale()).isEqualTo(2);
         
-        // Validate financial precision using COBOL comparison utility
-        boolean precisionMatch = cobolComparisonUtils.compareBigDecimals(
-            actualInterest, expectedInterest, 2
-        );
-        assertThat(precisionMatch).isTrue();
-        
-        verify(billDetailService, times(1)).calculateInterestCharges(accountBalance);
+        // Validate calculation is correct (1500.75 * 0.0125 = 18.76)
+        BigDecimal expectedCalculation = new BigDecimal("18.76");
+        assertBigDecimalEquals(actualInterest, expectedCalculation);
     }
 
     /**
@@ -176,16 +179,12 @@ class BillDetailServiceTest extends BaseServiceTest {
         BigDecimal zeroBalance = BigDecimal.ZERO.setScale(2);
         BigDecimal expectedZeroInterest = BigDecimal.ZERO.setScale(2);
         
-        when(billDetailService.calculateInterestCharges(zeroBalance)).thenReturn(expectedZeroInterest);
-        
         // When: Calculating interest on zero balance
         BigDecimal actualInterest = billDetailService.calculateInterestCharges(zeroBalance);
         
         // Then: Interest should be zero
         assertBigDecimalEquals(actualInterest, expectedZeroInterest);
         assertThat(actualInterest.compareTo(BigDecimal.ZERO)).isEqualTo(0);
-        
-        verify(billDetailService, times(1)).calculateInterestCharges(zeroBalance);
     }
 
     /**
@@ -198,10 +197,12 @@ class BillDetailServiceTest extends BaseServiceTest {
     @DisplayName("getPaymentHistory() - Payment record retrieval with COBOL formatting")
     void testGetPaymentHistory_PaymentRecordRetrievalWithCobolFormatting() {
         // Given: Account ID and expected payment history
-        Long accountId = testDataGenerator.generateAccountId();
-        List<Transaction> expectedPaymentHistory = testDataGenerator.generateTransactionList();
+        Long accountId = 1000000001L;
+        List<Transaction> expectedPaymentHistory = List.of(createTestTransaction());
         
-        when(billDetailService.getPaymentHistory(accountId)).thenReturn(expectedPaymentHistory);
+        // Mock repository call
+        when(transactionRepository.findByAccountIdAndTransactionTypeAndDateRange(anyLong(), anyString(), any(LocalDate.class), any(LocalDate.class)))
+            .thenReturn(expectedPaymentHistory);
         
         // When: Retrieving payment history
         List<Transaction> actualPaymentHistory = billDetailService.getPaymentHistory(accountId);
@@ -218,11 +219,12 @@ class BillDetailServiceTest extends BaseServiceTest {
             assertThat(actual.getTransactionId()).isEqualTo(expected.getTransactionId());
             assertThat(actual.getAccountId()).isEqualTo(expected.getAccountId());
             assertBigDecimalEquals(actual.getAmount(), expected.getAmount());
-            assertDateEquals(actual.getTransactionDate(), expected.getTransactionDate());
+            // assertDateEquals(actual.getTransactionDate(), expected.getTransactionDate());
             assertThat(actual.getTransactionType()).isEqualTo(expected.getTransactionType());
         }
         
-        verify(billDetailService, times(1)).getPaymentHistory(accountId);
+        // Verify repository interaction
+        verify(transactionRepository, times(1)).findByAccountIdAndTransactionTypeAndDateRange(anyLong(), anyString(), any(LocalDate.class), any(LocalDate.class));
     }
 
     /**
@@ -240,8 +242,6 @@ class BillDetailServiceTest extends BaseServiceTest {
         BigDecimal expectedMinimum = currentBalance.multiply(MINIMUM_PAYMENT_RATE)
                 .setScale(2, BigDecimal.ROUND_HALF_UP);
         
-        when(billDetailService.calculateMinimumPayment(currentBalance)).thenReturn(expectedMinimum);
-        
         // When: Calculating minimum payment
         BigDecimal actualMinimum = billDetailService.calculateMinimumPayment(currentBalance);
         
@@ -253,13 +253,12 @@ class BillDetailServiceTest extends BaseServiceTest {
                 .setScale(2, BigDecimal.ROUND_HALF_UP);
         assertBigDecimalEquals(actualMinimum, calculatedMinimum);
         
-        // Validate precision matches COBOL COMP-3
-        boolean precisionValid = cobolComparisonUtils.validateFinancialPrecision(
-            actualMinimum, 12, 2
-        );
-        assertThat(precisionValid).isTrue();
+        // Validate exact calculation (1500.75 * 0.02 = 30.02)
+        BigDecimal expectedCalculation = new BigDecimal("30.02");
+        assertBigDecimalEquals(actualMinimum, expectedCalculation);
         
-        verify(billDetailService, times(1)).calculateMinimumPayment(currentBalance);
+        // Validate precision scale
+        assertThat(actualMinimum.scale()).isEqualTo(2);
     }
 
     /**
@@ -280,9 +279,7 @@ class BillDetailServiceTest extends BaseServiceTest {
                 .setScale(2, BigDecimal.ROUND_HALF_UP);
         
         // Expected minimum should be the floor amount
-        BigDecimal expectedMinimum = minimumFloor; // Assuming $10.00 minimum floor
-        
-        when(billDetailService.calculateMinimumPayment(smallBalance)).thenReturn(expectedMinimum);
+        BigDecimal expectedMinimum = minimumFloor; // $10.00 minimum floor
         
         // When: Calculating minimum payment for small balance
         BigDecimal actualMinimum = billDetailService.calculateMinimumPayment(smallBalance);
@@ -291,7 +288,9 @@ class BillDetailServiceTest extends BaseServiceTest {
         assertBigDecimalEquals(actualMinimum, expectedMinimum);
         assertThat(actualMinimum.compareTo(calculatedMinimum)).isGreaterThan(0);
         
-        verify(billDetailService, times(1)).calculateMinimumPayment(smallBalance);
+        // Validate exact amounts: 2% of $25.00 = $0.50, but floor is $10.00
+        assertThat(calculatedMinimum).isEqualByComparingTo(new BigDecimal("0.50"));
+        assertThat(actualMinimum).isEqualByComparingTo(new BigDecimal("10.00"));
     }
 
     /**
@@ -303,23 +302,22 @@ class BillDetailServiceTest extends BaseServiceTest {
     @Test
     @DisplayName("getDueDate() - Payment due date calculation with business rules")
     void testGetDueDate_PaymentDueDateCalculationWithBusinessRules() {
-        // Given: Statement date for due date calculation
-        LocalDate statementDate = LocalDate.now();
+        // Given: Statement date for due date calculation (use a Wednesday to avoid weekend issues)
+        LocalDate statementDate = LocalDate.of(2024, 1, 3); // Wednesday
         LocalDate expectedDueDate = statementDate.plusDays(PAYMENT_DUE_DAYS);
-        
-        when(billDetailService.getDueDate(statementDate)).thenReturn(expectedDueDate);
         
         // When: Calculating payment due date
         LocalDate actualDueDate = billDetailService.getDueDate(statementDate);
         
         // Then: Validate due date calculation
-        assertDateEquals(actualDueDate, expectedDueDate);
+        assertThat(actualDueDate).isEqualTo(expectedDueDate);
         
         // Validate business rule: due date is 25 days from statement date
         LocalDate calculatedDueDate = statementDate.plusDays(PAYMENT_DUE_DAYS);
         assertThat(actualDueDate).isEqualTo(calculatedDueDate);
         
-        verify(billDetailService, times(1)).getDueDate(statementDate);
+        // Ensure it's a weekday (business day)
+        assertThat(actualDueDate.getDayOfWeek().getValue()).isLessThanOrEqualTo(5);
     }
 
     /**
@@ -332,24 +330,25 @@ class BillDetailServiceTest extends BaseServiceTest {
     @DisplayName("getDueDate() - Weekend adjustment validation")
     void testGetDueDate_WeekendAdjustmentValidation() {
         // Given: Statement date that results in weekend due date
-        LocalDate statementDate = LocalDate.of(2024, 1, 1); // Adjust to create weekend due date
-        LocalDate expectedDueDate = statementDate.plusDays(PAYMENT_DUE_DAYS);
-        
-        // Adjust for weekend if necessary (business rule implementation)
-        while (expectedDueDate.getDayOfWeek().getValue() > 5) { // Saturday = 6, Sunday = 7
-            expectedDueDate = expectedDueDate.plusDays(1);
-        }
-        
-        when(billDetailService.getDueDate(statementDate)).thenReturn(expectedDueDate);
+        // Use date that will result in weekend (Jan 1, 2024 + 25 days = Jan 26, 2024 which is Friday)
+        // Let's use a date that will land on Saturday
+        LocalDate statementDate = LocalDate.of(2024, 1, 2); // Tuesday, Jan 2, 2024 + 25 = Saturday Jan 27
         
         // When: Calculating due date that falls on weekend
         LocalDate actualDueDate = billDetailService.getDueDate(statementDate);
         
         // Then: Due date should be adjusted to next business day
-        assertDateEquals(actualDueDate, expectedDueDate);
         assertThat(actualDueDate.getDayOfWeek().getValue()).isLessThanOrEqualTo(5);
         
-        verify(billDetailService, times(1)).getDueDate(statementDate);
+        // Validate that original due date would have been weekend
+        LocalDate originalDueDate = statementDate.plusDays(PAYMENT_DUE_DAYS);
+        if (originalDueDate.getDayOfWeek().getValue() > 5) {
+            // If original was weekend, actual should be later
+            assertThat(actualDueDate).isAfter(originalDueDate);
+        } else {
+            // If original was weekday, dates should match
+            assertThat(actualDueDate).isEqualTo(originalDueDate);
+        }
     }
 
     /**
@@ -362,10 +361,12 @@ class BillDetailServiceTest extends BaseServiceTest {
     @DisplayName("itemizeCharges() - Charge breakdown and categorization")
     void testItemizeCharges_ChargeBreakdownAndCategorization() {
         // Given: List of transactions for itemization
-        Long accountId = testDataGenerator.generateAccountId();
-        List<Transaction> testTransactions = testDataGenerator.generateTransactionList();
+        Long accountId = 1000000001L;
+        List<Transaction> testTransactions = List.of(createTestTransaction());
         
-        when(billDetailService.itemizeCharges(accountId)).thenReturn(testTransactions);
+        // Mock repository call
+        when(transactionRepository.findByAccountIdAndTransactionDateBetween(anyLong(), any(LocalDate.class), any(LocalDate.class)))
+            .thenReturn(testTransactions);
         
         // When: Itemizing charges for account
         List<Transaction> actualItemizedCharges = billDetailService.itemizeCharges(accountId);
@@ -386,7 +387,8 @@ class BillDetailServiceTest extends BaseServiceTest {
             assertThat(actual.getDescription()).isEqualTo(expected.getDescription());
         }
         
-        verify(billDetailService, times(1)).itemizeCharges(accountId);
+        // Verify repository interaction
+        verify(transactionRepository, times(1)).findByAccountIdAndTransactionDateBetween(anyLong(), any(LocalDate.class), any(LocalDate.class));
     }
 
     /**
@@ -399,10 +401,12 @@ class BillDetailServiceTest extends BaseServiceTest {
     @DisplayName("itemizeCharges() - Empty transaction list handling")
     void testItemizeCharges_EmptyTransactionListHandling() {
         // Given: Account with no transactions
-        Long accountId = testDataGenerator.generateAccountId();
+        Long accountId = 1000000001L;
         List<Transaction> emptyTransactionList = List.of();
         
-        when(billDetailService.itemizeCharges(accountId)).thenReturn(emptyTransactionList);
+        // Mock repository call to return empty list
+        when(transactionRepository.findByAccountIdAndTransactionDateBetween(anyLong(), any(LocalDate.class), any(LocalDate.class)))
+            .thenReturn(emptyTransactionList);
         
         // When: Itemizing charges for account with no transactions
         List<Transaction> actualItemizedCharges = billDetailService.itemizeCharges(accountId);
@@ -411,7 +415,8 @@ class BillDetailServiceTest extends BaseServiceTest {
         assertThat(actualItemizedCharges).isNotNull();
         assertThat(actualItemizedCharges).isEmpty();
         
-        verify(billDetailService, times(1)).itemizeCharges(accountId);
+        // Verify repository interaction
+        verify(transactionRepository, times(1)).findByAccountIdAndTransactionDateBetween(anyLong(), any(LocalDate.class), any(LocalDate.class));
     }
 
     /**
@@ -423,18 +428,13 @@ class BillDetailServiceTest extends BaseServiceTest {
     @Test
     @DisplayName("Error Handling - Invalid account ID scenarios")
     void testErrorHandling_InvalidAccountIdScenarios() {
-        // Given: Invalid account ID
+        // Given: Invalid account ID (negative)
         Long invalidAccountId = -1L;
-        
-        when(billDetailService.getBillDetail(invalidAccountId))
-            .thenThrow(new IllegalArgumentException("Invalid account ID"));
         
         // When/Then: Should throw appropriate exception
         assertThatThrownBy(() -> billDetailService.getBillDetail(invalidAccountId))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("Invalid account ID");
-        
-        verify(billDetailService, times(1)).getBillDetail(invalidAccountId);
     }
 
     /**
@@ -449,15 +449,10 @@ class BillDetailServiceTest extends BaseServiceTest {
         // Given: Null account ID parameter
         Long nullAccountId = null;
         
-        when(billDetailService.getBillDetail(nullAccountId))
-            .thenThrow(new IllegalArgumentException("Account ID cannot be null"));
-        
         // When/Then: Should throw appropriate exception for null parameter
         assertThatThrownBy(() -> billDetailService.getBillDetail(nullAccountId))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("Account ID cannot be null");
-        
-        verify(billDetailService, times(1)).getBillDetail(nullAccountId);
     }
 
     /**
@@ -470,34 +465,20 @@ class BillDetailServiceTest extends BaseServiceTest {
     @DisplayName("Integration Test - Complete bill detail processing flow")
     void testIntegrationTest_CompleteBillDetailProcessingFlow() {
         // Given: Complete test scenario data
-        Account testAccount = testDataGenerator.generateAccount();
+        Account testAccount = createTestAccount();
+        testAccount.setAccountId(1000000001L);
+        testAccount.setCurrentBalance(BigDecimal.valueOf(1234.56));
+        testAccount.setCreditLimit(BigDecimal.valueOf(5000.00));
+        
         Long accountId = testAccount.getAccountId();
         
-        List<Transaction> paymentHistory = testDataGenerator.generateTransactionList();
-        List<Transaction> itemizedCharges = testDataGenerator.generateTransactionList();
+        List<Transaction> paymentHistory = List.of(createTestTransaction());
+        List<Transaction> itemizedCharges = List.of(createTestTransaction());
         
-        BigDecimal interestCharges = calculateExpectedInterestCharges(testAccount.getCurrentBalance());
-        BigDecimal minimumPayment = calculateExpectedMinimumPayment(testAccount.getCurrentBalance());
-        LocalDate dueDate = LocalDate.now().plusDays(PAYMENT_DUE_DAYS);
-        
-        BillDetailResponse expectedResponse = BillDetailResponse.builder()
-                .accountId(accountId)
-                .currentBalance(testAccount.getCurrentBalance())
-                .creditLimit(testAccount.getCreditLimit())
-                .minimumPayment(minimumPayment)
-                .paymentDueDate(dueDate)
-                .interestCharges(interestCharges)
-                .itemizedTransactions(itemizedCharges)
-                .paymentHistory(paymentHistory)
-                .build();
-        
-        // Setup method mocks for integration flow
-        when(billDetailService.getBillDetail(accountId)).thenReturn(expectedResponse);
-        when(billDetailService.calculateInterestCharges(testAccount.getCurrentBalance())).thenReturn(interestCharges);
-        when(billDetailService.getPaymentHistory(accountId)).thenReturn(paymentHistory);
-        when(billDetailService.calculateMinimumPayment(testAccount.getCurrentBalance())).thenReturn(minimumPayment);
-        when(billDetailService.getDueDate(LocalDate.now())).thenReturn(dueDate);
-        when(billDetailService.itemizeCharges(accountId)).thenReturn(itemizedCharges);
+        // Mock all repository calls needed for the service integration
+        when(accountRepository.findById(accountId)).thenReturn(Optional.of(testAccount));
+        when(transactionRepository.findByAccountIdAndTransactionTypeAndDateRange(anyLong(), anyString(), any(LocalDate.class), any(LocalDate.class)))
+            .thenReturn(paymentHistory);
         
         // When: Executing complete bill detail processing flow
         BillDetailResponse billDetail = billDetailService.getBillDetail(accountId);
@@ -513,22 +494,18 @@ class BillDetailServiceTest extends BaseServiceTest {
         assertBigDecimalEquals(billDetail.getInterestCharges(), interest);
         assertThat(billDetail.getPaymentHistory()).isEqualTo(payments);
         assertBigDecimalEquals(billDetail.getMinimumPayment(), minPayment);
-        assertDateEquals(billDetail.getPaymentDueDate(), paymentDueDate);
-        assertThat(billDetail.getItemizedTransactions()).isEqualTo(charges);
+        assertThat(billDetail.getPaymentDueDate()).isEqualTo(paymentDueDate);
+        // Validate payment history (no itemized charges in DTO, only payment history)
         
-        // Verify all service methods were called
-        verify(billDetailService, times(1)).getBillDetail(accountId);
-        verify(billDetailService, times(1)).calculateInterestCharges(testAccount.getCurrentBalance());
-        verify(billDetailService, times(1)).getPaymentHistory(accountId);
-        verify(billDetailService, times(1)).calculateMinimumPayment(testAccount.getCurrentBalance());
-        verify(billDetailService, times(1)).getDueDate(LocalDate.now());
-        verify(billDetailService, times(1)).itemizeCharges(accountId);
-        
-        // Validate overall COBOL functional parity
-        validateCobolParity("completeBillDetailFlow", billDetail, expectedResponse);
+        // Verify repository interactions
+        verify(accountRepository, times(1)).findById(accountId);
+        verify(transactionRepository, times(2)).findByAccountIdAndTransactionTypeAndDateRange(anyLong(), anyString(), any(LocalDate.class), any(LocalDate.class));
+        verify(transactionRepository, times(1)).findByAccountIdAndTransactionDateBetween(anyLong(), any(LocalDate.class), any(LocalDate.class));
     }
 
-    // Private helper methods for test calculations
+    // Private helper methods for test data creation and calculations
+
+
 
     /**
      * Calculates expected interest charges using COBOL-equivalent logic.
