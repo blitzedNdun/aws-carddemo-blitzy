@@ -10,7 +10,7 @@ import com.carddemo.entity.CardXref;
 import com.carddemo.repository.CardXrefRepository;
 import com.carddemo.dto.CardCrossReferenceDto;
 import com.carddemo.batch.BatchJobListener;
-import com.carddemo.batch.BatchProcessingException;
+import com.carddemo.exception.BatchProcessingException;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -29,6 +29,7 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import jakarta.persistence.EntityManagerFactory;
 
@@ -108,6 +109,7 @@ public class CrossReferenceListJob {
     
     // Dependencies from BatchConfig and entities
     private final JobRepository jobRepository;
+    private final PlatformTransactionManager transactionManager;
     private final ThreadPoolTaskExecutor taskExecutor;
     private final EntityManagerFactory entityManagerFactory;
     private final CardXrefRepository cardXrefRepository;
@@ -117,6 +119,7 @@ public class CrossReferenceListJob {
      * Constructor with dependency injection for all required Spring Batch infrastructure components.
      * 
      * @param batchConfig BatchConfig instance providing jobRepository, jobLauncher, and taskExecutor
+     * @param transactionManager PlatformTransactionManager for Spring Batch transaction management
      * @param entityManagerFactory JPA EntityManagerFactory for database operations
      * @param cardXrefRepository Spring Data JPA repository for CardXref entity operations
      * @param batchJobListener Job execution listener for metrics collection and monitoring
@@ -124,12 +127,14 @@ public class CrossReferenceListJob {
     @Autowired
     public CrossReferenceListJob(
             BatchConfig batchConfig,
+            PlatformTransactionManager transactionManager,
             EntityManagerFactory entityManagerFactory,
             CardXrefRepository cardXrefRepository,
             BatchJobListener batchJobListener) {
         
         try {
-            this.jobRepository = batchConfig.jobRepository(null, null);
+            this.jobRepository = batchConfig.jobRepository(null, transactionManager);
+            this.transactionManager = transactionManager;
             this.taskExecutor = batchConfig.taskExecutor(batchConfig.batchProperties());
             this.entityManagerFactory = entityManagerFactory;
             this.cardXrefRepository = cardXrefRepository;
@@ -182,7 +187,7 @@ public class CrossReferenceListJob {
         } catch (Exception e) {
             logger.error("Failed to configure crossReferenceListJob", e);
             throw new BatchProcessingException(JOB_NAME, 
-                BatchProcessingException.ErrorType.CONFIGURATION_ERROR,
+                BatchProcessingException.ErrorType.LAUNCH_FAILURE,
                 "Job configuration failed for crossReferenceListJob", e);
         }
     }
@@ -216,7 +221,7 @@ public class CrossReferenceListJob {
         
         try {
             return new StepBuilder(STEP_NAME, jobRepository)
-                    .<CardXref, CardCrossReferenceDto>chunk(DEFAULT_CHUNK_SIZE, null)
+                    .<CardXref, CardCrossReferenceDto>chunk(DEFAULT_CHUNK_SIZE, transactionManager)
                     .reader(crossReferenceReader())
                     .processor(crossReferenceProcessor())
                     .writer(crossReferenceWriter())
@@ -225,7 +230,7 @@ public class CrossReferenceListJob {
         } catch (Exception e) {
             logger.error("Failed to configure crossReferenceListStep", e);
             throw new BatchProcessingException(STEP_NAME, 
-                BatchProcessingException.ErrorType.CONFIGURATION_ERROR,
+                BatchProcessingException.ErrorType.LAUNCH_FAILURE,
                 "Step configuration failed for crossReferenceListStep", e);
         }
     }
@@ -286,7 +291,7 @@ public class CrossReferenceListJob {
         } catch (Exception e) {
             logger.error("Failed to configure crossReferenceReader", e);
             throw new BatchProcessingException("crossReferenceReader", 
-                BatchProcessingException.ErrorType.CONFIGURATION_ERROR,
+                BatchProcessingException.ErrorType.LAUNCH_FAILURE,
                 "Reader configuration failed for crossReferenceReader", e);
         }
     }
@@ -346,7 +351,7 @@ public class CrossReferenceListJob {
                         logger.warn("CardXref entity has null required fields - CardNum: {}, CustId: {}, AcctId: {}", 
                                    cardNumber, customerId, accountId);
                         throw new BatchProcessingException("crossReferenceProcessor",
-                            BatchProcessingException.ErrorType.DATA_VALIDATION_ERROR,
+                            BatchProcessingException.ErrorType.EXECUTION_ERROR,
                             "Required fields missing in CardXref entity");
                     }
                     
@@ -465,7 +470,7 @@ public class CrossReferenceListJob {
         } catch (Exception e) {
             logger.error("Failed to configure crossReferenceWriter", e);
             throw new BatchProcessingException("crossReferenceWriter", 
-                BatchProcessingException.ErrorType.CONFIGURATION_ERROR,
+                BatchProcessingException.ErrorType.LAUNCH_FAILURE,
                 "Writer configuration failed for crossReferenceWriter", e);
         }
     }
@@ -504,61 +509,5 @@ public class CrossReferenceListJob {
         }
     }
 
-    /**
-     * Inner exception class for batch processing errors during Spring Batch job execution.
-     * Used for handling file processing failures, data access errors, and batch-specific error conditions.
-     */
-    private static class BatchProcessingException extends RuntimeException {
-        
-        public enum ErrorType {
-            CONFIGURATION_ERROR,
-            DATA_VALIDATION_ERROR,
-            RESOURCE_UNAVAILABLE,
-            PROCESSING_ERROR
-        }
-        
-        private final String component;
-        private final ErrorType errorType;
-        private final boolean retryable;
-        
-        public BatchProcessingException(String component, ErrorType errorType, String message) {
-            super(message);
-            this.component = component;
-            this.errorType = errorType;
-            this.retryable = determineRetryability(errorType);
-        }
-        
-        public BatchProcessingException(String component, ErrorType errorType, String message, Throwable cause) {
-            super(message, cause);
-            this.component = component;
-            this.errorType = errorType;
-            this.retryable = determineRetryability(errorType);
-        }
-        
-        public String getComponent() {
-            return component;
-        }
-        
-        public ErrorType getErrorType() {
-            return errorType;
-        }
-        
-        public boolean isRetryable() {
-            return retryable;
-        }
-        
-        private static boolean determineRetryability(ErrorType errorType) {
-            return switch (errorType) {
-                case RESOURCE_UNAVAILABLE -> true;
-                case PROCESSING_ERROR -> true;
-                case CONFIGURATION_ERROR -> false;
-                case DATA_VALIDATION_ERROR -> false;
-            };
-        }
-        
-        @Override
-        public String getMessage() {
-            return String.format("[%s] %s: %s", component, errorType, super.getMessage());
-        }
-    }
+
 }
