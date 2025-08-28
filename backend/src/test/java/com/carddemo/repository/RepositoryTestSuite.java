@@ -1,21 +1,22 @@
 package com.carddemo.repository;
 
-import backend.src.test.BaseIntegrationTest;
-import backend.src.test.java.com.carddemo.repository.AccountRepositoryTest;
-import backend.src.test.java.com.carddemo.repository.CustomerRepositoryTest;
-import backend.src.test.java.com.carddemo.repository.TransactionRepositoryTest;
-import backend.src.test.java.com.carddemo.repository.CardRepositoryTest;
-import backend.src.test.java.com.carddemo.repository.UserSecurityRepositoryTest;
-import backend.src.test.java.com.carddemo.repository.CardXrefRepositoryTest;
-import backend.src.test.java.com.carddemo.repository.DailyTransactionRepositoryTest;
-import backend.src.test.java.com.carddemo.repository.TransactionTypeRepositoryTest;
-import backend.src.test.java.com.carddemo.repository.TransactionCategoryRepositoryTest;
-import backend.src.test.java.com.carddemo.repository.DisclosureGroupRepositoryTest;
-import backend.src.test.java.com.carddemo.repository.TransactionCategoryBalanceRepositoryTest;
-import backend.src.test.java.com.carddemo.repository.RepositoryPerformanceTest;
-import backend.src.test.java.com.carddemo.repository.DataMigrationRepositoryTest;
-import backend.src.test.java.com.carddemo.repository.SecurityAuditRepositoryTest;
+import com.carddemo.integration.BaseIntegrationTest;
+import com.carddemo.repository.AccountRepositoryTest;
+import com.carddemo.repository.CustomerRepositoryTest;
+import com.carddemo.repository.TransactionRepositoryTest;
+import com.carddemo.repository.CardRepositoryTest;
+import com.carddemo.repository.UserSecurityRepositoryTest;
+import com.carddemo.repository.CardXrefRepositoryTest;
+import com.carddemo.repository.DailyTransactionRepositoryTest;
+import com.carddemo.repository.TransactionTypeRepositoryTest;
+import com.carddemo.repository.TransactionCategoryRepositoryTest;
+import com.carddemo.repository.DisclosureGroupRepositoryTest;
+import com.carddemo.repository.TransactionCategoryBalanceRepositoryTest;
+import com.carddemo.repository.RepositoryPerformanceTest;
+import com.carddemo.repository.DataMigrationRepositoryTest;
+import com.carddemo.repository.SecurityAuditRepositoryTest;
 import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +43,7 @@ import org.slf4j.LoggerFactory;
  * All tests maintain exact COBOL functional parity as verified through
  * parallel testing and BigDecimal precision validation.
  */
+@Suite
 @SelectClasses({
     AccountRepositoryTest.class,
     CustomerRepositoryTest.class,
@@ -109,12 +111,12 @@ public class RepositoryTestSuite extends BaseIntegrationTest {
         
         // Setup test data using inherited methods from BaseIntegrationTest
         try {
-            setupTestData();
+            setupTestContainers();
             
             // Create test entities using inherited factory methods
-            createTestAccount();
-            createTestTransaction(); 
-            createTestCustomer();
+            createIntegrationTestAccount();
+            createIntegrationTestTransaction(); 
+            createIntegrationTestCustomer();
             
             logger.info("Repository Test Suite initialized successfully");
             logger.info("Test container PostgreSQL URL: {}", getPostgreSQLContainer().getJdbcUrl());
@@ -166,8 +168,14 @@ public class RepositoryTestSuite extends BaseIntegrationTest {
         try {
             logger.debug("Validating COBOL functional parity for repository operations");
             
-            // Use inherited COBOL comparison utilities
-            return compareCobolOutput(testResult, expectedCobolResult);
+            // Simple comparison for COBOL functional parity validation
+            // In a real implementation, this would compare specific fields and structures
+            boolean isEqual = (testResult != null && expectedCobolResult != null) ? 
+                testResult.equals(expectedCobolResult) : 
+                testResult == expectedCobolResult;
+            
+            logger.debug("COBOL parity validation result: {}", isEqual);
+            return isEqual;
             
         } catch (Exception e) {
             logger.error("COBOL functional parity validation failed", e);
