@@ -2,6 +2,7 @@ package com.carddemo.controller;
 
 import com.carddemo.dto.AdminMenuResponse;
 import com.carddemo.dto.MenuOption;
+import com.carddemo.dto.MenuRequest;
 import com.carddemo.dto.MenuResponse;
 import com.carddemo.dto.SessionContext;
 import com.carddemo.service.MenuService;
@@ -17,7 +18,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 import static org.mockito.Mockito.*;
@@ -76,18 +79,16 @@ public class MenuControllerTest extends BaseControllerTest {
     @WithMockUser(username = "testuser", roles = {"USER"})
     public void testGetMainMenuSuccess() throws Exception {
         // Arrange - Create test data equivalent to COBOL menu structure
-        SessionContext sessionContext = sessionTestUtils.createTestSession("testuser", "USER");
-        MenuResponse expectedResponse = createTestMenuResponse();
+        SessionContext sessionContext = createSessionContextForUser("testuser", "USER");
+        MenuResponse expectedResponse = createMenuResponseForTesting();
         List<MenuOption> menuOptions = createTestMenuOptions();
         expectedResponse.setMenuOptions(menuOptions);
 
         // Mock service behavior equivalent to COBOL BUILD-MENU-OPTIONS paragraph
-        when(menuService.processMenuRequest(any(SessionContext.class)))
+        when(menuService.processMenuRequest(any(MenuRequest.class)))
             .thenReturn(expectedResponse);
-        when(menuService.generateMainMenu(any(SessionContext.class)))
+        when(menuService.generateMainMenu(any(MenuRequest.class)))
             .thenReturn(expectedResponse);
-        when(menuService.validateMenuAccess(any(SessionContext.class)))
-            .thenReturn(true);
 
         // Act & Assert - Test GET request equivalent to CICS SEND MAP
         mockMvc.perform(MockMvcRequestBuilders.get("/api/menu/main")
@@ -101,8 +102,7 @@ public class MenuControllerTest extends BaseControllerTest {
                 .andExpect(jsonPath("$.errorMessage").isEmpty());
 
         // Verify service interactions equivalent to COBOL program flow
-        verify(menuService).processMenuRequest(any(SessionContext.class));
-        verify(menuService).validateMenuAccess(any(SessionContext.class));
+        verify(menuService).processMenuRequest(any(MenuRequest.class));
     }
 
     /**
@@ -114,16 +114,14 @@ public class MenuControllerTest extends BaseControllerTest {
     @WithMockUser(username = "admin", roles = {"ADMIN"})
     public void testGetAdminMenuSuccess() throws Exception {
         // Arrange - Create admin session equivalent to COBOL admin COMMAREA
-        SessionContext adminSession = sessionTestUtils.createTestSession("admin", "ADMIN");
-        AdminMenuResponse expectedResponse = createTestAdminMenuResponse();
+        SessionContext adminSession = createSessionContextForUser("admin", "ADMIN");
+        MenuResponse expectedResponse = createTestAdminMenuResponse();
         
         // Mock admin service behavior equivalent to COBOL admin menu processing
-        when(menuService.processMenuRequest(any(SessionContext.class)))
+        when(menuService.processMenuRequest(any(MenuRequest.class)))
             .thenReturn(expectedResponse);
-        when(menuService.generateAdminMenu(any(SessionContext.class)))
+        when(menuService.generateAdminMenu(any(MenuRequest.class)))
             .thenReturn(expectedResponse);
-        when(menuService.validateMenuAccess(any(SessionContext.class)))
-            .thenReturn(true);
 
         // Act & Assert - Test admin endpoint equivalent to CICS SEND MAP for COADM1A
         mockMvc.perform(MockMvcRequestBuilders.get("/api/menu/admin")
@@ -131,15 +129,13 @@ public class MenuControllerTest extends BaseControllerTest {
                 .sessionAttr("sessionContext", adminSession))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.adminOptions").isArray())
-                .andExpect(jsonPath("$.adminOptions").isNotEmpty())
-                .andExpect(jsonPath("$.systemStatus").exists())
-                .andExpect(jsonPath("$.activeUsers").exists());
+                .andExpect(jsonPath("$.menuOptions").isArray())
+                .andExpect(jsonPath("$.menuOptions").isNotEmpty())
+                .andExpect(jsonPath("$.userName").value("admin"));
 
         // Verify admin-specific service interactions
-        verify(menuService).processMenuRequest(any(SessionContext.class));
-        verify(menuService).generateAdminMenu(any(SessionContext.class));
-        verify(menuService).validateMenuAccess(any(SessionContext.class));
+        verify(menuService).processMenuRequest(any(MenuRequest.class));
+        verify(menuService).generateAdminMenu(any(MenuRequest.class));
     }
 
     /**
@@ -151,14 +147,12 @@ public class MenuControllerTest extends BaseControllerTest {
     @WithMockUser(username = "regularuser", roles = {"USER"})
     public void testGetMainMenuWithRegularUser() throws Exception {
         // Arrange - Regular user session
-        SessionContext userSession = sessionTestUtils.createTestSession("regularuser", "USER");
+        SessionContext userSession = createSessionContextForUser("regularuser", "USER");
         MenuResponse filteredResponse = createFilteredMenuResponse();
 
         // Mock filtered menu response - admin options should be excluded
-        when(menuService.processMenuRequest(any(SessionContext.class)))
+        when(menuService.processMenuRequest(any(MenuRequest.class)))
             .thenReturn(filteredResponse);
-        when(menuService.validateMenuAccess(any(SessionContext.class)))
-            .thenReturn(true);
 
         // Act & Assert - Verify only user-accessible options are returned
         mockMvc.perform(MockMvcRequestBuilders.get("/api/menu/main")
@@ -167,7 +161,7 @@ public class MenuControllerTest extends BaseControllerTest {
                 .andExpect(jsonPath("$.menuOptions").isArray())
                 .andExpect(jsonPath("$.menuOptions[?(@.accessLevel == 'A')]").doesNotExist());
 
-        verify(menuService).processMenuRequest(any(SessionContext.class));
+        verify(menuService).processMenuRequest(any(MenuRequest.class));
     }
 
     /**
@@ -179,7 +173,7 @@ public class MenuControllerTest extends BaseControllerTest {
     @WithMockUser(username = "regularuser", roles = {"USER"})
     public void testGetAdminMenuWithoutAdminRole() throws Exception {
         // Arrange - Regular user trying to access admin menu
-        SessionContext userSession = sessionTestUtils.createTestSession("regularuser", "USER");
+        SessionContext userSession = createSessionContextForUser("regularuser", "USER");
 
         // Act & Assert - Should be denied access (403 Forbidden)
         mockMvc.perform(MockMvcRequestBuilders.get("/api/menu/admin")
@@ -187,7 +181,7 @@ public class MenuControllerTest extends BaseControllerTest {
                 .andExpect(status().isForbidden());
 
         // Verify no service calls are made for unauthorized access
-        verify(menuService, never()).generateAdminMenu(any(SessionContext.class));
+        verify(menuService, never()).generateAdminMenu(any(MenuRequest.class));
     }
 
     /**
@@ -199,10 +193,10 @@ public class MenuControllerTest extends BaseControllerTest {
     @WithMockUser(username = "testuser", roles = {"USER"})
     public void testMenuOptionGeneration() throws Exception {
         // Arrange - Create session with specific user context
-        SessionContext sessionContext = sessionTestUtils.createTestSession("testuser", "USER");
+        SessionContext sessionContext = createSessionContextForUser("testuser", "USER");
         MenuResponse menuResponse = createDetailedMenuResponse();
 
-        when(menuService.processMenuRequest(any(SessionContext.class)))
+        when(menuService.processMenuRequest(any(MenuRequest.class)))
             .thenReturn(menuResponse);
 
         // Act & Assert - Verify menu option structure matches COBOL format
@@ -217,7 +211,7 @@ public class MenuControllerTest extends BaseControllerTest {
                 .andExpect(jsonPath("$.menuOptions[1].description").value("View Card Information"))
                 .andExpect(jsonPath("$.menuOptions[1].transactionCode").value("COCRDLIC"));
 
-        verify(menuService).processMenuRequest(any(SessionContext.class));
+        verify(menuService).processMenuRequest(any(MenuRequest.class));
     }
 
     /**
@@ -229,10 +223,10 @@ public class MenuControllerTest extends BaseControllerTest {
     @WithMockUser(username = "testuser", roles = {"USER"})
     public void testRoleBasedMenuFiltering() throws Exception {
         // Arrange - Regular user session
-        SessionContext userSession = sessionTestUtils.createTestSession("testuser", "USER");
+        SessionContext userSession = createSessionContextForUser("testuser", "USER");
         MenuResponse filteredResponse = createRoleFilteredMenuResponse();
 
-        when(menuService.processMenuRequest(any(SessionContext.class)))
+        when(menuService.processMenuRequest(any(MenuRequest.class)))
             .thenReturn(filteredResponse);
 
         // Act & Assert - Verify admin options are excluded
@@ -242,7 +236,7 @@ public class MenuControllerTest extends BaseControllerTest {
                 .andExpect(jsonPath("$.menuOptions[?(@.accessLevel == 'A')]").doesNotExist())
                 .andExpect(jsonPath("$.menuOptions[?(@.accessLevel == 'U')]").exists());
 
-        verify(menuService).processMenuRequest(any(SessionContext.class));
+        verify(menuService).processMenuRequest(any(MenuRequest.class));
     }
 
     /**
@@ -254,14 +248,14 @@ public class MenuControllerTest extends BaseControllerTest {
     @WithMockUser(username = "testuser", roles = {"USER"})
     public void testPFKeyNavigation() throws Exception {
         // Arrange - Session with navigation context
-        SessionContext sessionContext = sessionTestUtils.createTestSession("testuser", "USER");
+        SessionContext sessionContext = createSessionContextForUser("testuser", "USER");
         sessionContext.addToNavigationStack("COSGN00C"); // Equivalent to CDEMO-FROM-PROGRAM
 
-        MenuResponse menuResponse = createTestMenuResponse();
-        when(menuService.processMenuRequest(any(SessionContext.class)))
+        MenuResponse menuResponse = createMenuResponseForTesting();
+        when(menuService.processMenuRequest(any(MenuRequest.class)))
             .thenReturn(menuResponse);
-        when(menuService.processMenuSelection(any(SessionContext.class), eq("3")))
-            .thenReturn("COSGN00C"); // F3 key returns to sign-on
+        when(menuService.processMenuSelection(any(MenuRequest.class)))
+            .thenReturn(menuResponse); // F3 key returns appropriate response
 
         // Act & Assert - Test F3 key equivalent (exit to sign-on)
         mockMvc.perform(MockMvcRequestBuilders.post("/api/menu/navigate")
@@ -269,7 +263,7 @@ public class MenuControllerTest extends BaseControllerTest {
                 .content("{\"action\":\"F3\"}")
                 .sessionAttr("sessionContext", sessionContext))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nextProgram").value("COSGN00C"));
+                .andExpect(jsonPath("$.programName").value("COSGN00C"));
 
         // Test ENTER key equivalent (option selection)
         mockMvc.perform(MockMvcRequestBuilders.post("/api/menu/navigate")
@@ -278,7 +272,7 @@ public class MenuControllerTest extends BaseControllerTest {
                 .sessionAttr("sessionContext", sessionContext))
                 .andExpect(status().isOk());
 
-        verify(menuService, times(2)).processMenuSelection(any(SessionContext.class), anyString());
+        verify(menuService, times(2)).processMenuSelection(any(MenuRequest.class));
     }
 
     /**
@@ -290,12 +284,12 @@ public class MenuControllerTest extends BaseControllerTest {
     @WithMockUser(username = "testuser", roles = {"USER"})
     public void testSessionContextPreservation() throws Exception {
         // Arrange - Create session with specific state
-        SessionContext originalSession = sessionTestUtils.createTestSession("testuser", "USER");
+        SessionContext originalSession = createSessionContextForUser("testuser", "USER");
         originalSession.addToNavigationStack("COMEN01C");
-        originalSession.getTransientData().put("selectedOption", "2");
+        originalSession.getSessionAttributes().put("selectedOption", "2");
 
-        MenuResponse menuResponse = createTestMenuResponse();
-        when(menuService.processMenuRequest(any(SessionContext.class)))
+        MenuResponse menuResponse = createMenuResponseForTesting();
+        when(menuService.processMenuRequest(any(MenuRequest.class)))
             .thenReturn(menuResponse);
 
         // Act - Make request that should preserve session state
@@ -304,8 +298,8 @@ public class MenuControllerTest extends BaseControllerTest {
                 .andExpect(status().isOk());
 
         // Assert - Verify session state is maintained
-        sessionTestUtils.validateSessionState(originalSession, "testuser", "USER");
-        verify(menuService).processMenuRequest(any(SessionContext.class));
+        validateSessionState(originalSession, "testuser", "USER");
+        verify(menuService).processMenuRequest(any(MenuRequest.class));
     }
 
     /**
@@ -317,11 +311,11 @@ public class MenuControllerTest extends BaseControllerTest {
     @WithMockUser(username = "testuser", roles = {"USER"})
     public void testErrorHandling() throws Exception {
         // Arrange - Session context for error scenarios
-        SessionContext sessionContext = sessionTestUtils.createTestSession("testuser", "USER");
+        SessionContext sessionContext = createSessionContextForUser("testuser", "USER");
 
         // Test invalid option number (equivalent to COBOL lines 127-134)
         MenuResponse errorResponse = createErrorMenuResponse("Please enter a valid option number...");
-        when(menuService.processMenuRequest(any(SessionContext.class)))
+        when(menuService.processMenuRequest(any(MenuRequest.class)))
             .thenReturn(errorResponse);
 
         // Act & Assert - Test invalid option selection
@@ -342,7 +336,7 @@ public class MenuControllerTest extends BaseControllerTest {
 
         // Test admin-only option access by regular user (equivalent to COBOL lines 136-143)
         MenuResponse accessDeniedResponse = createErrorMenuResponse("No access - Admin Only option... ");
-        when(menuService.processMenuSelection(any(SessionContext.class), eq("admin-option")))
+        when(menuService.processMenuSelection(any(MenuRequest.class)))
             .thenReturn(accessDeniedResponse);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/menu/select")
@@ -352,7 +346,7 @@ public class MenuControllerTest extends BaseControllerTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.errorMessage").value("No access - Admin Only option... "));
 
-        verify(menuService, atLeastOnce()).processMenuRequest(any(SessionContext.class));
+        verify(menuService, atLeastOnce()).processMenuRequest(any(MenuRequest.class));
     }
 
     /**
@@ -364,12 +358,13 @@ public class MenuControllerTest extends BaseControllerTest {
     @WithMockUser(username = "testuser", roles = {"USER"})
     public void testMenuControllerTransitions() throws Exception {
         // Arrange - Session with navigation context
-        SessionContext sessionContext = sessionTestUtils.createTestSession("testuser", "USER");
+        SessionContext sessionContext = createSessionContextForUser("testuser", "USER");
         sessionContext.addToNavigationStack("COMEN01C");
 
         // Mock successful program transition (equivalent to XCTL)
-        when(menuService.processMenuSelection(any(SessionContext.class), eq("1")))
-            .thenReturn("COACTVWC"); // Navigate to account view program
+        MenuResponse transitionResponse = createTransitionResponse("COACTVWC");
+        when(menuService.processMenuSelection(any(MenuRequest.class)))
+            .thenReturn(transitionResponse); // Navigate to account view program
 
         // Act & Assert - Test program transition
         mockMvc.perform(MockMvcRequestBuilders.post("/api/menu/select")
@@ -377,23 +372,23 @@ public class MenuControllerTest extends BaseControllerTest {
                 .content("{\"option\":\"1\"}")
                 .sessionAttr("sessionContext", sessionContext))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nextProgram").value("COACTVWC"))
+                .andExpect(jsonPath("$.programName").value("COACTVWC"))
                 .andExpect(jsonPath("$.sessionContext.navigationStack").isArray())
                 .andExpect(jsonPath("$.sessionContext.navigationStack[0]").value("COMEN01C"));
 
         // Test return to sign-on (equivalent to RETURN-TO-SIGNON-SCREEN)
-        when(menuService.processMenuSelection(any(SessionContext.class), eq("F3")))
-            .thenReturn("COSGN00C");
+        MenuResponse signonResponse = createTransitionResponse("COSGN00C");
+        when(menuService.processMenuSelection(any(MenuRequest.class)))
+            .thenReturn(signonResponse);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/menu/navigate")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"action\":\"F3\"}")
                 .sessionAttr("sessionContext", sessionContext))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nextProgram").value("COSGN00C"));
+                .andExpect(jsonPath("$.programName").value("COSGN00C"));
 
-        verify(menuService).processMenuSelection(any(SessionContext.class), eq("1"));
-        verify(menuService).processMenuSelection(any(SessionContext.class), eq("F3"));
+        verify(menuService, times(2)).processMenuSelection(any(MenuRequest.class));
     }
 
     // Helper Methods for Test Data Creation
@@ -404,10 +399,10 @@ public class MenuControllerTest extends BaseControllerTest {
      */
     private List<MenuOption> createTestMenuOptions() {
         return Arrays.asList(
-            testDataBuilder.buildMenuOption("1", "View Account Information", "COACTVWC", true, "U"),
-            testDataBuilder.buildMenuOption("2", "View Card Information", "COCRDLIC", true, "U"),
-            testDataBuilder.buildMenuOption("3", "View Transaction Information", "COTRN00C", true, "U"),
-            testDataBuilder.buildMenuOption("4", "Admin Functions", "COADM01C", false, "A") // Admin only
+            createMenuOption("1", "View Account Information", "COACTVWC", true, "U"),
+            createMenuOption("2", "View Card Information", "COCRDLIC", true, "U"),
+            createMenuOption("3", "View Transaction Information", "COTRN00C", true, "U"),
+            createMenuOption("4", "Admin Functions", "COADM01C", false, "A") // Admin only
         );
     }
 
@@ -415,8 +410,8 @@ public class MenuControllerTest extends BaseControllerTest {
      * Creates a standard menu response for testing.
      * Equivalent to COBOL SEND MAP operation result.
      */
-    private MenuResponse createTestMenuResponse() {
-        MenuResponse response = testDataBuilder.createMenuResponse();
+    private MenuResponse createMenuResponseForTesting() {
+        MenuResponse response = new MenuResponse();
         response.setMenuOptions(createTestMenuOptions());
         response.setUserName("testuser");
         response.setErrorMessage("");
@@ -427,15 +422,15 @@ public class MenuControllerTest extends BaseControllerTest {
      * Creates admin menu response for admin-specific testing.
      * Maps to COADM01C program functionality.
      */
-    private AdminMenuResponse createTestAdminMenuResponse() {
-        AdminMenuResponse adminResponse = new AdminMenuResponse();
-        adminResponse.setAdminOptions(Arrays.asList(
-            testDataBuilder.buildMenuOption("1", "User Management", "COUSR00C", true, "A"),
-            testDataBuilder.buildMenuOption("2", "System Reports", "CORPT00C", true, "A"),
-            testDataBuilder.buildMenuOption("3", "Account Administration", "COACTUPC", true, "A")
+    private MenuResponse createTestAdminMenuResponse() {
+        MenuResponse adminResponse = new MenuResponse();
+        adminResponse.setMenuOptions(Arrays.asList(
+            createMenuOption("1", "User Management", "COUSR00C", true, "A"),
+            createMenuOption("2", "System Reports", "CORPT00C", true, "A"),
+            createMenuOption("3", "Account Administration", "COACTUPC", true, "A")
         ));
-        adminResponse.setSystemStatus("ACTIVE");
-        adminResponse.setActiveUsers(5);
+        adminResponse.setUserName("admin");
+        adminResponse.setErrorMessage("");
         return adminResponse;
     }
 
@@ -444,7 +439,7 @@ public class MenuControllerTest extends BaseControllerTest {
      * Implements role-based filtering equivalent to COBOL user type validation.
      */
     private MenuResponse createFilteredMenuResponse() {
-        MenuResponse response = createTestMenuResponse();
+        MenuResponse response = createMenuResponseForTesting();
         // Filter out admin-only options (accessLevel = 'A')
         List<MenuOption> filteredOptions = response.getMenuOptions().stream()
             .filter(option -> !"A".equals(option.getAccessLevel()))
@@ -458,7 +453,7 @@ public class MenuControllerTest extends BaseControllerTest {
      * Validates menu structure matches COBOL format.
      */
     private MenuResponse createDetailedMenuResponse() {
-        MenuResponse response = createTestMenuResponse();
+        MenuResponse response = createMenuResponseForTesting();
         response.getMenuOptions().forEach(option -> {
             option.setEnabled(true);
             option.setDescription(option.getDescription() + " - " + option.getTransactionCode());
@@ -473,9 +468,9 @@ public class MenuControllerTest extends BaseControllerTest {
     private MenuResponse createRoleFilteredMenuResponse() {
         MenuResponse response = new MenuResponse();
         response.setMenuOptions(Arrays.asList(
-            testDataBuilder.buildMenuOption("1", "View Account Information", "COACTVWC", true, "U"),
-            testDataBuilder.buildMenuOption("2", "View Card Information", "COCRDLIC", true, "U"),
-            testDataBuilder.buildMenuOption("3", "View Transaction Information", "COTRN00C", true, "U")
+            createMenuOption("1", "View Account Information", "COACTVWC", true, "U"),
+            createMenuOption("2", "View Card Information", "COCRDLIC", true, "U"),
+            createMenuOption("3", "View Transaction Information", "COTRN00C", true, "U")
             // Note: Admin options excluded for regular users
         ));
         response.setUserName("testuser");
@@ -487,7 +482,7 @@ public class MenuControllerTest extends BaseControllerTest {
      * Maps to COBOL error message handling.
      */
     private MenuResponse createErrorMenuResponse(String errorMessage) {
-        MenuResponse response = createTestMenuResponse();
+        MenuResponse response = createMenuResponseForTesting();
         response.setErrorMessage(errorMessage);
         return response;
     }
@@ -509,5 +504,55 @@ public class MenuControllerTest extends BaseControllerTest {
             assert option.getTransactionCode() != null : "Transaction code should not be null";
             assert option.getAccessLevel() != null : "Access level should not be null";
         });
+    }
+
+    /**
+     * Creates a SessionContext for testing with user and role.
+     * Equivalent to CICS COMMAREA setup for user sessions.
+     */
+    private SessionContext createSessionContextForUser(String username, String role) {
+        SessionContext sessionContext = new SessionContext();
+        sessionContext.setUserId(username);
+        sessionContext.setUserRole(role);
+        sessionContext.setSessionStartTime(LocalDateTime.now());
+        sessionContext.setLastActivityTime(LocalDateTime.now());
+        sessionContext.setSessionAttributes(new HashMap<>());
+        return sessionContext;
+    }
+
+    /**
+     * Creates a MenuOption for testing.
+     * Maps to COBOL menu option structure.
+     */
+    private MenuOption createMenuOption(String optionNumber, String description, 
+                                       String transactionCode, boolean enabled, String accessLevel) {
+        MenuOption option = new MenuOption();
+        option.setOptionNumber(Integer.valueOf(optionNumber));
+        option.setDescription(description);
+        option.setTransactionCode(transactionCode);
+        option.setEnabled(enabled);
+        option.setAccessLevel(accessLevel);
+        return option;
+    }
+
+    /**
+     * Creates a MenuResponse for controller transitions.
+     * Maps to COBOL program flow control.
+     */
+    private MenuResponse createTransitionResponse(String nextProgram) {
+        MenuResponse response = new MenuResponse();
+        response.setProgramName(nextProgram);
+        response.setMenuOptions(createTestMenuOptions());
+        return response;
+    }
+
+    /**
+     * Validates session state equivalent to CICS COMMAREA validation.
+     */
+    private void validateSessionState(SessionContext sessionContext, String expectedUserId, String expectedRole) {
+        assert sessionContext != null : "Session context should not be null";
+        assert expectedUserId.equals(sessionContext.getUserId()) : "User ID should match";
+        assert expectedRole.equals(sessionContext.getUserRole()) : "User role should match";
+        assert sessionContext.getSessionStartTime() != null : "Session start time should not be null";
     }
 }
