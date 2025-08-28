@@ -118,11 +118,11 @@ public class BatchDataValidationTest {
     
     // COBOL COMP-3 test data - packed decimal byte arrays with known expected BigDecimal results
     private static final byte[][] COMP3_TEST_DATA = {
-        {0x12, 0x34, 0x5C},      // +12345 (positive)
-        {0x12, 0x34, 0x5D},      // -12345 (negative) 
-        {0x00, 0x00, 0x0C},      // +0 (zero positive)
-        {0x99, 0x99, 0x9C},      // +99999 (maximum positive)
-        {0x00, 0x01, 0x2C}       // +12 (small positive)
+        {(byte) 0x12, (byte) 0x34, (byte) 0x5C},      // +12345 (positive)
+        {(byte) 0x12, (byte) 0x34, (byte) 0x5D},      // -12345 (negative) 
+        {(byte) 0x00, (byte) 0x00, (byte) 0x0C},      // +0 (zero positive)
+        {(byte) 0x99, (byte) 0x99, (byte) 0x9C},      // +99999 (maximum positive)
+        {(byte) 0x00, (byte) 0x01, (byte) 0x2C}       // +12 (small positive)
     };
     
     private static final BigDecimal[] EXPECTED_COMP3_RESULTS = {
@@ -135,16 +135,7 @@ public class BatchDataValidationTest {
 
     // Dependency injection for testing
     @Autowired
-    private CobolDataConverter cobolDataConverter;
-    
-    @Autowired
     private TestDatabaseConfig testDatabaseConfig;
-    
-    @Autowired 
-    private AmountCalculator amountCalculator;
-    
-    @Autowired
-    private DateConversionUtil dateConversionUtil;
     
     @Autowired
     private AccountRepository accountRepository;
@@ -192,7 +183,7 @@ public class BatchDataValidationTest {
             logger.debug("Converting COMP-3 data: {} to BigDecimal", Arrays.toString(packedData));
             
             // Convert using CobolDataConverter
-            BigDecimal actualResult = cobolDataConverter.fromComp3(packedData, 2);
+            BigDecimal actualResult = CobolDataConverter.fromComp3(packedData, 2);
             
             // Validate exact match with expected result
             Assertions.assertEquals(expectedResult, actualResult, 
@@ -248,7 +239,7 @@ public class BatchDataValidationTest {
                 logger.debug("Testing interest calculation: balance={}, rate={}%", testAmount, testRate);
                 
                 // Calculate using AmountCalculator (should match COBOL logic)
-                BigDecimal calculatedInterest = amountCalculator.calculateMonthlyInterest(testAmount, interestRate);
+                BigDecimal calculatedInterest = AmountCalculator.calculateMonthlyInterest(testAmount, interestRate);
                 
                 // Calculate expected result using exact COBOL formula: (balance * rate) / 1200
                 BigDecimal expectedInterest = testAmount
@@ -331,7 +322,7 @@ public class BatchDataValidationTest {
             BigDecimal expectedNewBalance = runningBalance.add(transactionAmount);
             
             // Simulate transaction posting using AmountCalculator
-            BigDecimal calculatedNewBalance = amountCalculator.addAmounts(runningBalance, transactionAmount);
+            BigDecimal calculatedNewBalance = AmountCalculator.calculateBalance(runningBalance, transactionAmount);
             
             // Validate exact balance calculation
             Assertions.assertEquals(expectedNewBalance, calculatedNewBalance,
@@ -400,7 +391,7 @@ public class BatchDataValidationTest {
         // Test credit cycle update calculation
         BigDecimal creditAmount = new BigDecimal("200.33");
         BigDecimal expectedCycleCredit = testAccount.getCurrentCycleCredit().add(creditAmount);
-        BigDecimal calculatedCycleCredit = amountCalculator.addAmounts(
+        BigDecimal calculatedCycleCredit = AmountCalculator.calculateBalance(
             testAccount.getCurrentCycleCredit(), creditAmount);
         
         Assertions.assertEquals(expectedCycleCredit, calculatedCycleCredit,
@@ -409,7 +400,7 @@ public class BatchDataValidationTest {
         // Test debit cycle update calculation  
         BigDecimal debitAmount = new BigDecimal("125.67");
         BigDecimal expectedCycleDebit = testAccount.getCurrentCycleDebit().add(debitAmount);
-        BigDecimal calculatedCycleDebit = amountCalculator.addAmounts(
+        BigDecimal calculatedCycleDebit = AmountCalculator.calculateBalance(
             testAccount.getCurrentCycleDebit(), debitAmount);
         
         Assertions.assertEquals(expectedCycleDebit, calculatedCycleDebit,
@@ -428,7 +419,8 @@ public class BatchDataValidationTest {
         BigDecimal complexCalculationResult = testAccount.getCurrentBalance()
             .add(creditAmount)
             .subtract(debitAmount)
-            .multiply(new BigDecimal("1.005"), 2, RoundingMode.HALF_UP);  // 0.5% fee calculation
+            .multiply(new BigDecimal("1.005"))
+            .setScale(2, RoundingMode.HALF_UP);  // 0.5% fee calculation
         
         Assertions.assertNotNull(complexCalculationResult,
             "Complex balance calculation should not be null");
@@ -463,7 +455,7 @@ public class BatchDataValidationTest {
         BigDecimal refundAmount = new BigDecimal("-150.75");
         
         BigDecimal expectedBalance = positiveBalance.add(refundAmount);
-        BigDecimal calculatedBalance = amountCalculator.addAmounts(positiveBalance, refundAmount);
+        BigDecimal calculatedBalance = AmountCalculator.calculateBalance(positiveBalance, refundAmount);
         
         Assertions.assertEquals(expectedBalance, calculatedBalance,
             "Negative amount handling incorrect for refund");
@@ -471,7 +463,7 @@ public class BatchDataValidationTest {
         // Test negative balance scenarios
         BigDecimal largeRefund = new BigDecimal("-750.00");
         BigDecimal expectedNegativeBalance = positiveBalance.add(largeRefund);
-        BigDecimal calculatedNegativeBalance = amountCalculator.addAmounts(positiveBalance, largeRefund);
+        BigDecimal calculatedNegativeBalance = AmountCalculator.calculateBalance(positiveBalance, largeRefund);
         
         Assertions.assertEquals(expectedNegativeBalance, calculatedNegativeBalance,
             "Negative balance calculation incorrect");
@@ -483,7 +475,7 @@ public class BatchDataValidationTest {
         BigDecimal interestRate = new BigDecimal("18.99");
         
         // Interest should not be calculated on negative balances
-        BigDecimal calculatedInterest = amountCalculator.calculateMonthlyInterest(negativeBalance, interestRate);
+        BigDecimal calculatedInterest = AmountCalculator.calculateMonthlyInterest(negativeBalance, interestRate);
         
         // Interest on negative balance should be zero (business rule)
         Assertions.assertEquals(BigDecimal.ZERO.setScale(2), calculatedInterest,
@@ -507,7 +499,7 @@ public class BatchDataValidationTest {
         BigDecimal balance = new BigDecimal("100.00");
         BigDecimal zeroAmount = BigDecimal.ZERO;
         
-        BigDecimal resultBalance = amountCalculator.addAmounts(balance, zeroAmount);
+        BigDecimal resultBalance = AmountCalculator.calculateBalance(balance, zeroAmount);
         Assertions.assertEquals(balance, resultBalance,
             "Adding zero amount should not change balance");
         
@@ -515,7 +507,7 @@ public class BatchDataValidationTest {
         BigDecimal testBalance = new BigDecimal("1000.00");
         BigDecimal zeroRate = BigDecimal.ZERO;
         
-        BigDecimal zeroInterest = amountCalculator.calculateMonthlyInterest(testBalance, zeroRate);
+        BigDecimal zeroInterest = AmountCalculator.calculateMonthlyInterest(testBalance, zeroRate);
         Assertions.assertEquals(BigDecimal.ZERO.setScale(2), zeroInterest,
             "Zero interest rate should produce zero interest");
         
@@ -523,7 +515,7 @@ public class BatchDataValidationTest {
         BigDecimal zeroBalance = BigDecimal.ZERO;
         BigDecimal normalRate = new BigDecimal("18.99");
         
-        BigDecimal interestOnZero = amountCalculator.calculateMonthlyInterest(zeroBalance, normalRate);
+        BigDecimal interestOnZero = AmountCalculator.calculateMonthlyInterest(zeroBalance, normalRate);
         Assertions.assertEquals(BigDecimal.ZERO.setScale(2), interestOnZero,
             "Interest on zero balance should be zero");
         
@@ -547,14 +539,14 @@ public class BatchDataValidationTest {
         BigDecimal largeAmount2 = new BigDecimal("1.00");
         
         // This should not cause overflow with BigDecimal
-        BigDecimal result = amountCalculator.addAmounts(largeAmount1, largeAmount2);
+        BigDecimal result = AmountCalculator.calculateBalance(largeAmount1, largeAmount2);
         Assertions.assertNotNull(result, "Large amount addition should not return null");
         
         // Test multiplication with large amounts
         BigDecimal largeRate = new BigDecimal("99.99");
         BigDecimal largeBalance = new BigDecimal("100000.00");
         
-        BigDecimal largeInterest = amountCalculator.calculateMonthlyInterest(largeBalance, largeRate);
+        BigDecimal largeInterest = AmountCalculator.calculateMonthlyInterest(largeBalance, largeRate);
         Assertions.assertNotNull(largeInterest, "Large interest calculation should not return null");
         Assertions.assertTrue(largeInterest.compareTo(BigDecimal.ZERO) > 0,
             "Large interest calculation should be positive");
@@ -574,24 +566,24 @@ public class BatchDataValidationTest {
     public void testDateTimestampConversions() throws Exception {
         logger.info("Testing date and timestamp format conversions");
         
-        // Test current date to DB2 timestamp conversion
+        // Test current date to timestamp conversion
         LocalDateTime testDateTime = LocalDateTime.of(2024, 3, 15, 14, 30, 45);
-        String db2Timestamp = dateConversionUtil.convertToDb2Timestamp(testDateTime);
+        String timestampString = DateConversionUtil.formatTimestamp(testDateTime);
         
-        // DB2 timestamp format: YYYY-MM-DD-HH.MM.SS.000000
-        Assertions.assertNotNull(db2Timestamp, "DB2 timestamp should not be null");
-        Assertions.assertTrue(db2Timestamp.matches("\\d{4}-\\d{2}-\\d{2}-\\d{2}\\.\\d{2}\\.\\d{2}\\.\\d{6}"),
-            "DB2 timestamp format should match expected pattern");
+        // Standard timestamp format: YYYY-MM-DD HH:MM:SS
+        Assertions.assertNotNull(timestampString, "Timestamp should not be null");
+        Assertions.assertTrue(timestampString.matches("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}"),
+            "Timestamp format should match expected pattern");
         
         // Test COBOL date parsing (CCYYMMDD format)
         String cobolDateString = "20240315";
-        LocalDate parsedDate = dateConversionUtil.parseCobolDate(cobolDateString);
+        LocalDate parsedDate = DateConversionUtil.parseDate(cobolDateString);
         
         Assertions.assertEquals(LocalDate.of(2024, 3, 15), parsedDate,
             "COBOL date parsing should produce correct LocalDate");
         
         // Test round-trip conversion consistency
-        String formattedTimestamp = dateConversionUtil.formatTimestamp(testDateTime);
+        String formattedTimestamp = DateConversionUtil.formatTimestamp(testDateTime);
         Assertions.assertNotNull(formattedTimestamp,
             "Formatted timestamp should not be null");
         
