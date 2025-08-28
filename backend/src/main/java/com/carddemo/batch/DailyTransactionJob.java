@@ -190,11 +190,11 @@ public class DailyTransactionJob {
      * 
      * @return configured Job instance for daily transaction processing
      */
-    @Bean
+    @Bean(name = "dailyTransactionBatchJob")
     public Job dailyTransactionJob() {
         logger.info("Configuring daily transaction batch job");
         
-        return new JobBuilder("dailyTransactionJob", jobRepository)
+        return new JobBuilder("dailyTransactionBatchJob", jobRepository)
                 .start(dailyTransactionStep())
                 .listener(batchJobListener)
                 .incrementer(new org.springframework.batch.core.launch.support.RunIdIncrementer())

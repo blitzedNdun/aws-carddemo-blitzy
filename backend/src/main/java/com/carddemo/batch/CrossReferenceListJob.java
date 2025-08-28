@@ -118,24 +118,26 @@ public class CrossReferenceListJob {
     /**
      * Constructor with dependency injection for all required Spring Batch infrastructure components.
      * 
-     * @param batchConfig BatchConfig instance providing jobRepository, jobLauncher, and taskExecutor
+     * @param jobRepository JobRepository bean for Spring Batch job management
      * @param transactionManager PlatformTransactionManager for Spring Batch transaction management
+     * @param taskExecutor ThreadPoolTaskExecutor for Spring Batch parallel processing
      * @param entityManagerFactory JPA EntityManagerFactory for database operations
      * @param cardXrefRepository Spring Data JPA repository for CardXref entity operations
      * @param batchJobListener Job execution listener for metrics collection and monitoring
      */
     @Autowired
     public CrossReferenceListJob(
-            BatchConfig batchConfig,
+            JobRepository jobRepository,
             PlatformTransactionManager transactionManager,
+            ThreadPoolTaskExecutor taskExecutor,
             EntityManagerFactory entityManagerFactory,
             CardXrefRepository cardXrefRepository,
             BatchJobListener batchJobListener) {
         
         try {
-            this.jobRepository = batchConfig.jobRepository(null, transactionManager);
+            this.jobRepository = jobRepository;
             this.transactionManager = transactionManager;
-            this.taskExecutor = batchConfig.taskExecutor(batchConfig.batchProperties());
+            this.taskExecutor = taskExecutor;
             this.entityManagerFactory = entityManagerFactory;
             this.cardXrefRepository = cardXrefRepository;
             this.batchJobListener = batchJobListener;
@@ -173,7 +175,7 @@ public class CrossReferenceListJob {
      * 
      * @return configured Job instance ready for execution by JobLauncher
      */
-    @Bean
+    @Bean(name = "crossReferenceJob")
     public Job crossReferenceListJob() {
         logger.info("Configuring crossReferenceListJob to replace CBACT03C COBOL program");
         
@@ -215,7 +217,7 @@ public class CrossReferenceListJob {
      * 
      * @return configured Step instance for cross-reference record processing
      */
-    @Bean
+    @Bean(name = "crossReferenceStep")
     public Step crossReferenceListStep() {
         logger.info("Configuring crossReferenceListStep for sequential cross-reference processing");
         
@@ -269,7 +271,7 @@ public class CrossReferenceListJob {
      * 
      * @return configured JpaPagingItemReader for CardXref entities
      */
-    @Bean
+    @Bean(name = "crossReferenceReader")
     public JpaPagingItemReader<CardXref> crossReferenceReader() {
         logger.info("Configuring JpaPagingItemReader for sequential CardXref processing");
         
@@ -328,7 +330,7 @@ public class CrossReferenceListJob {
      * 
      * @return configured ItemProcessor for CardXref to CardCrossReferenceDto transformation
      */
-    @Bean
+    @Bean(name = "crossReferenceProcessor")
     public ItemProcessor<CardXref, CardCrossReferenceDto> crossReferenceProcessor() {
         logger.info("Configuring ItemProcessor for CardXref to CardCrossReferenceDto transformation");
         
@@ -423,7 +425,7 @@ public class CrossReferenceListJob {
      * 
      * @return configured FlatFileItemWriter for cross-reference listing output
      */
-    @Bean
+    @Bean(name = "crossReferenceWriter")
     public FlatFileItemWriter<CardCrossReferenceDto> crossReferenceWriter() {
         logger.info("Configuring FlatFileItemWriter for cross-reference listing output");
         

@@ -150,7 +150,7 @@ public class CustomerListJob {
     private static final Logger logger = LoggerFactory.getLogger(CustomerListJob.class);
     
     // Job configuration constants
-    private static final String JOB_NAME = "customerListJob";
+    private static final String JOB_NAME = "customerDataListJob";
     private static final String STEP_NAME = "customerListStep";
     private static final int CHUNK_SIZE = 100;
     private static final int PAGE_SIZE = 100;
