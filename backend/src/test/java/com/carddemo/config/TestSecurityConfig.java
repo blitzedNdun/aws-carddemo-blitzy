@@ -42,10 +42,11 @@ public class TestSecurityConfig {
     /**
      * Provides a permissive security filter chain that allows all requests without authentication.
      * This simplifies controller testing by removing authentication requirements.
+     * Named 'springSecurityFilterChain' to match MockMvc Spring Security integration expectations.
      */
-    @Bean
+    @Bean("springSecurityFilterChain")
     @Primary
-    public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain springSecurityFilterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(authz -> authz.anyRequest().permitAll())
             .csrf(csrf -> csrf.disable())
