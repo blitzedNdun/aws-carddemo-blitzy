@@ -19,11 +19,11 @@ import com.carddemo.dto.TransactionDetailDto;
 import com.carddemo.dto.AddTransactionRequest;
 import com.carddemo.entity.Transaction;
 import com.carddemo.entity.Account;
-import com.carddemo.controller.TestConstants;
+import com.carddemo.test.TestConstants;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureTestWeb;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -78,7 +78,7 @@ import java.util.UUID;
  * @since 2024
  */
 @SpringBootTest
-@AutoConfigureTestWeb
+@AutoConfigureMockMvc
 @Transactional
 public class TransactionControllerIntegrationTest extends BaseIntegrationTest {
 
@@ -106,13 +106,21 @@ public class TransactionControllerIntegrationTest extends BaseIntegrationTest {
     @Test
     public void testGetTransactionList_WithPagination_ReturnsCorrectResults() throws Exception {
         // Arrange - Create test account and transactions using base class utilities
-        Account testAccount = createTestAccount();
+        Account testAccount = createIntegrationTestAccount();
         Long accountId = testAccount.getAccountId();
         
         // Create multiple transactions for pagination testing
-        Transaction transaction1 = createTestTransaction(accountId, new BigDecimal("100.25"));
-        Transaction transaction2 = createTestTransaction(accountId, new BigDecimal("250.75"));
-        Transaction transaction3 = createTestTransaction(accountId, new BigDecimal("75.50"));
+        Transaction transaction1 = createIntegrationTestTransaction();
+        transaction1.setAccountId(accountId);
+        transaction1.setAmount(new BigDecimal("100.25").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
+        
+        Transaction transaction2 = createIntegrationTestTransaction();
+        transaction2.setAccountId(accountId);
+        transaction2.setAmount(new BigDecimal("250.75").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
+        
+        Transaction transaction3 = createIntegrationTestTransaction();
+        transaction3.setAccountId(accountId);
+        transaction3.setAmount(new BigDecimal("75.50").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
         
         transactionRepository.save(transaction1);
         transactionRepository.save(transaction2);
@@ -172,8 +180,10 @@ public class TransactionControllerIntegrationTest extends BaseIntegrationTest {
     @Test
     public void testGetTransactionById_WithValidId_ReturnsTransactionDetail() throws Exception {
         // Arrange - Create test transaction with complete merchant details
-        Account testAccount = createTestAccount();
-        Transaction testTransaction = createTestTransaction(testAccount.getAccountId(), new BigDecimal("123.45"));
+        Account testAccount = createIntegrationTestAccount();
+        Transaction testTransaction = createIntegrationTestTransaction();
+        testTransaction.setAccountId(testAccount.getAccountId());
+        testTransaction.setAmount(new BigDecimal("123.45").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
         
         // Set additional transaction details for comprehensive testing
         testTransaction.setMerchantName("Test Merchant Inc");
@@ -216,7 +226,7 @@ public class TransactionControllerIntegrationTest extends BaseIntegrationTest {
         assertThat(response.getDescription()).isEqualTo("Test transaction description");
 
         // Validate BigDecimal precision matches COBOL COMP-3 behavior
-        assertBigDecimalEquals(response.getAmount(), new BigDecimal("123.45"), TestConstants.COBOL_DECIMAL_SCALE);
+        assertBigDecimalEquals(new BigDecimal("123.45"), response.getAmount(), "Transaction amount should match COBOL precision");
         validateCobolPrecision(response.getAmount());
     }
 
@@ -236,7 +246,7 @@ public class TransactionControllerIntegrationTest extends BaseIntegrationTest {
     @Test
     public void testCreateTransaction_WithValidRequest_CreatesTransactionSuccessfully() throws Exception {
         // Arrange - Create test account with sufficient balance
-        Account testAccount = createTestAccount();
+        Account testAccount = createIntegrationTestAccount();
         testAccount.setCurrentBalance(new BigDecimal("1000.00"));
         testAccount.setCreditLimit(new BigDecimal("5000.00"));
         
@@ -283,7 +293,7 @@ public class TransactionControllerIntegrationTest extends BaseIntegrationTest {
         UUID.fromString(response.getTransactionId());
 
         // Validate BigDecimal precision preservation
-        assertBigDecimalEquals(response.getAmount(), new BigDecimal("156.78"), TestConstants.COBOL_DECIMAL_SCALE);
+        assertBigDecimalEquals(new BigDecimal("156.78"), response.getAmount(), "Transaction amount should preserve COBOL precision");
         validateCobolPrecision(response.getAmount());
 
         // Validate transaction persistence in database
@@ -298,7 +308,7 @@ public class TransactionControllerIntegrationTest extends BaseIntegrationTest {
         assertThat(persistedTransaction.getDescription()).isEqualTo("Integration test transaction");
 
         // Validate exact precision match using custom assertion
-        assertBigDecimalEquals(persistedTransaction.getAmount(), new BigDecimal("156.78"), TestConstants.COBOL_DECIMAL_SCALE);
+        assertBigDecimalEquals(new BigDecimal("156.78"), persistedTransaction.getAmount(), "Persisted transaction amount should maintain COBOL precision");
     }
 
     /**
@@ -316,20 +326,26 @@ public class TransactionControllerIntegrationTest extends BaseIntegrationTest {
     @Test
     public void testGetTransactionList_WithFilters_ReturnsFilteredResults() throws Exception {
         // Arrange - Create transactions with different characteristics for filtering
-        Account testAccount = createTestAccount();
+        Account testAccount = createIntegrationTestAccount();
         Long accountId = testAccount.getAccountId();
         String cardNumber = "4532123456789012";
         
         // Create transactions with varying amounts and dates
-        Transaction transaction1 = createTestTransaction(accountId, new BigDecimal("100.00"));
+        Transaction transaction1 = createIntegrationTestTransaction();
+        transaction1.setAccountId(accountId);
+        transaction1.setAmount(new BigDecimal("100.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
         transaction1.setCardNumber(cardNumber);
         transaction1.setTransactionDate(LocalDate.now().minusDays(1));
         
-        Transaction transaction2 = createTestTransaction(accountId, new BigDecimal("200.00"));
+        Transaction transaction2 = createIntegrationTestTransaction();
+        transaction2.setAccountId(accountId);
+        transaction2.setAmount(new BigDecimal("200.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
         transaction2.setCardNumber("4111111111111111"); // Different card
         transaction2.setTransactionDate(LocalDate.now());
         
-        Transaction transaction3 = createTestTransaction(accountId, new BigDecimal("300.00"));
+        Transaction transaction3 = createIntegrationTestTransaction();
+        transaction3.setAccountId(accountId);
+        transaction3.setAmount(new BigDecimal("300.00").setScale(TestConstants.COBOL_DECIMAL_SCALE, TestConstants.COBOL_ROUNDING_MODE));
         transaction3.setCardNumber(cardNumber);
         transaction3.setTransactionDate(LocalDate.now());
         
@@ -452,7 +468,7 @@ public class TransactionControllerIntegrationTest extends BaseIntegrationTest {
     @Test
     public void testBigDecimalPrecision_MaintainsCobolCompatibility() throws Exception {
         // Arrange - Create test data with precise decimal values
-        Account testAccount = createTestAccount();
+        Account testAccount = createIntegrationTestAccount();
         
         AddTransactionRequest request = new AddTransactionRequest();
         request.setAccountId(testAccount.getAccountId().toString());
@@ -474,7 +490,7 @@ public class TransactionControllerIntegrationTest extends BaseIntegrationTest {
 
         // Assert - Validate COBOL precision behavior
         BigDecimal expectedAmount = new BigDecimal("123.46"); // Rounded using HALF_UP
-        assertBigDecimalEquals(createdTransaction.getAmount(), expectedAmount, TestConstants.COBOL_DECIMAL_SCALE);
+        assertBigDecimalEquals(expectedAmount, createdTransaction.getAmount(), "Created transaction amount should match COBOL HALF_UP rounding");
         validateCobolPrecision(createdTransaction.getAmount());
 
         // Verify database persistence maintains precision
@@ -482,7 +498,7 @@ public class TransactionControllerIntegrationTest extends BaseIntegrationTest {
         Transaction persistedTransaction = transactionRepository.findById(transactionId).orElse(null);
         
         assertThat(persistedTransaction).isNotNull();
-        assertBigDecimalEquals(persistedTransaction.getAmount(), expectedAmount, TestConstants.COBOL_DECIMAL_SCALE);
+        assertBigDecimalEquals(expectedAmount, persistedTransaction.getAmount(), "Persisted transaction amount should match expected COBOL precision");
         
         // Verify scale is exactly 2 (COBOL COMP-3 equivalent)
         assertThat(persistedTransaction.getAmount().scale()).isEqualTo(TestConstants.COBOL_DECIMAL_SCALE);
@@ -502,7 +518,7 @@ public class TransactionControllerIntegrationTest extends BaseIntegrationTest {
     @Test
     public void testConcurrentTransactionProcessing_MaintainsDataIntegrity() throws Exception {
         // Arrange - Create test account for concurrent access
-        Account testAccount = createTestAccount();
+        Account testAccount = createIntegrationTestAccount();
         testAccount.setCurrentBalance(new BigDecimal("10000.00"));
         
         // Create multiple concurrent transaction requests

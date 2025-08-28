@@ -77,4 +77,14 @@ public class TransactionSummaryDto {
     @JsonFormat(shape = JsonFormat.Shape.NUMBER)
     private BigDecimal amount;
 
+    /**
+     * Card number associated with this transaction.
+     * Maps to TRAN-CARD-NUM from CVTRA05Y copybook (PIC X(16)).
+     * Used for transaction filtering and validation purposes.
+     * Essential for transaction traceability and card-specific reporting.
+     */
+    @NotBlank
+    @JsonProperty("cardNumber")
+    private String cardNumber;
+
 }
