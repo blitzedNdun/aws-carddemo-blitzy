@@ -19,7 +19,9 @@ import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.core.step.tasklet.TaskletStep;
 import org.springframework.batch.repeat.RepeatStatus;
@@ -95,7 +97,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Profile({"!test", "!unit-test"})
 @Configuration
-@Component
 public class AccountProcessingJob {
 
     private static final Logger logger = LoggerFactory.getLogger(AccountProcessingJob.class);
@@ -223,7 +224,8 @@ public class AccountProcessingJob {
         return new StepBuilder(ACCOUNT_STEP_NAME, jobRepository)
                 .tasklet(new Tasklet() {
                     @Override
-                    public RepeatStatus execute(StepExecution stepExecution) throws Exception {
+                    public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
+                        StepExecution stepExecution = contribution.getStepExecution();
                         logger.info("Starting Account List Job execution (CBACT01C replacement)");
                         LocalDateTime stepStartTime = LocalDateTime.now();
                         
@@ -322,7 +324,8 @@ public class AccountProcessingJob {
         return new StepBuilder(CARD_STEP_NAME, jobRepository)
                 .tasklet(new Tasklet() {
                     @Override
-                    public RepeatStatus execute(StepExecution stepExecution) throws Exception {
+                    public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
+                        StepExecution stepExecution = contribution.getStepExecution();
                         logger.info("Starting Card List Job execution (CBACT02C replacement)");
                         LocalDateTime stepStartTime = LocalDateTime.now();
                         
@@ -429,7 +432,8 @@ public class AccountProcessingJob {
         return new StepBuilder(XREF_STEP_NAME, jobRepository)
                 .tasklet(new Tasklet() {
                     @Override
-                    public RepeatStatus execute(StepExecution stepExecution) throws Exception {
+                    public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
+                        StepExecution stepExecution = contribution.getStepExecution();
                         logger.info("Starting Cross Reference List Job execution (CBACT03C replacement)");
                         LocalDateTime stepStartTime = LocalDateTime.now();
                         
