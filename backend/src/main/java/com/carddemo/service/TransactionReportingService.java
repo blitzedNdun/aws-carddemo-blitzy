@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -70,7 +71,7 @@ public class TransactionReportingService {
         
         BigDecimal totalAmount = transactions.stream()
             .map(Transaction::getAmount)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+            .reduce(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP), BigDecimal::add);
             
         return new DailyTransactionReportResult(
             transactions.size(),
@@ -116,7 +117,7 @@ public class TransactionReportingService {
         
         BigDecimal totalAmount = transactions.stream()
             .map(Transaction::getAmount)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+            .reduce(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP), BigDecimal::add);
             
         String reportId = "RPT-" + periodStart.toString() + "-" + System.currentTimeMillis();
         LocalDateTime generationTimestamp = LocalDateTime.now();
@@ -249,7 +250,7 @@ public class TransactionReportingService {
     public BigDecimal calculateAccountTotals(List<Transaction> transactions) {
         return transactions.stream()
             .map(Transaction::getAmount)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+            .reduce(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP), BigDecimal::add);
     }
 
     /**
@@ -265,7 +266,7 @@ public class TransactionReportingService {
         Map<Long, BigDecimal> accountTotals = transactions.stream()
             .collect(Collectors.groupingBy(
                 Transaction::getAccountId,
-                Collectors.reducing(BigDecimal.ZERO, Transaction::getAmount, BigDecimal::add)
+                Collectors.reducing(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP), Transaction::getAmount, BigDecimal::add)
             ));
             
         result.put("accountTotals", accountTotals);
@@ -283,9 +284,11 @@ public class TransactionReportingService {
      * @return grand total amount
      */
     public BigDecimal calculateGrandTotals(List<Transaction> transactions) {
+        // Start with ZERO at proper monetary scale for COBOL precision compatibility
+        BigDecimal total = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         return transactions.stream()
             .map(Transaction::getAmount)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+            .reduce(total, BigDecimal::add);
     }
 
     /**
@@ -529,13 +532,13 @@ public class TransactionReportingService {
 
     public static class MerchantCategoryData {
         private int transactionCount = 0;
-        private BigDecimal totalAmount = BigDecimal.ZERO;
-        private BigDecimal averageTransactionAmount = BigDecimal.ZERO;
+        private BigDecimal totalAmount = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        private BigDecimal averageTransactionAmount = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
 
         public void addTransaction(Transaction transaction) {
             transactionCount++;
             totalAmount = totalAmount.add(transaction.getAmount());
-            averageTransactionAmount = totalAmount.divide(new BigDecimal(transactionCount), 2, BigDecimal.ROUND_HALF_UP);
+            averageTransactionAmount = totalAmount.divide(new BigDecimal(transactionCount), 2, RoundingMode.HALF_UP);
         }
 
         public int getTransactionCount() { return transactionCount; }
