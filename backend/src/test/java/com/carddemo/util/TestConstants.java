@@ -26,6 +26,7 @@ public final class TestConstants {
      * Target throughput for performance testing (10,000 TPS requirement)
      */
     public static final int THROUGHPUT_TPS_TARGET = 10000;
+    public static final int TARGET_TPS = 10000; // Alias for PerformanceValidationTest compatibility
     
     /**
      * Maximum allowed batch processing time (4 hours requirement)
@@ -350,6 +351,8 @@ public final class TestConstants {
     public static final String ACCOUNT_STATUS_ACTIVE = "Y";
     public static final BigDecimal DEFAULT_ACCOUNT_BALANCE = new BigDecimal("1000.00");
     public static final String TEST_USER_ID = "TESTUSER";
+    public static final String TEST_USER_PASSWORD = "password123";
+    public static final BigDecimal TEST_TRANSACTION_AMOUNT = new BigDecimal("100.00");
     
     // Field length constants
     public static final int TRANSACTION_ID_MAX_LENGTH = 16;
@@ -360,6 +363,7 @@ public final class TestConstants {
     public static final int DEFAULT_BATCH_SIZE = 100;
     public static final long BATCH_PROCESSING_TIMEOUT_MS = 300000L; // 5 minutes
     public static final long MAX_MEMORY_USAGE_MB = 512L;
+    public static final int BATCH_PROCESSING_WINDOW_HOURS = 4; // 4-hour batch processing window requirement
     
     // Additional validation constants
     public static final String INVALID_CARD_NUMBER = "0000000000000000";
