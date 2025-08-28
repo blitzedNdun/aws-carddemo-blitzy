@@ -9,7 +9,7 @@ import com.carddemo.controller.TransactionController;
 import com.carddemo.controller.AccountController;
 import com.carddemo.config.WebConfig;
 import com.carddemo.config.RedisConfig;
-import TestConstants;
+import com.carddemo.controller.TestConstants;
 
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.test.web.servlet.RequestBuilder;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.web.context.WebApplicationContext;
@@ -482,8 +483,8 @@ class MockMvcTestRequestBuilder {
     public RequestBuilder build() {
         // Apply headers to the base builder
         headers.forEach((name, value) -> {
-            if (baseBuilder instanceof MockMvcRequestBuilders.GetRequestBuilder) {
-                ((MockMvcRequestBuilders.GetRequestBuilder) baseBuilder).header(name, value);
+            if (baseBuilder instanceof MockHttpServletRequestBuilder) {
+                ((MockHttpServletRequestBuilder) baseBuilder).header(name, value);
             }
         });
 
