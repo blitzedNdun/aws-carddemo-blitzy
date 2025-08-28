@@ -130,8 +130,8 @@ public class DailyTransactionJob {
     
     // Field names corresponding to DailyTransactionDto properties
     private static final String[] FIELD_NAMES = new String[] {
-        "cardNumber", "transactionAmount", "transactionType", 
-        "categoryCode", "transactionDate", "merchantName", "description"
+        "cardNumber", "amount", "typeCode", 
+        "categoryCode", "procTimestamp", "merchantName", "description"
     };
 
     @Autowired
@@ -332,8 +332,8 @@ public class DailyTransactionJob {
                     Account account = validateAccount(accountId);
                     
                     // Step 3: Validate transaction amount and type
-                    BigDecimal transactionAmount = validateTransactionAmount(dto.getTransactionAmount());
-                    validateTransactionType(dto.getTransactionType());
+                    BigDecimal transactionAmount = validateTransactionAmount(dto.getAmount().toString());
+                    validateTransactionType(dto.getTypeCode());
                     
                     // Step 4: Perform credit limit validation
                     validateCreditLimit(account, transactionAmount);
@@ -352,7 +352,24 @@ public class DailyTransactionJob {
                 } catch (Exception e) {
                     logger.error("Unexpected error processing transaction for card {}: {}", 
                                dto.getCardNumber(), e.getMessage(), e);
-                    throw new BatchProcessingException("Transaction processing failed", e);
+                    throw new BatchProcessingException("dailyTransactionJob", BatchProcessingException.ErrorType.EXECUTION_ERROR, "Transaction processing failed: " + e.getMessage());
+                }
+            }
+            
+            /**
+             * Validates transaction type code.
+             * Implements COBOL transaction type validation logic.
+             */
+            private void validateTransactionType(String transactionType) throws BusinessRuleException {
+                if (transactionType == null || transactionType.trim().isEmpty()) {
+                    throw new BusinessRuleException("Transaction type cannot be null or empty", "TRANSACTION_TYPE_INVALID");
+                }
+                
+                // Basic transaction type validation - can be expanded with specific business rules
+                String trimmedType = transactionType.trim();
+                if (trimmedType.length() != 2) {
+                    throw new BusinessRuleException("Transaction type must be 2 characters: " + transactionType, 
+                                                  "TRANSACTION_TYPE_INVALID");
                 }
             }
             
@@ -362,7 +379,9 @@ public class DailyTransactionJob {
              */
             private Long validateCardAndGetAccountId(String cardNumber) throws BusinessRuleException {
                 // Validate card number format
-                validationUtil.validateTransactionType(cardNumber); // Reuse validation logic
+                if (cardNumber == null || cardNumber.trim().isEmpty()) {
+                    throw new BusinessRuleException("Card number cannot be null or empty", "CARD_NUMBER_INVALID");
+                }
                 
                 // Lookup card in cross-reference table
                 List<CardXref> cardXrefs = cardXrefRepository.findByXrefCardNum(cardNumber);
@@ -390,10 +409,16 @@ public class DailyTransactionJob {
                 Account account = optAccount.get();
                 
                 // Validate account status - must be active
-                validationUtil.validateAccountStatus(account.getActiveStatus());
+                if (!"Y".equals(account.getActiveStatus())) {
+                    throw new BusinessRuleException("Account is not active: " + account.getActiveStatus(), 
+                                                  "ACCOUNT_INACTIVE");
+                }
                 
                 // Validate account expiration date
-                validationUtil.validateExpirationDate(account.getExpirationDate());
+                if (account.getExpirationDate() != null && account.getExpirationDate().isBefore(LocalDate.now())) {
+                    throw new BusinessRuleException("Account has expired: " + account.getExpirationDate(), 
+                                                  "ACCOUNT_EXPIRED");
+                }
                 
                 return account;
             }
@@ -404,7 +429,7 @@ public class DailyTransactionJob {
             private BigDecimal validateTransactionAmount(String amountString) throws BusinessRuleException {
                 try {
                     // Convert using COBOL data converter for exact precision
-                    BigDecimal amount = cobolDataConverter.convertDecimal(amountString, 2);
+                    BigDecimal amount = CobolDataConverter.toBigDecimal(amountString, 2);
                     
                     if (amount.compareTo(BigDecimal.ZERO) <= 0) {
                         throw new BusinessRuleException("Transaction amount must be positive: " + amount, 
@@ -424,9 +449,14 @@ public class DailyTransactionJob {
              */
             private void validateCreditLimit(Account account, BigDecimal transactionAmount) 
                     throws BusinessRuleException {
-                validationUtil.validateCreditLimit(account.getCurrentBalance(), 
-                                                 account.getCreditLimit(), 
-                                                 transactionAmount);
+                BigDecimal newBalance = account.getCurrentBalance().add(transactionAmount);
+                if (newBalance.compareTo(account.getCreditLimit()) > 0) {
+                    throw new BusinessRuleException("Transaction would exceed credit limit. " +
+                        "Current: " + account.getCurrentBalance() + 
+                        ", Transaction: " + transactionAmount + 
+                        ", Limit: " + account.getCreditLimit(), 
+                        "CREDIT_LIMIT_EXCEEDED");
+                }
             }
             
             /**
@@ -438,14 +468,14 @@ public class DailyTransactionJob {
                 
                 // Set primary fields
                 transaction.setAccountId(accountId);
-                transaction.setTransactionAmount(transactionAmount);
-                transaction.setTransactionType(dto.getTransactionType());
+                transaction.setAmount(transactionAmount);
+                transaction.setTransactionTypeCode(dto.getTypeCode());
                 transaction.setCategoryCode(dto.getCategoryCode());
                 
                 // Convert and set transaction date
-                LocalDate transactionDate = dateConversionUtil.parseDate(dto.getTransactionDate());
+                LocalDate transactionDate = DateConversionUtil.parseDate(dto.getProcTimestamp());
                 transaction.setTransactionDate(transactionDate);
-                transaction.setTransactionTimestamp(dateConversionUtil.convertToLocalDateTime(dto.getTransactionDate()));
+                transaction.setOriginalTimestamp(transactionDate.atStartOfDay()); // Convert LocalDate to LocalDateTime
                 
                 // Set merchant and description
                 transaction.setMerchantName(dto.getMerchantName().trim());
@@ -491,7 +521,8 @@ public class DailyTransactionJob {
         
         return new ItemWriter<Transaction>() {
             @Override
-            public void write(List<? extends Transaction> transactions) throws Exception {
+            public void write(org.springframework.batch.item.Chunk<? extends Transaction> chunk) throws Exception {
+                java.util.List<? extends Transaction> transactions = chunk.getItems();
                 logger.debug("Writing {} transactions to database", transactions.size());
                 
                 try {
@@ -512,7 +543,7 @@ public class DailyTransactionJob {
                     
                 } catch (Exception e) {
                     logger.error("Error writing transactions to database: {}", e.getMessage(), e);
-                    throw new BatchProcessingException("Failed to write transactions", e);
+                    throw new BatchProcessingException("dailyTransactionJob", BatchProcessingException.ErrorType.EXECUTION_ERROR, "Failed to write transactions: " + e.getMessage());
                 }
             }
             
@@ -536,7 +567,7 @@ public class DailyTransactionJob {
                         // Update existing balance
                         categoryBalance = existingBalance.get();
                         BigDecimal currentBalance = categoryBalance.getBalance();
-                        BigDecimal newBalance = currentBalance.add(transaction.getTransactionAmount());
+                        BigDecimal newBalance = currentBalance.add(transaction.getAmount());
                         categoryBalance.setBalance(newBalance);
                         
                         logger.debug("Updating category balance for account {} category {} from {} to {}", 
@@ -545,14 +576,17 @@ public class DailyTransactionJob {
                     } else {
                         // Create new balance record
                         categoryBalance = new TransactionCategoryBalance();
-                        categoryBalance.setAccountId(transaction.getAccountId());
-                        categoryBalance.setCategoryCode(transaction.getCategoryCode());
-                        categoryBalance.setBalanceDate(transaction.getTransactionDate());
-                        categoryBalance.setBalance(transaction.getTransactionAmount());
+                        TransactionCategoryBalance.TransactionCategoryBalanceKey key = 
+                            new TransactionCategoryBalance.TransactionCategoryBalanceKey();
+                        key.setAccountId(transaction.getAccountId());
+                        key.setCategoryCode(transaction.getCategoryCode());
+                        key.setBalanceDate(transaction.getTransactionDate());
+                        categoryBalance.setId(key);
+                        categoryBalance.setBalance(transaction.getAmount());
                         
                         logger.debug("Creating new category balance for account {} category {} with balance {}", 
                                    transaction.getAccountId(), transaction.getCategoryCode(), 
-                                   transaction.getTransactionAmount());
+                                   transaction.getAmount());
                     }
                     
                     // Save the category balance record
@@ -575,13 +609,13 @@ public class DailyTransactionJob {
                     Optional<Account> optAccount = accountRepository.findByIdForUpdate(transaction.getAccountId());
                     
                     if (optAccount.isEmpty()) {
-                        throw new BatchProcessingException("Account not found for balance update: " + 
-                                                         transaction.getAccountId());
+                        throw new BatchProcessingException("dailyTransactionJob", BatchProcessingException.ErrorType.EXECUTION_ERROR, 
+                                                         "Account not found for balance update: " + transaction.getAccountId());
                     }
                     
                     Account account = optAccount.get();
                     BigDecimal currentBalance = account.getCurrentBalance();
-                    BigDecimal newBalance = currentBalance.add(transaction.getTransactionAmount());
+                    BigDecimal newBalance = currentBalance.add(transaction.getAmount());
                     
                     // Update account balance
                     account.setCurrentBalance(newBalance);
