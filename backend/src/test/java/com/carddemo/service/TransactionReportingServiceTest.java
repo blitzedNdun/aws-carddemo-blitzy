@@ -235,9 +235,9 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
         }
         
         // Configure mock repository - members_accessed from TransactionRepository
-        when(transactionRepository.findByAccountIdAndDateRange(Mockito.anyLong(), 
-            Mockito.eq(monthStart.atStartOfDay()), Mockito.eq(monthEnd.atTime(23, 59, 59)), Mockito.any()))
-            .thenReturn(new org.springframework.data.domain.PageImpl<>(monthlyTransactions));
+        when(transactionRepository.findByProcessingDateBetween(
+            Mockito.eq(monthStart.atStartOfDay()), Mockito.eq(monthEnd.atTime(23, 59, 59))))
+            .thenReturn(monthlyTransactions);
         
         // Act - Generate monthly aggregation report
         long startTime = System.currentTimeMillis();
@@ -319,7 +319,7 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
         // Configure mock repository for compliance data retrieval
         when(transactionRepository.findByProcessingDateBetween(
             periodStart.atStartOfDay(), 
-            periodEnd.atTime(23, 59, 59, 999999999)
+            periodEnd.atTime(23, 59, 59)
         ))
             .thenReturn(complianceTransactions);
         
@@ -416,7 +416,7 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
         }
         
         // Configure mock repository for fraud detection queries
-        when(transactionRepository.findByAccountId(Mockito.anyLong()))
+        when(transactionRepository.findByProcessingDateBetween(Mockito.any(LocalDateTime.class), Mockito.any(LocalDateTime.class)))
             .thenReturn(suspiciousTransactions);
         
         // Act - Generate fraud detection report

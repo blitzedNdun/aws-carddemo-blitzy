@@ -96,10 +96,10 @@ public class FinancialCalculationParityTest extends BaseIntegrationTest {
         setupTestContainers();
         
         // Create test account with COBOL-compatible monetary precision
-        testAccount = createTestAccount();
+        testAccount = createIntegrationTestAccount();
         
         // Create test transaction for balance update testing
-        testTransaction = createTestTransaction();
+        testTransaction = createIntegrationTestTransaction();
         
         // Initialize COBOL reference calculation results for validation
         initializeCobolReferenceResults();
@@ -162,7 +162,7 @@ public class FinancialCalculationParityTest extends BaseIntegrationTest {
         );
         
         for (BigDecimal testValue : testValues) {
-            BigDecimal normalized = CobolDataConverter.createBigDecimalWithCobolPrecision(testValue);
+            BigDecimal normalized = CobolDataConverter.preservePrecision(testValue, COBOL_MONETARY_SCALE);
             
             // Validate scale is exactly 2 (COBOL COMP-3 monetary standard)
             assertThat(normalized.scale()).isEqualTo(COBOL_MONETARY_SCALE);
@@ -206,7 +206,7 @@ public class FinancialCalculationParityTest extends BaseIntegrationTest {
             BigDecimal expectedOutput = testCase.getValue();
             
             // Use CobolDataConverter to apply COBOL rounding behavior
-            BigDecimal actualOutput = input.setScale(COBOL_MONETARY_SCALE, CobolDataConverter.getRoundingModeForCobol());
+            BigDecimal actualOutput = input.setScale(COBOL_MONETARY_SCALE, CobolDataConverter.COBOL_ROUNDING_MODE);
             
             assertBigDecimalEquals(expectedOutput, actualOutput);
             validateCobolPrecision(actualOutput);
@@ -245,8 +245,8 @@ public class FinancialCalculationParityTest extends BaseIntegrationTest {
                     .setScale(COBOL_MONETARY_SCALE, COBOL_ROUNDING_MODE);
             
             // Update balance using CobolDataConverter precision handling
-            runningBalance = CobolDataConverter.createBigDecimalWithCobolPrecision(
-                    runningBalance.add(transactionAmount));
+            runningBalance = CobolDataConverter.preservePrecision(
+                    runningBalance.add(transactionAmount), COBOL_MONETARY_SCALE);
             
             // Validate precision and accuracy
             assertBigDecimalEquals(expectedBalance, runningBalance);
@@ -284,13 +284,13 @@ public class FinancialCalculationParityTest extends BaseIntegrationTest {
         
         for (BigDecimal originalAmount : testAmounts) {
             // Process transaction amount through COBOL precision converter
-            BigDecimal processedAmount = CobolDataConverter.createBigDecimalWithCobolPrecision(originalAmount);
+            BigDecimal processedAmount = CobolDataConverter.preservePrecision(originalAmount, COBOL_MONETARY_SCALE);
             
             // Validate precision maintenance
             validateCobolPrecision(processedAmount);
             
             // Create transaction with processed amount
-            Transaction precisionTransaction = createTestTransaction();
+            Transaction precisionTransaction = createIntegrationTestTransaction();
             precisionTransaction.setAmount(processedAmount);
             
             // Validate transaction amount precision
@@ -326,7 +326,7 @@ public class FinancialCalculationParityTest extends BaseIntegrationTest {
         
         // Calculate available credit using COBOL precision
         BigDecimal availableCredit = creditLimit.subtract(currentBalance).subtract(pendingCharges);
-        availableCredit = CobolDataConverter.createBigDecimalWithCobolPrecision(availableCredit);
+        availableCredit = CobolDataConverter.preservePrecision(availableCredit, COBOL_MONETARY_SCALE);
         
         // Expected available credit: 5000.00 - 1500.75 - 250.25 = 3249.00
         BigDecimal expectedAvailableCredit = new BigDecimal("3249.00").setScale(COBOL_MONETARY_SCALE, COBOL_ROUNDING_MODE);
@@ -366,7 +366,7 @@ public class FinancialCalculationParityTest extends BaseIntegrationTest {
             
             // Perform currency conversion with COBOL precision
             BigDecimal convertedAmount = originalAmount.multiply(exchangeRate);
-            convertedAmount = CobolDataConverter.createBigDecimalWithCobolPrecision(convertedAmount);
+            convertedAmount = CobolDataConverter.preservePrecision(convertedAmount, COBOL_MONETARY_SCALE);
             
             // Validate precision maintenance after conversion
             validateCobolPrecision(convertedAmount);
