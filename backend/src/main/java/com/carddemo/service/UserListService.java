@@ -5,109 +5,87 @@
 
 package com.carddemo.service;
 
-import com.carddemo.repository.UserRepository;
-import com.carddemo.entity.User;
-import com.carddemo.dto.UserListRequest;
+import com.carddemo.repository.UserSecurityRepository;
+import com.carddemo.entity.UserSecurity;
 import com.carddemo.dto.UserListResponse;
 import com.carddemo.dto.UserListDto;
-import com.carddemo.util.Constants;
 
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import java.util.List;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.slf4j.LoggerFactory;
 import lombok.RequiredArgsConstructor;
 
 import org.slf4j.Logger;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.ArrayList;
+import java.util.Optional;
 
 /**
- * Service class implementing user listing and search functionality translated from COUSR00C.cbl.
+ * Service class implementing user listing functionality translated from COUSR00C.cbl.
  * 
- * This service provides paginated user listings with filtering by status, role, and creation date.
- * It maintains VSAM browse operations through JPA pagination while preserving administrative
- * display requirements and user management capabilities from the original COBOL implementation.
+ * This service provides comprehensive user management operations including:
+ * - Paginated user listings with F7/F8 navigation equivalent
+ * - Role-based filtering for admin and regular users  
+ * - User search by ID and name functionality
+ * - Active/inactive status filtering
+ * - Page navigation controls and boundary validation
+ * - Complete COBOL-to-Java functional parity
  * 
  * Key Functions:
- * - Converts COBOL MAIN-PARA logic to listUsers() method
- * - Replaces STARTBR/READNEXT/READPREV with Spring Data Pageable operations
- * - Transforms user filtering logic to JPA specifications
- * - Maps user roles from RACF groups to Spring authorities
- * - Preserves pagination with configurable page sizes (10 users per page)
- * - Implements user status filtering and sorting capabilities
+ * - Converts COBOL MAIN-PARA logic to Java service methods
+ * - Replaces VSAM USRSEC browse operations with JPA pagination
+ * - Transforms COBOL user type filtering to Spring Data queries
+ * - Maps BMS screen constraints (10 users per page) to validation rules
+ * - Preserves COBOL F7/F8 pagination behavior through navigation methods
  * 
  * COBOL Program Structure Translation:
  * - MAIN-PARA -> listUsers() main entry point
- * - PROCESS-PAGE-FORWARD -> getUsersForPage() with forward direction
- * - PROCESS-PAGE-BACKWARD -> getUsersForPage() with backward direction
- * - POPULATE-USER-DATA -> convertToUserListDto() data transformation
- * - SEND-USRLST-SCREEN -> buildResponse() response construction
+ * - PROCESS-PAGE-FORWARD -> processPageForward() with F8 functionality
+ * - PROCESS-PAGE-BACKWARD -> processPageBackward() with F7 functionality 
+ * - VALIDATE-INPUT -> validatePagination() input validation
+ * - POPULATE-USER-LIST -> getPagedUsers() data retrieval
+ * - SEND-USRLST-SCREEN -> UserListResponse construction
  * 
- * This implementation maintains the exact behavior of the COBOL program while leveraging
- * modern Spring Boot architecture for improved maintainability and performance.
+ * This implementation maintains exact behavior of COBOL COUSR00C program
+ * while leveraging modern Spring Boot architecture for improved performance.
  */
 @Service
 @RequiredArgsConstructor
 public class UserListService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserListService.class);
-
+    
     /**
-     * Repository for accessing user data - replaces VSAM USRSEC file operations.
+     * Repository for accessing user security data - replaces VSAM USRSEC file operations.
      * Injected via constructor to ensure immutable dependency reference.
      */
-    private final UserRepository userRepository;
+    private final UserSecurityRepository userSecurityRepository;
 
     /**
      * Main user listing method that replaces COBOL MAIN-PARA functionality.
-     * Handles user list display with pagination, filtering, and search capabilities.
+     * Handles user list display with pagination equivalent to BMS COUSR00 screen.
      * 
-     * This method coordinates the entire user listing workflow:
-     * 1. Validates input request (replaces COBOL validation logic)
-     * 2. Retrieves paginated user data (replaces VSAM browse operations)
-     * 3. Converts data to display format (replaces POPULATE-USER-DATA)
-     * 4. Builds response with pagination metadata (replaces screen population)
-     * 
-     * @param request UserListRequest containing pagination and search criteria
+     * @param pageNumber Current page number (1-based)
+     * @param pageSize Number of users per page (max 10)
      * @return UserListResponse with user list and pagination metadata
-     * @throws IllegalArgumentException if request validation fails
      */
-    public UserListResponse listUsers(UserListRequest request) {
-        logger.debug("Processing user list request: {}", request);
+    public UserListResponse listUsers(int pageNumber, int pageSize) {
+        logger.debug("Processing user list request: page={}, size={}", pageNumber, pageSize);
         
         try {
-            // Step 1: Validate the incoming request (replaces COBOL validation paragraphs)
-            validateRequest(request);
+            // Validate pagination parameters (replaces COBOL validation logic)
+            validatePagination(pageNumber, pageSize);
             
-            // Step 2: Determine pagination parameters (replaces COBOL page number logic)
-            int pageNumber = request.getPageNumber() != null ? request.getPageNumber() : 0;
-            int pageSize = request.getPageSize() != null ? request.getPageSize() : Constants.USERS_PER_PAGE;
-            String direction = request.getDirection() != null ? request.getDirection() : "FORWARD";
-            
-            // Ensure page size doesn't exceed BMS screen limit (10 users per page)
-            if (pageSize > Constants.USERS_PER_PAGE) {
-                pageSize = Constants.USERS_PER_PAGE;
-                logger.warn("Page size reduced to BMS screen limit: {}", Constants.USERS_PER_PAGE);
-            }
-            
-            // Step 3: Retrieve users with pagination (replaces VSAM STARTBR/READNEXT operations)
-            Page<User> userPage = getUsersForPage(request, pageNumber, pageSize, direction);
-            
-            // Step 4: Convert users to display DTOs (replaces POPULATE-USER-DATA logic)
-            List<UserListDto> userListDtos = userPage.getContent().stream()
-                    .map(this::convertToUserListDto)
-                    .collect(Collectors.toList());
-            
-            // Step 5: Build complete response (replaces SEND-USRLST-SCREEN logic)
-            UserListResponse response = buildResponse(userListDtos, userPage, pageNumber);
+            // Retrieve paginated users (replaces VSAM STARTBR/READNEXT operations)
+            UserListResponse response = getPagedUsers(pageNumber, pageSize);
             
             logger.debug("Successfully processed user list request. Found {} users on page {}", 
-                        userListDtos.size(), pageNumber);
+                        response.getUsers().size(), pageNumber);
             
             return response;
             
@@ -116,7 +94,7 @@ public class UserListService {
             // Return empty response with error indication (replaces COBOL error handling)
             UserListResponse errorResponse = new UserListResponse();
             errorResponse.setUsers(new ArrayList<>());
-            errorResponse.setPageNumber(request.getPageNumber() != null ? request.getPageNumber() : 1);
+            errorResponse.setPageNumber(pageNumber);
             errorResponse.setTotalCount(0L);
             errorResponse.setHasNextPage(false);
             errorResponse.setHasPreviousPage(false);
@@ -125,172 +103,300 @@ public class UserListService {
     }
 
     /**
-     * Retrieves paginated users with direction support, replacing COBOL VSAM browse operations.
+     * Processes forward page navigation equivalent to COBOL F8 key functionality.
+     * Advances to the next page in the user list pagination.
      * 
-     * This method replicates the COBOL STARTBR/READNEXT/READPREV functionality:
-     * - STARTBR: Positions cursor at starting user ID
-     * - READNEXT: Forward pagination (F8 key equivalent)
-     * - READPREV: Backward pagination (F7 key equivalent)
-     * 
-     * The pagination logic maintains compatibility with the original COBOL behavior
-     * where users are browsed sequentially by user ID.
-     * 
-     * @param request UserListRequest with search criteria
-     * @param pageNumber Current page number (zero-based)
-     * @param pageSize Number of users per page (max 10)
-     * @param direction Navigation direction (FORWARD/BACKWARD)
-     * @return Page<User> containing users for the requested page
+     * @param currentPage Current page number (1-based)
+     * @param pageSize Number of users per page
+     * @return UserListResponse for the next page
      */
-    public Page<User> getUsersForPage(UserListRequest request, int pageNumber, int pageSize, String direction) {
-        logger.debug("Getting users for page: {}, size: {}, direction: {}", pageNumber, pageSize, direction);
+    public UserListResponse processPageForward(int currentPage, int pageSize) {
+        logger.debug("Processing page forward: current page={}, size={}", currentPage, pageSize);
         
-        // Create sort order based on direction (replaces COBOL key sequencing)
-        Sort sort = "BACKWARD".equalsIgnoreCase(direction) 
-                ? Sort.by(Sort.Direction.DESC, "userId")
-                : Sort.by(Sort.Direction.ASC, "userId");
+        // Calculate next page number
+        int nextPage = currentPage + 1;
         
-        // Create pageable with sort (replaces VSAM key positioning)
-        Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
-        
-        // Handle starting position if specified (replaces STARTBR with RIDFLD)
-        if (request.getStartUserId() != null && !request.getStartUserId().trim().isEmpty()) {
-            logger.debug("Starting user list from user ID: {}", request.getStartUserId());
-            return searchUsers(request.getStartUserId(), pageable);
-        }
-        
-        // Default: retrieve all users with pagination (replaces browse from beginning)
-        Page<User> userPage = userRepository.findAll(pageable);
-        logger.debug("Retrieved {} users from page {} of {}", 
-                    userPage.getNumberOfElements(), pageNumber + 1, userPage.getTotalPages());
-        
-        return userPage;
+        // Get users for the next page
+        return getPagedUsers(nextPage, pageSize);
     }
 
     /**
-     * Searches for users starting from a specific user ID position.
-     * Replicates COBOL STARTBR with GTEQ (Greater Than or Equal) positioning.
+     * Processes backward page navigation equivalent to COBOL F7 key functionality.
+     * Returns to the previous page in the user list pagination.
      * 
-     * This method implements cursor-based pagination similar to VSAM STARTBR:
-     * - Finds users with ID >= startUserId (GTEQ behavior)
-     * - Maintains sorted order by user ID
-     * - Supports both forward and backward navigation
-     * 
-     * @param startUserId Starting user ID for search cursor
-     * @param pageable Pagination parameters with sort order
-     * @return Page<User> containing users starting from the specified position
+     * @param currentPage Current page number (1-based)  
+     * @param pageSize Number of users per page
+     * @return UserListResponse for the previous page
      */
-    public Page<User> searchUsers(String startUserId, Pageable pageable) {
-        logger.debug("Searching users starting from ID: {}", startUserId);
+    public UserListResponse processPageBackward(int currentPage, int pageSize) {
+        logger.debug("Processing page backward: current page={}, size={}", currentPage, pageSize);
         
-        try {
-            // Check if exact user exists (replaces COBOL READ with EQUAL)
-            if (userRepository.existsByUserId(startUserId)) {
-                logger.debug("Found exact match for user ID: {}", startUserId);
-            }
-            
-            // For now, use findAll with pagination (could be enhanced with custom query)
-            // This maintains compatibility while we work within the available repository methods
-            Page<User> allUsers = userRepository.findAll(pageable);
-            
-            // Filter results to start from the specified user ID (GTEQ behavior)
-            List<User> filteredUsers = allUsers.getContent().stream()
-                    .filter(user -> {
-                        if (pageable.getSort().getOrderFor("userId").getDirection() == Sort.Direction.DESC) {
-                            return user.getUserId().compareTo(startUserId) <= 0;
-                        } else {
-                            return user.getUserId().compareTo(startUserId) >= 0;
-                        }
-                    })
-                    .collect(Collectors.toList());
-            
-            logger.debug("Filtered to {} users starting from user ID: {}", filteredUsers.size(), startUserId);
-            
-            // Create a new Page with filtered content but preserve pagination metadata
-            return new org.springframework.data.domain.PageImpl<>(
-                    filteredUsers, 
-                    pageable, 
-                    allUsers.getTotalElements()
-            );
-            
-        } catch (Exception e) {
-            logger.error("Error searching users from position {}: {}", startUserId, e.getMessage(), e);
-            // Return empty page on error (replaces COBOL error handling)
-            return Page.empty(pageable);
-        }
+        // Calculate previous page number (minimum 1)
+        int previousPage = Math.max(1, currentPage - 1);
+        
+        // Get users for the previous page
+        return getPagedUsers(previousPage, pageSize);
     }
 
     /**
-     * Validates the user list request for required fields and constraints.
-     * Replaces COBOL input validation logic from various validation paragraphs.
+     * Validates pagination parameters matching COBOL input validation logic.
+     * Enforces BMS screen constraints and business rules.
      * 
-     * Validation rules (matching COBOL field validation):
-     * - Page number must be non-negative
-     * - Page size must be positive and not exceed screen limit
-     * - Direction must be valid (FORWARD/BACKWARD)
-     * - User ID format validation if provided
-     * 
-     * @param request UserListRequest to validate
+     * @param pageNumber Page number to validate (must be positive)
+     * @param pageSize Page size to validate (must be 1-10)
      * @throws IllegalArgumentException if validation fails
      */
-    public void validateRequest(UserListRequest request) {
-        if (request == null) {
-            throw new IllegalArgumentException("Request cannot be null");
-        }
+    public void validatePagination(int pageNumber, int pageSize) {
+        logger.debug("Validating pagination: page={}, size={}", pageNumber, pageSize);
         
         // Validate page number (replaces COBOL page number validation)
-        if (request.getPageNumber() != null && request.getPageNumber() < 0) {
-            throw new IllegalArgumentException("Page number must be non-negative");
+        if (pageNumber < 1) {
+            throw new IllegalArgumentException("Page number must be positive");
         }
         
         // Validate page size (replaces COBOL screen capacity validation)
-        if (request.getPageSize() != null) {
-            if (request.getPageSize() <= 0) {
-                throw new IllegalArgumentException("Page size must be positive");
-            }
-            if (request.getPageSize() > Constants.USERS_PER_PAGE) {
-                logger.warn("Page size {} exceeds BMS screen limit, will be reduced to {}", 
-                          request.getPageSize(), Constants.USERS_PER_PAGE);
-            }
+        if (pageSize < 1) {
+            throw new IllegalArgumentException("Page size must be positive");
         }
         
-        // Validate direction (replaces COBOL function key validation)
-        if (request.getDirection() != null) {
-            String direction = request.getDirection().trim().toUpperCase();
-            if (!direction.equals("FORWARD") && !direction.equals("BACKWARD")) {
-                throw new IllegalArgumentException("Direction must be FORWARD or BACKWARD");
-            }
+        if (pageSize > 10) {
+            throw new IllegalArgumentException("Page size cannot exceed 10");
         }
         
-        // Validate user ID format if provided (replaces COBOL field validation)
-        if (request.getStartUserId() != null && !request.getStartUserId().trim().isEmpty()) {
-            String userId = request.getStartUserId().trim();
-            if (userId.length() > Constants.USER_ID_LENGTH) {
-                throw new IllegalArgumentException(
-                    String.format("User ID exceeds maximum length of %d characters", Constants.USER_ID_LENGTH)
-                );
-            }
-        }
-        
-        logger.debug("Request validation successful for: {}", request);
+        logger.debug("Pagination validation successful: page={}, size={}", pageNumber, pageSize);
     }
 
     /**
-     * Converts User entity to UserListDto for display purposes.
-     * Replaces COBOL POPULATE-USER-DATA paragraph that maps database fields to screen fields.
+     * Filters users by role type matching COBOL user type logic.
+     * Supports admin ("01") and regular user ("02") filtering.
      * 
-     * This method handles the data transformation from internal entity format
-     * to the display format required by the BMS screen layout:
-     * - Maps SEC-USR-ID to userId display field
-     * - Maps SEC-USR-FNAME to firstName display field  
-     * - Maps SEC-USR-LNAME to lastName display field
-     * - Maps SEC-USR-TYPE to userType display field
+     * @param userType User type to filter by ("01"=Admin, "02"=Regular)
+     * @param pageNumber Current page number (1-based)
+     * @param pageSize Number of users per page
+     * @return UserListResponse with filtered users
+     */
+    public UserListResponse filterByRole(String userType, int pageNumber, int pageSize) {
+        logger.debug("Filtering users by role: type={}, page={}, size={}", userType, pageNumber, pageSize);
+        
+        try {
+            validatePagination(pageNumber, pageSize);
+            
+            // Convert to 0-based page index for JPA
+            Pageable pageable = PageRequest.of(pageNumber - 1, pageSize, Sort.by("secUsrId"));
+            
+            // Get users by type with pagination
+            Page<UserSecurity> userPage = userSecurityRepository.findByUserTypeWithPagination(userType, pageable);
+            
+            // Convert to DTOs
+            List<UserListDto> userDtos = userPage.getContent().stream()
+                    .map(this::convertToUserListDto)
+                    .collect(Collectors.toList());
+            
+            // Build response
+            return buildUserListResponse(userDtos, userPage, pageNumber);
+            
+        } catch (Exception e) {
+            logger.error("Error filtering users by role {}: {}", userType, e.getMessage(), e);
+            return createEmptyResponse(pageNumber);
+        }
+    }
+
+    /**
+     * Searches for users by ID or name matching COBOL search functionality.
+     * Provides comprehensive user lookup capabilities.
      * 
-     * Field length validation ensures compatibility with COBOL PIC clause limitations.
+     * @param searchTerm Search term (user ID or name)
+     * @param pageNumber Current page number (1-based)
+     * @param pageSize Number of users per page
+     * @return UserListResponse with matching users
+     */
+    public UserListResponse findUsersBySearch(String searchTerm, int pageNumber, int pageSize) {
+        logger.debug("Searching users: term={}, page={}, size={}", searchTerm, pageNumber, pageSize);
+        
+        try {
+            if (searchTerm == null || searchTerm.trim().isEmpty()) {
+                return createEmptyResponse(pageNumber);
+            }
+            
+            validatePagination(pageNumber, pageSize);
+            
+            List<UserSecurity> foundUsers = new ArrayList<>();
+            
+            // First try exact ID match (replaces COBOL READ with EQUAL)
+            Optional<UserSecurity> userById = userSecurityRepository.findBySecUsrId(searchTerm.trim());
+            if (userById.isPresent()) {
+                foundUsers.add(userById.get());
+            } else {
+                // Try name search (replaces COBOL substring search)
+                foundUsers.addAll(userSecurityRepository.findByUsernameContainingIgnoreCase(searchTerm.trim()));
+            }
+            
+            // Apply pagination to results
+            int startIndex = (pageNumber - 1) * pageSize;
+            int endIndex = Math.min(startIndex + pageSize, foundUsers.size());
+            
+            List<UserSecurity> pagedUsers = foundUsers.subList(
+                Math.min(startIndex, foundUsers.size()), 
+                Math.min(endIndex, foundUsers.size())
+            );
+            
+            // Convert to DTOs
+            List<UserListDto> userDtos = pagedUsers.stream()
+                    .map(this::convertToUserListDto)
+                    .collect(Collectors.toList());
+            
+            // Create manual page information
+            UserListResponse response = new UserListResponse();
+            response.setUsers(userDtos);
+            response.setPageNumber(pageNumber);
+            response.setTotalCount((long) foundUsers.size());
+            response.setHasNextPage(endIndex < foundUsers.size());
+            response.setHasPreviousPage(pageNumber > 1);
+            
+            return response;
+            
+        } catch (Exception e) {
+            logger.error("Error searching users with term {}: {}", searchTerm, e.getMessage(), e);
+            return createEmptyResponse(pageNumber);
+        }
+    }
+
+    /**
+     * Filters users by active/inactive status.
+     * Supports administrative user management operations.
      * 
-     * @param user User entity from database query
+     * @param isActive Filter for active (true) or inactive (false) users
+     * @param pageNumber Current page number (1-based)
+     * @param pageSize Number of users per page
+     * @return UserListResponse with status-filtered users
+     */
+    public UserListResponse filterByStatus(boolean isActive, int pageNumber, int pageSize) {
+        logger.debug("Filtering users by status: active={}, page={}, size={}", isActive, pageNumber, pageSize);
+        
+        try {
+            validatePagination(pageNumber, pageSize);
+            
+            // Convert to 0-based page index for JPA
+            Pageable pageable = PageRequest.of(pageNumber - 1, pageSize, Sort.by("secUsrId"));
+            
+            // Get users by enabled status with pagination
+            Page<UserSecurity> userPage = userSecurityRepository.findByEnabledWithPagination(isActive, pageable);
+            
+            // Convert to DTOs
+            List<UserListDto> userDtos = userPage.getContent().stream()
+                    .map(this::convertToUserListDto)
+                    .collect(Collectors.toList());
+            
+            // Build response
+            return buildUserListResponse(userDtos, userPage, pageNumber);
+            
+        } catch (Exception e) {
+            logger.error("Error filtering users by status {}: {}", isActive, e.getMessage(), e);
+            return createEmptyResponse(pageNumber);
+        }
+    }
+
+    /**
+     * Processes user selection matching COBOL selection logic.
+     * Validates and returns selected user for further operations.
+     * 
+     * @param userId User ID to select
+     * @return Selected UserSecurity entity
+     * @throws IllegalArgumentException if user not found
+     */
+    public UserSecurity processUserSelection(String userId) {
+        logger.debug("Processing user selection: userId={}", userId);
+        
+        if (userId == null || userId.trim().isEmpty()) {
+            throw new IllegalArgumentException("User ID cannot be empty");
+        }
+        
+        Optional<UserSecurity> user = userSecurityRepository.findBySecUsrId(userId.trim());
+        if (user.isPresent()) {
+            logger.debug("User selected successfully: {}", userId);
+            return user.get();
+        } else {
+            throw new IllegalArgumentException("User not found: " + userId);
+        }
+    }
+
+    /**
+     * Retrieves paginated users with correct navigation state calculation.
+     * Core pagination method used by other service methods.
+     * 
+     * @param pageNumber Current page number (1-based)
+     * @param pageSize Number of users per page
+     * @return UserListResponse with paginated user data
+     */
+    public UserListResponse getPagedUsers(int pageNumber, int pageSize) {
+        logger.debug("Getting paged users: page={}, size={}", pageNumber, pageSize);
+        
+        try {
+            validatePagination(pageNumber, pageSize);
+            
+            // Convert to 0-based page index for JPA
+            Pageable pageable = PageRequest.of(pageNumber - 1, pageSize, Sort.by("secUsrId"));
+            
+            // Get users with pagination
+            Page<UserSecurity> userPage = userSecurityRepository.findAll(pageable);
+            
+            // Convert to DTOs
+            List<UserListDto> userDtos = userPage.getContent().stream()
+                    .map(this::convertToUserListDto)
+                    .collect(Collectors.toList());
+            
+            // Build response
+            return buildUserListResponse(userDtos, userPage, pageNumber);
+            
+        } catch (Exception e) {
+            logger.error("Error getting paged users: {}", e.getMessage(), e);
+            return createEmptyResponse(pageNumber);
+        }
+    }
+
+    /**
+     * Main processing method that executes complete user list workflow.
+     * Coordinates filtering, pagination, and response building.
+     * 
+     * @param pageNumber Current page number (1-based)
+     * @param pageSize Number of users per page
+     * @param userType Optional user type filter
+     * @param searchTerm Optional search term
+     * @param statusFilter Optional status filter
+     * @return UserListResponse with processed results
+     */
+    public UserListResponse mainProcess(int pageNumber, int pageSize, String userType, 
+                                      String searchTerm, Boolean statusFilter) {
+        logger.debug("Main process: page={}, size={}, type={}, search={}, status={}", 
+                    pageNumber, pageSize, userType, searchTerm, statusFilter);
+        
+        try {
+            // Apply filters based on provided parameters
+            if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+                return findUsersBySearch(searchTerm, pageNumber, pageSize);
+            } else if (userType != null && !userType.trim().isEmpty()) {
+                return filterByRole(userType, pageNumber, pageSize);
+            } else if (statusFilter != null) {
+                return filterByStatus(statusFilter, pageNumber, pageSize);
+            } else {
+                // Default: return all users with pagination
+                return getPagedUsers(pageNumber, pageSize);
+            }
+            
+        } catch (Exception e) {
+            logger.error("Error in main process: {}", e.getMessage(), e);
+            return createEmptyResponse(pageNumber);
+        }
+    }
+
+    /**
+     * Converts UserSecurity entity to UserListDto for display.
+     * Replaces COBOL POPULATE-USER-DATA paragraph logic.
+     * 
+     * @param user UserSecurity entity from database
      * @return UserListDto formatted for display
      */
-    public UserListDto convertToUserListDto(User user) {
+    private UserListDto convertToUserListDto(UserSecurity user) {
         if (user == null) {
             logger.warn("Cannot convert null user to UserListDto");
             return null;
@@ -299,22 +405,19 @@ public class UserListService {
         UserListDto dto = new UserListDto();
         
         try {
-            // Map user ID (replaces MOVE SEC-USR-ID TO USRID01I)
-            dto.setUserId(user.getUserId());
-            
-            // Map first name (replaces MOVE SEC-USR-FNAME TO FNAME01I)
+            // Map user fields (replaces COBOL MOVE statements)
+            dto.setUserId(user.getSecUsrId());
             dto.setFirstName(user.getFirstName());
-            
-            // Map last name (replaces MOVE SEC-USR-LNAME TO LNAME01I)
             dto.setLastName(user.getLastName());
-            
-            // Map user type (replaces MOVE SEC-USR-TYPE TO UTYPE01I)
             dto.setUserType(user.getUserType());
             
-            logger.debug("Converted user {} to UserListDto", user.getUserId());
+            // Set default selection flag (empty for initial display)
+            dto.setSelectionFlag("");
+            
+            logger.debug("Converted user {} to UserListDto", user.getSecUsrId());
             
         } catch (Exception e) {
-            logger.error("Error converting user {} to UserListDto: {}", user.getUserId(), e.getMessage(), e);
+            logger.error("Error converting user {} to UserListDto: {}", user.getSecUsrId(), e.getMessage(), e);
             throw new RuntimeException("Failed to convert user to display format", e);
         }
         
@@ -322,47 +425,28 @@ public class UserListService {
     }
 
     /**
-     * Builds the complete UserListResponse with pagination metadata.
-     * Replaces COBOL SEND-USRLST-SCREEN logic and pagination calculations.
+     * Builds UserListResponse with pagination metadata.
+     * Replaces COBOL response construction logic.
      * 
-     * This method constructs the final response containing:
-     * - User list data for display (up to 10 users per page)
-     * - Current page number (replaces PAGENUM field)
-     * - Next/Previous page availability flags (replaces F7/F8 key logic)
-     * - Total count for pagination calculations
-     * 
-     * The pagination logic matches the original COBOL behavior where:
-     * - F7 key enables backward navigation (hasPreviousPage)
-     * - F8 key enables forward navigation (hasNextPage)
-     * - Page numbering starts from 1 (matching BMS screen display)
-     * 
-     * @param userListDtos List of users converted for display
-     * @param userPage Spring Data Page object with pagination metadata
-     * @param currentPageNumber Current page number (zero-based)
-     * @return UserListResponse with complete pagination information
+     * @param userDtos List of user DTOs for display
+     * @param userPage Spring Data Page with pagination info
+     * @param currentPageNumber Current page number (1-based)
+     * @return Complete UserListResponse
      */
-    public UserListResponse buildResponse(List<UserListDto> userListDtos, Page<User> userPage, int currentPageNumber) {
-        logger.debug("Building response for {} users on page {}", userListDtos.size(), currentPageNumber);
+    private UserListResponse buildUserListResponse(List<UserListDto> userDtos, Page<UserSecurity> userPage, 
+                                                  int currentPageNumber) {
+        logger.debug("Building response for {} users on page {}", userDtos.size(), currentPageNumber);
         
         UserListResponse response = new UserListResponse();
         
         try {
             // Set user list (limited to 10 per page per BMS screen constraint)
-            List<UserListDto> limitedUsers = userListDtos.stream()
-                    .limit(Constants.USERS_PER_PAGE)
-                    .collect(Collectors.toList());
-            response.setUsers(limitedUsers);
+            response.setUsers(userDtos);
             
-            // Set page number (convert to 1-based for display, matching COBOL PAGENUM)
-            response.setPageNumber(currentPageNumber + 1);
-            
-            // Set total count (replaces COBOL record count calculations)
+            // Set pagination metadata
+            response.setPageNumber(currentPageNumber);
             response.setTotalCount(userPage.getTotalElements());
-            
-            // Set next page availability (replaces F8 key enable/disable logic)
             response.setHasNextPage(userPage.hasNext());
-            
-            // Set previous page availability (replaces F7 key enable/disable logic)
             response.setHasPreviousPage(userPage.hasPrevious());
             
             logger.debug("Built response: page {} of {}, {} total users, next={}, prev={}", 
@@ -374,14 +458,26 @@ public class UserListService {
             
         } catch (Exception e) {
             logger.error("Error building user list response: {}", e.getMessage(), e);
-            // Return minimal response on error (replaces COBOL error screen logic)
-            response.setUsers(new ArrayList<>());
-            response.setPageNumber(1);
-            response.setTotalCount(0L);
-            response.setHasNextPage(false);
-            response.setHasPreviousPage(false);
+            return createEmptyResponse(currentPageNumber);
         }
         
+        return response;
+    }
+
+    /**
+     * Creates empty response for error conditions.
+     * Ensures consistent error handling across all methods.
+     * 
+     * @param pageNumber Current page number
+     * @return Empty UserListResponse
+     */
+    private UserListResponse createEmptyResponse(int pageNumber) {
+        UserListResponse response = new UserListResponse();
+        response.setUsers(new ArrayList<>());
+        response.setPageNumber(pageNumber);
+        response.setTotalCount(0L);
+        response.setHasNextPage(false);
+        response.setHasPreviousPage(false);
         return response;
     }
 }

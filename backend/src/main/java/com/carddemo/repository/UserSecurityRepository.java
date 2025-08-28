@@ -2,6 +2,10 @@ package com.carddemo.repository;
 
 import com.carddemo.entity.UserSecurity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
@@ -105,6 +109,48 @@ public interface UserSecurityRepository extends JpaRepository<UserSecurity, Long
      * @return List of UserSecurity entities with failed attempts above threshold
      */
     List<UserSecurity> findByFailedLoginAttemptsGreaterThan(int threshold);
+
+    /**
+     * Finds users by user type with pagination support.
+     * Supports role-based filtering for administrative operations with pagination.
+     * 
+     * @param userType the user type to filter by ('A' = Admin, 'U' = User)
+     * @param pageable pagination parameters
+     * @return Page of UserSecurity entities matching the specified user type
+     */
+    @Query("SELECT u FROM UserSecurity u WHERE u.userType = :userType")
+    Page<UserSecurity> findByUserTypeWithPagination(@Param("userType") String userType, Pageable pageable);
+
+    /**
+     * Finds users by enabled status with pagination support.
+     * Supports filtering active/inactive users for management operations.
+     * 
+     * @param enabled the enabled status to filter by
+     * @param pageable pagination parameters  
+     * @return Page of UserSecurity entities matching the specified enabled status
+     */
+    @Query("SELECT u FROM UserSecurity u WHERE u.enabled = :enabled")
+    Page<UserSecurity> findByEnabledWithPagination(@Param("enabled") boolean enabled, Pageable pageable);
+
+    /**
+     * Finds users by username containing the specified text (case-insensitive).
+     * Supports user search functionality by partial username matching.
+     * 
+     * @param username the username text to search for (case-insensitive)
+     * @return List of UserSecurity entities with usernames containing the search text
+     */
+    @Query("SELECT u FROM UserSecurity u WHERE LOWER(u.username) LIKE LOWER(CONCAT('%', :username, '%'))")
+    List<UserSecurity> findByUsernameContainingIgnoreCase(@Param("username") String username);
+
+    /**
+     * Finds users by first name or last name containing the specified text (case-insensitive).
+     * Supports user search functionality by partial name matching.
+     * 
+     * @param name the name text to search for (case-insensitive)
+     * @return List of UserSecurity entities with names containing the search text
+     */
+    @Query("SELECT u FROM UserSecurity u WHERE LOWER(u.firstName) LIKE LOWER(CONCAT('%', :name, '%')) OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :name, '%'))")
+    List<UserSecurity> findByNameContainingIgnoreCase(@Param("name") String name);
 
     // Note: Standard JpaRepository methods are automatically available:
     // - findById(Long id) - finds user by primary key

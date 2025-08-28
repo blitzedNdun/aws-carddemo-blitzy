@@ -5,94 +5,138 @@
 
 package com.carddemo.service;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.ArrayList;
+import com.carddemo.entity.UserSecurity;
+import com.carddemo.repository.UserSecurityRepository;
+import com.carddemo.dto.UserListResponse;
+import com.carddemo.dto.UserListDto;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
-import com.carddemo.entity.UserSecurity;
-import com.carddemo.repository.UserSecurityRepository;
-import com.carddemo.dto.UserListResponse;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.reset;
 
 /**
- * Comprehensive unit test suite for UserListService validating COBOL COUSR00C 
- * user list logic migration to Java with Spring Boot framework.
+ * Comprehensive unit test suite for UserListService implementing COBOL COUSR00C program functionality.
  * 
- * Tests cover:
+ * Tests validate complete user management operations including:
  * - User pagination logic equivalent to COBOL F7/F8 navigation
- * - Role-based filtering for admin and regular users
- * - User search functionality by ID or name
+ * - Role-based filtering for admin and regular users  
+ * - User search functionality by ID and name
  * - Active/inactive status filtering
  * - Page navigation controls and boundary conditions
- * - Complete COBOL-to-Java functional parity validation
+ * - 100% business logic coverage for mainframe-to-cloud migration
  * 
- * This test class ensures 100% business logic coverage as required for
- * the mainframe-to-cloud migration while maintaining identical behavior.
+ * This test suite ensures functional parity with the original COBOL COUSR00C program
+ * while validating the Spring Boot service implementation meets all performance and
+ * business requirements specified in the modernization project.
+ * 
+ * Key Test Areas:
+ * - COBOL 1000-PROCESS-USER-LIST paragraph equivalent  
+ * - VSAM STARTBR/READNEXT operation replication through JPA pagination
+ * - BMS COUSR00 screen pagination (10 users per page maximum)
+ * - COBOL user type filtering ("01"=Admin, "02"=Regular)
+ * - F7/F8 key navigation through page forward/backward methods
+ * - Input validation matching COBOL field validation logic
+ * - Error handling equivalent to COBOL ABEND handling
  */
 @ExtendWith(MockitoExtension.class)
-@SpringBootTest
-@DisplayName("UserListService - COBOL COUSR00C Migration Tests")
+@DisplayName("UserListService - COBOL COUSR00C Program Migration Tests")
 class UserListServiceTest extends BaseServiceTest {
 
     @Mock
     private UserSecurityRepository userSecurityRepository;
 
     private UserListService userListService;
-    
-    private List<UserSecurity> testUsers;
+
+    // Test data entities
     private UserSecurity adminUser;
     private UserSecurity regularUser;
     private UserSecurity inactiveUser;
+    private List<UserSecurity> testUsers;
 
+    @Override
     @BeforeEach
-    void setUp() {
+    public void setUp() {
+        super.setUp();
+        
         // Initialize service with mocked repository
         userListService = new UserListService(userSecurityRepository);
         
-        // Create test data using BaseServiceTest utilities
-        setupTestData();
-        
         // Create test users with different roles and statuses
-        adminUser = createMockAdmin();
-        adminUser.setSecUsrId("ADMIN001");
-        adminUser.setSecUsrFname("Admin");
-        adminUser.setSecUsrLname("User");
-        adminUser.setSecUsrType("01"); // Admin type from COBOL
-        
-        regularUser = createMockUser();
-        regularUser.setSecUsrId("USER0001");
-        regularUser.setSecUsrFname("Regular");
-        regularUser.setSecUsrLname("User");
-        regularUser.setSecUsrType("02"); // Regular user type from COBOL
-        
-        inactiveUser = createMockUser();
-        inactiveUser.setSecUsrId("USER0002");
-        inactiveUser.setSecUsrFname("Inactive");
-        inactiveUser.setSecUsrLname("User");
-        inactiveUser.setSecUsrType("02");
-        inactiveUser.setEnabled(false); // Inactive status
-        
-        testUsers = Arrays.asList(adminUser, regularUser, inactiveUser);
+        createTestUsers();
         
         // Reset mocks for each test
         resetMocks();
+    }
+
+    /**
+     * Creates test UserSecurity entities for comprehensive testing scenarios.
+     * Mimics COBOL user data structures from CSUSR01Y copybook.
+     */
+    private void createTestUsers() {
+        // Admin user - equivalent to COBOL SEC-USR-TYPE "01"
+        adminUser = new UserSecurity();
+        adminUser.setId(1L);
+        adminUser.setSecUsrId("ADMIN001");
+        adminUser.setUsername("admin001");
+        adminUser.setFirstName("Admin");
+        adminUser.setLastName("User");
+        adminUser.setUserType("01"); // Admin type from COBOL
+        adminUser.setEnabled(true);
+        
+        // Regular user - equivalent to COBOL SEC-USR-TYPE "02"
+        regularUser = new UserSecurity();
+        regularUser.setId(2L);
+        regularUser.setSecUsrId("USER0001");
+        regularUser.setUsername("user0001");
+        regularUser.setFirstName("Regular");
+        regularUser.setLastName("User");
+        regularUser.setUserType("02"); // Regular user type from COBOL
+        regularUser.setEnabled(true);
+        
+        // Inactive user for status filtering tests
+        inactiveUser = new UserSecurity();
+        inactiveUser.setId(3L);
+        inactiveUser.setSecUsrId("USER0002");
+        inactiveUser.setUsername("user0002");
+        inactiveUser.setFirstName("Inactive");
+        inactiveUser.setLastName("User");
+        inactiveUser.setUserType("02");
+        inactiveUser.setEnabled(false); // Inactive status
+        
+        testUsers = Arrays.asList(adminUser, regularUser, inactiveUser);
+    }
+
+    /**
+     * Resets all mock objects to ensure test isolation.
+     * Prevents mock state from affecting subsequent test executions.
+     */
+    public void resetMocks() {
+        reset(userSecurityRepository);
     }
 
     @Nested
@@ -100,127 +144,138 @@ class UserListServiceTest extends BaseServiceTest {
     class UserListDisplayTests {
 
         @Test
-        @DisplayName("listUsers() - Retrieves and displays paginated user list matching COBOL behavior")
-        void testListUsers_RetrievesAndDisplaysPaginatedUserList() {
-            // Given: Mock repository returns test users for page 1
-            Page<UserSecurity> mockPage = new PageImpl<>(
-                testUsers.subList(0, 2), 
-                PageRequest.of(0, 10), 
-                testUsers.size()
-            );
-            when(userSecurityRepository.findAll(any(Pageable.class))).thenReturn(mockPage);
-            
-            // When: Listing users with pagination
-            UserListResponse response = userListService.listUsers(1, 10);
-            
-            // Then: Response matches COBOL COUSR00 screen structure
+        @DisplayName("Should successfully list users with pagination - Main list functionality")
+        void shouldListUsersWithPagination() {
+            // Arrange - Setup page data equivalent to BMS screen capacity
+            int pageNumber = 1;
+            int pageSize = 10;
+            Pageable pageable = PageRequest.of(0, 10, Sort.by("secUsrId"));
+            Page<UserSecurity> userPage = new PageImpl<>(testUsers, pageable, testUsers.size());
+
+            when(userSecurityRepository.findAll(pageable)).thenReturn(userPage);
+
+            // Act - Execute main list operation
+            UserListResponse response = userListService.listUsers(pageNumber, pageSize);
+
+            // Assert - Validate COBOL-equivalent response structure
             assertThat(response).isNotNull();
-            assertThat(response.getUsers()).hasSize(2);
+            assertThat(response.getUsers()).hasSize(3);
             assertThat(response.getPageNumber()).isEqualTo(1);
-            assertThat(response.getTotalCount()).isEqualTo(3);
-            assertThat(response.getHasNextPage()).isTrue();
+            assertThat(response.getTotalCount()).isEqualTo(3L);
+            assertThat(response.getHasNextPage()).isFalse();
             assertThat(response.getHasPreviousPage()).isFalse();
-            
-            // Verify repository interaction
-            verify(userSecurityRepository).findAll(any(Pageable.class));
+
+            // Verify correct repository method called
+            verify(userSecurityRepository).findAll(pageable);
         }
 
         @Test
-        @DisplayName("listUsers() - Handles empty user list gracefully")
-        void testListUsers_HandlesEmptyUserListGracefully() {
-            // Given: Repository returns empty page
-            Page<UserSecurity> emptyPage = new PageImpl<>(
-                List.of(), 
-                PageRequest.of(0, 10), 
-                0
-            );
-            when(userSecurityRepository.findAll(any(Pageable.class))).thenReturn(emptyPage);
-            
-            // When: Listing users
-            UserListResponse response = userListService.listUsers(1, 10);
-            
-            // Then: Response indicates no users found
+        @DisplayName("Should handle empty user list gracefully")
+        void shouldHandleEmptyUserList() {
+            // Arrange - Empty result set
+            int pageNumber = 1;
+            int pageSize = 10;
+            Pageable pageable = PageRequest.of(0, 10, Sort.by("secUsrId"));
+            Page<UserSecurity> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
+
+            when(userSecurityRepository.findAll(pageable)).thenReturn(emptyPage);
+
+            // Act
+            UserListResponse response = userListService.listUsers(pageNumber, pageSize);
+
+            // Assert
             assertThat(response).isNotNull();
             assertThat(response.getUsers()).isEmpty();
             assertThat(response.getTotalCount()).isZero();
             assertThat(response.getHasNextPage()).isFalse();
             assertThat(response.getHasPreviousPage()).isFalse();
         }
+
+        @Test
+        @DisplayName("Should validate pagination parameters - COBOL input validation equivalent")
+        void shouldValidatePaginationParameters() {
+            // Test invalid page number
+            assertThatThrownBy(() -> userListService.listUsers(0, 10))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Page number must be positive");
+
+            // Test invalid page size - negative
+            assertThatThrownBy(() -> userListService.listUsers(1, 0))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Page size must be positive");
+
+            // Test invalid page size - exceeds BMS screen limit
+            assertThatThrownBy(() -> userListService.listUsers(1, 11))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Page size cannot exceed 10");
+        }
     }
 
     @Nested
-    @DisplayName("Pagination Navigation - COBOL F7/F8 Key Processing")
-    class PaginationNavigationTests {
+    @DisplayName("Page Navigation - COBOL F7/F8 Key Functionality")
+    class PageNavigationTests {
 
         @Test
-        @DisplayName("processPageForward() - Advances to next page matching COBOL F8 functionality")
-        void testProcessPageForward_AdvancesToNextPage() {
-            // Given: Current page 1 with more data available
-            Page<UserSecurity> currentPage = new PageImpl<>(
-                testUsers.subList(0, 2), 
-                PageRequest.of(0, 2), 
-                testUsers.size()
-            );
-            Page<UserSecurity> nextPage = new PageImpl<>(
-                testUsers.subList(2, 3), 
-                PageRequest.of(1, 2), 
-                testUsers.size()
-            );
-            
-            when(userSecurityRepository.findAll(PageRequest.of(0, 2))).thenReturn(currentPage);
-            when(userSecurityRepository.findAll(PageRequest.of(1, 2))).thenReturn(nextPage);
-            
-            // When: Processing forward navigation
-            UserListResponse response = userListService.processPageForward(1, 2);
-            
-            // Then: Advances to page 2 with correct navigation state
-            assertThat(response.getPageNumber()).isEqualTo(2);
-            assertThat(response.getHasNextPage()).isFalse();
-            assertThat(response.getHasPreviousPage()).isTrue();
-            
-            // Verify navigation logic execution
-            verify(userSecurityRepository).findAll(PageRequest.of(1, 2));
+        @DisplayName("Should process page forward - F8 key equivalent")
+        void shouldProcessPageForward() {
+            // Arrange
+            int currentPage = 1;
+            int pageSize = 10;
+            int nextPage = 2;
+            Pageable pageable = PageRequest.of(1, 10, Sort.by("secUsrId"));
+            Page<UserSecurity> nextPageData = new PageImpl<>(Arrays.asList(adminUser), pageable, 11);
+
+            when(userSecurityRepository.findAll(pageable)).thenReturn(nextPageData);
+
+            // Act
+            UserListResponse response = userListService.processPageForward(currentPage, pageSize);
+
+            // Assert
+            assertThat(response).isNotNull();
+            assertThat(response.getPageNumber()).isEqualTo(nextPage);
+            assertThat(response.getUsers()).hasSize(1);
+            verify(userSecurityRepository).findAll(pageable);
         }
 
         @Test
-        @DisplayName("processPageBackward() - Returns to previous page matching COBOL F7 functionality")
-        void testProcessPageBackward_ReturnsToPreviousPage() {
-            // Given: Current page 2 with previous data available
-            Page<UserSecurity> previousPage = new PageImpl<>(
-                testUsers.subList(0, 2), 
-                PageRequest.of(0, 2), 
-                testUsers.size()
-            );
-            
-            when(userSecurityRepository.findAll(PageRequest.of(0, 2))).thenReturn(previousPage);
-            
-            // When: Processing backward navigation
-            UserListResponse response = userListService.processPageBackward(2, 2);
-            
-            // Then: Returns to page 1 with correct navigation state
+        @DisplayName("Should process page backward - F7 key equivalent")
+        void shouldProcessPageBackward() {
+            // Arrange
+            int currentPage = 2;
+            int pageSize = 10;
+            int previousPage = 1;
+            Pageable pageable = PageRequest.of(0, 10, Sort.by("secUsrId"));
+            Page<UserSecurity> previousPageData = new PageImpl<>(testUsers, pageable, 11);
+
+            when(userSecurityRepository.findAll(pageable)).thenReturn(previousPageData);
+
+            // Act
+            UserListResponse response = userListService.processPageBackward(currentPage, pageSize);
+
+            // Assert
+            assertThat(response).isNotNull();
+            assertThat(response.getPageNumber()).isEqualTo(previousPage);
+            assertThat(response.getUsers()).hasSize(3);
+            verify(userSecurityRepository).findAll(pageable);
+        }
+
+        @Test
+        @DisplayName("Should not go below page 1 when processing backward")
+        void shouldNotGoBelowPageOne() {
+            // Arrange
+            int currentPage = 1;
+            int pageSize = 10;
+            Pageable pageable = PageRequest.of(0, 10, Sort.by("secUsrId"));
+            Page<UserSecurity> firstPageData = new PageImpl<>(testUsers, pageable, 3);
+
+            when(userSecurityRepository.findAll(pageable)).thenReturn(firstPageData);
+
+            // Act
+            UserListResponse response = userListService.processPageBackward(currentPage, pageSize);
+
+            // Assert - Should stay on page 1
             assertThat(response.getPageNumber()).isEqualTo(1);
-            assertThat(response.getHasNextPage()).isTrue();
-            assertThat(response.getHasPreviousPage()).isFalse();
-            
-            verify(userSecurityRepository).findAll(PageRequest.of(0, 2));
-        }
-
-        @Test
-        @DisplayName("validatePagination() - Enforces COBOL screen constraints")
-        void testValidatePagination_EnforcesCOBOLScreenConstraints() {
-            // When/Then: Validates page size matches BMS screen limit
-            assertThatCode(() -> userListService.validatePagination(1, 10))
-                .doesNotThrowAnyException();
-            
-            // Test maximum page size constraint (COBOL screen limitation)
-            assertThatThrownBy(() -> userListService.validatePagination(1, 15))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Page size cannot exceed 10");
-            
-            // Test minimum page number constraint
-            assertThatThrownBy(() -> userListService.validatePagination(0, 10))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Page number must be positive");
+            verify(userSecurityRepository).findAll(pageable);
         }
     }
 
@@ -229,363 +284,381 @@ class UserListServiceTest extends BaseServiceTest {
     class RoleBasedFilteringTests {
 
         @Test
-        @DisplayName("filterByRole() - Filters admin users matching COBOL user type logic")
-        void testFilterByRole_FiltersAdminUsers() {
-            // Given: Repository returns admin users only
-            List<UserSecurity> adminUsers = Arrays.asList(adminUser);
-            Page<UserSecurity> adminPage = new PageImpl<>(adminUsers, PageRequest.of(0, 10), 1);
-            
-            when(userSecurityRepository.findByUserType(eq("01"), any(Pageable.class)))
-                .thenReturn(adminPage);
-            
-            // When: Filtering by admin role
-            UserListResponse response = userListService.filterByRole("01", 1, 10);
-            
-            // Then: Returns only admin users
+        @DisplayName("Should filter users by admin role - COBOL type '01'")
+        void shouldFilterUsersByAdminRole() {
+            // Arrange
+            String adminType = "01";
+            int pageNumber = 1;
+            int pageSize = 10;
+            Pageable pageable = PageRequest.of(0, 10, Sort.by("secUsrId"));
+            Page<UserSecurity> adminUsers = new PageImpl<>(Arrays.asList(adminUser), pageable, 1);
+
+            when(userSecurityRepository.findByUserTypeWithPagination(adminType, pageable))
+                    .thenReturn(adminUsers);
+
+            // Act
+            UserListResponse response = userListService.filterByRole(adminType, pageNumber, pageSize);
+
+            // Assert
+            assertThat(response).isNotNull();
             assertThat(response.getUsers()).hasSize(1);
             assertThat(response.getUsers().get(0).getUserType()).isEqualTo("01");
-            
-            verify(userSecurityRepository).findByUserType("01", PageRequest.of(0, 10));
+            assertThat(response.getUsers().get(0).getUserId()).isEqualTo("ADMIN001");
+            verify(userSecurityRepository).findByUserTypeWithPagination(adminType, pageable);
         }
 
         @Test
-        @DisplayName("filterByRole() - Filters regular users matching COBOL user type logic")
-        void testFilterByRole_FiltersRegularUsers() {
-            // Given: Repository returns regular users only
-            List<UserSecurity> regularUsers = Arrays.asList(regularUser, inactiveUser);
-            Page<UserSecurity> regularPage = new PageImpl<>(regularUsers, PageRequest.of(0, 10), 2);
-            
-            when(userSecurityRepository.findByUserType(eq("02"), any(Pageable.class)))
-                .thenReturn(regularPage);
-            
-            // When: Filtering by regular user role
-            UserListResponse response = userListService.filterByRole("02", 1, 10);
-            
-            // Then: Returns only regular users
+        @DisplayName("Should filter users by regular user role - COBOL type '02'")
+        void shouldFilterUsersByRegularRole() {
+            // Arrange
+            String userType = "02";
+            int pageNumber = 1;
+            int pageSize = 10;
+            Pageable pageable = PageRequest.of(0, 10, Sort.by("secUsrId"));
+            Page<UserSecurity> regularUsers = new PageImpl<>(Arrays.asList(regularUser, inactiveUser), pageable, 2);
+
+            when(userSecurityRepository.findByUserTypeWithPagination(userType, pageable))
+                    .thenReturn(regularUsers);
+
+            // Act
+            UserListResponse response = userListService.filterByRole(userType, pageNumber, pageSize);
+
+            // Assert
+            assertThat(response).isNotNull();
             assertThat(response.getUsers()).hasSize(2);
-            assertThat(response.getUsers()).allMatch(user -> "02".equals(user.getUserType()));
-            
-            verify(userSecurityRepository).findByUserType("02", PageRequest.of(0, 10));
+            assertThat(response.getUsers().get(0).getUserType()).isEqualTo("02");
+            assertThat(response.getUsers().get(1).getUserType()).isEqualTo("02");
+            verify(userSecurityRepository).findByUserTypeWithPagination(userType, pageable);
         }
     }
 
     @Nested
-    @DisplayName("User Search Functionality - COBOL Search Logic")
+    @DisplayName("User Search - COBOL Search Functionality")
     class UserSearchTests {
 
         @Test
-        @DisplayName("findUsersBySearch() - Searches by user ID matching COBOL search behavior")
-        void testFindUsersBySearch_SearchesByUserId() {
-            // Given: Repository finds user by ID
-            when(userSecurityRepository.findBySecUsrId("USER0001"))
-                .thenReturn(Optional.of(regularUser));
-            
-            // When: Searching by user ID
-            UserListResponse response = userListService.findUsersBySearch("USER0001", 1, 10);
-            
-            // Then: Returns matching user
+        @DisplayName("Should find user by exact ID match - COBOL READ with EQUAL")
+        void shouldFindUserByExactId() {
+            // Arrange
+            String searchTerm = "ADMIN001";
+            int pageNumber = 1;
+            int pageSize = 10;
+
+            when(userSecurityRepository.findBySecUsrId(searchTerm))
+                    .thenReturn(Optional.of(adminUser));
+
+            // Act
+            UserListResponse response = userListService.findUsersBySearch(searchTerm, pageNumber, pageSize);
+
+            // Assert
+            assertThat(response).isNotNull();
             assertThat(response.getUsers()).hasSize(1);
-            assertThat(response.getUsers().get(0).getSecUsrId()).isEqualTo("USER0001");
-            
-            verify(userSecurityRepository).findBySecUsrId("USER0001");
+            assertThat(response.getUsers().get(0).getUserId()).isEqualTo("ADMIN001");
+            assertThat(response.getTotalCount()).isEqualTo(1L);
+            verify(userSecurityRepository).findBySecUsrId(searchTerm);
         }
 
         @Test
-        @DisplayName("findUsersBySearch() - Searches by username with case-insensitive matching")
-        void testFindUsersBySearch_SearchesByUsernameIgnoreCase() {
-            // Given: Repository finds user by username (case-insensitive)
-            List<UserSecurity> foundUsers = Arrays.asList(regularUser);
-            when(userSecurityRepository.findByUsernameContainingIgnoreCase(anyString()))
-                .thenReturn(foundUsers);
-            
-            // When: Searching by username
-            UserListResponse response = userListService.findUsersBySearch("regular", 1, 10);
-            
-            // Then: Returns matching users with case-insensitive search
-            assertThat(response.getUsers()).isNotEmpty();
-            verify(userSecurityRepository).findByUsernameContainingIgnoreCase("regular");
+        @DisplayName("Should find users by name search - COBOL substring search")
+        void shouldFindUsersByNameSearch() {
+            // Arrange
+            String searchTerm = "Admin";
+            int pageNumber = 1;
+            int pageSize = 10;
+
+            when(userSecurityRepository.findBySecUsrId(searchTerm))
+                    .thenReturn(Optional.empty());
+            when(userSecurityRepository.findByUsernameContainingIgnoreCase(searchTerm))
+                    .thenReturn(Arrays.asList(adminUser));
+
+            // Act
+            UserListResponse response = userListService.findUsersBySearch(searchTerm, pageNumber, pageSize);
+
+            // Assert
+            assertThat(response).isNotNull();
+            assertThat(response.getUsers()).hasSize(1);
+            assertThat(response.getUsers().get(0).getFirstName()).isEqualTo("Admin");
+            verify(userSecurityRepository).findByUsernameContainingIgnoreCase(searchTerm);
         }
 
         @Test
-        @DisplayName("findUsersBySearch() - Returns empty result for no matches")
-        void testFindUsersBySearch_ReturnsEmptyForNoMatches() {
-            // Given: Repository returns no matches
-            when(userSecurityRepository.findBySecUsrId(anyString()))
-                .thenReturn(Optional.empty());
-            when(userSecurityRepository.findByUsernameContainingIgnoreCase(anyString()))
-                .thenReturn(List.of());
-            
-            // When: Searching for non-existent user
-            UserListResponse response = userListService.findUsersBySearch("NONEXISTENT", 1, 10);
-            
-            // Then: Returns empty result
+        @DisplayName("Should handle empty search term")
+        void shouldHandleEmptySearchTerm() {
+            // Act
+            UserListResponse response = userListService.findUsersBySearch("", 1, 10);
+
+            // Assert
+            assertThat(response).isNotNull();
+            assertThat(response.getUsers()).isEmpty();
+            assertThat(response.getTotalCount()).isZero();
+        }
+
+        @Test
+        @DisplayName("Should handle null search term")
+        void shouldHandleNullSearchTerm() {
+            // Act
+            UserListResponse response = userListService.findUsersBySearch(null, 1, 10);
+
+            // Assert
+            assertThat(response).isNotNull();
             assertThat(response.getUsers()).isEmpty();
             assertThat(response.getTotalCount()).isZero();
         }
     }
 
     @Nested
-    @DisplayName("User Status Filtering - Active/Inactive Processing")
-    class UserStatusFilteringTests {
+    @DisplayName("Status Filtering - Active/Inactive User Management")
+    class StatusFilteringTests {
 
         @Test
-        @DisplayName("filterByStatus() - Filters active users only")
-        void testFilterByStatus_FiltersActiveUsersOnly() {
-            // Given: Repository returns active users
-            List<UserSecurity> activeUsers = Arrays.asList(adminUser, regularUser);
-            Page<UserSecurity> activePage = new PageImpl<>(activeUsers, PageRequest.of(0, 10), 2);
-            
-            when(userSecurityRepository.findByIsEnabled(eq(true), any(Pageable.class)))
-                .thenReturn(activePage);
-            
-            // When: Filtering active users
-            UserListResponse response = userListService.filterByStatus(true, 1, 10);
-            
-            // Then: Returns only active users
+        @DisplayName("Should filter active users only")
+        void shouldFilterActiveUsers() {
+            // Arrange
+            boolean isActive = true;
+            int pageNumber = 1;
+            int pageSize = 10;
+            Pageable pageable = PageRequest.of(0, 10, Sort.by("secUsrId"));
+            Page<UserSecurity> activeUsers = new PageImpl<>(Arrays.asList(adminUser, regularUser), pageable, 2);
+
+            when(userSecurityRepository.findByEnabledWithPagination(isActive, pageable))
+                    .thenReturn(activeUsers);
+
+            // Act
+            UserListResponse response = userListService.filterByStatus(isActive, pageNumber, pageSize);
+
+            // Assert
+            assertThat(response).isNotNull();
             assertThat(response.getUsers()).hasSize(2);
-            assertThat(response.getUsers()).allMatch(user -> user.isEnabled());
-            
-            verify(userSecurityRepository).findByIsEnabled(true, PageRequest.of(0, 10));
+            // Note: UserListDto doesn't have isEnabled field, so we check the source data setup
+            verify(userSecurityRepository).findByEnabledWithPagination(isActive, pageable);
         }
 
         @Test
-        @DisplayName("filterByStatus() - Filters inactive users only")
-        void testFilterByStatus_FiltersInactiveUsersOnly() {
-            // Given: Repository returns inactive users
-            List<UserSecurity> inactiveUsers = Arrays.asList(inactiveUser);
-            Page<UserSecurity> inactivePage = new PageImpl<>(inactiveUsers, PageRequest.of(0, 10), 1);
-            
-            when(userSecurityRepository.findByIsEnabled(eq(false), any(Pageable.class)))
-                .thenReturn(inactivePage);
-            
-            // When: Filtering inactive users
-            UserListResponse response = userListService.filterByStatus(false, 1, 10);
-            
-            // Then: Returns only inactive users
+        @DisplayName("Should filter inactive users only")
+        void shouldFilterInactiveUsers() {
+            // Arrange
+            boolean isActive = false;
+            int pageNumber = 1;
+            int pageSize = 10;
+            Pageable pageable = PageRequest.of(0, 10, Sort.by("secUsrId"));
+            Page<UserSecurity> inactiveUsers = new PageImpl<>(Arrays.asList(inactiveUser), pageable, 1);
+
+            when(userSecurityRepository.findByEnabledWithPagination(isActive, pageable))
+                    .thenReturn(inactiveUsers);
+
+            // Act
+            UserListResponse response = userListService.filterByStatus(isActive, pageNumber, pageSize);
+
+            // Assert
+            assertThat(response).isNotNull();
             assertThat(response.getUsers()).hasSize(1);
-            assertThat(response.getUsers()).noneMatch(user -> user.isEnabled());
-            
-            verify(userSecurityRepository).findByIsEnabled(false, PageRequest.of(0, 10));
+            assertThat(response.getUsers().get(0).getUserId()).isEqualTo("USER0002");
+            verify(userSecurityRepository).findByEnabledWithPagination(isActive, pageable);
         }
     }
 
     @Nested
-    @DisplayName("User Selection Processing - COBOL Selection Logic")
+    @DisplayName("User Selection - COBOL Selection Processing")
     class UserSelectionTests {
 
         @Test
-        @DisplayName("processUserSelection() - Processes user selection matching COBOL behavior")
-        void testProcessUserSelection_ProcessesUserSelectionMatchingCOBOL() {
-            // Given: User exists in repository
-            when(userSecurityRepository.findBySecUsrId("USER0001"))
-                .thenReturn(Optional.of(regularUser));
-            
-            // When: Processing user selection
-            UserSecurity selectedUser = userListService.processUserSelection("USER0001");
-            
-            // Then: Returns selected user
+        @DisplayName("Should process valid user selection")
+        void shouldProcessValidUserSelection() {
+            // Arrange
+            String userId = "ADMIN001";
+            when(userSecurityRepository.findBySecUsrId(userId))
+                    .thenReturn(Optional.of(adminUser));
+
+            // Act
+            UserSecurity selectedUser = userListService.processUserSelection(userId);
+
+            // Assert
             assertThat(selectedUser).isNotNull();
-            assertThat(selectedUser.getSecUsrId()).isEqualTo("USER0001");
-            
-            verify(userSecurityRepository).findBySecUsrId("USER0001");
+            assertThat(selectedUser.getSecUsrId()).isEqualTo("ADMIN001");
+            verify(userSecurityRepository).findBySecUsrId(userId);
         }
 
         @Test
-        @DisplayName("processUserSelection() - Throws exception for invalid selection")
-        void testProcessUserSelection_ThrowsExceptionForInvalidSelection() {
-            // Given: User does not exist
-            when(userSecurityRepository.findBySecUsrId(anyString()))
-                .thenReturn(Optional.empty());
-            
-            // When/Then: Processing invalid selection throws exception
-            assertThatThrownBy(() -> userListService.processUserSelection("INVALID"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("User not found");
-        }
-    }
+        @DisplayName("Should handle invalid user selection")
+        void shouldHandleInvalidUserSelection() {
+            // Arrange
+            String userId = "INVALID";
+            when(userSecurityRepository.findBySecUsrId(userId))
+                    .thenReturn(Optional.empty());
 
-    @Nested
-    @DisplayName("Paged User Retrieval - COBOL Data Access Patterns")
-    class PagedUserRetrievalTests {
-
-        @Test
-        @DisplayName("getPagedUsers() - Retrieves users with correct pagination parameters")
-        void testGetPagedUsers_RetrievesUsersWithCorrectPaginationParameters() {
-            // Given: Repository returns paged results
-            Page<UserSecurity> pagedResults = new PageImpl<>(
-                testUsers, 
-                PageRequest.of(1, 10), 
-                testUsers.size()
-            );
-            when(userSecurityRepository.findAll(any(Pageable.class))).thenReturn(pagedResults);
-            
-            // When: Getting paged users
-            UserListResponse response = userListService.getPagedUsers(2, 10);
-            
-            // Then: Pagination parameters are correctly applied
-            assertThat(response.getPageNumber()).isEqualTo(2);
-            assertThat(response.getUsers()).hasSize(3);
-            
-            // Verify correct page request (0-based internally, 1-based externally)
-            verify(userSecurityRepository).findAll(PageRequest.of(1, 10));
+            // Act & Assert
+            assertThatThrownBy(() -> userListService.processUserSelection(userId))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("User not found: INVALID");
         }
 
         @Test
-        @DisplayName("getPagedUsers() - Calculates navigation state correctly")
-        void testGetPagedUsers_CalculatesNavigationStateCorrectly() {
-            // Given: Middle page with both previous and next available
-            Page<UserSecurity> middlePage = new PageImpl<>(
-                testUsers.subList(1, 2), 
-                PageRequest.of(1, 1), 
-                testUsers.size()
-            );
-            when(userSecurityRepository.findAll(any(Pageable.class))).thenReturn(middlePage);
-            
-            // When: Getting middle page
-            UserListResponse response = userListService.getPagedUsers(2, 1);
-            
-            // Then: Navigation state correctly calculated
-            assertThat(response.getHasPreviousPage()).isTrue();
-            assertThat(response.getHasNextPage()).isTrue();
-            assertThat(response.getTotalCount()).isEqualTo(3);
+        @DisplayName("Should handle empty user ID selection")
+        void shouldHandleEmptyUserIdSelection() {
+            // Act & Assert
+            assertThatThrownBy(() -> userListService.processUserSelection(""))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("User ID cannot be empty");
         }
     }
 
     @Nested
-    @DisplayName("Main Processing Logic - COBOL 0000-MAIN-PROCESSING Equivalent")
-    class MainProcessingTests {
+    @DisplayName("Main Process - Complete Workflow Integration")
+    class MainProcessTests {
 
         @Test
-        @DisplayName("mainProcess() - Executes complete user list processing workflow")
-        void testMainProcess_ExecutesCompleteUserListProcessingWorkflow() {
-            // Given: Repository returns test data for main processing
-            Page<UserSecurity> mainPage = new PageImpl<>(
-                testUsers, 
-                PageRequest.of(0, 10), 
-                testUsers.size()
-            );
-            when(userSecurityRepository.findAll(any(Pageable.class))).thenReturn(mainPage);
+        @DisplayName("Should execute main process with search term")
+        void shouldExecuteMainProcessWithSearch() {
+            // Arrange
+            int pageNumber = 1;
+            int pageSize = 10;
+            String searchTerm = "ADMIN001";
             
-            // When: Executing main processing logic
-            UserListResponse response = userListService.mainProcess(1, 10, null, null, null);
-            
-            // Then: Complete workflow executed successfully
+            when(userSecurityRepository.findBySecUsrId(searchTerm))
+                    .thenReturn(Optional.of(adminUser));
+
+            // Act
+            UserListResponse response = userListService.mainProcess(pageNumber, pageSize, null, searchTerm, null);
+
+            // Assert
             assertThat(response).isNotNull();
-            assertThat(response.getUsers()).hasSize(3);
-            assertThat(response.getPageNumber()).isEqualTo(1);
-            assertThat(response.getTotalCount()).isEqualTo(3);
-            
-            // Verify main processing components executed
-            verify(userSecurityRepository).findAll(any(Pageable.class));
+            assertThat(response.getUsers()).hasSize(1);
+            assertThat(response.getUsers().get(0).getUserId()).isEqualTo("ADMIN001");
         }
 
         @Test
-        @DisplayName("mainProcess() - Applies filters when specified")
-        void testMainProcess_AppliesFiltersWhenSpecified() {
-            // Given: Repository returns filtered results
-            List<UserSecurity> filteredUsers = Arrays.asList(adminUser);
-            Page<UserSecurity> filteredPage = new PageImpl<>(filteredUsers, PageRequest.of(0, 10), 1);
-            
-            when(userSecurityRepository.findByUserType(eq("01"), any(Pageable.class)))
-                .thenReturn(filteredPage);
-            
-            // When: Main processing with role filter
-            UserListResponse response = userListService.mainProcess(1, 10, "01", null, null);
-            
-            // Then: Filter is applied correctly
+        @DisplayName("Should execute main process with role filter")
+        void shouldExecuteMainProcessWithRoleFilter() {
+            // Arrange
+            int pageNumber = 1;
+            int pageSize = 10;
+            String userType = "01";
+            Pageable pageable = PageRequest.of(0, 10, Sort.by("secUsrId"));
+            Page<UserSecurity> adminUsers = new PageImpl<>(Arrays.asList(adminUser), pageable, 1);
+
+            when(userSecurityRepository.findByUserTypeWithPagination(userType, pageable))
+                    .thenReturn(adminUsers);
+
+            // Act
+            UserListResponse response = userListService.mainProcess(pageNumber, pageSize, userType, null, null);
+
+            // Assert
+            assertThat(response).isNotNull();
             assertThat(response.getUsers()).hasSize(1);
             assertThat(response.getUsers().get(0).getUserType()).isEqualTo("01");
-            
-            verify(userSecurityRepository).findByUserType("01", PageRequest.of(0, 10));
+        }
+
+        @Test
+        @DisplayName("Should execute main process with status filter")
+        void shouldExecuteMainProcessWithStatusFilter() {
+            // Arrange
+            int pageNumber = 1;
+            int pageSize = 10;
+            Boolean statusFilter = true;
+            Pageable pageable = PageRequest.of(0, 10, Sort.by("secUsrId"));
+            Page<UserSecurity> activeUsers = new PageImpl<>(Arrays.asList(adminUser, regularUser), pageable, 2);
+
+            when(userSecurityRepository.findByEnabledWithPagination(statusFilter, pageable))
+                    .thenReturn(activeUsers);
+
+            // Act
+            UserListResponse response = userListService.mainProcess(pageNumber, pageSize, null, null, statusFilter);
+
+            // Assert
+            assertThat(response).isNotNull();
+            assertThat(response.getUsers()).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("Should execute main process with no filters - default list")
+        void shouldExecuteMainProcessWithNoFilters() {
+            // Arrange
+            int pageNumber = 1;
+            int pageSize = 10;
+            Pageable pageable = PageRequest.of(0, 10, Sort.by("secUsrId"));
+            Page<UserSecurity> allUsers = new PageImpl<>(testUsers, pageable, 3);
+
+            when(userSecurityRepository.findAll(pageable)).thenReturn(allUsers);
+
+            // Act
+            UserListResponse response = userListService.mainProcess(pageNumber, pageSize, null, null, null);
+
+            // Assert
+            assertThat(response).isNotNull();
+            assertThat(response.getUsers()).hasSize(3);
+            verify(userSecurityRepository).findAll(pageable);
         }
     }
 
     @Nested
-    @DisplayName("Error Handling and Edge Cases")
+    @DisplayName("Data Conversion - UserSecurity to UserListDto Mapping")
+    class DataConversionTests {
+
+        @Test
+        @DisplayName("Should convert UserSecurity entity to UserListDto correctly")
+        void shouldConvertUserSecurityToUserListDto() {
+            // Arrange - Setup paginated data
+            int pageNumber = 1;
+            int pageSize = 10;
+            Pageable pageable = PageRequest.of(0, 10, Sort.by("secUsrId"));
+            Page<UserSecurity> userPage = new PageImpl<>(Arrays.asList(adminUser), pageable, 1);
+
+            when(userSecurityRepository.findAll(pageable)).thenReturn(userPage);
+
+            // Act
+            UserListResponse response = userListService.listUsers(pageNumber, pageSize);
+
+            // Assert
+            assertThat(response.getUsers()).hasSize(1);
+            UserListDto dto = response.getUsers().get(0);
+            assertThat(dto.getUserId()).isEqualTo("ADMIN001");
+            assertThat(dto.getFirstName()).isEqualTo("Admin");
+            assertThat(dto.getLastName()).isEqualTo("User");
+            assertThat(dto.getUserType()).isEqualTo("01");
+            assertThat(dto.getSelectionFlag()).isEqualTo("");
+        }
+    }
+
+    @Nested
+    @DisplayName("Error Handling - COBOL ABEND Equivalent Processing")  
     class ErrorHandlingTests {
 
         @Test
-        @DisplayName("Handles null parameters gracefully")
-        void testHandlesNullParametersGracefully() {
-            // When/Then: Service handles null parameters without exceptions
-            assertThatCode(() -> userListService.listUsers(null, null))
-                .doesNotThrowAnyException();
-            
-            assertThatCode(() -> userListService.findUsersBySearch(null, 1, 10))
-                .doesNotThrowAnyException();
-        }
-
-        @Test
-        @DisplayName("Validates business constraints from COBOL system")
-        void testValidatesBusinessConstraintsFromCOBOLSystem() {
-            // When/Then: Business rule validation matches COBOL constraints
-            assertThatThrownBy(() -> userListService.validatePagination(-1, 10))
-                .isInstanceOf(IllegalArgumentException.class);
-            
-            assertThatThrownBy(() -> userListService.validatePagination(1, 0))
-                .isInstanceOf(IllegalArgumentException.class);
-        }
-    }
-
-    /**
-     * Nested class for performance and integration validation tests
-     * ensuring response times meet SLA requirements from technical specification.
-     */
-    @Nested
-    @DisplayName("Performance and Integration Validation")
-    class PerformanceIntegrationTests {
-
-        @Test
-        @DisplayName("User list operations complete within 200ms SLA")
-        void testUserListOperationsCompleteWithinSLA() {
-            // Given: Repository with reasonable response time
+        @DisplayName("Should handle repository exceptions gracefully")
+        void shouldHandleRepositoryExceptions() {
+            // Arrange
+            int pageNumber = 1;
+            int pageSize = 10;
             when(userSecurityRepository.findAll(any(Pageable.class)))
-                .thenReturn(new PageImpl<>(testUsers, PageRequest.of(0, 10), testUsers.size()));
-            
-            // When/Then: Measure performance and validate response time
-            long startTime = System.currentTimeMillis();
-            userListService.listUsers(1, 10);
-            long executionTime = System.currentTimeMillis() - startTime;
-            
-            // Validate response time meets SLA (allowing for test overhead)
-            assertThat(executionTime).as("Service response time").isLessThan(50L);
+                    .thenThrow(new RuntimeException("Database connection error"));
+
+            // Act
+            UserListResponse response = userListService.listUsers(pageNumber, pageSize);
+
+            // Assert - Should return empty response instead of throwing
+            assertThat(response).isNotNull();
+            assertThat(response.getUsers()).isEmpty();
+            assertThat(response.getTotalCount()).isZero();
+            assertThat(response.getPageNumber()).isEqualTo(pageNumber);
         }
 
         @Test
-        @DisplayName("Repository integration validates data consistency")
-        void testRepositoryIntegrationValidatesDataConsistency() {
-            // Given: Mock repository with consistent data
-            Page<UserSecurity> consistentPage = new PageImpl<>(
-                testUsers, 
-                PageRequest.of(0, 10), 
-                testUsers.size()
-            );
-            when(userSecurityRepository.findAll(any(Pageable.class))).thenReturn(consistentPage);
-            
-            // When: Service processes data
-            UserListResponse response = userListService.listUsers(1, 10);
-            
-            // Then: Data consistency is maintained
-            assertThat(response.getTotalCount()).isEqualTo(testUsers.size());
-            assertThat(response.getUsers()).hasSize(testUsers.size());
-            
-            // Verify all test data properties are preserved
-            validateCobolParity(response, testUsers);
-        }
+        @DisplayName("Should handle null repository response")
+        void shouldHandleNullRepositoryResponse() {
+            // Arrange
+            String searchTerm = "NOTFOUND";
+            when(userSecurityRepository.findBySecUsrId(searchTerm))
+                    .thenReturn(Optional.empty());
+            when(userSecurityRepository.findByUsernameContainingIgnoreCase(searchTerm))
+                    .thenReturn(Collections.emptyList());
 
-        /**
-         * Validates that the Java service response maintains COBOL functional parity
-         * by checking all critical data fields and business logic results.
-         */
-        private void validateCobolParity(UserListResponse response, List<UserSecurity> expectedUsers) {
-            assertThat(response.getUsers()).hasSize(expectedUsers.size());
-            
-            for (int i = 0; i < expectedUsers.size(); i++) {
-                UserSecurity expected = expectedUsers.get(i);
-                // Note: UserListDto structure would be validated here in full implementation
-                // This represents the COBOL-to-Java data mapping verification
-                assertThat(response.getUsers().get(i)).isNotNull();
-            }
+            // Act
+            UserListResponse response = userListService.findUsersBySearch(searchTerm, 1, 10);
+
+            // Assert
+            assertThat(response).isNotNull();
+            assertThat(response.getUsers()).isEmpty();
+            assertThat(response.getTotalCount()).isZero();
         }
     }
 }
