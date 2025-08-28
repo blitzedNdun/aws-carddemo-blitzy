@@ -185,7 +185,6 @@ public class SignOnService {
             
             // Build response with user context and menu options
             response.setSuccess(true);
-            response.setMessage("Authentication successful");
             response.setUserName(user.getDisplayName());
             response.setUserType(user.getUserType());
             
@@ -377,6 +376,20 @@ public class SignOnService {
         logger.info("Processing logout for user: {}", userId);
         
         try {
+            // Validate user exists before processing logout
+            if (userId == null || userId.trim().isEmpty()) {
+                logger.warn("Invalid user ID for logout: {}", userId);
+                return false;
+            }
+            
+            String normalizedUserId = userId.toUpperCase().trim();
+            Optional<UserSecurity> userOptional = userSecurityRepository.findBySecUsrId(normalizedUserId);
+            
+            if (!userOptional.isPresent()) {
+                logger.warn("User not found for logout: {}", normalizedUserId);
+                return false;
+            }
+            
             // Log logout event for audit trail
             logger.info("User {} logged out successfully", userId);
             return true;
