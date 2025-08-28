@@ -93,7 +93,11 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
-@EnableAutoConfiguration(exclude = {org.springframework.boot.autoconfigure.h2.H2ConsoleAutoConfiguration.class})
+@EnableAutoConfiguration(exclude = {
+    org.springframework.boot.autoconfigure.h2.H2ConsoleAutoConfiguration.class,
+    org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class,
+    org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration.class
+})
 @Import({TestDatabaseConfig.class, com.carddemo.config.TestSecurityConfig.class})
 @ComponentScan(basePackages = "com.carddemo", 
                excludeFilters = {
@@ -115,7 +119,9 @@ import static org.junit.jupiter.api.Assertions.*;
                        com.carddemo.security.LegacyPasswordEncoder.class,
                        com.carddemo.security.SecurityTestConfig.class,
                        com.carddemo.test.SecurityTestConfig.class,
-                       com.carddemo.integration.IntegrationTestConfiguration.class
+                       com.carddemo.integration.IntegrationTestConfiguration.class,
+                       com.carddemo.TestContainersConfig.class,
+                       com.carddemo.controller.MockMvcTestConfig.class
                    })
                })
 @TestPropertySource(properties = {

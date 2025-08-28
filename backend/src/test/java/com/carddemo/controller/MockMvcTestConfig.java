@@ -105,7 +105,7 @@ public class MockMvcTestConfig {
                 .setControllerAdvice(exceptionHandler)
                 .setCustomArgumentResolvers(sessionAttributeResolver())
                 .setLocaleResolver(testLocaleResolver())
-                .apply(SecurityMockMvcConfigurers.springSecurity())
+                // Remove .apply(SecurityMockMvcConfigurers.springSecurity()) to avoid filter chain dependency
                 .build();
     }
 
