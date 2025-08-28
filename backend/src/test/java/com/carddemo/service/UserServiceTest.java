@@ -11,6 +11,7 @@ import com.carddemo.entity.UserSecurity;
 import com.carddemo.entity.AuditLog;
 import com.carddemo.exception.ResourceNotFoundException;
 import com.carddemo.exception.ValidationException;
+import com.carddemo.exception.BusinessRuleException;
 import com.carddemo.repository.UserRepository;
 import com.carddemo.repository.UserSecurityRepository;
 // import com.carddemo.util.ValidationUtil; // Removed - methods don't exist
@@ -435,13 +436,13 @@ class UserServiceTest {
         @DisplayName("Should prevent deletion of active admin users")
         void testDeleteUserAdminProtection() {
             // Given: Admin user that should be protected
-            testUserSecurity.setUserType("ADMIN");
+            testUserSecurity.setUserType("A"); // Admin type is "A" not "ADMIN"
             when(userRepository.findByUserId("TEST0001")).thenReturn(Optional.of(testUser));
             when(userSecurityRepository.findBySecUsrId("TEST0001")).thenReturn(Optional.of(testUserSecurity));
 
             // When/Then: Should prevent admin deletion
             assertThatThrownBy(() -> userService.deleteUser("TEST0001"))
-                .isInstanceOf(ValidationException.class)
+                .isInstanceOf(BusinessRuleException.class) // Corrected exception type
                 .hasMessageContaining("Cannot delete admin user");
 
             verify(userRepository, never()).delete(any(User.class));
