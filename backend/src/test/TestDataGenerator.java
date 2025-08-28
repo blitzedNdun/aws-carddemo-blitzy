@@ -202,16 +202,7 @@ public class TestDataGenerator {
         return String.format("CUST%08d", RANDOM.nextInt(100000000));
     }
 
-    private BigDecimal generateBalance() {
-        double balance = RANDOM.nextDouble() * 2000.00;
-        return new BigDecimal(balance).setScale(2, RoundingMode.HALF_UP);
-    }
 
-    private BigDecimal generateCreditLimit() {
-        double[] limits = {500.00, 1000.00, 2000.00, 5000.00, 10000.00};
-        double limit = limits[RANDOM.nextInt(limits.length)];
-        return new BigDecimal(limit).setScale(2, RoundingMode.HALF_UP);
-    }
 
     private String generateTransactionId() {
         return String.format("TXN%010d", RANDOM.nextInt(Integer.MAX_VALUE));
@@ -294,10 +285,34 @@ public class TestDataGenerator {
     }
 
     /**
+     * Generates a random balance value for testing with COBOL precision
+     */
+    public BigDecimal generateBalance() {
+        double balance = RANDOM.nextDouble() * 2000.00;
+        return new BigDecimal(balance).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Generates a random credit limit value for testing with COBOL precision
+     */
+    public BigDecimal generateCreditLimit() {
+        double[] limits = {500.00, 1000.00, 2000.00, 5000.00, 10000.00};
+        double limit = limits[RANDOM.nextInt(limits.length)];
+        return new BigDecimal(limit).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
      * Resets the random seed for reproducible test data generation.
      */
     public void resetRandomSeed() {
         RANDOM.setSeed(System.currentTimeMillis());
+    }
+
+    /**
+     * Resets the random seed to a specific value for reproducible test data generation.
+     */
+    public void resetRandomSeed(long seed) {
+        RANDOM.setSeed(seed);
     }
 
     // Private helper method overrides for better type safety
