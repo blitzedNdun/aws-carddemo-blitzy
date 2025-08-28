@@ -778,7 +778,7 @@ public class TestDataBuilder {
          * @return this TransactionBuilder for method chaining
          */
         public TransactionBuilder withTransactionType(String transactionType) {
-            // Set transaction type logic if needed
+            transaction.setTransactionTypeCode(transactionType);
             return this;
         }
 
