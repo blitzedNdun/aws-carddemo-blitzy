@@ -8,6 +8,7 @@ package com.carddemo.dto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import java.util.ArrayList;
 import java.time.LocalDateTime;
 
 /**
@@ -135,6 +136,7 @@ public class SignOnResponse {
      */
     public SignOnResponse() {
         this.timestamp = LocalDateTime.now();
+        this.menuOptions = new ArrayList<>();
     }
 
     /**
