@@ -38,6 +38,8 @@ import java.math.BigDecimal;
 import java.util.stream.Collectors;
 
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * Integration test class for CrossReferenceController that validates card-to-account and account-to-card cross-reference operations.
@@ -118,9 +120,16 @@ import org.springframework.mock.web.MockHttpSession;
  * @version 1.0
  * @since CardDemo v1.0
  */
-@SpringBootTest
-@AutoConfigureMockMvc
 @Transactional
+@ActiveProfiles("test")
+@TestPropertySource(properties = {
+    "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL",
+    "spring.datasource.driver-class-name=org.h2.Driver",
+    "spring.datasource.username=sa", 
+    "spring.datasource.password=",
+    "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
+    "spring.jpa.hibernate.ddl-auto=create-drop"
+})
 public class CrossReferenceControllerTest extends BaseControllerTest {
 
     /**
@@ -144,10 +153,7 @@ public class CrossReferenceControllerTest extends BaseControllerTest {
     @Autowired
     private CardRepository cardRepository;
 
-    /**
-     * Mock HTTP session for authenticated test requests.
-     */
-    private MockHttpSession mockHttpSession;
+
 
     // Test data constants for consistent testing
     private static final String VALID_CARD_NUMBER = "4111111111111111";
@@ -166,8 +172,8 @@ public class CrossReferenceControllerTest extends BaseControllerTest {
     public void setUp() {
         super.setUp();
         
-        // Initialize mock session
-        mockHttpSession = createMockSession();
+        // Initialize mock session with test user credentials  
+        createMockSession(VALID_USER_ID, USER_ROLE, "CC00");
         
         // Create base test cross-reference data
         setupTestCrossReferenceData();
