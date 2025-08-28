@@ -27,7 +27,7 @@ import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.support.PassThroughItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Component;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -144,7 +144,7 @@ class FormattedCustomer {
  * @version 1.0
  * @since 2024
  */
-@Component
+@Configuration
 public class CustomerListJob {
     
     private static final Logger logger = LoggerFactory.getLogger(CustomerListJob.class);
@@ -290,46 +290,47 @@ public class CustomerListJob {
                     
                     // Format customer ID with zero padding to match COBOL display
                     formatted.customerId = FormatUtil.formatFixedLength(
-                        customer.getCustomerId().toString(), 11, true);
+                        customer.getCustomerId(), 11);
                     
                     // Format names with proper length and padding
                     formatted.firstName = FormatUtil.formatFixedLength(
-                        customer.getFirstName() != null ? customer.getFirstName() : "", 15, false);
+                        customer.getFirstName() != null ? customer.getFirstName() : "", 15);
                     formatted.lastName = FormatUtil.formatFixedLength(
-                        customer.getLastName() != null ? customer.getLastName() : "", 20, false);
+                        customer.getLastName() != null ? customer.getLastName() : "", 20);
                     
                     // Format date of birth using FormatUtil date formatting
-                    formatted.dateOfBirth = FormatUtil.formatDate(customer.getDateOfBirth());
+                    formatted.dateOfBirth = customer.getDateOfBirth() != null ? 
+                        customer.getDateOfBirth().format(java.time.format.DateTimeFormatter.ofPattern("MM/dd/yyyy")) : "";
                     
                     // Mask SSN for security using FormatUtil masking
-                    formatted.ssn = FormatUtil.maskSensitiveData(customer.getSsn());
+                    formatted.ssn = FormatUtil.maskSensitiveData(customer.getSsn(), 4);
                     
                     // Format FICO score with zero suppression
                     formatted.ficoScore = FormatUtil.formatZeroSuppressed(
-                        customer.getFicoScore() != null ? customer.getFicoScore().toString() : "0");
+                        customer.getFicoScore() != null ? customer.getFicoScore() : BigDecimal.ZERO, 4, 0);
                     
                     // Format phone number with proper formatting
                     formatted.phoneNumber = FormatUtil.formatFixedLength(
-                        customer.getPhoneNumber() != null ? customer.getPhoneNumber() : "", 14, false);
+                        customer.getPhoneNumber() != null ? customer.getPhoneNumber() : "", 14);
                     
                     // Format address fields matching COBOL field layout
                     // Note: Using addressLine1 and addressLine2 to match Customer entity
                     formatted.address1 = FormatUtil.formatFixedLength(
-                        customer.getAddressLine1() != null ? customer.getAddressLine1() : "", 35, false);
+                        customer.getAddressLine1() != null ? customer.getAddressLine1() : "", 35);
                     formatted.address2 = FormatUtil.formatFixedLength(
-                        customer.getAddressLine2() != null ? customer.getAddressLine2() : "", 35, false);
+                        customer.getAddressLine2() != null ? customer.getAddressLine2() : "", 35);
                     
-                    // Format city using available field
+                    // Format city using address line 3 (since there's no separate city field)
                     formatted.city = FormatUtil.formatFixedLength(
-                        customer.getCityName() != null ? customer.getCityName() : "", 25, false);
+                        customer.getAddressLine3() != null ? customer.getAddressLine3() : "", 25);
                     
                     // Format state code
                     formatted.state = FormatUtil.formatFixedLength(
-                        customer.getStateCode() != null ? customer.getStateCode() : "", 2, false);
+                        customer.getStateCode() != null ? customer.getStateCode() : "", 2);
                     
                     // Format zip code
                     formatted.zipCode = FormatUtil.formatFixedLength(
-                        customer.getZipCode() != null ? customer.getZipCode() : "", 10, false);
+                        customer.getZipCode() != null ? customer.getZipCode() : "", 10);
                     
                     logger.debug("Successfully processed customer ID: {}", customer.getCustomerId());
                     return formatted;
@@ -383,23 +384,23 @@ public class CustomerListJob {
         // Add header line to match COBOL output format
         writer.setHeaderCallback(writer1 -> {
             try {
-                String header = "CUSTOMER LISTING REPORT - " + FormatUtil.formatDate(LocalDate.now());
-                writer1.write(FormatUtil.formatFixedLength(header, 80, false));
+                String header = "CUSTOMER LISTING REPORT - " + LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("MM/dd/yyyy"));
+                writer1.write(FormatUtil.formatFixedLength(header, 80));
                 writer1.write("\n");
-                writer1.write(FormatUtil.formatFixedLength("CUSTOMER ID", 11, false) + "|" +
-                             FormatUtil.formatFixedLength("FIRST NAME", 15, false) + "|" +
-                             FormatUtil.formatFixedLength("LAST NAME", 20, false) + "|" +
-                             FormatUtil.formatFixedLength("DOB", 10, false) + "|" +
-                             FormatUtil.formatFixedLength("SSN", 11, false) + "|" +
-                             FormatUtil.formatFixedLength("FICO", 4, false) + "|" +
-                             FormatUtil.formatFixedLength("PHONE", 14, false) + "|" +
-                             FormatUtil.formatFixedLength("ADDRESS 1", 35, false) + "|" +
-                             FormatUtil.formatFixedLength("ADDRESS 2", 35, false) + "|" +
-                             FormatUtil.formatFixedLength("CITY", 25, false) + "|" +
-                             FormatUtil.formatFixedLength("ST", 2, false) + "|" +
-                             FormatUtil.formatFixedLength("ZIP", 10, false));
+                writer1.write(FormatUtil.formatFixedLength("CUSTOMER ID", 11) + "|" +
+                             FormatUtil.formatFixedLength("FIRST NAME", 15) + "|" +
+                             FormatUtil.formatFixedLength("LAST NAME", 20) + "|" +
+                             FormatUtil.formatFixedLength("DOB", 10) + "|" +
+                             FormatUtil.formatFixedLength("SSN", 11) + "|" +
+                             FormatUtil.formatFixedLength("FICO", 4) + "|" +
+                             FormatUtil.formatFixedLength("PHONE", 14) + "|" +
+                             FormatUtil.formatFixedLength("ADDRESS 1", 35) + "|" +
+                             FormatUtil.formatFixedLength("ADDRESS 2", 35) + "|" +
+                             FormatUtil.formatFixedLength("CITY", 25) + "|" +
+                             FormatUtil.formatFixedLength("ST", 2) + "|" +
+                             FormatUtil.formatFixedLength("ZIP", 10));
                 writer1.write("\n");
-                writer1.write(FormatUtil.formatFixedLength("", 80, false).replace(' ', '-'));
+                writer1.write(FormatUtil.formatFixedLength("", 80).replace(' ', '-'));
             } catch (Exception e) {
                 logger.error("Error writing header", e);
             }
@@ -409,9 +410,9 @@ public class CustomerListJob {
         writer.setFooterCallback(writer1 -> {
             try {
                 writer1.write("\n");
-                writer1.write(FormatUtil.formatFixedLength("", 80, false).replace(' ', '-'));
+                writer1.write(FormatUtil.formatFixedLength("", 80).replace(' ', '-'));
                 writer1.write("\n");
-                writer1.write(FormatUtil.formatFixedLength("END OF CUSTOMER LISTING REPORT", 80, false));
+                writer1.write(FormatUtil.formatFixedLength("END OF CUSTOMER LISTING REPORT", 80));
             } catch (Exception e) {
                 logger.error("Error writing footer", e);
             }
