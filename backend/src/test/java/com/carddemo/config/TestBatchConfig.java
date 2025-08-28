@@ -20,7 +20,7 @@ import org.springframework.batch.test.JobLauncherTestUtils;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
-import org.springframework.core.task.SynchronousTaskExecutor;
+import org.springframework.core.task.SyncTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 
@@ -200,7 +200,7 @@ public class TestBatchConfig {
         jobLauncher.setJobRepository(testJobRepository());
         
         // Configure synchronous task executor for deterministic behavior
-        SynchronousTaskExecutor taskExecutor = new SynchronousTaskExecutor();
+        SyncTaskExecutor taskExecutor = new SyncTaskExecutor();
         jobLauncher.setTaskExecutor(taskExecutor);
         
         jobLauncher.afterPropertiesSet();
