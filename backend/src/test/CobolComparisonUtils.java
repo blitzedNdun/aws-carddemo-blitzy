@@ -131,6 +131,17 @@ public class CobolComparisonUtils {
     }
 
     /**
+     * Compares BigDecimal values with COBOL precision semantics and custom message
+     */
+    public static boolean compareBigDecimals(BigDecimal value1, BigDecimal value2, String message) {
+        boolean result = compareBigDecimals(value1, value2);
+        if (!result && message != null && !message.trim().isEmpty()) {
+            System.out.println("Comparison failed: " + message + " - Expected: " + value2 + ", Actual: " + value1);
+        }
+        return result;
+    }
+
+    /**
      * Compares file outputs for batch processing validation
      */
     public static boolean compareFiles(String javaOutput, String cobolOutput) {
