@@ -83,11 +83,9 @@ public abstract class BaseServiceTest {
     protected PerformanceTestUtils performanceTestUtils;
     protected MockServiceFactory mockServiceFactory;
     
-    // Utility classes for COBOL parity
-    protected CobolDataConverter cobolDataConverter;
-    protected ValidationUtil validationUtil;
-    protected AmountCalculator amountCalculator;
-    protected DateConversionUtil dateConversionUtil;
+    // Utility classes are static - no instances needed
+    // CobolDataConverter, ValidationUtil, AmountCalculator, and DateConversionUtil
+    // are utility classes with static methods only
 
     /**
      * Initializes the base test environment with required utilities and configurations.
@@ -108,11 +106,7 @@ public abstract class BaseServiceTest {
         performanceTestUtils = new PerformanceTestUtils();
         mockServiceFactory = new MockServiceFactory();
         
-        // Initialize COBOL parity utilities
-        cobolDataConverter = new CobolDataConverter();
-        validationUtil = new ValidationUtil();
-        amountCalculator = new AmountCalculator();
-        dateConversionUtil = new DateConversionUtil();
+        // COBOL parity utilities are static - no initialization needed
         
         // Setup transaction rollback for test isolation
         setupTransactionRollback();
@@ -166,7 +160,7 @@ public abstract class BaseServiceTest {
             .withCurrentBalance(createValidAmount("2500.00"))
             .withCreditLimit(createValidAmount("5000.00"))
             .withOpenDate(LocalDate.now().minusYears(2))
-            .withActiveStatus("Y")
+            .withActiveStatus()
             .build();
         
         // Validate COBOL compatibility
@@ -187,12 +181,11 @@ public abstract class BaseServiceTest {
      * @return Card entity with COBOL-compatible test data
      */
     public Card createTestCard() {
-        Card card = testDataBuilder.createCard()
-            .withCardNumber("4532123456789012")
-            .withAccountId(1000000001L)
-            .withExpirationDate(LocalDate.now().plusYears(3))
-            .withActiveStatus("Y")
-            .build();
+        Card card = testDataBuilder.createCard();
+        card.setCardNumber("4532123456789012");
+        card.setAccountId(1000000001L);
+        card.setExpirationDate(LocalDate.now().plusYears(3));
+        card.setActiveStatus("Y");
         
         // Validate COBOL field compatibility
         validateTestData(card);
@@ -217,8 +210,8 @@ public abstract class BaseServiceTest {
             .withAccountId(1000000001L)
             .withAmount(createValidAmount("125.50"))
             .withTransactionType("PU")
-            .withTransactionDate(LocalDate.now())
-            .withMerchantName("Test Merchant")
+            .withTimestamp(LocalDate.now().atStartOfDay())
+            .withMerchantInfo("Test Merchant")
             .withDescription("Test transaction")
             .build();
         
@@ -241,12 +234,11 @@ public abstract class BaseServiceTest {
      */
     public Customer createTestCustomer() {
         Customer customer = testDataBuilder.createCustomer()
-            .withCustomerId("000001001")
-            .withFirstName("John")
-            .withLastName("Doe")
+            .withCustomerId(1001L)
+            .withName("John Doe")
             .withSSN("***-**-1234")  // Masked for security
             .withDateOfBirth(LocalDate.of(1985, 5, 15))
-            .withPhoneNumber("555-0123")
+            .withPhone("555-0123")
             .build();
         
         // Validate COBOL field format compliance
@@ -267,14 +259,11 @@ public abstract class BaseServiceTest {
      * @return User entity with COBOL-compatible test data
      */
     public User createTestUser() {
-        User user = testDataBuilder.createUser()
-            .withUserId("USER001")
-            .withFirstName("Admin")
-            .withLastName("User")
-            .withUserType("A")  // A=Admin, U=User
-            .withDepartment("ADMIN")
-            .withEmail("admin@carddemo.com")
-            .build();
+        User user = testDataBuilder.createUser();
+        user.setUserId("USER001");
+        user.setFirstName("Admin");
+        user.setLastName("User");
+        user.setUserType("A");  // A=Admin, U=User
         
         // Validate COBOL user structure compatibility
         validateTestData(user);
@@ -301,7 +290,7 @@ public abstract class BaseServiceTest {
             .isEqualTo(TEST_PRECISION_SCALE);
         
         // Validate that rounding mode matches COBOL behavior
-        cobolComparisonUtils.compareAmounts(expected, actual);
+        cobolComparisonUtils.compareDecimalValues(actual, expected);
     }
 
     /**
@@ -322,8 +311,8 @@ public abstract class BaseServiceTest {
             .as("Amount scale must match COBOL COMP-3 precision")
             .isEqualTo(TEST_PRECISION_SCALE);
         
-        // Validate against COBOL arithmetic rules
-        boolean isValidPrecision = cobolDataConverter.validatePrecision(amount, 7, 2);
+        // Validate against COBOL arithmetic rules using comparison utils
+        boolean isValidPrecision = cobolComparisonUtils.compareBigDecimalPrecision(amount, 7, 2);
         assertThat(isValidPrecision)
             .as("Amount must meet COBOL precision validation")
             .isTrue();
@@ -347,7 +336,7 @@ public abstract class BaseServiceTest {
      * @param javaResult Actual result from Java calculation
      */
     public void assertCobolParity(Object cobolResult, Object javaResult) {
-        boolean parityValidated = cobolComparisonUtils.validateCobolParity(cobolResult, javaResult);
+        boolean parityValidated = cobolComparisonUtils.validateFunctionalParity(javaResult, cobolResult);
         
         assertThat(parityValidated)
             .as("Java implementation must maintain identical behavior to COBOL")
@@ -364,11 +353,11 @@ public abstract class BaseServiceTest {
      * This utility provides high-precision timing measurement for performance validation
      * against the 200ms SLA requirement. Uses nanosecond precision for accurate measurement.
      * 
-     * @param codeBlock Runnable code block to measure
+     * @param operation Supplier operation to measure
      * @return Elapsed execution time in milliseconds
      */
-    public long measureExecutionTime(Runnable codeBlock) {
-        return performanceTestUtils.measureExecutionTime(codeBlock);
+    public long measureExecutionTime(java.util.function.Supplier<Object> operation) {
+        return performanceTestUtils.measureExecutionTime(operation);
     }
 
     /**
@@ -380,7 +369,10 @@ public abstract class BaseServiceTest {
      * @param executionTimeMs Actual execution time in milliseconds
      */
     public void assertUnder200ms(long executionTimeMs) {
-        performanceTestUtils.assertUnder200ms(executionTimeMs);
+        boolean isValid = performanceTestUtils.validateResponseTime(executionTimeMs);
+        assertThat(isValid)
+            .as("Execution time must be under 200ms SLA")
+            .isTrue();
         
         // Log performance metrics for monitoring
         logger.debug("Performance validation passed: {}ms (under 200ms SLA)", executionTimeMs);
@@ -447,23 +439,23 @@ public abstract class BaseServiceTest {
     public void validateTestData(Object entity) {
         if (entity instanceof Account) {
             Account account = (Account) entity;
-            validationUtil.validateAccountNumber(account.getAccountId().toString());
+            ValidationUtil.validateRequiredField("accountId", account.getAccountId().toString());
             assertAmountPrecision(account.getCurrentBalance());
             assertAmountPrecision(account.getCreditLimit());
         } else if (entity instanceof Transaction) {
             Transaction transaction = (Transaction) entity;
             assertAmountPrecision(transaction.getAmount());
-            validationUtil.validateAmount(transaction.getAmount());
+            ValidationUtil.validateRequiredField("amount", transaction.getAmount().toString());
         } else if (entity instanceof Card) {
             Card card = (Card) entity;
-            validationUtil.validateCardNumber(card.getCardNumber());
+            ValidationUtil.determineCardType(card.getCardNumber()); // This validates card number format
         } else if (entity instanceof Customer) {
             Customer customer = (Customer) entity;
-            validationUtil.validateUserInput(customer.getFirstName());
-            validationUtil.validateUserInput(customer.getLastName());
+            ValidationUtil.validateRequiredField("firstName", customer.getFirstName());
+            ValidationUtil.validateRequiredField("lastName", customer.getLastName());
         } else if (entity instanceof User) {
             User user = (User) entity;
-            validationUtil.validateUserInput(user.getUserId());
+            ValidationUtil.validateUserId(user.getUserId());
         }
         
         logger.debug("Test data validation completed for entity: {}", entity.getClass().getSimpleName());
@@ -477,15 +469,11 @@ public abstract class BaseServiceTest {
      * consistent test behavior across different environments.
      */
     public void logTestExecution() {
-        PerformanceTimer timer = performanceTestUtils.getTimer();
-        if (timer != null && timer.getElapsedMillis() > 0) {
-            logger.info("Test execution completed in {}ms", timer.getElapsedMillis());
-            
-            // Log performance warning if approaching SLA threshold
-            if (timer.getElapsedMillis() > (MAX_RESPONSE_TIME_MS * 0.8)) {
-                logger.warn("Test execution approaching performance threshold: {}ms", timer.getElapsedMillis());
-            }
-        }
+        // Log test completion for audit trail
+        logger.debug("Test execution completed successfully");
+        
+        // Performance timing is handled by individual test measurement calls
+        // No central timer tracking needed at base class level
     }
 
     /**
@@ -521,7 +509,7 @@ public abstract class BaseServiceTest {
 class TestDataConstants {
     public static final String VALID_ACCOUNT_ID = "1000000001";
     public static final String VALID_CARD_NUMBER = "4532123456789012";
-    public static final String VALID_CUSTOMER_ID = "000001001";
+    public static final Long VALID_CUSTOMER_ID = 1001L;
     public static final BigDecimal VALID_AMOUNT = new BigDecimal("125.50").setScale(2, RoundingMode.HALF_UP);
     public static final BigDecimal INVALID_AMOUNT = new BigDecimal("9999999.999");
     public static final String TEST_USER_ID = "USER001";
