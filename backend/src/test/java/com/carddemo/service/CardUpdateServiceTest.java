@@ -59,7 +59,6 @@ import static org.mockito.Mockito.*;
  * This test class ensures that the Java implementation produces identical results
  * to the original COBOL COCRDUPC.cbl program for all business logic scenarios.
  */
-@ExtendWith(MockitoExtension.class)
 @DisplayName("CreditCardUpdateService - COCRDUPC COBOL Program Equivalent Tests")
 class CardUpdateServiceTest extends AbstractBaseTest implements UnitTest {
 
