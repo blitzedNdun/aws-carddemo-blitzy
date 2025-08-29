@@ -154,7 +154,7 @@ public class SessionServiceTest extends BaseServiceTest {
      * Initializes all mock objects and establishes consistent test state for session testing.
      */
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         // Call parent setup for base test utilities
         super.setUp();
         
@@ -176,7 +176,7 @@ public class SessionServiceTest extends BaseServiceTest {
      * Resets all mock objects and validates test completion state.
      */
     @AfterEach
-    void tearDown() {
+    public void tearDown() {
         // Call parent cleanup
         super.tearDown();
         
@@ -825,7 +825,7 @@ public class SessionServiceTest extends BaseServiceTest {
             
             // Assert - most operations should succeed (allow for some contention)
             assertThat(completed).isTrue();
-            assertThat(successfulOperations.get()).isGreaterThan(concurrentUsers * 0.8); // 80% success rate minimum
+            assertThat(successfulOperations.get()).isGreaterThan((int)(concurrentUsers * 0.8)); // 80% success rate minimum
         }
     }
 
@@ -922,7 +922,7 @@ public class SessionServiceTest extends BaseServiceTest {
             
             // Assert - majority of sessions should be created successfully
             assertThat(completed).isTrue();
-            assertThat(successfulSessions.get()).isGreaterThan(sessionCount * 0.9); // 90% success rate minimum
+            assertThat(successfulSessions.get()).isGreaterThan((int)(sessionCount * 0.9)); // 90% success rate minimum
         }
 
         @Test
@@ -1045,8 +1045,7 @@ public class SessionServiceTest extends BaseServiceTest {
         @Test
         @DisplayName("Should configure Redis session timeout matching CICS policy")
         void testRedisSessionTimeout_ShouldMatchCICSPolicy() {
-            // Arrange - verify Redis configuration
-            when(redisConfig.redisConnectionFactory()).thenReturn(mock(org.springframework.data.redis.connection.RedisConnectionFactory.class));
+            // Arrange - Redis configuration is handled by @EnableRedisHttpSession annotation
             
             // Act - create session to trigger Redis configuration
             sessionService.createSession(mockRequest, TEST_USER_ID, TEST_ADMIN_ROLE, TEST_MENU_CONTEXT);
@@ -1081,7 +1080,7 @@ public class SessionServiceTest extends BaseServiceTest {
      * 
      * @param executionTimeMs Measured execution time in milliseconds
      */
-    private void assertUnder200ms(long executionTimeMs) {
+    public void assertUnder200ms(long executionTimeMs) {
         assertThat(executionTimeMs)
                 .as("Execution time must be under 200ms SLA")
                 .isLessThan(MAX_RESPONSE_TIME_MS);
