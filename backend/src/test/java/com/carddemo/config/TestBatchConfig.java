@@ -13,6 +13,7 @@ import com.carddemo.controller.TestConstants;
 // Spring Boot Test Configuration
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 
 // Spring Batch Test Infrastructure
 import org.springframework.batch.test.JobRepositoryTestUtils;
@@ -36,6 +37,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import jakarta.persistence.EntityManagerFactory;
 import org.springframework.orm.jpa.LocalEntityManagerFactoryBean;
 import com.carddemo.service.AccountClosureBatchService;
+import com.carddemo.service.AccountMaintenanceBatchService;
 
 /**
  * Spring Batch test configuration providing comprehensive testing infrastructure for batch job validation.
@@ -166,6 +168,20 @@ public class TestBatchConfig {
     }
 
     /**
+     * Mock AccountMaintenanceBatchService for test environment.
+     * 
+     * This creates a mock AccountMaintenanceBatchService to satisfy any production batch
+     * configurations that might be loaded during testing despite profile exclusions.
+     * 
+     * @return Mock AccountMaintenanceBatchService for test execution
+     */
+    @Bean
+    public com.carddemo.service.AccountMaintenanceBatchService accountMaintenanceBatchService() {
+        logger.info("Configuring mock AccountMaintenanceBatchService for production config compatibility");
+        return Mockito.mock(com.carddemo.service.AccountMaintenanceBatchService.class);
+    }
+
+    /**
      * Configures in-memory JobRepository for fast test execution without external database dependencies.
      * 
      * This method creates a lightweight, memory-based job repository optimized for test scenarios,
@@ -201,6 +217,7 @@ public class TestBatchConfig {
      * @throws Exception if job repository factory initialization fails
      */
     @Bean
+    @Primary
     public JobRepository testJobRepository() throws Exception {
         logger.info("Configuring in-memory JobRepository for batch testing");
         
@@ -320,7 +337,7 @@ public class TestBatchConfig {
     }
     
     /**
-     * Configures JobLauncherTestUtils for simplified batch job testing with comprehensive validation support.
+     * Configures JobLauncherTestUtils for comprehensive batch job testing with comprehensive validation support.
      * 
      * This method creates the primary testing utility that provides simplified job execution,
      * parameter injection, and result validation capabilities specifically designed for Spring Batch
@@ -444,18 +461,5 @@ public class TestBatchConfig {
         }
     }
 
-    /**
-     * Provides a mock BatchConfig bean for test environment to satisfy dependency injection.
-     * 
-     * This method creates a mock BatchConfig that satisfies the @Autowired dependencies
-     * of batch services during testing without requiring the full production batch
-     * infrastructure setup.
-     * 
-     * @return Mock BatchConfig configured for test environment
-     */
-    @Bean
-    public BatchConfig testBatchConfig() {
-        logger.info("Creating mock BatchConfig for test environment");
-        return Mockito.mock(BatchConfig.class);
-    }
+
 }
