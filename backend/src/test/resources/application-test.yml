@@ -62,12 +62,15 @@ spring:
   session:
     store-type: none
     
-  # Batch Configuration for Testing
+  # Batch Configuration for Testing - completely disabled
   batch:
     job:
       enabled: false
     jdbc:
-      initialize-schema: embedded
+      initialize-schema: never
+  # Disable all batch-related components
+  main:
+    allow-bean-definition-overriding: true
       
   # Redis Configuration for Testing (disabled)
   redis:
