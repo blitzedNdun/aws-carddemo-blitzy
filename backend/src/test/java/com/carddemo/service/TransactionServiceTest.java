@@ -18,6 +18,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.reset;
 
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -150,7 +152,7 @@ public class TransactionServiceTest extends BaseServiceTest {
      * - Transaction boundary setup for test isolation
      */
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         // Initialize base test environment
         super.setUp();
         
@@ -159,14 +161,11 @@ public class TransactionServiceTest extends BaseServiceTest {
         performanceTestUtils = new PerformanceTestUtils();
         mockServiceFactory = new MockServiceFactory();
         
-        // Create test entities with realistic COBOL-compatible data
+        // Create test entities with consistent relationships
         testAccount = createTestAccount();
-        testCard = createTestCard();
-        testTransaction = createTestTransaction();
+        testCard = createConsistentTestCard();
+        testTransaction = createConsistentTestTransaction();
         testTransactionList = createTestTransactionList(10);
-        
-        // Configure mock repositories with standard success responses
-        configureMockRepositories();
         
         // Validate test data meets COBOL precision requirements
         validateTestDataPrecision();
@@ -187,13 +186,12 @@ public class TransactionServiceTest extends BaseServiceTest {
             Pageable pageable = PageRequest.of(TEST_PAGE_NUMBER, TEST_PAGE_SIZE);
             Page<Transaction> expectedPage = new PageImpl<>(testTransactionList, pageable, testTransactionList.size());
             
-            when(transactionRepository.findByAccountIdAndDateRange(anyLong(), any(LocalDate.class), 
-                any(LocalDate.class), any(Pageable.class))).thenReturn(expectedPage);
+            when(transactionRepository.findByAccountId(eq(TEST_ACCOUNT_ID), any(Pageable.class)))
+                .thenReturn(expectedPage);
 
             // Act & Assert Performance
             long executionTime = measurePerformance(() -> {
-                Page<Transaction> result = transactionService.listTransactions(TEST_ACCOUNT_ID, 
-                    LocalDate.now().minusMonths(1), LocalDate.now(), pageable);
+                Page<Transaction> result = transactionService.getTransactionPage(TEST_PAGE_NUMBER, TEST_ACCOUNT_ID);
                 
                 // Validate results
                 assertAll("Transaction listing validation",
@@ -213,8 +211,7 @@ public class TransactionServiceTest extends BaseServiceTest {
             validateResponseTime(executionTime, MAX_RESPONSE_TIME_MS);
             
             // Verify repository interaction
-            verify(transactionRepository, times(1)).findByAccountIdAndDateRange(
-                anyLong(), any(LocalDate.class), any(LocalDate.class), any(Pageable.class));
+            verify(transactionRepository, times(1)).findByAccountId(eq(TEST_ACCOUNT_ID), any(Pageable.class));
         }
 
         @Test
@@ -230,18 +227,14 @@ public class TransactionServiceTest extends BaseServiceTest {
             Page<Transaction> firstPageResult = new PageImpl<>(firstPageData, firstPage, 15);
             Page<Transaction> secondPageResult = new PageImpl<>(secondPageData, secondPage, 15);
             
-            when(transactionRepository.findByAccountIdAndDateRange(anyLong(), any(LocalDate.class), 
-                any(LocalDate.class), eq(firstPage))).thenReturn(firstPageResult);
-            when(transactionRepository.findByAccountIdAndDateRange(anyLong(), any(LocalDate.class), 
-                any(LocalDate.class), eq(secondPage))).thenReturn(secondPageResult);
+            when(transactionRepository.findByAccountId(eq(TEST_ACCOUNT_ID), any(Pageable.class)))
+                .thenReturn(firstPageResult, secondPageResult);
 
             // Act & Assert Performance for pagination operations
             long executionTime = measurePerformance(() -> {
                 // Test forward pagination like COBOL PROCESS-PF8-KEY
-                Page<Transaction> firstResult = transactionService.getTransactionPage(TEST_ACCOUNT_ID, 
-                    LocalDate.now().minusMonths(1), LocalDate.now(), firstPage);
-                Page<Transaction> secondResult = transactionService.getTransactionPage(TEST_ACCOUNT_ID,
-                    LocalDate.now().minusMonths(1), LocalDate.now(), secondPage);
+                Page<Transaction> firstResult = transactionService.getTransactionPage(0, TEST_ACCOUNT_ID);
+                Page<Transaction> secondResult = transactionService.getTransactionPage(1, TEST_ACCOUNT_ID);
                 
                 // Validate pagination behavior matches VSAM browse
                 assertAll("Forward pagination validation",
@@ -270,13 +263,11 @@ public class TransactionServiceTest extends BaseServiceTest {
             Page<Transaction> singleTransactionPage = new PageImpl<>(
                 List.of(testTransaction), pageable, 1);
             
-            when(transactionRepository.findByAccountIdAndDateRange(anyLong(), any(LocalDate.class),
-                any(LocalDate.class), any(Pageable.class))).thenReturn(singleTransactionPage);
+            when(transactionRepository.findByAccountId(eq(TEST_ACCOUNT_ID), any(Pageable.class))).thenReturn(singleTransactionPage);
 
             // Act
             long executionTime = measurePerformance(() -> {
-                Page<Transaction> result = transactionService.listTransactions(TEST_ACCOUNT_ID,
-                    LocalDate.now().minusMonths(1), LocalDate.now(), pageable);
+                Page<Transaction> result = transactionService.getTransactionPage(0, TEST_ACCOUNT_ID);
                 
                 Transaction transaction = result.getContent().get(0);
                 
@@ -317,16 +308,16 @@ public class TransactionServiceTest extends BaseServiceTest {
         @DisplayName("Should retrieve transaction detail under 200ms SLA")
         void testGetTransactionDetail() {
             // Arrange
-            String transactionId = "0000000000000001";
-            when(transactionRepository.findById(anyString())).thenReturn(Optional.of(testTransaction));
+            String transactionId = "5129461015";
+            when(transactionRepository.findById(5129461015L)).thenReturn(Optional.of(testTransaction));
 
             // Act & Assert Performance
             long executionTime = measurePerformance(() -> {
-                Optional<Transaction> result = transactionService.getTransactionDetail(transactionId);
+                Optional<Transaction> result = transactionService.getTransactionDetailEntity(transactionId);
                 
                 assertAll("Transaction detail validation",
                     () -> assertTrue(result.isPresent(), "Transaction should be found"),
-                    () -> assertEquals(transactionId, result.get().getTransactionId(),
+                    () -> assertEquals(testTransaction.getTransactionId(), result.get().getTransactionId(),
                         "Transaction ID should match"),
                     () -> assertAmountPrecision(result.get().getAmount()),
                     () -> assertEquals(TEST_ACCOUNT_ID, result.get().getAccountId(),
@@ -341,7 +332,7 @@ public class TransactionServiceTest extends BaseServiceTest {
             validateResponseTime(executionTime, MAX_RESPONSE_TIME_MS);
             
             // Verify repository interaction
-            verify(transactionRepository, times(1)).findById(transactionId);
+            verify(transactionRepository, times(1)).findById(5129461015L);
         }
 
         @Test
@@ -349,12 +340,12 @@ public class TransactionServiceTest extends BaseServiceTest {
         void testGetTransactionDetailNotFound() {
             // Arrange
             String nonExistentTransactionId = "9999999999999999";
-            when(transactionRepository.findById(nonExistentTransactionId))
+            when(transactionRepository.findById(9999999999999999L))
                 .thenReturn(Optional.empty());
 
             // Act & Assert
             long executionTime = measurePerformance(() -> {
-                Optional<Transaction> result = transactionService.getTransactionDetail(nonExistentTransactionId);
+                Optional<Transaction> result = transactionService.getTransactionDetailEntity(nonExistentTransactionId);
                 
                 assertFalse(result.isPresent(), "Transaction should not be found");
                 return result;
@@ -376,11 +367,12 @@ public class TransactionServiceTest extends BaseServiceTest {
         @DisplayName("Should add new transaction with validation under 200ms SLA")
         void testAddTransaction() {
             // Arrange
-            Transaction newTransaction = createTestTransaction();
+            Transaction newTransaction = createConsistentTestTransaction();
             newTransaction.setTransactionId(null); // New transaction has no ID yet
             
             when(accountRepository.findById(TEST_ACCOUNT_ID)).thenReturn(Optional.of(testAccount));
             when(cardRepository.findById(TEST_CARD_NUMBER)).thenReturn(Optional.of(testCard));
+            when(cardRepository.findByAccountId(TEST_ACCOUNT_ID)).thenReturn(List.of(testCard));
             when(transactionRepository.save(any(Transaction.class))).thenReturn(testTransaction);
 
             // Act & Assert Performance
@@ -405,8 +397,8 @@ public class TransactionServiceTest extends BaseServiceTest {
             // Validate performance meets COBOL requirements
             validateResponseTime(executionTime, MAX_RESPONSE_TIME_MS);
             
-            // Verify all validation steps were performed
-            verify(accountRepository, times(1)).findById(TEST_ACCOUNT_ID);
+            // Verify all validation steps were performed (account validated twice: once in validateAccountForTransaction, once in processTransactionCreation)
+            verify(accountRepository, times(2)).findById(TEST_ACCOUNT_ID);
             verify(cardRepository, times(1)).findById(anyString());
             verify(transactionRepository, times(1)).save(any(Transaction.class));
         }
@@ -423,12 +415,12 @@ public class TransactionServiceTest extends BaseServiceTest {
             );
 
             for (BigDecimal amount : testAmounts) {
-                Transaction transaction = createTestTransaction();
+                Transaction transaction = createValidTransaction();
                 transaction.setAmount(amount.setScale(2, java.math.RoundingMode.HALF_UP));
                 
                 // Act & Assert Performance
                 long executionTime = measurePerformance(() -> {
-                    boolean isValid = transactionService.validateTransaction(transaction);
+                    boolean isValid = transactionService.validateTransactionAmount(transaction.getAmount());
                     
                     if (amount.compareTo(BigDecimal.ZERO) > 0) {
                         assertTrue(isValid, "Valid amount should pass validation: " + amount);
@@ -462,14 +454,15 @@ public class TransactionServiceTest extends BaseServiceTest {
             
             // Configure mocks for concurrent access
             when(accountRepository.findById(TEST_ACCOUNT_ID)).thenReturn(Optional.of(testAccount));
-            when(cardRepository.findById(anyString())).thenReturn(Optional.of(testCard));
+            when(cardRepository.findById(TEST_CARD_NUMBER)).thenReturn(Optional.of(testCard));
+            when(cardRepository.findByAccountId(TEST_ACCOUNT_ID)).thenReturn(List.of(testCard));
             when(transactionRepository.save(any(Transaction.class))).thenReturn(testTransaction);
 
             // Act - Submit concurrent transaction creation requests
             long startTime = System.nanoTime();
             for (int i = 0; i < 5; i++) {
                 CompletableFuture<Transaction> future = CompletableFuture.supplyAsync(() -> {
-                    Transaction newTransaction = createTestTransaction();
+                    Transaction newTransaction = createConsistentTestTransaction();
                     newTransaction.setTransactionId(null);
                     newTransaction.setAmount(new BigDecimal("100.00").setScale(2));
                     return transactionService.addTransaction(newTransaction);
@@ -502,9 +495,11 @@ public class TransactionServiceTest extends BaseServiceTest {
         @DisplayName("Should handle optimistic locking conflicts")
         void testOptimisticLockingFailure() {
             // Arrange
-            Transaction conflictingTransaction = createTestTransaction();
+            Transaction conflictingTransaction = createConsistentTestTransaction();
+            conflictingTransaction.setTransactionId(null); // New transaction
             when(accountRepository.findById(TEST_ACCOUNT_ID)).thenReturn(Optional.of(testAccount));
-            when(cardRepository.findById(anyString())).thenReturn(Optional.of(testCard));
+            when(cardRepository.findById(TEST_CARD_NUMBER)).thenReturn(Optional.of(testCard));
+            when(cardRepository.findByAccountId(TEST_ACCOUNT_ID)).thenReturn(List.of(testCard));
             when(transactionRepository.save(any(Transaction.class)))
                 .thenThrow(new OptimisticLockingFailureException("Concurrent modification"));
 
@@ -516,21 +511,57 @@ public class TransactionServiceTest extends BaseServiceTest {
     }
 
     /**
-     * Helper method to configure mock repositories with realistic test responses.
-     * Sets up standard success scenarios for all repository operations.
+     * Creates a test card with consistent account relationship.
+     * Ensures card belongs to the test account for validation.
      */
-    private void configureMockRepositories() {
-        // Configure TransactionRepository mock
-        when(transactionRepository.findById(anyString())).thenReturn(Optional.of(testTransaction));
-        when(transactionRepository.save(any(Transaction.class))).thenReturn(testTransaction);
+    private Card createConsistentTestCard() {
+        Card card = createTestCard();
+        card.setCardNumber(TEST_CARD_NUMBER);
+        card.setAccountId(TEST_ACCOUNT_ID);
+        card.setActiveStatus("Y");
+        return card;
+    }
+
+    /**
+     * Creates a test transaction with valid codes required by TransactionService validation.
+     * Sets proper transaction type code and category code to pass business validation.
+     */
+    private Transaction createValidTransaction() {
+        Transaction transaction = new Transaction();
+        transaction.setTransactionId(5129461015L);
+        transaction.setAccountId(TEST_ACCOUNT_ID);
+        transaction.setCardNumber(TEST_CARD_NUMBER);
+        transaction.setAmount(TEST_AMOUNT);
+        transaction.setTransactionDate(LocalDate.now());
+        transaction.setDescription("TEST TRANSACTION");
+        transaction.setMerchantName("TEST MERCHANT");
+        transaction.setMerchantCity("TEST CITY");
+        transaction.setMerchantZip("12345");
+        transaction.setMerchantId(123456789L);
         
-        // Configure AccountRepository mock  
-        when(accountRepository.findById(anyLong())).thenReturn(Optional.of(testAccount));
-        when(accountRepository.save(any(Account.class))).thenReturn(testAccount);
+        // Set VALID transaction codes required by service validation
+        transaction.setTransactionTypeCode("01"); // Valid: 01-05
+        transaction.setCategoryCode("01");         // Valid: 01-06
+        transaction.setSubcategoryCode("01");      
+        transaction.setSource("WEB");
+        transaction.setOriginalTimestamp(LocalDateTime.now());
+        transaction.setProcessedTimestamp(LocalDateTime.now());
         
-        // Configure CardRepository mock
-        when(cardRepository.findById(anyString())).thenReturn(Optional.of(testCard));
-        when(cardRepository.findByAccountId(anyLong())).thenReturn(List.of(testCard));
+        return transaction;
+    }
+
+    /**
+     * Creates a test transaction with consistent account and card relationships.
+     * Ensures transaction references existing account and card for validation.
+     */
+    private Transaction createConsistentTestTransaction() {
+        Transaction transaction = createValidTransaction();
+        transaction.setAccountId(TEST_ACCOUNT_ID);
+        transaction.setCardNumber(TEST_CARD_NUMBER);
+        transaction.setAmount(TEST_AMOUNT);
+        // Set a fixed transaction ID for consistent testing
+        transaction.setTransactionId(5129461015L);
+        return transaction;
     }
 
     /**
@@ -542,9 +573,17 @@ public class TransactionServiceTest extends BaseServiceTest {
     private List<Transaction> createTestTransactionList(int count) {
         List<Transaction> transactions = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            Transaction transaction = createTestTransaction();
-            transaction.setTransactionId(String.format("%016d", i + 1));
+            Transaction transaction = createValidTransaction();
+            transaction.setTransactionId((long)(i + 1));
+            transaction.setAccountId(TEST_ACCOUNT_ID);
+            transaction.setCardNumber(TEST_CARD_NUMBER);
             transaction.setAmount(new BigDecimal("100.00").add(new BigDecimal(i)).setScale(2));
+            
+            // Ensure valid transaction codes for service validation
+            transaction.setTransactionTypeCode("01"); // Valid: 01-05
+            transaction.setCategoryCode("01");         // Valid: 01-06
+            transaction.setSubcategoryCode("01");
+            
             transactions.add(transaction);
         }
         return transactions;
@@ -615,4 +654,6 @@ public class TransactionServiceTest extends BaseServiceTest {
                 "Description must not exceed 50 characters")
         );
     }
+
+
 }
