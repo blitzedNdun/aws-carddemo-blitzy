@@ -1222,4 +1222,58 @@ public class TestDataBuilder {
         int yearsBack = ThreadLocalRandom.current().nextInt(18, 81); // Between 18 and 80 years old
         return now.minusYears(yearsBack).minusDays(ThreadLocalRandom.current().nextInt(365));
     }
+
+    /**
+     * Builds a valid SSN for validation testing.
+     * Creates realistic SSN format without using real SSNs, following SSA guidelines.
+     * 
+     * @return formatted SSN as 9-digit string with dashes
+     */
+    public String buildValidSSN() {
+        // Generate area number (001-899, excluding 666)
+        int area;
+        do {
+            area = ThreadLocalRandom.current().nextInt(1, 900);
+        } while (area == 666);
+        
+        // Generate group number (01-99)
+        int group = ThreadLocalRandom.current().nextInt(1, 100);
+        
+        // Generate serial number (0001-9999)
+        int serial = ThreadLocalRandom.current().nextInt(1, 10000);
+        
+        return String.format("%03d-%02d-%04d", area, group, serial);
+    }
+
+    /**
+     * Builds a valid phone number for validation testing.
+     * Creates realistic phone number with valid area code following NANPA standards.
+     * 
+     * @return formatted 10-digit phone number
+     */
+    public String buildValidPhoneNumber() {
+        // Use valid area codes that exist in NANPA
+        String[] validAreaCodes = {"201", "202", "203", "205", "206", "207", "212", "213", "214", "215", 
+                                   "216", "217", "301", "302", "303", "304", "305", "307", "312", "313"};
+        String areaCode = validAreaCodes[ThreadLocalRandom.current().nextInt(validAreaCodes.length)];
+        
+        // Generate valid exchange (200-999, not starting with 0 or 1)
+        String exchange = String.format("%03d", ThreadLocalRandom.current().nextInt(200, 999));
+        
+        // Generate subscriber number (0000-9999)
+        String subscriber = String.format("%04d", ThreadLocalRandom.current().nextInt(1000, 9999));
+        
+        return areaCode + exchange + subscriber;
+    }
+
+    /**
+     * Builds a valid ZIP code for validation testing.
+     * Creates realistic ZIP code in valid format.
+     * 
+     * @return formatted ZIP code (5 digits only - numeric characters only)
+     */
+    public String buildValidZipCode() {
+        // Generate base 5-digit ZIP code (numeric only for ValidationUtil compatibility)
+        return String.format("%05d", ThreadLocalRandom.current().nextInt(10000, 99999));
+    }
 }
