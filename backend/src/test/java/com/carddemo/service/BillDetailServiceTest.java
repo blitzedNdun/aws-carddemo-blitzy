@@ -271,15 +271,15 @@ class BillDetailServiceTest extends BaseServiceTest {
     @DisplayName("calculateMinimumPayment() - Minimum floor amount validation")
     void testCalculateMinimumPayment_MinimumFloorAmountValidation() {
         // Given: Small balance that would result in minimum payment below floor
-        BigDecimal smallBalance = BigDecimal.valueOf(25.00);
-        BigDecimal minimumFloor = BigDecimal.valueOf(10.00);
+        BigDecimal smallBalance = new BigDecimal("25.00");
+        BigDecimal minimumFloor = new BigDecimal("10.00");
         
         // Calculate 2% of small balance (would be $0.50)
         BigDecimal calculatedMinimum = smallBalance.multiply(MINIMUM_PAYMENT_RATE)
                 .setScale(2, BigDecimal.ROUND_HALF_UP);
         
-        // Expected minimum should be the floor amount
-        BigDecimal expectedMinimum = minimumFloor; // $10.00 minimum floor
+        // Expected minimum should be the floor amount with proper scale
+        BigDecimal expectedMinimum = minimumFloor; // $10.00 minimum floor with scale 2
         
         // When: Calculating minimum payment for small balance
         BigDecimal actualMinimum = billDetailService.calculateMinimumPayment(smallBalance);
@@ -304,7 +304,7 @@ class BillDetailServiceTest extends BaseServiceTest {
     void testGetDueDate_PaymentDueDateCalculationWithBusinessRules() {
         // Given: Statement date for due date calculation (use a Wednesday to avoid weekend issues)
         LocalDate statementDate = LocalDate.of(2024, 1, 3); // Wednesday
-        LocalDate expectedDueDate = statementDate.plusDays(PAYMENT_DUE_DAYS);
+        LocalDate expectedDueDate = statementDate.plusDays(PAYMENT_DUE_DAYS).plusDays(1); // Jan 28 (Sunday) adjusted to Jan 29 (Monday)
         
         // When: Calculating payment due date
         LocalDate actualDueDate = billDetailService.getDueDate(statementDate);
@@ -312,9 +312,10 @@ class BillDetailServiceTest extends BaseServiceTest {
         // Then: Validate due date calculation
         assertThat(actualDueDate).isEqualTo(expectedDueDate);
         
-        // Validate business rule: due date is 25 days from statement date
-        LocalDate calculatedDueDate = statementDate.plusDays(PAYMENT_DUE_DAYS);
-        assertThat(actualDueDate).isEqualTo(calculatedDueDate);
+        // Validate business rule: due date is 25 days from statement date, adjusted for weekends
+        LocalDate rawDueDate = statementDate.plusDays(PAYMENT_DUE_DAYS);
+        // If raw due date falls on weekend, it should be adjusted to next business day
+        assertThat(rawDueDate.getDayOfWeek().getValue()).isGreaterThan(5); // Confirms Sunday (7)
         
         // Ensure it's a weekday (business day)
         assertThat(actualDueDate.getDayOfWeek().getValue()).isLessThanOrEqualTo(5);
