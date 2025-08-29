@@ -16,6 +16,7 @@ import com.carddemo.util.AmountCalculator;
 import com.carddemo.util.DateConversionUtil;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.transaction.annotation.Transactional;
@@ -98,6 +99,7 @@ public abstract class BaseServiceTest {
      * - Transaction rollback configuration
      * - Mock object initialization
      */
+    @BeforeEach
     public void setUp() {
         logger.debug("Initializing BaseServiceTest environment");
         
