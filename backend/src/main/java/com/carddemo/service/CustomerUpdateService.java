@@ -66,7 +66,7 @@ public class CustomerUpdateService {
      */
     public Customer updateCustomer(Customer customer) {
         if (customer == null) {
-            throw new IllegalArgumentException("Customer data cannot be null");
+            throw new IllegalArgumentException("Customer cannot be null");
         }
 
         if (customer.getCustomerId() == null) {
@@ -91,9 +91,11 @@ public class CustomerUpdateService {
             throw new RuntimeException("Customer not found: " + customerIdStr);
         }
 
-        // Validate customer data before update
-        if (!validateCustomerData(customer)) {
-            throw new IllegalArgumentException("Customer data validation failed");
+        // Validate customer data before update with specific error messages
+        try {
+            validateCustomerDataWithSpecificErrors(customer);
+        } catch (IllegalArgumentException e) {
+            throw e;
         }
 
         // Update customer information
@@ -114,7 +116,7 @@ public class CustomerUpdateService {
      */
     public String standardizeAddress(String address) {
         if (address == null) {
-            throw new IllegalArgumentException("Address cannot be null");
+            throw new IllegalArgumentException("Address cannot be null or empty");
         }
         
         if (address.trim().isEmpty()) {
@@ -146,6 +148,9 @@ public class CustomerUpdateService {
 
         // Clean up multiple spaces
         standardized = standardized.replaceAll("\\s+", " ");
+        
+        // Format ZIP codes - convert 9-digit ZIP codes to 5-4 format
+        standardized = standardized.replaceAll("\\b(\\d{5})(\\d{4})\\b", "$1-$2");
 
         return standardized.trim();
     }
@@ -163,9 +168,29 @@ public class CustomerUpdateService {
         }
 
         try {
-            // Use ValidationUtil for comprehensive phone validation
-            ValidationUtil.validatePhoneNumber("phoneNumber", phoneNumber);
-            return true;
+            // Check for invalid separators (dots are not allowed)
+            if (phoneNumber.contains(".")) {
+                return false;
+            }
+            
+            // Clean phone number to extract just digits
+            String cleanPhone = phoneNumber.trim().replaceAll("\\D", "");
+            
+            // Check if it's exactly 10 digits
+            if (cleanPhone.length() != 10) {
+                return false;
+            }
+            
+            // Extract area code for validation
+            String areaCode = cleanPhone.substring(0, 3);
+            
+            // Reject reserved/special area codes
+            if ("555".equals(areaCode) || "911".equals(areaCode) || "411".equals(areaCode)) {
+                return false;
+            }
+            
+            // Use ValidationUtil for area code validation
+            return ValidationUtil.validatePhoneAreaCode(areaCode);
         } catch (Exception e) {
             return false;
         }
@@ -180,16 +205,27 @@ public class CustomerUpdateService {
      */
     public boolean validateCustomerData(Customer customer) {
         if (customer == null) {
+            throw new IllegalArgumentException("Customer data cannot be null");
+        }
+
+        // Check required fields
+        if (customer.getCustomerId() == null || customer.getCustomerId().trim().isEmpty()) {
+            return false;
+        }
+        
+        if (customer.getFirstName() == null || customer.getFirstName().trim().isEmpty()) {
+            return false;
+        }
+        
+        if (customer.getSSN() == null || customer.getSSN().trim().isEmpty()) {
             return false;
         }
 
         // Validate SSN using ValidationUtil
-        if (customer.getSSN() != null) {
-            try {
-                ValidationUtil.validateSSN(customer.getSSN());
-            } catch (Exception e) {
-                return false;
-            }
+        try {
+            ValidationUtil.validateSSN(customer.getSSN());
+        } catch (Exception e) {
+            return false;
         }
 
         // Validate phone numbers
@@ -224,6 +260,67 @@ public class CustomerUpdateService {
     }
 
     /**
+     * Validates customer data with specific error messages for better error reporting.
+     * Used by updateCustomer to provide detailed validation failure information.
+     * 
+     * @param customer Customer to validate
+     * @throws IllegalArgumentException with specific error message if validation fails
+     */
+    private void validateCustomerDataWithSpecificErrors(Customer customer) {
+        if (customer == null) {
+            throw new IllegalArgumentException("Customer data cannot be null");
+        }
+
+        // Check required fields
+        if (customer.getCustomerId() == null || customer.getCustomerId().trim().isEmpty()) {
+            throw new IllegalArgumentException("Customer ID is required");
+        }
+        
+        if (customer.getFirstName() == null || customer.getFirstName().trim().isEmpty()) {
+            throw new IllegalArgumentException("First name is required");
+        }
+        
+        if (customer.getSSN() == null || customer.getSSN().trim().isEmpty()) {
+            throw new IllegalArgumentException("SSN is required");
+        }
+
+        // Validate SSN format
+        try {
+            ValidationUtil.validateSSN(customer.getSSN());
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid SSN format");
+        }
+
+        // Validate phone numbers
+        if (customer.getPhoneNumber() != null && !validatePhoneNumber(customer.getPhoneNumber())) {
+            throw new IllegalArgumentException("Invalid phone number format");
+        }
+
+        if (customer.getPhoneNumber2() != null && !validatePhoneNumber(customer.getPhoneNumber2())) {
+            throw new IllegalArgumentException("Invalid secondary phone number format");
+        }
+
+        // Validate date of birth
+        if (customer.getDateOfBirth() != null) {
+            if (!DateConversionUtil.isNotFutureDate(customer.getDateOfBirth())) {
+                throw new IllegalArgumentException("Date of birth cannot be in the future");
+            }
+            try {
+                ValidationUtil.validateDateOfBirth(customer.getDateOfBirth());
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Invalid date of birth");
+            }
+        }
+
+        // Validate FICO score range
+        if (customer.getFicoScore() != null) {
+            if (customer.getFicoScore().compareTo(new BigDecimal("300")) < 0 || customer.getFicoScore().compareTo(new BigDecimal("850")) > 0) {
+                throw new IllegalArgumentException("Credit score must be between 300 and 850");
+            }
+        }
+    }
+
+    /**
      * Updates customer credit score with validation and precision preservation.
      * Maintains COBOL COMP-3 packed decimal precision for financial calculations.
      * 
@@ -242,12 +339,7 @@ public class CustomerUpdateService {
             throw new IllegalArgumentException("Credit score cannot be null");
         }
 
-        // Validate credit score range
-        if (creditScore.compareTo(new BigDecimal("300")) < 0 || creditScore.compareTo(new BigDecimal("850")) > 0) {
-            throw new IllegalArgumentException("Credit score must be between 300 and 850");
-        }
-
-        // Find customer
+        // Find customer first (before validating range)
         Long customerIdLong;
         try {
             customerIdLong = Long.parseLong(customerId);
@@ -257,6 +349,11 @@ public class CustomerUpdateService {
         Optional<Customer> existingCustomer = customerRepository.findById(customerIdLong);
         if (!existingCustomer.isPresent()) {
             throw new RuntimeException("Customer not found: " + customerId);
+        }
+
+        // Validate credit score range
+        if (creditScore.compareTo(new BigDecimal("300")) < 0 || creditScore.compareTo(new BigDecimal("850")) > 0) {
+            throw new IllegalArgumentException("Credit score must be between 300 and 850");
         }
 
         // Update credit score maintaining precision
