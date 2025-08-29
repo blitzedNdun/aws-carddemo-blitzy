@@ -25,6 +25,7 @@ import com.carddemo.exception.FileProcessingException;
 
 
 import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Profile;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.transaction.annotation.Transactional;
@@ -93,6 +94,7 @@ import java.io.PrintWriter;
  * @version 1.0
  * @since 2024
  */
+@Profile("!test")
 @Service
 @Transactional
 public class TransactionExtractBatchService {

@@ -96,8 +96,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @version 1.0
  * @since CardDemo v1.0
  */
-@Profile({"!test", "!unit-test"})
 @Configuration
+@Profile("!test")
 public class AccountProcessingJob {
 
     private static final Logger logger = LoggerFactory.getLogger(AccountProcessingJob.class);
@@ -179,17 +179,25 @@ public class AccountProcessingJob {
      * - Memory and resource utilization tracking
      * - Operational dashboard integration through metrics exposure
      * 
+     * @param executeAccountListStep injected Step bean for account list processing
+     * @param executeCardListStep injected Step bean for card list processing  
+     * @param executeCrossReferenceListStep injected Step bean for cross-reference list processing
+     * @param accountProcessingJobListener injected JobExecutionListener bean for monitoring
      * @return Job configured for composite account processing with complete orchestration
      */
     @Bean
-    public Job accountProcessingJob() {
-        logger.info("Configuring composite accountProcessingJob - orchestrating CBACT01C, CBACT02C, and CBACT03C replacements");
+    public Job compositeAccountProcessingJob(
+            @Qualifier("executeAccountListStep") Step executeAccountListStep,
+            @Qualifier("executeCardListStep") Step executeCardListStep,  
+            @Qualifier("executeCrossReferenceListStep") Step executeCrossReferenceListStep,
+            @Qualifier("accountProcessingJobListener") JobExecutionListener accountProcessingJobListener) {
+        logger.info("Configuring composite AccountProcessingJob - orchestrating CBACT01C, CBACT02C, and CBACT03C replacements");
         
         return new JobBuilder(COMPOSITE_JOB_NAME, jobRepository)
-                .start(executeAccountListStep())
-                .next(executeCardListStep())  
-                .next(executeCrossReferenceListStep())
-                .listener(accountProcessingJobListener())
+                .start(executeAccountListStep)
+                .next(executeCardListStep)  
+                .next(executeCrossReferenceListStep)
+                .listener(accountProcessingJobListener)
                 .build();
     }
 

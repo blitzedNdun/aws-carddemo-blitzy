@@ -28,6 +28,7 @@ import org.springframework.batch.item.support.PassThroughItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -145,6 +146,7 @@ class FormattedCustomer {
  * @since 2024
  */
 @Configuration
+@Profile("!test")
 public class CustomerListJob {
     
     private static final Logger logger = LoggerFactory.getLogger(CustomerListJob.class);

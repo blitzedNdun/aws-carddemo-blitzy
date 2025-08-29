@@ -22,6 +22,7 @@ import com.carddemo.exception.DataPrecisionException;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Profile;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
@@ -75,6 +76,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @version 1.0.0
  * @since CardDemo 1.0
  */
+@Profile("!test")
 @Service
 public class DailyTransactionBatchService {
 

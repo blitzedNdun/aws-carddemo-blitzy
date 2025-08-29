@@ -6,6 +6,7 @@
 package com.carddemo.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Profile;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.scope.context.ChunkContext;
@@ -113,9 +114,9 @@ import org.springframework.transaction.annotation.Transactional;
  * @version 1.0
  * @since CardDemo v1.0
  */
+@Profile("!test")
 @Service
 @Transactional
-@org.springframework.context.annotation.Profile("!test")
 public class StatementGenerationBatchServiceA implements Tasklet {
 
     private static final Logger logger = LoggerFactory.getLogger(StatementGenerationBatchServiceA.class);

@@ -31,6 +31,7 @@ import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Profile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,10 +57,11 @@ import java.util.HashMap;
  * the validation rules and calculations from the original COBOL implementation.
  * 
  * Translated from: CBCUS01C.cbl - Customer Maintenance Batch Program
- * Migration Target: Spring Batch 5.x with @Service annotation
+ * Migration Target: Spring Batch 5.x with @Profile("!test")
+@Service annotation
  */
+@Profile("!test")
 @Service
-@org.springframework.context.annotation.Profile("!test")
 public class CustomerMaintenanceBatchService {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomerMaintenanceBatchService.class);

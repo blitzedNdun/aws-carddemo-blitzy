@@ -91,8 +91,8 @@ import java.time.format.DateTimeFormatter;
  * @version 1.0
  * @since CardDemo v1.0
  */
-@Profile({"!test", "!unit-test"})
 @Configuration
+@Profile("!test")
 @Component
 public class CardListJob {
 

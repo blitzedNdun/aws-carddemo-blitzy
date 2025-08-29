@@ -13,6 +13,7 @@ import com.carddemo.repository.NotificationRepository;
 import com.carddemo.repository.AccountArchiveRepository;
 
 import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Profile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -75,6 +76,7 @@ import org.slf4j.LoggerFactory;
  * @version 1.0
  * @since 2024
  */
+@Profile("!test")
 @Service
 public class AccountClosureBatchService {
 

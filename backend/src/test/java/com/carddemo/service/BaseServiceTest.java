@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.concurrent.TimeUnit;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
@@ -474,6 +475,46 @@ public abstract class BaseServiceTest {
         
         // Performance timing is handled by individual test measurement calls
         // No central timer tracking needed at base class level
+    }
+
+    /**
+     * Measures the performance of a Runnable operation and returns execution time.
+     * 
+     * @param operation Runnable operation to measure
+     * @return Execution time in milliseconds
+     */
+    public long measurePerformance(Runnable operation) {
+        long startTime = System.nanoTime();
+        operation.run();
+        long endTime = System.nanoTime();
+        return TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
+    }
+
+    /**
+     * Measures the performance of a Supplier operation and returns execution time.
+     * 
+     * @param operation Supplier operation to measure
+     * @return Execution time in milliseconds
+     */
+    public long measurePerformance(java.util.function.Supplier<Object> operation) {
+        long startTime = System.nanoTime();
+        operation.get();
+        long endTime = System.nanoTime();
+        return TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
+    }
+
+    /**
+     * Validates that response time meets SLA requirements.
+     * 
+     * @param responseTimeMs Measured response time in milliseconds
+     * @param maxTimeMs Maximum allowed response time in milliseconds
+     */
+    public void validateResponseTime(long responseTimeMs, long maxTimeMs) {
+        assertThat(responseTimeMs)
+            .as("Response time must be under %dms SLA", maxTimeMs)
+            .isLessThan(maxTimeMs);
+        
+        logger.debug("Response time validation passed: {}ms (under {}ms SLA)", responseTimeMs, maxTimeMs);
     }
 
     /**

@@ -31,6 +31,11 @@ import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Qualifier;
+import jakarta.persistence.EntityManagerFactory;
+import org.springframework.orm.jpa.LocalEntityManagerFactoryBean;
+import com.carddemo.service.AccountClosureBatchService;
 
 /**
  * Spring Batch test configuration providing comprehensive testing infrastructure for batch job validation.
@@ -94,6 +99,73 @@ public class TestBatchConfig {
     private static final int BATCH_PROCESSING_WINDOW_HOURS = 4; // 4-hour processing window from specification
     
     /**
+     * Shared test DataSource for Spring Batch testing infrastructure.
+     * 
+     * This method creates a single in-memory H2 database to be shared across all
+     * Spring Batch test components, eliminating conflicts and circular dependencies.
+     * 
+     * @return DataSource configured with in-memory H2 database for test execution
+     */
+    @Bean
+    public DataSource testDataSource() {
+        logger.info("Configuring shared test DataSource for batch testing");
+        
+        return new EmbeddedDatabaseBuilder()
+                .setType(EmbeddedDatabaseType.H2)
+                .addScript("classpath:org/springframework/batch/core/schema-h2.sql")
+                .generateUniqueName(true)
+                .build();
+    }
+
+    /**
+     * Primary DataSource bean to satisfy production config dependencies.
+     * 
+     * This creates a DataSource qualified as "dataSource" to satisfy any production
+     * configuration classes that might be loaded during testing despite profile exclusions.
+     * 
+     * @return DataSource qualified as "dataSource" for test execution
+     */
+    @Bean
+    @Qualifier("dataSource")
+    public DataSource dataSource() {
+        logger.info("Configuring primary DataSource for production config compatibility");
+        
+        return new EmbeddedDatabaseBuilder()
+                .setType(EmbeddedDatabaseType.H2)
+                .addScript("classpath:org/springframework/batch/core/schema-h2.sql")
+                .generateUniqueName(true)
+                .build();
+    }
+
+    /**
+     * Mock EntityManagerFactory for test environment.
+     * 
+     * This creates a mock EntityManagerFactory to satisfy any production configuration
+     * classes that might be loaded during testing despite profile exclusions.
+     * 
+     * @return Mock EntityManagerFactory for test execution
+     */
+    @Bean
+    public EntityManagerFactory entityManagerFactory() {
+        logger.info("Configuring mock EntityManagerFactory for production config compatibility");
+        return Mockito.mock(EntityManagerFactory.class);
+    }
+
+    /**
+     * Mock AccountClosureBatchService for test environment.
+     * 
+     * This creates a mock AccountClosureBatchService to satisfy any production batch
+     * configurations that might be loaded during testing despite profile exclusions.
+     * 
+     * @return Mock AccountClosureBatchService for test execution
+     */
+    @Bean
+    public AccountClosureBatchService accountClosureBatchService() {
+        logger.info("Configuring mock AccountClosureBatchService for production config compatibility");
+        return Mockito.mock(AccountClosureBatchService.class);
+    }
+
+    /**
      * Configures in-memory JobRepository for fast test execution without external database dependencies.
      * 
      * This method creates a lightweight, memory-based job repository optimized for test scenarios,
@@ -135,14 +207,7 @@ public class TestBatchConfig {
         org.springframework.batch.core.repository.support.JobRepositoryFactoryBean factory = 
                 new org.springframework.batch.core.repository.support.JobRepositoryFactoryBean();
         
-        // Configure in-memory H2 database
-        DataSource testDataSource = new EmbeddedDatabaseBuilder()
-                .setType(EmbeddedDatabaseType.H2)
-                .addScript("classpath:org/springframework/batch/core/schema-h2.sql")
-                .generateUniqueName(true)
-                .build();
-        
-        factory.setDataSource(testDataSource);
+        factory.setDataSource(testDataSource());
         factory.setTransactionManager(testTransactionManager());
         
         // Configure test-specific settings
@@ -218,7 +283,7 @@ public class TestBatchConfig {
      * 
      * <p>Test Transaction Management Features:
      * <ul>
-     * <li>DataSourceTransactionManager integration with in-memory H2 database</li>
+     * <li>DataSourceTransactionManager integration with shared in-memory H2 database</li>
      * <li>Automatic rollback support for test cleanup and isolation</li>
      * <li>ACID compliance for batch operation testing with data integrity</li>
      * <li>Transaction boundary management matching production behavior</li>
@@ -247,17 +312,10 @@ public class TestBatchConfig {
     public PlatformTransactionManager testTransactionManager() {
         logger.info("Configuring test transaction manager for batch operations");
         
-        // Create embedded H2 database for transaction management
-        DataSource testDataSource = new EmbeddedDatabaseBuilder()
-                .setType(EmbeddedDatabaseType.H2)
-                .addScript("classpath:org/springframework/batch/core/schema-h2.sql")
-                .generateUniqueName(true)
-                .build();
-        
         DataSourceTransactionManager transactionManager = new DataSourceTransactionManager();
-        transactionManager.setDataSource(testDataSource);
+        transactionManager.setDataSource(testDataSource());
         
-        logger.debug("Test transaction manager configured with H2 in-memory database");
+        logger.debug("Test transaction manager configured with shared H2 in-memory database");
         return transactionManager;
     }
     
@@ -384,5 +442,20 @@ public class TestBatchConfig {
             logger.error("Failed to configure JobRepositoryTestUtils", e);
             throw new RuntimeException("JobRepositoryTestUtils configuration failed", e);
         }
+    }
+
+    /**
+     * Provides a mock BatchConfig bean for test environment to satisfy dependency injection.
+     * 
+     * This method creates a mock BatchConfig that satisfies the @Autowired dependencies
+     * of batch services during testing without requiring the full production batch
+     * infrastructure setup.
+     * 
+     * @return Mock BatchConfig configured for test environment
+     */
+    @Bean
+    public BatchConfig testBatchConfig() {
+        logger.info("Creating mock BatchConfig for test environment");
+        return Mockito.mock(BatchConfig.class);
     }
 }

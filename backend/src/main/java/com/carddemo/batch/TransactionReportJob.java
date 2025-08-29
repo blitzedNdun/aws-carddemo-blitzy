@@ -100,8 +100,8 @@ import java.util.Optional;
  * @version 1.0
  * @since 2024
  */
-@Profile({"!test", "!unit-test"})
 @Configuration
+@Profile("!test")
 public class TransactionReportJob {
 
     // Constants for report formatting (matching COBOL specifications)

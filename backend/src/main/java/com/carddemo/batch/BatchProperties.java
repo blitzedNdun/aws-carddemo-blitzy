@@ -5,8 +5,11 @@
 
 package com.carddemo.batch;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Profile;
 import org.springframework.beans.factory.annotation.Value;
 
 import jakarta.validation.constraints.NotBlank;
@@ -53,6 +56,7 @@ import java.nio.file.Path;
  * @version 1.0
  * @since 2024
  */
+@Profile("!test")
 @Component
 @ConfigurationProperties(prefix = "carddemo.batch")
 public class BatchProperties {

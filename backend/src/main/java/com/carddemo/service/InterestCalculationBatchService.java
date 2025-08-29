@@ -11,6 +11,7 @@ import com.carddemo.repository.InterestRateRepository;
 import com.carddemo.util.CobolDataConverter;
 
 import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Profile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -69,6 +70,7 @@ import org.slf4j.LoggerFactory;
  * @since 2024
  */
 @Service
+@Profile("!test")
 @Transactional
 public class InterestCalculationBatchService {
 

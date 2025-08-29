@@ -222,7 +222,7 @@ public class TransactionReportingServiceTest extends AbstractBaseTest implements
             Account account = testDataGenerator.generateAccount(customer);
             testAccounts.add(account);
         }
-        List<Transaction> monthlyTransactions = TestDataGenerator.generateDailyTransactionBatch(100);
+        List<Transaction> monthlyTransactions = TestDataGenerator.generateTransactionBatch(100);
         
         // Configure transactions across multiple accounts in the test month
         for (int i = 0; i < monthlyTransactions.size(); i++) {

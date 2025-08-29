@@ -16,6 +16,7 @@ import com.carddemo.util.DateConversionUtil;
 import com.carddemo.config.BatchConfig;
 
 import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Profile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.launch.JobLauncher;
@@ -69,6 +70,7 @@ import java.util.stream.Collectors;
  * @since 2024
  */
 @Service
+@Profile("!test")
 public class AccountArchiveBatchService {
 
     private static final Logger logger = LoggerFactory.getLogger(AccountArchiveBatchService.class);

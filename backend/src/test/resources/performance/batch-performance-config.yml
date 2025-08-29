@@ -22,7 +22,7 @@ batch_jobs:
   
   # Account Processing Job (derived from CBACT01C.cbl)
   account_processing:
-    job_name: "accountProcessingJob"
+    job_name: "compositeAccountProcessingJob"
     description: "Sequential account file processing matching CBACT01C COBOL program"
     enabled: true
     

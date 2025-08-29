@@ -17,6 +17,7 @@ import com.carddemo.util.DateConversionUtil;
 import com.carddemo.util.AmountCalculator;
 
 import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Profile;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.JpaPagingItemReader;
@@ -68,6 +69,7 @@ import org.slf4j.LoggerFactory;
  * @version 1.0
  * @since 2024
  */
+@Profile("!test")
 @Service
 public class AccountMaintenanceBatchService {
 

@@ -16,6 +16,7 @@ import com.carddemo.entity.Statement;
 import com.carddemo.entity.Transaction;
 
 import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Profile;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,8 +63,8 @@ import java.util.List;
  * @version 1.0
  * @since Spring Boot 3.2.x, Spring Batch 5.x
  */
+@Profile("!test")
 @Service
-@org.springframework.context.annotation.Profile("!test")
 public class StatementGenerationBatchServiceB {
 
     @Autowired

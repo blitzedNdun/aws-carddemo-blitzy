@@ -9,14 +9,23 @@ import com.carddemo.config.BatchConfig;
 import com.carddemo.service.NotificationService;
 import com.carddemo.exception.BatchProcessingException;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.batch.core.JobExecution;
+import org.springframework.context.annotation.Profile;
 import org.springframework.batch.core.JobExecutionListener;
+import org.springframework.context.annotation.Profile;
 import org.springframework.batch.core.JobParameters;
+import org.springframework.context.annotation.Profile;
 import org.springframework.batch.core.StepExecution;
+import org.springframework.context.annotation.Profile;
 import org.springframework.batch.core.explore.JobExplorer;
+import org.springframework.context.annotation.Profile;
 import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.context.annotation.Profile;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.task.TaskExecutor;
 
 import io.micrometer.core.instrument.MeterRegistry;
@@ -90,6 +99,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @version 1.0
  * @since 2024
  */
+@Profile("!test")
 @Component
 public class BatchJobListener implements JobExecutionListener {
     

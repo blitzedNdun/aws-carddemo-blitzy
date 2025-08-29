@@ -11,6 +11,7 @@ import com.carddemo.entity.Transaction;
 import com.carddemo.entity.DailyTransaction;
 
 import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Profile;
 import org.springframework.batch.core.launch.JobLauncher;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -56,6 +57,7 @@ import java.util.stream.Collectors;
  * @version 1.0
  * @since Spring Boot 3.2.x migration from COBOL batch processing
  */
+@Profile("!test")
 @Service
 @Transactional
 public class TransactionReconBatchService {

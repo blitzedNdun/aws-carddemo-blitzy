@@ -359,20 +359,7 @@ public class TestDataGenerator {
         return new BigDecimal(amount).setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE);
     }
     
-    /**
-     * Generates a batch of daily transactions for batch processing tests.
-     * Creates multiple transaction objects for bulk testing scenarios.
-     *
-     * @param count Number of transactions to generate
-     * @return List of transaction objects
-     */
-    public static List<Transaction> generateDailyTransactionBatch(int count) {
-        List<Transaction> transactions = new ArrayList<>();
-        for (int i = 0; i < count; i++) {
-            transactions.add(generateTransaction());
-        }
-        return transactions;
-    }
+
     
     /**
      * Generates a random transaction date within the last 30 days.
@@ -542,5 +529,78 @@ public class TestDataGenerator {
      */
     private static BigDecimal generateComp3BigDecimal(String amount) {
         return new BigDecimal(amount).setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE);
+    }
+
+    /**
+     * Generates a DailyTransaction entity for testing.
+     * Creates daily transactions with COBOL-compatible field values.
+     *
+     * @return DailyTransaction entity with realistic test data
+     */
+    public static com.carddemo.entity.DailyTransaction generateDailyTransaction() {
+        com.carddemo.entity.DailyTransaction dailyTransaction = new com.carddemo.entity.DailyTransaction();
+        
+        // Set transaction ID as String
+        dailyTransaction.setTransactionId("T" + String.format("%015d", random.nextInt(999999999)));
+        
+        // Set card number
+        dailyTransaction.setCardNumber(TEST_CARD_NUMBER);
+        
+        // Set transaction amount with COBOL COMP-3 precision
+        dailyTransaction.setTransactionAmount(generateComp3BigDecimal(7, 50000.0));
+        
+        // Set transaction date
+        dailyTransaction.setTransactionDate(LocalDate.now());
+        
+        // Set transaction type code
+        dailyTransaction.setTransactionTypeCode(TEST_TRANSACTION_TYPE_CODE);
+        
+        // Set category code
+        dailyTransaction.setCategoryCode("PUCH");
+        
+        // Set account ID
+        dailyTransaction.setAccountId(TEST_ACCOUNT_ID);
+        
+        // Set merchant information
+        dailyTransaction.setMerchantId(Long.parseLong(generateMerchantId().substring(3))); // Extract numeric part
+        dailyTransaction.setMerchantName("Test Merchant");
+        
+        // Set description
+        dailyTransaction.setDescription("Test Daily Transaction");
+        
+        // Set processing status
+        dailyTransaction.setProcessingStatus("NEW");
+        
+        return dailyTransaction;
+    }
+    
+    /**
+     * Generates a batch of transactions for testing.
+     * Creates multiple Transaction objects for bulk testing scenarios.
+     *
+     * @param count Number of transactions to generate
+     * @return List of Transaction objects
+     */
+    public static List<Transaction> generateTransactionBatch(int count) {
+        List<Transaction> transactions = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            transactions.add(generateTransaction());
+        }
+        return transactions;
+    }
+    
+    /**
+     * Generates a batch of daily transactions for batch processing tests.
+     * Creates multiple DailyTransaction objects for bulk testing scenarios.
+     *
+     * @param count Number of daily transactions to generate
+     * @return List of DailyTransaction objects
+     */
+    public static List<com.carddemo.entity.DailyTransaction> generateDailyTransactionBatch(int count) {
+        List<com.carddemo.entity.DailyTransaction> transactions = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            transactions.add(generateDailyTransaction());
+        }
+        return transactions;
     }
 }
