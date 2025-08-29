@@ -45,7 +45,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.FileSystemResource;
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -107,7 +107,6 @@ import jakarta.persistence.EntityManagerFactory;
  * @since 2024
  */
 @Configuration
-@EnableBatchProcessing
 @Profile("!test")
 public class DailyTransactionJob {
     
@@ -227,8 +226,8 @@ public class DailyTransactionJob {
         
         return new StepBuilder("dailyTransactionStep", jobRepository)
                 .<DailyTransactionDto, Transaction>chunk(CHUNK_SIZE, transactionManager)
-                .reader(transactionReader())
-                .processor(transactionProcessor())
+                .reader(dailyTransactionReader())
+                .processor(dailyTransactionProcessor())
                 .writer(transactionWriter())
                 .faultTolerant()
                 .skipLimit(SKIP_LIMIT)
@@ -266,8 +265,8 @@ public class DailyTransactionJob {
      * @return configured FlatFileItemReader for daily transaction file processing
      */
     @Bean
-    public FlatFileItemReader<DailyTransactionDto> transactionReader() {
-        logger.info("Configuring transaction file reader");
+    public FlatFileItemReader<DailyTransactionDto> dailyTransactionReader() {
+        logger.info("Configuring daily transaction file reader");
         
         // Configure field set mapper for DTO population
         BeanWrapperFieldSetMapper<DailyTransactionDto> fieldSetMapper = new BeanWrapperFieldSetMapper<>();
@@ -318,8 +317,8 @@ public class DailyTransactionJob {
      * @return configured ItemProcessor for transaction validation and transformation
      */
     @Bean
-    public ItemProcessor<DailyTransactionDto, Transaction> transactionProcessor() {
-        logger.info("Configuring transaction processor");
+    public ItemProcessor<DailyTransactionDto, Transaction> dailyTransactionProcessor() {
+        logger.info("Configuring daily transaction processor");
         
         return new ItemProcessor<DailyTransactionDto, Transaction>() {
             @Override
