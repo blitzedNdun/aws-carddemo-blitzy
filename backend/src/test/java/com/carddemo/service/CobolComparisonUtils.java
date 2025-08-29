@@ -472,4 +472,41 @@ public class CobolComparisonUtils {
         // Default to equals comparison for other types
         return actual.equals(expected);
     }
+
+    /**
+     * Compares validation results between Java and COBOL implementations.
+     * 
+     * Validates that Java validation logic produces identical boolean results
+     * to COBOL validation routines, ensuring functional parity.
+     * 
+     * @param javaResult actual boolean result from Java validation
+     * @param cobolExpected expected boolean result matching COBOL behavior
+     * @return true if validation results match exactly
+     */
+    public boolean compareValidationResults(boolean javaResult, boolean cobolExpected) {
+        return javaResult == cobolExpected;
+    }
+
+    /**
+     * Asserts that error messages match between Java and COBOL implementations.
+     * 
+     * Validates that Java exception messages maintain identical content
+     * to COBOL error messages for compatibility with external interfaces.
+     * 
+     * @param javaErrorMessage actual error message from Java exception
+     * @param expectedCobolMessage expected error message matching COBOL behavior
+     * @return true if error messages match exactly (case-insensitive)
+     */
+    public boolean assertErrorMessageMatch(String javaErrorMessage, String expectedCobolMessage) {
+        if (javaErrorMessage == null && expectedCobolMessage == null) {
+            return true;
+        }
+        
+        if (javaErrorMessage == null || expectedCobolMessage == null) {
+            return false;
+        }
+        
+        // Compare error messages (case-insensitive for flexibility)
+        return javaErrorMessage.toLowerCase().trim().equals(expectedCobolMessage.toLowerCase().trim());
+    }
 }
