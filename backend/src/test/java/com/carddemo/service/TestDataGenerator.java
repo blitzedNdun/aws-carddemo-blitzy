@@ -344,7 +344,7 @@ public class TestDataGenerator {
         customer.setDateOfBirth(LocalDate.of(1980, 5, 15));
         customer.setSsn("123456789");
         customer.setFicoScore(BigDecimal.valueOf(750)); // Default high FICO for testing
-        customer.setPhoneNumber1("555-123-4567");
+        customer.setPhoneNumber("(202) 123-4567"); // Use valid area code and proper field
         return customer;
     }
     

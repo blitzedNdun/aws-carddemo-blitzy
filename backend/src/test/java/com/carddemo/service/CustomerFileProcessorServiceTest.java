@@ -361,11 +361,11 @@ public class CustomerFileProcessorServiceTest {
             .doesNotThrowAnyException();
         
         // Verify: Customer data accessible and properly formatted
-        assertThat(testCustomer.getCustomerId()).isEqualTo(1L);
+        assertThat(testCustomer.getCustomerId()).isEqualTo("1");
         assertThat(testCustomer.getFirstName()).isEqualTo("John");
         assertThat(testCustomer.getLastName()).isEqualTo("Doe");
         assertThat(testCustomer.getPhoneNumber1()).isEqualTo("555-123-4567");
-        assertThat(testCustomer.getFicoScore()).isEqualTo(750);
+        assertThat(testCustomer.getFicoScore()).isEqualTo(BigDecimal.valueOf(750));
     }
 
     /**
@@ -453,9 +453,9 @@ public class CustomerFileProcessorServiceTest {
         verify(customerRepository, times(1)).flush();
         
         // Verify: All customers would be processed in order
-        assertThat(orderedCustomers.get(0).getCustomerId()).isEqualTo(1L);
-        assertThat(orderedCustomers.get(1).getCustomerId()).isEqualTo(2L);
-        assertThat(orderedCustomers.get(2).getCustomerId()).isEqualTo(3L);
+        assertThat(orderedCustomers.get(0).getCustomerId()).isEqualTo("1");
+        assertThat(orderedCustomers.get(1).getCustomerId()).isEqualTo("2");
+        assertThat(orderedCustomers.get(2).getCustomerId()).isEqualTo("3");
     }
 
     /**

@@ -36,7 +36,6 @@ import static org.mockito.Mockito.*;
  * 100% functional parity with the original mainframe authentication logic while leveraging
  * modern Java enterprise frameworks.
  */
-@ExtendWith(MockitoExtension.class)
 public class AuthenticationServiceTest extends AbstractBaseTest implements UnitTest {
 
     @Mock
@@ -59,11 +58,11 @@ public class AuthenticationServiceTest extends AbstractBaseTest implements UnitT
     }
 
     private void setupTestUsers() {
-        // Setup test user
+        // Setup test user - use uppercase for COBOL mainframe compatibility
         testUser = new UserSecurity();
         testUser.setId(1L);
-        testUser.setSecUsrId(TestConstants.TEST_USER_ID);
-        testUser.setUsername(TestConstants.TEST_USER_ID);
+        testUser.setSecUsrId(TestConstants.TEST_USER_ID.toUpperCase());
+        testUser.setUsername(TestConstants.TEST_USER_ID.toUpperCase());
         testUser.setPassword(TestConstants.TEST_USER_PASSWORD);
         testUser.setUserType("U");
         testUser.setFirstName("Test");
@@ -95,7 +94,7 @@ public class AuthenticationServiceTest extends AbstractBaseTest implements UnitT
         String username = TestConstants.TEST_USER_ID;
         String password = TestConstants.TEST_USER_PASSWORD;
         
-        when(userSecurityRepository.findByUsername(username))
+        when(userSecurityRepository.findByUsername(username.toUpperCase()))
             .thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches(password, testUser.getPassword()))
             .thenReturn(true);
@@ -111,7 +110,7 @@ public class AuthenticationServiceTest extends AbstractBaseTest implements UnitT
         assertTrue(result.getAuthorities().size() > 0, "Should have at least one authority");
         
         // Verify repository and encoder interactions
-        verify(userSecurityRepository).findByUsername(username);
+        verify(userSecurityRepository).findByUsername(username.toUpperCase());
         verify(passwordEncoder).matches(password, testUser.getPassword());
         
         logTestExecution("Valid credentials authentication test passed", null);
@@ -124,7 +123,7 @@ public class AuthenticationServiceTest extends AbstractBaseTest implements UnitT
         String username = TestConstants.TEST_USER_ID;
         String invalidPassword = "wrongpassword";
         
-        when(userSecurityRepository.findByUsername(username))
+        when(userSecurityRepository.findByUsername(username.toUpperCase()))
             .thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches(invalidPassword, testUser.getPassword()))
             .thenReturn(false);
@@ -135,7 +134,7 @@ public class AuthenticationServiceTest extends AbstractBaseTest implements UnitT
         }, "Should throw UsernameNotFoundException for invalid password");
         
         // Verify interactions
-        verify(userSecurityRepository).findByUsername(username);
+        verify(userSecurityRepository).findByUsername(username.toUpperCase());
         verify(passwordEncoder).matches(invalidPassword, testUser.getPassword());
         
         logTestExecution("Invalid password authentication test passed", null);
@@ -170,7 +169,7 @@ public class AuthenticationServiceTest extends AbstractBaseTest implements UnitT
         String username = TestConstants.TEST_USER_ID;
         String password = TestConstants.TEST_USER_PASSWORD;
         
-        when(userSecurityRepository.findByUsername(username))
+        when(userSecurityRepository.findByUsername(username.toUpperCase()))
             .thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches(password, testUser.getPassword()))
             .thenReturn(true);
@@ -182,7 +181,7 @@ public class AuthenticationServiceTest extends AbstractBaseTest implements UnitT
         assertTrue(result, "Validation should return true for valid credentials");
         
         // Verify interactions
-        verify(userSecurityRepository).findByUsername(username);
+        verify(userSecurityRepository).findByUsername(username.toUpperCase());
         verify(passwordEncoder).matches(password, testUser.getPassword());
         
         logTestExecution("Valid credentials validation test passed", null);
@@ -195,7 +194,7 @@ public class AuthenticationServiceTest extends AbstractBaseTest implements UnitT
         String username = TestConstants.TEST_USER_ID;
         String invalidPassword = "wrongpassword";
         
-        when(userSecurityRepository.findByUsername(username))
+        when(userSecurityRepository.findByUsername(username.toUpperCase()))
             .thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches(invalidPassword, testUser.getPassword()))
             .thenReturn(false);
@@ -207,7 +206,7 @@ public class AuthenticationServiceTest extends AbstractBaseTest implements UnitT
         assertFalse(result, "Validation should return false for invalid credentials");
         
         // Verify interactions
-        verify(userSecurityRepository).findByUsername(username);
+        verify(userSecurityRepository).findByUsername(username.toUpperCase());
         verify(passwordEncoder).matches(invalidPassword, testUser.getPassword());
         
         logTestExecution("Invalid credentials validation test passed", null);

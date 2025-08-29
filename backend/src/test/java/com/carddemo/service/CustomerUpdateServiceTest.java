@@ -266,10 +266,10 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         @Test
         @DisplayName("validatePhoneNumber() - valid US phone number format")
         void validatePhoneNumber_ValidUsFormat_ReturnsTrue() {
-            // Given: Valid US phone numbers in various formats
-            String phone1 = "(555) 123-4567";
-            String phone2 = "555-123-4567";
-            String phone3 = "5551234567";
+            // Given: Valid US phone numbers in various formats (avoiding reserved 555 area code)
+            String phone1 = "(202) 123-4567";
+            String phone2 = "212-123-4567";
+            String phone3 = "3121234567";
             String phone4 = testDataGenerator.generatePhoneNumber();
 
             // When: Validating phone numbers
@@ -505,6 +505,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
             // Given: Batch with valid and invalid customers
             Customer validCustomer = testDataGenerator.generateCustomer();
             validCustomer.setCustomerId(String.valueOf(1L));
+            validCustomer.setPhoneNumber("(202) 123-4567"); // Fix invalid 555 area code
             
             Customer invalidCustomer = testDataGenerator.generateCustomer();
             invalidCustomer.setCustomerId("2");
@@ -512,15 +513,17 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
             
             Customer anotherValidCustomer = testDataGenerator.generateCustomer();
             anotherValidCustomer.setCustomerId("3");
+            anotherValidCustomer.setPhoneNumber("(212) 456-7890"); // Fix invalid 555 area code
             
             List<Customer> customerBatch = Arrays.asList(validCustomer, invalidCustomer, anotherValidCustomer);
             
+            // Mock repository to find existing customers for update operations
+            // Only mock for valid customers that will pass validation and reach updateCustomer()
             when(customerRepository.findById(1L))
                 .thenReturn(Optional.of(validCustomer));
-            when(customerRepository.findById(2L))
-                .thenReturn(Optional.of(invalidCustomer));
             when(customerRepository.findById(3L))
                 .thenReturn(Optional.of(anotherValidCustomer));
+
             when(customerRepository.save(validCustomer))
                 .thenReturn(validCustomer);
             when(customerRepository.save(anotherValidCustomer))
@@ -534,7 +537,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
             // Verify that only valid customers are returned
             assertThat(result).hasSize(2);
             assertThat(result).allMatch(customer -> 
-                customer.getCustomerId().equals(1L) || customer.getCustomerId().equals(3L));
+                customer.getCustomerId().equals("1") || customer.getCustomerId().equals("3"));
             
             // Verify that only valid customers were saved
             verify(customerRepository, times(2)).save(any(Customer.class));
