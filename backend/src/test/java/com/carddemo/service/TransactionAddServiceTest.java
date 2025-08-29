@@ -8,7 +8,7 @@ import com.carddemo.entity.Transaction;
 import com.carddemo.repository.AccountRepository;
 import com.carddemo.repository.TransactionRepository;
 import com.carddemo.repository.CardXrefRepository;
-import com.carddemo.util.CobolComparisonUtils;
+import com.carddemo.test.CobolComparisonUtils;
 import com.carddemo.util.TestConstants;
 
 import org.assertj.core.api.Assertions;

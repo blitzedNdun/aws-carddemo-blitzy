@@ -1054,32 +1054,7 @@ public class AccountUpdateServiceTest {
         Assertions.assertThat(response.getAuditInfo()).isNull();
     }
 
-    // Static inner class for utility method replacements when CobolComparisonUtils is not available
-    private static class CobolComparisonUtils {
-        public static boolean compareBigDecimals(BigDecimal value1, BigDecimal value2) {
-            return value1.compareTo(value2) == 0 && value1.scale() == value2.scale();
-        }
-        
-        public static boolean validateFinancialPrecision(BigDecimal value) {
-            return value.scale() == 2 && !value.toString().contains("E");
-        }
-        
-        public static boolean compareCustomerRecords(Customer customer1, Customer customer2) {
-            return customer1.getCustomerId().equals(customer2.getCustomerId()) &&
-                   customer1.getSsn().equals(customer2.getSsn()) &&
-                   customer1.getFirstName().toUpperCase().equals(customer2.getFirstName().toUpperCase());
-        }
-        
-        public static boolean validateFicoScorePrecision(Integer ficoScore) {
-            return ficoScore >= 300 && ficoScore <= 850 && ficoScore % 1 == 0;
-        }
-        
-        public static String generateComparisonReport(Account account, Customer customer) {
-            return "Account ID: " + account.getAccountId() + "\n" +
-                   "Customer ID: " + customer.getCustomerId() + "\n" +
-                   "Validation Status: PASSED\n";
-        }
-    }
+
 
     // Helper methods for creating test data
 

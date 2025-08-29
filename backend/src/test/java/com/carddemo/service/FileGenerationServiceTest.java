@@ -16,7 +16,7 @@ import com.carddemo.service.FileGenerationService.CsvExportConfig;
 import com.carddemo.service.FileGenerationService.PdfGenerationOptions;
 import com.carddemo.util.FileUtils;
 import com.carddemo.service.TestDataBuilder;
-import com.carddemo.service.CobolComparisonUtils;
+import com.carddemo.test.CobolComparisonUtils;
 import com.carddemo.service.PerformanceTestUtils;
 import com.carddemo.entity.Transaction;
 import com.carddemo.entity.Account;

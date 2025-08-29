@@ -613,80 +613,9 @@ class PerformanceTimer {
     }
 }
 
-/**
- * Utility class for comparing COBOL and Java calculations to ensure parity.
- * Provides validation methods for ensuring identical behavior between systems.
- */
-class CobolComparisonUtils {
-    
-    /**
-     * Validates functional parity between Java and COBOL implementations.
-     */
-    public boolean validateFunctionalParity(Object javaResult, Object cobolResult) {
-        if (javaResult == null && cobolResult == null) return true;
-        if (javaResult == null || cobolResult == null) return false;
-        return javaResult.equals(cobolResult);
-    }
-    
-    /**
-     * Compares two decimal values for COBOL precision compliance.
-     */
-    public void compareDecimalValues(BigDecimal actual, BigDecimal expected) {
-        // Implementation for decimal comparison
-    }
-    
-    /**
-     * Compares BigDecimal precision against COBOL specifications.
-     */
-    public boolean compareBigDecimalPrecision(BigDecimal amount, int precision, int scale) {
-        return amount.precision() <= precision && amount.scale() == scale;
-    }
-}
 
-/**
- * Utility class for performance testing and SLA validation.
- * Provides timing and measurement capabilities for test operations.
- */
-class PerformanceTestUtils {
-    
-    /**
-     * Measures execution time of a supplier operation.
-     */
-    public long measureExecutionTime(java.util.function.Supplier<Object> operation) {
-        long startTime = System.nanoTime();
-        operation.get();
-        long endTime = System.nanoTime();
-        return TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
-    }
-    
-    /**
-     * Validates response time against SLA requirements.
-     */
-    public boolean validateResponseTime(long responseTimeMs) {
-        return responseTimeMs < 200L; // 200ms SLA requirement
-    }
-}
 
-/**
- * Factory class for creating and managing mock objects in tests.
- * Centralizes mock configuration and management for consistency.
- */
-class MockServiceFactory {
-    
-    /**
-     * Resets all managed mock objects.
-     */
-    public void resetAllMocks() {
-        // Implementation for resetting mocks
-    }
-    
-    /**
-     * Configures success response scenarios for mocks.
-     */
-    public void configureSuccessResponse() {
-        // Implementation for success scenario configuration
-    }
-}
+
 
 /**
  * COBOL data validation assertions for ensuring precision and format compliance.

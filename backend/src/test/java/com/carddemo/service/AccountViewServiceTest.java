@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Arrays;
 
 import com.carddemo.service.TestDataGenerator;
-import com.carddemo.service.CobolComparisonUtils;
+import com.carddemo.test.CobolComparisonUtils;
 import com.carddemo.repository.AccountRepository;
 import com.carddemo.repository.CustomerRepository;
 import com.carddemo.repository.CardRepository;

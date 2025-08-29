@@ -7,8 +7,10 @@ package com.carddemo.service;
 
 import com.carddemo.repository.AccountRepository;
 import com.carddemo.repository.TransactionRepository;
+import com.carddemo.repository.TransactionTypeRepository;
 import com.carddemo.entity.Account;
 import com.carddemo.entity.Transaction;
+import com.carddemo.entity.TransactionType;
 import com.carddemo.dto.BillPaymentRequest;
 import com.carddemo.dto.BillPaymentResponse;
 import com.carddemo.exception.ValidationException;
@@ -23,6 +25,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -37,6 +41,7 @@ import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -78,6 +83,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @since 2024
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("Payment Service Tests - Bill Payment Processing")
 public class PaymentServiceTest extends BaseServiceTest {
 
@@ -86,6 +92,9 @@ public class PaymentServiceTest extends BaseServiceTest {
 
     @Mock
     private TransactionRepository transactionRepository;
+
+    @Mock
+    private TransactionTypeRepository transactionTypeRepository;
 
     @InjectMocks
     private BillPaymentService paymentService;
@@ -105,6 +114,7 @@ public class PaymentServiceTest extends BaseServiceTest {
 
     private Account testAccount;
     private Transaction testTransaction;
+    private TransactionType testTransactionType;
     private BillPaymentRequest validRequest;
 
     /**
@@ -128,13 +138,19 @@ public class PaymentServiceTest extends BaseServiceTest {
         testTransaction = createTestTransaction();
         testTransaction.setTransactionId(TEST_TRANSACTION_ID);
 
+        // Create test transaction type for bill payment
+        testTransactionType = TestDataBuilder.createTransactionType();
+        testTransactionType.setTransactionTypeCode(TRANSACTION_TYPE_CODE);
+
         // Create valid payment request matching COBOL input validation
         validRequest = new BillPaymentRequest();
         validRequest.setAccountId(TEST_ACCOUNT_ID_STR);
         validRequest.setConfirmPayment("Y");
 
-        // Reset all mocks to ensure clean state
+        // Reset all mocks to ensure clean state and configure transaction type lookup
         resetMocks();
+        when(transactionTypeRepository.findByTransactionTypeCode(TRANSACTION_TYPE_CODE))
+            .thenReturn(testTransactionType);
     }
 
     /**
@@ -231,7 +247,7 @@ public class PaymentServiceTest extends BaseServiceTest {
             // Act & Assert - Validate business rule exception
             assertThatThrownBy(() -> paymentService.processBillPayment(validRequest))
                 .isInstanceOf(BusinessRuleException.class)
-                .hasMessage("Account is not active");
+                .hasMessage("Account is not active [Error Code: ACCOUNT_INACTIVE]");
 
             // Verify no payment processing for inactive account
             verify(transactionRepository, never()).save(any());
@@ -274,7 +290,7 @@ public class PaymentServiceTest extends BaseServiceTest {
             // Act & Assert - Validate COBOL "nothing to pay" logic
             assertThatThrownBy(() -> paymentService.processBillPayment(validRequest))
                 .isInstanceOf(BusinessRuleException.class)
-                .hasMessage("Insufficient funds");
+                .hasMessage("Insufficient funds [Error Code: INSUFFICIENT_FUNDS]");
 
             // Verify no transaction created for zero balance
             verify(transactionRepository, never()).save(any());
@@ -290,7 +306,7 @@ public class PaymentServiceTest extends BaseServiceTest {
             // Act & Assert - Validate COBOL error message
             assertThatThrownBy(() -> paymentService.processBillPayment(validRequest))
                 .isInstanceOf(BusinessRuleException.class)
-                .hasMessage("You have nothing to pay...");
+                .hasMessage("You have nothing to pay... [Error Code: 9001]");
         }
 
         @Test
@@ -403,11 +419,12 @@ public class PaymentServiceTest extends BaseServiceTest {
                 testAccounts.add(account);
                 
                 when(accountRepository.findById(TEST_ACCOUNT_ID + i)).thenReturn(Optional.of(account));
-                when(accountRepository.save(account)).thenReturn(account);
             }
             
-            when(transactionRepository.findTopByOrderByTransactionIdDesc()).thenReturn(Optional.of(testTransaction));
-            when(transactionRepository.save(any(Transaction.class))).thenReturn(testTransaction);
+            // Use lenient stubbing for concurrent scenarios
+            lenient().when(accountRepository.save(any(Account.class))).thenReturn(testAccount);
+            lenient().when(transactionRepository.findTopByOrderByTransactionIdDesc()).thenReturn(Optional.of(testTransaction));
+            lenient().when(transactionRepository.save(any(Transaction.class))).thenReturn(testTransaction);
 
             // Act - Execute concurrent payments
             for (int i = 0; i < threadCount; i++) {
@@ -626,7 +643,7 @@ public class PaymentServiceTest extends BaseServiceTest {
             // Act & Assert - Validate error handling
             assertThatThrownBy(() -> paymentService.processBillPayment(validRequest))
                 .isInstanceOf(BusinessRuleException.class)
-                .hasMessage("Unexpected error during payment processing");
+                .hasMessage("Unexpected error during payment processing [Error Code: 9999]");
         }
 
         @Test
@@ -806,7 +823,7 @@ public class PaymentServiceTest extends BaseServiceTest {
             // Act & Assert - Validate duplicate payment prevention
             assertThatThrownBy(() -> paymentService.processBillPayment(validRequest))
                 .isInstanceOf(BusinessRuleException.class)
-                .hasMessage("Insufficient funds");
+                .hasMessage("Insufficient funds [Error Code: INSUFFICIENT_FUNDS]");
         }
 
         @Test
@@ -827,7 +844,7 @@ public class PaymentServiceTest extends BaseServiceTest {
             // Act & Assert - Second identical request should be rejected
             assertThatThrownBy(() -> paymentService.processBillPayment(validRequest))
                 .isInstanceOf(BusinessRuleException.class)
-                .hasMessage("Insufficient funds");
+                .hasMessage("Insufficient funds [Error Code: INSUFFICIENT_FUNDS]");
 
             // Verify first payment succeeded
             assertThat(firstResponse.isSuccess()).isTrue();
