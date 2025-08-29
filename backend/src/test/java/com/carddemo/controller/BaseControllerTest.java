@@ -22,6 +22,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import com.carddemo.config.TestDatabaseConfig;
+import com.carddemo.config.TestBatchConfig;
 import com.carddemo.config.DatabaseConfig;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -98,7 +99,7 @@ import static org.junit.jupiter.api.Assertions.*;
     org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class,
     org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration.class
 })
-@Import({TestDatabaseConfig.class, com.carddemo.config.TestSecurityConfig.class})
+@Import({TestDatabaseConfig.class, com.carddemo.config.TestBatchConfig.class})
 @ComponentScan(basePackages = "com.carddemo", 
                excludeFilters = {
                    @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {
@@ -121,8 +122,11 @@ import static org.junit.jupiter.api.Assertions.*;
                        com.carddemo.test.SecurityTestConfig.class,
                        com.carddemo.integration.IntegrationTestConfiguration.class,
                        com.carddemo.TestContainersConfig.class,
-                       com.carddemo.controller.MockMvcTestConfig.class
-                   })
+                       com.carddemo.controller.MockMvcTestConfig.class,
+                       com.carddemo.service.InterestCalculationJobService.class,
+                       com.carddemo.service.InterestCalculationBatchService.class
+                   }),
+                   @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\\.carddemo\\.batch\\..*")
                })
 @TestPropertySource(properties = {
     "spring.profiles.active=test",

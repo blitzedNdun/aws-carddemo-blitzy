@@ -5,8 +5,7 @@
 
 package com.carddemo.config;
 
-import com.carddemo.batch.DailyTransactionJob;
-import com.carddemo.batch.InterestCalculationJob;
+
 import com.carddemo.config.BatchConfig;
 import com.carddemo.controller.TestConstants;
 
@@ -119,38 +118,19 @@ public class TestBatchConfig {
                 .build();
     }
 
-    /**
-     * Primary DataSource bean to satisfy production config dependencies.
-     * 
-     * This creates a DataSource qualified as "dataSource" to satisfy any production
-     * configuration classes that might be loaded during testing despite profile exclusions.
-     * 
-     * @return DataSource qualified as "dataSource" for test execution
-     */
-    @Bean
-    @Qualifier("dataSource")
-    public DataSource dataSource() {
-        logger.info("Configuring primary DataSource for production config compatibility");
-        
-        return new EmbeddedDatabaseBuilder()
-                .setType(EmbeddedDatabaseType.H2)
-                .addScript("classpath:org/springframework/batch/core/schema-h2.sql")
-                .generateUniqueName(true)
-                .build();
-    }
 
     /**
-     * Mock EntityManagerFactory for test environment.
+     * Mock BatchProperties for test environment.
      * 
-     * This creates a mock EntityManagerFactory to satisfy any production configuration
-     * classes that might be loaded during testing despite profile exclusions.
+     * This creates a mock BatchProperties to satisfy any production batch
+     * configurations that might be loaded during testing despite profile exclusions.
      * 
-     * @return Mock EntityManagerFactory for test execution
+     * @return Mock BatchProperties for test execution
      */
     @Bean
-    public EntityManagerFactory entityManagerFactory() {
-        logger.info("Configuring mock EntityManagerFactory for production config compatibility");
-        return Mockito.mock(EntityManagerFactory.class);
+    public com.carddemo.batch.BatchProperties batchProperties() {
+        logger.info("Configuring mock BatchProperties for production config compatibility");
+        return Mockito.mock(com.carddemo.batch.BatchProperties.class);
     }
 
     /**
@@ -180,6 +160,8 @@ public class TestBatchConfig {
         logger.info("Configuring mock AccountMaintenanceBatchService for production config compatibility");
         return Mockito.mock(com.carddemo.service.AccountMaintenanceBatchService.class);
     }
+
+
 
     /**
      * Configures in-memory JobRepository for fast test execution without external database dependencies.

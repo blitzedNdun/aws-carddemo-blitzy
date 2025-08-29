@@ -12,6 +12,7 @@ import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -44,6 +45,7 @@ import org.slf4j.LoggerFactory;
  * @since 2024
  */
 @Service
+@Profile("!test")
 public class InterestCalculationJobService {
 
     private static final Logger logger = LoggerFactory.getLogger(InterestCalculationJobService.class);
