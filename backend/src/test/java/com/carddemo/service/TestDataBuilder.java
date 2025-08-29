@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.ArrayList;
+import java.util.List;
 import java.lang.String;
 
 /**
@@ -1275,5 +1276,95 @@ public class TestDataBuilder {
     public String buildValidZipCode() {
         // Generate base 5-digit ZIP code (numeric only for ValidationUtil compatibility)
         return String.format("%05d", ThreadLocalRandom.current().nextInt(10000, 99999));
+    }
+
+    /**
+     * Creates a CardXrefBuilder for fluent construction of CardXref test entities.
+     * Provides builder pattern for creating CardXref cross-reference objects with realistic values.
+     * 
+     * @return new CardXrefBuilder instance
+     */
+    public CardXrefBuilder buildCardXref() {
+        return new CardXrefBuilder();
+    }
+
+    /**
+     * Creates multiple CardXref entities for bulk testing scenarios.
+     * Generates varied cross-reference data with different card numbers, customers, and accounts.
+     * 
+     * @param count number of CardXref entities to generate
+     * @return List of CardXref entities with varied test data
+     */
+    public List<CardXref> buildMultipleCardXrefs(int count) {
+        List<CardXref> cardXrefs = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            cardXrefs.add(buildCardXref()
+                .withCardNumber(generateValidCardNumber())
+                .withCustomerId(generateCustomerId())
+                .withAccountId(generateAccountId())
+                .build());
+        }
+        return cardXrefs;
+    }
+
+    /**
+     * Inner class providing fluent builder pattern for CardXref entity construction.
+     * Supports method chaining and realistic default value generation for cross-reference testing.
+     */
+    public static class CardXrefBuilder {
+        private CardXref cardXref;
+
+        public CardXrefBuilder() {
+            this.cardXref = new CardXref();
+            setDefaults();
+        }
+
+        /**
+         * Sets the card number for the CardXref being built.
+         * 
+         * @param cardNumber the card number to set (16 characters)
+         * @return this CardXrefBuilder for method chaining
+         */
+        public CardXrefBuilder withCardNumber(String cardNumber) {
+            cardXref.setXrefCardNum(cardNumber);
+            return this;
+        }
+
+        /**
+         * Sets the customer ID for the CardXref being built.
+         * 
+         * @param customerId the customer ID to set
+         * @return this CardXrefBuilder for method chaining
+         */
+        public CardXrefBuilder withCustomerId(Long customerId) {
+            cardXref.setXrefCustId(customerId);
+            return this;
+        }
+
+        /**
+         * Sets the account ID for the CardXref being built.
+         * 
+         * @param accountId the account ID to set
+         * @return this CardXrefBuilder for method chaining
+         */
+        public CardXrefBuilder withAccountId(Long accountId) {
+            cardXref.setXrefAcctId(accountId);
+            return this;
+        }
+
+        /**
+         * Builds the CardXref entity with the configured values.
+         * 
+         * @return configured CardXref entity
+         */
+        public CardXref build() {
+            return cardXref;
+        }
+
+        private void setDefaults() {
+            cardXref.setXrefCardNum(generateValidCardNumber());
+            cardXref.setXrefCustId(generateCustomerId());
+            cardXref.setXrefAcctId(generateAccountId());
+        }
     }
 }
