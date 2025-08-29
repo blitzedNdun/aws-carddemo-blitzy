@@ -507,11 +507,11 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
             validCustomer.setCustomerId(String.valueOf(1L));
             
             Customer invalidCustomer = testDataGenerator.generateCustomer();
-            invalidCustomer.setCustomerId(String.valueOf(2L));
+            invalidCustomer.setCustomerId("2");
             invalidCustomer.setSSN("INVALID-SSN");
             
             Customer anotherValidCustomer = testDataGenerator.generateCustomer();
-            anotherValidCustomer.setCustomerId(String.valueOf(3L));
+            anotherValidCustomer.setCustomerId("3");
             
             List<Customer> customerBatch = Arrays.asList(validCustomer, invalidCustomer, anotherValidCustomer);
             
@@ -534,7 +534,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
             // Verify that only valid customers are returned
             assertThat(result).hasSize(2);
             assertThat(result).allMatch(customer -> 
-                customer.getCustomerId().equals("VALID001") || customer.getCustomerId().equals("VALID002"));
+                customer.getCustomerId().equals(1L) || customer.getCustomerId().equals(3L));
             
             // Verify that only valid customers were saved
             verify(customerRepository, times(2)).save(any(Customer.class));
@@ -766,10 +766,10 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         void errorHandling_BatchFailure_RollsBackTransaction() {
             // Given: Batch with one customer that will cause save failure
             Customer validCustomer = testDataGenerator.generateCustomer();
-            validCustomer.setCustomerId(String.valueOf(1L));
+            validCustomer.setCustomerId("1");
             
             Customer failingCustomer = testDataGenerator.generateCustomer();
-            failingCustomer.setCustomerId(String.valueOf(2L));
+            failingCustomer.setCustomerId("2");
             
             List<Customer> customerBatch = Arrays.asList(validCustomer, failingCustomer);
             
@@ -806,6 +806,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         void validationUtilIntegration_ComprehensiveValidation_ValidatesAllFields() {
             // Given: Customer requiring comprehensive validation
             Customer customer = testDataGenerator.generateCustomer();
+            customer.setCustomerId(TestConstants.VALID_CUSTOMER_ID);  // Add required customer ID
             customer.setSSN("123-45-6789");
             customer.setPhoneNumber("(214) 555-1234");
             customer.setDateOfBirth(LocalDate.of(1990, 5, 15));
@@ -942,9 +943,13 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
         void testUpdateCustomer_ValidatesCustomerPhoneNumberAndAddressAccess() {
             // Given: Customer with existing phone number and address
             testCustomer = testDataGenerator.generateCustomer();
+            testCustomer.setCustomerId(String.valueOf(TestConstants.VALID_CUSTOMER_ID_LONG));
             String originalPhone = testCustomer.getPhoneNumber();
             String originalAddress = testCustomer.getAddress();
             
+            // Mock both findById and save operations
+            when(customerRepository.findById(TestConstants.VALID_CUSTOMER_ID_LONG))
+                .thenReturn(Optional.of(testCustomer));
             when(customerRepository.save(any(Customer.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
             
@@ -956,6 +961,7 @@ public class CustomerUpdateServiceTest extends AbstractBaseTest implements UnitT
             assertThat(originalPhone).isNotNull();
             assertThat(originalAddress).isNotNull();
             
+            verify(customerRepository).findById(TestConstants.VALID_CUSTOMER_ID_LONG);
             verify(customerRepository).save(testCustomer);
         }
 
