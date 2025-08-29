@@ -60,7 +60,7 @@ public class BillDetailService {
 
     // Business rule constants matching COBOL program
     private static final BigDecimal MINIMUM_PAYMENT_RATE = BigDecimal.valueOf(0.02); // 2% of balance
-    private static final BigDecimal MINIMUM_PAYMENT_FLOOR = BigDecimal.valueOf(10.00); // $10.00 minimum
+    private static final BigDecimal MINIMUM_PAYMENT_FLOOR = new BigDecimal("10.00"); // $10.00 minimum with scale 2
     private static final BigDecimal INTEREST_RATE_MONTHLY = BigDecimal.valueOf(0.0125); // 1.25% monthly
     private static final int PAYMENT_DUE_DAYS = 25; // Payment due in 25 days from statement
     private static final int COBOL_DECIMAL_SCALE = 2; // COMP-3 decimal scale
