@@ -70,6 +70,7 @@ import com.carddemo.config.TestDatabaseConfig;
 
 // Entity Classes for Data Management
 import com.carddemo.entity.Account;
+import com.carddemo.entity.Customer;
 import com.carddemo.entity.Transaction;
 import com.carddemo.entity.TransactionCategoryBalance;
 import com.carddemo.entity.DisclosureGroup;
@@ -86,6 +87,9 @@ import com.carddemo.repository.TransactionTypeRepository;
 import com.carddemo.util.CobolDataConverter;
 import com.carddemo.util.AmountCalculator;
 import com.carddemo.util.DateConversionUtil;
+
+// Test Utility Classes for COBOL Comparison and Validation
+import com.carddemo.test.CobolComparisonUtils;
 
 // Test Infrastructure Classes (fallback to available classes)
 // Note: Some test utility classes may be created by other agents
@@ -758,9 +762,13 @@ public class InterestCalculationJobTest {
             List<Transaction> javaResults = transactionRepository.findAll();
             
             // Use CobolComparisonUtils to validate results
+            List<String> javaOutputLines = convertTransactionsToFileFormat(javaResults);
+            String javaOutput = String.join("\n", javaOutputLines);
+            List<String> cobolOutputLines = getExpectedCobolOutput();
+            String cobolOutput = String.join("\n", cobolOutputLines);
             boolean resultsMatch = CobolComparisonUtils.compareFiles(
-                    convertTransactionsToFileFormat(javaResults),
-                    getExpectedCobolOutput()
+                    javaOutput,
+                    cobolOutput
             );
             
             assertTrue(resultsMatch, 
@@ -829,7 +837,12 @@ public class InterestCalculationJobTest {
         for (int i = 1; i <= count; i++) {
             Account account = new Account();
             account.setAccountId((long) (10000000000L + i));
-            account.setCustomerId((long) (100000000 + i));
+            
+            // Create Customer object for Account relationship
+            Customer customer = new Customer();
+            customer.setCustomerId(String.valueOf(100000000 + i));
+            account.setCustomer(customer);
+            
             account.setCurrentBalance(new BigDecimal("1500.00"));
             account.setCreditLimit(new BigDecimal("5000.00"));
             account.setGroupId("GROUP_" + String.format("%02d", i));
@@ -886,17 +899,19 @@ public class InterestCalculationJobTest {
         
         for (Account account : testAccounts) {
             // Create multiple category balances per account to test accumulation
-            TransactionCategoryBalance balance1 = new TransactionCategoryBalance();
-            balance1.setAccountId(account.getAccountId());
-            balance1.setCategoryCode("05");
-            balance1.setBalance(new BigDecimal("1000.00"));
-            balance1.setBalanceDate(LocalDate.now());
+            TransactionCategoryBalance balance1 = new TransactionCategoryBalance(
+                account.getAccountId(),
+                "05", 
+                LocalDate.now(),
+                new BigDecimal("1000.00")
+            );
             
-            TransactionCategoryBalance balance2 = new TransactionCategoryBalance();
-            balance2.setAccountId(account.getAccountId());
-            balance2.setCategoryCode("06");
-            balance2.setBalance(new BigDecimal("500.00"));
-            balance2.setBalanceDate(LocalDate.now());
+            TransactionCategoryBalance balance2 = new TransactionCategoryBalance(
+                account.getAccountId(),
+                "06",
+                LocalDate.now(),
+                new BigDecimal("500.00")
+            );
             
             balances.add(balance1);
             balances.add(balance2);
@@ -912,11 +927,12 @@ public class InterestCalculationJobTest {
         List<TransactionCategoryBalance> balances = new ArrayList<>();
         
         for (int i = 1; i <= count; i++) {
-            TransactionCategoryBalance balance = new TransactionCategoryBalance();
-            balance.setAccountId(accountId);
-            balance.setCategoryCode(String.format("%02d", i + 4)); // Categories 05, 06, 07
-            balance.setBalance(new BigDecimal("1000.00").multiply(new BigDecimal(i)));
-            balance.setBalanceDate(LocalDate.now());
+            TransactionCategoryBalance balance = new TransactionCategoryBalance(
+                accountId,
+                String.format("%02d", i + 4), // Categories 05, 06, 07
+                LocalDate.now(),
+                new BigDecimal("1000.00").multiply(new BigDecimal(i))
+            );
             balances.add(balance);
         }
         
@@ -947,11 +963,12 @@ public class InterestCalculationJobTest {
         List<TransactionCategoryBalance> largeDataSet = new ArrayList<>();
         
         for (int i = 0; i < recordCount; i++) {
-            TransactionCategoryBalance balance = new TransactionCategoryBalance();
-            balance.setAccountId(testAccounts.get(i % testAccounts.size()).getAccountId());
-            balance.setCategoryCode("05");
-            balance.setBalance(new BigDecimal("100.00"));
-            balance.setBalanceDate(LocalDate.now());
+            TransactionCategoryBalance balance = new TransactionCategoryBalance(
+                testAccounts.get(i % testAccounts.size()).getAccountId(),
+                "05",
+                LocalDate.now(),
+                new BigDecimal("100.00")
+            );
             largeDataSet.add(balance);
         }
         
@@ -970,11 +987,12 @@ public class InterestCalculationJobTest {
         List<TransactionCategoryBalance> perfBalances = new ArrayList<>();
         for (Account account : perfAccounts) {
             for (int i = 1; i <= 5; i++) {
-                TransactionCategoryBalance balance = new TransactionCategoryBalance();
-                balance.setAccountId(account.getAccountId());
-                balance.setCategoryCode("0" + i);
-                balance.setBalance(new BigDecimal("500.00"));
-                balance.setBalanceDate(LocalDate.now());
+                TransactionCategoryBalance balance = new TransactionCategoryBalance(
+                    account.getAccountId(),
+                    "0" + i,
+                    LocalDate.now(),
+                    new BigDecimal("500.00")
+                );
                 perfBalances.add(balance);
             }
         }
