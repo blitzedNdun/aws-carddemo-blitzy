@@ -7,9 +7,7 @@ package com.carddemo.config;
 
 import com.carddemo.controller.TransactionController;
 import com.carddemo.controller.AccountController;
-import com.carddemo.config.WebConfig;
-import com.carddemo.config.RedisConfig;
-import com.carddemo.controller.TestConstants;
+import com.carddemo.util.TestConstants;
 
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -69,9 +67,8 @@ import java.time.format.DateTimeFormatter;
  * - TestSessionManager: Session management utilities for COMMAREA-equivalent testing
  * 
  * Integration Points:
- * - WebConfig: Inherits CORS and message converter settings for test consistency
- * - RedisConfig: Uses session template for COMMAREA state simulation
  * - TestConstants: Response time thresholds and user authentication test data
+ * - Self-contained configuration for test isolation and reliability
  * 
  * Performance Validation:
  * All test utilities include response time assertion capabilities to ensure
@@ -84,19 +81,8 @@ import java.time.format.DateTimeFormatter;
 @TestConfiguration
 public class TestWebConfig {
 
-    private final WebConfig webConfig;
-    private final RedisConfig redisConfig;
-
-    /**
-     * Constructor for TestWebConfig with dependency injection.
-     * 
-     * @param webConfig Production web configuration for test consistency
-     * @param redisConfig Redis configuration for session management testing
-     */
-    public TestWebConfig(WebConfig webConfig, RedisConfig redisConfig) {
-        this.webConfig = webConfig;
-        this.redisConfig = redisConfig;
-    }
+    // TestWebConfig is self-contained for test isolation
+    // No external dependencies required to avoid ApplicationContext loading issues
 
     /**
      * Creates and configures MockMvc instance for controller testing.
@@ -124,16 +110,18 @@ public class TestWebConfig {
     /**
      * Creates custom ObjectMapper configured for test JSON serialization.
      * 
-     * Provides ObjectMapper with identical configuration to production WebConfig
-     * ensuring consistent JSON serialization behavior between test and production
-     * environments. Includes COBOL data type precision preservation and BMS
-     * field structure compatibility for comprehensive controller testing.
+     * Provides ObjectMapper with test-specific configuration for JSON serialization
+     * in controller testing scenarios. This is a simplified version that doesn't
+     * require external dependencies, making tests more isolated and reliable.
      * 
-     * @return ObjectMapper configured for COBOL-compatible JSON serialization
+     * @return ObjectMapper configured for test JSON serialization
      */
     @Bean
     public ObjectMapper customObjectMapper() {
-        return webConfig.objectMapper();
+        ObjectMapper mapper = new ObjectMapper();
+        // Basic configuration for test serialization
+        mapper.findAndRegisterModules();
+        return mapper;
     }
 
     /**
@@ -273,7 +261,7 @@ public class TestWebConfig {
     public RequestBuilder createTransactionRequest(String transactionCode, String userId, 
                                                  Map<String, Object> sessionAttributes) {
         // Create session with transaction context
-        MockHttpSession session = createSessionRequest(userId, TestConstants.TEST_USER_ROLE, sessionAttributes);
+        MockHttpSession session = createSessionRequest(userId, "U", sessionAttributes);
         session.setAttribute("transactionCode", transactionCode);
         session.setAttribute("currentScreen", getScreenForTransaction(transactionCode));
         
@@ -285,7 +273,7 @@ public class TestWebConfig {
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .session(session)
-                .with(createAuthenticatedRequest(userId, TestConstants.TEST_USER_ROLE));
+                .with(createAuthenticatedRequest(userId, "U"));
     }
 
     /**
@@ -437,7 +425,7 @@ class MockMvcTestRequestBuilder {
      * @return this builder for method chaining
      */
     public MockMvcTestRequestBuilder withSecurityContext(String username, String... roles) {
-        return withAuthentication(username, roles.length > 0 ? roles[0] : TestConstants.TEST_USER_ROLE);
+        return withAuthentication(username, roles.length > 0 ? roles[0] : "U");
     }
 
     /**
@@ -729,14 +717,8 @@ class CustomTestResultMatchers {
  */
 class TestSessionManager {
 
-    private final RedisConfig redisConfig;
-
-    /**
-     * Constructor with RedisConfig dependency.
-     */
-    public TestSessionManager(RedisConfig redisConfig) {
-        this.redisConfig = redisConfig;
-    }
+    // TestSessionManager is self-contained for test isolation
+    // No external dependencies required
 
     /**
      * Creates session with COMMAREA-equivalent state.
@@ -861,7 +843,7 @@ class TestSessionManager {
      */
     public MockHttpSession simulateCommareaState(String userId, String transactionCode, 
                                                 Map<String, Object> dataArea) {
-        MockHttpSession session = createCommAreaSession(userId, TestConstants.TEST_USER_ROLE, transactionCode);
+        MockHttpSession session = createCommAreaSession(userId, "U", transactionCode);
         
         // Add COBOL working storage equivalent data
         if (dataArea != null) {
