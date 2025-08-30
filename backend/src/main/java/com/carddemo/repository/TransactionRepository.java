@@ -122,6 +122,16 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     List<Transaction> findByAccountIdAndTransactionDateBefore(Long accountId, LocalDate cutoffDate);
 
     /**
+     * Finds transactions for a specific account filtered by transaction type code.
+     * Supports transaction categorization and interest calculation scenarios.
+     * 
+     * @param accountId the account ID to filter by
+     * @param transactionTypeCode the transaction type code to filter by
+     * @return List of transactions matching the account and type
+     */
+    List<Transaction> findByAccountIdAndTransactionTypeCode(Long accountId, String transactionTypeCode);
+
+    /**
      * Counts transactions for a specific account within a date range.
      * Supports batch processing statistics and performance monitoring.
      * 
