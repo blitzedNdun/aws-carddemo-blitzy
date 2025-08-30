@@ -122,15 +122,21 @@ public class TestDataGenerator {
         // Generate 11-digit account number in COBOL format (PIC 9(11))
         account.setAccountId(40000000000L + random.nextInt(999999999));
         
-        // Generate balance with COBOL COMP-3 precision (2 decimal places)
-        account.setCurrentBalance(generateAccountBalance());
+        // Generate credit limit first
+        BigDecimal creditLimit = generateCreditLimit();
+        account.setCreditLimit(creditLimit);
+        
+        // Generate balance ensuring it's not greater than credit limit
+        BigDecimal currentBalance = generateAccountBalance();
+        if (currentBalance.compareTo(creditLimit) > 0) {
+            // Set balance to a value between 10% and 90% of credit limit
+            double ratio = 0.1 + (random.nextDouble() * 0.8); // 10% to 90%
+            currentBalance = creditLimit.multiply(new BigDecimal(ratio)).setScale(2, RoundingMode.HALF_UP);
+        }
+        account.setCurrentBalance(currentBalance);
         
         // Set account active status
         account.setActiveStatus("Y");
-        
-        // Set credit limit
-        BigDecimal creditLimit = generateCreditLimit();
-        account.setCreditLimit(creditLimit);
         
         // Set cash credit limit (ensure it doesn't exceed credit limit)
         BigDecimal cashCreditLimit = generateCashCreditLimit();
@@ -348,14 +354,21 @@ public class TestDataGenerator {
      */
     public static Transaction generateTransaction() {
         Transaction transaction = new Transaction();
-        transaction.setTransactionId(Long.parseLong(TEST_TRANSACTION_ID.substring(3))); // Extract numeric part
+        
+        // Generate unique 16-digit transaction ID
+        long transactionId = 1000000000000000L + Math.abs(random.nextLong() % 8999999999999999L);
+        transaction.setTransactionId(transactionId);
+        
         transaction.setAmount(generateComp3BigDecimal(7, 50000.0));
-        transaction.setTransactionTypeCode(TEST_TRANSACTION_TYPE_CODE); // Use string setter instead
-        transaction.setCategoryCode("PUCH"); // Match the reference data we created
-        transaction.setSubcategoryCode("01"); // Match the reference data we created
+        transaction.setTransactionTypeCode(TEST_TRANSACTION_TYPE_CODE);
+        transaction.setCategoryCode("PUCH");
+        transaction.setSubcategoryCode("01");
         transaction.setTransactionDate(LocalDate.now());
         transaction.setAccountId(TEST_ACCOUNT_ID);
-        transaction.setCardNumber(TEST_CARD_NUMBER);
+        
+        // Generate unique card number instead of using constant
+        transaction.setCardNumber(generateCardNumber());
+        
         transaction.setDescription("Test Transaction");
         return transaction;
     }
@@ -408,14 +421,39 @@ public class TestDataGenerator {
      */
     public static Card generateCard() {
         Card card = new Card();
-        card.setCardNumber(TEST_CARD_NUMBER);
+        
+        // Generate unique card number (16 digits starting with 4000 for test data)
+        String cardNumber = generateCardNumber();
+        card.setCardNumber(cardNumber);
+        
         card.setAccountId(TEST_ACCOUNT_ID);
         card.setCustomerId(TEST_CUSTOMER_ID_LONG);
-        card.setCvvCode("123");
+        
+        // Generate random CVV (3 digits)
+        card.setCvvCode(String.format("%03d", random.nextInt(1000)));
+        
+        // Generate embossed name
         card.setEmbossedName("TEST CARDHOLDER");
         card.setExpirationDate(LocalDate.now().plusYears(3));
         card.setActiveStatus("Y");
         return card;
+    }
+    
+    /**
+     * Generates a unique 16-digit card number for testing.
+     * Uses 4000 prefix (Visa test number pattern) with random remaining digits.
+     *
+     * @return 16-digit card number string
+     */
+    public static String generateCardNumber() {
+        // Use 4000 prefix for Visa test cards, then generate 12 random digits
+        StringBuilder cardNumber = new StringBuilder("4000");
+        
+        for (int i = 0; i < 12; i++) {
+            cardNumber.append(random.nextInt(10));
+        }
+        
+        return cardNumber.toString();
     }
     
     /**

@@ -592,7 +592,9 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
                 boolean isNumeric = picClause.contains("9");
                 // Extract length from PIC clause (e.g., "PIC X(1)" -> 1, "PIC 9(18)" -> 18)
                 int length = extractLengthFromPicClause(picClause);
-                String result = testDataGenerator.generatePicString(length, isNumeric);
+                String result = isNumeric ? 
+                    testDataGenerator.generateNumericString(length) : 
+                    testDataGenerator.generatePicString(length, false);
                 
                 // Then: Should handle all boundary lengths
                 Assertions.assertThat(result).isNotNull();
@@ -819,7 +821,7 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
             // When: Generating various data types
             BigDecimal monetary = testDataGenerator.generateComp3BigDecimal(2, 10000.0);
             String alphanumeric = testDataGenerator.generatePicString(20, false);
-            String numeric = testDataGenerator.generatePicString(10, true);
+            String numeric = testDataGenerator.generateNumericString(10); // Use numeric string for PIC 9
 
             // Then: All should be compatible with CobolDataConverter
             
