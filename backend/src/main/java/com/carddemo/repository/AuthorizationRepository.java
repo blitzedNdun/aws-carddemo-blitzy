@@ -153,7 +153,7 @@ public interface AuthorizationRepository extends JpaRepository<Authorization, Lo
            "AND a.approvalStatus = :approvalStatus " +
            "ORDER BY a.requestTimestamp DESC")
     List<Authorization> findByMerchantIdAndApprovalStatus(
-            @Param("merchantId") String merchantId,
+            @Param("merchantId") Long merchantId,
             @Param("approvalStatus") String approvalStatus);
 
     /**
@@ -211,7 +211,7 @@ public interface AuthorizationRepository extends JpaRepository<Authorization, Lo
      * @param endTime the end of the time range to analyze
      * @return list of authorizations with failed velocity checks in the time range
      */
-    @Query("SELECT a FROM Authorization a WHERE a.velocityCheckResult = 'FAIL' " +
+    @Query("SELECT a FROM Authorization a WHERE a.velocityCheckResult = false " +
            "AND a.requestTimestamp BETWEEN :startTime AND :endTime " +
            "ORDER BY a.requestTimestamp DESC")
     List<Authorization> findVelocityFailuresByTimeRange(
@@ -304,7 +304,7 @@ public interface AuthorizationRepository extends JpaRepository<Authorization, Lo
     @Query("SELECT DISTINCT a.merchantId FROM Authorization a " +
            "WHERE a.requestTimestamp BETWEEN :startTime AND :endTime " +
            "ORDER BY a.merchantId")
-    List<String> findDistinctMerchantsByTimeRange(
+    List<Long> findDistinctMerchantsByTimeRange(
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime);
 }

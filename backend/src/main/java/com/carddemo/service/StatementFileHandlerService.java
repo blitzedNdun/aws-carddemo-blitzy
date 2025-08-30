@@ -11,6 +11,7 @@ import com.carddemo.repository.CustomerRepository;
 import com.carddemo.repository.AccountRepository;
 import com.carddemo.entity.Transaction;
 import com.carddemo.entity.CardXref;
+import com.carddemo.entity.CardXrefId;
 import com.carddemo.entity.Customer;
 import com.carddemo.entity.Account;
 
@@ -613,7 +614,7 @@ public class StatementFileHandlerService {
                 case FILE_XREFFILE:
                     CardXref cardXref = parseCardXrefRecord(fieldData);
                     // For CardXref, check existence using composite key components
-                    if (cardXref.getXrefCardNum() != null) {
+                    if (cardXref.getId() != null && cardXref.getId().getXrefCardNum() != null) {
                         cardXref = cardXrefRepository.save(cardXref);
                         response.setFieldData(formatCardXrefRecord(cardXref));
                     } else {
@@ -686,9 +687,10 @@ public class StatementFileHandlerService {
      */
     private String formatCardXrefRecord(CardXref cardXref) {
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("%-16s", cardXref.getXrefCardNum() != null ? cardXref.getXrefCardNum() : ""));
-        sb.append(String.format("%011d", cardXref.getXrefAcctId() != null ? cardXref.getXrefAcctId() : 0L));
-        sb.append(String.format("%09d", cardXref.getXrefCustId() != null ? cardXref.getXrefCustId() : 0L));
+        CardXrefId id = cardXref.getId();
+        sb.append(String.format("%-16s", id != null && id.getXrefCardNum() != null ? id.getXrefCardNum() : ""));
+        sb.append(String.format("%011d", id != null && id.getXrefAcctId() != null ? id.getXrefAcctId() : 0L));
+        sb.append(String.format("%09d", id != null && id.getXrefCustId() != null ? id.getXrefCustId() : 0L));
         return sb.toString();
     }
 

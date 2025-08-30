@@ -637,15 +637,14 @@ public class CardAuthorizationService {
             Authorization auth = new Authorization();
             auth.setCardNumber(request.getCardNumber());
             auth.setAccountId(accountId);
-            auth.setMerchantId(request.getMerchantId());
             auth.setTransactionAmount(request.getTransactionAmount());
             auth.setAuthorizationCode(response.getAuthorizationCode());
             auth.setRequestTimestamp(startTime);
             auth.setResponseTimestamp(LocalDateTime.now());
             auth.setApprovalStatus(status);
             auth.setDeclineReasonCode(declineReason);
-            auth.setVelocityCheckResult(velocityResult);
-            auth.setFraudScore(fraudScore);
+            auth.setVelocityCheckResult("PASS".equals(velocityResult));
+            auth.setFraudScore(new BigDecimal(fraudScore));
             // Calculate processing time directly to avoid null pointer exception
             long processingTimeMs = java.time.Duration.between(startTime, LocalDateTime.now()).toMillis();
             auth.setProcessingTime((int) processingTimeMs);
