@@ -8,6 +8,7 @@ package com.carddemo.batch;
 import com.carddemo.entity.Customer;
 import com.carddemo.repository.CustomerRepository;
 import com.carddemo.util.FormatUtil;
+import com.carddemo.util.Constants;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -51,18 +52,46 @@ import java.util.List;
  * and formatting applied for consistent output generation.
  */
 class FormattedCustomer {
-    public String customerId;
-    public String firstName;
-    public String lastName;
-    public String dateOfBirth;
-    public String ssn;
-    public String ficoScore;
-    public String phoneNumber;
-    public String address1;
-    public String address2;
-    public String city;
-    public String state;
-    public String zipCode;
+    private String customerId;
+    private String firstName;
+    private String lastName;
+    private String dateOfBirth;
+    private String ssn;
+    private String ficoScore;
+    private String phoneNumber;
+    private String address1;
+    private String address2;
+    private String city;
+    private String state;
+    private String zipCode;
+    
+    // Getter methods for Spring BeanWrapper compatibility
+    public String getCustomerId() { return customerId; }
+    public String getFirstName() { return firstName; }
+    public String getLastName() { return lastName; }
+    public String getDateOfBirth() { return dateOfBirth; }
+    public String getSsn() { return ssn; }
+    public String getFicoScore() { return ficoScore; }
+    public String getPhoneNumber() { return phoneNumber; }
+    public String getAddress1() { return address1; }
+    public String getAddress2() { return address2; }
+    public String getCity() { return city; }
+    public String getState() { return state; }
+    public String getZipCode() { return zipCode; }
+    
+    // Setter methods for Spring BeanWrapper compatibility
+    public void setCustomerId(String customerId) { this.customerId = customerId; }
+    public void setFirstName(String firstName) { this.firstName = firstName; }
+    public void setLastName(String lastName) { this.lastName = lastName; }
+    public void setDateOfBirth(String dateOfBirth) { this.dateOfBirth = dateOfBirth; }
+    public void setSsn(String ssn) { this.ssn = ssn; }
+    public void setFicoScore(String ficoScore) { this.ficoScore = ficoScore; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    public void setAddress1(String address1) { this.address1 = address1; }
+    public void setAddress2(String address2) { this.address2 = address2; }
+    public void setCity(String city) { this.city = city; }
+    public void setState(String state) { this.state = state; }
+    public void setZipCode(String zipCode) { this.zipCode = zipCode; }
     
     /**
      * Returns formatted customer data as delimited string for file output.
@@ -146,7 +175,6 @@ class FormattedCustomer {
  * @since 2024
  */
 @Configuration
-@Profile("!test")
 public class CustomerListJob {
     
     private static final Logger logger = LoggerFactory.getLogger(CustomerListJob.class);
@@ -169,6 +197,10 @@ public class CustomerListJob {
     private final CustomerRepository customerRepository;
     private final BatchJobListener batchJobListener;
     
+    // Step-scoped writer for dynamic output file configuration
+    @Autowired
+    private FlatFileItemWriter<FormattedCustomer> customerItemWriter;
+    
     // Additional Spring Batch components for job execution
     @Autowired
     private JobLauncher jobLauncher;
@@ -176,6 +208,7 @@ public class CustomerListJob {
     // Job execution state tracking
     private volatile JobExecution lastJobExecution;
     private volatile String currentStatus = "READY";
+
     
     /**
      * Constructor for dependency injection of Spring Batch infrastructure components.
@@ -239,7 +272,7 @@ public class CustomerListJob {
                 .<Customer, FormattedCustomer>chunk(CHUNK_SIZE, transactionManager)
                 .reader(customerItemReader())
                 .processor(customerItemProcessor())
-                .writer(customerItemWriter())
+                .writer(customerItemWriter)
                 .build();
     }
     
@@ -291,48 +324,48 @@ public class CustomerListJob {
                     FormattedCustomer formatted = new FormattedCustomer();
                     
                     // Format customer ID with zero padding to match COBOL display
-                    formatted.customerId = FormatUtil.formatFixedLength(
-                        customer.getCustomerId(), 11);
+                    formatted.setCustomerId(FormatUtil.formatFixedLength(
+                        customer.getCustomerId(), 11));
                     
                     // Format names with proper length and padding
-                    formatted.firstName = FormatUtil.formatFixedLength(
-                        customer.getFirstName() != null ? customer.getFirstName() : "", 15);
-                    formatted.lastName = FormatUtil.formatFixedLength(
-                        customer.getLastName() != null ? customer.getLastName() : "", 20);
+                    formatted.setFirstName(FormatUtil.formatFixedLength(
+                        customer.getFirstName() != null ? customer.getFirstName() : "", 15));
+                    formatted.setLastName(FormatUtil.formatFixedLength(
+                        customer.getLastName() != null ? customer.getLastName() : "", 20));
                     
                     // Format date of birth using FormatUtil date formatting
-                    formatted.dateOfBirth = customer.getDateOfBirth() != null ? 
-                        customer.getDateOfBirth().format(java.time.format.DateTimeFormatter.ofPattern("MM/dd/yyyy")) : "";
+                    formatted.setDateOfBirth(customer.getDateOfBirth() != null ? 
+                        customer.getDateOfBirth().format(java.time.format.DateTimeFormatter.ofPattern("MM/dd/yyyy")) : "");
                     
                     // Mask SSN for security using FormatUtil masking
-                    formatted.ssn = FormatUtil.maskSensitiveData(customer.getSsn(), 4);
+                    formatted.setSsn(FormatUtil.maskSensitiveData(customer.getSsn(), 4));
                     
                     // Format FICO score with zero suppression
-                    formatted.ficoScore = FormatUtil.formatZeroSuppressed(
-                        customer.getFicoScore() != null ? customer.getFicoScore() : BigDecimal.ZERO, 4, 0);
+                    formatted.setFicoScore(FormatUtil.formatZeroSuppressed(
+                        customer.getFicoScore() != null ? customer.getFicoScore() : BigDecimal.ZERO, 4, 0));
                     
                     // Format phone number with proper formatting
-                    formatted.phoneNumber = FormatUtil.formatFixedLength(
-                        customer.getPhoneNumber() != null ? customer.getPhoneNumber() : "", 14);
+                    formatted.setPhoneNumber(FormatUtil.formatFixedLength(
+                        customer.getPhoneNumber() != null ? customer.getPhoneNumber() : "", Constants.PHONE_NUMBER_LENGTH));
                     
                     // Format address fields matching COBOL field layout
                     // Note: Using addressLine1 and addressLine2 to match Customer entity
-                    formatted.address1 = FormatUtil.formatFixedLength(
-                        customer.getAddressLine1() != null ? customer.getAddressLine1() : "", 35);
-                    formatted.address2 = FormatUtil.formatFixedLength(
-                        customer.getAddressLine2() != null ? customer.getAddressLine2() : "", 35);
+                    formatted.setAddress1(FormatUtil.formatFixedLength(
+                        customer.getAddressLine1() != null ? customer.getAddressLine1() : "", 35));
+                    formatted.setAddress2(FormatUtil.formatFixedLength(
+                        customer.getAddressLine2() != null ? customer.getAddressLine2() : "", 35));
                     
                     // Format city using address line 3 (since there's no separate city field)
-                    formatted.city = FormatUtil.formatFixedLength(
-                        customer.getAddressLine3() != null ? customer.getAddressLine3() : "", 25);
+                    formatted.setCity(FormatUtil.formatFixedLength(
+                        customer.getAddressLine3() != null ? customer.getAddressLine3() : "", 25));
                     
                     // Format state code
-                    formatted.state = FormatUtil.formatFixedLength(
-                        customer.getStateCode() != null ? customer.getStateCode() : "", 2);
+                    formatted.setState(FormatUtil.formatFixedLength(
+                        customer.getStateCode() != null ? customer.getStateCode() : "", 2));
                     
                     // Format zip code
-                    formatted.zipCode = FormatUtil.formatFixedLength(
-                        customer.getZipCode() != null ? customer.getZipCode() : "", 10);
+                    formatted.setZipCode(FormatUtil.formatFixedLength(
+                        customer.getZipCode() != null ? customer.getZipCode() : "", 10));
                     
                     logger.debug("Successfully processed customer ID: {}", customer.getCustomerId());
                     return formatted;
@@ -360,12 +393,24 @@ public class CustomerListJob {
      * @return configured FlatFileItemWriter for customer output
      */
     @Bean
-    @JobScope
-    public FlatFileItemWriter<FormattedCustomer> customerItemWriter() {
-        logger.info("Configuring customer item writer for output file: {}", OUTPUT_FILE_PATH);
+    @org.springframework.batch.core.configuration.annotation.StepScope
+    public FlatFileItemWriter<FormattedCustomer> customerItemWriter(
+            @org.springframework.beans.factory.annotation.Value("#{jobParameters['outputFile']}") String outputFile) {
+        
+        String actualOutputFile = (outputFile != null) ? outputFile : OUTPUT_FILE_PATH;
+        logger.info("Configuring customer item writer for output file: {}", actualOutputFile);
+        
+        // Validate output path exists or can be created (for test failure scenarios)
+        java.io.File outputFileObject = new java.io.File(actualOutputFile);
+        java.io.File parentDir = outputFileObject.getParentFile();
+        if (parentDir != null && !parentDir.exists() && !parentDir.mkdirs()) {
+            String errorMsg = "Cannot create output directory: " + parentDir.getAbsolutePath();
+            logger.error(errorMsg);
+            throw new IllegalArgumentException(errorMsg);
+        }
         
         FlatFileItemWriter<FormattedCustomer> writer = new FlatFileItemWriter<>();
-        writer.setResource(new FileSystemResource(OUTPUT_FILE_PATH));
+        writer.setResource(new FileSystemResource(actualOutputFile));
         writer.setName("customerItemWriter");
         
         // Configure line aggregator for formatted output
@@ -395,7 +440,7 @@ public class CustomerListJob {
                              FormatUtil.formatFixedLength("DOB", 10) + "|" +
                              FormatUtil.formatFixedLength("SSN", 11) + "|" +
                              FormatUtil.formatFixedLength("FICO", 4) + "|" +
-                             FormatUtil.formatFixedLength("PHONE", 14) + "|" +
+                             FormatUtil.formatFixedLength("PHONE", Constants.PHONE_NUMBER_LENGTH) + "|" +
                              FormatUtil.formatFixedLength("ADDRESS 1", 35) + "|" +
                              FormatUtil.formatFixedLength("ADDRESS 2", 35) + "|" +
                              FormatUtil.formatFixedLength("CITY", 25) + "|" +
