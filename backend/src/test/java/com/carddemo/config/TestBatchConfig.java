@@ -13,6 +13,8 @@ import com.carddemo.controller.TestConstants;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
@@ -22,6 +24,7 @@ import org.springframework.batch.test.JobLauncherTestUtils;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
+import org.springframework.batch.core.Job;
 import org.springframework.core.task.SyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -99,6 +102,7 @@ import com.carddemo.test.TestDataGenerator;
 @TestConfiguration
 @EnableBatchProcessing
 @EnableJpaRepositories(basePackages = "com.carddemo.repository")
+@ComponentScan(basePackages = {"com.carddemo.test", "com.carddemo.batch"})
 public class TestBatchConfig {
     
     private static final Logger logger = LoggerFactory.getLogger(TestBatchConfig.class);
@@ -218,8 +222,8 @@ public class TestBatchConfig {
         factory.setDataSource(testDataSource());
         factory.setTransactionManager(testTransactionManager());
         
-        // Configure test-specific settings
-        factory.setTablePrefix(TEST_TABLE_PREFIX);
+        // Configure test-specific settings - use standard prefix for H2 compatibility
+        // factory.setTablePrefix(TEST_TABLE_PREFIX);
         factory.setIsolationLevelForCreate("ISOLATION_READ_COMMITTED");
         factory.setValidateTransactionState(false); // Relaxed for testing
         
@@ -531,5 +535,7 @@ public class TestBatchConfig {
         logger.info("Configuring mock TestDataGenerator for test environment");
         return Mockito.mock(TestDataGenerator.class);
     }
+
+
 
 }
