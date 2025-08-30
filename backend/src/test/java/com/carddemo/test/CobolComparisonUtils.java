@@ -1,5 +1,6 @@
 package com.carddemo.test;
 
+import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -14,6 +15,7 @@ import java.util.List;
  * Provides BigDecimal precision validation, numeric comparison with COMP-3 equivalent behavior,
  * and date format verification.
  */
+@Component
 public class CobolComparisonUtils {
 
     // COBOL COMP-3 decimal scale matching
