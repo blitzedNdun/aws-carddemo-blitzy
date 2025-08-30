@@ -13,6 +13,8 @@ import com.carddemo.controller.TestConstants;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 // Spring Batch Test Infrastructure
 import org.springframework.batch.test.JobRepositoryTestUtils;
@@ -21,6 +23,7 @@ import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
 import org.springframework.core.task.SyncTaskExecutor;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 
@@ -37,6 +40,10 @@ import jakarta.persistence.EntityManagerFactory;
 import org.springframework.orm.jpa.LocalEntityManagerFactoryBean;
 import com.carddemo.service.AccountClosureBatchService;
 import com.carddemo.service.AccountMaintenanceBatchService;
+import com.carddemo.batch.StatementGenerationJob;
+import com.carddemo.util.ReportFormatter;
+import com.carddemo.config.BatchConfig;
+import com.carddemo.test.TestDataGenerator;
 
 /**
  * Spring Batch test configuration providing comprehensive testing infrastructure for batch job validation.
@@ -90,6 +97,8 @@ import com.carddemo.service.AccountMaintenanceBatchService;
  * @see BatchConfig
  */
 @TestConfiguration
+@EnableBatchProcessing
+@EnableJpaRepositories(basePackages = "com.carddemo.repository")
 public class TestBatchConfig {
     
     private static final Logger logger = LoggerFactory.getLogger(TestBatchConfig.class);
@@ -443,5 +452,84 @@ public class TestBatchConfig {
         }
     }
 
+    /**
+     * Mock StatementGenerationJob for test environment.
+     * 
+     * This creates a mock StatementGenerationJob to satisfy test dependencies
+     * since the production job is excluded from test profile.
+     * 
+     * @return Mock StatementGenerationJob for test execution
+     */
+    @Bean
+    public StatementGenerationJob statementGenerationJob() {
+        logger.info("Configuring mock StatementGenerationJob for test profile");
+        return Mockito.mock(StatementGenerationJob.class);
+    }
+
+    /**
+     * TaskExecutor for test environment.
+     * 
+     * Provides a basic synchronous task executor for test scenarios.
+     * 
+     * @return TaskExecutor for test execution
+     */
+    @Bean
+    public TaskExecutor taskExecutor() {
+        logger.info("Configuring TaskExecutor for test batch processing");
+        return new SyncTaskExecutor();
+    }
+
+    /**
+     * Mock ReportFormatter for test environment.
+     * 
+     * Provides a mock ReportFormatter to satisfy StatementGenerationJob dependencies.
+     * 
+     * @return Mock ReportFormatter for test execution
+     */
+    @Bean
+    public ReportFormatter reportFormatter() {
+        logger.info("Configuring mock ReportFormatter for test environment");
+        return Mockito.mock(ReportFormatter.class);
+    }
+
+    /**
+     * Mock BatchConfig for test environment.
+     * 
+     * Provides a mock BatchConfig to satisfy StatementGenerationJob dependencies.
+     * 
+     * @return Mock BatchConfig for test execution
+     */
+    @Bean
+    public BatchConfig batchConfig() {
+        logger.info("Configuring mock BatchConfig for test environment");
+        return Mockito.mock(BatchConfig.class);
+    }
+
+    /**
+     * Transaction manager for test environment.
+     * 
+     * Provides transaction manager with the specific bean name expected by batch configuration.
+     * 
+     * @param dataSource configured test DataSource
+     * @return PlatformTransactionManager for test transaction management
+     */
+    @Bean("transactionManager")
+    public PlatformTransactionManager transactionManager(DataSource dataSource) {
+        logger.info("Configuring transactionManager for test batch processing");
+        return new DataSourceTransactionManager(dataSource);
+    }
+
+    /**
+     * Mock TestDataGenerator for test environment.
+     * 
+     * Provides a mock TestDataGenerator to satisfy test dependencies.
+     * 
+     * @return Mock TestDataGenerator for test execution
+     */
+    @Bean
+    public TestDataGenerator testDataGenerator() {
+        logger.info("Configuring mock TestDataGenerator for test environment");
+        return Mockito.mock(TestDataGenerator.class);
+    }
 
 }
