@@ -45,7 +45,7 @@ import java.util.Objects;
  * for sensitive data like SSN and supports GDPR compliance through data masking annotations.
  * 
  * Field mappings from COBOL copybooks:
- * - CUST-ID (PIC 9(9)) → customerId (BIGINT)
+ * - CUST-ID (PIC 9(10)) → customerId (BIGINT)
  * - CUST-FIRST-NAME (PIC X(25)) → firstName (VARCHAR(20))
  * - CUST-MIDDLE-NAME (PIC X(25)) → middleName (VARCHAR(20))
  * - CUST-LAST-NAME (PIC X(25)) → lastName (VARCHAR(20))
@@ -77,7 +77,7 @@ import java.util.Objects;
 public class Customer {
 
     // Constants for field lengths (matching COBOL PIC clauses)
-    private static final int CUSTOMER_ID_LENGTH = 9;
+    private static final int CUSTOMER_ID_LENGTH = 10;
     private static final int SSN_LENGTH = 9;
     private static final int PHONE_NUMBER_LENGTH = 15;
     private static final int ZIP_CODE_LENGTH = 10;
@@ -86,7 +86,7 @@ public class Customer {
     
     /**
      * Customer ID - Primary key.
-     * Maps to CUST-ID field from COBOL copybook (PIC 9(9)).
+     * Maps to CUST-ID field from COBOL copybook (PIC 9(10)).
      * Unique identifier for each customer in the system.
      * Note: Explicitly assigned in COBOL migration (no auto-generation).
      */
@@ -511,11 +511,12 @@ public class Customer {
     /**
      * Convenience method to get customer ID as String for test compatibility.
      * Maps Long customerId to String format expected by tests.
+     * Formats with leading zeros to match COBOL PIC 9(9) specification.
      *
-     * @return customer ID as string, or null if customerId is null
+     * @return customer ID as string with leading zeros (9 digits), or null if customerId is null
      */
     public String getCustomerId() {
-        return customerId != null ? String.valueOf(customerId) : null;
+        return customerId != null ? String.format("%09d", customerId) : null;
     }
 
     /**
