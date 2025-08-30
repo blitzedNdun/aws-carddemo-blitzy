@@ -230,7 +230,7 @@ public class StatementGenerationJobConfigA {
      * Reads account data within the specified range for statement generation.
      */
     @Bean
-    @org.springframework.context.annotation.Scope("step")
+    @org.springframework.context.annotation.Scope(value = "step", proxyMode = org.springframework.context.annotation.ScopedProxyMode.TARGET_CLASS)
     public ItemReader<AccountStatementData> accountStatementReader() {
         return new JpaPagingItemReaderBuilder<AccountStatementData>()
                 .name("accountStatementReader")
