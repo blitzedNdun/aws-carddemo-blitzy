@@ -17,13 +17,8 @@ import com.carddemo.util.CobolDataConverter;
 
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
+
 import com.carddemo.config.TestDatabaseConfig;
-import com.carddemo.config.TestBatchConfig;
-import com.carddemo.config.DatabaseConfig;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 // Using H2 in-memory database instead of Testcontainers PostgreSQL
@@ -49,7 +44,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
-import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
 
 // Removed Testcontainers imports - using H2 in-memory database
 import jakarta.servlet.http.HttpSession;
@@ -92,52 +86,39 @@ import static org.junit.jupiter.api.Assertions.*;
  * @version 1.0
  * @since 2024
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+    classes = {
+        // Test configuration classes
+        TestDatabaseConfig.class,
+        com.carddemo.config.TestSecurityConfig.class,
+        
+        // Controllers being tested
+        com.carddemo.controller.AccountController.class,
+        com.carddemo.controller.TransactionController.class,
+        com.carddemo.controller.CardController.class,
+        com.carddemo.controller.CustomerController.class,
+        
+        // Required services
+        com.carddemo.service.AccountService.class,
+        com.carddemo.service.TransactionService.class,
+        com.carddemo.service.CreditCardService.class,
+        com.carddemo.service.CustomerService.class,
+        
+        // Required repositories 
+        com.carddemo.repository.AccountRepository.class,
+        com.carddemo.repository.TransactionRepository.class,
+        com.carddemo.repository.CardRepository.class,
+        com.carddemo.repository.CustomerRepository.class,
+        
+        // Required utilities
+        com.carddemo.util.CobolDataConverter.class,
+        com.carddemo.util.ValidationUtil.class
+    },
+    webEnvironment = SpringBootTest.WebEnvironment.MOCK
+)
 @AutoConfigureMockMvc
-@EnableAutoConfiguration(exclude = {
-    org.springframework.boot.autoconfigure.h2.H2ConsoleAutoConfiguration.class,
-    org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class,
-    org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration.class
-})
-@Import({TestDatabaseConfig.class, com.carddemo.config.TestBatchConfig.class})
-@ComponentScan(basePackages = "com.carddemo", 
-               excludeFilters = {
-                   @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {
-                       DatabaseConfig.class,
-                       com.carddemo.config.MetricsConfig.class,
-                       com.carddemo.service.MonitoringService.class,
-                       com.carddemo.config.TestSecurityConfig.class,
-                       com.carddemo.security.SecurityConfig.class,
-                       com.carddemo.security.AuthenticationService.class,
-                       com.carddemo.security.AuthorizationService.class,
-                       com.carddemo.security.CustomAccessDeniedHandler.class,
-                       com.carddemo.security.CustomAuthenticationEntryPoint.class,
-                       com.carddemo.security.CustomAuthenticationProvider.class,
-                       com.carddemo.security.CustomUserDetailsService.class,
-                       com.carddemo.security.JwtAuthenticationFilter.class,
-                       com.carddemo.security.JwtRequestFilter.class,
-                       com.carddemo.security.JwtTokenService.class,
-                       com.carddemo.security.LegacyPasswordEncoder.class,
-                       com.carddemo.security.SecurityTestConfig.class,
-                       com.carddemo.test.SecurityTestConfig.class,
-                       com.carddemo.integration.IntegrationTestConfiguration.class,
-                       com.carddemo.TestContainersConfig.class,
-                       com.carddemo.controller.MockMvcTestConfig.class,
-                       com.carddemo.service.InterestCalculationJobService.class,
-                       com.carddemo.service.InterestCalculationBatchService.class
-                   }),
-                   @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\\.carddemo\\.batch\\..*")
-               })
 @TestPropertySource(properties = {
-    "spring.profiles.active=test",
-    "spring.jpa.hibernate.ddl-auto=create-drop",
-    "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
-    "spring.datasource.driver-class-name=org.h2.Driver", 
-    "spring.datasource.username=sa",
-    "spring.datasource.password=password",
-    "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
-    "spring.session.store-type=none",
-    "logging.level.com.carddemo=DEBUG"
+    "spring.profiles.active=test"
 })
 public abstract class BaseControllerTest {
 
@@ -331,15 +312,14 @@ public abstract class BaseControllerTest {
     }
 
     /**
-     * Setup MockMvc with Spring Security configuration for comprehensive controller testing.
-     * Configures MockMvc instance with security context, session management, and
-     * custom configuration for testing secured endpoints.
+     * Setup MockMvc with basic configuration for controller testing.
+     * Configures MockMvc instance with session management for testing endpoints.
+     * Note: Spring Security is excluded from auto-configuration, so security setup is manual.
      */
     protected void setupMockMvc() {
         if (webApplicationContext != null) {
             this.mockMvc = MockMvcBuilders
                     .webAppContextSetup(webApplicationContext)
-                    .apply(SecurityMockMvcConfigurers.springSecurity())
                     .build();
         }
     }
