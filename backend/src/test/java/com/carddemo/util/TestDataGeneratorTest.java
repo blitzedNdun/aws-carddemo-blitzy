@@ -174,7 +174,7 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("generatePicString - generates numeric strings matching PIC 9 patterns")
         public void testGeneratePicString_GeneratesNumericStrings() {
             // When: Generating PIC 9(10) string for account ID
-            String result = testDataGenerator.generatePicString(10, true);
+            String result = testDataGenerator.generateNumericString(10);
             
             // Then: Validate numeric string properties
             Assertions.assertThat(result).isNotNull();
@@ -190,7 +190,7 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
         @DisplayName("generatePicString - handles PIC S9 signed numeric patterns")
         public void testGeneratePicString_HandlesSignedNumericPatterns() {
             // When: Generating PIC S9(7)V99 for monetary amount
-            String result = testDataGenerator.generatePicString(9, true);
+            String result = testDataGenerator.generateNumericString(9);
             
             // Then: Validate signed decimal string properties
             Assertions.assertThat(result).isNotNull();
@@ -218,7 +218,9 @@ public class TestDataGeneratorTest extends AbstractBaseTest {
                 // When: Generating string for each PIC clause type
                 int length = (Integer) spec[0];
                 boolean numeric = (Boolean) spec[1];
-                String result = testDataGenerator.generatePicString(length, numeric);
+                String result = numeric 
+                    ? testDataGenerator.generateNumericString(length)
+                    : testDataGenerator.generatePicString(length, false); // alphanumeric
                 
                 // Then: Validate basic string properties
                 Assertions.assertThat(result).isNotNull();

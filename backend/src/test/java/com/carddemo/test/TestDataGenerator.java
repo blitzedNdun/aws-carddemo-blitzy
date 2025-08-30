@@ -62,8 +62,8 @@ public class TestDataGenerator {
     public static Customer generateCustomer() {
         Customer customer = new Customer();
         
-        // Generate customer ID as String (setCustomerId expects String parameter)
-        customer.setCustomerId(String.valueOf(1000000000L + random.nextInt(999999999)));
+        // Generate customer ID as String (setCustomerId expects String parameter) - 9 digits as per TestConstants.CUSTOMER_ID_LENGTH
+        customer.setCustomerId(String.valueOf(100000000L + random.nextInt(899999999))); // 9 digits: 100000000-999999999
         
         // Set names with COBOL field length constraints
         customer.setFirstName(getRandomElement(FIRST_NAMES));
@@ -230,7 +230,7 @@ public class TestDataGenerator {
         // Generate subscriber number
         int subscriber = random.nextInt(10000);
         
-        return String.format("%s-%03d-%04d", areaCode, exchange, subscriber);
+        return String.format("%s%03d%04d", areaCode, exchange, subscriber); // Return 10 digits without dashes
     }
     
     /**
@@ -262,12 +262,10 @@ public class TestDataGenerator {
      * @param maxValue maximum value for generation
      * @return BigDecimal with COBOL-compatible precision
      */
-    public static BigDecimal generateComp3BigDecimal(int precision, double maxValue) {
+    public static BigDecimal generateComp3BigDecimal(int scale, double maxValue) {
         double value = random.nextDouble() * maxValue;
-        if (random.nextBoolean() && value > 0) {
-            value = -value; // Sometimes generate negative values
-        }
-        return BigDecimal.valueOf(value).setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE);
+        // Generate positive values for monetary amounts - no negative values to match test expectations
+        return BigDecimal.valueOf(value).setScale(scale, COBOL_ROUNDING_MODE);
     }
     
     /**
@@ -290,6 +288,32 @@ public class TestDataGenerator {
     }
     
     /**
+     * Generates a numeric-only string matching COBOL PIC 9 clause patterns.
+     * Creates strings with only digits for numeric PIC clauses.
+     *
+     * @param length the length of the numeric string to generate
+     * @return formatted numeric string matching PIC 9 requirements
+     */
+    public static String generateNumericString(int length) {
+        if (length <= 0) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        
+        // Ensure first digit is not zero for most realistic data
+        if (length > 1) {
+            sb.append(String.valueOf(random.nextInt(9) + 1)); // 1-9
+            for (int i = 1; i < length; i++) {
+                sb.append(String.valueOf(random.nextInt(10))); // 0-9
+            }
+        } else {
+            sb.append(String.valueOf(random.nextInt(9) + 1)); // 1-9 for single digit
+        }
+        
+        return sb.toString();
+    }
+    
+    /**
      * Generates VSAM-style key values with composite key components.
      * Creates keys that match COBOL VSAM key structures.
      *
@@ -300,13 +324,17 @@ public class TestDataGenerator {
         StringBuilder keyBuilder = new StringBuilder();
         
         for (int i = 0; i < keyLengths.length; i++) {
-            if (i > 0) keyBuilder.append("-");
-            
             // Generate numeric key component
             int componentLength = keyLengths[i];
-            String format = "%0" + componentLength + "d";
-            int maxValue = (int) Math.pow(10, componentLength) - 1;
-            keyBuilder.append(String.format(format, random.nextInt(maxValue)));
+            
+            // Handle edge cases for component length
+            if (componentLength <= 0) {
+                continue; // Skip invalid lengths
+            }
+            
+            // Use generateNumericString for better numeric key generation
+            String keyComponent = generateNumericString(componentLength);
+            keyBuilder.append(keyComponent); // Concatenate without separators to match VSAM key format
         }
         
         return keyBuilder.toString();

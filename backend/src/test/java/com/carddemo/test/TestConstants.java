@@ -115,6 +115,7 @@ public final class TestConstants {
         put("ACCOUNT_NUMBER_LENGTH", 11);
         put("CUSTOMER_ID_LENGTH", 9);
         put("decimal_precision_tolerance", 0.01); // Added missing tolerance for BigDecimal assertions
+        put("numeric_overflow_check", true); // Added missing numeric overflow validation flag
     }};
     
     // Functional parity rules for COBOL-to-Java validation

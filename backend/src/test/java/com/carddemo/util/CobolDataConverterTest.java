@@ -643,8 +643,8 @@ class CobolDataConverterTest {
         BigDecimal result = (BigDecimal) CobolDataConverter.convertToJavaType(cobolValue, picClause);
         
         // Validate against functional parity rules
-        Boolean preserveDecimalPrecision = (Boolean) TestConstants.FUNCTIONAL_PARITY_RULES.get("preserve_decimal_precision");
-        Boolean matchCobolRounding = (Boolean) TestConstants.FUNCTIONAL_PARITY_RULES.get("match_cobol_rounding");
+        Boolean preserveDecimalPrecision = (Boolean) TestConstants.FUNCTIONAL_PARITY_RULES.get("PRESERVE_DECIMAL_PRECISION");
+        Boolean matchCobolRounding = (Boolean) TestConstants.FUNCTIONAL_PARITY_RULES.get("ENFORCE_COBOL_ROUNDING");
         
         Assertions.assertThat(preserveDecimalPrecision)
                 .isTrue()
@@ -670,39 +670,47 @@ class CobolDataConverterTest {
      */
     @Test
     void testComp3EdgeCasesAndPatterns() {
-        // Test pattern from TestConstants.COBOL_COMP3_PATTERNS
-        String positivePattern = (String) TestConstants.COBOL_COMP3_PATTERNS.get("positive_pattern");
-        String negativePattern = (String) TestConstants.COBOL_COMP3_PATTERNS.get("negative_pattern"); 
-        String zeroPattern = (String) TestConstants.COBOL_COMP3_PATTERNS.get("zero_pattern");
+        // Test COMP-3 edge cases with actual byte arrays
+        // Create test COMP-3 data for positive value 123.45 (scale 2)
+        byte[] positiveComp3 = {0x12, 0x34, 0x5C}; // 123.45 positive
+        BigDecimal positiveResult = CobolDataConverter.fromComp3(positiveComp3, 2);
         
-        Assertions.assertThat(positivePattern)
-                .isEqualTo("123.45")
-                .as("Positive pattern should match expected COBOL format");
+        Assertions.assertThat(positiveResult)
+                .isEqualTo(new BigDecimal("123.45"))
+                .as("Positive COMP-3 conversion should match expected value");
                 
-        Assertions.assertThat(negativePattern)
-                .isEqualTo("-123.45")
-                .as("Negative pattern should match expected COBOL format");
-                
-        Assertions.assertThat(zeroPattern)
-                .isEqualTo("0.00")
-                .as("Zero pattern should match expected COBOL format");
-                
-        // Test conversion of these patterns
-        BigDecimal positiveResult = CobolDataConverter.toBigDecimal(positivePattern, TestConstants.COBOL_DECIMAL_SCALE);
-        BigDecimal negativeResult = CobolDataConverter.toBigDecimal(negativePattern, TestConstants.COBOL_DECIMAL_SCALE);
-        BigDecimal zeroResult = CobolDataConverter.toBigDecimal(zeroPattern, TestConstants.COBOL_DECIMAL_SCALE);
+        // Create test COMP-3 data for negative value -123.45 (scale 2)  
+        byte[] negativeComp3 = {0x12, 0x34, 0x5D}; // 123.45 negative
+        BigDecimal negativeResult = CobolDataConverter.fromComp3(negativeComp3, 2);
         
-        Assertions.assertThat(positiveResult.compareTo(new BigDecimal("123.45")))
-                .isEqualTo(0)
-                .as("Positive pattern conversion should be exact");
+        Assertions.assertThat(negativeResult)
+                .isEqualTo(new BigDecimal("-123.45"))
+                .as("Negative COMP-3 conversion should match expected value");
                 
-        Assertions.assertThat(negativeResult.compareTo(new BigDecimal("-123.45")))
-                .isEqualTo(0)
-                .as("Negative pattern conversion should be exact");
+        // Create test COMP-3 data for zero value 0.00 (scale 2)
+        byte[] zeroComp3 = {0x00, 0x0C}; // 0.00 positive
+        BigDecimal zeroResult = CobolDataConverter.fromComp3(zeroComp3, 2);
+        
+        Assertions.assertThat(zeroResult)
+                .isEqualTo(new BigDecimal("0.00"))
+                .as("Zero COMP-3 conversion should match expected value");
                 
-        Assertions.assertThat(zeroResult.compareTo(BigDecimal.ZERO))
-                .isEqualTo(0)
-                .as("Zero pattern conversion should be exact");
+        // Test additional edge cases
+        // Test minimum value with scale
+        byte[] minComp3 = {0x00, 0x1C}; // 0.01 positive
+        BigDecimal minValue = CobolDataConverter.fromComp3(minComp3, 2);
+        
+        Assertions.assertThat(minValue)
+                .isEqualTo(new BigDecimal("0.01"))
+                .as("Minimum value conversion should be precise");
+        
+        // Test maximum digits with scale 
+        byte[] maxComp3 = {(byte) 0x99, (byte) 0x99, (byte) 0x9C}; // 999.99 positive
+        BigDecimal maxValue = CobolDataConverter.fromComp3(maxComp3, 2);
+        
+        Assertions.assertThat(maxValue)
+                .isEqualTo(new BigDecimal("999.99"))
+                .as("Maximum value conversion should be precise");
     }
 
     /**
