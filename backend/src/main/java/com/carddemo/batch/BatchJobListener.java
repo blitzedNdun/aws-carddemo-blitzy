@@ -99,7 +99,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * @version 1.0
  * @since 2024
  */
-@Profile("!test")
 @Component
 public class BatchJobListener implements JobExecutionListener {
     

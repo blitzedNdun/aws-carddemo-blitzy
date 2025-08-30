@@ -37,7 +37,7 @@ import java.util.Objects;
  * - Decline reason code tracking for analysis
  * 
  * Database Mapping:
- * - Table: authorizations
+ * - Table: authorization_data
  * - Primary Key: authorization_id (BIGINT, auto-generated)
  * - Foreign Keys: card_number → card_data, account_id → account_data
  * - Indexes: auth_card_idx (card_number), auth_account_idx (account_id), auth_timestamp_idx (request_timestamp)
@@ -63,7 +63,7 @@ import java.util.Objects;
  * @since CardDemo v1.0
  */
 @Entity
-@Table(name = "authorizations", indexes = {
+@Table(name = "authorization_data", indexes = {
     @Index(name = "auth_card_idx", columnList = "card_number"),
     @Index(name = "auth_account_idx", columnList = "account_id"), 
     @Index(name = "auth_timestamp_idx", columnList = "request_timestamp"),
@@ -101,13 +101,11 @@ public class Authorization {
     private Long accountId;
 
     /**
-     * Merchant ID for the authorization request.
-     * Identifies the merchant requesting authorization for transaction processing.
+     * Merchant ID for authorization tracking.
+     * Identifies the merchant requesting authorization for fraud detection and reporting.
      */
-    @Column(name = "merchant_id", length = 15, nullable = false)
-    @NotNull(message = "Merchant ID is required")
-    @Size(max = 15, message = "Merchant ID cannot exceed 15 characters")
-    private String merchantId;
+    @Column(name = "merchant_id")
+    private Long merchantId;
 
     /**
      * Transaction amount for authorization.
@@ -167,23 +165,22 @@ public class Authorization {
 
     /**
      * Velocity check result for transaction frequency validation.
-     * Indicates the outcome of velocity limit checks (PASS, FAIL, WARNING).
+     * Boolean flag indicating if velocity checks passed (true) or failed (false).
      */
-    @Column(name = "velocity_check_result", length = 7, nullable = false)
+    @Column(name = "velocity_check_result", nullable = false)
     @NotNull(message = "Velocity check result is required")
-    @Pattern(regexp = "^(PASS|FAIL|WARNING)$", message = "Velocity check result must be PASS, FAIL, or WARNING")
-    private String velocityCheckResult;
+    private Boolean velocityCheckResult;
 
     /**
      * Fraud score calculated by the fraud detection system.
      * Range: 0-1000, where higher scores indicate higher fraud risk.
      * Used for authorization decision-making and risk management.
      */
-    @Column(name = "fraud_score", nullable = false)
+    @Column(name = "fraud_score", nullable = false, precision = 5, scale = 2)
     @NotNull(message = "Fraud score is required")
-    @DecimalMin(value = "0", message = "Fraud score cannot be negative")
-    @DecimalMax(value = "1000", message = "Fraud score cannot exceed 1000")
-    private Integer fraudScore;
+    @DecimalMin(value = "0.00", message = "Fraud score cannot be negative")
+    @DecimalMax(value = "999.99", message = "Fraud score cannot exceed 999.99")
+    private BigDecimal fraudScore;
 
     /**
      * Processing time in milliseconds for the authorization request.
@@ -228,13 +225,13 @@ public class Authorization {
      * @param responseTimestamp the response timestamp
      * @param approvalStatus the approval status (APPROVED/DECLINED)
      * @param velocityCheckResult the velocity check result
-     * @param fraudScore the fraud score (0-1000)
+     * @param fraudScore the fraud score (0-999.99)
      * @param processingTime the processing time in milliseconds
      */
-    public Authorization(String cardNumber, Long accountId, String merchantId, 
+    public Authorization(String cardNumber, Long accountId, Long merchantId,
                         BigDecimal transactionAmount, LocalDateTime requestTimestamp,
                         LocalDateTime responseTimestamp, String approvalStatus,
-                        String velocityCheckResult, Integer fraudScore, Integer processingTime) {
+                        Boolean velocityCheckResult, BigDecimal fraudScore, Integer processingTime) {
         this.cardNumber = cardNumber;
         this.accountId = accountId;
         this.merchantId = merchantId;
@@ -273,11 +270,11 @@ public class Authorization {
         this.accountId = accountId;
     }
 
-    public String getMerchantId() {
+    public Long getMerchantId() {
         return merchantId;
     }
 
-    public void setMerchantId(String merchantId) {
+    public void setMerchantId(Long merchantId) {
         this.merchantId = merchantId;
     }
 
@@ -329,19 +326,19 @@ public class Authorization {
         this.declineReasonCode = declineReasonCode;
     }
 
-    public String getVelocityCheckResult() {
+    public Boolean getVelocityCheckResult() {
         return velocityCheckResult;
     }
 
-    public void setVelocityCheckResult(String velocityCheckResult) {
+    public void setVelocityCheckResult(Boolean velocityCheckResult) {
         this.velocityCheckResult = velocityCheckResult;
     }
 
-    public Integer getFraudScore() {
+    public BigDecimal getFraudScore() {
         return fraudScore;
     }
 
-    public void setFraudScore(Integer fraudScore) {
+    public void setFraudScore(BigDecimal fraudScore) {
         this.fraudScore = fraudScore;
     }
 
@@ -416,12 +413,12 @@ public class Authorization {
 
     /**
      * Determines if the fraud score indicates high risk.
-     * High risk threshold: fraud score >= 750.
+     * High risk threshold: fraud score >= 750.00.
      * 
      * @return true if fraud score indicates high risk, false otherwise
      */
     public boolean isHighRisk() {
-        return fraudScore != null && fraudScore >= 750;
+        return fraudScore != null && fraudScore.compareTo(new BigDecimal("750.00")) >= 0;
     }
 
     /**
@@ -451,10 +448,6 @@ public class Authorization {
         
         if (accountId == null) {
             throw new RuntimeException("Account ID is required for authorization");
-        }
-        
-        if (merchantId == null || merchantId.isEmpty()) {
-            throw new RuntimeException("Merchant ID is required for authorization");
         }
         
         if (transactionAmount == null) {
@@ -513,19 +506,16 @@ public class Authorization {
         }
         
         // Validate velocity check result
-        if (velocityCheckResult == null || velocityCheckResult.isEmpty()) {
+        if (velocityCheckResult == null) {
             throw new RuntimeException("Velocity check result is required");
-        }
-        if (!"PASS".equals(velocityCheckResult) && !"FAIL".equals(velocityCheckResult) && !"WARNING".equals(velocityCheckResult)) {
-            throw new RuntimeException("Velocity check result must be PASS, FAIL, or WARNING");
         }
         
         // Validate fraud score
         if (fraudScore == null) {
             throw new RuntimeException("Fraud score is required");
         }
-        if (fraudScore < 0 || fraudScore > 1000) {
-            throw new RuntimeException("Fraud score must be between 0 and 1000");
+        if (fraudScore.compareTo(BigDecimal.ZERO) < 0 || fraudScore.compareTo(new BigDecimal("999.99")) > 0) {
+            throw new RuntimeException("Fraud score must be between 0.00 and 999.99");
         }
         
         // Validate processing time
@@ -563,14 +553,13 @@ public class Authorization {
                 "authorizationId=" + authorizationId +
                 ", cardNumber='" + (cardNumber != null ? "****" + cardNumber.substring(12) : null) + '\'' +
                 ", accountId=" + accountId +
-                ", merchantId='" + merchantId + '\'' +
                 ", transactionAmount=" + transactionAmount +
                 ", authorizationCode='" + authorizationCode + '\'' +
                 ", requestTimestamp=" + requestTimestamp +
                 ", responseTimestamp=" + responseTimestamp +
                 ", approvalStatus='" + approvalStatus + '\'' +
                 ", declineReasonCode='" + declineReasonCode + '\'' +
-                ", velocityCheckResult='" + velocityCheckResult + '\'' +
+                ", velocityCheckResult=" + velocityCheckResult +
                 ", fraudScore=" + fraudScore +
                 ", processingTime=" + processingTime +
                 ", isApproved=" + isApproved() +
