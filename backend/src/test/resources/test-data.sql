@@ -11,16 +11,16 @@ DELETE FROM fee_schedule;
 DELETE FROM settlement;
 DELETE FROM authorization_data;
 DELETE FROM daily_transactions;
-DELETE FROM dispute;
+DELETE FROM disputes;
 DELETE FROM report;
-DELETE FROM notification;
-DELETE FROM fee;
-DELETE FROM statement;
+DELETE FROM notifications;
+DELETE FROM fees;
+DELETE FROM statements;
 DELETE FROM interest_rate;
 DELETE FROM disclosure_groups;
 DELETE FROM card_xref;
 DELETE FROM transaction_category_balance;
-DELETE FROM transaction_data;
+DELETE FROM transactions;
 DELETE FROM user_data;
 DELETE FROM user_security;
 DELETE FROM card_data;
@@ -42,7 +42,7 @@ INSERT INTO customer_data (customer_id, first_name, middle_name, last_name, addr
 (1000000001, 'John', 'A', 'Doe', '123 Main Street', 'Apt 4B', 'NY', 'USA', '10001', '555-123-4567', 
     '123-45-6789', '1985-06-15', 720, 'Y', 25000.00, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 (1000000002, 'Jane', 'B', 'Smith', '456 Oak Avenue', NULL, 'CA', 'USA', '90210', '555-987-6543', 
-    '987-65-4321', '1990-03-22', 680, 'Y', 30000.00, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    '567-65-4321', '1990-03-22', 680, 'Y', 30000.00, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 (1000000003, 'Robert', 'C', 'Johnson', '789 Pine Road', 'Unit 12', 'TX', 'USA', '75201', '555-456-7890', 
     '456-78-9012', '1982-11-30', 750, 'Y', 20000.00, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 (1000000004, 'Mary', 'D', 'Williams', '321 Elm Street', NULL, 'FL', 'USA', '33101', '555-234-5678', 
@@ -90,17 +90,17 @@ INSERT INTO user_data (user_id, first_name, last_name, email, phone, status, use
 ('USR005', 'Mike', 'Support', 'support@carddemo.com', '555-001-0005', 'ACTIVE', 'SUPPORT');
 
 -- Insert sample transactions
-INSERT INTO transaction_data (transaction_id, account_id, card_number, type_code, category_code, 
+INSERT INTO transactions (account_id, card_number, transaction_type_code, category_code, 
     subcategory_code, source, description, amount, merchant_name, merchant_city, transaction_date) VALUES
-('TX0000000000001', 12345678901, '4000123456789001', '01', '0100', '01', 'MERCHANT', 
+(12345678901, '4000123456789001', '01', '0100', '01', 'MERCHANT', 
     'GROCERY STORE PURCHASE', 85.67, 'SAFEWAY STORES', 'NEW YORK', CURRENT_DATE - 5),
-('TX0000000000002', 12345678901, '4000123456789001', '01', '0100', '02', 'ONLINE', 
+(12345678901, '4000123456789001', '01', '0100', '02', 'ONLINE', 
     'AMAZON PURCHASE', 129.99, 'AMAZON.COM', 'SEATTLE', CURRENT_DATE - 3),
-('TX0000000000003', 12345678902, '4000123456789002', '02', '0200', '01', 'ATM', 
+(12345678902, '4000123456789002', '02', '0200', '01', 'ATM', 
     'CASH ADVANCE', 200.00, 'CHASE BANK ATM', 'LOS ANGELES', CURRENT_DATE - 7),
-('TX0000000000004', 12345678903, '4000123456789003', '01', '0100', '01', 'MERCHANT', 
+(12345678903, '4000123456789003', '01', '0100', '01', 'MERCHANT', 
     'GAS STATION', 45.23, 'SHELL OIL', 'DALLAS', CURRENT_DATE - 2),
-('TX0000000000005', 12345678904, '4000123456789004', '03', '0300', '01', 'ELECTRONIC', 
+(12345678904, '4000123456789004', '03', '0300', '01', 'ELECTRONIC', 
     'PAYMENT RECEIVED', -500.00, 'ONLINE BANKING', 'MIAMI', CURRENT_DATE - 1);
 
 -- Insert transaction category balances
@@ -139,27 +139,27 @@ INSERT INTO interest_rate (account_group_id, transaction_type_code, current_apr,
 ('GOLD', '01', 17.9900, '2024-01-01', 0.00049260);
 
 -- Insert test statements
-INSERT INTO statement (account_id, statement_date, due_date, previous_balance, current_balance, minimum_payment) VALUES
-(12345678901, CURRENT_DATE - 30, CURRENT_DATE + 25, 1125.75, 1250.75, 25.00),
-(12345678902, CURRENT_DATE - 30, CURRENT_DATE + 25, 2145.50, 2345.50, 47.00),
-(12345678903, CURRENT_DATE - 30, CURRENT_DATE + 25, 445.25, 567.25, 15.00),
-(12345678904, CURRENT_DATE - 30, CURRENT_DATE + 25, 3623.88, 4123.88, 82.48),
-(12345678905, CURRENT_DATE - 30, CURRENT_DATE + 25, 765.33, 890.33, 18.00);
+INSERT INTO statements (account_id, statement_date, payment_due_date, previous_balance, current_balance, minimum_payment_amount, statement_status) VALUES
+(12345678901, CURRENT_DATE - 30, CURRENT_DATE + 25, 1125.75, 1250.75, 25.00, 'G'),
+(12345678902, CURRENT_DATE - 30, CURRENT_DATE + 25, 2145.50, 2345.50, 47.00, 'G'),
+(12345678903, CURRENT_DATE - 30, CURRENT_DATE + 25, 445.25, 567.25, 15.00, 'G'),
+(12345678904, CURRENT_DATE - 30, CURRENT_DATE + 25, 3623.88, 4123.88, 82.48, 'G'),
+(12345678905, CURRENT_DATE - 30, CURRENT_DATE + 25, 765.33, 890.33, 18.00, 'G');
 
 -- Insert test fees
-INSERT INTO fee (account_id, fee_type, fee_amount, assessment_date, fee_status, description) VALUES
+INSERT INTO fees (account_id, fee_type, fee_amount, assessment_date, fee_status, description) VALUES
 (12345678901, 'LATE_PAYMENT', 35.00, CURRENT_DATE - 10, 'POSTED', 'Late payment fee for overdue balance'),
 (12345678904, 'OVER_LIMIT', 25.00, CURRENT_DATE - 5, 'ASSESSED', 'Over credit limit fee'),
 (12345678905, 'ANNUAL', 95.00, CURRENT_DATE - 365, 'POSTED', 'Annual membership fee');
 
 -- Insert test notifications
-INSERT INTO notification (customer_id, notification_type, channel_address, template_id, 
+INSERT INTO notifications (customer_id, notification_type, channel_address, template_id, 
     delivery_status, priority) VALUES
-(1000000001, 'EMAIL', 'john.doe@email.com', 'STMT_READY', 'DELIVERED', 'NORMAL'),
-(1000000002, 'SMS', '555-987-6543', 'PMT_DUE', 'SENT', 'HIGH'),
-(1000000003, 'EMAIL', 'robert.johnson@email.com', 'OVERLIMIT', 'PENDING', 'HIGH'),
-(1000000004, 'EMAIL', 'mary.williams@email.com', 'LATE_FEE', 'DELIVERED', 'HIGH'),
-(1000000005, 'SMS', '555-345-6789', 'FRAUD_ALERT', 'FAILED', 'URGENT');
+(1000000001, 'EMAIL', 'john.doe@email.com', 'STMT_READY', 'DELIVERED', 5),
+(1000000002, 'SMS', '555-987-6543', 'PMT_DUE', 'SENT', 8),
+(1000000003, 'EMAIL', 'robert.johnson@email.com', 'OVERLIMIT', 'PENDING', 8),
+(1000000004, 'EMAIL', 'mary.williams@email.com', 'LATE_FEE', 'DELIVERED', 8),
+(1000000005, 'SMS', '555-345-6789', 'FRAUD_ALERT', 'FAILED', 10);
 
 -- Insert test reports
 INSERT INTO report (report_type, start_date, end_date, status, format, user_id) VALUES
@@ -169,10 +169,11 @@ INSERT INTO report (report_type, start_date, end_date, status, format, user_id) 
 ('COMPLIANCE', CURRENT_DATE - 30, CURRENT_DATE, 'COMPLETED', 'TEXT', 'USR001');
 
 -- Insert test disputes
-INSERT INTO dispute (transaction_id, account_id, dispute_type, status, reason_code, description, 
-    provisional_credit_amount, created_date) VALUES
-('TX0000000000002', 12345678901, 'FRAUD', 'OPEN', 'FR01', 'Unauthorized transaction', 129.99, CURRENT_DATE - 5),
-('TX0000000000003', 12345678902, 'BILLING_ERROR', 'INVESTIGATION', 'BE02', 'Incorrect amount charged', 200.00, CURRENT_DATE - 10);
+INSERT INTO disputes (transaction_id, account_id, dispute_type, status, reason_code, description, 
+    provisional_credit_amount, created_date, dispute_amount, provisional_credit_eligible, 
+    provisional_credit_issued, chargeback_initiated, merchant_response_received, last_updated_date) VALUES
+(1000000000002, 12345678901, 'FRAUD', 'OPEN', 'FR01', 'Unauthorized transaction', 129.99, CURRENT_DATE - 5, 129.99, true, true, false, false, CURRENT_TIMESTAMP),
+(1000000000003, 12345678902, 'BILLING_ERROR', 'INVESTIGATION', 'BE02', 'Incorrect amount charged', 200.00, CURRENT_DATE - 10, 200.00, true, false, false, false, CURRENT_TIMESTAMP);
 
 -- Insert test daily transactions for batch processing
 INSERT INTO daily_transactions (transaction_id, account_id, type_code, category_code, source, 
