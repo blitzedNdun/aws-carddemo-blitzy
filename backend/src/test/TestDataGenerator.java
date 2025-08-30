@@ -1,6 +1,7 @@
 package com.carddemo.test;
 
 import com.carddemo.entity.Account;
+import com.carddemo.entity.Customer;
 import com.carddemo.entity.Transaction;
 import com.carddemo.entity.TransactionCategory;
 import com.carddemo.entity.TransactionCategoryBalance;
@@ -38,7 +39,7 @@ public class TestDataGenerator {
     public Account generateValidAccount() {
         Account account = new Account();
         account.setAccountId(generateAccountNumber());
-        account.setCustomerId(generateCustomerId());
+        account.setCustomer(generateCustomer());
         account.setCurrentBalance(generateBalance());
         account.setCreditLimit(generateCreditLimit());
         account.setActiveStatus("ACTIVE");
@@ -227,6 +228,27 @@ public class TestDataGenerator {
     }
 
     /**
+     * Generates a test Customer entity with COBOL-compatible data patterns.
+     */
+    public Customer generateCustomer() {
+        return Customer.builder()
+                .customerId(generateCustomerId())
+                .firstName(generateFirstName())
+                .lastName(generateLastName())
+                .dateOfBirth(generateDateOfBirth())
+                .ssn(generateSSN())
+                .phoneAreaCode(generatePhoneAreaCode())
+                .phoneNumber(generatePhoneNumber())
+                .ficoScore(generateFicoScore())
+                .address(generateAddress())
+                .city(generateCity())
+                .state(generateState())
+                .zipCode(generateZipCode())
+                .emailAddress(generateEmailAddress())
+                .build();
+    }
+
+    /**
      * Generates a test TransactionCategory entity with proper category code formatting.
      */
     public TransactionCategory generateTransactionCategory() {
@@ -320,5 +342,76 @@ public class TestDataGenerator {
         String prefix = VALID_ACCOUNT_PREFIXES[RANDOM.nextInt(VALID_ACCOUNT_PREFIXES.length)];
         String accountStr = prefix + String.format("%06d", RANDOM.nextInt(1000000));
         return Long.parseLong(accountStr);
+    }
+
+    /**
+     * Helper methods for generating customer data
+     */
+    private String generateFirstName() {
+        String[] firstNames = {"JOHN", "JANE", "ROBERT", "MARY", "MICHAEL", "PATRICIA", "WILLIAM", "JENNIFER", "DAVID", "LINDA"};
+        return firstNames[RANDOM.nextInt(firstNames.length)];
+    }
+
+    private String generateLastName() {
+        String[] lastNames = {"SMITH", "JOHNSON", "WILLIAMS", "BROWN", "JONES", "GARCIA", "MILLER", "DAVIS", "RODRIGUEZ", "MARTINEZ"};
+        return lastNames[RANDOM.nextInt(lastNames.length)];
+    }
+
+    private LocalDate generateDateOfBirth() {
+        int yearsAgo = 18 + RANDOM.nextInt(65); // Age between 18 and 83
+        return LocalDate.now().minusYears(yearsAgo);
+    }
+
+    private String generateSSN() {
+        return String.format("%03d-%02d-%04d", 
+                RANDOM.nextInt(900) + 100,
+                RANDOM.nextInt(90) + 10,
+                RANDOM.nextInt(9000) + 1000);
+    }
+
+    private String generatePhoneAreaCode() {
+        String[] areaCodes = {"212", "718", "917", "646", "347", "929", "332"};
+        return areaCodes[RANDOM.nextInt(areaCodes.length)];
+    }
+
+    private String generatePhoneNumber() {
+        return String.format("%03d-%04d", 
+                RANDOM.nextInt(900) + 100,
+                RANDOM.nextInt(9000) + 1000);
+    }
+
+    private Integer generateFicoScore() {
+        return 300 + RANDOM.nextInt(551); // FICO scores range from 300-850
+    }
+
+    private String generateAddress() {
+        String[] addresses = {
+            "123 MAIN ST",
+            "456 ELM AVE", 
+            "789 OAK BLVD",
+            "321 PINE RD",
+            "654 MAPLE DR"
+        };
+        return addresses[RANDOM.nextInt(addresses.length)];
+    }
+
+    private String generateCity() {
+        String[] cities = {"NEW YORK", "LOS ANGELES", "CHICAGO", "HOUSTON", "PHILADELPHIA", "PHOENIX", "SAN ANTONIO", "SAN DIEGO", "DALLAS", "SAN JOSE"};
+        return cities[RANDOM.nextInt(cities.length)];
+    }
+
+    private String generateState() {
+        String[] states = {"NY", "CA", "TX", "FL", "PA", "IL", "OH", "GA", "NC", "MI"};
+        return states[RANDOM.nextInt(states.length)];
+    }
+
+    private String generateZipCode() {
+        return String.format("%05d", RANDOM.nextInt(100000));
+    }
+
+    private String generateEmailAddress() {
+        String[] domains = {"gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "aol.com"};
+        String username = generateFirstName().toLowerCase() + "." + generateLastName().toLowerCase();
+        return username + "@" + domains[RANDOM.nextInt(domains.length)];
     }
 }
