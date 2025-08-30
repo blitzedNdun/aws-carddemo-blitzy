@@ -11,6 +11,8 @@ import com.carddemo.config.TestDatabaseConfig;
 import com.carddemo.entity.Account;
 import com.carddemo.entity.Card;
 import com.carddemo.entity.CardXref;
+import com.carddemo.entity.CardXrefId;
+import com.carddemo.entity.Customer;
 import com.carddemo.entity.DailyTransaction;
 import com.carddemo.entity.Transaction;
 import com.carddemo.entity.TransactionCategoryBalance;
@@ -172,10 +174,16 @@ public class DailyTransactionJobTest {
      * Creates accounts, cards, and cross-reference records matching CBTRN test scenarios.
      */
     private void initializeBaseTestData() {
+        // Create test customer first
+        Customer testCustomer = new Customer();
+        testCustomer.setCustomerId("10001");
+        testCustomer.setFirstName("Test");
+        testCustomer.setLastName("Customer");
+        
         // Create test account with precise BigDecimal values matching COBOL COMP-3
         Account testAccount = new Account();
         testAccount.setAccountId(1000001L);
-        testAccount.setCustomerId(10001L);
+        testAccount.setCustomer(testCustomer);
         testAccount.setCurrentBalance(new BigDecimal("1500.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
         testAccount.setCreditLimit(new BigDecimal("5000.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
         testAccount.setActiveStatus("Y");
@@ -194,9 +202,8 @@ public class DailyTransactionJobTest {
 
         // Create cross-reference record matching CBTRN01C lookup requirements
         CardXref testXref = new CardXref();
-        testXref.setCardNumber("4000123456789012");
-        testXref.setCustomerId(10001L);
-        testXref.setAccountId(1000001L);
+        CardXrefId xrefId = new CardXrefId("4000123456789012", 10001L, 1000001L);
+        testXref.setId(xrefId);
         cardXrefRepository.save(testXref);
     }
 
@@ -206,10 +213,10 @@ public class DailyTransactionJobTest {
      */
     private DailyTransaction createValidDailyTransaction() {
         DailyTransaction transaction = new DailyTransaction();
-        transaction.setTransactionId(9000001L);
+        transaction.setTransactionId("9000001"); // DailyTransaction uses String ID
         transaction.setCardNumber("4000123456789012");
-        transaction.setAmount(new BigDecimal("125.50").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
-        transaction.setTransactionType("PU"); // Purchase transaction
+        transaction.setTransactionAmount(new BigDecimal("125.50").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE)); // Correct method name
+        transaction.setTransactionTypeCode("PU"); // Purchase transaction - correct method name  
         transaction.setCategoryCode("GROC"); // Grocery category
         transaction.setDescription("TEST MERCHANT PURCHASE");
         transaction.setMerchantName("TEST MERCHANT");
@@ -237,7 +244,7 @@ public class DailyTransactionJobTest {
                 transaction.setCardNumber("9999999999999999"); // Non-existent card
                 break;
             case "CREDIT_LIMIT_EXCEEDED":
-                transaction.setAmount(new BigDecimal("5500.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
+                transaction.setTransactionAmount(new BigDecimal("5500.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE)); // Fixed method name
                 break;
             case "INACTIVE_ACCOUNT":
                 Account account = accountRepository.findById(1000001L).orElse(null);
@@ -287,13 +294,13 @@ public class DailyTransactionJobTest {
 
             Transaction postedTransaction = postedTransactions.get(0);
             assertThat(postedTransaction.getTransactionId()).isEqualTo(9000001L);
-            assertThat(postedTransaction.getAmount()).isEqualByComparingTo(dailyTxn.getAmount());
+            assertThat(postedTransaction.getAmount()).isEqualByComparingTo(dailyTxn.getTransactionAmount());
             assertThat(postedTransaction.getAccountId()).isEqualTo(1000001L);
             assertThat(postedTransaction.getProcessedTimestamp()).isNotNull();
 
             // Verify account balance was updated correctly (CBTRN02C logic)
             Account updatedAccount = accountRepository.findById(1000001L).orElse(null);
-            BigDecimal expectedBalance = originalBalance.subtract(dailyTxn.getAmount()).setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE);
+            BigDecimal expectedBalance = originalBalance.subtract(dailyTxn.getTransactionAmount()).setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE);
             assertThat(updatedAccount.getCurrentBalance()).isEqualByComparingTo(expectedBalance);
 
             // Verify processing completed within performance threshold
@@ -308,8 +315,8 @@ public class DailyTransactionJobTest {
             // Arrange: Create multiple valid transactions to test chunk processing
             for (int i = 0; i < 50; i++) {
                 DailyTransaction txn = createValidDailyTransaction();
-                txn.setTransactionId(9000001L + i);
-                txn.setAmount(new BigDecimal("10.00").multiply(new BigDecimal(i + 1)).setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
+                txn.setTransactionId(String.valueOf(9000001L + i));
+                txn.setTransactionAmount(new BigDecimal("10.00").multiply(new BigDecimal(i + 1)).setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
                 dailyTransactionRepository.save(txn);
             }
 
@@ -367,10 +374,10 @@ public class DailyTransactionJobTest {
             assertThat(jobExecution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
 
             // Verify cross-reference record exists and is valid
-            Optional<CardXref> xref = cardXrefRepository.findByCardNumber("4000123456789012");
+            Optional<CardXref> xref = cardXrefRepository.findFirstByXrefCardNum("4000123456789012");
             assertThat(xref).isPresent();
-            assertThat(xref.get().getAccountId()).isEqualTo(1000001L);
-            assertThat(xref.get().getCustomerId()).isEqualTo(10001L);
+            assertThat(xref.get().getId().getXrefAcctId()).isEqualTo(1000001L);
+            assertThat(xref.get().getId().getXrefCustId()).isEqualTo(10001L);
 
             // Verify transaction was processed successfully
             List<Transaction> postedTransactions = transactionRepository.findByAccountId(1000001L);
@@ -413,9 +420,8 @@ public class DailyTransactionJobTest {
             
             // Create mismatched cross-reference scenario
             CardXref mismatchedXref = new CardXref();
-            mismatchedXref.setCardNumber("4000123456789012");
-            mismatchedXref.setCustomerId(10001L);
-            mismatchedXref.setAccountId(9999999L); // Invalid account ID
+            CardXrefId mismatchedXrefId = new CardXrefId("4000123456789012", 10001L, 9999999L); // Invalid account ID
+            mismatchedXref.setId(mismatchedXrefId);
             cardXrefRepository.save(mismatchedXref);
             
             dailyTransactionRepository.save(dailyTxn);
@@ -451,7 +457,7 @@ public class DailyTransactionJobTest {
             accountRepository.save(account);
 
             DailyTransaction dailyTxn = createValidDailyTransaction();
-            dailyTxn.setAmount(new BigDecimal("123.45").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
+            dailyTxn.setTransactionAmount(new BigDecimal("123.45").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
             dailyTransactionRepository.save(dailyTxn);
 
             JobParameters jobParameters = new JobParametersBuilder()
@@ -480,8 +486,8 @@ public class DailyTransactionJobTest {
         void testCurrentCycleDebitUpdate() throws Exception {
             // Arrange: Set up purchase transaction
             DailyTransaction purchaseTxn = createValidDailyTransaction();
-            purchaseTxn.setTransactionType("PU");
-            purchaseTxn.setAmount(new BigDecimal("250.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
+            purchaseTxn.setTransactionTypeCode("PU");
+            purchaseTxn.setTransactionAmount(new BigDecimal("250.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
             dailyTransactionRepository.save(purchaseTxn);
 
             Account originalAccount = accountRepository.findById(1000001L).orElse(null);
@@ -499,7 +505,7 @@ public class DailyTransactionJobTest {
             assertThat(jobExecution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
 
             Account updatedAccount = accountRepository.findById(1000001L).orElse(null);
-            BigDecimal expectedCycleDebit = originalCycleDebit.add(purchaseTxn.getAmount()).setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE);
+            BigDecimal expectedCycleDebit = originalCycleDebit.add(purchaseTxn.getTransactionAmount()).setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE);
             assertThat(updatedAccount.getCurrentCycleDebit()).isEqualByComparingTo(expectedCycleDebit);
         }
 
@@ -509,8 +515,8 @@ public class DailyTransactionJobTest {
         void testCurrentCycleCreditUpdate() throws Exception {
             // Arrange: Set up payment transaction
             DailyTransaction paymentTxn = createValidDailyTransaction();
-            paymentTxn.setTransactionType("PA");
-            paymentTxn.setAmount(new BigDecimal("300.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
+            paymentTxn.setTransactionTypeCode("PA");
+            paymentTxn.setTransactionAmount(new BigDecimal("300.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
             dailyTransactionRepository.save(paymentTxn);
 
             Account originalAccount = accountRepository.findById(1000001L).orElse(null);
@@ -528,7 +534,7 @@ public class DailyTransactionJobTest {
             assertThat(jobExecution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
 
             Account updatedAccount = accountRepository.findById(1000001L).orElse(null);
-            BigDecimal expectedCycleCredit = originalCycleCredit.add(paymentTxn.getAmount()).setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE);
+            BigDecimal expectedCycleCredit = originalCycleCredit.add(paymentTxn.getTransactionAmount()).setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE);
             assertThat(updatedAccount.getCurrentCycleCredit()).isEqualByComparingTo(expectedCycleCredit);
         }
     }
@@ -580,7 +586,7 @@ public class DailyTransactionJobTest {
 
             // Create transaction that would push to limit boundary
             DailyTransaction boundaryTxn = createValidDailyTransaction();
-            boundaryTxn.setAmount(new BigDecimal("3000.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE)); // Exactly at limit
+            boundaryTxn.setTransactionAmount(new BigDecimal("3000.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE)); // Exactly at limit
             dailyTransactionRepository.save(boundaryTxn);
 
             JobParameters jobParameters = new JobParametersBuilder()
@@ -684,15 +690,15 @@ public class DailyTransactionJobTest {
         void testRejectRecordGeneration() throws Exception {
             // Arrange: Create multiple invalid transactions
             DailyTransaction invalidCard = createInvalidDailyTransaction("INVALID_CARD");
-            invalidCard.setTransactionId(9000001L);
+            invalidCard.setTransactionId("9000001");
             dailyTransactionRepository.save(invalidCard);
 
             DailyTransaction expiredCard = createInvalidDailyTransaction("EXPIRED_CARD");
-            expiredCard.setTransactionId(9000002L);
+            expiredCard.setTransactionId("9000002");
             dailyTransactionRepository.save(expiredCard);
 
             DailyTransaction overlimit = createInvalidDailyTransaction("CREDIT_LIMIT_EXCEEDED");
-            overlimit.setTransactionId(9000003L);
+            overlimit.setTransactionId("9000003");
             dailyTransactionRepository.save(overlimit);
 
             JobParameters jobParameters = new JobParametersBuilder()
@@ -728,11 +734,11 @@ public class DailyTransactionJobTest {
         void testValidationTrailerGeneration() throws Exception {
             // Arrange: Create mix of valid and invalid transactions
             DailyTransaction validTxn = createValidDailyTransaction();
-            validTxn.setTransactionId(9000001L);
+            validTxn.setTransactionId("9000001");
             dailyTransactionRepository.save(validTxn);
 
             DailyTransaction invalidTxn = createInvalidDailyTransaction("INVALID_CARD");
-            invalidTxn.setTransactionId(9000002L);
+            invalidTxn.setTransactionId("9000002");
             dailyTransactionRepository.save(invalidTxn);
 
             JobParameters jobParameters = new JobParametersBuilder()
@@ -767,8 +773,8 @@ public class DailyTransactionJobTest {
             int transactionCount = 10000; // Simulated daily volume
             for (int i = 0; i < transactionCount; i++) {
                 DailyTransaction txn = createValidDailyTransaction();
-                txn.setTransactionId(9000001L + i);
-                txn.setAmount(new BigDecimal("50.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
+                txn.setTransactionId(String.valueOf(9000001L + i));
+                txn.setTransactionAmount(new BigDecimal("50.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
                 dailyTransactionRepository.save(txn);
             }
 
@@ -801,7 +807,7 @@ public class DailyTransactionJobTest {
             int transactionCount = CHUNK_SIZE + 500; // More than one chunk
             for (int i = 0; i < transactionCount; i++) {
                 DailyTransaction txn = createValidDailyTransaction();
-                txn.setTransactionId(9000001L + i);
+                txn.setTransactionId(String.valueOf(9000001L + i));
                 dailyTransactionRepository.save(txn);
             }
 
@@ -863,7 +869,7 @@ public class DailyTransactionJobTest {
             // Arrange: Create batch for restart testing
             for (int i = 0; i < 100; i++) {
                 DailyTransaction txn = createValidDailyTransaction();
-                txn.setTransactionId(9000001L + i);
+                txn.setTransactionId(String.valueOf(9000001L + i));
                 dailyTransactionRepository.save(txn);
             }
 
@@ -894,9 +900,9 @@ public class DailyTransactionJobTest {
 
             // Simulate database constraint scenario by creating conflicting data
             Transaction existingTxn = new Transaction();
-            existingTxn.setTransactionId(txn.getTransactionId()); // Duplicate ID scenario
+            // Transaction ID is auto-generated, don't set it manually
             existingTxn.setAccountId(1000001L);
-            existingTxn.setAmount(txn.getAmount());
+            existingTxn.setAmount(txn.getTransactionAmount());
             existingTxn.setTransactionDate(LocalDate.now());
             transactionRepository.save(existingTxn);
 
@@ -955,7 +961,7 @@ public class DailyTransactionJobTest {
         void testTimezoneHandling() throws Exception {
             // Arrange: Create transaction with edge case timestamps
             DailyTransaction midnightTxn = createValidDailyTransaction();
-            midnightTxn.setTransactionId(9000001L);
+            midnightTxn.setTransactionId(String.valueOf(9000001L));
             midnightTxn.setOriginalTimestamp(LocalDateTime.of(2024, 3, 15, 23, 59, 59));
             dailyTransactionRepository.save(midnightTxn);
 
@@ -989,15 +995,15 @@ public class DailyTransactionJobTest {
         void testCategoryBalanceUpdates() throws Exception {
             // Arrange: Create transactions for different categories
             DailyTransaction groceryTxn = createValidDailyTransaction();
-            groceryTxn.setTransactionId(9000001L);
+            groceryTxn.setTransactionId(String.valueOf(9000001L));
             groceryTxn.setCategoryCode("GROC");
-            groceryTxn.setAmount(new BigDecimal("150.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
+            groceryTxn.setTransactionAmount(new BigDecimal("150.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
             dailyTransactionRepository.save(groceryTxn);
 
             DailyTransaction gasTxn = createValidDailyTransaction();
-            gasTxn.setTransactionId(9000002L);
+            gasTxn.setTransactionId(String.valueOf(9000002L));
             gasTxn.setCategoryCode("GAS");
-            gasTxn.setAmount(new BigDecimal("75.50").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
+            gasTxn.setTransactionAmount(new BigDecimal("75.50").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
             dailyTransactionRepository.save(gasTxn);
 
             JobParameters jobParameters = new JobParametersBuilder()
@@ -1038,9 +1044,9 @@ public class DailyTransactionJobTest {
             // Arrange: Create multiple transactions for same category
             for (int i = 0; i < 5; i++) {
                 DailyTransaction txn = createValidDailyTransaction();
-                txn.setTransactionId(9000001L + i);
+                txn.setTransactionId(String.valueOf(9000001L + i));
                 txn.setCategoryCode("GROC");
-                txn.setAmount(new BigDecimal("25.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
+                txn.setTransactionAmount(new BigDecimal("25.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
                 dailyTransactionRepository.save(txn);
             }
 
@@ -1078,9 +1084,9 @@ public class DailyTransactionJobTest {
         void testCobolOutputParity() throws Exception {
             // Arrange: Create transaction set that matches COBOL test case
             DailyTransaction cobolTestTxn = createValidDailyTransaction();
-            cobolTestTxn.setTransactionId(9000001L);
-            cobolTestTxn.setAmount(new BigDecimal("99.99").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
-            cobolTestTxn.setTransactionType("PU");
+            cobolTestTxn.setTransactionId(String.valueOf(9000001L));
+            cobolTestTxn.setTransactionAmount(new BigDecimal("99.99").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
+            cobolTestTxn.setTransactionTypeCode("PU");
             cobolTestTxn.setCategoryCode("MISC");
             dailyTransactionRepository.save(cobolTestTxn);
 
@@ -1125,7 +1131,7 @@ public class DailyTransactionJobTest {
             accountRepository.save(account);
 
             DailyTransaction edgeTxn = createValidDailyTransaction();
-            edgeTxn.setAmount(new BigDecimal("0.02").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
+            edgeTxn.setTransactionAmount(new BigDecimal("0.02").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
             dailyTransactionRepository.save(edgeTxn);
 
             JobParameters jobParameters = new JobParametersBuilder()
@@ -1156,17 +1162,17 @@ public class DailyTransactionJobTest {
             // Arrange: Create comprehensive test scenario
             // Valid transaction
             DailyTransaction validTxn = createValidDailyTransaction();
-            validTxn.setTransactionId(9000001L);
+            validTxn.setTransactionId(String.valueOf(9000001L));
             dailyTransactionRepository.save(validTxn);
 
             // Invalid transaction for reject testing
             DailyTransaction invalidTxn = createInvalidDailyTransaction("INVALID_CARD");
-            invalidTxn.setTransactionId(9000002L);
+            invalidTxn.setTransactionId(String.valueOf(9000002L));
             dailyTransactionRepository.save(invalidTxn);
 
             // Credit limit transaction
             DailyTransaction limitTxn = createInvalidDailyTransaction("CREDIT_LIMIT_EXCEEDED");
-            limitTxn.setTransactionId(9000003L);
+            limitTxn.setTransactionId(String.valueOf(9000003L));
             dailyTransactionRepository.save(limitTxn);
 
             // Capture initial state
@@ -1191,7 +1197,7 @@ public class DailyTransactionJobTest {
 
             // Account balance updated only for valid transaction
             Account updatedAccount = accountRepository.findById(1000001L).orElse(null);
-            BigDecimal expectedBalance = originalBalance.subtract(validTxn.getAmount()).setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE);
+            BigDecimal expectedBalance = originalBalance.subtract(validTxn.getTransactionAmount()).setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE);
             assertThat(updatedAccount.getCurrentBalance()).isEqualByComparingTo(expectedBalance);
 
             // Verify step execution metrics
@@ -1209,23 +1215,23 @@ public class DailyTransactionJobTest {
             // Arrange: Create different transaction types
             // Purchase transaction
             DailyTransaction purchase = createValidDailyTransaction();
-            purchase.setTransactionId(9000001L);
-            purchase.setTransactionType("PU");
-            purchase.setAmount(new BigDecimal("100.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
+            purchase.setTransactionId(String.valueOf(9000001L));
+            purchase.setTransactionTypeCode("PU");
+            purchase.setTransactionAmount(new BigDecimal("100.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
             dailyTransactionRepository.save(purchase);
 
             // Payment transaction  
             DailyTransaction payment = createValidDailyTransaction();
-            payment.setTransactionId(9000002L);
-            payment.setTransactionType("PA");
-            payment.setAmount(new BigDecimal("200.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
+            payment.setTransactionId(String.valueOf(9000002L));
+            payment.setTransactionTypeCode("PA");
+            payment.setTransactionAmount(new BigDecimal("200.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
             dailyTransactionRepository.save(payment);
 
             // Cash advance transaction
             DailyTransaction cashAdvance = createValidDailyTransaction();
-            cashAdvance.setTransactionId(9000003L);
-            cashAdvance.setTransactionType("CA");
-            cashAdvance.setAmount(new BigDecimal("50.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
+            cashAdvance.setTransactionId(String.valueOf(9000003L));
+            cashAdvance.setTransactionTypeCode("CA");
+            cashAdvance.setTransactionAmount(new BigDecimal("50.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
             dailyTransactionRepository.save(cashAdvance);
 
             Account originalAccount = accountRepository.findById(1000001L).orElse(null);
@@ -1251,21 +1257,21 @@ public class DailyTransactionJobTest {
             // Verify balance calculation: 1500.00 - 100.00 + 200.00 - 50.00 = 1550.00
             Account updatedAccount = accountRepository.findById(1000001L).orElse(null);
             BigDecimal expectedBalance = originalBalance
-                .subtract(purchase.getAmount())
-                .add(payment.getAmount())
-                .subtract(cashAdvance.getAmount())
+                .subtract(purchase.getTransactionAmount())
+                .add(payment.getTransactionAmount())
+                .subtract(cashAdvance.getTransactionAmount())
                 .setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE);
             assertThat(updatedAccount.getCurrentBalance()).isEqualByComparingTo(expectedBalance);
 
             // Verify cycle debits and credits
             BigDecimal expectedCycleDebit = originalCycleDebit
-                .add(purchase.getAmount())
-                .add(cashAdvance.getAmount())
+                .add(purchase.getTransactionAmount())
+                .add(cashAdvance.getTransactionAmount())
                 .setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE);
             assertThat(updatedAccount.getCurrentCycleDebit()).isEqualByComparingTo(expectedCycleDebit);
 
             BigDecimal expectedCycleCredit = originalCycleCredit
-                .add(payment.getAmount())
+                .add(payment.getTransactionAmount())
                 .setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE);
             assertThat(updatedAccount.getCurrentCycleCredit()).isEqualByComparingTo(expectedCycleCredit);
         }
@@ -1282,7 +1288,7 @@ public class DailyTransactionJobTest {
             // Arrange: Create test data for reader step
             for (int i = 0; i < 25; i++) {
                 DailyTransaction txn = createValidDailyTransaction();
-                txn.setTransactionId(9000001L + i);
+                txn.setTransactionId(String.valueOf(9000001L + i));
                 dailyTransactionRepository.save(txn);
             }
 
@@ -1296,7 +1302,7 @@ public class DailyTransactionJobTest {
 
             // Assert: Verify reader step performance
             assertThat(stepExecution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
-            assertThat(stepExecution.getReadCount()).isEqualTo(25);
+            assertThat(stepExecution.getStepExecutions().iterator().next().getReadCount()).isEqualTo(25);
         }
 
         @Test
@@ -1305,11 +1311,11 @@ public class DailyTransactionJobTest {
         void testTransactionProcessorStep() throws Exception {
             // Arrange: Create mixed valid and invalid transactions
             DailyTransaction validTxn = createValidDailyTransaction();
-            validTxn.setTransactionId(9000001L);
+            validTxn.setTransactionId(String.valueOf(9000001L));
             dailyTransactionRepository.save(validTxn);
 
             DailyTransaction invalidTxn = createInvalidDailyTransaction("EXPIRED_CARD");
-            invalidTxn.setTransactionId(9000002L);
+            invalidTxn.setTransactionId(String.valueOf(9000002L));
             dailyTransactionRepository.save(invalidTxn);
 
             JobParameters jobParameters = new JobParametersBuilder()
@@ -1322,7 +1328,7 @@ public class DailyTransactionJobTest {
 
             // Assert: Verify processor validation logic
             assertThat(stepExecution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
-            assertThat(stepExecution.getReadCount()).isEqualTo(2);
+            assertThat(stepExecution.getStepExecutions().iterator().next().getReadCount()).isEqualTo(2);
             
             // Verify processing results (valid transactions proceed, invalid are filtered)
             // Implementation would track filter counts in step execution context
@@ -1346,7 +1352,7 @@ public class DailyTransactionJobTest {
 
             // Assert: Verify writer commit operations
             assertThat(stepExecution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
-            assertThat(stepExecution.getWriteCount()).isGreaterThan(0);
+            assertThat(stepExecution.getStepExecutions().iterator().next().getWriteCount()).isGreaterThan(0);
 
             // Verify data persistence
             List<Transaction> writtenTransactions = transactionRepository.findByAccountId(1000001L);
@@ -1364,7 +1370,7 @@ public class DailyTransactionJobTest {
         void testTransactionAmountValidation() throws Exception {
             // Arrange: Create transaction with specific decimal precision
             DailyTransaction precisionTxn = createValidDailyTransaction();
-            precisionTxn.setAmount(new BigDecimal("123.456789").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE)); // Should round to 123.46
+            precisionTxn.setTransactionAmount(new BigDecimal("123.456789").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE)); // Should round to 123.46
             dailyTransactionRepository.save(precisionTxn);
 
             JobParameters jobParameters = new JobParametersBuilder()
@@ -1421,12 +1427,12 @@ public class DailyTransactionJobTest {
         void testTransactionDateValidation() throws Exception {
             // Arrange: Create transactions with different dates
             DailyTransaction todayTxn = createValidDailyTransaction();
-            todayTxn.setTransactionId(9000001L);
+            todayTxn.setTransactionId(String.valueOf(9000001L));
             todayTxn.setOriginalTimestamp(LocalDateTime.now());
             dailyTransactionRepository.save(todayTxn);
 
             DailyTransaction yesterdayTxn = createValidDailyTransaction();
-            yesterdayTxn.setTransactionId(9000002L);
+            yesterdayTxn.setTransactionId(String.valueOf(9000002L));
             yesterdayTxn.setOriginalTimestamp(LocalDateTime.now().minusDays(1));
             dailyTransactionRepository.save(yesterdayTxn);
 
@@ -1467,8 +1473,8 @@ public class DailyTransactionJobTest {
 
             for (int i = 0; i < productionVolume; i++) {
                 DailyTransaction txn = createValidDailyTransaction();
-                txn.setTransactionId(9000001L + i);
-                txn.setAmount(new BigDecimal("25.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
+                txn.setTransactionId(String.valueOf(9000001L + i));
+                txn.setTransactionAmount(new BigDecimal("25.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
                 if (i % 100 == 0) {
                     dailyTransactionRepository.saveAll(List.of(txn)); // Batch save for performance
                 } else {
@@ -1517,7 +1523,7 @@ public class DailyTransactionJobTest {
             int memoryTestVolume = 25000;
             for (int i = 0; i < memoryTestVolume; i++) {
                 DailyTransaction txn = createValidDailyTransaction();
-                txn.setTransactionId(9000001L + i);
+                txn.setTransactionId(String.valueOf(9000001L + i));
                 dailyTransactionRepository.save(txn);
             }
 
@@ -1566,7 +1572,7 @@ public class DailyTransactionJobTest {
 
             // Transaction that tests edge of credit limit
             DailyTransaction edgeTxn = createValidDailyTransaction();
-            edgeTxn.setAmount(new BigDecimal("0.03").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
+            edgeTxn.setTransactionAmount(new BigDecimal("0.03").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
             dailyTransactionRepository.save(edgeTxn);
 
             JobParameters jobParameters = new JobParametersBuilder()
@@ -1601,7 +1607,7 @@ public class DailyTransactionJobTest {
         void testZeroAmountTransactionHandling() throws Exception {
             // Arrange: Create zero amount transaction
             DailyTransaction zeroTxn = createValidDailyTransaction();
-            zeroTxn.setAmount(BigDecimal.ZERO.setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
+            zeroTxn.setTransactionAmount(BigDecimal.ZERO.setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
             dailyTransactionRepository.save(zeroTxn);
 
             Account originalAccount = accountRepository.findById(1000001L).orElse(null);
@@ -1636,9 +1642,9 @@ public class DailyTransactionJobTest {
             
             for (int i = 0; i < validTypeCodes.length; i++) {
                 DailyTransaction txn = createValidDailyTransaction();
-                txn.setTransactionId(9000001L + i);
-                txn.setTransactionType(validTypeCodes[i]);
-                txn.setAmount(new BigDecimal("10.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
+                txn.setTransactionId(String.valueOf(9000001L + i));
+                txn.setTransactionTypeCode(validTypeCodes[i]);
+                txn.setTransactionAmount(new BigDecimal("10.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
                 dailyTransactionRepository.save(txn);
             }
 
