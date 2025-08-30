@@ -27,8 +27,8 @@ import com.carddemo.test.AbstractBaseTest;
 import com.carddemo.test.CobolComparisonUtils;
 import com.carddemo.test.TestDataGenerator;
 import com.carddemo.test.TestConstants;
-import com.carddemo.test.categories.IntegrationTest;
-import com.carddemo.test.categories.UnitTest;
+import com.carddemo.test.IntegrationTest;
+import com.carddemo.test.UnitTest;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -44,12 +44,12 @@ import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.test.JobLauncherTestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.batch.test.context.SpringBatchTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+
+
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -57,6 +57,7 @@ import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -89,19 +90,17 @@ import java.util.stream.Collectors;
  * @version 1.0
  * @since CardDemo v1.0
  */
-@SpringBootTest
-@ContextConfiguration(classes = {TestBatchConfig.class, TestDatabaseConfig.class})
-@ActiveProfiles("test")
-@Testcontainers
+@SpringBootTest(classes = {
+    StatementGenerationJob.class,
+    TestBatchConfig.class,
+    TestDatabaseConfig.class
+})
+@SpringBatchTest
+@ActiveProfiles({"test", "batch-test"})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class StatementGenerationJobTest extends AbstractBaseTest {
 
-    // Test container for realistic database testing
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine")
-            .withDatabaseName("carddemodb")
-            .withUsername("postgres")
-            .withPassword("postgres");
+
 
     @Autowired
     private JobLauncherTestUtils jobLauncherTestUtils;
@@ -144,7 +143,7 @@ public class StatementGenerationJobTest extends AbstractBaseTest {
     private static final long RESPONSE_TIME_THRESHOLD_MS = 200L;
 
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         super.setUp();
         setupTestData();
         configureJobLauncher();
@@ -170,20 +169,18 @@ public class StatementGenerationJobTest extends AbstractBaseTest {
                 .phoneNumber1("555-123-4567")
                 .ssn("123456789")
                 .dateOfBirth(LocalDate.of(1980, 5, 15))
-                .ficoScore(750)
+                .ficoScore(BigDecimal.valueOf(750))
                 .build();
         customerRepository.save(testCustomer);
 
         // Create account data matching CVACT01Y copybook structure
         testAccount = Account.builder()
                 .accountId(1000000001L)
-                .customerId(testCustomer.getCustomerId())
                 .customer(testCustomer)
                 .currentBalance(new BigDecimal("1250.75"))
                 .creditLimit(new BigDecimal("5000.00"))
-                .activeStatus("ACTIVE")
-                .accountType("CREDIT")
-                .openDate(LocalDateTime.now().minusYears(2))
+                .activeStatus("Y")
+                .openDate(LocalDate.now().minusYears(2))
                 .build();
         accountRepository.save(testAccount);
 
@@ -266,13 +263,15 @@ public class StatementGenerationJobTest extends AbstractBaseTest {
      * Creates test card data for cross-reference testing.
      */
     private List<Card> createTestCardData() {
-        Card card = Card.builder()
-                .cardNumber("4532123456789012")
-                .accountId(testAccount.getAccountId())
-                .customerId(testCustomer.getCustomerId())
-                .expirationDate("12/25")
-                .activeStatus("ACTIVE")
-                .build();
+        Card card = new Card(
+                "4532123456789012",
+                testAccount.getAccountId(),
+                Long.valueOf(testCustomer.getCustomerId()),
+                "123",
+                "TEST CARDHOLDER",
+                LocalDate.of(2025, 12, 31),
+                "Y"
+        );
         return Arrays.asList(card);
     }
 
@@ -280,11 +279,11 @@ public class StatementGenerationJobTest extends AbstractBaseTest {
      * Creates test card cross-reference data matching XREFFILE structure.
      */
     private List<CardXref> createTestCardXrefData() {
-        CardXref xref = CardXref.builder()
-                .cardNumber("4532123456789012")
-                .customerId(testCustomer.getCustomerId())
-                .accountId(testAccount.getAccountId())
-                .build();
+        CardXref xref = new CardXref(
+                "4532123456789012",
+                Long.valueOf(testCustomer.getCustomerId()),
+                testAccount.getAccountId()
+        );
         return Arrays.asList(xref);
     }
 
@@ -317,9 +316,11 @@ public class StatementGenerationJobTest extends AbstractBaseTest {
             assertThat(jobExecution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
             assertThat(jobExecution.getExitStatus().getExitCode()).isEqualTo("COMPLETED");
             
-            // Validate processing time meets 4-hour window requirement
-            long processingTimeMs = jobExecution.getEndTime().getTime() - 
-                                  jobExecution.getStartTime().getTime();
+            // Validate processing time meets 4-hour window requirement  
+            long processingTimeMs = Duration.between(
+                jobExecution.getStartTime(), 
+                jobExecution.getEndTime()
+            ).toMillis();
             assertThat(processingTimeMs).isLessThan(BATCH_PROCESSING_WINDOW_HOURS * 3600 * 1000);
         }
 
@@ -474,11 +475,11 @@ public class StatementGenerationJobTest extends AbstractBaseTest {
             assertThat(jobExecution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
             
             // Verify cross-reference lookups worked correctly
-            CardXref foundXref = cardXrefRepository.findByCardNumber(cardNumber).stream()
+            CardXref foundXref = cardXrefRepository.findByXrefCardNum(cardNumber).stream()
                     .findFirst().orElse(null);
             assertThat(foundXref).isNotNull();
-            assertThat(foundXref.getAccountId()).isEqualTo(testAccount.getAccountId());
-            assertThat(foundXref.getCustomerId()).isEqualTo(testCustomer.getCustomerId());
+            assertThat(foundXref.getXrefAcctId()).isEqualTo(testAccount.getAccountId());
+            assertThat(foundXref.getXrefCustId()).isEqualTo(Long.valueOf(testCustomer.getCustomerId()));
         }
     }
 
@@ -906,7 +907,7 @@ public class StatementGenerationJobTest extends AbstractBaseTest {
         for (int i = 0; i < count; i++) {
             Account account = testDataGenerator.generateAccount();
             account.setAccountId((long) (2000000000L + i));
-            account.setCustomerId(testCustomer.getCustomerId());
+            account.setCustomer(testCustomer);
             accounts.add(account);
         }
         return accounts;
