@@ -84,7 +84,7 @@ class CustomerTest {
             
             // Test minimum customer ID
             customer.setCustomerId("1");
-            assertThat(customer.getCustomerId()).isEqualTo("1");
+            assertThat(customer.getCustomerId()).isEqualTo("000000001");
         }
 
         @Test
@@ -376,9 +376,9 @@ class CustomerTest {
             customer.setCustomerId("999999999");
             assertThat(customer.getCustomerId()).hasSize(9);
             
-            // Test minimum customer ID
+            // Test minimum customer ID (should be zero-padded to 9 digits)
             customer.setCustomerId("1");
-            assertThat(customer.getCustomerId()).isEqualTo("1");
+            assertThat(customer.getCustomerId()).isEqualTo("000000001");
         }
 
         @Test
