@@ -44,9 +44,6 @@ import org.springframework.batch.test.JobLauncherTestUtils;
 import org.springframework.batch.test.context.SpringBatchTest;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -110,7 +107,7 @@ import java.util.concurrent.TimeUnit;
  * @version 1.0
  * @since CardDemo v1.0
  */
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @SpringBatchTest
 @SpringJUnitConfig(classes = {TestBatchConfig.class, TestDatabaseConfig.class})
 @TestPropertySource(properties = {
@@ -120,7 +117,6 @@ import java.util.concurrent.TimeUnit;
     "logging.level.com.carddemo.batch=DEBUG",
     "logging.level.org.springframework.batch=INFO"
 })
-@Testcontainers
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @Transactional
 public class AccountProcessingJobTest {
@@ -138,11 +134,8 @@ public class AccountProcessingJobTest {
     private static final int MEDIUM_DATASET_SIZE = 1000;
     private static final int LARGE_DATASET_SIZE = 10000;
 
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine")
-            .withDatabaseName("carddemo_test")
-            .withUsername("testuser")
-            .withPassword("testpass");
+    // Using in-memory H2 database for testing (configured in TestBatchConfig)
+    private static final String TEST_DATABASE = "H2 in-memory test database";
 
     @Autowired
     private JobLauncherTestUtils jobLauncherTestUtils;
@@ -222,7 +215,7 @@ public class AccountProcessingJobTest {
         
         System.out.println("=".repeat(120));
         System.out.println("ACCOUNT PROCESSING JOB TEST SETUP - Validating CBACT01C, CBACT02C, CBACT03C Migration");
-        System.out.println("Test Database: " + postgres.getJdbcUrl());
+        System.out.println("Test Database: " + TEST_DATABASE);
         System.out.println("Test Accounts: " + testAccounts.size());
         System.out.println("Test Cards: " + testCards.size());
         System.out.println("Test Cross-References: " + testCardXrefs.size());
