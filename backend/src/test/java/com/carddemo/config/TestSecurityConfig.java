@@ -1,60 +1,75 @@
 package com.carddemo.config;
 
-import com.carddemo.entity.UserSecurity;
-import com.carddemo.repository.UserSecurityRepository;
-import com.carddemo.service.SignOnService;
-import com.carddemo.dto.SignOnResponse;
-import org.mockito.Mockito;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.config.http.SessionCreationPolicy;
-
-import java.util.Optional;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 
 /**
- * Spring Security test configuration disabling security for simplified controller testing.
+ * Test-specific Spring Security configuration class that replaces RACF authentication and authorization.
+ * Configures authentication providers, session management, and role hierarchy for testing purposes.
  * 
- * This configuration replaces production Spring Security with a permissive test configuration
- * that allows all requests without authentication, enabling focused testing of controller
- * logic without complex security setup.
- * 
- * For tests that need authenticated users, @WithMockUser annotation can be used on individual test methods.
+ * Note: This is a test-specific configuration. The main security configuration
+ * is located in com.carddemo.security.SecurityConfig for production use.
  */
-@TestConfiguration
+@Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
+@Profile("test") // Only load this configuration during testing
 public class TestSecurityConfig {
 
     /**
-     * Provides a permissive security filter chain that allows all requests without authentication.
-     * This simplifies controller testing by removing authentication requirements.
-     * Named 'springSecurityFilterChain' to match MockMvc Spring Security integration expectations.
+     * Configure the security filter chain for HTTP requests.
+     * 
+     * @param http HttpSecurity builder
+     * @return SecurityFilterChain configured for the application
+     * @throws Exception if configuration fails
      */
-    @Bean("springSecurityFilterChain")
-    @Primary
-    public SecurityFilterChain springSecurityFilterChain(HttpSecurity http) throws Exception {
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .authorizeHttpRequests(authz -> authz.anyRequest().permitAll())
+            .authorizeHttpRequests(authz -> authz
+                .requestMatchers("/actuator/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                .requestMatchers("/api/auth/signin", "/api/auth/signup").permitAll()
+                .anyRequest().authenticated()
+            )
             .csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+            .sessionManagement(session -> session
+                .maximumSessions(1)
+                .maxSessionsPreventsLogin(false)
+            );
         
         return http.build();
     }
 
+    /**
+     * Configure password encoder for COBOL compatibility.
+     * Uses NoOpPasswordEncoder for plain text passwords during migration.
+     * 
+     * @return PasswordEncoder that does no encoding
+     */
+    @Bean
+    @SuppressWarnings("deprecation")
+    public PasswordEncoder passwordEncoder() {
+        return NoOpPasswordEncoder.getInstance();
+    }
 
+    /**
+     * Configure authentication manager.
+     * 
+     * @param authConfig AuthenticationConfiguration
+     * @return AuthenticationManager
+     * @throws Exception if configuration fails
+     */
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
+        return authConfig.getAuthenticationManager();
+    }
 }

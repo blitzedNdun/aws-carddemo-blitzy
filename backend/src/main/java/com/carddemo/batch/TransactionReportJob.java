@@ -37,12 +37,20 @@ import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.support.ListItemReader;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Scope;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.io.StringWriter;
 import java.io.PrintWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 
 /**
@@ -130,10 +138,14 @@ public class TransactionReportJob {
     
     @Autowired
     private CardXrefRepository cardXrefRepository;
+    
+    @Autowired
+    private ApplicationContext applicationContext;
 
     // Instance variables for report state management
     private StringWriter reportOutput;
     private PrintWriter reportWriter;
+    private PrintWriter fileWriter;
     private int currentLineCount;
     private int currentPageNumber;
     private BigDecimal currentPageTotal;
@@ -145,6 +157,7 @@ public class TransactionReportJob {
     // Job execution context variables
     private LocalDate jobStartDate;
     private LocalDate jobEndDate;
+    private String outputDirectory;
     private JobExecution currentJobExecution;
 
     /**
@@ -223,9 +236,9 @@ public class TransactionReportJob {
             
             return new StepBuilder("transactionReportStep", jobRepository)
                 .<Transaction, EnrichedTransaction>chunk(chunkSize, transactionManager)
-                .reader(transactionReportReader())
+                .reader(applicationContext.getBean("transactionReportReader", ItemReader.class))
                 .processor(transactionReportProcessor())
-                .writer(transactionReportWriter())
+                .writer(applicationContext.getBean("transactionReportWriter", ItemWriter.class))
                 .build();
                 
         } catch (Exception e) {
@@ -263,26 +276,25 @@ public class TransactionReportJob {
      * @return ItemReader configured for date-filtered transaction retrieval
      */
     @Bean("transactionReportReader")
-    public ItemReader<Transaction> transactionReportReader() {
-        // Extract date parameters from job execution context
-        JobParameters jobParameters = getJobParameters();
-        LocalDate startDate = LocalDate.parse(
-            jobParameters.getString("start_date", LocalDate.now().minusDays(1).format(DATE_FORMATTER)),
-            DATE_FORMATTER
-        );
-        LocalDate endDate = LocalDate.parse(
-            jobParameters.getString("end_date", LocalDate.now().format(DATE_FORMATTER)),
-            DATE_FORMATTER
-        );
+    @Scope("step")
+    public ItemReader<Transaction> transactionReportReader(
+            @Value("#{jobParameters['startDate']}") String startDateParam,
+            @Value("#{jobParameters['endDate']}") String endDateParam,
+            @Value("#{jobParameters['outputDirectory']}") String outputDirParam) {
         
-        // Store dates for use in report headers
+        // Parse date parameters  
+        LocalDate startDate = LocalDate.parse(startDateParam, DATE_FORMATTER);
+        LocalDate endDate = LocalDate.parse(endDateParam, DATE_FORMATTER);
+        
+        // Store parameters for use in report headers
         this.jobStartDate = startDate;
         this.jobEndDate = endDate;
+        this.outputDirectory = outputDirParam != null ? outputDirParam : "target/output";
         
-        // Retrieve transactions using repository method
-        List<Transaction> transactions = transactionRepository.findByProcessingDateBetween(
-            startDate.atStartOfDay(), 
-            endDate.atTime(23, 59, 59, 999999999)
+        // Retrieve transactions using repository method - query by transaction_date as per tech spec
+        List<Transaction> transactions = transactionRepository.findByTransactionDateBetween(
+            startDate, 
+            endDate
         );
         
         // Create list-based ItemReader for the filtered transactions
@@ -408,7 +420,10 @@ public class TransactionReportJob {
      * @return ItemWriter configured for formatted report output generation
      */
     @Bean("transactionReportWriter")
-    public ItemWriter<EnrichedTransaction> transactionReportWriter() {
+    @Scope("step")
+    public ItemWriter<EnrichedTransaction> transactionReportWriter(
+            @Value("#{jobParameters['outputDirectory']}") String outputDirParam) {
+        this.outputDirectory = outputDirParam != null ? outputDirParam : "target/output";
         return items -> {
             try {
                 // Initialize report output if first time
@@ -481,8 +496,8 @@ public class TransactionReportJob {
         
         // Return default parameters if no job execution context available
         return new JobParametersBuilder()
-            .addString("start_date", LocalDate.now().minusDays(1).format(DATE_FORMATTER))
-            .addString("end_date", LocalDate.now().format(DATE_FORMATTER))
+            .addString("startDate", LocalDate.now().minusDays(1).format(DATE_FORMATTER))
+            .addString("endDate", LocalDate.now().format(DATE_FORMATTER))
             .toJobParameters();
     }
 
@@ -513,6 +528,18 @@ public class TransactionReportJob {
     // Private helper methods for report generation and formatting
 
     /**
+     * Helper method to write formatted line to both StringWriter and file.
+     */
+    private void writeToReport(String format, Object... args) {
+        String line = String.format(format, args);
+        reportWriter.print(line);
+        if (fileWriter != null) {
+            fileWriter.print(line);
+            fileWriter.flush(); // Ensure data is written to file immediately
+        }
+    }
+
+    /**
      * Initializes report state variables for new job execution.
      */
     private void initializeReportState() {
@@ -529,8 +556,26 @@ public class TransactionReportJob {
      * Initializes report output writers and formatting structures.
      */
     private void initializeReportOutput() {
-        this.reportOutput = new StringWriter();
-        this.reportWriter = new PrintWriter(reportOutput);
+        try {
+            // Create output directory if it doesn't exist
+            Path outputDir = Paths.get(outputDirectory);
+            Files.createDirectories(outputDir);
+            
+            // Generate report filename based on date range
+            String reportFilename = String.format("transaction_report_%s_%s.txt",
+                jobStartDate.format(DateTimeFormatter.ofPattern("yyyyMMdd")),
+                jobEndDate.format(DateTimeFormatter.ofPattern("yyyyMMdd")));
+            
+            Path reportPath = outputDir.resolve(reportFilename);
+            
+            // Initialize both StringWriter (for backward compatibility) and FileWriter
+            this.reportOutput = new StringWriter();
+            this.reportWriter = new PrintWriter(reportOutput);
+            this.fileWriter = new PrintWriter(new FileWriter(reportPath.toFile()));
+            
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to initialize report output file", e);
+        }
     }
 
     /**
@@ -539,23 +584,23 @@ public class TransactionReportJob {
      */
     private void writeReportHeaders() {
         // Report title and date range
-        reportWriter.printf("%-133s%n", REPORT_TITLE);
-        reportWriter.printf("%-133s%n", ""); // Blank line
+        writeToReport("%-133s%n", REPORT_TITLE);
+        writeToReport("%-133s%n", ""); // Blank line
         
         if (jobStartDate != null && jobEndDate != null) {
-            reportWriter.printf("Reporting from %s to %s%n", 
+            writeToReport("Reporting from %s to %s%n", 
                 jobStartDate.format(DATE_FORMATTER),
                 jobEndDate.format(DATE_FORMATTER));
         }
         
-        reportWriter.printf("%-133s%n", ""); // Blank line
+        writeToReport("%-133s%n", ""); // Blank line
         
         // Column headers (matching COBOL TRANSACTION-HEADER-1 and TRANSACTION-HEADER-2)
-        reportWriter.printf("%-16s %-11s %-2s %-50s %-4s %-25s %-10s %12s%n",
+        writeToReport("%-16s %-11s %-2s %-50s %-4s %-25s %-10s %12s%n",
             "TRANSACTION ID", "ACCOUNT ID", "TY", "TYPE DESCRIPTION", 
             "CAT", "CATEGORY DESCRIPTION", "SOURCE", "AMOUNT");
         
-        reportWriter.printf("%-16s %-11s %-2s %-50s %-4s %-25s %-10s %12s%n",
+        writeToReport("%-16s %-11s %-2s %-50s %-4s %-25s %-10s %12s%n",
             "================", "===========", "==", "==================================================",
             "====", "=========================", "==========", "============");
         
@@ -569,7 +614,7 @@ public class TransactionReportJob {
     private void writeTransactionDetail(EnrichedTransaction enrichedTransaction) {
         Transaction transaction = enrichedTransaction.getTransaction();
         
-        reportWriter.printf("%-16s %-11s %-2s %-50s %-4s %-25s %-10s %12.2f%n",
+        writeToReport("%-16s %-11s %-2s %-50s %-4s %-25s %-10s %12.2f%n",
             transaction.getTransactionId() != null ? String.format("%016d", transaction.getTransactionId()) : "",
             enrichedTransaction.getAccountId() != null ? String.format("%011d", enrichedTransaction.getAccountId()) : "",
             transaction.getTransactionTypeCode() != null ? transaction.getTransactionTypeCode() : "",
@@ -585,9 +630,8 @@ public class TransactionReportJob {
      * Equivalent to COBOL 1110-WRITE-PAGE-TOTALS procedure.
      */
     private void writePageTotals() {
-        reportWriter.printf("%-121s %12.2f%n", "PAGE TOTAL:", currentPageTotal);
-        reportWriter.printf("%-133s%n", ""); // Blank line
-        grandTotal = grandTotal.add(currentPageTotal);
+        writeToReport("%-121s %12.2f%n", "PAGE TOTAL:", currentPageTotal);
+        writeToReport("%-133s%n", ""); // Blank line
         currentPageTotal = BigDecimal.ZERO;
         currentPageNumber++;
     }
@@ -597,8 +641,8 @@ public class TransactionReportJob {
      * Equivalent to COBOL 1120-WRITE-ACCOUNT-TOTALS procedure.
      */
     private void writeAccountTotals() {
-        reportWriter.printf("%-121s %12.2f%n", "ACCOUNT TOTAL:", currentAccountTotal);
-        reportWriter.printf("%-133s%n", ""); // Blank line  
+        writeToReport("%-121s %12.2f%n", "ACCOUNT TOTAL:", currentAccountTotal);
+        writeToReport("%-133s%n", ""); // Blank line  
         currentAccountTotal = BigDecimal.ZERO;
     }
 
@@ -607,7 +651,7 @@ public class TransactionReportJob {
      * Equivalent to COBOL 1110-WRITE-GRAND-TOTALS procedure.
      */
     private void writeGrandTotals() {
-        reportWriter.printf("%-121s %12.2f%n", "GRAND TOTAL:", grandTotal);
+        writeToReport("%-121s %12.2f%n", "GRAND TOTAL:", grandTotal);
     }
 
     /**
@@ -628,10 +672,14 @@ public class TransactionReportJob {
         // Write grand totals
         writeGrandTotals();
         
-        // Close the report writer
+        // Close both report writers
         if (reportWriter != null) {
             reportWriter.flush();
             reportWriter.close();
+        }
+        if (fileWriter != null) {
+            fileWriter.flush();
+            fileWriter.close();
         }
     }
 
