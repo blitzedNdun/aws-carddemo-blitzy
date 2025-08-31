@@ -360,8 +360,8 @@ public class CustomerFileProcessorServiceTest {
         assertThatCode(() -> customerFileProcessorService.custFileGetNext())
             .doesNotThrowAnyException();
         
-        // Verify: Customer data accessible and properly formatted
-        assertThat(testCustomer.getCustomerId()).isEqualTo("1");
+        // Verify: Customer data accessible and properly formatted (COBOL zero-padded)
+        assertThat(testCustomer.getCustomerId()).isEqualTo("000000001");
         assertThat(testCustomer.getFirstName()).isEqualTo("John");
         assertThat(testCustomer.getLastName()).isEqualTo("Doe");
         assertThat(testCustomer.getPhoneNumber1()).isEqualTo("555-123-4567");
@@ -452,10 +452,10 @@ public class CustomerFileProcessorServiceTest {
         verify(customerRepository, times(1)).findAll();
         verify(customerRepository, times(1)).flush();
         
-        // Verify: All customers would be processed in order
-        assertThat(orderedCustomers.get(0).getCustomerId()).isEqualTo("1");
-        assertThat(orderedCustomers.get(1).getCustomerId()).isEqualTo("2");
-        assertThat(orderedCustomers.get(2).getCustomerId()).isEqualTo("3");
+        // Verify: All customers would be processed in order (COBOL zero-padded format)
+        assertThat(orderedCustomers.get(0).getCustomerId()).isEqualTo("000000001");
+        assertThat(orderedCustomers.get(1).getCustomerId()).isEqualTo("000000002");
+        assertThat(orderedCustomers.get(2).getCustomerId()).isEqualTo("000000003");
     }
 
     /**
