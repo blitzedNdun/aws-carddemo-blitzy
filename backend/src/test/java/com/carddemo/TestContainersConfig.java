@@ -31,6 +31,9 @@ import org.slf4j.Logger;
  * integration and comprehensive integration testing approach.
  */
 @TestConfiguration
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+    name = "testcontainers.enabled", havingValue = "true", matchIfMissing = false
+)
 public class TestContainersConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(TestContainersConfig.class);
