@@ -188,7 +188,7 @@ public class DataMigrationJob {
                 .<String, Customer>chunk(CHUNK_SIZE, transactionManager)
                 .reader(customerFileReader())
                 .processor(customerProcessor())
-                .writer(customerWriter())
+                .writer(customerMigrationWriter())
                 .build();
     }
     
@@ -267,7 +267,7 @@ public class DataMigrationJob {
      * Customer JPA writer - persists Customer entities to PostgreSQL.
      */
     @Bean
-    public JpaItemWriter<Customer> customerWriter() {
+    public JpaItemWriter<Customer> customerMigrationWriter() {
         return new JpaItemWriterBuilder<Customer>()
                 .entityManagerFactory(entityManagerFactory)
                 .build();
@@ -287,8 +287,8 @@ public class DataMigrationJob {
         return new StepBuilder("accountMigrationStep", jobRepository)
                 .<String, Account>chunk(CHUNK_SIZE, transactionManager)
                 .reader(accountFileReader())
-                .processor(accountProcessor())
-                .writer(accountWriter())
+                .processor(accountMigrationProcessor())
+                .writer(accountMigrationWriter())
                 .build();
     }
     
@@ -309,7 +309,7 @@ public class DataMigrationJob {
      * Account processor - converts COBOL account records to JPA entities.
      */
     @Bean
-    public ItemProcessor<String, Account> accountProcessor() {
+    public ItemProcessor<String, Account> accountMigrationProcessor() {
         return new ItemProcessor<String, Account>() {
             @Override
             public Account process(String line) throws Exception {
@@ -365,7 +365,7 @@ public class DataMigrationJob {
      * Account JPA writer - persists Account entities to PostgreSQL.
      */
     @Bean
-    public JpaItemWriter<Account> accountWriter() {
+    public JpaItemWriter<Account> accountMigrationWriter() {
         return new JpaItemWriterBuilder<Account>()
                 .entityManagerFactory(entityManagerFactory)
                 .build();
@@ -385,8 +385,8 @@ public class DataMigrationJob {
         return new StepBuilder("cardMigrationStep", jobRepository)
                 .<String, Card>chunk(CHUNK_SIZE, transactionManager)
                 .reader(cardFileReader())
-                .processor(cardProcessor())
-                .writer(cardWriter())
+                .processor(cardMigrationProcessor())
+                .writer(cardMigrationWriter())
                 .build();
     }
     
@@ -407,7 +407,7 @@ public class DataMigrationJob {
      * Card processor - converts COBOL card records to JPA entities.
      */
     @Bean
-    public ItemProcessor<String, Card> cardProcessor() {
+    public ItemProcessor<String, Card> cardMigrationProcessor() {
         return new ItemProcessor<String, Card>() {
             @Override
             public Card process(String line) throws Exception {
@@ -446,7 +446,7 @@ public class DataMigrationJob {
      * Card JPA writer - persists Card entities to PostgreSQL.
      */
     @Bean
-    public JpaItemWriter<Card> cardWriter() {
+    public JpaItemWriter<Card> cardMigrationWriter() {
         return new JpaItemWriterBuilder<Card>()
                 .entityManagerFactory(entityManagerFactory)
                 .build();
@@ -466,8 +466,8 @@ public class DataMigrationJob {
         return new StepBuilder("transactionMigrationStep", jobRepository)
                 .<String, Transaction>chunk(CHUNK_SIZE, transactionManager)
                 .reader(transactionFileReader())
-                .processor(transactionProcessor())
-                .writer(transactionWriter())
+                .processor(transactionMigrationProcessor())
+                .writer(transactionMigrationWriter())
                 .build();
     }
     
@@ -488,7 +488,7 @@ public class DataMigrationJob {
      * Transaction processor - converts COBOL transaction records to JPA entities.
      */
     @Bean
-    public ItemProcessor<String, Transaction> transactionProcessor() {
+    public ItemProcessor<String, Transaction> transactionMigrationProcessor() {
         return new ItemProcessor<String, Transaction>() {
             @Override
             public Transaction process(String line) throws Exception {
@@ -528,7 +528,7 @@ public class DataMigrationJob {
      * Transaction JPA writer - persists Transaction entities to PostgreSQL.
      */
     @Bean
-    public JpaItemWriter<Transaction> transactionWriter() {
+    public JpaItemWriter<Transaction> transactionMigrationWriter() {
         return new JpaItemWriterBuilder<Transaction>()
                 .entityManagerFactory(entityManagerFactory)
                 .build();
