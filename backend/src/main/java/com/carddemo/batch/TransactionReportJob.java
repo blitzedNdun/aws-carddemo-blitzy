@@ -183,8 +183,8 @@ public class TransactionReportJob {
      * 
      * @return Job configured transaction report job for execution by Spring Batch infrastructure
      */
-    @Bean("transactionReportBatchJob")
-    public Job transactionBatchJob() {
+    @Bean("reportGenerationJob")
+    public Job reportGenerationJob() {
         try {
             // Initialize report state variables
             initializeReportState();
