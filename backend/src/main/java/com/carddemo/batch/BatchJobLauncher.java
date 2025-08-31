@@ -21,6 +21,8 @@ import com.carddemo.dto.ApiRequest;
 import com.carddemo.dto.ApiResponse;
 import com.carddemo.dto.PageResponse;
 import com.carddemo.dto.Message;
+import com.carddemo.dto.ResponseStatus;
+import com.carddemo.dto.MessageLevel;
 
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.batch.core.launch.JobOperator;
@@ -59,6 +61,7 @@ import java.util.concurrent.CompletableFuture;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDate;
+import java.time.Duration;
 import java.math.BigDecimal;
 
 import org.slf4j.Logger;
@@ -256,7 +259,7 @@ public class BatchJobLauncher {
             responseData.put("jobInstanceId", jobExecution.getJobInstance().getId());
             
             response.setResponseData(responseData);
-            response.setSuccess(true);
+            response.setStatus(ResponseStatus.SUCCESS);
             response.getMessages().add(Message.info("Job launched successfully: " + jobName));
             
             logger.info("Successfully launched job: {} with execution ID: {}", 
@@ -266,9 +269,9 @@ public class BatchJobLauncher {
             
         } catch (BatchProcessingException e) {
             logger.error("Batch processing error during job launch: {}", e.getMessage());
-            response.setSuccess(false);
-            response.setReturnCode("BATCH_ERROR");
-            response.getMessages().add(new Message("ERROR", e.getMessage()));
+            response.setStatus(ResponseStatus.ERROR);
+            response.setTransactionCode("BATCH_ERROR");
+            response.getMessages().add(Message.error(e.getMessage()));
             
             if (e.isRetryable()) {
                 return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
@@ -278,8 +281,8 @@ public class BatchJobLauncher {
             
         } catch (Exception e) {
             logger.error("Unexpected error during job launch", e);
-            response.setSuccess(false);
-            response.setReturnCode("SYSTEM_ERROR");
+            response.setStatus(ResponseStatus.ERROR);
+            response.setTransactionCode("SYSTEM_ERROR");
             response.getMessages().add(Message.error("System error occurred during job launch"));
             
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
@@ -340,9 +343,10 @@ public class BatchJobLauncher {
             
             // Calculate duration if job has started
             if (jobExecution.getStartTime() != null) {
-                Date endTime = jobExecution.getEndTime() != null ? 
-                    jobExecution.getEndTime() : new Date();
-                long durationMs = endTime.getTime() - jobExecution.getStartTime().getTime();
+                LocalDateTime startTime = jobExecution.getStartTime();
+                LocalDateTime endTime = jobExecution.getEndTime() != null ? 
+                    jobExecution.getEndTime() : LocalDateTime.now();
+                long durationMs = java.time.Duration.between(startTime, endTime).toMillis();
                 statusData.put("durationMillis", durationMs);
                 statusData.put("durationSeconds", durationMs / 1000);
             }
@@ -397,7 +401,7 @@ public class BatchJobLauncher {
             }
             
             response.setResponseData(statusData);
-            response.setSuccess(true);
+            response.setStatus(ResponseStatus.SUCCESS);
             response.getMessages().add(Message.info(
                 "Job status retrieved successfully for execution: " + jobExecutionId));
             
@@ -407,16 +411,16 @@ public class BatchJobLauncher {
             
         } catch (BatchProcessingException e) {
             logger.error("Batch processing error during status retrieval: {}", e.getMessage());
-            response.setSuccess(false);
-            response.setReturnCode("BATCH_ERROR");
+            response.setStatus(ResponseStatus.ERROR);
+            response.setTransactionCode("BATCH_ERROR");
             response.getMessages().add(Message.error(e.getMessage()));
             
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
             
         } catch (Exception e) {
             logger.error("Unexpected error during job status retrieval", e);
-            response.setSuccess(false);
-            response.setReturnCode("SYSTEM_ERROR");
+            response.setStatus(ResponseStatus.ERROR);
+            response.setTransactionCode("SYSTEM_ERROR");
             response.getMessages().add(Message.error("System error occurred during status retrieval"));
             
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
@@ -476,19 +480,24 @@ public class BatchJobLauncher {
             
             if (forceStop) {
                 // Force stop - immediate termination
-                boolean stopped = jobOperator.abandon(jobExecutionId);
-                if (!stopped) {
+                try {
+                    jobOperator.abandon(jobExecutionId);
+                    logger.info("Job execution {} abandoned successfully", jobExecutionId);
+                } catch (Exception e) {
                     // Try operator stop if abandon fails
-                    stopped = jobOperator.stop(jobExecutionId);
-                }
-                
-                if (!stopped) {
-                    throw new BatchProcessingException("Failed to force stop job execution: " + jobExecutionId, true);
+                    try {
+                        jobOperator.stop(jobExecutionId);
+                        logger.info("Job execution {} stopped after abandon failure", jobExecutionId);
+                    } catch (Exception stopException) {
+                        throw new BatchProcessingException("Failed to force stop job execution: " + jobExecutionId, true);
+                    }
                 }
             } else {
                 // Graceful stop - let current chunk complete
-                boolean stopped = jobOperator.stop(jobExecutionId);
-                if (!stopped) {
+                try {
+                    jobOperator.stop(jobExecutionId);
+                    logger.info("Job execution {} stopped gracefully", jobExecutionId);
+                } catch (Exception e) {
                     throw new BatchProcessingException("Failed to stop job execution: " + jobExecutionId, true);
                 }
             }
@@ -507,7 +516,7 @@ public class BatchJobLauncher {
             responseData.put("stopTime", new Date());
             
             response.setResponseData(responseData);
-            response.setSuccess(true);
+            response.setStatus(ResponseStatus.SUCCESS);
             response.getMessages().add(Message.info(
                 "Job stop operation completed for execution: " + jobExecutionId));
             
@@ -517,8 +526,8 @@ public class BatchJobLauncher {
             
         } catch (BatchProcessingException e) {
             logger.error("Batch processing error during job stop: {}", e.getMessage());
-            response.setSuccess(false);
-            response.setReturnCode("BATCH_ERROR");
+            response.setStatus(ResponseStatus.ERROR);
+            response.setTransactionCode("BATCH_ERROR");
             response.getMessages().add(Message.error(e.getMessage()));
             
             if (e.isRetryable()) {
@@ -530,16 +539,16 @@ public class BatchJobLauncher {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             logger.error("Thread interrupted during job stop operation", e);
-            response.setSuccess(false);
-            response.setReturnCode("INTERRUPTED_ERROR");
+            response.setStatus(ResponseStatus.ERROR);
+            response.setTransactionCode("INTERRUPTED_ERROR");
             response.getMessages().add(Message.error("Job stop operation was interrupted"));
             
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
             
         } catch (Exception e) {
             logger.error("Unexpected error during job stop operation", e);
-            response.setSuccess(false);
-            response.setReturnCode("SYSTEM_ERROR");
+            response.setStatus(ResponseStatus.ERROR);
+            response.setTransactionCode("SYSTEM_ERROR");
             response.getMessages().add(Message.error("System error occurred during job stop"));
             
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
@@ -609,7 +618,18 @@ public class BatchJobLauncher {
             originalExecution.getJobParameters().getParameters().forEach((key, parameter) -> {
                 // Skip run.id parameter as it will be auto-generated for restart
                 if (!"run.id".equals(key)) {
-                    parametersBuilder.addParameter(key, parameter);
+                    Object value = parameter.getValue();
+                    if (value instanceof String) {
+                        parametersBuilder.addString(key, (String) value);
+                    } else if (value instanceof Long) {
+                        parametersBuilder.addLong(key, (Long) value);
+                    } else if (value instanceof Date) {
+                        parametersBuilder.addDate(key, (Date) value);
+                    } else if (value instanceof Double) {
+                        parametersBuilder.addDouble(key, (Double) value);
+                    } else {
+                        parametersBuilder.addString(key, value.toString());
+                    }
                 }
             });
             
@@ -659,7 +679,7 @@ public class BatchJobLauncher {
             responseData.put("restartParameters", restartParams);
             
             response.setResponseData(responseData);
-            response.setSuccess(true);
+            response.setStatus(ResponseStatus.SUCCESS);
             response.getMessages().add(Message.info(
                 "Job restarted successfully. Original execution: " + jobExecutionId + 
                 ", Restart execution: " + restartExecution.getId()));
@@ -671,8 +691,8 @@ public class BatchJobLauncher {
             
         } catch (BatchProcessingException e) {
             logger.error("Batch processing error during job restart: {}", e.getMessage());
-            response.setSuccess(false);
-            response.setReturnCode("BATCH_ERROR");
+            response.setStatus(ResponseStatus.ERROR);
+            response.setTransactionCode("BATCH_ERROR");
             response.getMessages().add(Message.error(e.getMessage()));
             
             if (e.isRetryable()) {
@@ -683,8 +703,8 @@ public class BatchJobLauncher {
             
         } catch (Exception e) {
             logger.error("Unexpected error during job restart operation", e);
-            response.setSuccess(false);
-            response.setReturnCode("SYSTEM_ERROR");
+            response.setStatus(ResponseStatus.ERROR);
+            response.setTransactionCode("SYSTEM_ERROR");
             response.getMessages().add(Message.error("System error occurred during job restart"));
             
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
@@ -785,7 +805,9 @@ public class BatchJobLauncher {
                         
                         // Calculate duration if completed
                         if (execution.getStartTime() != null && execution.getEndTime() != null) {
-                            long durationMs = execution.getEndTime().getTime() - execution.getStartTime().getTime();
+                            LocalDateTime startTime = execution.getStartTime();
+                            LocalDateTime endTime = execution.getEndTime();
+                            long durationMs = java.time.Duration.between(startTime, endTime).toMillis();
                             executionData.put("durationMillis", durationMs);
                         }
                         
@@ -811,8 +833,8 @@ public class BatchJobLauncher {
             
             // Sort by create time descending (newest first)
             allExecutions.sort((a, b) -> {
-                Date dateA = (Date) a.get("createTime");
-                Date dateB = (Date) b.get("createTime");
+                LocalDateTime dateA = (LocalDateTime) a.get("createTime");
+                LocalDateTime dateB = (LocalDateTime) b.get("createTime");
                 if (dateA == null && dateB == null) return 0;
                 if (dateA == null) return 1;
                 if (dateB == null) return -1;
@@ -831,9 +853,9 @@ public class BatchJobLauncher {
             }
             
             // Build paginated response
-            response.setItems(pageData);
-            response.setCurrentPage(page);
-            response.setPageSize(size);
+            response.setData(pageData);
+            response.setPage(page);
+            response.setSize(size);
             response.setTotalElements(totalElements);
             response.setTotalPages(totalPages);
             
@@ -846,9 +868,9 @@ public class BatchJobLauncher {
             logger.error("Batch processing error during job executions retrieval: {}", e.getMessage());
             
             PageResponse<Map<String, Object>> errorResponse = new PageResponse<>();
-            errorResponse.setItems(new ArrayList<>());
-            errorResponse.setCurrentPage(page);
-            errorResponse.setPageSize(size);
+            errorResponse.setData(new ArrayList<>());
+            errorResponse.setPage(page);
+            errorResponse.setSize(size);
             errorResponse.setTotalElements(0);
             errorResponse.setTotalPages(0);
             
@@ -858,9 +880,9 @@ public class BatchJobLauncher {
             logger.error("Unexpected error during job executions retrieval", e);
             
             PageResponse<Map<String, Object>> errorResponse = new PageResponse<>();
-            errorResponse.setItems(new ArrayList<>());
-            errorResponse.setCurrentPage(page);
-            errorResponse.setPageSize(size);
+            errorResponse.setData(new ArrayList<>());
+            errorResponse.setPage(page);
+            errorResponse.setSize(size);
             errorResponse.setTotalElements(0);
             errorResponse.setTotalPages(0);
             
@@ -931,7 +953,7 @@ public class BatchJobLauncher {
             jobsData.put("categorySummary", categorySummary);
             
             response.setResponseData(jobsData);
-            response.setSuccess(true);
+            response.setStatus(ResponseStatus.SUCCESS);
             response.getMessages().add(Message.info(
                 "Retrieved " + SUPPORTED_JOBS.size() + " available job definitions"));
             
@@ -941,8 +963,8 @@ public class BatchJobLauncher {
             
         } catch (Exception e) {
             logger.error("Unexpected error during job names retrieval", e);
-            response.setSuccess(false);
-            response.setReturnCode("SYSTEM_ERROR");
+            response.setStatus(ResponseStatus.ERROR);
+            response.setTransactionCode("SYSTEM_ERROR");
             response.getMessages().add(Message.error("System error occurred during job names retrieval"));
             
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
