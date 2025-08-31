@@ -181,7 +181,7 @@ public class MonitoringServiceTest extends BaseServiceTest {
         mockUser.setFirstName("Test");
         mockUser.setLastName("User");
         mockUser.setEmail("test.user@carddemo.com");
-        mockUser.setPhone("555-0123");
+        mockUser.setPhone("555-012-3456");
         mockUser.setDepartment("IT");
         mockUser.setUserType("U"); // U for User
         mockUser.setStatus("A"); // A for Active
@@ -201,7 +201,7 @@ public class MonitoringServiceTest extends BaseServiceTest {
         mockAdmin.setFirstName("Test");
         mockAdmin.setLastName("Admin");
         mockAdmin.setEmail("test.admin@carddemo.com");
-        mockAdmin.setPhone("555-0124");
+        mockAdmin.setPhone("555-012-4567");
         mockAdmin.setDepartment("IT");
         mockAdmin.setUserType("A"); // A for Admin
         mockAdmin.setStatus("A"); // A for Active

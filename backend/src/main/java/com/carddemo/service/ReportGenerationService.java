@@ -293,7 +293,8 @@ public class ReportGenerationService {
             if (!accounts.isEmpty()) {
                 for (var account : accounts) {
                     if (account.getCustomerId() != null) {
-                        var custAccounts = accountRepository.findByCustomerId(account.getCustomerId());
+                        Long customerId = Long.parseLong(account.getCustomerId());
+                        var custAccounts = accountRepository.findByCustomerId(customerId);
                         customerAccounts.addAll(custAccounts);
                     }
                 }

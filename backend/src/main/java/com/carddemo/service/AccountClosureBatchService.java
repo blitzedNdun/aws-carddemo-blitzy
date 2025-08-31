@@ -459,7 +459,8 @@ public class AccountClosureBatchService {
             }
             
             com.carddemo.entity.Account account = accountOpt.get();
-            Long customerId = account.getCustomerId();
+            String customerIdStr = account.getCustomerId();
+            Long customerId = customerIdStr != null ? Long.parseLong(customerIdStr) : null;
             
             // Generate customer closure confirmation notification
             com.carddemo.entity.Notification customerNotification = com.carddemo.entity.Notification.builder()

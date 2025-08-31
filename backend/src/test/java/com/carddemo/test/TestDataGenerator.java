@@ -236,7 +236,7 @@ public class TestDataGenerator {
         // Generate subscriber number
         int subscriber = random.nextInt(10000);
         
-        return String.format("%s%03d%04d", areaCode, exchange, subscriber); // Return 10 digits without dashes
+        return String.format("%s-%03d-%04d", areaCode, exchange, subscriber); // Return formatted with dashes
     }
     
     /**

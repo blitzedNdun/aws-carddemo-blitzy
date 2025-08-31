@@ -183,10 +183,40 @@ public class Card {
         this.accountId = accountId;
     }
 
-    public Long getCustomerId() {
-        return customerId;
+    /**
+     * Get customer ID as formatted string matching COBOL format.
+     * Maps Long customerId to String format expected by tests and UI.
+     * 
+     * @return customer ID as string with leading zeros (9 digits), or null if customerId is null
+     */
+    public String getCustomerId() {
+        return customerId != null ? String.format("%09d", customerId) : null;
     }
 
+    /**
+     * Set customer ID from string format, converting to Long for storage.
+     * Accepts both string and numeric formats for flexibility.
+     * 
+     * @param customerIdStr customer ID as string
+     */
+    public void setCustomerId(String customerIdStr) {
+        if (customerIdStr != null && !customerIdStr.trim().isEmpty()) {
+            try {
+                this.customerId = Long.valueOf(customerIdStr);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid customer ID format: " + customerIdStr, e);
+            }
+        } else {
+            this.customerId = null;
+        }
+    }
+
+    /**
+     * Set customer ID from Long value directly.
+     * Convenience method for internal operations.
+     * 
+     * @param customerId customer ID as Long
+     */
     public void setCustomerId(Long customerId) {
         this.customerId = customerId;
     }

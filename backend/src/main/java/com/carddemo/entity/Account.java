@@ -359,18 +359,15 @@ public class Account {
     }
     
     /**
-     * Retrieves customer ID from the associated Customer entity.
-     * Provides convenient access to customer identification without requiring
-     * full Customer object navigation. Used for foreign key access and reporting.
+     * Get customer ID from the associated Customer entity.
+     * Returns the customer ID in the same String format as Customer.getCustomerId()
+     * to maintain consistency across entities for tests and UI components.
      * 
-     * @return customer ID if customer relationship exists, null otherwise
+     * @return customer ID as formatted string (9 digits with leading zeros) if relationship exists, null otherwise
      */
-    public Long getCustomerId() {
+    public String getCustomerId() {
         if (customer != null) {
-            String customerIdStr = customer.getCustomerId();
-            if (customerIdStr != null) {
-                return Long.valueOf(customerIdStr);
-            }
+            return customer.getCustomerId(); // Already returns formatted String
         }
         return null;
     }

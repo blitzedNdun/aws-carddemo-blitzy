@@ -241,7 +241,7 @@ public abstract class BaseServiceTest {
             .withName("John Doe")
             .withSSN("***-**-1234")  // Masked for security
             .withDateOfBirth(LocalDate.of(1985, 5, 15))
-            .withPhone("555-0123")
+            .withPhone("555-012-3456")
             .build();
         
         // Validate COBOL field format compliance

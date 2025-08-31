@@ -130,7 +130,7 @@ public class TransactionTest extends AbstractBaseTest implements UnitTest {
         mockAccount = mock(Account.class);
         when(mockAccount.getAccountId()).thenReturn(TestConstants.TEST_ACCOUNT_ID);
         when(mockAccount.getCurrentBalance()).thenReturn(new BigDecimal("1500.00"));
-        when(mockAccount.getCustomerId()).thenReturn(12345L);
+        when(mockAccount.getCustomerId()).thenReturn("000012345");
         
         // Mock Card entity with required getter methods  
         mockCard = mock(Card.class);

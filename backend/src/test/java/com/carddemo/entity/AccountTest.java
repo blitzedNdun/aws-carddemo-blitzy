@@ -569,7 +569,7 @@ public class AccountTest extends AbstractBaseTest implements UnitTest {
     public void testEntityRelationshipsWithCustomerAndCard() throws Exception {
         // Test Customer relationship (@ManyToOne)
         assertThat(testAccount.getCustomer()).isNotNull();
-        assertThat(testAccount.getCustomer().getCustomerId()).isEqualTo("1");  // getCustomerId() returns String for test compatibility
+        assertThat(testAccount.getCustomer().getCustomerId()).isEqualTo("000000001");  // getCustomerId() returns zero-padded 9-digit String
         assertThat(testAccount.getCustomer().getFirstName()).isEqualTo("TEST");
         assertThat(testAccount.getCustomer().getLastName()).isEqualTo("CUSTOMER");
         
@@ -598,7 +598,7 @@ public class AccountTest extends AbstractBaseTest implements UnitTest {
         
         // Test getCustomerId() convenience method - Account returns Long, Customer returns String
         assertThat(testAccount.getCustomerId()).isEqualTo(1L);  // Account.getCustomerId() returns Long
-        assertThat(testCustomer.getCustomerId()).isEqualTo("1"); // Customer.getCustomerId() returns String
+        assertThat(testCustomer.getCustomerId()).isEqualTo("000000001"); // Customer.getCustomerId() returns zero-padded 9-digit String
         
         // Test Card relationship through accountId foreign key
         assertThat(testCard.getAccountId()).isEqualTo(testAccount.getAccountId());

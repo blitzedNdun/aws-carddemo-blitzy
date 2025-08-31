@@ -307,7 +307,8 @@ public final class ValidationTestUtils {
     public static void validateCrossFieldRules(Account account, Customer customer) {
         // Validate customer and account relationship
         if (account != null && customer != null) {
-            Long accountCustomerId = account.getCustomerId();
+            String accountCustomerIdStr = account.getCustomerId();
+            Long accountCustomerId = accountCustomerIdStr != null ? Long.parseLong(accountCustomerIdStr) : null;
             Long customerId = Long.valueOf(customer.getCustomerId());
             
             if (accountCustomerId != null && customerId != null && !accountCustomerId.equals(customerId)) {

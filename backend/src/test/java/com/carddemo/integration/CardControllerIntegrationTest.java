@@ -354,7 +354,7 @@ public class CardControllerIntegrationTest extends BaseIntegrationTest {
         
         try {
             // Test cross-reference retrieval
-            CardXref retrievedXref = performCardXrefLookup(testCard.getCardNumber(), testCard.getCustomerId(), String.valueOf(testCard.getAccountId()));
+            CardXref retrievedXref = performCardXrefLookup(testCard.getCardNumber(), Long.parseLong(testCard.getCustomerId()), String.valueOf(testCard.getAccountId()));
             
             // Validate cross-reference data integrity
             assertThat(retrievedXref.getXrefCardNum())
@@ -708,7 +708,7 @@ public class CardControllerIntegrationTest extends BaseIntegrationTest {
     private CardXref createTestCardXref(Card card) {
         CardXref xref = new CardXref();
         xref.setXrefCardNum(card.getCardNumber());
-        xref.setXrefCustId(card.getCustomerId());
+        xref.setXrefCustId(Long.parseLong(card.getCustomerId()));
         xref.setXrefAcctId(card.getAccountId());
         return xref;
     }

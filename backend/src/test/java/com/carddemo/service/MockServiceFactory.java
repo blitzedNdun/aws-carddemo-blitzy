@@ -682,7 +682,7 @@ public class MockServiceFactory {
         customer.setFirstName("Jane");
         customer.setLastName("Smith");
         customer.setSsn("***-**-1234");
-        customer.setPhoneNumber1("555-0123");
+        customer.setPhoneNumber1("555-012-3456");
         customer.setDateOfBirth(LocalDate.of(1985, 5, 15));
         return customer;
     }

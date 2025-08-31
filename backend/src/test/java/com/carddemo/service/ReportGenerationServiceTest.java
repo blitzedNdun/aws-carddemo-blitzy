@@ -903,7 +903,7 @@ public class ReportGenerationServiceTest {
             .lastName("Doe")
             .ssn("123456789")
             .dateOfBirth(LocalDate.of(1980, 1, 1))
-            .phoneNumber1("555-1234")
+            .phoneNumber1("555-123-4567")
             .build();
     }
 

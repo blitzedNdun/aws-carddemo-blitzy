@@ -259,7 +259,7 @@ class AccountViewServiceTest {
             // Create CardXref for cross-reference lookup (COBOL 9200-GETCARDXREF-BYACCT)
             CardXref testCardXref = new CardXref();
             testCardXref.setXrefAcctId(Long.parseLong(accountId));
-            testCardXref.setXrefCustId(testAccount.getCustomerId());
+            testCardXref.setXrefCustId(Long.parseLong(testAccount.getCustomerId()));
             testCardXref.setXrefCardNum("1234567890123456");
 
             // Create a simple Card for testing
@@ -270,7 +270,7 @@ class AccountViewServiceTest {
 
             when(cardXrefRepository.findByXrefAcctId(Long.parseLong(accountId))).thenReturn(Arrays.asList(testCardXref));
             when(accountRepository.findById(Long.parseLong(accountId))).thenReturn(Optional.of(testAccount));
-            when(customerRepository.findById(testAccount.getCustomerId())).thenReturn(Optional.of(testCustomer));
+            when(customerRepository.findById(Long.parseLong(testAccount.getCustomerId()))).thenReturn(Optional.of(testCustomer));
 
             // When: Execute detailed account retrieval
             AccountViewResponse result = accountViewService.viewAccount(accountId);
@@ -283,7 +283,7 @@ class AccountViewServiceTest {
             // Verify all repository calls made (simulates complete COBOL file chain)
             verify(cardXrefRepository).findByXrefAcctId(Long.parseLong(accountId));
             verify(accountRepository).findById(Long.parseLong(accountId));
-            verify(customerRepository).findById(testAccount.getCustomerId());
+            verify(customerRepository).findById(Long.parseLong(testAccount.getCustomerId()));
         }
     }
 
@@ -398,11 +398,11 @@ class AccountViewServiceTest {
             // Create CardXref for cross-reference lookup
             CardXref testCardXref = new CardXref();
             testCardXref.setXrefAcctId(Long.parseLong(accountId));
-            testCardXref.setXrefCustId(testAccount.getCustomerId());
+            testCardXref.setXrefCustId(Long.parseLong(testAccount.getCustomerId()));
             testCardXref.setXrefCardNum("1234567890123456");
 
             when(cardXrefRepository.findByXrefAcctId(Long.parseLong(accountId))).thenReturn(Arrays.asList(testCardXref));
-            when(customerRepository.findById(testAccount.getCustomerId())).thenReturn(Optional.of(testCustomer));
+            when(customerRepository.findById(Long.parseLong(testAccount.getCustomerId()))).thenReturn(Optional.of(testCustomer));
             when(accountRepository.findById(Long.parseLong(accountId))).thenReturn(Optional.of(testAccount));
 
             // When: Retrieve account
@@ -435,11 +435,11 @@ class AccountViewServiceTest {
             // Create CardXref for cross-reference lookup
             CardXref testCardXref = new CardXref();
             testCardXref.setXrefAcctId(Long.parseLong(accountId));
-            testCardXref.setXrefCustId(zeroBalanceAccount.getCustomerId());
+            testCardXref.setXrefCustId(Long.parseLong(zeroBalanceAccount.getCustomerId()));
             testCardXref.setXrefCardNum("1234567890123456");
 
             when(cardXrefRepository.findByXrefAcctId(Long.parseLong(accountId))).thenReturn(Arrays.asList(testCardXref));
-            when(customerRepository.findById(zeroBalanceAccount.getCustomerId())).thenReturn(Optional.of(testCustomer));
+            when(customerRepository.findById(Long.parseLong(zeroBalanceAccount.getCustomerId()))).thenReturn(Optional.of(testCustomer));
             when(accountRepository.findById(Long.parseLong(accountId))).thenReturn(Optional.of(zeroBalanceAccount));
 
             // When: Retrieve account with zero balance
@@ -531,11 +531,11 @@ class AccountViewServiceTest {
             // Create CardXref for cross-reference lookup
             CardXref testCardXref = new CardXref();
             testCardXref.setXrefAcctId(Long.parseLong(accountId));
-            testCardXref.setXrefCustId(testAccount.getCustomerId());
+            testCardXref.setXrefCustId(Long.parseLong(testAccount.getCustomerId()));
             testCardXref.setXrefCardNum("1234567890123456");
 
             when(cardXrefRepository.findByXrefAcctId(Long.parseLong(accountId))).thenReturn(Arrays.asList(testCardXref));
-            when(customerRepository.findById(testAccount.getCustomerId())).thenReturn(Optional.of(testCustomer));
+            when(customerRepository.findById(Long.parseLong(testAccount.getCustomerId()))).thenReturn(Optional.of(testCustomer));
             when(accountRepository.findById(Long.parseLong(accountId))).thenReturn(Optional.of(testAccount));
 
             // When: Retrieve account

@@ -106,8 +106,9 @@ public class AccountService {
             logger.debug("Retrieved account data for account ID: {}", accountIdStr);
             
             // Read customer data (replicates READ CUSTDAT from COACTVWC.cbl)
-            // Customer ID is already Long type from Account entity
-            Long customerId = account.getCustomerId();
+            // Customer ID retrieved from Account entity as String, convert to Long for repository query
+            String customerIdStr = account.getCustomerId();
+            Long customerId = customerIdStr != null ? Long.parseLong(customerIdStr) : null;
             Optional<Customer> customerOpt = customerRepository.findById(customerId);
             if (customerOpt.isEmpty()) {
                 logger.warn("Customer not found for account {}: {}", accountIdStr, customerId);

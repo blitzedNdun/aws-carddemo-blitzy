@@ -338,16 +338,20 @@ public class StatementGenerationJob {
      * @return Customer entity or null if not found
      */
     private Customer getCustomerForAccount(Account account) {
-        Long customerId = account.getCustomerId();
+        String customerIdStr = account.getCustomerId();
+        if (customerIdStr == null) {
+            return null;
+        }
+        Long customerId = Long.parseLong(customerIdStr);
         if (customerId == null) {
             logger.warn("No customer ID found for account: {}", account.getAccountId());
             return null;
         }
         
-        String customerIdStr = String.valueOf(customerId);
+        String cacheKey = String.valueOf(customerId);
         
         // Check cache first
-        Customer customer = customerCache.get(customerIdStr);
+        Customer customer = customerCache.get(cacheKey);
         if (customer != null) {
             return customer;
         }
@@ -355,7 +359,7 @@ public class StatementGenerationJob {
         // Retrieve from database using Long ID
         customer = customerRepository.findById(customerId).orElse(null);
         if (customer != null) {
-            customerCache.put(customerIdStr, customer);
+            customerCache.put(cacheKey, customer);
         }
         
         return customer;

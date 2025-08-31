@@ -795,11 +795,11 @@ public class AccountProcessingJobTest {
             CardXrefId xrefId = new CardXrefId();
             xrefId.setXrefCardNum(card.getCardNumber());
             xrefId.setXrefAcctId(card.getAccountId());
-            xrefId.setXrefCustId(card.getCustomerId());
+            xrefId.setXrefCustId(Long.parseLong(card.getCustomerId()));
             xref.setId(xrefId);
             xref.setXrefCardNum(card.getCardNumber());
             xref.setXrefAcctId(card.getAccountId());
-            xref.setXrefCustId(card.getCustomerId());
+            xref.setXrefCustId(Long.parseLong(card.getCustomerId()));
             testCardXrefs.add(xref);
         }
     }

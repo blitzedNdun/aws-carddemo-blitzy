@@ -918,7 +918,8 @@ public class AccountRepositoryTest {
             createdTestAccounts.add(savedAccount);
             
             // When: Navigating relationships
-            Long retrievedCustomerId = savedAccount.getCustomerId();
+            String retrievedCustomerIdStr = savedAccount.getCustomerId();
+            Long retrievedCustomerId = retrievedCustomerIdStr != null ? Long.parseLong(retrievedCustomerIdStr) : null;
             
             // Then: Relationship navigation works correctly
             assertThat(retrievedCustomerId).isEqualTo(Long.valueOf(savedCustomer.getCustomerId()));

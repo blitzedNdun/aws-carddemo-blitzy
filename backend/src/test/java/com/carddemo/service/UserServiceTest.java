@@ -100,7 +100,7 @@ class UserServiceTest {
         testUser.setLastName("Doe");
         testUser.setEmail("john.doe@carddemo.com");
         testUser.setDepartment("IT");
-        testUser.setPhone("555-1234");
+        testUser.setPhone("555-123-4567");
         testUser.setStatus("A"); // A=Active
         testUser.setCreatedDate(LocalDateTime.now().minusDays(30));
         testUser.setUpdatedDate(LocalDateTime.now().minusDays(1));
