@@ -236,7 +236,7 @@ class AccountViewServiceTest {
             // Then: Verify complete data retrieval chain
             assertThat(result).isNotNull();
             assertThat(result.getAccountId()).isEqualTo(accountId);
-            assertThat(result.getCustomerId()).isEqualTo("98765");
+            assertThat(result.getCustomerId()).isEqualTo("000098765");
             assertThat(result.getCurrentBalance()).isEqualTo(new BigDecimal("1250.75"));
             assertThat(result.getCreditLimit()).isEqualTo(new BigDecimal("5000.00"));
 

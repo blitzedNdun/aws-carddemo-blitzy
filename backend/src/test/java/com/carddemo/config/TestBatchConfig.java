@@ -24,6 +24,14 @@ import org.springframework.batch.test.JobRepositoryTestUtils;
 import org.springframework.batch.test.JobLauncherTestUtils;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.explore.JobExplorer;
+import org.springframework.batch.core.explore.support.JobExplorerFactoryBean;
+import org.springframework.batch.core.launch.JobOperator;
+import org.springframework.batch.core.launch.support.SimpleJobOperator;
+import org.springframework.batch.core.configuration.JobLocator;
+import org.springframework.batch.core.configuration.ListableJobLocator;
+import org.springframework.batch.core.configuration.support.JobRegistryBeanPostProcessor;
+import org.springframework.batch.core.configuration.support.MapJobRegistry;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -283,6 +291,77 @@ public class TestBatchConfig {
         
         logger.debug("Test JobRepository configured with in-memory H2 database");
         return factory.getObject();
+    }
+    
+    /**
+     * Configures JobExplorer for batch job metadata exploration and status checking.
+     * 
+     * This method creates a JobExplorer instance that provides read-only access to Spring Batch
+     * job execution metadata, enabling comprehensive job status checking, execution history
+     * analysis, and job parameter validation in test scenarios.
+     * 
+     * @return JobExplorer configured with test JobRepository
+     * @throws Exception if JobExplorer initialization fails
+     */
+    @Bean("testJobExplorer")
+    @Primary
+    public JobExplorer testJobExplorer(@Qualifier("testJobRepository") JobRepository jobRepository) throws Exception {
+        logger.info("Configuring JobExplorer for batch job metadata exploration");
+        
+        org.springframework.batch.core.explore.support.JobExplorerFactoryBean factory = 
+                new org.springframework.batch.core.explore.support.JobExplorerFactoryBean();
+        
+        factory.setDataSource(testDataSource());
+        factory.setTransactionManager(testTransactionManager());
+        // Use standard table prefix for H2 compatibility
+        factory.setTablePrefix("BATCH_");
+        
+        factory.afterPropertiesSet();
+        
+        logger.debug("Test JobExplorer configured with in-memory H2 database");
+        return factory.getObject();
+    }
+    
+    /**
+     * Configures JobLocator for job lookup in test environment.
+     * 
+     * @return ListableJobLocator configured for test environment
+     */
+    @Bean("testJobLocator") 
+    @Primary
+    public ListableJobLocator testJobLocator() {
+        logger.info("Configuring JobLocator for batch job lookup");
+        return new MapJobRegistry();
+    }
+    
+    /**
+     * Configures JobOperator for batch job lifecycle operations in test environment.
+     * 
+     * This method creates a SimpleJobOperator instance that provides comprehensive job
+     * lifecycle management capabilities including job launching, stopping, restarting,
+     * and status monitoring for test scenarios.
+     * 
+     * @return JobOperator configured for test environment
+     * @throws Exception if JobOperator initialization fails
+     */
+    @Bean("testJobOperator")
+    @Primary
+    public JobOperator testJobOperator(@Qualifier("testJobRepository") JobRepository jobRepository,
+                                     @Qualifier("testJobExplorer") JobExplorer jobExplorer,
+                                     @Qualifier("testJobLauncher") JobLauncher jobLauncher,
+                                     @Qualifier("testJobLocator") ListableJobLocator jobLocator) throws Exception {
+        logger.info("Configuring JobOperator for batch job lifecycle operations");
+        
+        SimpleJobOperator jobOperator = new SimpleJobOperator();
+        jobOperator.setJobRepository(jobRepository);
+        jobOperator.setJobExplorer(jobExplorer);
+        jobOperator.setJobLauncher(jobLauncher);
+        jobOperator.setJobRegistry(jobLocator);
+        
+        jobOperator.afterPropertiesSet();
+        
+        logger.debug("Test JobOperator configured with test components");
+        return jobOperator;
     }
     
     /**
@@ -800,6 +879,34 @@ public class TestBatchConfig {
     public com.carddemo.util.DateConversionUtil dateConversionUtil() {
         logger.info("Configuring mock DateConversionUtil for test environment");
         return Mockito.mock(com.carddemo.util.DateConversionUtil.class);
+    }
+
+    /**
+     * Test-specific reportGenerationJob bean for ReportService dependency.
+     * 
+     * Creates a test-specific configuration of the reportGenerationJob that can be loaded
+     * in the test profile to satisfy ReportService @Qualifier("reportGenerationJob") dependency.
+     * This bean reuses the same implementation as transactionReportJob but with the correct
+     * bean name expected by ReportService.
+     * 
+     * @return Job bean with reportGenerationJob qualifier for test execution
+     */
+    @Bean("reportGenerationJob")
+    @Primary
+    public Job reportGenerationJob(@Qualifier("testJobRepository") JobRepository jobRepository,
+                                 @Qualifier("transactionReportTestStep") Step transactionReportTestStep) {
+        logger.info("Configuring test reportGenerationJob bean for ReportService dependency");
+        
+        // Create a functional job for testing that mimics the main job behavior
+        try {
+            return new org.springframework.batch.core.job.builder.JobBuilder("reportGenerationJob", jobRepository)
+                    .validator(testJobParametersValidator())
+                    .start(transactionReportTestStep)
+                    .build();
+        } catch (Exception e) {
+            logger.error("Failed to configure test reportGenerationJob", e);
+            throw new RuntimeException("Test reportGenerationJob configuration failed", e);
+        }
     }
 
     /**

@@ -64,9 +64,9 @@ public final class Constants {
 
     /**
      * Maximum length for customer ID fields.
-     * Maps to COBOL PIC 9(10) specification for 10-digit customer IDs.
+     * Maps to COBOL PIC 9(09) specification for 9-digit customer IDs with zero-padding.
      */
-    public static final int CUSTOMER_ID_LENGTH = 10;
+    public static final int CUSTOMER_ID_LENGTH = 9;
 
     /**
      * Maximum length for SSN fields including dashes.
@@ -78,7 +78,7 @@ public final class Constants {
      * Maximum length for phone number fields.
      * Maps to COBOL PIC X(14) specification for (XXX) XXX-XXXX format.
      */
-    public static final int PHONE_NUMBER_LENGTH = 12;
+    public static final int PHONE_NUMBER_LENGTH = 14;
 
     /**
      * Maximum length for ZIP code fields.

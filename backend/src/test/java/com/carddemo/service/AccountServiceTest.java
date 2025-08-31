@@ -124,7 +124,7 @@ class AccountServiceTest extends BaseServiceTest {
             assertThat(result.getCurrentBalance().scale()).isEqualTo(2);
             assertThat(result.getCreditLimit()).isEqualTo(CREDIT_LIMIT);
             assertThat(result.getCreditLimit().scale()).isEqualTo(2);
-            assertThat(result.getCustomerId()).isEqualTo(String.valueOf(VALID_CUSTOMER_ID));
+            assertThat(result.getCustomerId()).isEqualTo(String.format("%09d", VALID_CUSTOMER_ID));
 
             // Verify repository interactions match VSAM STARTBR/READ pattern
             verify(accountRepository, times(1)).findById(VALID_ACCOUNT_ID);

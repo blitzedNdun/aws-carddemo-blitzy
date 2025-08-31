@@ -115,7 +115,9 @@ import java.util.concurrent.TimeUnit;
     "spring.jpa.hibernate.ddl-auto=create-drop",
     "spring.jpa.show-sql=true",
     "logging.level.com.carddemo.batch=DEBUG",
-    "logging.level.org.springframework.batch=INFO"
+    "logging.level.org.springframework.batch=INFO",
+    "spring.main.allow-bean-definition-overriding=true",
+    "spring.liquibase.enabled=false"
 })
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @Transactional
