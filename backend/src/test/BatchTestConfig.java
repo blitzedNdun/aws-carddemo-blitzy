@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.carddemo.test;
+// Configuration class for Spring Batch testing at root test level
+// This class provides batch testing configuration for the entire test suite
 
 // Internal imports from dependency files
 import com.carddemo.batch.DailyTransactionJob;
@@ -41,7 +42,7 @@ import org.springframework.batch.core.launch.support.TaskExecutorJobLauncher;
 import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.transaction.support.ResourcelessTransactionManager;
+import org.springframework.batch.support.transaction.ResourcelessTransactionManager;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.StepExecution;
@@ -420,8 +421,8 @@ public class BatchTestConfig {
                   .isEqualTo(ExitStatus.COMPLETED.getExitCode());
         
         // Validate execution timing
-        Duration executionTime = Duration.between(jobExecution.getStartTime().toInstant(), 
-                                                jobExecution.getEndTime().toInstant());
+        Duration executionTime = Duration.between(jobExecution.getStartTime().toInstant(ZoneOffset.UTC), 
+                                                jobExecution.getEndTime().toInstant(ZoneOffset.UTC));
         
         Assertions.assertThat(executionTime.toMinutes())
                   .as("Job should complete within test timeout")
@@ -509,8 +510,8 @@ public class BatchTestConfig {
         Map<String, Object> metrics = new HashMap<>();
         
         // Calculate execution time metrics
-        Duration executionTime = Duration.between(jobExecution.getStartTime().toInstant(),
-                                                jobExecution.getEndTime().toInstant());
+        Duration executionTime = Duration.between(jobExecution.getStartTime().toInstant(ZoneOffset.UTC),
+                                                jobExecution.getEndTime().toInstant(ZoneOffset.UTC));
         metrics.put("executionTimeMs", executionTime.toMillis());
         metrics.put("executionTimeSeconds", executionTime.getSeconds());
         metrics.put("executionTimeMinutes", executionTime.toMinutes());
@@ -537,8 +538,8 @@ public class BatchTestConfig {
             stepData.put("commitCount", stepExecution.getCommitCount());
             
             if (stepExecution.getStartTime() != null && stepExecution.getEndTime() != null) {
-                Duration stepDuration = Duration.between(stepExecution.getStartTime().toInstant(),
-                                                       stepExecution.getEndTime().toInstant());
+                Duration stepDuration = Duration.between(stepExecution.getStartTime().toInstant(ZoneOffset.UTC),
+                                                       stepExecution.getEndTime().toInstant(ZoneOffset.UTC));
                 stepData.put("executionTimeMs", stepDuration.toMillis());
             }
             
@@ -608,8 +609,8 @@ public class BatchTestConfig {
      */
     public Duration measureExecutionTime(JobExecution jobExecution) {
         if (jobExecution.getStartTime() != null && jobExecution.getEndTime() != null) {
-            Duration executionTime = Duration.between(jobExecution.getStartTime().toInstant(),
-                                                    jobExecution.getEndTime().toInstant());
+            Duration executionTime = Duration.between(jobExecution.getStartTime().toInstant(ZoneOffset.UTC),
+                                                    jobExecution.getEndTime().toInstant(ZoneOffset.UTC));
             
             logger.info("Job {} execution time: {}ms", 
                        jobExecution.getJobInstance().getJobName(), executionTime.toMillis());
