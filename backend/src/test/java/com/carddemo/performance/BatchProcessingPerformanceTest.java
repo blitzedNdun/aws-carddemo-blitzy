@@ -13,6 +13,10 @@ import com.carddemo.batch.BatchJobLauncher;
 import com.carddemo.batch.BatchJobListener;
 import com.carddemo.config.BatchConfig;
 import com.carddemo.performance.TestDataGenerator;
+import com.carddemo.entity.Transaction;
+import com.carddemo.entity.Account;
+import com.carddemo.dto.ApiRequest;
+import com.carddemo.dto.SessionContext;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +30,10 @@ import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.BatchStatus;
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import static org.assertj.core.api.Assertions.*;
 
 import io.micrometer.core.instrument.MeterRegistry;
@@ -130,6 +137,12 @@ public class BatchProcessingPerformanceTest {
     
     @Autowired
     private MeterRegistry meterRegistry;
+    
+    @Autowired
+    private JobLauncher jobLauncher;
+    
+    @Autowired
+    private ApplicationContext applicationContext;
 
     // Performance metrics storage
     private List<Map<String, Object>> performanceResults;
@@ -212,8 +225,8 @@ public class BatchProcessingPerformanceTest {
         Timer.Sample timerSample = Timer.start(meterRegistry);
         
         // Execute daily transaction job
-        JobExecution jobExecution = dailyTransactionJob.dailyTransactionJob()
-            .getJobLauncher().run(dailyTransactionJob.dailyTransactionJob(), jobParameters);
+        Job dailyTransactionBatchJob = (Job) applicationContext.getBean("dailyTransactionBatchJob");
+        JobExecution jobExecution = jobLauncher.run(dailyTransactionBatchJob, jobParameters);
         
         // Stop performance measurement
         long executionTimeMs = timerSample.stop(Timer.builder("batch.job.execution.time")
@@ -260,7 +273,7 @@ public class BatchProcessingPerformanceTest {
     @Timeout(value = 45, unit = TimeUnit.MINUTES)
     public void testInterestCalculationJobPerformance() throws Exception {
         // Setup production-size account data for interest calculation
-        List<Map<String, Object>> accountData = testDataGenerator.generateTransactionList(LARGE_DATASET_SIZE);
+        List<Transaction> accountData = testDataGenerator.generateTransactionList(LARGE_DATASET_SIZE);
         
         // Configure job parameters with processing date
         JobParameters jobParameters = new JobParametersBuilder()
@@ -274,8 +287,8 @@ public class BatchProcessingPerformanceTest {
         Timer.Sample timerSample = Timer.start(meterRegistry);
         
         // Execute interest calculation job
-        JobExecution jobExecution = interestCalculationJob.interestCalculationJob()
-            .getJobLauncher().run(interestCalculationJob.interestCalculationJob(), jobParameters);
+        Job interestCalculationBatchJob = interestCalculationJob.interestCalculationJob();
+        JobExecution jobExecution = jobLauncher.run(interestCalculationBatchJob, jobParameters);
         
         // Stop performance measurement
         long executionTimeMs = timerSample.stop(Timer.builder("batch.job.execution.time")
@@ -343,8 +356,8 @@ public class BatchProcessingPerformanceTest {
         Timer.Sample timerSample = Timer.start(meterRegistry);
         
         // Execute statement generation job
-        JobExecution jobExecution = statementGenerationJob.statementGenerationJob()
-            .getJobLauncher().run(statementGenerationJob.statementGenerationJob(), jobParameters);
+        Job statementGenerationBatchJob = statementGenerationJob.statementGenerationJob();
+        JobExecution jobExecution = jobLauncher.run(statementGenerationBatchJob, jobParameters);
         
         // Stop performance measurement
         long executionTimeMs = timerSample.stop(Timer.builder("batch.job.execution.time")
@@ -409,8 +422,8 @@ public class BatchProcessingPerformanceTest {
         Timer.Sample timerSample = Timer.start(meterRegistry);
         
         // Execute transaction report job
-        JobExecution jobExecution = transactionReportJob.transactionReportJob()
-            .getJobLauncher().run(transactionReportJob.transactionReportJob(), jobParameters);
+        Job reportGenerationBatchJob = (Job) applicationContext.getBean("reportGenerationJob");
+        JobExecution jobExecution = jobLauncher.run(reportGenerationBatchJob, jobParameters);
         
         // Stop performance measurement
         long executionTimeMs = timerSample.stop(Timer.builder("batch.job.execution.time")
@@ -471,8 +484,8 @@ public class BatchProcessingPerformanceTest {
                     .addString("jobSequence", "1")
                     .toJobParameters();
                     
-                return dailyTransactionJob.dailyTransactionJob()
-                    .getJobLauncher().run(dailyTransactionJob.dailyTransactionJob(), params);
+                Job job = dailyTransactionJob.dailyTransactionJob();
+                return jobLauncher.run(job, params);
             } catch (Exception e) {
                 throw new RuntimeException("Daily transaction job failed", e);
             }
@@ -491,8 +504,8 @@ public class BatchProcessingPerformanceTest {
                     .addString("jobSequence", "2")
                     .toJobParameters();
                     
-                return interestCalculationJob.interestCalculationJob()
-                    .getJobLauncher().run(interestCalculationJob.interestCalculationJob(), params);
+                Job interestCalculationBatchJob = interestCalculationJob.interestCalculationJob();
+                return jobLauncher.run(interestCalculationBatchJob, params);
             } catch (Exception e) {
                 throw new RuntimeException("Interest calculation job failed", e);
             }
@@ -507,8 +520,8 @@ public class BatchProcessingPerformanceTest {
                     .addString("jobSequence", "3")
                     .toJobParameters();
                     
-                return statementGenerationJob.statementGenerationJob()
-                    .getJobLauncher().run(statementGenerationJob.statementGenerationJob(), params);
+                Job job = statementGenerationJob.statementGenerationJob();
+                return jobLauncher.run(job, params);
             } catch (Exception e) {
                 throw new RuntimeException("Statement generation job failed", e);
             }
@@ -524,8 +537,8 @@ public class BatchProcessingPerformanceTest {
                     .addString("jobSequence", "4")
                     .toJobParameters();
                     
-                return transactionReportJob.transactionReportJob()
-                    .getJobLauncher().run(transactionReportJob.transactionReportJob(), params);
+                Job job = transactionReportJob.reportGenerationJob();
+                return jobLauncher.run(job, params);
             } catch (Exception e) {
                 throw new RuntimeException("Transaction report job failed", e);
             }
@@ -588,7 +601,7 @@ public class BatchProcessingPerformanceTest {
             
             // Generate test data for current size
             testDataGenerator.resetRandomSeed(12345L); // Consistent test data
-            List<Map<String, Object>> testData = testDataGenerator.generateTransactionList(datasetSize);
+            List<Transaction> testData = testDataGenerator.generateTransactionList(datasetSize);
             
             // Test daily transaction job throughput
             Timer.Sample timerSample = Timer.start(meterRegistry);
@@ -600,8 +613,8 @@ public class BatchProcessingPerformanceTest {
                 .addLong("datasetSize", datasetSize.longValue())
                 .toJobParameters();
             
-            JobExecution jobExecution = dailyTransactionJob.dailyTransactionJob()
-                .getJobLauncher().run(dailyTransactionJob.dailyTransactionJob(), jobParameters);
+            Job dailyTransactionBatchJob = (Job) applicationContext.getBean("dailyTransactionBatchJob");
+            JobExecution jobExecution = jobLauncher.run(dailyTransactionBatchJob, jobParameters);
             
             long executionTimeMs = timerSample.stop(Timer.builder("batch.throughput.test")
                 .tag("datasetSize", String.valueOf(datasetSize))
@@ -673,8 +686,8 @@ public class BatchProcessingPerformanceTest {
                 maxMemoryUsed = Math.max(maxMemoryUsed, usedMemoryMB);
                 
                 // Record memory gauge metric
-                Gauge.builder("batch.memory.usage.mb")
-                    .register(meterRegistry, () -> usedMemoryMB);
+                Gauge.builder("batch.memory.usage.mb", usedMemoryMB, value -> value)
+                    .register(meterRegistry);
                 
                 try {
                     Thread.sleep(5000); // Check every 5 seconds
@@ -699,8 +712,8 @@ public class BatchProcessingPerformanceTest {
                 .addString("memoryTest", "true")
                 .toJobParameters();
             
-            JobExecution jobExecution = interestCalculationJob.interestCalculationJob()
-                .getJobLauncher().run(interestCalculationJob.interestCalculationJob(), jobParameters);
+            Job interestCalculationBatchJob = interestCalculationJob.interestCalculationJob();
+            JobExecution jobExecution = jobLauncher.run(interestCalculationBatchJob, jobParameters);
             
             // Validate job completed successfully
             assertThat(jobExecution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
@@ -774,8 +787,8 @@ public class BatchProcessingPerformanceTest {
         
         // Execute database-intensive job (transaction report with complex queries)
         Timer.Sample jobTimer = Timer.start(meterRegistry);
-        JobExecution jobExecution = transactionReportJob.transactionReportJob()
-            .getJobLauncher().run(transactionReportJob.transactionReportJob(), jobParameters);
+        Job reportGenerationBatchJob = (Job) applicationContext.getBean("reportGenerationJob");
+        JobExecution jobExecution = jobLauncher.run(reportGenerationBatchJob, jobParameters);
         jobTimer.stop(dbQueryTimer);
         
         // Validate job completed successfully
@@ -828,8 +841,8 @@ public class BatchProcessingPerformanceTest {
                     .addString("processDate", LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE))
                     .addString("parallelTest", "job1")
                     .toJobParameters();
-                return dailyTransactionJob.dailyTransactionJob()
-                    .getJobLauncher().run(dailyTransactionJob.dailyTransactionJob(), params);
+                Job dailyTransactionBatchJob = (Job) applicationContext.getBean("dailyTransactionBatchJob");
+                return jobLauncher.run(dailyTransactionBatchJob, params);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -844,8 +857,8 @@ public class BatchProcessingPerformanceTest {
                     .addString("endDate", LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE))
                     .addString("parallelTest", "job2")
                     .toJobParameters();
-                return transactionReportJob.transactionReportJob()
-                    .getJobLauncher().run(transactionReportJob.transactionReportJob(), params);
+                Job reportGenerationBatchJob = (Job) applicationContext.getBean("reportGenerationJob");
+                return jobLauncher.run(reportGenerationBatchJob, params);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -860,8 +873,8 @@ public class BatchProcessingPerformanceTest {
                     .addLong("chunkSize", 100L)
                     .addString("parallelTest", "job3")
                     .toJobParameters();
-                return statementGenerationJob.statementGenerationJob()
-                    .getJobLauncher().run(statementGenerationJob.statementGenerationJob(), params);
+                Job statementGenerationBatchJob = statementGenerationJob.statementGenerationJob();
+                return jobLauncher.run(statementGenerationBatchJob, params);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -938,8 +951,8 @@ public class BatchProcessingPerformanceTest {
             .toJobParameters();
         
         Timer.Sample initialTimer = Timer.start(meterRegistry);
-        JobExecution initialExecution = dailyTransactionJob.dailyTransactionJob()
-            .getJobLauncher().run(dailyTransactionJob.dailyTransactionJob(), initialParams);
+        Job job = dailyTransactionJob.dailyTransactionJob();
+        JobExecution initialExecution = jobLauncher.run(job, initialParams);
         
         // Let job run for a short time then stop it (simulate failure)
         Thread.sleep(10000); // Let it process some records
@@ -947,7 +960,7 @@ public class BatchProcessingPerformanceTest {
         // Stop the job (simulating failure scenario)
         if (initialExecution.getStatus() == BatchStatus.STARTED) {
             batchJobLauncher.stopJob(initialExecution.getId(), 
-                new com.carddemo.dto.ApiRequest<>(new HashMap<>()));
+                new ApiRequest<>("BATCH_STOP", new HashMap<>(), new SessionContext()));
         }
         
         long initialExecutionTime = initialTimer.stop(Timer.builder("batch.restart.initial.time")
@@ -963,8 +976,8 @@ public class BatchProcessingPerformanceTest {
             .addLong("chunkSize", 1000L)
             .toJobParameters();
         
-        JobExecution restartExecution = dailyTransactionJob.dailyTransactionJob()
-            .getJobLauncher().run(dailyTransactionJob.dailyTransactionJob(), restartParams);
+        Job restartJob = dailyTransactionJob.dailyTransactionJob();
+        JobExecution restartExecution = jobLauncher.run(restartJob, restartParams);
         
         long restartExecutionTime = restartTimer.stop(Timer.builder("batch.restart.recovery.time")
             .register(meterRegistry));
@@ -1203,13 +1216,13 @@ public class BatchProcessingPerformanceTest {
             testDataGenerator.resetRandomSeed(12345L);
             
             // Generate production-size transaction data
-            List<Map<String, Object>> transactions = testDataGenerator.generateTransactionList(LARGE_DATASET_SIZE);
+            List<Transaction> transactions = testDataGenerator.generateTransactionList(LARGE_DATASET_SIZE);
             
             // Generate account data with COBOL COMP-3 precision
             for (int i = 0; i < 10000; i++) {
-                Map<String, Object> account = testDataGenerator.generateAccount();
+                Account account = testDataGenerator.generateAccount();
                 // Generate balance with proper BigDecimal precision
-                account.put("balance", testDataGenerator.generateComp3BigDecimal(7, 2));
+                account.setCurrentBalance(testDataGenerator.generateComp3BigDecimal(7, 2, 999999.99));
             }
             
             logTestExecution("Production-size test data setup completed", null);
