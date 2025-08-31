@@ -68,7 +68,7 @@ import java.util.regex.Pattern;
  * @version 1.0
  * @since CardDemo v1.0
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK,
     classes = {CardDemoApplication.class, TestDatabaseConfig.class, TestRedisConfig.class, TestReconciliationJobConfig.class})
 @ActiveProfiles("test") 
 @TestPropertySource(properties = {

@@ -71,7 +71,7 @@ import static org.assertj.core.api.Assertions.*;
  * @version 1.0
  * @since 2024
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @Testcontainers
 @AutoConfigureMockMvc
 public class SecurityIntegrationTest extends BaseIntegrationTest {

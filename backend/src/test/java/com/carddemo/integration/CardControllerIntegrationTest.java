@@ -83,7 +83,7 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppC
  * @version 1.0
  * @since CardDemo v1.0
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureWebMvc
 @Testcontainers
 public class CardControllerIntegrationTest extends BaseIntegrationTest {

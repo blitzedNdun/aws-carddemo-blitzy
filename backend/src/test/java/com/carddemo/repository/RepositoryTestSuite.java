@@ -61,7 +61,7 @@ import org.slf4j.LoggerFactory;
     SecurityAuditRepositoryTest.class
 })
 @SpringBootTest(
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    webEnvironment = SpringBootTest.WebEnvironment.MOCK,
     properties = {
         "spring.profiles.active=test",
         "spring.jpa.hibernate.ddl-auto=create-drop",

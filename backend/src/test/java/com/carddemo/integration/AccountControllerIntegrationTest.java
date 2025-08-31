@@ -71,7 +71,7 @@ import jakarta.persistence.OptimisticLockException;
  * @version 1.0
  * @since 2024
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @Testcontainers
 @Transactional
 public class AccountControllerIntegrationTest extends BaseIntegrationTest {
