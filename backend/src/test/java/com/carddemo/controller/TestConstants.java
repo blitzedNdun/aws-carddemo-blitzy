@@ -29,6 +29,12 @@ public final class TestConstants {
      */
     public static final double MAX_ERROR_RATE_PERCENT = 1.0;
     
+    /**
+     * Batch processing window in hours for performance validation
+     * Based on requirement: Complete batch processing within 4-hour window
+     */
+    public static final int BATCH_PROCESSING_WINDOW_HOURS = 4;
+    
     // COBOL Data Precision Constants
     
     /**
