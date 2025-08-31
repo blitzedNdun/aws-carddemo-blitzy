@@ -97,6 +97,11 @@ public final class TestConstants {
     public static final int BATCH_CHUNK_SIZE = 1000;
     public static final long BATCH_PROCESSING_WINDOW_HOURS = 4L;
     
+    // Batch recovery constants for BatchRecoveryTest
+    public static final long CHECKPOINT_INTERVAL = 100L;
+    public static final long SKIP_LIMIT = 10L;
+    public static final long RETRY_LIMIT = 3L;
+    
     // COBOL COMP-3 patterns for data validation
     public static final Map<String, Object> COBOL_COMP3_PATTERNS = new HashMap<String, Object>() {{
         put("BALANCE", "S9(9)V99");
