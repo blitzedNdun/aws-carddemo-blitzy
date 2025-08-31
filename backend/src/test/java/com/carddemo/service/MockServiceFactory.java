@@ -141,22 +141,22 @@ public class MockServiceFactory {
             return transaction;
         });
         
-        // Configure findById() method
-        when(mock.findById(ArgumentMatchers.anyLong())).thenReturn(Optional.of(createSampleTransaction()));
+        // Configure findById() method - lenient to avoid unnecessary stubbing exceptions
+        lenient().when(mock.findById(ArgumentMatchers.anyLong())).thenReturn(Optional.of(createSampleTransaction()));
         
-        // Configure findByAccountIdAndDateRange() method
-        when(mock.findByAccountIdAndDateRange(
+        // Configure findByAccountIdAndDateRange() method - lenient to avoid unnecessary stubbing exceptions
+        lenient().when(mock.findByAccountIdAndDateRange(
             ArgumentMatchers.anyLong(),
             ArgumentMatchers.any(LocalDateTime.class),
             ArgumentMatchers.any(LocalDateTime.class),
             ArgumentMatchers.any(Pageable.class)
         )).thenReturn(configurePaginatedResponse(Arrays.asList(createSampleTransaction()), 0));
         
-        // Configure findAll() method
-        when(mock.findAll()).thenReturn(Arrays.asList(createSampleTransaction(), createSampleTransaction()));
+        // Configure findAll() method - lenient to avoid unnecessary stubbing exceptions
+        lenient().when(mock.findAll()).thenReturn(Arrays.asList(createSampleTransaction(), createSampleTransaction()));
         
-        // Configure deleteById() method - no-op
-        doNothing().when(mock).deleteById(ArgumentMatchers.anyLong());
+        // Configure deleteById() method - no-op - lenient to avoid unnecessary stubbing exceptions
+        lenient().doNothing().when(mock).deleteById(ArgumentMatchers.anyLong());
         
         return mock;
     }
