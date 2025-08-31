@@ -11,6 +11,7 @@ import com.carddemo.config.TestDatabaseConfig;
 import com.carddemo.entity.Account;
 import com.carddemo.entity.Card;
 import com.carddemo.entity.CardXref;
+import com.carddemo.entity.CardXrefId;
 import com.carddemo.repository.AccountRepository;
 import com.carddemo.repository.CardRepository;
 import com.carddemo.repository.CardXrefRepository;
@@ -19,7 +20,7 @@ import com.carddemo.batch.CardListJob;
 import com.carddemo.batch.CrossReferenceListJob;
 import com.carddemo.batch.BatchTestUtils;
 import com.carddemo.test.TestDataGenerator;
-import com.carddemo.util.CobolComparisonUtils;
+import com.carddemo.test.CobolComparisonUtils;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -648,12 +649,12 @@ public class AccountProcessingJobTest {
             
             xrefRecords.forEach(xref -> {
                 // Validate composite key components are not null
-                assertThat(xref.getCardNumber()).isNotNull();
-                assertThat(xref.getCustomerId()).isNotNull();
-                assertThat(xref.getAccountId()).isNotNull();
+                assertThat(xref.getXrefCardNum()).isNotNull();
+                assertThat(xref.getXrefCustId()).isNotNull();
+                assertThat(xref.getXrefAcctId()).isNotNull();
                 
                 // Validate key structure matches COBOL record layout
-                assertThat(xref.getCardNumber().length()).isEqualTo(16); // VSAM key length
+                assertThat(xref.getXrefCardNum().length()).isEqualTo(16); // VSAM key length
             });
             
             System.out.println("✅ VSAM key structure compatibility validated");
@@ -782,18 +783,28 @@ public class AccountProcessingJobTest {
 
         // Generate test cards
         for (Account account : testAccounts) {
-            Card card = testDataGenerator.generateCard();
+            Card card = new Card();
             card.setAccountId(account.getAccountId());
-            card.setCardNumber(testDataGenerator.generateVsamKey());
+            card.setCardNumber(testDataGenerator.generateCardNumber());
+            // Set other required card fields
+            card.setCustomerId(account.getCustomerId());
+            card.setActiveStatus("Y");
+            card.setEmbossedName("TEST CARDHOLDER");
+            card.setExpirationDate(java.time.LocalDate.now().plusYears(3));
             testCards.add(card);
         }
 
         // Generate test cross-references
         for (Card card : testCards) {
-            CardXref xref = testDataGenerator.generateCardXref();
-            xref.setCardNumber(card.getCardNumber());
-            xref.setAccountId(card.getAccountId());
-            xref.setCustomerId(card.getCustomerId());
+            CardXref xref = new CardXref();
+            CardXrefId xrefId = new CardXrefId();
+            xrefId.setXrefCardNum(card.getCardNumber());
+            xrefId.setXrefAcctId(card.getAccountId());
+            xrefId.setXrefCustId(card.getCustomerId());
+            xref.setId(xrefId);
+            xref.setXrefCardNum(card.getCardNumber());
+            xref.setXrefAcctId(card.getAccountId());
+            xref.setXrefCustId(card.getCustomerId());
             testCardXrefs.add(xref);
         }
     }
@@ -918,8 +929,9 @@ public class AccountProcessingJobTest {
     private void validatePerformanceMetrics(JobExecution jobExecution, long executionTimeMs) {
         // Validate step-level performance metrics
         jobExecution.getStepExecutions().forEach(stepExecution -> {
-            long stepDuration = stepExecution.getEndTime().getTime() - 
-                              stepExecution.getStartTime().getTime();
+            long stepDuration = java.time.temporal.ChronoUnit.MILLIS.between(
+                stepExecution.getStartTime(), 
+                stepExecution.getEndTime());
             
             // Log performance details
             System.out.println("Step: " + stepExecution.getStepName() + 
@@ -939,7 +951,7 @@ public class AccountProcessingJobTest {
         assertThat(orphanedCards).isEmpty();
         
         List<CardXref> orphanedXrefs = cardXrefRepository.findAll().stream()
-            .filter(xref -> !cardRepository.findById(xref.getCardNumber()).isPresent())
+            .filter(xref -> !cardRepository.findById(xref.getXrefCardNum()).isPresent())
             .collect(java.util.stream.Collectors.toList());
         
         assertThat(orphanedXrefs).isEmpty();
