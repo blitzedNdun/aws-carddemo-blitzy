@@ -27,8 +27,13 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemWriter;
 import org.springframework.core.task.SyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 
@@ -41,6 +46,7 @@ import com.carddemo.entity.Transaction;
 import com.carddemo.entity.CardXref;
 import com.carddemo.entity.TransactionType;
 import com.carddemo.entity.TransactionCategory;
+import com.carddemo.batch.DailyTransactionJob;
 import java.util.List;
 
 // Data Source Configuration
@@ -148,6 +154,27 @@ public class TestBatchConfig {
     @Bean
     public DataSource testDataSource() {
         logger.info("Configuring shared test DataSource for batch testing");
+        
+        return new EmbeddedDatabaseBuilder()
+                .setType(EmbeddedDatabaseType.H2)
+                .addScript("classpath:org/springframework/batch/core/schema-h2.sql")
+                .generateUniqueName(true)
+                .build();
+    }
+
+    /**
+     * Primary DataSource with "dataSource" qualifier for AccountClosureJobConfig dependency.
+     * 
+     * This method provides the DataSource bean with the specific qualifier expected by
+     * AccountClosureJobConfig and other production batch job configurations.
+     * 
+     * @return DataSource configured with "dataSource" qualifier for batch job injection
+     */
+    @Bean
+    @Qualifier("dataSource")
+    @Primary
+    public DataSource dataSource() {
+        logger.info("Configuring primary dataSource for batch job configuration compatibility");
         
         return new EmbeddedDatabaseBuilder()
                 .setType(EmbeddedDatabaseType.H2)
@@ -480,30 +507,103 @@ public class TestBatchConfig {
     }
 
     /**
-     * Mock StatementGenerationJob for test environment.
+     * Creates a StatementGenerationJob for test execution with failure simulation support.
      * 
-     * This creates a mock StatementGenerationJob to satisfy test dependencies
-     * since the production job is excluded from test profile.
+     * This implementation supports multi-step processing and failure simulation for recovery testing,
+     * replacing the production StatementGenerationJob with test-specific capabilities.
      * 
-     * @return Mock StatementGenerationJob for test execution
+     * @return StatementGenerationJob instance with failure simulation for test execution
      */
     @Bean
-    public StatementGenerationJob statementGenerationJob() {
-        logger.info("Configuring mock StatementGenerationJob for test profile");
-        return Mockito.mock(StatementGenerationJob.class);
+    public StatementGenerationJob statementGenerationJob(@Qualifier("testJobRepository") JobRepository jobRepository,
+                                                         @Qualifier("testTransactionManager") PlatformTransactionManager transactionManager) {
+        logger.info("Configuring StatementGenerationJob with failure simulation for test profile");
+        
+        StatementGenerationJob mockJob = Mockito.mock(StatementGenerationJob.class);
+        
+        // Configure mock to return a multi-step test job with failure simulation when statementGenerationJob() is called
+        Job testJob = new org.springframework.batch.core.job.builder.JobBuilder("testStatementGenerationJob", jobRepository)
+                .start(createFailureSimulationStatementStep1(jobRepository, transactionManager))
+                .next(createFailureSimulationStatementStep2(jobRepository, transactionManager))
+                .next(createFailureSimulationStatementStep3(jobRepository, transactionManager))
+                .build();
+                
+        Mockito.when(mockJob.statementGenerationJob()).thenReturn(testJob);
+        
+        logger.debug("StatementGenerationJob configured with multi-step failure simulation test implementation");
+        return mockJob;
     }
 
     /**
-     * TaskExecutor for test environment.
-     * 
-     * Provides a basic synchronous task executor for test scenarios.
-     * 
-     * @return TaskExecutor for test execution
+     * Creates step 1 for statement generation with failure simulation.
      */
-    @Bean
-    public TaskExecutor taskExecutor() {
-        logger.info("Configuring TaskExecutor for test batch processing");
-        return new SyncTaskExecutor();
+    private Step createFailureSimulationStatementStep1(@Qualifier("testJobRepository") JobRepository jobRepository,
+                                                       @Qualifier("testTransactionManager") PlatformTransactionManager transactionManager) {
+        return new org.springframework.batch.core.step.builder.StepBuilder("statementStep1", jobRepository)
+            .<String, String>chunk(5, transactionManager)
+            .reader(new FailureSimulationItemReader())
+            .writer(new FailureSimulationItemWriter())
+            .build();
+    }
+
+    /**
+     * Creates step 2 for statement generation with failure simulation.
+     */
+    private Step createFailureSimulationStatementStep2(@Qualifier("testJobRepository") JobRepository jobRepository,
+                                                       @Qualifier("testTransactionManager") PlatformTransactionManager transactionManager) {
+        return new org.springframework.batch.core.step.builder.StepBuilder("statementStep2", jobRepository)
+            .<String, String>chunk(5, transactionManager)
+            .reader(new FailureSimulationItemReader())
+            .writer(new FailureSimulationItemWriter())
+            .build();
+    }
+
+    /**
+     * Creates step 3 for statement generation with failure simulation.
+     */
+    private Step createFailureSimulationStatementStep3(@Qualifier("testJobRepository") JobRepository jobRepository,
+                                                       @Qualifier("testTransactionManager") PlatformTransactionManager transactionManager) {
+        return new org.springframework.batch.core.step.builder.StepBuilder("statementStep3", jobRepository)
+            .<String, String>chunk(5, transactionManager)
+            .reader(new FailureSimulationItemReader())
+            .writer(new FailureSimulationItemWriter())
+            .build();
+    }
+
+
+
+    /**
+     * Primary ThreadPoolTaskExecutor for test environment.
+     * 
+     * Provides a ThreadPoolTaskExecutor specifically for batch jobs, matching
+     * the production taskExecutor bean name. Uses single-threaded configuration 
+     * for deterministic test behavior and eliminates bean ambiguity issues.
+     * 
+     * @return ThreadPoolTaskExecutor for test execution
+     */
+    @Bean("taskExecutor")
+    @Primary
+    public org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor taskExecutor() {
+        logger.info("Configuring primary TaskExecutor for test batch job execution");
+        
+        org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor executor = 
+            new org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor();
+        
+        // Configure for single-threaded test execution to ensure deterministic behavior
+        executor.setCorePoolSize(1);
+        executor.setMaxPoolSize(1);
+        executor.setQueueCapacity(10);
+        executor.setKeepAliveSeconds(60);
+        executor.setThreadNamePrefix("TestBatch-");
+        executor.setDaemon(false);
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(30);
+        
+        // Initialize the executor
+        executor.initialize();
+        
+        logger.debug("Primary TaskExecutor configured for test batch processing");
+        return executor;
     }
 
     /**
@@ -651,6 +751,58 @@ public class TestBatchConfig {
     }
 
     /**
+     * Mock MonitoringService for test environment.
+     * 
+     * Provides a mock MonitoringService to satisfy JwtRequestFilter dependencies.
+     * 
+     * @return Mock MonitoringService for test execution
+     */
+    @Bean
+    public com.carddemo.service.MonitoringService monitoringService() {
+        logger.info("Configuring mock MonitoringService for test environment");
+        return Mockito.mock(com.carddemo.service.MonitoringService.class);
+    }
+
+    /**
+     * Mock ValidationUtil for test environment.
+     * 
+     * Provides a mock ValidationUtil to satisfy batch job dependencies.
+     * 
+     * @return Mock ValidationUtil for test execution
+     */
+    @Bean
+    public com.carddemo.util.ValidationUtil validationUtil() {
+        logger.info("Configuring mock ValidationUtil for test environment");
+        return Mockito.mock(com.carddemo.util.ValidationUtil.class);
+    }
+
+    /**
+     * Mock CobolDataConverter for test environment.
+     * 
+     * Provides a mock CobolDataConverter to satisfy batch job dependencies.
+     * 
+     * @return Mock CobolDataConverter for test execution
+     */
+    @Bean
+    public com.carddemo.util.CobolDataConverter cobolDataConverter() {
+        logger.info("Configuring mock CobolDataConverter for test environment");
+        return Mockito.mock(com.carddemo.util.CobolDataConverter.class);
+    }
+
+    /**
+     * Mock DateConversionUtil for test environment.
+     * 
+     * Provides a mock DateConversionUtil to satisfy batch job dependencies.
+     * 
+     * @return Mock DateConversionUtil for test execution
+     */
+    @Bean
+    public com.carddemo.util.DateConversionUtil dateConversionUtil() {
+        logger.info("Configuring mock DateConversionUtil for test environment");
+        return Mockito.mock(com.carddemo.util.DateConversionUtil.class);
+    }
+
+    /**
      * Test-specific TransactionReportJob for testing environment.
      * 
      * Creates a test-specific configuration of the TransactionReportJob that can be loaded
@@ -662,11 +814,11 @@ public class TestBatchConfig {
     @Bean("transactionReportJob")
     public Job transactionReportJob(@Qualifier("testJobRepository") JobRepository jobRepository,
                                    @Qualifier("transactionReportTestStep") Step transactionReportTestStep) {
-        logger.info("Configuring test TransactionReportJob for batch testing");
+        logger.info("Configuring test ReportGenerationJob for batch testing");
         
         // Create a functional job for testing that mimics the main job behavior
         try {
-            return new org.springframework.batch.core.job.builder.JobBuilder("transactionReportJob", jobRepository)
+            return new org.springframework.batch.core.job.builder.JobBuilder("reportGenerationJob", jobRepository)
                     .validator(testJobParametersValidator())
                     .start(transactionReportTestStep)
                     .build();
@@ -878,6 +1030,289 @@ public class TestBatchConfig {
             java.nio.file.Files.write(reportPath, reportContent.toString().getBytes());
             logger.info("Test report written to: " + reportPath);
         };
+    }
+
+    /**
+     * Creates a DailyTransactionJob for test execution with failure simulation support.
+     * 
+     * This implementation supports failure simulation for recovery testing,
+     * replacing the production DailyTransactionJob with test-specific capabilities.
+     * 
+     * @return DailyTransactionJob instance with failure simulation for test execution
+     */
+    @Bean
+    @Primary  
+    public DailyTransactionJob testDailyTransactionJob(@Qualifier("testJobRepository") JobRepository jobRepository,
+                                                       @Qualifier("testTransactionManager") PlatformTransactionManager transactionManager) {
+        logger.info("Configuring DailyTransactionJob with failure simulation for batch recovery testing");
+        
+        DailyTransactionJob mockJob = Mockito.mock(DailyTransactionJob.class);
+        
+        // Configure mock to return a test job with failure simulation when dailyTransactionJob() is called
+        Job testJob = new org.springframework.batch.core.job.builder.JobBuilder("testDailyTransactionJob", jobRepository)
+                .start(createFailureSimulationDailyTransactionStep(jobRepository, transactionManager))
+                .next(createSecondaryProcessingStep(jobRepository, transactionManager))
+                .build();
+                
+        Mockito.when(mockJob.dailyTransactionJob()).thenReturn(testJob);
+        
+        logger.debug("DailyTransactionJob configured with failure simulation test implementation");
+        return mockJob;
+    }
+
+    /**
+     * Creates a test step with failure simulation capabilities for daily transaction processing.
+     */
+    private Step createFailureSimulationDailyTransactionStep(@Qualifier("testJobRepository") JobRepository jobRepository,
+                                                           @Qualifier("testTransactionManager") PlatformTransactionManager transactionManager) {
+        return new org.springframework.batch.core.step.builder.StepBuilder("dailyTransactionProcessingStep", jobRepository)
+            .<String, String>chunk(10, transactionManager)
+            .reader(new FailureSimulationItemReader())
+            .processor(new FailureSimulationItemProcessor())
+            .writer(new FailureSimulationItemWriter())
+            .faultTolerant()
+            .skipLimit(100)
+            .skip(RuntimeException.class)
+            .skip(java.io.IOException.class)
+            .skip(org.springframework.dao.DataIntegrityViolationException.class)
+            .retry(Exception.class)
+            .retryLimit(3)
+            .build();
+    }
+
+    /**
+     * Creates a secondary processing step for multi-step testing.
+     */
+    private Step createSecondaryProcessingStep(@Qualifier("testJobRepository") JobRepository jobRepository,
+                                             @Qualifier("testTransactionManager") PlatformTransactionManager transactionManager) {
+        return new org.springframework.batch.core.step.builder.StepBuilder("secondaryProcessingStep", jobRepository)
+            .<String, String>chunk(5, transactionManager)
+            .reader(new FailureSimulationItemReader())
+            .writer(items -> {}) // Simple writer for secondary step
+            .build();
+    }
+
+    /**
+     * Creates an InterestCalculationJob for test execution with failure simulation support.
+     * 
+     * This implementation supports failure simulation for recovery testing,
+     * replacing the production InterestCalculationJob with test-specific capabilities.
+     * 
+     * @return InterestCalculationJob instance with failure simulation for test execution
+     */
+    @Bean
+    @Primary
+    public com.carddemo.batch.InterestCalculationJob interestCalculationJob(@Qualifier("testJobRepository") JobRepository jobRepository,
+                                                                            @Qualifier("testTransactionManager") PlatformTransactionManager transactionManager) {
+        logger.info("Configuring InterestCalculationJob with failure simulation for batch recovery testing");
+        
+        com.carddemo.batch.InterestCalculationJob mockJob = Mockito.mock(com.carddemo.batch.InterestCalculationJob.class);
+        
+        // Configure mock to return a test job with failure simulation when interestCalculationJob() is called
+        Job testJob = new org.springframework.batch.core.job.builder.JobBuilder("testInterestCalculationJob", jobRepository)
+                .start(createFailureSimulationInterestCalculationStep(jobRepository, transactionManager))
+                .build();
+                
+        Mockito.when(mockJob.interestCalculationJob()).thenReturn(testJob);
+        
+        logger.debug("InterestCalculationJob configured with failure simulation test implementation");
+        return mockJob;
+    }
+
+    /**
+     * Creates a test step with failure simulation capabilities for interest calculation processing.
+     */
+    private Step createFailureSimulationInterestCalculationStep(@Qualifier("testJobRepository") JobRepository jobRepository,
+                                                               @Qualifier("testTransactionManager") PlatformTransactionManager transactionManager) {
+        return new org.springframework.batch.core.step.builder.StepBuilder("interestCalculationStep", jobRepository)
+            .<String, String>chunk(10, transactionManager)
+            .reader(new FailureSimulationItemReader())
+            .processor(new FailureSimulationItemProcessor()) 
+            .writer(new FailureSimulationItemWriter())
+            .faultTolerant()
+            .skipLimit(50)
+            .skip(RuntimeException.class)
+            .skip(java.io.IOException.class)
+            .skip(org.springframework.dao.DataIntegrityViolationException.class)
+            .retry(Exception.class)
+            .retryLimit(2)
+            .build();
+    }
+
+    /**
+     * Creates BatchTestUtils bean for test execution.
+     * 
+     * BatchTestUtils is a utility class that provides helper methods for batch job testing.
+     * Since it's not a Spring component, we need to create it as a bean for autowiring.
+     * 
+     * @return BatchTestUtils instance for test execution
+     */
+    @Bean
+    public com.carddemo.batch.BatchTestUtils batchTestUtils() {
+        logger.info("Configuring BatchTestUtils for batch job testing");
+        return new com.carddemo.batch.BatchTestUtils();
+    }
+
+    // ========== FAILURE SIMULATION CLASSES FOR BATCH RECOVERY TESTING ==========
+
+    /**
+     * Item reader that simulates processing data and can inject failures based on job parameters.
+     */
+    private static class FailureSimulationItemReader implements org.springframework.batch.item.ItemReader<String> {
+        private int readCount = 0;
+        private final int maxItems = 1000; // Large enough to support failure point testing
+        
+        @Override
+        public String read() throws Exception {
+            if (readCount >= maxItems) {
+                return null; // End of data
+            }
+            
+            readCount++;
+            
+            // Check if we should simulate failure at this point AFTER incrementing count
+            checkForSimulatedFailure();
+            
+            return "TestItem" + readCount;
+        }
+        
+        private void checkForSimulatedFailure() throws Exception {
+            org.springframework.batch.core.StepExecution stepExecution = getCurrentStepExecution();
+            if (stepExecution != null && stepExecution.getJobExecution() != null) {
+                JobParameters params = stepExecution.getJobExecution().getJobParameters();
+                String stepName = stepExecution.getStepName();
+                
+                String simulateFailure = params.getString("simulateFailure");
+                Long failurePoint = params.getLong("failurePoint");
+                
+                // Handle step2 failure - trigger on second step (secondaryProcessingStep)
+                if ("step2".equals(simulateFailure) && "secondaryProcessingStep".equals(stepName) 
+                    && readCount >= (failurePoint != null ? failurePoint : 10)) {
+                    throw new RuntimeException("Simulated failure in step 2 at record " + readCount);
+                }
+                
+                // Handle afterCheckpoint failure - trigger after specified commits (much smaller numbers)
+                if ("afterCheckpoint".equals(simulateFailure)) {
+                    Long failureAfterCommits = params.getLong("failureAfterCommits");
+                    if (failureAfterCommits != null && readCount >= (failureAfterCommits * 5)) {
+                        throw new RuntimeException("Simulated failure after checkpoint at record " + readCount);
+                    }
+                }
+                
+                // Handle step3 failure - trigger on third step
+                if ("step3".equals(simulateFailure) && "statementStep3".equals(stepName) && readCount >= 3) {
+                    throw new RuntimeException("Simulated failure in step 3");
+                }
+                
+                // Handle partial chunk failure
+                if ("partialChunk".equals(simulateFailure)) {
+                    Long failureAtRecord = params.getLong("failureAtRecord");
+                    if (failureAtRecord != null && readCount >= failureAtRecord) {
+                        throw new RuntimeException("Simulated partial chunk failure at record " + readCount);
+                    }
+                }
+                
+                // Handle failure in first step
+                if ("step1".equals(simulateFailure) && "dailyTransactionProcessingStep".equals(stepName) 
+                    && readCount >= (failurePoint != null ? failurePoint : 500)) {
+                    throw new RuntimeException("Simulated daily transaction job failure at record " + readCount);
+                }
+            }
+        }
+        
+        private org.springframework.batch.core.StepExecution getCurrentStepExecution() {
+            try {
+                return org.springframework.batch.core.scope.context.StepSynchronizationManager.getContext().getStepExecution();
+            } catch (Exception e) {
+                return null;
+            }
+        }
+    }
+
+    /**
+     * Item processor that can simulate processing failures and data integrity violations.
+     */
+    private static class FailureSimulationItemProcessor implements org.springframework.batch.item.ItemProcessor<String, String> {
+        private int processCount = 0;
+        
+        @Override
+        public String process(String item) throws Exception {
+            processCount++;
+            
+            // Check for simulated processing failures
+            checkForProcessingFailures();
+            
+            return "Processed-" + item;
+        }
+        
+        private void checkForProcessingFailures() throws Exception {
+            org.springframework.batch.core.StepExecution stepExecution = getCurrentStepExecution();
+            if (stepExecution != null && stepExecution.getJobExecution() != null) {
+                JobParameters params = stepExecution.getJobExecution().getJobParameters();
+                
+                String simulateFailure = params.getString("simulateFailure");
+                String errorType = params.getString("errorType");
+                
+                if ("transactionError".equals(simulateFailure) && "dataIntegrityViolation".equals(errorType)) {
+                    throw new org.springframework.dao.DataIntegrityViolationException("Simulated data integrity violation");
+                }
+                
+                if ("deadlockRecovery".equals(simulateFailure)) {
+                    throw new org.springframework.dao.DeadlockLoserDataAccessException("Simulated deadlock", null);
+                }
+            }
+        }
+        
+        private org.springframework.batch.core.StepExecution getCurrentStepExecution() {
+            try {
+                return org.springframework.batch.core.scope.context.StepSynchronizationManager.getContext().getStepExecution();
+            } catch (Exception e) {
+                return null;
+            }
+        }
+    }
+
+    /**
+     * Item writer that can simulate write failures and resource management issues.
+     */
+    private static class FailureSimulationItemWriter implements org.springframework.batch.item.ItemWriter<String> {
+        private int writeCount = 0;
+        
+        @Override
+        public void write(org.springframework.batch.item.Chunk<? extends String> chunk) throws Exception {
+            writeCount += chunk.size();
+            
+            // Check for simulated write failures
+            checkForWriteFailures();
+            
+            // Simulate writing items (no actual persistence needed for recovery tests)
+            logger.debug("Writing {} items, total written: {}", chunk.size(), writeCount);
+        }
+        
+        private void checkForWriteFailures() throws Exception {
+            org.springframework.batch.core.StepExecution stepExecution = getCurrentStepExecution();
+            if (stepExecution != null && stepExecution.getJobExecution() != null) {
+                JobParameters params = stepExecution.getJobExecution().getJobParameters();
+                
+                String simulateFailure = params.getString("simulateFailure");
+                
+                if ("resourceCleanup".equals(simulateFailure) && writeCount > 50) {
+                    throw new java.io.IOException("Simulated resource failure during write");
+                }
+                
+                if ("fileHandleManagement".equals(simulateFailure) && writeCount > 30) {
+                    throw new java.io.IOException("Simulated file handle exhaustion");
+                }
+            }
+        }
+        
+        private org.springframework.batch.core.StepExecution getCurrentStepExecution() {
+            try {
+                return org.springframework.batch.core.scope.context.StepSynchronizationManager.getContext().getStepExecution();
+            } catch (Exception e) {
+                return null;
+            }
+        }
     }
 
 }
