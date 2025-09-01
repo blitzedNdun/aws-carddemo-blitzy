@@ -95,7 +95,6 @@ import org.slf4j.LoggerFactory;
  * @since 2024
  */
 @Component
-@Profile("!test")
 public class InterestCalculationJob {
 
     private static final Logger logger = LoggerFactory.getLogger(InterestCalculationJob.class);

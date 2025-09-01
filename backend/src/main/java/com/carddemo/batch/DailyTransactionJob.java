@@ -15,7 +15,6 @@ import com.carddemo.repository.AccountRepository;
 import com.carddemo.repository.CardXrefRepository;
 import com.carddemo.repository.TransactionCategoryBalanceRepository;
 import com.carddemo.batch.BatchJobListener;
-import com.carddemo.util.ValidationUtil;
 import com.carddemo.util.CobolDataConverter;
 import com.carddemo.util.DateConversionUtil;
 import com.carddemo.exception.BusinessRuleException;
@@ -107,7 +106,6 @@ import jakarta.persistence.EntityManagerFactory;
  * @since 2024
  */
 @Configuration
-@Profile("!test")
 public class DailyTransactionJob {
     
     private static final Logger logger = LoggerFactory.getLogger(DailyTransactionJob.class);
@@ -164,15 +162,6 @@ public class DailyTransactionJob {
     
     @Autowired
     private BatchJobListener batchJobListener;
-    
-    @Autowired
-    private ValidationUtil validationUtil;
-    
-    @Autowired
-    private CobolDataConverter cobolDataConverter;
-    
-    @Autowired
-    private DateConversionUtil dateConversionUtil;
 
     /**
      * Configures and creates the main daily transaction processing job.
