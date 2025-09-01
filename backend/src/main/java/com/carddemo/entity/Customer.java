@@ -339,7 +339,7 @@ public class Customer {
             try {
                 ValidationUtil.validatePhoneNumber("phoneNumber1", phoneNumber1);
             } catch (ValidationException e) {
-                validationException.addFieldError("phoneNumber1", "Invalid phone number format");
+                validationException.addFieldError("phoneNumber1", "Phone validation details: " + e.getMessage() + " | Field errors: " + e.getFieldErrors());
             }
         }
 
