@@ -31,14 +31,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.batch.BatchJobRepository;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobInstance;
 import org.springframework.batch.core.explore.JobExplorer;
 
 import javax.sql.DataSource;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.List;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
@@ -78,14 +79,8 @@ public class ActuatorConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(ActuatorConfig.class);
 
-    @Autowired
-    private DailyTransactionJob dailyTransactionJob;
-    
-    @Autowired
-    private BatchJobLauncher batchJobLauncher;
-    
-    @Autowired
-    private InterestCalculationJob interestCalculationJob;
+    // Note: Batch job classes are configuration beans, not runtime monitoring objects
+    // We'll use JobExplorer for runtime job monitoring instead
     
     @Autowired
     private AccountRepository accountRepository;
@@ -164,7 +159,7 @@ public class ActuatorConfig {
                 }
                 
                 // Test specific repository functionality
-                boolean accountExists = accountRepository.existsById("0000000000001001");
+                boolean accountExists = accountRepository.existsById(0000000000001001L);
                 String testUsername = userSecurityRepository.findByUsername("admin") != null ? "admin found" : "admin not found";
                 
                 return Health.up()
@@ -305,56 +300,42 @@ public class ActuatorConfig {
                 Map<String, Object> healthDetails = new HashMap<>();
                 boolean overallHealth = true;
                 
-                // Check DailyTransactionJob status
+                // Check batch job system using JobExplorer
                 try {
-                    String dailyJobStatus = dailyTransactionJob.getExecutionStatus();
-                    JobParameters dailyJobParams = dailyTransactionJob.getJobParameters();
+                    // Get job instances for key batch jobs
+                    List<String> jobNames = jobExplorer.getJobNames();
+                    healthDetails.put("availableJobs", jobNames);
                     
-                    healthDetails.put("dailyTransactionJob.status", dailyJobStatus);
-                    healthDetails.put("dailyTransactionJob.parameters", dailyJobParams != null ? "Configured" : "Not configured");
-                    
-                    if ("FAILED".equals(dailyJobStatus) || "STOPPED".equals(dailyJobStatus)) {
-                        overallHealth = false;
+                    // Check for recent executions of key jobs
+                    if (jobNames.contains("dailyTransactionJob")) {
+                        List<JobInstance> dailyJobInstances = jobExplorer.getJobInstances("dailyTransactionJob", 0, 1);
+                        if (!dailyJobInstances.isEmpty()) {
+                            JobExecution lastExecution = jobExplorer.getJobExecution(
+                                jobExplorer.getJobExecutions(dailyJobInstances.get(0)).get(0).getId());
+                            healthDetails.put("dailyTransactionJob.lastStatus", 
+                                lastExecution != null ? lastExecution.getStatus().toString() : "No executions");
+                        } else {
+                            healthDetails.put("dailyTransactionJob.lastStatus", "No instances found");
+                        }
                     }
-                } catch (Exception e) {
-                    logger.warn("Failed to get DailyTransactionJob status: {}", e.getMessage());
-                    healthDetails.put("dailyTransactionJob.error", e.getMessage());
-                    overallHealth = false;
-                }
-                
-                // Check InterestCalculationJob status
-                try {
-                    String interestJobStatus = interestCalculationJob.getExecutionStatus();
-                    JobParameters interestJobParams = interestCalculationJob.getJobParameters();
                     
-                    healthDetails.put("interestCalculationJob.status", interestJobStatus);
-                    healthDetails.put("interestCalculationJob.parameters", interestJobParams != null ? "Configured" : "Not configured");
-                    
-                    if ("FAILED".equals(interestJobStatus) || "STOPPED".equals(interestJobStatus)) {
-                        overallHealth = false;
+                    if (jobNames.contains("interestCalculationJob")) {
+                        List<JobInstance> interestJobInstances = jobExplorer.getJobInstances("interestCalculationJob", 0, 1);
+                        if (!interestJobInstances.isEmpty()) {
+                            JobExecution lastExecution = jobExplorer.getJobExecution(
+                                jobExplorer.getJobExecutions(interestJobInstances.get(0)).get(0).getId());
+                            healthDetails.put("interestCalculationJob.lastStatus", 
+                                lastExecution != null ? lastExecution.getStatus().toString() : "No executions");
+                        } else {
+                            healthDetails.put("interestCalculationJob.lastStatus", "No instances found");
+                        }
                     }
-                } catch (Exception e) {
-                    logger.warn("Failed to get InterestCalculationJob status: {}", e.getMessage());
-                    healthDetails.put("interestCalculationJob.error", e.getMessage());
-                    overallHealth = false;
-                }
-                
-                // Check BatchJobLauncher status
-                try {
-                    Map<String, Object> batchStatus = batchJobLauncher.getJobStatus();
-                    JobExecution latestExecution = batchJobLauncher.getJobExecution("dailyTransactionJob");
                     
-                    healthDetails.put("batchJobLauncher.status", "Operational");
-                    healthDetails.put("batchJobLauncher.jobCount", batchStatus.size());
-                    healthDetails.put("batchJobLauncher.latestExecution", latestExecution != null ? latestExecution.getStatus().toString() : "No executions");
-                    
-                    // Test async launch capability
-                    // Note: This is a health check, so we won't actually launch a job
-                    healthDetails.put("batchJobLauncher.asyncCapable", "Available");
+                    healthDetails.put("jobExplorerOperational", true);
                     
                 } catch (Exception e) {
-                    logger.warn("Failed to get BatchJobLauncher status: {}", e.getMessage());
-                    healthDetails.put("batchJobLauncher.error", e.getMessage());
+                    logger.warn("Failed to get batch job status via JobExplorer: {}", e.getMessage());
+                    healthDetails.put("batchJobSystem.error", e.getMessage());
                     overallHealth = false;
                 }
                 
@@ -413,64 +394,82 @@ public class ActuatorConfig {
         
         PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
         
-        // Register custom gauges for business metrics
-        Gauge.builder("carddemo.accounts.total")
-                .description("Total number of accounts in the system")
-                .register(registry, this, obj -> {
+        // Register custom gauges for business metrics using proper three-parameter API
+        Gauge.builder("carddemo.accounts.total", this, obj -> {
                     try {
                         return accountRepository.count();
                     } catch (Exception e) {
                         logger.warn("Failed to get account count for metrics: {}", e.getMessage());
                         return -1;
                     }
-                });
+                })
+                .description("Total number of accounts in the system")
+                .register(registry);
         
-        Gauge.builder("carddemo.transactions.total")
-                .description("Total number of transactions in the system")
-                .register(registry, this, obj -> {
+        Gauge.builder("carddemo.transactions.total", this, obj -> {
                     try {
                         return transactionRepository.count();
                     } catch (Exception e) {
                         logger.warn("Failed to get transaction count for metrics: {}", e.getMessage());
                         return -1;
                     }
-                });
+                })
+                .description("Total number of transactions in the system")
+                .register(registry);
         
-        Gauge.builder("carddemo.users.total")
-                .description("Total number of users in the system")
-                .register(registry, this, obj -> {
+        Gauge.builder("carddemo.users.total", this, obj -> {
                     try {
                         return userSecurityRepository.count();
                     } catch (Exception e) {
                         logger.warn("Failed to get user count for metrics: {}", e.getMessage());
                         return -1;
                     }
-                });
+                })
+                .description("Total number of users in the system")
+                .register(registry);
         
-        // Register batch job metrics
-        Gauge.builder("carddemo.batch.daily_job.status")
-                .description("Daily transaction job execution status (1=success, 0=failure)")
-                .register(registry, this, obj -> {
+        // Register batch job metrics using JobExplorer
+        Gauge.builder("carddemo.batch.daily_job.status", this, obj -> {
                     try {
-                        String status = dailyTransactionJob.getExecutionStatus();
-                        return "COMPLETED".equals(status) ? 1 : 0;
+                        List<String> jobNames = jobExplorer.getJobNames();
+                        if (jobNames.contains("dailyTransactionJob")) {
+                            List<JobInstance> instances = jobExplorer.getJobInstances("dailyTransactionJob", 0, 1);
+                            if (!instances.isEmpty()) {
+                                List<JobExecution> executions = jobExplorer.getJobExecutions(instances.get(0));
+                                if (!executions.isEmpty()) {
+                                    return executions.get(0).getStatus().toString().equals("COMPLETED") ? 1 : 0;
+                                }
+                            }
+                        }
+                        return 0;
                     } catch (Exception e) {
                         logger.warn("Failed to get daily job status for metrics: {}", e.getMessage());
                         return -1;
                     }
-                });
+                })
+                .description("Daily transaction job execution status (1=success, 0=failure)")
+                .register(registry);
         
-        Gauge.builder("carddemo.batch.interest_job.status")
-                .description("Interest calculation job execution status (1=success, 0=failure)")
-                .register(registry, this, obj -> {
+        Gauge.builder("carddemo.batch.interest_job.status", this, obj -> {
                     try {
-                        String status = interestCalculationJob.getExecutionStatus();
-                        return "COMPLETED".equals(status) ? 1 : 0;
+                        List<String> jobNames = jobExplorer.getJobNames();
+                        if (jobNames.contains("interestCalculationJob")) {
+                            List<JobInstance> instances = jobExplorer.getJobInstances("interestCalculationJob", 0, 1);
+                            if (!instances.isEmpty()) {
+                                List<JobExecution> executions = jobExplorer.getJobExecutions(instances.get(0));
+                                if (!executions.isEmpty()) {
+                                    return executions.get(0).getStatus().toString().equals("COMPLETED") ? 1 : 0;
+                                }
+                            }
+                        }
+                        return 0;
                     } catch (Exception e) {
                         logger.warn("Failed to get interest job status for metrics: {}", e.getMessage());
                         return -1;
                     }
-                });
+                })
+                .description("Interest calculation job execution status (1=success, 0=failure)")
+                .register(registry);
         
         logger.info("Prometheus meter registry configured with custom business metrics");
         return registry;
@@ -536,9 +535,7 @@ public class ActuatorConfig {
                 .register(meterRegistry);
         
         // Create gauge for daily transaction volume
-        Gauge.builder("carddemo.transactions.daily.volume")
-                .description("Number of transactions processed today")
-                .register(meterRegistry, this, obj -> {
+        Gauge.builder("carddemo.transactions.daily.volume", this, obj -> {
                     try {
                         LocalDate today = LocalDate.now();
                         LocalDateTime startOfDay = today.atStartOfDay();
@@ -548,16 +545,18 @@ public class ActuatorConfig {
                         logger.warn("Failed to get daily transaction volume: {}", e.getMessage());
                         return 0;
                     }
-                });
+                })
+                .description("Number of transactions processed today")
+                .register(meterRegistry);
         
-        // Create gauge for error rate monitoring
-        Gauge.builder("carddemo.transactions.error.rate")
-                .description("Current transaction error rate percentage")
-                .register(meterRegistry, this, obj -> {
+        // Create gauge for error rate monitoring  
+        Gauge.builder("carddemo.transactions.error.rate", this, obj -> {
                     long total = transactionCount.get();
                     long errors = errorCount.get();
                     return total > 0 ? (errors * 100.0 / total) : 0.0;
-                });
+                })
+                .description("Current transaction error rate percentage")
+                .register(meterRegistry);
         
         // Return metrics management object
         return new Object() {
@@ -667,11 +666,31 @@ public class ActuatorConfig {
                 status.put("batchSystemActive", true);
                 status.put("lastStatusCheck", LocalDateTime.now());
                 
+                // Get batch job status using JobExplorer
+                List<String> jobNames = jobExplorer.getJobNames();
+                status.put("availableJobs", jobNames);
+                
                 // Get DailyTransactionJob status
                 Map<String, Object> dailyJobInfo = new HashMap<>();
                 try {
-                    dailyJobInfo.put("status", dailyTransactionJob.getExecutionStatus());
-                    dailyJobInfo.put("parameters", dailyTransactionJob.getJobParameters());
+                    if (jobNames.contains("dailyTransactionJob")) {
+                        List<JobInstance> instances = jobExplorer.getJobInstances("dailyTransactionJob", 0, 1);
+                        if (!instances.isEmpty()) {
+                            List<JobExecution> executions = jobExplorer.getJobExecutions(instances.get(0));
+                            if (!executions.isEmpty()) {
+                                JobExecution lastExecution = executions.get(0);
+                                dailyJobInfo.put("status", lastExecution.getStatus().toString());
+                                dailyJobInfo.put("startTime", lastExecution.getStartTime());
+                                dailyJobInfo.put("endTime", lastExecution.getEndTime());
+                            } else {
+                                dailyJobInfo.put("status", "No executions found");
+                            }
+                        } else {
+                            dailyJobInfo.put("status", "No instances found");
+                        }
+                    } else {
+                        dailyJobInfo.put("status", "Job not configured");
+                    }
                     dailyJobInfo.put("operational", true);
                 } catch (Exception e) {
                     dailyJobInfo.put("status", "ERROR");
@@ -684,8 +703,24 @@ public class ActuatorConfig {
                 // Get InterestCalculationJob status
                 Map<String, Object> interestJobInfo = new HashMap<>();
                 try {
-                    interestJobInfo.put("status", interestCalculationJob.getExecutionStatus());
-                    interestJobInfo.put("parameters", interestCalculationJob.getJobParameters());
+                    if (jobNames.contains("interestCalculationJob")) {
+                        List<JobInstance> instances = jobExplorer.getJobInstances("interestCalculationJob", 0, 1);
+                        if (!instances.isEmpty()) {
+                            List<JobExecution> executions = jobExplorer.getJobExecutions(instances.get(0));
+                            if (!executions.isEmpty()) {
+                                JobExecution lastExecution = executions.get(0);
+                                interestJobInfo.put("status", lastExecution.getStatus().toString());
+                                interestJobInfo.put("startTime", lastExecution.getStartTime());
+                                interestJobInfo.put("endTime", lastExecution.getEndTime());
+                            } else {
+                                interestJobInfo.put("status", "No executions found");
+                            }
+                        } else {
+                            interestJobInfo.put("status", "No instances found");
+                        }
+                    } else {
+                        interestJobInfo.put("status", "Job not configured");
+                    }
                     interestJobInfo.put("operational", true);
                 } catch (Exception e) {
                     interestJobInfo.put("status", "ERROR");
@@ -694,26 +729,6 @@ public class ActuatorConfig {
                     logger.warn("Failed to get interest job status: {}", e.getMessage());
                 }
                 status.put("interestCalculationJob", interestJobInfo);
-                
-                // Get BatchJobLauncher status
-                Map<String, Object> launcherInfo = new HashMap<>();
-                try {
-                    Map<String, Object> jobStatuses = batchJobLauncher.getJobStatus();
-                    JobExecution latestDaily = batchJobLauncher.getJobExecution("dailyTransactionJob");
-                    JobExecution latestInterest = batchJobLauncher.getJobExecution("interestCalculationJob");
-                    
-                    launcherInfo.put("jobStatuses", jobStatuses);
-                    launcherInfo.put("latestDailyExecution", latestDaily != null ? latestDaily.getStatus().toString() : "None");
-                    launcherInfo.put("latestInterestExecution", latestInterest != null ? latestInterest.getStatus().toString() : "None");
-                    launcherInfo.put("asyncLaunchAvailable", true);
-                    launcherInfo.put("operational", true);
-                } catch (Exception e) {
-                    launcherInfo.put("status", "ERROR");
-                    launcherInfo.put("error", e.getMessage());
-                    launcherInfo.put("operational", false);
-                    logger.warn("Failed to get batch launcher status: {}", e.getMessage());
-                }
-                status.put("batchJobLauncher", launcherInfo);
                 
                 // Add repository health for data access validation
                 Map<String, Object> dataAccessInfo = new HashMap<>();
@@ -734,17 +749,18 @@ public class ActuatorConfig {
                 Map<String, Object> jobInfo;
                 
                 jobInfo = (Map<String, Object>) status.get("dailyTransactionJob");
-                if (!Boolean.TRUE.equals(jobInfo.get("operational"))) {
+                if (jobInfo != null && !Boolean.TRUE.equals(jobInfo.get("operational"))) {
                     overallHealth = false;
                 }
                 
                 jobInfo = (Map<String, Object>) status.get("interestCalculationJob");
-                if (!Boolean.TRUE.equals(jobInfo.get("operational"))) {
+                if (jobInfo != null && !Boolean.TRUE.equals(jobInfo.get("operational"))) {
                     overallHealth = false;
                 }
                 
-                jobInfo = (Map<String, Object>) status.get("batchJobLauncher");
-                if (!Boolean.TRUE.equals(jobInfo.get("operational"))) {
+                // Check data access operational status
+                jobInfo = (Map<String, Object>) status.get("dataAccess");
+                if (jobInfo != null && !Boolean.TRUE.equals(jobInfo.get("dataAccessOperational"))) {
                     overallHealth = false;
                 }
                 
