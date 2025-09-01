@@ -8,6 +8,8 @@ package com.carddemo.performance;
 import com.carddemo.config.ActuatorConfig;
 import com.carddemo.controller.TransactionController;
 import com.carddemo.test.TestDataGenerator;
+import com.carddemo.entity.Account;
+import com.carddemo.entity.Transaction;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -129,7 +131,7 @@ public class TransactionLoadTest {
     @BeforeEach
     public void setUp() {
         // Reset test data generator for consistent test runs
-        testDataGenerator.resetRandomSeed();
+        testDataGenerator.resetRandomSeed(12345L);
         
         // Initialize thread pool for concurrent testing
         executorService = Executors.newFixedThreadPool(CONCURRENT_USERS);
@@ -286,7 +288,7 @@ public class TransactionLoadTest {
     @DisplayName("Response time validation under 200ms SLA requirement")
     public void testResponseTimeUnder200ms() {
         // Generate test data for response time validation
-        List<Map<String, Object>> testAccounts = testDataGenerator.generateTransactionList();
+        List<Transaction> testTransactions = testDataGenerator.generateTransactionList(10);
         String testTransactionId = "000000000001";
         Map<String, Object> newTransactionData = generateNewTransactionData();
         
@@ -414,10 +416,10 @@ public class TransactionLoadTest {
         Duration testDuration = Duration.between(testStart, Instant.now());
         double sessionsPerSecond = concurrentSessions / (testDuration.toMillis() / 1000.0);
         
-        assertThat(successCount.get()).isGreaterThan(concurrentSessions * 0.98) // Allow 2% tolerance
+        assertThat(successCount.get()).isGreaterThan((int)(concurrentSessions * 0.98)) // Allow 2% tolerance
                 .describedAs("Successful concurrent sessions should be at least 98%% of total");
         
-        assertThat(errorCount.get()).isLessThan(concurrentSessions * 0.05) // Max 5% error rate
+        assertThat(errorCount.get()).isLessThan((int)(concurrentSessions * 0.05)) // Max 5% error rate
                 .describedAs("Error count should be less than 5%% of total sessions");
         
         generateLoadTestReport("Concurrent_Load_Test", sessionsPerSecond, calculateResponseTimePercentiles());
@@ -448,8 +450,8 @@ public class TransactionLoadTest {
     @DisplayName("Individual transaction endpoint performance characteristics")
     public void testTransactionEndpointPerformance() {
         // Test data generation for endpoint-specific testing
-        Map<String, Object> testAccount = testDataGenerator.generateAccount();
-        Map<String, Object> testTransaction = testDataGenerator.generateTransaction();
+        Account testAccount = testDataGenerator.generateAccount();
+        Transaction testTransaction = testDataGenerator.generateTransaction();
         String testTransactionId = "000000000001";
         
         Map<String, List<Long>> endpointMetrics = new HashMap<>();
@@ -463,7 +465,7 @@ public class TransactionLoadTest {
         // Test GET /api/transactions endpoint (COTRN00C equivalent)
         for (int i = 0; i < testIterations; i++) {
             long responseTime = measureSingleEndpointPerformance(() -> {
-                return webTestClient.get()
+                webTestClient.get()
                         .uri("/api/transactions")
                         .exchange()
                         .expectStatus().isOk()
@@ -477,7 +479,7 @@ public class TransactionLoadTest {
         // Test GET /api/transactions/{id} endpoint (COTRN01C equivalent)
         for (int i = 0; i < testIterations; i++) {
             long responseTime = measureSingleEndpointPerformance(() -> {
-                return webTestClient.get()
+                webTestClient.get()
                         .uri("/api/transactions/{transactionId}", testTransactionId)
                         .exchange()
                         .expectStatus().isOk()
@@ -492,7 +494,7 @@ public class TransactionLoadTest {
         for (int i = 0; i < testIterations / 10; i++) { // Reduce POST volume
             Map<String, Object> newTransactionData = generateUniqueTransactionData(i);
             long responseTime = measureSingleEndpointPerformance(() -> {
-                return webTestClient.post()
+                webTestClient.post()
                         .uri("/api/transactions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(newTransactionData)
@@ -507,11 +509,12 @@ public class TransactionLoadTest {
         
         // Test paginated transaction endpoint
         for (int i = 0; i < testIterations; i++) {
+            final int pageNum = i % 10; // Capture for lambda
             long responseTime = measureSingleEndpointPerformance(() -> {
-                return webTestClient.get()
+                webTestClient.get()
                         .uri(uriBuilder -> uriBuilder
                                 .path("/api/transactions")
-                                .queryParam("page", i % 10)
+                                .queryParam("page", pageNum)
                                 .queryParam("size", 20)
                                 .build())
                         .exchange()
@@ -555,7 +558,7 @@ public class TransactionLoadTest {
     @DisplayName("Pagination performance for large transaction datasets")
     public void testPaginationPerformance() {
         // Generate large dataset for pagination testing
-        testDataGenerator.resetRandomSeed();
+        testDataGenerator.resetRandomSeed(12345L);
         
         Map<String, List<Long>> paginationMetrics = new HashMap<>();
         paginationMetrics.put("small_pages", new ArrayList<>());
@@ -567,11 +570,12 @@ public class TransactionLoadTest {
         
         // Test small page sizes (10-20 records)
         for (int page = 0; page < totalTestPages; page++) {
+            final int pageNum = page; // Capture for lambda
             long responseTime = measureSingleEndpointPerformance(() -> {
-                return webTestClient.get()
+                webTestClient.get()
                         .uri(uriBuilder -> uriBuilder
                                 .path("/api/transactions")
-                                .queryParam("page", page)
+                                .queryParam("page", pageNum)
                                 .queryParam("size", 15)
                                 .queryParam("sort", "transactionDate,desc")
                                 .build())
@@ -585,11 +589,12 @@ public class TransactionLoadTest {
         
         // Test medium page sizes (50-100 records)
         for (int page = 0; page < totalTestPages / 2; page++) {
+            final int pageNum = page; // Capture for lambda
             long responseTime = measureSingleEndpointPerformance(() -> {
-                return webTestClient.get()
+                webTestClient.get()
                         .uri(uriBuilder -> uriBuilder
                                 .path("/api/transactions")
-                                .queryParam("page", page)
+                                .queryParam("page", pageNum)
                                 .queryParam("size", 75)
                                 .queryParam("sort", "transactionDate,desc")
                                 .build())
@@ -603,11 +608,12 @@ public class TransactionLoadTest {
         
         // Test large page sizes (200-500 records)
         for (int page = 0; page < totalTestPages / 10; page++) {
+            final int pageNum = page; // Capture for lambda
             long responseTime = measureSingleEndpointPerformance(() -> {
-                return webTestClient.get()
+                webTestClient.get()
                         .uri(uriBuilder -> uriBuilder
                                 .path("/api/transactions")
-                                .queryParam("page", page)
+                                .queryParam("page", pageNum)
                                 .queryParam("size", 300)
                                 .queryParam("sort", "transactionDate,desc")
                                 .build())
@@ -622,11 +628,11 @@ public class TransactionLoadTest {
         // Test random page access patterns
         Random random = new Random(12345); // Fixed seed for reproducible tests
         for (int i = 0; i < 50; i++) {
-            int randomPage = random.nextInt(100);
-            int randomSize = 20 + random.nextInt(80); // 20-100 record pages
+            final int randomPage = random.nextInt(100);
+            final int randomSize = 20 + random.nextInt(80); // 20-100 record pages
             
             long responseTime = measureSingleEndpointPerformance(() -> {
-                return webTestClient.get()
+                webTestClient.get()
                         .uri(uriBuilder -> uriBuilder
                                 .path("/api/transactions")
                                 .queryParam("page", randomPage)
@@ -676,9 +682,9 @@ public class TransactionLoadTest {
                 .description("Overall load test execution time")
                 .register(meterRegistry);
         
-        Gauge.builder("load.test.concurrent.users")
+        Gauge.builder("load.test.concurrent.users", this, TransactionLoadTest::getCurrentConcurrentUsers)
                 .description("Number of concurrent users in load test")
-                .register(meterRegistry, this, TransactionLoadTest::getCurrentConcurrentUsers);
+                .register(meterRegistry);
         
         // Execute comprehensive metrics collection test
         Timer.Sample overallSample = Timer.start(meterRegistry);
@@ -966,7 +972,7 @@ public class TransactionLoadTest {
         generateCapacityPlanningReport(reportingMetrics);
         
         // Validate report generation success
-        assertThat(reportingSuccess.get()).isGreaterThan(reportingIterations * 0.95)
+        assertThat(reportingSuccess.get()).isGreaterThan((int)(reportingIterations * 0.95))
                 .describedAs("Reporting test should achieve >95% success rate");
         
         assertThat((Double) reportingMetrics.get("actualTPS")).isGreaterThan(0.0)
@@ -996,7 +1002,7 @@ public class TransactionLoadTest {
             Map<String, Object> data = new HashMap<>();
             data.put("account", testDataGenerator.generateAccount());
             data.put("transaction", testDataGenerator.generateTransaction());
-            data.put("amount", testDataGenerator.generateComp3BigDecimal());
+            data.put("amount", testDataGenerator.generateComp3BigDecimal(7, 50000.0));
             testData.add(data);
         }
         return testData;
@@ -1008,7 +1014,7 @@ public class TransactionLoadTest {
     private Map<String, Object> generateUniqueTransactionData(int uniqueId) {
         Map<String, Object> transactionData = new HashMap<>();
         transactionData.put("accountId", "ACC" + String.format("%010d", uniqueId));
-        transactionData.put("amount", testDataGenerator.generateComp3BigDecimal());
+        transactionData.put("amount", testDataGenerator.generateComp3BigDecimal(7, 50000.0));
         transactionData.put("description", "Load Test Transaction " + uniqueId);
         transactionData.put("transactionType", "PURCHASE");
         transactionData.put("merchantName", "Test Merchant " + (uniqueId % 100));
@@ -1115,10 +1121,11 @@ public class TransactionLoadTest {
             // Pagination browsing simulation
             int pageCount = 3 + (sessionId % 5);
             for (int page = 0; page < pageCount; page++) {
+                final int currentPage = page; // Capture for lambda
                 webTestClient.get()
                         .uri(uriBuilder -> uriBuilder
                                 .path("/api/transactions")
-                                .queryParam("page", page)
+                                .queryParam("page", currentPage)
                                 .queryParam("size", 20)
                                 .build())
                         .exchange()
