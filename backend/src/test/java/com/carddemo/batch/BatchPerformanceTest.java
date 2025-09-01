@@ -10,19 +10,21 @@ import com.carddemo.batch.BatchTestUtils;
 import com.carddemo.config.MetricsConfig;
 import com.carddemo.config.ActuatorConfig;
 import com.carddemo.config.BatchConfig;
-import AbstractBaseTest;
-import TestConstants;
+import com.carddemo.test.AbstractBaseTest;
+import com.carddemo.test.TestConstants;
 
 import org.openjdk.jmh.annotations.Mode;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.batch.test.JobLauncherTestUtils;
 import io.micrometer.core.instrument.Timer;
-import org.springframework.boot.actuator.metrics.MetricsEndpoint;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.assertj.core.api.Assertions;
 import java.time.Instant;
 import java.lang.management.ManagementFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.batch.core.Job;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -99,6 +101,10 @@ public class BatchPerformanceTest extends AbstractBaseTest {
     private AccountProcessingJob accountProcessingJob;
     
     @Autowired
+    @Qualifier("compositeAccountProcessingJob")
+    private Job compositeAccountProcessingJobBean;
+    
+    @Autowired
     private BatchTestUtils batchTestUtils;
     
     @Autowired
@@ -110,9 +116,12 @@ public class BatchPerformanceTest extends AbstractBaseTest {
     @Autowired
     private BatchConfig batchConfig;
     
+    @Autowired
+    private MeterRegistry meterRegistry;
+    
+    @Autowired
     private JobLauncherTestUtils jobLauncherTestUtils;
     private Timer.Sample timerSample;
-    private MetricsEndpoint metricsEndpoint;
     private MemoryMXBean memoryMXBean;
     private OperatingSystemMXBean osBean;
     private ThreadMXBean threadMXBean;
@@ -121,12 +130,10 @@ public class BatchPerformanceTest extends AbstractBaseTest {
     private Map<String, Object> performanceMetrics;
     
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         super.setUp();
         
         // Initialize performance monitoring components
-        this.jobLauncherTestUtils = testBatchConfig.jobLauncherTestUtils();
-        this.metricsEndpoint = actuatorConfig.performanceEndpoint();
         this.memoryMXBean = ManagementFactory.getMemoryMXBean();
         this.osBean = ManagementFactory.getOperatingSystemMXBean();
         this.threadMXBean = ManagementFactory.getThreadMXBean();
@@ -135,14 +142,14 @@ public class BatchPerformanceTest extends AbstractBaseTest {
         this.performanceMetrics = new HashMap<>();
         
         // Setup test data for batch processing
-        batchTestUtils.setupBatchTestData();
+        batchTestUtils.generateTestAccounts(1000);
         
         // Validate test environment readiness
         validateProcessingWindow();
     }
     
     @AfterEach
-    void tearDown() {
+    public void tearDown() {
         // Collect final performance metrics
         collectPerformanceMetrics();
         
@@ -155,7 +162,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
     @Test
     @Order(1)
     @DisplayName("Daily Transaction Job Performance - Validate execution within processing window")
-    void testDailyTransactionJobPerformance() {
+    void testDailyTransactionJobPerformance() throws Exception {
         // Given: Daily transaction job with performance monitoring
         Instant startTime = Instant.now();
         JobParameters jobParams = new JobParametersBuilder()
@@ -188,7 +195,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
     @Test
     @Order(2)
     @DisplayName("Interest Calculation Job Performance - Validate BigDecimal precision performance")
-    void testInterestCalculationJobPerformance() {
+    void testInterestCalculationJobPerformance() throws Exception {
         // Given: Interest calculation job with precision monitoring
         Instant startTime = Instant.now();
         JobParameters jobParams = new JobParametersBuilder()
@@ -211,7 +218,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
             .isLessThan(TestConstants.BATCH_PROCESSING_WINDOW_HOURS * 60L);
             
         // Validate BigDecimal precision performance under load
-        batchTestUtils.validateCobolPrecision();
+        batchTestUtils.validateCobolPrecision("999999.99", new BigDecimal("999999.99"), 11, 2);
         
         // Record metrics for baseline comparison
         performanceMetrics.put("interestCalculationJob.executionTime", executionTime.toSeconds());
@@ -224,7 +231,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
     @Test
     @Order(3)
     @DisplayName("Statement Generation Job Performance - Validate large-scale file generation")
-    void testStatementGenerationJobPerformance() {
+    void testStatementGenerationJobPerformance() throws Exception {
         // Given: Statement generation job with I/O monitoring
         Instant startTime = Instant.now();
         JobParameters jobParams = new JobParametersBuilder()
@@ -260,7 +267,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
     @Test
     @Order(4)  
     @DisplayName("Account Processing Job Performance - Validate composite job orchestration")
-    void testAccountProcessingJobPerformance() {
+    void testAccountProcessingJobPerformance() throws Exception {
         // Given: Account processing composite job with orchestration monitoring
         Instant startTime = Instant.now();
         JobParameters jobParams = new JobParametersBuilder()
@@ -270,7 +277,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
             .toJobParameters();
         
         // When: Execute account processing composite job
-        jobLauncherTestUtils.setJob(accountProcessingJob.accountProcessingJob());
+        jobLauncherTestUtils.setJob(compositeAccountProcessingJobBean);
         JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParams);
         Instant endTime = Instant.now();
         
@@ -293,7 +300,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
     @Test
     @Order(5)
     @DisplayName("Batch Processing Window Compliance - Validate complete nightly batch execution")
-    void testBatchProcessingWindowCompliance() {
+    void testBatchProcessingWindowCompliance() throws Exception {
         // Given: Complete nightly batch processing sequence
         Instant batchStartTime = Instant.now();
         List<JobExecution> allJobExecutions = List.of();
@@ -307,7 +314,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
             CompletableFuture<JobExecution> statementFuture = executeJobAsync(
                 statementGenerationJob.statementGenerationJob(), "statement-generation");
             CompletableFuture<JobExecution> accountFuture = executeJobAsync(
-                accountProcessingJob.accountProcessingJob(), "account-processing");
+                compositeAccountProcessingJobBean, "account-processing");
             
             // Wait for all jobs to complete
             CompletableFuture.allOf(dailyTxnFuture, interestFuture, statementFuture, accountFuture).get();
@@ -340,7 +347,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
     @Test
     @Order(6)
     @DisplayName("Throughput Measurement - Validate records per second processing rates")
-    void testThroughputMeasurement() {
+    void testThroughputMeasurement() throws Exception {
         // Given: Large dataset for throughput testing
         int testRecordCount = TestConstants.PERFORMANCE_TEST_DATA.size();
         batchTestUtils.generateTestAccounts(testRecordCount);
@@ -379,7 +386,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
     @Test
     @Order(7)
     @DisplayName("Memory Utilization Profiling - Monitor heap and non-heap memory during execution")
-    void testMemoryUtilizationProfiling() {
+    void testMemoryUtilizationProfiling() throws Exception {
         // Given: Memory monitoring setup
         long initialHeapUsed = memoryMXBean.getHeapMemoryUsage().getUsed();
         long initialNonHeapUsed = memoryMXBean.getNonHeapMemoryUsage().getUsed();
@@ -416,7 +423,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
     @Test
     @Order(8)
     @DisplayName("Concurrent Job Execution - Test parallel batch processing")
-    void testConcurrentJobExecution() {
+    void testConcurrentJobExecution() throws Exception {
         // Given: Concurrent job execution setup
         ExecutorService executorService = Executors.newFixedThreadPool(4);
         Instant startTime = Instant.now();
@@ -461,7 +468,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
     @Test
     @Order(9)
     @DisplayName("Resource Contention Scenarios - Test system behavior under resource pressure")
-    void testResourceContentionScenarios() {
+    void testResourceContentionScenarios() throws Exception {
         // Given: Resource contention simulation setup
         int threadCount = Runtime.getRuntime().availableProcessors() * 2;
         ExecutorService contentionExecutor = Executors.newFixedThreadPool(threadCount);
@@ -484,7 +491,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
                 .addLong("timestamp", System.currentTimeMillis())
                 .toJobParameters();
                 
-            jobLauncherTestUtils.setJob(accountProcessingJob.accountProcessingJob());
+            jobLauncherTestUtils.setJob(compositeAccountProcessingJobBean);
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParams);
             
             Instant endTime = Instant.now();
@@ -499,7 +506,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
             // Job should still complete, even if slower under contention
             Assertions.assertThat(contentionExecutionTime.toMinutes())
                 .as("Job should complete even under resource contention")
-                .isLessThan(TestConstants.BATCH_PROCESSING_WINDOW_HOURS * 60L * 1.5); // Allow 50% degradation
+                .isLessThan((long) (TestConstants.BATCH_PROCESSING_WINDOW_HOURS * 60L * 1.5)); // Allow 50% degradation
                 
             // Record resource contention metrics
             performanceMetrics.put("contention.executionTimeMinutes", contentionExecutionTime.toMinutes());
@@ -517,7 +524,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
     @Test
     @Order(10)
     @DisplayName("Stress Testing - Validate system behavior under extreme load")
-    void testStressTesting() {
+    void testStressTesting() throws Exception {
         // Given: Extreme load scenario setup
         int largeDatasetSize = TestConstants.PERFORMANCE_TEST_DATA.size() * 10; // 10x normal volume
         batchTestUtils.generateTestAccounts(largeDatasetSize);
@@ -536,7 +543,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
         
         // Monitor system resources during stress test
         long startMemory = memoryMXBean.getHeapMemoryUsage().getUsed();
-        double startCpuLoad = osBean.getProcessCpuLoad();
+        double startCpuLoad = Math.max(0.0, osBean.getSystemLoadAverage() / osBean.getAvailableProcessors());
         
         JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParams);
         
@@ -545,7 +552,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
         
         // Monitor peak resource usage
         long peakMemory = memoryMXBean.getHeapMemoryUsage().getUsed();
-        double peakCpuLoad = osBean.getProcessCpuLoad();
+        double peakCpuLoad = Math.max(0.0, osBean.getSystemLoadAverage() / osBean.getAvailableProcessors());
         
         // Then: Validate system stability under extreme load
         Assertions.assertThat(jobExecution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
@@ -572,7 +579,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
     @Test
     @Order(11)
     @DisplayName("Performance Baseline Comparison - Validate against mainframe benchmarks")
-    void testPerformanceBaseline() {
+    void testPerformanceBaseline() throws Exception {
         // Given: Baseline comparison setup with known mainframe metrics
         Map<String, Double> mainframeBaselines = Map.of(
             "DAILY_TRANSACTION", 3600.0,     // 1 hour baseline
@@ -613,7 +620,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
         
         @Test
         @DisplayName("Chunk Size Optimization Benchmark")
-        void benchmarkChunkSizeOptimization() {
+        void benchmarkChunkSizeOptimization() throws Exception {
             // Given: Different chunk sizes to test
             int[] chunkSizes = {100, 500, 1000, 2000, 5000}; // 1000 is baseline
             Map<Integer, Double> chunkPerformance = new HashMap<>();
@@ -632,7 +639,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
                 Instant endTime = Instant.now();
                 
                 Duration executionTime = Duration.between(startTime, endTime);
-                chunkPerformance.put(chunkSize, executionTime.toSeconds());
+                chunkPerformance.put(chunkSize, (double) executionTime.toSeconds());
                 
                 // Validate job completion
                 Assertions.assertThat(jobExecution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
@@ -661,7 +668,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
         
         @Test
         @DisplayName("Database Connection Pool Benchmark")
-        void benchmarkDatabaseConnectionPooling() {
+        void benchmarkDatabaseConnectionPooling() throws Exception {
             // Given: Different connection pool configurations
             int[] poolSizes = {5, 10, 20, 30, 40};
             Map<Integer, Double> poolPerformance = new HashMap<>();
@@ -678,12 +685,12 @@ public class BatchPerformanceTest extends AbstractBaseTest {
                     .addLong("timestamp", System.currentTimeMillis())
                     .toJobParameters();
                     
-                jobLauncherTestUtils.setJob(accountProcessingJob.accountProcessingJob());
+                jobLauncherTestUtils.setJob(compositeAccountProcessingJobBean);
                 JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParams);
                 Instant endTime = Instant.now();
                 
                 Duration executionTime = Duration.between(startTime, endTime);
-                poolPerformance.put(poolSize, executionTime.toSeconds());
+                poolPerformance.put(poolSize, (double) executionTime.toSeconds());
                 
                 Assertions.assertThat(jobExecution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
             }
@@ -704,7 +711,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
         
         @Test 
         @DisplayName("Parallel Processing Benchmark")
-        void benchmarkParallelProcessing() {
+        void benchmarkParallelProcessing() throws Exception {
             // Given: Different parallel processing configurations
             int[] threadCounts = {1, 2, 4, 8, 16};
             Map<Integer, Double> parallelPerformance = new HashMap<>();
@@ -723,7 +730,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
                 Instant endTime = Instant.now();
                 
                 Duration executionTime = Duration.between(startTime, endTime);
-                parallelPerformance.put(threadCount, executionTime.toSeconds());
+                parallelPerformance.put(threadCount, (double) executionTime.toSeconds());
                 
                 Assertions.assertThat(jobExecution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
             }
@@ -779,7 +786,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
             case "DAILY_TRANSACTION" -> dailyTransactionJob.dailyTransactionJob();
             case "INTEREST_CALCULATION" -> interestCalculationJob.interestCalculationJob(); 
             case "STATEMENT_GENERATION" -> statementGenerationJob.statementGenerationJob();
-            case "ACCOUNT_PROCESSING" -> accountProcessingJob.accountProcessingJob();
+            case "ACCOUNT_PROCESSING" -> compositeAccountProcessingJobBean;
             default -> throw new IllegalArgumentException("Unknown job type: " + jobType);
         };
         
@@ -804,7 +811,7 @@ public class BatchPerformanceTest extends AbstractBaseTest {
     }
     
     public void measureCpuUtilization() {
-        double cpuUsage = osBean.getProcessCpuLoad();
+        double cpuUsage = Math.max(0.0, osBean.getSystemLoadAverage() / osBean.getAvailableProcessors());
         long threadCount = threadMXBean.getThreadCount();
         
         performanceMetrics.put("system.cpuUsage", cpuUsage);
