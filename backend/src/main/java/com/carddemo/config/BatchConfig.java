@@ -65,7 +65,6 @@ import javax.sql.DataSource;
  * @since 2024
  */
 @Configuration
-@Profile("!test")
 public class BatchConfig {
 
     // Thread pool configuration constants for batch processing optimization

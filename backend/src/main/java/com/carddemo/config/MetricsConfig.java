@@ -40,7 +40,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * while maintaining identical operational visibility and SLA compliance.
  */
 @Configuration
-@Profile("!test")
 public class MetricsConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(MetricsConfig.class);
@@ -73,6 +72,20 @@ public class MetricsConfig {
     }
 
 
+
+    /**
+     * Creates and configures Prometheus meter registry for metrics export.
+     * Essential for collecting and exporting metrics to Prometheus monitoring system.
+     * 
+     * @return PrometheusMeterRegistry configured for metrics collection
+     */
+    @Bean
+    public PrometheusMeterRegistry prometheusMeterRegistry() {
+        logger.info("Creating PrometheusMeterRegistry for metrics export");
+        PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
+        logger.info("PrometheusMeterRegistry created successfully");
+        return registry;
+    }
 
     /**
      * Custom health indicator for business logic validation.
