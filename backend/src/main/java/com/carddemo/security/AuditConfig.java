@@ -8,6 +8,8 @@ package com.carddemo.security;
 import com.carddemo.security.SecurityEventListener;
 import com.carddemo.service.AuditService;
 import com.carddemo.config.ActuatorConfig;
+import com.carddemo.entity.AuditLog;
+import com.carddemo.repository.AuditLogRepository;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationEventPublisher;
@@ -37,6 +39,7 @@ import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Gauge;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import java.util.Map;
 import java.util.HashMap;
@@ -99,6 +102,12 @@ public class AuditConfig {
     @Autowired
     private DataSource dataSource;
     
+    @Autowired
+    private AuditLogRepository auditLogRepository;
+    
+    @Autowired
+    private MeterRegistry meterRegistry;
+    
     // Audit metrics tracking
     private Counter auditEventCounter;
     private Counter complianceReportCounter;
@@ -160,14 +169,15 @@ public class AuditConfig {
                         Timer.Sample sample = Timer.start();
                         CompletableFuture.runAsync(() -> {
                             try {
-                                auditService.saveAuditLog(
-                                    auditEvent.getUserId(),
-                                    auditEvent.getEventType(),
-                                    auditEvent.getDescription(),
-                                    auditEvent.getSourceIp(),
-                                    auditEvent.getUserAgent(),
-                                    auditEvent.getAdditionalData()
-                                );
+                                AuditLog auditLog = new AuditLog();
+                                auditLog.setUsername(auditEvent.getUserId());
+                                auditLog.setEventType(auditEvent.getEventType());
+                                auditLog.setTimestamp(LocalDateTime.now());
+                                auditLog.setSourceIp(auditEvent.getSourceIp());
+                                auditLog.setDetails(auditEvent.getDescription());
+                                auditLog.setOutcome("SUCCESS");
+                                auditLog.setResourceAccessed("AUDIT_EVENT");
+                                auditService.saveAuditLog(auditLog);
                                 
                                 if (auditProcessingTimer != null) {
                                     sample.stop(auditProcessingTimer);
@@ -227,7 +237,7 @@ public class AuditConfig {
         
         // SecurityEventListener is already a Spring Component, but we configure it here
         // to ensure proper integration with our audit configuration
-        SecurityEventListener listener = new SecurityEventListener();
+        SecurityEventListener listener = new SecurityEventListener(meterRegistry);
         
         // The listener will be automatically configured with AuditService and MeterRegistry
         // through Spring's dependency injection mechanism
@@ -269,8 +279,8 @@ public class AuditConfig {
         logger.info("Configuring audit metrics collector for security monitoring");
         
         try {
-            // Get MeterRegistry from ActuatorConfig
-            MeterRegistry meterRegistry = actuatorConfig.metricsRegistry();
+            // Use the MeterRegistry parameter passed to this method
+            // MeterRegistry meterRegistry is already available as a parameter
             
             // Configure audit event counters
             auditEventCounter = Counter.builder("carddemo.audit.events.total")
@@ -311,28 +321,29 @@ public class AuditConfig {
                 .register(meterRegistry);
             
             // Configure audit retention gauges
-            auditRetentionGauge = Gauge.builder("carddemo.audit.retention.days_retained")
-                .description("Current audit log retention period in days")
-                .register(meterRegistry, this, obj -> {
+            auditRetentionGauge = Gauge.builder("carddemo.audit.retention.days_retained", this, obj -> {
                     try {
                         // Get retention policy from AuditService or configuration
-                        return 2555; // 7 years for financial compliance
+                        return 2555.0; // 7 years for financial compliance
                     } catch (Exception e) {
                         logger.warn("Failed to get audit retention metric: {}", e.getMessage());
-                        return 0;
+                        return 0.0;
                     }
-                });
+                })
+                .description("Current audit log retention period in days")
+                .register(meterRegistry);
             
-            Gauge.builder("carddemo.audit.storage.total_entries")
-                .description("Total number of audit log entries in storage")
-                .register(meterRegistry, this, obj -> {
+            Gauge.builder("carddemo.audit.storage.total_entries", this, obj -> {
                     try {
-                        return auditService.getTotalAuditLogCount();
+                        // Use repository count method since getTotalAuditLogCount doesn't exist
+                        return (double) auditLogRepository.count();
                     } catch (Exception e) {
                         logger.warn("Failed to get audit entry count: {}", e.getMessage());
-                        return 0;
+                        return 0.0;
                     }
-                });
+                })
+                .description("Total number of audit log entries in storage")
+                .register(meterRegistry);
             
             // Configure security incident metrics
             Counter securityIncidentCounter = Counter.builder("carddemo.audit.security.incidents")
@@ -341,7 +352,7 @@ public class AuditConfig {
                 .register(meterRegistry);
             
             // Get transaction metrics from ActuatorConfig for correlation
-            Object transactionMetrics = actuatorConfig.transactionMetrics(meterRegistry);
+            Object transactionMetrics = actuatorConfig.customTransactionMetrics(meterRegistry);
             
             logger.info("Audit metrics collector configured successfully with {} metrics", 8);
             
@@ -426,7 +437,10 @@ public class AuditConfig {
                     Timer.Sample sample = Timer.start();
                     
                     // Validate audit trail integrity using AuditService
-                    boolean integrityValid = auditService.validateAuditTrailIntegrity();
+                    LocalDateTime startDate = LocalDateTime.now().minusDays(1);
+                    LocalDateTime endDate = LocalDateTime.now();
+                    Map<String, Object> integrityResult = auditService.validateAuditTrailIntegrity(startDate, endDate);
+                    boolean integrityValid = (Boolean) integrityResult.getOrDefault("integrityValid", false);
                     
                     if (integrityValid) {
                         logger.info("Daily audit trail integrity validation successful");
@@ -460,7 +474,9 @@ public class AuditConfig {
                     Timer.Sample sample = Timer.start();
                     
                     // Archive old logs using AuditService
-                    int archivedCount = auditService.archiveOldLogs();
+                    LocalDateTime cutoffDate = LocalDateTime.now().minusDays(2555); // 7 years retention
+                    Map<String, Object> archivalResult = auditService.archiveOldLogs(cutoffDate, true);
+                    Long archivedCount = (Long) archivalResult.getOrDefault("archivedCount", 0L);
                     
                     logger.info("Weekly audit log archival completed: {} logs archived", archivedCount);
                     
@@ -504,7 +520,9 @@ public class AuditConfig {
             private void generateComplianceReport(String framework) {
                 try {
                     // Use AuditService to generate compliance reports
-                    Map<String, Object> report = auditService.generateComplianceReport(framework);
+                    LocalDateTime startDate = LocalDateTime.now().minusDays(30); // Last month
+                    LocalDateTime endDate = LocalDateTime.now();
+                    Map<String, Object> report = auditService.generateComplianceReport(framework, startDate, endDate);
                     logger.info("Generated {} compliance report with {} entries", 
                         framework, report.getOrDefault("totalEntries", 0));
                 } catch (Exception e) {
@@ -871,7 +889,9 @@ public class AuditConfig {
                 try {
                     Timer.Sample sample = Timer.start();
                     
-                    Map<String, Object> soxReport = auditService.generateComplianceReport("SOX");
+                    LocalDateTime startDate = LocalDateTime.now().minusDays(30);
+                    LocalDateTime endDate = LocalDateTime.now();
+                    Map<String, Object> soxReport = auditService.generateComplianceReport("SOX", startDate, endDate);
                     
                     logger.info("SOX compliance report generated: {} audit entries, {} controls validated", 
                         soxReport.getOrDefault("totalEntries", 0),
@@ -893,7 +913,9 @@ public class AuditConfig {
                 try {
                     Timer.Sample sample = Timer.start();
                     
-                    Map<String, Object> pciReport = auditService.generateComplianceReport("PCI_DSS");
+                    LocalDateTime startDate = LocalDateTime.now().minusDays(30);
+                    LocalDateTime endDate = LocalDateTime.now();
+                    Map<String, Object> pciReport = auditService.generateComplianceReport("PCI_DSS", startDate, endDate);
                     
                     logger.info("PCI DSS compliance report generated: {} security events, {} requirements validated",
                         pciReport.getOrDefault("securityEvents", 0),
@@ -915,7 +937,9 @@ public class AuditConfig {
                 try {
                     Timer.Sample sample = Timer.start();
                     
-                    Map<String, Object> gdprReport = auditService.generateComplianceReport("GDPR");
+                    LocalDateTime startDate = LocalDateTime.now().minusDays(30);
+                    LocalDateTime endDate = LocalDateTime.now();
+                    Map<String, Object> gdprReport = auditService.generateComplianceReport("GDPR", startDate, endDate);
                     
                     logger.info("GDPR compliance report generated: {} data access events, {} privacy controls validated",
                         gdprReport.getOrDefault("dataAccessEvents", 0),
@@ -937,7 +961,9 @@ public class AuditConfig {
                 try {
                     Timer.Sample sample = Timer.start();
                     
-                    Map<String, Object> soc2Report = auditService.generateComplianceReport("SOC2");
+                    LocalDateTime startDate = LocalDateTime.now().minusDays(30);
+                    LocalDateTime endDate = LocalDateTime.now();
+                    Map<String, Object> soc2Report = auditService.generateComplianceReport("SOC2", startDate, endDate);
                     
                     logger.info("SOC2 compliance report generated: {} security controls, {} availability metrics",
                         soc2Report.getOrDefault("securityControls", 0),
@@ -962,7 +988,9 @@ public class AuditConfig {
                 logger.info("Generating on-demand compliance report for framework: {}", framework);
                 
                 try {
-                    Map<String, Object> report = auditService.generateComplianceReport(framework);
+                    LocalDateTime startDate = LocalDateTime.now().minusDays(30);
+                    LocalDateTime endDate = LocalDateTime.now();
+                    Map<String, Object> report = auditService.generateComplianceReport(framework, startDate, endDate);
                     
                     if (complianceReportCounter != null) {
                         complianceReportCounter.increment();
