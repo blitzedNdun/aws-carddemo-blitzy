@@ -102,12 +102,16 @@ import org.slf4j.LoggerFactory;
         "com.carddemo.controller", 
         "com.carddemo.repository",
         "com.carddemo.config",
+        "com.carddemo.client",
+        "com.carddemo.batch",
+        "com.carddemo.util",
+        "com.carddemo.security",
         "com.carddemo.test"
     },
     exclude = {
         // Exclude production-only auto-configurations for faster test execution
-        SecurityAutoConfiguration.class,  // Use test security configuration instead
-        BatchAutoConfiguration.class      // Enable only when needed for batch testing
+        SecurityAutoConfiguration.class  // Use test security configuration instead
+        // BatchAutoConfiguration.class ENABLED for batch integration testing
     }
 )
 @Import({BaseTestConfig.class})
