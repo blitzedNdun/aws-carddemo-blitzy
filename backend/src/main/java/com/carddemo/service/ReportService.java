@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Map;
 import java.util.HashMap;
@@ -215,9 +216,10 @@ public class ReportService {
                 return false;
             }
             
-            // Date range cannot exceed 1 year (365 days)
-            if (start.plusDays(365).isBefore(end)) {
-                logger.warn("Date range validation failed - exceeds 365 day limit");
+            // Date range cannot exceed 1 year (366 days max for leap year) - allow full calendar year
+            long daysBetween = ChronoUnit.DAYS.between(start, end) + 1; // +1 to include both start and end dates
+            if (daysBetween > 366) {
+                logger.warn("Date range validation failed - exceeds 366 day limit");
                 return false;
             }
             
@@ -276,8 +278,14 @@ public class ReportService {
      * @param jobId Spring Batch job execution ID
      */
     public void writeJobToQueue(String reportType, Map<String, String> dateRange, Long jobId) {
-        logger.info("Writing job submission to queue simulation - Job ID: {}, Type: {}, Range: {} to {}", 
-                   jobId, reportType, dateRange.get("startDate"), dateRange.get("endDate"));
+        // Handle null parameters gracefully - COBOL error path equivalent
+        if (dateRange == null) {
+            logger.info("Writing job submission to queue simulation - Job ID: {}, Type: {}, Range: null", 
+                       jobId, reportType);
+        } else {
+            logger.info("Writing job submission to queue simulation - Job ID: {}, Type: {}, Range: {} to {}", 
+                       jobId, reportType, dateRange.get("startDate"), dateRange.get("endDate"));
+        }
         
         // In the original COBOL program, this would write to TDQ 'JOBS'
         // In Spring Boot, we use structured logging for job tracking
@@ -288,8 +296,8 @@ public class ReportService {
             Map<String, Object> jobRecord = new HashMap<>();
             jobRecord.put("jobId", jobId);
             jobRecord.put("reportType", reportType);
-            jobRecord.put("startDate", dateRange.get("startDate"));
-            jobRecord.put("endDate", dateRange.get("endDate"));
+            jobRecord.put("startDate", dateRange != null ? dateRange.get("startDate") : null);
+            jobRecord.put("endDate", dateRange != null ? dateRange.get("endDate") : null);
             jobRecord.put("queueName", JOB_QUEUE_NAME);
             jobRecord.put("submissionTime", System.currentTimeMillis());
             jobRecord.put("status", "SUBMITTED");
@@ -407,9 +415,25 @@ public class ReportService {
                 return dateRange;
             }
             
-            // Perform comprehensive validation using validateDateRange
-            if (!validateDateRange(customStartDate, customEndDate)) {
-                dateRange.put("error", "Invalid date range. Check dates are not in future, start <= end, and within 365 days");
+            // Perform comprehensive validation with specific error messages
+            LocalDate today = LocalDate.now();
+            
+            // Check for future dates
+            if (startDate.isAfter(today) || endDate.isAfter(today)) {
+                dateRange.put("error", "Date range cannot contain future dates");
+                return dateRange;
+            }
+            
+            // Check start <= end
+            if (startDate.isAfter(endDate)) {
+                dateRange.put("error", "Start date must be before or equal to end date");
+                return dateRange;
+            }
+            
+            // Check 366-day limit with specific message (allows full leap year)
+            long daysBetween = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+            if (daysBetween > 366) {
+                dateRange.put("error", "Date range cannot exceed 366 days");
                 return dateRange;
             }
             

@@ -112,7 +112,7 @@ public class ReportServiceTest {
         
         // Create mock job execution matching Spring Batch structure
         mockJobInstance = new JobInstance(1001L, "reportGenerationJob");
-        mockJobExecution = new JobExecution(mockJobInstance, 2001L, null, null);
+        mockJobExecution = new JobExecution(mockJobInstance, new JobParameters());
         mockJobExecution.setStatus(BatchStatus.STARTED);
         mockJobExecution.setExitStatus(ExitStatus.EXECUTING);
         mockJobExecution.setId(2001L);
@@ -226,7 +226,7 @@ public class ReportServiceTest {
     
     @Test
     @DisplayName("Test invalid report type handling - COBOL error path")
-    void testProcessReportRequest_InvalidReportType_Error() {
+    void testProcessReportRequest_InvalidReportType_Error() throws Exception {
         // Arrange - Set up invalid report type to trigger COBOL error condition
         String reportType = "INVALID";
         String customStartDate = null;
@@ -247,7 +247,7 @@ public class ReportServiceTest {
     
     @Test
     @DisplayName("Test null report type handling - COBOL input validation")
-    void testProcessReportRequest_NullReportType_Error() {
+    void testProcessReportRequest_NullReportType_Error() throws Exception {
         // Arrange - Test null input validation
         String reportType = null;
         String customStartDate = null;
@@ -397,8 +397,8 @@ public class ReportServiceTest {
         // Assert - Verify validation error for future dates
         assertNotNull(result, "Result should not be null");
         assertTrue(result.containsKey("error"), "Should contain error for future dates");
-        assertTrue(result.get("error").contains("Invalid date range"),
-            "Error should indicate invalid date range");
+        assertTrue(result.get("error").contains("Date range cannot contain future dates"),
+            "Error should indicate future dates are not allowed");
     }
     
     @Test
@@ -887,8 +887,8 @@ public class ReportServiceTest {
         // Assert - Verify error handling for future dates
         assertNotNull(result, "Result should not be null");
         assertTrue(result.containsKey("error"), "Should contain error for future dates");
-        assertTrue(result.get("error").contains("Invalid date range"),
-            "Error should indicate invalid date range");
+        assertTrue(result.get("error").contains("Date range cannot contain future dates"),
+            "Error should indicate future dates are not allowed");
     }
     
     @Test
@@ -904,8 +904,8 @@ public class ReportServiceTest {
         // Assert - Verify error handling for invalid range
         assertNotNull(result, "Result should not be null");
         assertTrue(result.containsKey("error"), "Should contain error when start is after end");
-        assertTrue(result.get("error").contains("Invalid date range"),
-            "Error should indicate invalid date range");
+        assertTrue(result.get("error").contains("Start date must be before or equal to end date"),
+            "Error should indicate start date is after end date");
     }
     
     @Test
@@ -922,8 +922,8 @@ public class ReportServiceTest {
         
         // Assert - Verify error handling for excessive date range
         assertNotNull(result, "Result should not be null");
-        assertTrue(result.containsKey("error"), "Should contain error for range exceeding 365 days");
-        assertTrue(result.get("error").contains("Date range cannot exceed 365 days"),
+        assertTrue(result.containsKey("error"), "Should contain error for range exceeding 366 days");
+        assertTrue(result.get("error").contains("Date range cannot exceed 366 days"),
             "Error should indicate date range limit exceeded");
     }
     
@@ -1064,15 +1064,17 @@ public class ReportServiceTest {
         boolean isValid = reportService.validateDateRange(leapYearDate, leapYearDate);
         assertTrue(isValid, "Leap year date should be valid");
         
-        // Test year boundaries
-        String yearStart = LocalDate.now().withDayOfYear(1).format(YYYYMMDD_FORMAT);
-        String yearEnd = LocalDate.now().withMonth(12).withDayOfMonth(31).format(YYYYMMDD_FORMAT);
+        // Test year boundaries using past complete year to avoid future date issues
+        LocalDate pastYear = LocalDate.now().minusYears(1);
+        String yearStart = pastYear.withDayOfYear(1).format(YYYYMMDD_FORMAT);
+        String yearEnd = pastYear.withMonth(12).withDayOfMonth(31).format(YYYYMMDD_FORMAT);
         isValid = reportService.validateDateRange(yearStart, yearEnd);
         assertTrue(isValid, "Full year range should be valid");
         
-        // Test month boundaries
-        LocalDate firstDay = LocalDate.now().withDayOfMonth(1);
-        LocalDate lastDay = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
+        // Test month boundaries using past complete month to avoid future date issues
+        LocalDate pastMonth = LocalDate.now().minusMonths(1);
+        LocalDate firstDay = pastMonth.withDayOfMonth(1);
+        LocalDate lastDay = pastMonth.withDayOfMonth(pastMonth.lengthOfMonth());
         String monthStart = firstDay.format(YYYYMMDD_FORMAT);
         String monthEnd = lastDay.format(YYYYMMDD_FORMAT);
         isValid = reportService.validateDateRange(monthStart, monthEnd);
