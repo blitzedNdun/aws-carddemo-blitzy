@@ -843,6 +843,33 @@ public class TestBatchConfig {
     }
 
     /**
+     * Mock MetricsConfig for test environment.
+     * 
+     * Provides a mock MetricsConfig to satisfy ActuatorConfig dependencies.
+     * 
+     * @return Mock MetricsConfig for test execution
+     */
+    @Bean
+    public com.carddemo.config.MetricsConfig metricsConfig() {
+        logger.info("Configuring mock MetricsConfig for test environment");
+        return Mockito.mock(com.carddemo.config.MetricsConfig.class);
+    }
+
+    /**
+     * Real PrometheusMeterRegistry for test environment.
+     * 
+     * Provides a real PrometheusMeterRegistry instance to satisfy ActuatorConfig dependencies.
+     * Using real instance instead of mock because Spring Boot post-processors need actual implementation.
+     * 
+     * @return Real PrometheusMeterRegistry for test execution
+     */
+    @Bean
+    public io.micrometer.prometheus.PrometheusMeterRegistry prometheusMeterRegistry() {
+        logger.info("Configuring real PrometheusMeterRegistry for test environment");
+        return new io.micrometer.prometheus.PrometheusMeterRegistry(io.micrometer.prometheus.PrometheusConfig.DEFAULT);
+    }
+
+    /**
      * Mock ValidationUtil for test environment.
      * 
      * Provides a mock ValidationUtil to satisfy batch job dependencies.
@@ -881,33 +908,7 @@ public class TestBatchConfig {
         return Mockito.mock(com.carddemo.util.DateConversionUtil.class);
     }
 
-    /**
-     * Test-specific reportGenerationJob bean for ReportService dependency.
-     * 
-     * Creates a test-specific configuration of the reportGenerationJob that can be loaded
-     * in the test profile to satisfy ReportService @Qualifier("reportGenerationJob") dependency.
-     * This bean reuses the same implementation as transactionReportJob but with the correct
-     * bean name expected by ReportService.
-     * 
-     * @return Job bean with reportGenerationJob qualifier for test execution
-     */
-    @Bean("reportGenerationJob")
-    @Primary
-    public Job reportGenerationJob(@Qualifier("testJobRepository") JobRepository jobRepository,
-                                 @Qualifier("transactionReportTestStep") Step transactionReportTestStep) {
-        logger.info("Configuring test reportGenerationJob bean for ReportService dependency");
-        
-        // Create a functional job for testing that mimics the main job behavior
-        try {
-            return new org.springframework.batch.core.job.builder.JobBuilder("reportGenerationJob", jobRepository)
-                    .validator(testJobParametersValidator())
-                    .start(transactionReportTestStep)
-                    .build();
-        } catch (Exception e) {
-            logger.error("Failed to configure test reportGenerationJob", e);
-            throw new RuntimeException("Test reportGenerationJob configuration failed", e);
-        }
-    }
+
 
     /**
      * Test-specific TransactionReportJob for testing environment.
@@ -1421,5 +1422,7 @@ public class TestBatchConfig {
             }
         }
     }
+
+
 
 }

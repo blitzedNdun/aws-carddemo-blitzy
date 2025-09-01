@@ -57,72 +57,22 @@ public class MetricsConfig {
     private final Map<String, Object> healthIndicators = new ConcurrentHashMap<>();
 
     /**
-     * Configures Prometheus MeterRegistry for metrics export and monitoring integration.
+     * Initializes custom transaction metrics on the provided MeterRegistry.
+     * Called by ActuatorConfig to configure business-specific metrics.
      * 
-     * @return PrometheusMeterRegistry configured for cloud-native monitoring
+     * @param registry the MeterRegistry to register metrics on
      */
-    @Bean
-    public PrometheusMeterRegistry prometheusMeterRegistry() {
-        logger.info("Configuring Prometheus meter registry for metrics export");
-        PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
-        
-        // Configure registry with additional settings for production monitoring
-        registry.config().commonTags("application", "carddemo");
+    public void configureCustomMetrics(MeterRegistry registry) {
+        logger.info("Configuring custom transaction metrics on provided registry");
         
         // Store reference and initialize custom metrics
         this.meterRegistry = registry;
         initializeCustomTransactionMetrics();
         
-        logger.info("Prometheus meter registry configured successfully");
-        return registry;
+        logger.info("Custom metrics configuration completed successfully");
     }
 
-    /**
-     * Database health indicator for PostgreSQL connectivity monitoring.
-     * Validates database connection and basic query execution.
-     * 
-     * @return HealthIndicator for database monitoring
-     */
-    @Bean
-    public HealthIndicator databaseHealthIndicator() {
-        return () -> {
-            try {
-                if (dataSource == null) {
-                    logger.warn("DataSource not configured - database health check skipped");
-                    return Health.unknown()
-                            .withDetail("status", "DataSource not available")
-                            .withDetail("reason", "No DataSource bean configured")
-                            .build();
-                }
 
-                // Test database connectivity
-                try (Connection connection = dataSource.getConnection()) {
-                    if (connection.isValid(5)) {
-                        healthIndicators.put("database", "UP");
-                        return Health.up()
-                                .withDetail("database", "PostgreSQL")
-                                .withDetail("status", "Connected")
-                                .withDetail("validation_timeout", "5 seconds")
-                                .build();
-                    } else {
-                        logger.error("Database connection validation failed");
-                        healthIndicators.put("database", "DOWN");
-                        return Health.down()
-                                .withDetail("database", "PostgreSQL")
-                                .withDetail("status", "Connection validation failed")
-                                .build();
-                    }
-                }
-            } catch (SQLException e) {
-                logger.error("Database health check failed", e);
-                healthIndicators.put("database", "DOWN");
-                return Health.down()
-                        .withDetail("database", "PostgreSQL")
-                        .withDetail("error", e.getMessage())
-                        .build();
-            }
-        };
-    }
 
     /**
      * Custom health indicator for business logic validation.
@@ -197,35 +147,7 @@ public class MetricsConfig {
         };
     }
 
-    /**
-     * Batch job health indicator for Spring Batch monitoring.
-     * Monitors batch processing health and execution state.
-     * 
-     * @return HealthIndicator for batch job monitoring
-     */
-    @Bean
-    public HealthIndicator batchJobHealthIndicator() {
-        return () -> {
-            try {
-                // Basic batch job health check
-                // In production, this would validate Spring Batch job repository
-                healthIndicators.put("batch_jobs", "UP");
-                return Health.up()
-                        .withDetail("component", "Batch Job Processor")
-                        .withDetail("type", "Spring Batch")
-                        .withDetail("status", "Ready")
-                        .withDetail("note", "Job repository accessible")
-                        .build();
-            } catch (Exception e) {
-                logger.error("Batch job health check failed", e);
-                healthIndicators.put("batch_jobs", "DOWN");
-                return Health.down()
-                        .withDetail("component", "Batch Job Processor")
-                        .withDetail("error", e.getMessage())
-                        .build();
-            }
-        };
-    }
+
 
     /**
      * Custom health indicator for application-specific monitoring.

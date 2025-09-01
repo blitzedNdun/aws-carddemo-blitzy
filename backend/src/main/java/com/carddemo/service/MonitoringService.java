@@ -82,9 +82,9 @@ public class MonitoringService {
     private final AtomicReference<Health> aggregatedHealth = new AtomicReference<>(Health.up().build());
     
     @Autowired
-    public MonitoringService(MetricsConfig metricsConfig) {
+    public MonitoringService(MetricsConfig metricsConfig, PrometheusMeterRegistry prometheusMeterRegistry) {
         this.metricsConfig = metricsConfig;
-        this.prometheusMeterRegistry = metricsConfig.prometheusMeterRegistry();
+        this.prometheusMeterRegistry = prometheusMeterRegistry;
         this.meterRegistry = this.prometheusMeterRegistry;
         
         // Initialize core transaction metrics
@@ -115,9 +115,8 @@ public class MonitoringService {
      */
     private void initializeHealthIndicators() {
         try {
-            // Add database health indicator from MetricsConfig
-            HealthIndicator databaseHealth = metricsConfig.databaseHealthIndicator();
-            healthIndicators.put("database", databaseHealth);
+            // Database health indicator is now managed as Spring Bean in ActuatorConfig
+            // No manual initialization needed - Spring Boot Actuator will handle it
             
             // Add custom health indicator from MetricsConfig  
             HealthIndicator customHealth = metricsConfig.customHealthIndicator();

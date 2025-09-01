@@ -521,11 +521,12 @@ public class MetricsCollectionTest implements PerformanceTest {
         
         // Validate MetricsConfig integration
         assertThat(metricsConfig).isNotNull();
-        assertThat(metricsConfig.prometheusMeterRegistry()).isNotNull();
+        // MetricsConfig no longer provides prometheusMeterRegistry directly
+        // It configures custom metrics on the registry provided by ActuatorConfig
         
         // Test custom health indicators
         assertThat(metricsConfig.customHealthIndicator()).isNotNull();
-        assertThat(metricsConfig.databaseHealthIndicator()).isNotNull();
+        // Database health indicator is now managed by ActuatorConfig as Spring Bean
         
         // Verify custom metrics from MetricsConfig
         Counter transactionCounter = metricsConfig.getCounter("transactions_processed");

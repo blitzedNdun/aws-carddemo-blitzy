@@ -141,7 +141,7 @@ public class MonitoringServiceTest extends BaseServiceTest {
         configureMockMeterRegistry();
         
         // Initialize MonitoringService with mocked dependencies
-        monitoringService = new MonitoringService(mockMetricsConfig);
+        monitoringService = new MonitoringService(mockMetricsConfig, mockPrometheusMeterRegistry);
         
         // Create mock session for testing
         createMockSession();
@@ -1133,10 +1133,9 @@ public class MonitoringServiceTest extends BaseServiceTest {
      */
     private void configureMockMetricsConfig() {
         // Use real PrometheusMeterRegistry for proper metric registration during tests
-        PrometheusMeterRegistry realMeterRegistry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
+        mockPrometheusMeterRegistry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
         
-        when(mockMetricsConfig.prometheusMeterRegistry()).thenReturn(realMeterRegistry);
-        when(mockMetricsConfig.databaseHealthIndicator()).thenReturn(mockDatabaseHealthIndicator);
+        // Configure MetricsConfig mocks (databaseHealthIndicator now managed by ActuatorConfig)
         when(mockMetricsConfig.customHealthIndicator()).thenReturn(mockCustomHealthIndicator);
         
         logger.debug("Mock MetricsConfig configured successfully with real PrometheusMeterRegistry");

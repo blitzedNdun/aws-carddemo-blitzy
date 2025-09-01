@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.annotation.PostConstruct;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobInstance;
@@ -99,6 +100,12 @@ public class ActuatorConfig {
     
     @Autowired
     private JobExplorer jobExplorer;
+    
+    @Autowired
+    private MetricsConfig metricsConfig;
+    
+    @Autowired
+    private PrometheusMeterRegistry prometheusMeterRegistry;
     
     // Metrics tracking for custom business logic
     private final AtomicLong transactionCount = new AtomicLong(0);
@@ -366,33 +373,32 @@ public class ActuatorConfig {
     }
 
     /**
-     * Creates Prometheus meter registry for metrics export.
+     * Configures custom business metrics on the auto-configured Prometheus MeterRegistry.
      * 
-     * This method configures a PrometheusMeterRegistry for collecting and exporting
-     * application metrics to Prometheus monitoring system. The registry enables
-     * comprehensive metrics collection including JVM metrics, HTTP request metrics,
-     * custom business metrics, and batch processing metrics for operational monitoring.
+     * This method configures business-specific metrics for the CardDemo application
+     * on the auto-configured PrometheusMeterRegistry provided by Spring Boot actuator.
+     * The configuration integrates with Micrometer's Prometheus export functionality
+     * to provide comprehensive monitoring for cloud-native deployments.
      * 
-     * Metrics Collection Features:
-     * - JVM memory, GC, and thread metrics for resource monitoring
-     * - HTTP request duration, error rates, and throughput metrics
-     * - Custom business logic counters and timers for transaction processing
-     * - Spring Batch job execution metrics and completion tracking
-     * - Database connection pool and query performance metrics
+     * Custom Business Metrics:
+     * - Database entity counters (accounts, transactions, users)
+     * - Spring Batch job status indicators
+     * - System health validation metrics
+     * - Performance monitoring gauges
      * 
-     * Prometheus Integration:
-     * - Configures scrape endpoint at /actuator/prometheus
-     * - Enables dimensional metrics with labels for detailed analysis
-     * - Supports real-time metric queries and alerting rules
+     * The registry configuration matches mainframe monitoring capabilities with
+     * equivalent metrics for operational alerting and performance tracking.
+     * Metrics are exposed via the /actuator/prometheus endpoint for Prometheus
+     * scraping and integration with Grafana dashboards.
+     * 
+     * Integration Features:
+     * - Compatible with Kubernetes service discovery
+     * - Supports alerting rules for business logic validation
      * - Provides time-series data for performance trend analysis
-     * 
-     * @return PrometheusMeterRegistry configured for metrics export
      */
-    @Bean
-    public PrometheusMeterRegistry prometheusMeterRegistry() {
-        logger.info("Configuring Prometheus meter registry for metrics export");
-        
-        PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
+    @PostConstruct
+    public void configureCustomPrometheusMetrics() {
+        logger.info("Configuring custom business metrics on auto-configured Prometheus registry");
         
         // Register custom gauges for business metrics using proper three-parameter API
         Gauge.builder("carddemo.accounts.total", this, obj -> {
@@ -404,7 +410,7 @@ public class ActuatorConfig {
                     }
                 })
                 .description("Total number of accounts in the system")
-                .register(registry);
+                .register(prometheusMeterRegistry);
         
         Gauge.builder("carddemo.transactions.total", this, obj -> {
                     try {
@@ -415,7 +421,7 @@ public class ActuatorConfig {
                     }
                 })
                 .description("Total number of transactions in the system")
-                .register(registry);
+                .register(prometheusMeterRegistry);
         
         Gauge.builder("carddemo.users.total", this, obj -> {
                     try {
@@ -426,7 +432,7 @@ public class ActuatorConfig {
                     }
                 })
                 .description("Total number of users in the system")
-                .register(registry);
+                .register(prometheusMeterRegistry);
         
         // Register batch job metrics using JobExplorer
         Gauge.builder("carddemo.batch.daily_job.status", this, obj -> {
@@ -448,7 +454,7 @@ public class ActuatorConfig {
                     }
                 })
                 .description("Daily transaction job execution status (1=success, 0=failure)")
-                .register(registry);
+                .register(prometheusMeterRegistry);
         
         Gauge.builder("carddemo.batch.interest_job.status", this, obj -> {
                     try {
@@ -469,10 +475,12 @@ public class ActuatorConfig {
                     }
                 })
                 .description("Interest calculation job execution status (1=success, 0=failure)")
-                .register(registry);
+                .register(prometheusMeterRegistry);
         
-        logger.info("Prometheus meter registry configured with custom business metrics");
-        return registry;
+        // Initialize custom transaction metrics from MetricsConfig
+        metricsConfig.configureCustomMetrics(prometheusMeterRegistry);
+        
+        logger.info("Custom business metrics configured successfully on Prometheus registry");
     }
 
     /**
