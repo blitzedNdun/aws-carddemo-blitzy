@@ -89,6 +89,7 @@ public class CustomerMaintenanceService {
     
     // Dependency injection for external validation services
     @Autowired
+    @org.springframework.beans.factory.annotation.Qualifier("addressValidationClient")
     private AddressValidationService addressValidationService;
     
     @Autowired

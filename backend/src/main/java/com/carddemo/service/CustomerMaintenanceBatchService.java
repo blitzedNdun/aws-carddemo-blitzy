@@ -86,6 +86,7 @@ public class CustomerMaintenanceBatchService {
     private CustomerRepository customerRepository;
 
     @Autowired
+    @org.springframework.beans.factory.annotation.Qualifier("addressValidationClient")
     private AddressValidationService addressValidationService;
 
     @Autowired

@@ -69,7 +69,6 @@ import org.slf4j.LoggerFactory;
  * @version 1.0
  * @since 2024
  */
-@Profile("!test")
 @Service
 public class AccountMaintenanceBatchService {
 

@@ -48,7 +48,6 @@ import java.util.concurrent.atomic.AtomicReference;
  * - Prometheus metrics export with cardinality management
  */
 @Service
-@Profile("!test")
 public class MonitoringService {
 
     private static final Logger logger = LoggerFactory.getLogger(MonitoringService.class);
