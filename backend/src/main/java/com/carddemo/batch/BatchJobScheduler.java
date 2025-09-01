@@ -12,6 +12,7 @@ import com.carddemo.batch.BatchProcessingException;
 import com.carddemo.batch.DailyTransactionJob;
 import com.carddemo.batch.InterestCalculationJob;
 import com.carddemo.batch.StatementGenerationJob;
+import com.carddemo.dto.ApiRequest;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -97,6 +98,7 @@ public class BatchJobScheduler {
     private final AtomicBoolean schedulerEnabled = new AtomicBoolean(true);
     private final Map<String, LocalDateTime> lastExecutionTimes = new ConcurrentHashMap<>();
     private final Map<String, Integer> retryAttempts = new ConcurrentHashMap<>();
+    private final Map<String, Long> lastExecutionIds = new ConcurrentHashMap<>();
 
     // Dependency injection
     private final BatchJobLauncher batchJobLauncher;
@@ -193,10 +195,12 @@ public class BatchJobScheduler {
                     jobRequest.put("parameters", buildJobParameters(now.toLocalDate()));
                     
                     // Use BatchJobLauncher to launch the job
-                    batchJobLauncher.launchJob(createJobRequest(jobRequest));
+                    Map<String, Object> response = batchJobLauncher.launchJob(createJobRequest(jobRequest)).getBody().getResponseData();
+                    Long executionId = (Long) response.get("jobExecutionId");
                     
                     // Record successful execution
                     lastExecutionTimes.put(DAILY_TRANSACTION_JOB, now);
+                    lastExecutionIds.put(DAILY_TRANSACTION_JOB, executionId);
                     retryAttempts.remove(DAILY_TRANSACTION_JOB);
                     
                     logger.info("Daily transaction job completed successfully");
@@ -280,10 +284,12 @@ public class BatchJobScheduler {
             // Launch job asynchronously
             CompletableFuture<Void> jobFuture = CompletableFuture.runAsync(() -> {
                 try {
-                    batchJobLauncher.launchJob(createJobRequest(jobRequest));
+                    Map<String, Object> response = batchJobLauncher.launchJob(createJobRequest(jobRequest)).getBody().getResponseData();
+                    Long executionId = (Long) response.get("jobExecutionId");
                     
                     // Record successful execution
                     lastExecutionTimes.put(INTEREST_CALCULATION_JOB, now);
+                    lastExecutionIds.put(INTEREST_CALCULATION_JOB, executionId);
                     retryAttempts.remove(INTEREST_CALCULATION_JOB);
                     
                     logger.info("Interest calculation job completed successfully");
@@ -362,10 +368,12 @@ public class BatchJobScheduler {
             // Launch job asynchronously
             CompletableFuture<Void> jobFuture = CompletableFuture.runAsync(() -> {
                 try {
-                    batchJobLauncher.launchJob(createJobRequest(jobRequest));
+                    Map<String, Object> response = batchJobLauncher.launchJob(createJobRequest(jobRequest)).getBody().getResponseData();
+                    Long executionId = (Long) response.get("jobExecutionId");
                     
                     // Record successful execution
                     lastExecutionTimes.put(STATEMENT_GENERATION_JOB, now);
+                    lastExecutionIds.put(STATEMENT_GENERATION_JOB, executionId);
                     retryAttempts.remove(STATEMENT_GENERATION_JOB);
                     
                     logger.info("Statement generation job completed successfully");
@@ -558,24 +566,28 @@ public class BatchJobScheduler {
         Map<String, Object> status = new HashMap<>();
         
         try {
-            // Use BatchJobLauncher to get current job status
-            Map<String, Object> jobStatus = batchJobLauncher.getJobStatus(jobName);
-            
             status.put("jobName", jobName);
-            status.put("status", jobStatus.get("status"));
             status.put("lastExecutionTime", lastExecutionTimes.get(jobName));
             status.put("retryAttempts", retryAttempts.getOrDefault(jobName, 0));
             status.put("schedulerEnabled", schedulerEnabled.get());
             
-            // Add additional status details from BatchJobLauncher
-            if (jobStatus.containsKey("executionId")) {
-                status.put("executionId", jobStatus.get("executionId"));
-            }
-            if (jobStatus.containsKey("startTime")) {
-                status.put("startTime", jobStatus.get("startTime"));
-            }
-            if (jobStatus.containsKey("endTime")) {
-                status.put("endTime", jobStatus.get("endTime"));
+            // Get job status from BatchJobLauncher if we have an execution ID
+            Long executionId = lastExecutionIds.get(jobName);
+            if (executionId != null) {
+                Map<String, Object> jobStatus = batchJobLauncher.getJobStatus(executionId).getBody().getResponseData();
+                status.put("executionId", executionId);
+                status.put("status", jobStatus.get("status"));
+                
+                // Add additional status details from BatchJobLauncher
+                if (jobStatus.containsKey("startTime")) {
+                    status.put("startTime", jobStatus.get("startTime"));
+                }
+                if (jobStatus.containsKey("endTime")) {
+                    status.put("endTime", jobStatus.get("endTime"));
+                }
+            } else {
+                status.put("status", "NOT_EXECUTED");
+                status.put("executionId", null);
             }
             
         } catch (Exception e) {
@@ -607,13 +619,21 @@ public class BatchJobScheduler {
             
             for (String jobName : List.of(DAILY_TRANSACTION_JOB, INTEREST_CALCULATION_JOB, STATEMENT_GENERATION_JOB)) {
                 try {
-                    Map<String, Object> jobStatus = batchJobLauncher.getJobStatus(jobName);
-                    String status = (String) jobStatus.get("status");
-                    
-                    if ("RUNNING".equals(status) || "STARTED".equals(status)) {
-                        batchJobLauncher.stopJob(jobName);
-                        stoppedJobs.add(jobName);
-                        logger.info("Stopped running job: {}", jobName);
+                    Long executionId = lastExecutionIds.get(jobName);
+                    if (executionId != null) {
+                        Map<String, Object> jobStatus = batchJobLauncher.getJobStatus(executionId).getBody().getResponseData();
+                        String status = (String) jobStatus.get("status");
+                        
+                        if ("RUNNING".equals(status) || "STARTED".equals(status)) {
+                            // Create stop request
+                            ApiRequest<Map<String, Object>> stopRequest = new ApiRequest<>();
+                            stopRequest.setTransactionCode("JOB_STOP");
+                            stopRequest.setRequestData(new HashMap<>());
+                            
+                            batchJobLauncher.stopJob(executionId, stopRequest);
+                            stoppedJobs.add(jobName);
+                            logger.info("Stopped running job: {}", jobName);
+                        }
                     }
                 } catch (Exception e) {
                     logger.warn("Failed to stop job {}: {}", jobName, e.getMessage());
@@ -623,6 +643,7 @@ public class BatchJobScheduler {
             // Clear retry attempts and execution history
             retryAttempts.clear();
             lastExecutionTimes.clear();
+            lastExecutionIds.clear();
             
             logger.info("Batch job scheduler stopped successfully. Stopped {} running jobs: {}", 
                     stoppedJobs.size(), stoppedJobs);
@@ -755,12 +776,13 @@ public class BatchJobScheduler {
      * Creates a properly formatted job request object for the BatchJobLauncher.
      * 
      * @param jobRequest Map containing job name and parameters
-     * @return Formatted job request object
+     * @return Formatted ApiRequest object
      */
-    private Object createJobRequest(Map<String, Object> jobRequest) {
-        // This would typically return a JobRequest object or similar
-        // For now, returning the map as BatchJobLauncher.launchJob() expects
-        return jobRequest;
+    private ApiRequest<Map<String, Object>> createJobRequest(Map<String, Object> jobRequest) {
+        ApiRequest<Map<String, Object>> apiRequest = new ApiRequest<>();
+        apiRequest.setTransactionCode("BATCH_SCHEDULER");
+        apiRequest.setRequestData(jobRequest);
+        return apiRequest;
     }
 
     /**
