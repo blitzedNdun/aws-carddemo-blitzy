@@ -66,8 +66,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.persistence.EntityManagerFactory;
-import org.springframework.orm.jpa.LocalEntityManagerFactoryBean;
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
+import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
+import org.springframework.orm.jpa.JpaTransactionManager;
 import com.carddemo.service.AccountClosureBatchService;
 import com.carddemo.service.AccountMaintenanceBatchService;
 import com.carddemo.batch.StatementGenerationJob;
@@ -191,6 +194,52 @@ public class TestBatchConfig {
                 .build();
     }
 
+    /**
+     * Configures EntityManagerFactory for JPA operations in test environment.
+     * 
+     * This method creates a LocalContainerEntityManagerFactoryBean configured for test scenarios
+     * with H2 in-memory database support. The configuration enables JPA entity operations
+     * required for proper transaction management and data persistence testing.
+     * 
+     * @return EntityManagerFactory for test JPA operations
+     */
+    @Bean
+    @Primary
+    public EntityManagerFactory testEntityManagerFactory() {
+        logger.info("Configuring EntityManagerFactory for test JPA operations");
+        
+        LocalContainerEntityManagerFactoryBean factory = new LocalContainerEntityManagerFactoryBean();
+        
+        // Configure data source and entity scanning
+        factory.setDataSource(testDataSource());
+        factory.setPackagesToScan("com.carddemo.entity");
+        
+        // Configure Hibernate as JPA vendor
+        HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
+        vendorAdapter.setDatabase(org.springframework.orm.jpa.vendor.Database.H2);
+        vendorAdapter.setShowSql(false); // Keep quiet during tests
+        vendorAdapter.setGenerateDdl(true); // Allow DDL generation for test entities
+        factory.setJpaVendorAdapter(vendorAdapter);
+        
+        // Configure Hibernate properties for test environment
+        java.util.Properties hibernateProperties = new java.util.Properties();
+        hibernateProperties.put("hibernate.hbm2ddl.auto", "create-drop");
+        hibernateProperties.put("hibernate.dialect", "org.hibernate.dialect.H2Dialect");
+        hibernateProperties.put("hibernate.show_sql", "false");
+        hibernateProperties.put("hibernate.format_sql", "false");
+        hibernateProperties.put("hibernate.jdbc.batch_size", "20");
+        hibernateProperties.put("hibernate.jdbc.fetch_size", "50");
+        hibernateProperties.put("hibernate.order_inserts", "true");
+        hibernateProperties.put("hibernate.order_updates", "true");
+        hibernateProperties.put("hibernate.connection.isolation", "2"); // READ_COMMITTED
+        factory.setJpaProperties(hibernateProperties);
+        
+        // Initialize the factory
+        factory.afterPropertiesSet();
+        
+        logger.debug("Test EntityManagerFactory configured with H2 dialect");
+        return factory.getObject();
+    }
 
     /**
      * Mock BatchProperties for test environment.
@@ -421,7 +470,7 @@ public class TestBatchConfig {
     /**
      * Configures lightweight transaction manager for test environment with proper rollback support.
      * 
-     * This method creates a transaction manager optimized for test scenarios, providing complete
+     * This method creates a DataSourceTransactionManager optimized for test scenarios, providing complete
      * transaction support for batch operations while maintaining fast execution and proper cleanup
      * between test executions for reliable test isolation.
      * 
@@ -455,13 +504,41 @@ public class TestBatchConfig {
     @Bean
     @Primary
     public PlatformTransactionManager testTransactionManager() {
-        logger.info("Configuring test transaction manager for batch operations");
+        logger.info("Configuring JPA test transaction manager for batch operations");
         
-        DataSourceTransactionManager transactionManager = new DataSourceTransactionManager();
-        transactionManager.setDataSource(testDataSource());
+        // Use JPA transaction manager to properly handle JPA entity persistence
+        // This provides full JPA transaction support for entity operations in tests
+        JpaTransactionManager jpaTransactionManager = new JpaTransactionManager();
+        jpaTransactionManager.setEntityManagerFactory(testEntityManagerFactory());
+        jpaTransactionManager.setDataSource(testDataSource());
         
-        logger.debug("Test transaction manager configured with shared H2 in-memory database");
-        return transactionManager;
+        logger.debug("Test transaction manager configured with JPA EntityManagerFactory for proper entity persistence");
+        return jpaTransactionManager;
+    }
+    
+    /**
+     * Configures TransactionTemplate for programmatic transaction management in tests.
+     * 
+     * This provides explicit transaction control for test scenarios that require
+     * precise transaction boundaries and state management, especially useful for
+     * testing persistence and rollback scenarios in concurrent batch execution tests.
+     * 
+     * @param transactionManager the transaction manager to use
+     * @return TransactionTemplate configured for test operations
+     */
+    @Bean
+    public org.springframework.transaction.support.TransactionTemplate testTransactionTemplate(
+            @Qualifier("testTransactionManager") PlatformTransactionManager transactionManager) {
+        logger.info("Configuring TransactionTemplate for test batch processing");
+        
+        org.springframework.transaction.support.TransactionTemplate template = 
+            new org.springframework.transaction.support.TransactionTemplate(transactionManager);
+            
+        template.setPropagationBehavior(org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        template.setTimeout(30); // 30 second timeout for test transactions
+        
+        logger.debug("TransactionTemplate configured for test batch processing");
+        return template;
     }
     
     /**
