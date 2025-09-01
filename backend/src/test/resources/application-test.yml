@@ -62,13 +62,13 @@ spring:
   session:
     store-type: none
     
-  # Batch Configuration for Testing - completely disabled
+  # Batch Configuration for Testing - enabled for integration tests
   batch:
     job:
-      enabled: false
+      enabled: false  # Disable auto-launch but keep batch infrastructure
+      name: dailyTransactionBatchJob  # Specify default job to avoid multiple jobs error
     jdbc:
-      initialize-schema: never
-  # Disable all batch-related components
+      initialize-schema: always  # Enable for batch integration tests
       
   # Redis Configuration for Testing (disabled)
   redis:
@@ -76,6 +76,10 @@ spring:
     port: 6379
     timeout: 2000ms
     
+# TestContainers Configuration - Disabled for H2 testing
+testcontainers:
+  enabled: false
+
 # Logging Configuration
 logging:
   level:
