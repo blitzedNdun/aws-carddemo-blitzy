@@ -57,9 +57,9 @@ public final class TestConstants {
     public static final String TEST_USER_ID = "TESTUSER";
     
     /**
-     * Standard test password for authentication testing
+     * Standard test password for authentication testing (PIC X(8) compatible)
      */
-    public static final String TEST_USER_PASSWORD = "password123";
+    public static final String TEST_USER_PASSWORD = "testpass";
     
     /**
      * Standard test user role for security testing scenarios
@@ -72,6 +72,21 @@ public final class TestConstants {
      * 'A' represents admin user matching COBOL SEC-USR-TYPE logic
      */
     public static final String TEST_ADMIN_ROLE = "A";
+    
+    /**
+     * Standard test account ID for integration testing scenarios
+     */
+    public static final String TEST_ACCOUNT_ID = "0000000001";
+    
+    /**
+     * Standard test transaction ID for integration testing scenarios
+     */
+    public static final String TEST_TRANSACTION_ID = "T000000001";
+    
+    /**
+     * Standard test card number for integration testing scenarios
+     */
+    public static final String TEST_CARD_NUMBER = "4532123456789012";
     
     // Performance Test Data Constants
     

@@ -387,6 +387,45 @@ public final class TestConstants {
     public static final long TEST_POLLING_INTERVAL_MS = 100L;
 
     // ============================================================================
+    // USER AUTHENTICATION CONSTANTS
+    // ============================================================================
+    
+    /**
+     * Test user ID for authentication scenarios (PIC X(8) compatible).
+     */
+    public static final String TEST_USER_ID = "TESTUSER";
+    
+    /**
+     * Test user password for authentication scenarios (PIC X(8) compatible).
+     */
+    public static final String TEST_USER_PASSWORD = "TESTPASS";
+    
+    /**
+     * Test user role for standard user operations.
+     */
+    public static final String TEST_USER_ROLE = "USER";
+    
+    /**
+     * Test admin role for administrative operations.
+     */
+    public static final String TEST_ADMIN_ROLE = "ADMIN";
+    
+    /**
+     * Test account ID for account operations.
+     */
+    public static final String TEST_ACCOUNT_ID = "12345678901";
+    
+    /**
+     * Test transaction ID for transaction operations.
+     */
+    public static final String TEST_TRANSACTION_ID = "TXN12345";
+    
+    /**
+     * Test card number for card operations.
+     */
+    public static final String TEST_CARD_NUMBER = "4000123456789012";
+    
+    // ============================================================================
     // MONITORING AND ALERTING CONSTANTS
     // ============================================================================
     
