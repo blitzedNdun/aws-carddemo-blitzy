@@ -61,14 +61,6 @@ spring:
   # Session Configuration for Testing
   session:
     store-type: none
-    
-  # Batch Configuration for Testing - enabled for integration tests
-  batch:
-    job:
-      enabled: false  # Disable auto-launch but keep batch infrastructure
-      name: dailyTransactionBatchJob  # Specify default job to avoid multiple jobs error
-    jdbc:
-      initialize-schema: always  # Enable for batch integration tests
       
   # Redis Configuration for Testing (disabled)
   redis:

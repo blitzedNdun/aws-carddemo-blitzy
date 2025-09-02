@@ -88,31 +88,12 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest(
     classes = {
-        // Test configuration classes
+        // Use main application class to enable proper component scanning
+        com.carddemo.CardDemoApplication.class,
+        
+        // Additional test configuration classes
         TestDatabaseConfig.class,
-        com.carddemo.config.TestSecurityConfig.class,
-        
-        // Controllers being tested
-        com.carddemo.controller.AccountController.class,
-        com.carddemo.controller.TransactionController.class,
-        com.carddemo.controller.CardController.class,
-        com.carddemo.controller.CustomerController.class,
-        
-        // Required services
-        com.carddemo.service.AccountService.class,
-        com.carddemo.service.TransactionService.class,
-        com.carddemo.service.CreditCardService.class,
-        com.carddemo.service.CustomerService.class,
-        
-        // Required repositories 
-        com.carddemo.repository.AccountRepository.class,
-        com.carddemo.repository.TransactionRepository.class,
-        com.carddemo.repository.CardRepository.class,
-        com.carddemo.repository.CustomerRepository.class,
-        
-        // Required utilities
-        com.carddemo.util.CobolDataConverter.class,
-        com.carddemo.util.ValidationUtil.class
+        com.carddemo.config.TestSecurityConfig.class
     },
     webEnvironment = SpringBootTest.WebEnvironment.MOCK
 )
