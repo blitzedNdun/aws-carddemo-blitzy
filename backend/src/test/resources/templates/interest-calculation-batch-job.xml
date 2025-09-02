@@ -1,0 +1,470 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+/*****************************************************************
+ * Spring Batch Job Configuration Template                       *
+ * Application: CardDemo                                         *
+ * Purpose: Monthly Interest Calculation Batch Job              *
+ * Source: CBACT04C.cbl COBOL Program                          *
+ * Function: Calculates and posts monthly interest for all      *
+ *          active accounts based on transaction category       *
+ *          balances and interest rates                         *
+ *****************************************************************/
+ 
+Copyright Amazon.com, Inc. or its affiliates.
+All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License").
+You may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+either express or implied. See the License for the specific
+language governing permissions and limitations under the License.
+-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans 
+           http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/batch 
+           http://www.springframework.org/schema/batch/spring-batch.xsd
+           http://www.springframework.org/schema/context
+           http://www.springframework.org/schema/context/spring-context.xsd
+           http://www.springframework.org/schema/tx
+           http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+    <!-- =============================================================== -->
+    <!-- JOB DEFINITION: Interest Calculation Job                       -->
+    <!-- Replaces: CBACT04C.cbl COBOL batch program                    -->
+    <!-- Purpose: Monthly interest calculation and posting              -->
+    <!-- =============================================================== -->
+    
+    <batch:job id="interestCalculationJob" restartable="true">
+        <!-- Job-level parameters from JCL equivalent -->
+        <batch:parameters>
+            <batch:parameter name="processingDate" type="java.lang.String" defaultValue="#{T(java.time.LocalDate).now().toString()}" />
+            <batch:parameter name="chunkSize" type="java.lang.Long" defaultValue="1000" />
+            <batch:parameter name="maxThreads" type="java.lang.Long" defaultValue="4" />
+            <batch:parameter name="runId" type="java.lang.Long" defaultValue="#{T(System).currentTimeMillis()}" />
+        </batch:parameters>
+        
+        <!-- Job execution listeners for audit trail -->
+        <batch:listeners>
+            <batch:listener ref="interestCalculationJobListener" />
+            <batch:listener ref="performanceMetricsListener" />
+        </batch:listeners>
+        
+        <!-- Step 1: Prepare Transaction Category Balances (replaces 0000-TCATBALF-OPEN) -->
+        <batch:step id="prepareTransactionCategoryBalancesStep">
+            <batch:tasklet ref="prepareTransactionCategoryBalancesTasklet" />
+            <batch:next on="COMPLETED" to="processAccountInterestStep" />
+            <batch:fail on="FAILED" />
+        </batch:step>
+        
+        <!-- Step 2: Main Interest Calculation Processing (replaces main COBOL processing loop) -->
+        <batch:step id="processAccountInterestStep">
+            <batch:chunk 
+                reader="transactionCategoryBalanceReader"
+                processor="interestCalculationProcessor" 
+                writer="interestTransactionWriter"
+                commit-interval="#{jobParameters['chunkSize']}"
+                retry-limit="3">
+                
+                <!-- Chunk-level listeners for detailed processing metrics -->
+                <batch:listeners>
+                    <batch:listener ref="chunkProcessingListener" />
+                    <batch:listener ref="skipListener" />
+                </batch:listeners>
+                
+                <!-- Retry policy for transient database errors -->
+                <batch:retryable-exception-classes>
+                    <batch:include class="org.springframework.dao.DataAccessResourceFailureException" />
+                    <batch:include class="org.springframework.dao.DeadlockLoserDataAccessException" />
+                    <batch:include class="javax.persistence.PessimisticLockException" />
+                </batch:retryable-exception-classes>
+                
+                <!-- Skip policy for business logic errors (replaces COBOL error handling) -->
+                <batch:skippable-exception-classes>
+                    <batch:include class="com.carddemo.exception.AccountNotFoundException" />
+                    <batch:include class="com.carddemo.exception.InterestRateNotFoundException" />
+                    <batch:include class="com.carddemo.exception.InvalidBalanceException" />
+                </batch:skippable-exception-classes>
+                
+                <batch:skip-limit value="100" />
+            </batch:chunk>
+            
+            <batch:next on="COMPLETED" to="finalizeAccountUpdatesStep" />
+            <batch:fail on="FAILED" />
+        </batch:step>
+        
+        <!-- Step 3: Finalize Account Balance Updates (replaces 1050-UPDATE-ACCOUNT) -->
+        <batch:step id="finalizeAccountUpdatesStep">
+            <batch:chunk 
+                reader="pendingAccountUpdateReader"
+                processor="accountBalanceUpdateProcessor"
+                writer="accountBalanceUpdateWriter"
+                commit-interval="#{jobParameters['chunkSize']}"
+                retry-limit="3">
+                
+                <batch:listeners>
+                    <batch:listener ref="accountUpdateListener" />
+                </batch:listeners>
+                
+                <batch:retryable-exception-classes>
+                    <batch:include class="org.springframework.dao.OptimisticLockingFailureException" />
+                    <batch:include class="org.springframework.dao.DataAccessResourceFailureException" />
+                </batch:retryable-exception-classes>
+            </batch:chunk>
+            
+            <batch:next on="COMPLETED" to="generateCompletionReportStep" />
+            <batch:fail on="FAILED" />
+        </batch:step>
+        
+        <!-- Step 4: Generate Processing Summary Report (replaces COBOL display statements) -->
+        <batch:step id="generateCompletionReportStep">
+            <batch:tasklet ref="completionReportTasklet" />
+            <batch:end on="COMPLETED" />
+            <batch:fail on="FAILED" />
+        </batch:step>
+    </batch:job>
+
+    <!-- =============================================================== -->
+    <!-- ITEM READERS: Data Input Components                            -->
+    <!-- =============================================================== -->
+    
+    <!-- Transaction Category Balance Reader (replaces TCATBAL-FILE sequential read) -->
+    <bean id="transactionCategoryBalanceReader" 
+          class="org.springframework.batch.item.database.JpaPagingItemReader" scope="step">
+        <property name="entityManagerFactory" ref="entityManagerFactory" />
+        <property name="pageSize" value="#{jobParameters['chunkSize']}" />
+        <property name="queryString" value="
+            SELECT tcb FROM TransactionCategoryBalance tcb 
+            WHERE tcb.transactionDate <= :processingDate 
+            AND tcb.balance != 0
+            ORDER BY tcb.accountId, tcb.transactionTypeCode, tcb.transactionCategoryCode
+        " />
+        <property name="parameterValues">
+            <map>
+                <entry key="processingDate" value="#{jobParameters['processingDate']}" />
+            </map>
+        </property>
+        <property name="saveState" value="true" />
+    </bean>
+    
+    <!-- Pending Account Update Reader (for Step 3) -->
+    <bean id="pendingAccountUpdateReader"
+          class="org.springframework.batch.item.database.JpaPagingItemReader" scope="step">
+        <property name="entityManagerFactory" ref="entityManagerFactory" />
+        <property name="pageSize" value="#{jobParameters['chunkSize']}" />
+        <property name="queryString" value="
+            SELECT pau FROM PendingAccountUpdate pau 
+            WHERE pau.jobExecutionId = #{jobExecutionContext['jobExecutionId']}
+            ORDER BY pau.accountId
+        " />
+        <property name="saveState" value="true" />
+    </bean>
+
+    <!-- =============================================================== -->
+    <!-- ITEM PROCESSORS: Business Logic Components                     -->
+    <!-- =============================================================== -->
+    
+    <!-- Interest Calculation Processor (replaces COBOL 1300-COMPUTE-INTEREST) -->
+    <bean id="interestCalculationProcessor" 
+          class="com.carddemo.batch.processor.InterestCalculationProcessor" scope="step">
+        
+        <!-- COMP-3 decimal precision configuration for COBOL compatibility -->
+        <property name="decimalPrecision" value="15" />
+        <property name="decimalScale" value="2" />
+        <property name="roundingMode" value="HALF_UP" />
+        
+        <!-- Interest calculation formula: (TRAN-CAT-BAL * DIS-INT-RATE) / 1200 -->
+        <property name="annualToMonthlyDivisor" value="1200" />
+        
+        <!-- Processing date parameter injection -->
+        <property name="processingDate" value="#{jobParameters['processingDate']}" />
+        
+        <!-- Service dependencies for data lookups -->
+        <property name="accountService" ref="accountService" />
+        <property name="crossReferenceService" ref="crossReferenceService" />
+        <property name="disclosureGroupService" ref="disclosureGroupService" />
+        <property name="transactionService" ref="transactionService" />
+        
+        <!-- Audit logging configuration -->
+        <property name="auditEnabled" value="true" />
+        <property name="detailedLogging" value="true" />
+    </bean>
+    
+    <!-- Account Balance Update Processor (replaces COBOL balance updates) -->
+    <bean id="accountBalanceUpdateProcessor"
+          class="com.carddemo.batch.processor.AccountBalanceUpdateProcessor" scope="step">
+        
+        <!-- BigDecimal precision matching COBOL COMP-3 fields -->
+        <property name="balancePrecision" value="15" />
+        <property name="balanceScale" value="2" />
+        <property name="roundingMode" value="HALF_UP" />
+        
+        <!-- Zero out cycle amounts as per COBOL logic -->
+        <property name="resetCurrentCycleAmounts" value="true" />
+        
+        <property name="accountService" ref="accountService" />
+        <property name="auditEnabled" value="true" />
+    </bean>
+
+    <!-- =============================================================== -->
+    <!-- ITEM WRITERS: Data Output Components                           -->
+    <!-- =============================================================== -->
+    
+    <!-- Interest Transaction Writer (replaces TRANSACT-FILE write operations) -->
+    <bean id="interestTransactionWriter" 
+          class="org.springframework.batch.item.database.JpaItemWriter" scope="step">
+        <property name="entityManagerFactory" ref="entityManagerFactory" />
+        <property name="usePersist" value="true" />
+        <!-- Enable batch writing for performance optimization -->
+        <property name="clearPersistenceContext" value="true" />
+    </bean>
+    
+    <!-- Account Balance Update Writer (replaces ACCOUNT-FILE rewrite operations) -->
+    <bean id="accountBalanceUpdateWriter"
+          class="org.springframework.batch.item.database.JpaItemWriter" scope="step">
+        <property name="entityManagerFactory" ref="entityManagerFactory" />
+        <property name="usePersist" value="false" />
+        <property name="clearPersistenceContext" value="true" />
+    </bean>
+
+    <!-- =============================================================== -->
+    <!-- TASKLETS: Utility Processing Components                        -->
+    <!-- =============================================================== -->
+    
+    <!-- Prepare Transaction Category Balances Tasklet (replaces file open operations) -->
+    <bean id="prepareTransactionCategoryBalancesTasklet"
+          class="com.carddemo.batch.tasklet.PrepareTransactionCategoryBalancesTasklet">
+        <property name="dataSource" ref="dataSource" />
+        <property name="processingDate" value="#{jobParameters['processingDate']}" />
+        <!-- Validate data integrity before processing -->
+        <property name="validateDataIntegrity" value="true" />
+        <property name="auditService" ref="auditService" />
+    </bean>
+    
+    <!-- Completion Report Tasklet (replaces COBOL display and close operations) -->
+    <bean id="completionReportTasklet"
+          class="com.carddemo.batch.tasklet.CompletionReportTasklet">
+        <property name="reportService" ref="batchReportService" />
+        <property name="auditService" ref="auditService" />
+        <property name="outputDirectory" value="${batch.reports.output.directory:/var/batch/reports}" />
+        <property name="generateDetailedReport" value="true" />
+    </bean>
+
+    <!-- =============================================================== -->
+    <!-- JOB LISTENERS: Monitoring and Audit Components                 -->
+    <!-- =============================================================== -->
+    
+    <!-- Interest Calculation Job Listener (replaces COBOL job-level logging) -->
+    <bean id="interestCalculationJobListener"
+          class="com.carddemo.batch.listener.InterestCalculationJobListener">
+        <property name="auditService" ref="auditService" />
+        <property name="notificationService" ref="notificationService" />
+        <!-- Alert thresholds for operational monitoring -->
+        <property name="warningThresholdMinutes" value="60" />
+        <property name="criticalThresholdMinutes" value="180" />
+        <property name="maxAllowedFailures" value="100" />
+    </bean>
+    
+    <!-- Performance Metrics Listener -->
+    <bean id="performanceMetricsListener"
+          class="com.carddemo.batch.listener.PerformanceMetricsListener">
+        <property name="metricsService" ref="metricsService" />
+        <property name="enableDetailedMetrics" value="true" />
+        <!-- Performance targets based on COBOL program requirements -->
+        <property name="targetRecordsPerSecond" value="1000" />
+        <property name="maxProcessingTimeMinutes" value="240" />
+    </bean>
+    
+    <!-- Chunk Processing Listener (detailed step monitoring) -->
+    <bean id="chunkProcessingListener"
+          class="com.carddemo.batch.listener.ChunkProcessingListener">
+        <property name="auditService" ref="auditService" />
+        <property name="enableProgressLogging" value="true" />
+        <property name="progressReportInterval" value="1000" />
+    </bean>
+    
+    <!-- Skip Listener for error tracking -->
+    <bean id="skipListener"
+          class="com.carddemo.batch.listener.SkipListener">
+        <property name="auditService" ref="auditService" />
+        <property name="errorReportService" ref="errorReportService" />
+        <property name="maxSkipReportingLimit" value="50" />
+    </bean>
+    
+    <!-- Account Update Listener -->
+    <bean id="accountUpdateListener"
+          class="com.carddemo.batch.listener.AccountUpdateListener">
+        <property name="auditService" ref="auditService" />
+        <property name="balanceValidationService" ref="balanceValidationService" />
+        <property name="enableBalanceValidation" value="true" />
+    </bean>
+
+    <!-- =============================================================== -->
+    <!-- SERVICE DEPENDENCIES: Business Logic Services                  -->
+    <!-- =============================================================== -->
+    
+    <!-- Account Service for account data operations -->
+    <bean id="accountService" class="com.carddemo.service.AccountService">
+        <property name="accountRepository" ref="accountRepository" />
+        <property name="auditService" ref="auditService" />
+    </bean>
+    
+    <!-- Cross Reference Service for card-account lookups -->
+    <bean id="crossReferenceService" class="com.carddemo.service.CrossReferenceService">
+        <property name="crossReferenceRepository" ref="crossReferenceRepository" />
+    </bean>
+    
+    <!-- Disclosure Group Service for interest rate lookups -->
+    <bean id="disclosureGroupService" class="com.carddemo.service.DisclosureGroupService">
+        <property name="disclosureGroupRepository" ref="disclosureGroupRepository" />
+        <!-- Default interest rate configuration for missing disclosure groups -->
+        <property name="defaultGroupCode" value="DEFAULT" />
+        <property name="fallbackInterestRate" value="0.0" />
+    </bean>
+    
+    <!-- Transaction Service for transaction creation -->
+    <bean id="transactionService" class="com.carddemo.service.TransactionService">
+        <property name="transactionRepository" ref="transactionRepository" />
+        <property name="transactionIdGenerator" ref="transactionIdGenerator" />
+        <property name="auditService" ref="auditService" />
+    </bean>
+    
+    <!-- Audit Service for comprehensive logging -->
+    <bean id="auditService" class="com.carddemo.service.AuditService">
+        <property name="auditRepository" ref="auditRepository" />
+        <property name="enableDetailedAudit" value="true" />
+    </bean>
+    
+    <!-- Notification Service for alerts and reports -->
+    <bean id="notificationService" class="com.carddemo.service.NotificationService">
+        <property name="emailEnabled" value="${batch.notifications.email.enabled:false}" />
+        <property name="smsEnabled" value="${batch.notifications.sms.enabled:false}" />
+        <property name="slackEnabled" value="${batch.notifications.slack.enabled:true}" />
+    </bean>
+    
+    <!-- Metrics Service for performance monitoring -->
+    <bean id="metricsService" class="com.carddemo.service.MetricsService">
+        <property name="meterRegistry" ref="meterRegistry" />
+        <property name="enableCustomMetrics" value="true" />
+    </bean>
+    
+    <!-- Batch Report Service for completion reports -->
+    <bean id="batchReportService" class="com.carddemo.service.BatchReportService">
+        <property name="reportRepository" ref="reportRepository" />
+        <property name="templateEngine" ref="templateEngine" />
+    </bean>
+    
+    <!-- Error Report Service for skip/failure tracking -->
+    <bean id="errorReportService" class="com.carddemo.service.ErrorReportService">
+        <property name="errorRepository" ref="errorRepository" />
+        <property name="enableDetailedErrorLogging" value="true" />
+    </bean>
+    
+    <!-- Balance Validation Service for integrity checks -->
+    <bean id="balanceValidationService" class="com.carddemo.service.BalanceValidationService">
+        <property name="toleranceAmount" value="0.01" />
+        <property name="enableStrictValidation" value="true" />
+    </bean>
+
+    <!-- =============================================================== -->
+    <!-- UTILITY COMPONENTS: Supporting Infrastructure                  -->
+    <!-- =============================================================== -->
+    
+    <!-- Transaction ID Generator (replaces COBOL sequence generation) -->
+    <bean id="transactionIdGenerator" class="com.carddemo.util.TransactionIdGenerator">
+        <!-- Format: YYYYMMDDNNNNNN (Date + 6-digit sequence) -->
+        <property name="dateFormat" value="yyyyMMdd" />
+        <property name="sequenceLength" value="6" />
+        <property name="sequenceRepository" ref="sequenceRepository" />
+    </bean>
+    
+    <!-- Database Timestamp Utility (replaces COBOL Z-GET-DB2-FORMAT-TIMESTAMP) -->
+    <bean id="timestampUtility" class="com.carddemo.util.TimestampUtility">
+        <!-- DB2 timestamp format: YYYY-MM-DD-HH.MM.SS.ffffff -->
+        <property name="timestampFormat" value="yyyy-MM-dd-HH.mm.ss.SSSSSS" />
+        <property name="timeZone" value="UTC" />
+    </bean>
+
+    <!-- =============================================================== -->
+    <!-- CONFIGURATION PLACEHOLDERS AND PROFILES                       -->
+    <!-- =============================================================== -->
+    
+    <!-- Property placeholder for environment-specific configuration -->
+    <context:property-placeholder 
+        location="classpath:batch-interest-calculation.properties,
+                 classpath:batch-interest-calculation-${spring.profiles.active:dev}.properties"
+        ignore-resource-not-found="true" />
+    
+    <!-- Profile-specific configuration -->
+    <beans profile="dev">
+        <!-- Development environment configuration -->
+        <bean id="chunkSizeOverride" class="java.lang.Integer">
+            <constructor-arg value="100" />
+        </bean>
+    </beans>
+    
+    <beans profile="prod">
+        <!-- Production environment configuration -->
+        <bean id="chunkSizeOverride" class="java.lang.Integer">
+            <constructor-arg value="5000" />
+        </bean>
+    </beans>
+
+    <!-- =============================================================== -->
+    <!-- TRANSACTION MANAGEMENT CONFIGURATION                           -->
+    <!-- =============================================================== -->
+    
+    <!-- Job-level transaction manager -->
+    <tx:annotation-driven transaction-manager="transactionManager" />
+    
+    <!-- Batch-specific transaction manager configuration -->
+    <bean id="batchTransactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+        <property name="entityManagerFactory" ref="entityManagerFactory" />
+        <property name="dataSource" ref="dataSource" />
+        <!-- Extended timeout for large batch operations -->
+        <property name="defaultTimeout" value="3600" />
+    </bean>
+
+    <!-- =============================================================== -->
+    <!-- JOB REPOSITORY AND LAUNCHER CONFIGURATION                      -->
+    <!-- =============================================================== -->
+    
+    <!-- Job repository for Spring Batch metadata -->
+    <batch:job-repository 
+        id="jobRepository"
+        data-source="dataSource"
+        transaction-manager="batchTransactionManager"
+        isolation-level-for-create="SERIALIZABLE"
+        table-prefix="BATCH_"
+        max-varchar-length="2500" />
+    
+    <!-- Job launcher for programmatic job execution -->
+    <bean id="jobLauncher" class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+        <property name="jobRepository" ref="jobRepository" />
+        <property name="taskExecutor" ref="batchTaskExecutor" />
+    </bean>
+    
+    <!-- Task executor for multi-threaded processing -->
+    <bean id="batchTaskExecutor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+        <property name="corePoolSize" value="#{jobParameters['maxThreads'] ?: 4}" />
+        <property name="maxPoolSize" value="#{(jobParameters['maxThreads'] ?: 4) * 2}" />
+        <property name="queueCapacity" value="1000" />
+        <property name="threadNamePrefix" value="InterestCalc-" />
+        <property name="rejectedExecutionHandler">
+            <bean class="java.util.concurrent.ThreadPoolExecutor$CallerRunsPolicy" />
+        </property>
+    </bean>
+
+</beans>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+
+    <changeSet id="001-create-schemas" author="CardDemo Migration Team" context="development,migration,test,production">
+        <comment>Create database schemas for CardDemo application</comment>
+        
+        <sql>
+            -- Create application schema (using public as default)
+            -- PostgreSQL uses 'public' schema by default
+            
+            -- Create liquibase schema for change tracking
+            CREATE SCHEMA IF NOT EXISTS liquibase;
+        </sql>
+        
+        <rollback>
+            DROP SCHEMA IF EXISTS liquibase CASCADE;
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

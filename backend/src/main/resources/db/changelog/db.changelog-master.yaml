@@ -1,0 +1,32 @@
+databaseChangeLog:
+  # CardDemo Database Migration Master Changelog
+  # 
+  # This master changelog orchestrates the complete VSAM-to-PostgreSQL migration
+  # for the CardDemo mainframe modernization project. It includes all schema 
+  # changes, data migrations, and optimizations required for functional parity
+  # with the original COBOL/CICS system.
+  # 
+  # Migration Structure:
+  # - Initial schema creation for core entities
+  # - VSAM dataset to PostgreSQL table migrations  
+  # - Index creation for performance optimization
+  # - Referential integrity constraints
+  # - Data validation and integrity checks
+
+  # Change Log Includes
+  - include:
+      file: db/changelog/001-initial-schema.xml
+  - include:
+      file: db/changelog/002-account-entity.xml
+  - include:
+      file: db/changelog/003-transaction-entity.xml
+  - include:
+      file: db/changelog/004-customer-entity.xml
+  - include:
+      file: db/changelog/005-user-security-entity.xml
+  - include:
+      file: db/changelog/006-indexes-creation.xml
+  - include:
+      file: db/changelog/007-constraints-creation.xml
+  - include:
+      file: db/changelog/008-data-validation.xml

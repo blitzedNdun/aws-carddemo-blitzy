@@ -1,0 +1,34 @@
+{
+  "short_name": "CardDemo",
+  "name": "CardDemo - Credit Card Management System",
+  "description": "Modern enterprise credit card management application modernized from mainframe COBOL/CICS to React SPA",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#1976d2",
+  "background_color": "#ffffff",
+  "scope": "/",
+  "lang": "en-US",
+  "categories": ["finance", "business", "productivity"],
+  "prefer_related_applications": false,
+  "related_applications": []
+}

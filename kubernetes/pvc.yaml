@@ -1,0 +1,245 @@
+# PersistentVolumeClaim Manifests for CardDemo Application
+# Supporting PostgreSQL database and Redis session store persistence
+# in the containerized Spring Boot architecture
+
+---
+# PostgreSQL Database PersistentVolumeClaim
+# Provides 100Gi storage for modernized relational database architecture
+# Replacing VSAM KSDS datasets with PostgreSQL tables supporting
+# enterprise-grade transaction processing and ACID compliance
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgresql-storage
+  labels:
+    app: postgresql
+    component: database
+    tier: data
+    environment: production
+  annotations:
+    description: "Primary database storage for CardDemo PostgreSQL instance"
+    volume.beta.kubernetes.io/storage-class: "fast-ssd"
+    # Enable volume expansion for future growth
+    volume.kubernetes.io/allow-volume-expansion: "true"
+spec:
+  # ReadWriteOnce access mode for StatefulSet deployment
+  # Ensures exclusive access by single PostgreSQL pod while supporting
+  # streaming replication to standby instances
+  accessModes:
+    - ReadWriteOnce
+  
+  # Fast SSD storage class optimized for database workloads
+  # Supports sub-200ms response time SLA for financial transaction processing
+  # Provides high IOPS for concurrent transaction handling
+  storageClassName: fast-ssd
+  
+  resources:
+    requests:
+      # 100Gi storage capacity supporting enterprise data volume
+      # Accommodates account data, transaction history, customer records,
+      # and indexes with room for growth
+      storage: 100Gi
+  
+  # Volume mode set to Filesystem for standard database file operations
+  volumeMode: Filesystem
+
+---
+# Redis Session Store PersistentVolumeClaim  
+# Provides persistent storage for Redis RDB snapshots and AOF logging
+# Supporting distributed session management replacing CICS COMMAREA structures
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-storage
+  labels:
+    app: redis
+    component: session-store
+    tier: cache
+    environment: production
+  annotations:
+    description: "Session store persistence for CardDemo Redis instance"
+    volume.beta.kubernetes.io/storage-class: "fast-ssd"
+    # Enable volume expansion for session storage growth
+    volume.kubernetes.io/allow-volume-expansion: "true"
+spec:
+  # ReadWriteOnce access mode for Redis deployment
+  # Single Redis instance with persistence enabled
+  # Supports session recovery after pod restarts
+  accessModes:
+    - ReadWriteOnce
+  
+  # Fast SSD storage class for optimal session access performance
+  # Ensures rapid session retrieval and persistence operations
+  storageClassName: fast-ssd
+  
+  resources:
+    requests:
+      # 10Gi storage capacity for Redis persistence
+      # Supports RDB snapshots, AOF logging, and session data storage
+      # Adequate for distributed session management across user base
+      storage: 10Gi
+  
+  # Volume mode set to Filesystem for Redis persistence files
+  volumeMode: Filesystem
+
+---
+# Redis Cluster Node 1 PersistentVolumeClaim
+# Additional storage for Redis Cluster high availability configuration
+# Supporting horizontal scaling of session management
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-cluster-node-1
+  labels:
+    app: redis-cluster
+    component: session-store
+    tier: cache
+    node: "1"
+    environment: production
+  annotations:
+    description: "Redis cluster node 1 persistence storage"
+    volume.beta.kubernetes.io/storage-class: "fast-ssd"
+    volume.kubernetes.io/allow-volume-expansion: "true"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  
+  storageClassName: fast-ssd
+  
+  resources:
+    requests:
+      # 5Gi storage for each cluster node
+      # Distributed across multiple nodes for high availability
+      storage: 5Gi
+  
+  volumeMode: Filesystem
+
+---
+# Redis Cluster Node 2 PersistentVolumeClaim
+# Second cluster node for Redis high availability and load distribution
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-cluster-node-2
+  labels:
+    app: redis-cluster
+    component: session-store
+    tier: cache
+    node: "2"
+    environment: production
+  annotations:
+    description: "Redis cluster node 2 persistence storage"
+    volume.beta.kubernetes.io/storage-class: "fast-ssd"
+    volume.kubernetes.io/allow-volume-expansion: "true"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  
+  storageClassName: fast-ssd
+  
+  resources:
+    requests:
+      storage: 5Gi
+  
+  volumeMode: Filesystem
+
+---
+# Redis Cluster Node 3 PersistentVolumeClaim  
+# Third cluster node completing minimum Redis cluster configuration
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-cluster-node-3
+  labels:
+    app: redis-cluster
+    component: session-store
+    tier: cache
+    node: "3"
+    environment: production
+  annotations:
+    description: "Redis cluster node 3 persistence storage"
+    volume.beta.kubernetes.io/storage-class: "fast-ssd"
+    volume.kubernetes.io/allow-volume-expansion: "true"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  
+  storageClassName: fast-ssd
+  
+  resources:
+    requests:
+      storage: 5Gi
+  
+  volumeMode: Filesystem
+
+---
+# PostgreSQL WAL Archive PersistentVolumeClaim
+# Dedicated storage for Write-Ahead Log archival supporting
+# point-in-time recovery and compliance requirements  
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgresql-wal-archive
+  labels:
+    app: postgresql
+    component: wal-archive
+    tier: backup
+    environment: production
+  annotations:
+    description: "PostgreSQL WAL archive storage for point-in-time recovery"
+    volume.beta.kubernetes.io/storage-class: "standard"
+    volume.kubernetes.io/allow-volume-expansion: "true"
+spec:
+  # ReadWriteMany for WAL archival and backup processes
+  # Supports multiple backup and archival processes accessing WAL files
+  accessModes:
+    - ReadWriteOnce
+  
+  # Standard storage class for archival data
+  # Cost-optimized storage for backup and recovery purposes
+  storageClassName: standard
+  
+  resources:
+    requests:
+      # 50Gi storage for WAL archive retention
+      # Supports 30-day WAL retention policy for compliance
+      # Enables point-in-time recovery within regulatory requirements
+      storage: 50Gi
+  
+  volumeMode: Filesystem
+
+---
+# Application Logs PersistentVolumeClaim
+# Centralized storage for Spring Boot application logs
+# Supporting monitoring and audit requirements
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: application-logs
+  labels:
+    app: carddemo-backend
+    component: logging
+    tier: monitoring
+    environment: production
+  annotations:
+    description: "Spring Boot application logs persistent storage"
+    volume.beta.kubernetes.io/storage-class: "standard"
+    volume.kubernetes.io/allow-volume-expansion: "true"
+spec:
+  # ReadWriteMany to support multiple application pods writing logs
+  # Enables centralized log collection across horizontal pod scaling
+  accessModes:
+    - ReadWriteMany
+  
+  # Standard storage class for log data
+  # Cost-effective storage for application logging
+  storageClassName: standard
+  
+  resources:
+    requests:
+      # 20Gi storage for application logs
+      # Supports comprehensive audit logging and debugging
+      # Adequate for transaction logs and batch processing logs
+      storage: 20Gi
+  
+  volumeMode: Filesystem

@@ -1,0 +1,254 @@
+# Spring Batch Test Configuration for Interest Calculation Job
+# Tests migration of CBACT04C.cbl to InterestCalculationJob
+# Validates BigDecimal precision matching COBOL COMP-3 behavior
+
+spring:
+  batch:
+    job:
+      enabled: false  # Prevent auto-execution during tests
+    jdbc:
+      initialize-schema: embedded
+      
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+    
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQL95Dialect
+        format_sql: true
+
+# Test Data Configuration for Interest Calculation
+test:
+  batch:
+    interest-calculation:
+      # Test job parameters matching CBACT04C.cbl execution
+      job-parameters:
+        process-date: "2024-01-15"
+        batch-mode: "FULL"
+        cycle-date: "20240115"
+        
+      # Input test data for account balances
+      input-data:
+        transaction-category-balances:
+          - account-id: "10000000001"
+            transaction-type-code: "01"
+            transaction-category-code: "5001"
+            balance: "1500.75"  # TRAN-CAT-BAL equivalent
+            
+          - account-id: "10000000002"
+            transaction-type-code: "01"
+            transaction-category-code: "5001"
+            balance: "2750.50"
+            
+          - account-id: "10000000003"
+            transaction-type-code: "02"
+            transaction-category-code: "5002"
+            balance: "850.25"
+            
+        # Disclosure group rates - DIS-INT-RATE from CVTRA02Y.cpy
+        disclosure-groups:
+          - account-group-id: "GROUP001"
+            transaction-type-code: "01"
+            transaction-category-code: "5001"
+            interest-rate: "5.25"  # Annual rate stored as BigDecimal
+            
+          - account-group-id: "GROUP002"
+            transaction-type-code: "02"
+            transaction-category-code: "5002"
+            interest-rate: "4.75"
+            
+        # Account data from CVACT01Y.cpy structure
+        accounts:
+          - account-id: "10000000001"
+            account-group-id: "GROUP001"
+            current-balance: "1500.75"
+            active-status: "Y"
+            
+          - account-id: "10000000002"
+            account-group-id: "GROUP001"
+            current-balance: "2750.50"
+            active-status: "Y"
+            
+          - account-id: "10000000003"
+            account-group-id: "GROUP002"
+            current-balance: "850.25"
+            active-status: "Y"
+            
+      # Expected calculation results - validation against COBOL logic
+      expected-results:
+        # COMPUTE WS-MONTHLY-INT = ( TRAN-CAT-BAL * DIS-INT-RATE) / 1200
+        monthly-interest-calculations:
+          - account-id: "10000000001"
+            balance: "1500.75"
+            annual-rate: "5.25"
+            # (1500.75 * 5.25) / 1200 = 6.565625 -> 6.57 with HALF_UP rounding
+            expected-monthly-interest: "6.57"
+            
+          - account-id: "10000000002"
+            balance: "2750.50"
+            annual-rate: "5.25"
+            # (2750.50 * 5.25) / 1200 = 12.040625 -> 12.04 with HALF_UP rounding
+            expected-monthly-interest: "12.04"
+            
+          - account-id: "10000000003"
+            balance: "850.25"
+            annual-rate: "4.75"
+            # (850.25 * 4.75) / 1200 = 3.3676041666... -> 3.37 with HALF_UP rounding
+            expected-monthly-interest: "3.37"
+            
+      # BigDecimal precision configuration matching COBOL COMP-3
+      precision-settings:
+        # WS-MONTHLY-INT PIC S9(09)V99 equivalent
+        monthly-interest:
+          precision: 11  # 9 integer + 2 decimal places
+          scale: 2
+          rounding-mode: "HALF_UP"  # Matches COBOL ROUNDED behavior
+          
+        # TRAN-CAT-BAL PIC S9(09)V99 equivalent  
+        balance-amounts:
+          precision: 11
+          scale: 2
+          rounding-mode: "HALF_UP"
+          
+        # DIS-INT-RATE PIC S9(04)V99 equivalent
+        interest-rates:
+          precision: 6
+          scale: 2
+          rounding-mode: "HALF_UP"
+          
+      # Transaction processing configuration
+      transaction-output:
+        # Expected transaction records generated (1300-B-WRITE-TX equivalent)
+        expected-transactions:
+          - transaction-id: "202401150000001"  # PARM-DATE + suffix pattern
+            transaction-type-code: "01"
+            transaction-category-code: "05"  # Interest transaction category
+            source: "System"
+            description-pattern: "Int. for a/c {account-id}"
+            amount-field: "monthly-interest"
+            
+        # Transaction file format validation
+        transaction-record-structure:
+          transaction-id: "X(16)"
+          account-id: "9(11)"
+          transaction-type: "X(02)"
+          transaction-category: "9(04)"
+          amount: "S9(10)V99"
+          description: "X(50)"
+          origination-timestamp: "X(26)"
+          processing-timestamp: "X(26)"
+          
+      # Performance and processing requirements
+      performance-criteria:
+        # Must complete within 4-hour batch window (Section 0 requirement)
+        max-execution-time-minutes: 15  # Test data subset timeout
+        
+        # Memory usage limits for batch processing
+        max-heap-usage-mb: 512
+        
+        # Transaction throughput requirements
+        min-transactions-per-second: 100
+        
+      # Restart and recovery testing
+      restart-capabilities:
+        # Job restart from last successful step (JCL equivalent)
+        checkpoint-interval: 1000  # Records per checkpoint
+        restart-from-failure: true
+        skip-duplicate-processing: true
+        
+      # Data validation rules
+      validation-rules:
+        # Penny-level accuracy requirement (Section 0)
+        precision-tolerance: "0.00"  # No tolerance for financial calculations
+        
+        # Account balance integrity
+        balance-validation:
+          - rule: "positive-balances-only"
+            accounts: ["10000000001", "10000000002", "10000000003"]
+            
+        # Interest rate validation  
+        rate-validation:
+          min-rate: "0.01"  # 0.01%
+          max-rate: "99.99"  # 99.99%
+          
+        # Date validation for cycle processing
+        date-validation:
+          format: "YYYY-MM-DD"
+          range-check: true
+          business-day-only: false
+          
+      # Error handling and exception scenarios
+      error-scenarios:
+        # Invalid data handling
+        invalid-account-data:
+          - scenario: "negative-balance"
+            account-id: "99999999999"
+            balance: "-100.00"
+            expected-behavior: "skip-record"
+            
+          - scenario: "missing-interest-rate"
+            account-id: "99999999998"
+            group-id: "NOGROUP"
+            expected-behavior: "default-rate"
+            
+        # Processing failures
+        transaction-failures:
+          - scenario: "database-connection-timeout"
+            retry-count: 3
+            backoff-strategy: "exponential"
+            
+          - scenario: "insufficient-disk-space"
+            expected-behavior: "job-failure"
+            cleanup-required: true
+            
+# Logging configuration for test execution
+logging:
+  level:
+    com.carddemo.batch: DEBUG
+    org.springframework.batch: INFO
+    org.springframework.jdbc: DEBUG
+    
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    
+# Test environment Spring Actuator endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,metrics,prometheus,batch"
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# JUnit test execution properties        
+junit:
+  jupiter:
+    execution:
+      parallel:
+        enabled: true
+        mode:
+          default: concurrent
+    timeout:
+      default: "PT5M"  # 5 minute test timeout
+      
+# Integration test database configuration      
+testcontainers:
+  postgresql:
+    image: "postgres:15-alpine"
+    database-name: "carddemo_test"
+    username: "test_user"
+    password: "test_pass"
+    init-script-path: "classpath:sql/interest-calculation-test-schema.sql"

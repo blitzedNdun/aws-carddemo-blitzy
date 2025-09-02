@@ -1,0 +1,311 @@
+# Spring Batch Test Configuration for AccountReaderJob
+# Migration from COBOL program CBACT01C.cbl
+# Purpose: Test configuration for reading account master records sequentially
+# Emulates VSAM KSDS access patterns and COBOL DISPLAY statement formatting
+
+spring:
+  batch:
+    # Job configuration for AccountReaderJob testing
+    job:
+      enabled: false  # Prevent auto-startup during tests
+      
+  # Test database configuration
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+    initialization-mode: always
+    
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+
+# Logging configuration for console output matching COBOL DISPLAY statements
+logging:
+  level:
+    com.carddemo.batch: DEBUG
+    org.springframework.batch: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# Test job parameters for AccountReaderJob (CBACT01C migration)
+batch:
+  jobs:
+    account-reader:
+      # Job parameters matching COBOL file processing
+      parameters:
+        # Input file configuration (replaces VSAM ACCTFILE)
+        input.file.path: "classpath:test-data/account-test-data.csv"
+        input.file.encoding: "UTF-8"
+        
+        # VSAM KSDS emulation settings
+        vsam.access.mode: "sequential"  # Matches ACCESS MODE IS SEQUENTIAL
+        vsam.record.key: "ACCT-ID"      # Matches RECORD KEY IS FD-ACCT-ID
+        vsam.organization: "indexed"     # Matches ORGANIZATION IS INDEXED
+        
+        # Console output configuration matching COBOL DISPLAY format
+        output.console.enabled: true
+        output.format.cobol.compatible: true
+        output.field.separator: ":"
+        output.record.delimiter: "-------------------------------------------------"
+        
+        # EOF handling configuration (matches COBOL status '10' detection)
+        eof.detection.enabled: true
+        eof.status.code: "10"
+        
+        # Error handling configuration (matches CEE3ABD abend processing)
+        error.handling.enabled: true
+        error.abend.code: "999"
+        error.timeout: "0"
+        
+        # Processing limits for testing
+        max.records.to.process: 1000
+        chunk.size: 1
+        
+      # Step configuration
+      steps:
+        account-reader-step:
+          # Reader configuration
+          reader:
+            type: "FlatFileItemReader"
+            chunk.size: 1  # Process one record at a time like COBOL READ
+            skip.limit: 0   # No skipping - fail on errors like COBOL
+            
+          # Processor configuration  
+          processor:
+            type: "AccountRecordProcessor"
+            validation.enabled: true
+            field.conversion.cobol.compatible: true
+            
+          # Writer configuration (console output)
+          writer:
+            type: "ConsoleItemWriter"
+            format.cobol.display: true
+            
+# Test data configuration
+test:
+  data:
+    # Account record structure matching CVACT01Y copybook
+    account:
+      record:
+        length: 300  # RECLN 300 from copybook
+        fields:
+          acct_id:
+            position: 1
+            length: 11
+            type: "numeric"
+            picture: "9(11)"
+            description: "Account ID - Primary Key"
+            
+          acct_active_status:
+            position: 12
+            length: 1
+            type: "character"
+            picture: "X(01)"
+            description: "Account Active Status"
+            
+          acct_curr_bal:
+            position: 13
+            length: 12
+            type: "signed_decimal"
+            picture: "S9(10)V99"
+            scale: 2
+            description: "Current Balance"
+            
+          acct_credit_limit:
+            position: 25
+            length: 12
+            type: "signed_decimal"
+            picture: "S9(10)V99"
+            scale: 2
+            description: "Credit Limit"
+            
+          acct_cash_credit_limit:
+            position: 37
+            length: 12
+            type: "signed_decimal"
+            picture: "S9(10)V99"
+            scale: 2
+            description: "Cash Credit Limit"
+            
+          acct_open_date:
+            position: 49
+            length: 10
+            type: "character"
+            picture: "X(10)"
+            description: "Account Open Date"
+            
+          acct_expiration_date:
+            position: 59
+            length: 10
+            type: "character"
+            picture: "X(10)"
+            description: "Account Expiration Date"
+            
+          acct_reissue_date:
+            position: 69
+            length: 10
+            type: "character"
+            picture: "X(10)"
+            description: "Account Reissue Date"
+            
+          acct_curr_cyc_credit:
+            position: 79
+            length: 12
+            type: "signed_decimal"
+            picture: "S9(10)V99"
+            scale: 2
+            description: "Current Cycle Credit"
+            
+          acct_curr_cyc_debit:
+            position: 91
+            length: 12
+            type: "signed_decimal"
+            picture: "S9(10)V99"
+            scale: 2
+            description: "Current Cycle Debit"
+            
+          acct_addr_zip:
+            position: 103
+            length: 10
+            type: "character"
+            picture: "X(10)"
+            description: "Address ZIP Code"
+            
+          acct_group_id:
+            position: 113
+            length: 10
+            type: "character"
+            picture: "X(10)"
+            description: "Account Group ID"
+            
+          filler:
+            position: 123
+            length: 178
+            type: "character"
+            picture: "X(178)"
+            description: "Filler space"
+
+    # Test scenarios matching COBOL program flow
+    scenarios:
+      # Normal processing scenario
+      sequential_read_success:
+        description: "Test sequential reading of all account records successfully"
+        test_data_file: "account-test-data-success.csv"
+        expected_records: 5
+        expected_status: "COMPLETED"
+        console_output_validation: true
+        
+      # EOF scenario testing  
+      eof_detection:
+        description: "Test EOF detection matching COBOL status '10' handling"
+        test_data_file: "account-test-data-empty.csv"
+        expected_records: 0
+        expected_status: "COMPLETED"
+        eof_status_code: "10"
+        
+      # Error scenario testing
+      file_read_error:
+        description: "Test error handling matching COBOL abend processing"
+        test_data_file: "account-test-data-invalid.csv"
+        expected_status: "FAILED"
+        abend_code: "999"
+        error_message: "ERROR READING ACCOUNT FILE"
+        
+      # Large file processing
+      large_file_processing:
+        description: "Test processing large file within performance requirements"
+        test_data_file: "account-test-data-large.csv"
+        expected_records: 1000
+        max_processing_time_ms: 10000
+        expected_status: "COMPLETED"
+
+# COBOL Display Output Format Templates
+# Matches exact format from CBACT01C.cbl lines 119-130
+cobol:
+  display:
+    format:
+      templates:
+        start_message: "START OF EXECUTION OF PROGRAM CBACT01C"
+        end_message: "END OF EXECUTION OF PROGRAM CBACT01C"
+        record_header: ""  # No header in COBOL version
+        record_footer: "-------------------------------------------------"
+        field_formats:
+          acct_id: "ACCT-ID                 : %s"
+          acct_active_status: "ACCT-ACTIVE-STATUS      : %s"
+          acct_curr_bal: "ACCT-CURR-BAL           : %s"
+          acct_credit_limit: "ACCT-CREDIT-LIMIT       : %s"
+          acct_cash_credit_limit: "ACCT-CASH-CREDIT-LIMIT  : %s"
+          acct_open_date: "ACCT-OPEN-DATE          : %s"
+          acct_expiration_date: "ACCT-EXPIRAION-DATE     : %s"  # Preserving typo from COBOL
+          acct_reissue_date: "ACCT-REISSUE-DATE       : %s"
+          acct_curr_cyc_credit: "ACCT-CURR-CYC-CREDIT    : %s"
+          acct_curr_cyc_debit: "ACCT-CURR-CYC-DEBIT     : %s"
+          acct_group_id: "ACCT-GROUP-ID           : %s"
+        
+        # Error message formats matching COBOL
+        error_messages:
+          file_open_error: "ERROR OPENING ACCTFILE"
+          file_read_error: "ERROR READING ACCOUNT FILE"
+          file_close_error: "ERROR CLOSING ACCOUNT FILE"
+          abend_message: "ABENDING PROGRAM"
+          file_status_format: "FILE STATUS IS: NNNN%s"
+
+# Performance testing configuration
+performance:
+  testing:
+    enabled: true
+    # Metrics matching mainframe benchmark requirements
+    benchmarks:
+      max_processing_time_per_record_ms: 1
+      max_total_processing_time_ms: 10000
+      memory_usage_threshold_mb: 512
+      
+    # VSAM KSDS performance emulation
+    vsam:
+      emulation:
+        sequential_access_delay_ms: 0  # VSAM sequential is very fast
+        key_comparison_cost_ns: 100
+        buffer_size_records: 100
+        
+# File status handling matching COBOL behavior
+file:
+  status:
+    codes:
+      success: "00"        # Successful operation
+      eof: "10"           # End of file
+      record_not_found: "23"
+      file_not_open: "48"
+      general_error: "99"
+      
+    # Error handling strategy matching COBOL 9999-ABEND-PROGRAM
+    error:
+      strategy: "abort"    # Match COBOL abend behavior
+      retry_attempts: 0    # No retries in COBOL version
+      abend_timeout_ms: 0  # Immediate abend like COBOL
+
+# Integration test configuration
+integration:
+  test:
+    # Database state verification
+    database:
+      verification_enabled: true
+      connection_validation: true
+      
+    # Console output capture for validation
+    console:
+      capture_enabled: true
+      validation_enabled: true
+      format_verification: true
+      
+    # Timing verification
+    timing:
+      measurement_enabled: true
+      baseline_comparison: true
+      performance_regression_threshold_percent: 10

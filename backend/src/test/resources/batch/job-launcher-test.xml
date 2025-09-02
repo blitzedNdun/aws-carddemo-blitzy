@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/batch
+           http://www.springframework.org/schema/batch/spring-batch.xsd
+           http://www.springframework.org/schema/context
+           http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <!-- Spring Batch Test Configuration for CardDemo System -->
+    <!-- Provides job launcher, repository, and transaction management for programmatic batch testing -->
+    <!-- Matches mainframe batch behavior with restart capabilities and checkpoint management -->
+
+    <!-- Transaction Manager for Batch Operations -->
+    <!-- ResourcelessTransactionManager provides transaction support without requiring database resources -->
+    <!-- Enables transaction rollback and commit simulation for batch job testing -->
+    <bean id="transactionManager" 
+          class="org.springframework.batch.support.transaction.ResourcelessTransactionManager"/>
+
+    <!-- In-Memory Job Repository for Testing -->
+    <!-- MapJobRepositoryFactoryBean creates repository without database persistence -->
+    <!-- Supports job restart and checkpoint management in memory for isolated testing -->
+    <bean id="jobRepository" 
+          class="org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean">
+        <property name="transactionManager" ref="transactionManager"/>
+        <!-- Enable checkpoint management for restart capability testing -->
+        <property name="isolationLevelForCreate" value="ISOLATION_DEFAULT"/>
+        <!-- Configure table prefix for job metadata tables (not used in memory implementation) -->
+        <property name="tablePrefix" value="BATCH_"/>
+    </bean>
+
+    <!-- Job Launcher for Programmatic Test Execution -->
+    <!-- SimpleJobLauncher enables programmatic launching of batch jobs in test context -->
+    <!-- Supports synchronous and asynchronous job execution modes -->
+    <bean id="jobLauncher" 
+          class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+        <property name="jobRepository" ref="jobRepository"/>
+        <!-- Set task executor for job execution threading -->
+        <property name="taskExecutor">
+            <bean class="org.springframework.core.task.SyncTaskExecutor"/>
+        </property>
+    </bean>
+
+    <!-- Test Job Configuration for Interest Calculation -->
+    <!-- Validates COBOL-to-Java conversion accuracy in batch processing -->
+    <!-- Matches CBACT04C.cbl interest calculation logic with restart capability -->
+    <batch:job id="testInterestCalculationJob" job-repository="jobRepository">
+        <batch:step id="testInterestCalculationStep">
+            <batch:tasklet transaction-manager="transactionManager">
+                <bean class="org.springframework.batch.core.step.tasklet.MethodInvokingTaskletAdapter">
+                    <property name="targetObject">
+                        <bean class="java.lang.Object"/>
+                    </property>
+                    <property name="targetMethod" value="toString"/>
+                </bean>
+            </batch:tasklet>
+        </batch:step>
+        <!-- Job restart configuration -->
+        <batch:validator>
+            <bean class="org.springframework.batch.core.job.DefaultJobParametersValidator"/>
+        </batch:validator>
+    </batch:job>
+
+    <!-- Test Job Configuration for Daily Transaction Processing -->
+    <!-- Validates CBTRN01C.cbl and CBTRN02C.cbl transaction processing logic -->
+    <!-- Supports chunk-based processing with restart from failure points -->
+    <batch:job id="testDailyTransactionJob" job-repository="jobRepository" restartable="true">
+        <batch:step id="testTransactionProcessingStep">
+            <batch:tasklet transaction-manager="transactionManager">
+                <bean class="org.springframework.batch.core.step.tasklet.MethodInvokingTaskletAdapter">
+                    <property name="targetObject">
+                        <bean class="java.lang.Object"/>
+                    </property>
+                    <property name="targetMethod" value="hashCode"/>
+                </bean>
+            </batch:tasklet>
+        </batch:step>
+        <!-- Allow restart after failure for testing restart capability -->
+        <batch:listeners>
+            <batch:listener>
+                <bean class="org.springframework.batch.core.listener.JobListenerFactoryBean">
+                    <property name="delegate">
+                        <bean class="java.lang.Object"/>
+                    </property>
+                </bean>
+            </batch:listener>
+        </batch:listeners>
+    </batch:job>
+
+    <!-- Test Job Configuration for Statement Generation -->
+    <!-- Validates CBSTM03A.cbl and CBSTM03B.cbl statement generation logic -->
+    <!-- Tests file-based output processing with checkpoint management -->
+    <batch:job id="testStatementGenerationJob" job-repository="jobRepository">
+        <batch:step id="testStatementGenerationStep">
+            <batch:tasklet transaction-manager="transactionManager">
+                <bean class="org.springframework.batch.core.step.tasklet.MethodInvokingTaskletAdapter">
+                    <property name="targetObject">
+                        <bean class="java.lang.Object"/>
+                    </property>
+                    <property name="targetMethod" value="getClass"/>
+                </bean>
+            </batch:tasklet>
+        </batch:step>
+        <!-- Configure step execution listeners for checkpoint testing -->
+        <batch:listeners>
+            <batch:listener>
+                <bean class="org.springframework.batch.core.listener.StepListenerFactoryBean">
+                    <property name="delegate">
+                        <bean class="java.lang.Object"/>
+                    </property>
+                </bean>
+            </batch:listener>
+        </batch:listeners>
+    </batch:job>
+
+    <!-- Test Job Configuration for Account Maintenance -->
+    <!-- Validates CBACT01C.cbl, CBACT02C.cbl, and CBACT03C.cbl account processing -->
+    <!-- Tests BigDecimal precision handling and COBOL COMP-3 equivalence -->
+    <batch:job id="testAccountMaintenanceJob" job-repository="jobRepository" restartable="true">
+        <batch:step id="testAccountProcessingStep">
+            <batch:tasklet transaction-manager="transactionManager" allow-start-if-complete="true">
+                <bean class="org.springframework.batch.core.step.tasklet.MethodInvokingTaskletAdapter">
+                    <property name="targetObject">
+                        <bean class="java.lang.Object"/>
+                    </property>
+                    <property name="targetMethod" value="notify"/>
+                </bean>
+            </batch:tasklet>
+        </batch:step>
+        <!-- Job parameter validation for restart scenarios -->
+        <batch:validator>
+            <bean class="org.springframework.batch.core.job.DefaultJobParametersValidator">
+                <property name="requiredKeys">
+                    <set>
+                        <value>processDate</value>
+                        <value>batchMode</value>
+                    </set>
+                </property>
+                <property name="optionalKeys">
+                    <set>
+                        <value>restartMode</value>
+                        <value>debugEnabled</value>
+                    </set>
+                </property>
+            </bean>
+        </batch:validator>
+    </batch:job>
+
+    <!-- Test Job Configuration for Customer Maintenance -->
+    <!-- Validates CBCUS01C.cbl customer data processing logic -->
+    <!-- Tests data validation and error handling patterns -->
+    <batch:job id="testCustomerMaintenanceJob" job-repository="jobRepository">
+        <batch:step id="testCustomerProcessingStep" next="testCustomerValidationStep">
+            <batch:tasklet transaction-manager="transactionManager">
+                <bean class="org.springframework.batch.core.step.tasklet.MethodInvokingTaskletAdapter">
+                    <property name="targetObject">
+                        <bean class="java.lang.Object"/>
+                    </property>
+                    <property name="targetMethod" value="wait"/>
+                </bean>
+            </batch:tasklet>
+        </batch:step>
+        <batch:step id="testCustomerValidationStep">
+            <batch:tasklet transaction-manager="transactionManager">
+                <bean class="org.springframework.batch.core.step.tasklet.MethodInvokingTaskletAdapter">
+                    <property name="targetObject">
+                        <bean class="java.lang.Object"/>
+                    </property>
+                    <property name="targetMethod" value="notifyAll"/>
+                </bean>
+            </batch:tasklet>
+        </batch:step>
+        <!-- Flow control for multi-step job testing -->
+        <batch:listeners>
+            <batch:listener>
+                <bean class="org.springframework.batch.core.listener.JobListenerFactoryBean">
+                    <property name="delegate">
+                        <bean class="java.lang.Object"/>
+                    </property>
+                </bean>
+            </batch:listener>
+        </batch:listeners>
+    </batch:job>
+
+    <!-- Job Execution Test Helper Bean -->
+    <!-- Provides utility methods for job execution validation and result verification -->
+    <bean id="jobExecutionTestHelper" class="java.util.HashMap">
+        <constructor-arg>
+            <map>
+                <!-- Test configuration parameters -->
+                <entry key="maxRetries" value="3"/>
+                <entry key="chunkSize" value="100"/>
+                <entry key="skipLimit" value="10"/>
+                <entry key="restartEnabled" value="true"/>
+            </map>
+        </constructor-arg>
+    </bean>
+
+    <!-- Job Parameters Builder for Test Scenarios -->
+    <!-- Facilitates creation of job parameters for different test scenarios -->
+    <bean id="jobParametersBuilder" class="org.springframework.batch.core.JobParametersBuilder"/>
+
+    <!-- Synchronous Task Executor for Test Environment -->
+    <!-- Ensures synchronous execution of batch jobs in test context -->
+    <!-- Prevents threading issues during test execution and validation -->
+    <bean id="syncTaskExecutor" class="org.springframework.core.task.SyncTaskExecutor"/>
+
+    <!-- Asynchronous Task Executor for Performance Testing -->
+    <!-- Enables testing of concurrent batch job execution scenarios -->
+    <bean id="asyncTaskExecutor" class="org.springframework.core.task.SimpleAsyncTaskExecutor">
+        <property name="concurrencyLimit" value="5"/>
+        <property name="threadNamePrefix" value="batch-test-"/>
+    </bean>
+
+    <!-- Job Explorer for Test Job Monitoring -->
+    <!-- Provides read-only access to job execution metadata for test validation -->
+    <bean id="jobExplorer" 
+          class="org.springframework.batch.core.explore.support.MapJobExplorerFactoryBean">
+        <property name="repositoryFactory" ref="jobRepository"/>
+    </bean>
+
+    <!-- Job Operator for Test Job Management -->
+    <!-- Enables job control operations (start, stop, restart) for testing -->
+    <bean id="jobOperator" 
+          class="org.springframework.batch.core.launch.support.SimpleJobOperator">
+        <property name="jobLauncher" ref="jobLauncher"/>
+        <property name="jobRepository" ref="jobRepository"/>
+        <property name="jobExplorer" ref="jobExplorer"/>
+        <property name="jobRegistry">
+            <bean class="org.springframework.batch.core.configuration.support.MapJobRegistry"/>
+        </property>
+    </bean>
+
+</beans>

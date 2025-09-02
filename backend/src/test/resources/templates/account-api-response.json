@@ -1,0 +1,394 @@
+{
+  "accountViewSuccess": {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Account details retrieved successfully",
+    "timestamp": "2024-01-15T10:30:45.123Z",
+    "transactionId": "CAVW-20240115-103045-001",
+    "data": {
+      "account": {
+        "accountId": "00000000001",
+        "accountStatus": "Y",
+        "accountStatusDescription": "Active",
+        "currentBalance": "15235.67",
+        "creditLimit": "50000.00",
+        "cashCreditLimit": "25000.00",
+        "currentCycleCredit": "2500.00",
+        "currentCycleDebit": "1750.25",
+        "openDate": "2020-03-15",
+        "expiryDate": "2025-03-31",
+        "reissueDate": "2023-03-15",
+        "accountGroupId": "GRP001"
+      },
+      "customer": {
+        "customerId": "000000001",
+        "firstName": "John",
+        "middleName": "Robert",
+        "lastName": "Smith",
+        "socialSecurityNumber": "123-45-6789",
+        "dateOfBirth": "1985-06-15",
+        "ficoScore": "750",
+        "address": {
+          "line1": "123 Main Street",
+          "line2": "Apt 4B",
+          "city": "Springfield",
+          "state": "IL",
+          "zipCode": "62701",
+          "country": "USA"
+        },
+        "phone": {
+          "primary": "(555) 123-4567",
+          "secondary": "(555) 987-6543"
+        },
+        "governmentIssuedId": "DL12345678",
+        "eftAccountId": "EFT9876543",
+        "primaryCardHolder": "Y"
+      }
+    }
+  },
+
+  "accountUpdateSuccess": {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Account updated successfully",
+    "timestamp": "2024-01-15T10:30:45.123Z",
+    "transactionId": "CAUP-20240115-103045-002",
+    "data": {
+      "accountId": "00000000001",
+      "fieldsUpdated": [
+        "creditLimit",
+        "cashCreditLimit",
+        "accountStatus"
+      ],
+      "previousValues": {
+        "creditLimit": "45000.00",
+        "cashCreditLimit": "22500.00",
+        "accountStatus": "Y"
+      },
+      "currentValues": {
+        "creditLimit": "50000.00",
+        "cashCreditLimit": "25000.00",
+        "accountStatus": "Y"
+      }
+    }
+  },
+
+  "accountListSuccess": {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Account list retrieved successfully",
+    "timestamp": "2024-01-15T10:30:45.123Z",
+    "transactionId": "CALI-20240115-103045-003",
+    "data": {
+      "accounts": [
+        {
+          "accountId": "00000000001",
+          "customerId": "000000001",
+          "customerName": "John Robert Smith",
+          "accountStatus": "Y",
+          "currentBalance": "15235.67",
+          "creditLimit": "50000.00",
+          "openDate": "2020-03-15"
+        },
+        {
+          "accountId": "00000000002",
+          "customerId": "000000002",
+          "customerName": "Jane Marie Doe",
+          "accountStatus": "Y",
+          "currentBalance": "8750.25",
+          "creditLimit": "30000.00",
+          "openDate": "2021-07-22"
+        }
+      ],
+      "pagination": {
+        "totalRecords": 156,
+        "pageSize": 20,
+        "currentPage": 1,
+        "totalPages": 8,
+        "hasNextPage": true,
+        "hasPreviousPage": false,
+        "nextPageToken": "eyJwYWdlIjoyLCJzb3J0IjoiYWNjb3VudElkIn0="
+      }
+    }
+  },
+
+  "accountNotFound": {
+    "status": "error",
+    "statusCode": 404,
+    "message": "Account not found",
+    "timestamp": "2024-01-15T10:30:45.123Z",
+    "transactionId": "CAVW-20240115-103045-004",
+    "error": {
+      "code": "ACCT-404",
+      "type": "ACCOUNT_NOT_FOUND",
+      "description": "Account not found in account master file",
+      "cobolResponse": "DFHRESP(NOTFND)",
+      "cobolResponseCode": "14",
+      "cobolReasonCode": "0",
+      "details": {
+        "accountId": "99999999999",
+        "searchedIn": "ACCTDAT",
+        "originalMessage": "Account:99999999999 not found in Acct Master file.Resp:14 Reas:0"
+      }
+    }
+  },
+
+  "accountValidationError": {
+    "status": "error",
+    "statusCode": 400,
+    "message": "Account validation failed",
+    "timestamp": "2024-01-15T10:30:45.123Z",
+    "transactionId": "CAVW-20240115-103045-005",
+    "error": {
+      "code": "ACCT-400",
+      "type": "VALIDATION_ERROR",
+      "description": "Account number validation failed",
+      "validationErrors": [
+        {
+          "field": "accountId",
+          "code": "INVALID_FORMAT",
+          "message": "Account Filter must be a non-zero 11 digit number",
+          "value": "ABC123",
+          "cobolValidation": "FLG-ACCTFILTER-NOT-OK"
+        }
+      ]
+    }
+  },
+
+  "accountUpdateValidationError": {
+    "status": "error",
+    "statusCode": 400,
+    "message": "Account update validation failed",
+    "timestamp": "2024-01-15T10:30:45.123Z",
+    "transactionId": "CAUP-20240115-103045-006",
+    "error": {
+      "code": "ACCT-UPD-400",
+      "type": "UPDATE_VALIDATION_ERROR",
+      "description": "Multiple field validation errors",
+      "validationErrors": [
+        {
+          "field": "creditLimit",
+          "code": "INVALID_AMOUNT",
+          "message": "Credit limit must be a valid signed number with 2 decimal places",
+          "value": "abc.def",
+          "cobolValidation": "FLG-CRED-LIMIT-NOT-OK"
+        },
+        {
+          "field": "accountStatus",
+          "code": "INVALID_VALUE",
+          "message": "Account status must be Y or N",
+          "value": "X",
+          "cobolValidation": "FLG-ACCT-STATUS-NOT-OK"
+        },
+        {
+          "field": "socialSecurityNumber",
+          "code": "INVALID_SSN",
+          "message": "Invalid SSN format - part 1 cannot be 000, 666, or 900-999",
+          "value": "000-12-3456",
+          "cobolValidation": "INVALID-SSN-PART1"
+        }
+      ]
+    }
+  },
+
+  "customerNotFound": {
+    "status": "error",
+    "statusCode": 404,
+    "message": "Customer not found",
+    "timestamp": "2024-01-15T10:30:45.123Z",
+    "transactionId": "CAVW-20240115-103045-007",
+    "error": {
+      "code": "CUST-404",
+      "type": "CUSTOMER_NOT_FOUND",
+      "description": "Customer not found in customer master file",
+      "cobolResponse": "DFHRESP(NOTFND)",
+      "cobolResponseCode": "14",
+      "cobolReasonCode": "0",
+      "details": {
+        "customerId": "999999999",
+        "searchedIn": "CUSTDAT",
+        "originalMessage": "CustId:999999999 not found in customer master.Resp: 14 REAS:0"
+      }
+    }
+  },
+
+  "cardXrefNotFound": {
+    "status": "error",
+    "statusCode": 404,
+    "message": "Account card cross-reference not found",
+    "timestamp": "2024-01-15T10:30:45.123Z",
+    "transactionId": "CAVW-20240115-103045-008",
+    "error": {
+      "code": "XREF-404",
+      "type": "CARD_XREF_NOT_FOUND",
+      "description": "Account not found in account card cross-reference file",
+      "cobolResponse": "DFHRESP(NOTFND)",
+      "cobolResponseCode": "14",
+      "cobolReasonCode": "0",
+      "details": {
+        "accountId": "88888888888",
+        "searchedIn": "CXACAIX",
+        "originalMessage": "Account:88888888888 not found in Cross ref file. Resp:14 Reas:0"
+      }
+    }
+  },
+
+  "systemError": {
+    "status": "error",
+    "statusCode": 500,
+    "message": "System error occurred",
+    "timestamp": "2024-01-15T10:30:45.123Z",
+    "transactionId": "CAVW-20240115-103045-009",
+    "error": {
+      "code": "SYS-500",
+      "type": "SYSTEM_ERROR",
+      "description": "Unexpected system error during account processing",
+      "cobolAbend": "9999",
+      "details": {
+        "culprit": "COACTVWC",
+        "operation": "read",
+        "file": "ACCTDAT",
+        "cobolResponse": "DFHRESP(IOERR)",
+        "cobolResponseCode": "16",
+        "cobolReasonCode": "0",
+        "originalMessage": "File Error: read on ACCTDAT returned RESP 16,RESP2 0"
+      }
+    }
+  },
+
+  "noSearchCriteria": {
+    "status": "error",
+    "statusCode": 400,
+    "message": "No search criteria provided",
+    "timestamp": "2024-01-15T10:30:45.123Z",
+    "transactionId": "CAVW-20240115-103045-010",
+    "error": {
+      "code": "ACCT-400-NO-INPUT",
+      "type": "NO_INPUT_PROVIDED",
+      "description": "No input received",
+      "cobolValidation": "NO-SEARCH-CRITERIA-RECEIVED",
+      "details": {
+        "requiredFields": ["accountId"],
+        "message": "Account number not provided"
+      }
+    }
+  },
+
+  "unauthorizedAccess": {
+    "status": "error",
+    "statusCode": 401,
+    "message": "Unauthorized access",
+    "timestamp": "2024-01-15T10:30:45.123Z",
+    "transactionId": "CAVW-20240115-103045-011",
+    "error": {
+      "code": "AUTH-401",
+      "type": "UNAUTHORIZED",
+      "description": "User not authorized to access account information",
+      "details": {
+        "userId": "USER123",
+        "requiredRole": "ACCOUNT_VIEWER",
+        "currentRole": "GUEST"
+      }
+    }
+  },
+
+  "sessionExpired": {
+    "status": "error",
+    "statusCode": 401,
+    "message": "Session expired",
+    "timestamp": "2024-01-15T10:30:45.123Z",
+    "transactionId": "CAVW-20240115-103045-012",
+    "error": {
+      "code": "AUTH-401-EXPIRED",
+      "type": "SESSION_EXPIRED",
+      "description": "User session has expired",
+      "details": {
+        "sessionId": "SESS-123456789",
+        "expiredAt": "2024-01-15T10:25:00.000Z",
+        "action": "Please login again"
+      }
+    }
+  },
+
+  "fieldValidationErrors": {
+    "creditLimitError": {
+      "field": "creditLimit",
+      "code": "INVALID_CREDIT_LIMIT",
+      "message": "Credit limit must be a positive number with up to 2 decimal places and cannot exceed 999,999,999.99",
+      "cobolValidation": "FLG-CRED-LIMIT-NOT-OK"
+    },
+    "cashCreditLimitError": {
+      "field": "cashCreditLimit",
+      "code": "INVALID_CASH_CREDIT_LIMIT", 
+      "message": "Cash credit limit must be a positive number with up to 2 decimal places",
+      "cobolValidation": "FLG-CASH-CREDIT-LIMIT-NOT-OK"
+    },
+    "currentBalanceError": {
+      "field": "currentBalance",
+      "code": "INVALID_CURRENT_BALANCE",
+      "message": "Current balance must be a valid signed number with 2 decimal places",
+      "cobolValidation": "FLG-CURR-BAL-NOT-OK"
+    },
+    "ficoScoreError": {
+      "field": "ficoScore",
+      "code": "INVALID_FICO_SCORE",
+      "message": "FICO score must be a number between 300 and 850",
+      "cobolValidation": "FLG-FICO-SCORE-NOT-OK"
+    },
+    "phoneNumberError": {
+      "field": "phoneNumber",
+      "code": "INVALID_PHONE_NUMBER",
+      "message": "Phone number must be in format (999) 999-9999",
+      "cobolValidation": "WS-EDIT-US-PHONE-IS-INVALID"
+    },
+    "dateValidationError": {
+      "field": "dateOfBirth",
+      "code": "INVALID_DATE_FORMAT",
+      "message": "Date must be in CCYY-MM-DD format and be a valid date",
+      "cobolValidation": "WS-EDIT-DT-OF-BIRTH-INVALID"
+    }
+  },
+
+  "cobolResponseCodes": {
+    "DFHRESP_NORMAL": {
+      "code": "0",
+      "description": "Normal completion",
+      "httpStatus": 200
+    },
+    "DFHRESP_NOTFND": {
+      "code": "14", 
+      "description": "Record not found",
+      "httpStatus": 404
+    },
+    "DFHRESP_DUPKEY": {
+      "code": "15",
+      "description": "Duplicate key",
+      "httpStatus": 409
+    },
+    "DFHRESP_IOERR": {
+      "code": "16",
+      "description": "Input/Output error",
+      "httpStatus": 500
+    },
+    "DFHRESP_MAPFAIL": {
+      "code": "36",
+      "description": "Map failure",
+      "httpStatus": 400
+    }
+  },
+
+  "transactionCodes": {
+    "CAVW": {
+      "program": "COACTVWC",
+      "description": "Account View",
+      "mapset": "COACTVW",
+      "map": "CACTVWA"
+    },
+    "CAUP": {
+      "program": "COACTUPC", 
+      "description": "Account Update",
+      "mapset": "COACTUP",
+      "map": "CACTUPA"
+    }
+  }
+}

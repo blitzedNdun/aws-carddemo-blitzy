@@ -1,0 +1,315 @@
+# Performance Baseline Configuration for CardDemo Migration Validation
+# Defines expected processing rates, memory usage limits, and timing thresholds 
+# for Spring Batch ETL jobs to ensure migration meets the 4-hour batch window requirement
+
+# ==============================================================================
+# PERFORMANCE BASELINE CONFIGURATION
+# ==============================================================================
+# This configuration file establishes performance baselines for validating the 
+# COBOL-to-Java Spring Boot migration success. All baselines are derived from 
+# the technical specification requirements and ensure the modernized system 
+# meets or exceeds mainframe performance characteristics.
+
+performance:
+  # =============================================================================
+  # REST API PERFORMANCE BASELINES
+  # =============================================================================
+  # Interactive transaction performance targets based on technical specification
+  # Section 6.5 requirement: < 200ms response time for 95% of REST transactions
+  api:
+    response_time:
+      # Response time targets in milliseconds
+      target_95th_percentile: 200      # 95% of requests must complete under 200ms
+      target_99th_percentile: 500      # 99% of requests must complete under 500ms
+      warning_threshold: 300           # Alert when 95th percentile exceeds 300ms
+      critical_threshold: 1000         # Critical alert when 95th percentile exceeds 1000ms
+      
+    throughput:
+      # Requests per second targets per service instance
+      target_rps_per_instance: 1000    # Minimum 1000 TPS per Spring Boot pod
+      peak_rps_per_instance: 2000      # Peak capacity target
+      warning_threshold: 500           # Alert when RPS drops below 500
+      critical_threshold: 200          # Critical alert when RPS drops below 200
+      
+    error_rate:
+      # Error rate thresholds as percentages
+      target_error_rate: 1.0           # Target < 1% error rate
+      warning_threshold: 2.0           # Alert when error rate exceeds 2%
+      critical_threshold: 5.0          # Critical alert when error rate exceeds 5%
+      
+    concurrent_users:
+      # Concurrent user session targets
+      target_concurrent_sessions: 1000  # Support 1000+ concurrent sessions
+      max_concurrent_sessions: 5000     # Maximum session capacity
+      warning_threshold: 4000           # Alert when approaching max capacity
+      
+  # =============================================================================
+  # DATABASE PERFORMANCE BASELINES
+  # =============================================================================
+  # PostgreSQL database performance targets for VSAM-equivalent operations
+  # Based on Section 6.2.4 query optimization requirements: < 50ms average execution
+  database:
+    query_performance:
+      # Query execution time targets in milliseconds
+      target_avg_query_time: 50        # Average query execution < 50ms
+      target_95th_percentile: 100      # 95% of queries < 100ms
+      warning_threshold: 150           # Alert when avg query time > 150ms
+      critical_threshold: 500          # Critical alert when avg > 500ms
+      
+    connection_pool:
+      # HikariCP connection pool performance targets
+      target_active_connections: 15    # Target active connections < 15/20
+      max_connections: 20               # Maximum connection pool size
+      warning_threshold: 18             # Alert when active connections > 18
+      connection_timeout_ms: 30000      # 30 second connection timeout
+      
+    transaction_throughput:
+      # Database transaction processing targets
+      target_transactions_per_second: 500  # Minimum 500 DB TPS
+      peak_transactions_per_second: 1500   # Peak capacity
+      warning_threshold: 200               # Alert when TPS < 200
+      
+    index_performance:
+      # B-tree index utilization targets
+      target_index_scan_ratio: 95.0    # 95% of queries should use indexes
+      warning_threshold: 85.0           # Alert when index usage < 85%
+      
+  # =============================================================================
+  # SPRING BATCH ETL PERFORMANCE BASELINES
+  # =============================================================================
+  # Batch processing performance targets to meet 4-hour processing window
+  # Based on Section 2.4.6 requirement: Daily processing completion within 4-hour window
+  batch:
+    processing_window:
+      # Overall batch processing time limits in hours
+      target_completion_time: 4.0      # Complete all batch jobs within 4 hours
+      warning_threshold: 3.5           # Alert when approaching 3.5 hours
+      critical_threshold: 6.0          # Critical alert if exceeding 6 hours
+      
+    data_processing_rates:
+      # Records per second targets for different data types
+      customer_records_per_second: 100     # Customer data processing rate
+      account_records_per_second: 200      # Account data processing rate  
+      transaction_records_per_second: 500  # Transaction data processing rate
+      card_records_per_second: 150         # Credit card data processing rate
+      
+    chunk_processing:
+      # Spring Batch chunk processing configuration
+      optimal_chunk_size: 1000         # Optimal chunk size for balanced performance
+      min_chunk_size: 500              # Minimum chunk size
+      max_chunk_size: 2000             # Maximum chunk size
+      
+    checkpoint_frequency:
+      # Checkpoint intervals for large migrations
+      records_per_checkpoint: 5000     # Checkpoint every 5000 records
+      time_based_checkpoint_minutes: 30 # Time-based checkpoint every 30 minutes
+      
+    job_restart:
+      # Job restart performance requirements
+      max_restart_time_minutes: 15     # Maximum time to restart failed job
+      target_restart_time_minutes: 5   # Target restart time
+      
+  # =============================================================================
+  # SYSTEM RESOURCE PERFORMANCE BASELINES
+  # =============================================================================
+  # JVM and container resource utilization targets
+  # Based on Section 6.5.2.2 requirement: < 80% sustained CPU, < 85% memory
+  resources:
+    cpu_utilization:
+      # CPU usage targets as percentages
+      target_cpu_usage: 70.0           # Target CPU utilization < 70%
+      warning_threshold: 80.0          # Alert when CPU > 80%
+      critical_threshold: 90.0         # Critical alert when CPU > 90%
+      sustained_period_minutes: 10     # Alert if sustained for 10+ minutes
+      
+    memory_utilization:
+      # JVM heap memory usage targets as percentages
+      target_heap_usage: 75.0          # Target heap utilization < 75%
+      warning_threshold: 85.0          # Alert when heap > 85%
+      critical_threshold: 95.0         # Critical alert when heap > 95%
+      
+    garbage_collection:
+      # JVM garbage collection performance targets
+      target_gc_pause_ms: 100          # Target GC pause time < 100ms
+      warning_gc_pause_ms: 200         # Alert when GC pause > 200ms
+      max_gc_frequency_per_minute: 10  # Maximum GC frequency
+      
+  # =============================================================================
+  # I/O OPERATION PERFORMANCE BASELINES  
+  # =============================================================================
+  # File and database I/O operation performance targets
+  io_operations:
+    file_processing:
+      # File reading performance for migration data
+      target_file_read_mbps: 100       # Target file reading speed 100 MB/s
+      warning_threshold_mbps: 50       # Alert when file reading < 50 MB/s
+      
+    database_io:
+      # Database I/O operation targets
+      target_write_operations_per_sec: 1000  # Target DB write operations/sec
+      target_read_operations_per_sec: 2000   # Target DB read operations/sec
+      warning_write_threshold: 500           # Alert when writes < 500/sec
+      warning_read_threshold: 1000           # Alert when reads < 1000/sec
+      
+    disk_utilization:
+      # Disk space and I/O utilization targets
+      target_disk_usage_percent: 80.0  # Target disk usage < 80%
+      warning_threshold: 90.0          # Alert when disk usage > 90%
+      critical_threshold: 95.0         # Critical alert when disk > 95%
+      
+  # =============================================================================
+  # BUSINESS LOGIC PERFORMANCE BASELINES
+  # =============================================================================
+  # Financial calculation and validation performance targets
+  business_logic:
+    financial_calculations:
+      # Interest calculation performance targets
+      interest_calculations_per_second: 1000   # Target interest calcs/sec
+      balance_updates_per_second: 500          # Target balance updates/sec
+      warning_calculation_threshold: 200       # Alert when calcs < 200/sec
+      
+    validation_processing:
+      # Data validation operation targets
+      validation_operations_per_second: 2000   # Target validations/sec
+      field_validation_time_ms: 10            # Target field validation < 10ms
+      business_rule_validation_ms: 50         # Target business rule validation < 50ms
+      
+    precision_verification:
+      # Financial precision accuracy requirements
+      calculation_accuracy_percent: 100.0     # 100% calculation accuracy required
+      precision_tolerance: 0.01               # ±$0.01 precision tolerance
+      
+# ==============================================================================
+# PERFORMANCE MONITORING CONFIGURATION
+# ==============================================================================
+# Configuration for performance monitoring and alerting during migration
+monitoring:
+  metrics_collection:
+    # Metrics collection frequency
+    collection_interval_seconds: 15    # Collect metrics every 15 seconds
+    retention_period_days: 30          # Retain metrics for 30 days
+    
+  alerting:
+    # Alert configuration for performance degradation
+    evaluation_interval_seconds: 30    # Evaluate alert rules every 30 seconds
+    alert_grouping_interval_minutes: 5 # Group related alerts for 5 minutes
+    
+    notification_channels:
+      # Alert notification configuration
+      email_enabled: true
+      slack_enabled: true
+      pagerduty_critical_only: true
+      
+  dashboard_refresh:
+    # Dashboard update frequency
+    real_time_refresh_seconds: 10      # Real-time dashboard refresh
+    historical_refresh_minutes: 5      # Historical data refresh
+    
+# ==============================================================================
+# MIGRATION VALIDATION THRESHOLDS
+# ==============================================================================
+# Specific thresholds for validating migration success
+migration_validation:
+  performance_comparison:
+    # Acceptable performance variance compared to mainframe baseline
+    acceptable_degradation_percent: 10.0    # Allow 10% performance degradation
+    target_improvement_percent: 20.0        # Target 20% performance improvement
+    
+  data_integrity:
+    # Data integrity validation requirements
+    zero_data_loss_tolerance: true          # Zero tolerance for data loss
+    calculation_precision_match: true       # Exact calculation precision match
+    
+  availability_targets:
+    # System availability requirements during migration
+    minimum_uptime_percent: 99.9            # Minimum 99.9% uptime
+    maximum_downtime_minutes_per_day: 1.44  # Maximum 1.44 minutes downtime/day
+    
+  rollback_criteria:
+    # Criteria for migration rollback
+    critical_performance_degradation: 50.0  # Rollback if >50% degradation
+    data_integrity_failure: true            # Rollback on any data integrity failure
+    sustained_sla_breach_minutes: 30        # Rollback after 30 min SLA breach
+
+# ==============================================================================
+# TEST DATA VOLUME CONFIGURATION
+# ==============================================================================
+# Test data volumes for performance baseline validation
+test_data_volumes:
+  small_dataset:
+    # Small dataset for unit testing
+    customer_records: 1000
+    account_records: 5000  
+    transaction_records: 50000
+    card_records: 8000
+    expected_processing_time_minutes: 5
+    
+  medium_dataset:
+    # Medium dataset for integration testing
+    customer_records: 50000
+    account_records: 200000
+    transaction_records: 2000000
+    card_records: 300000
+    expected_processing_time_minutes: 30
+    
+  large_dataset:
+    # Large dataset for performance testing
+    customer_records: 500000
+    account_records: 2000000
+    transaction_records: 20000000
+    card_records: 3000000
+    expected_processing_time_minutes: 180  # 3 hours
+    
+  production_equivalent:
+    # Production-equivalent dataset for final validation
+    customer_records: 1000000
+    account_records: 4000000
+    transaction_records: 50000000
+    card_records: 6000000
+    expected_processing_time_minutes: 240  # 4 hours target
+
+# ==============================================================================
+# ENVIRONMENT-SPECIFIC BASELINES
+# ==============================================================================
+# Performance baselines adjusted for different environments
+environments:
+  development:
+    # Development environment with reduced expectations
+    cpu_utilization_multiplier: 1.5     # Allow 50% higher CPU usage
+    memory_utilization_multiplier: 1.3  # Allow 30% higher memory usage
+    response_time_multiplier: 2.0       # Allow 2x response time
+    
+  staging:
+    # Staging environment with production-like performance  
+    cpu_utilization_multiplier: 1.1     # Allow 10% higher CPU usage
+    memory_utilization_multiplier: 1.1  # Allow 10% higher memory usage
+    response_time_multiplier: 1.2       # Allow 20% higher response time
+    
+  production:
+    # Production environment with full performance requirements
+    cpu_utilization_multiplier: 1.0     # Full performance requirements
+    memory_utilization_multiplier: 1.0  # Full performance requirements  
+    response_time_multiplier: 1.0       # Full performance requirements
+
+# ==============================================================================
+# PERFORMANCE REGRESSION DETECTION
+# ==============================================================================
+# Configuration for detecting performance regressions
+regression_detection:
+  baseline_comparison:
+    # Compare performance against established baselines
+    enable_baseline_comparison: true
+    baseline_deviation_threshold: 15.0   # Alert on 15% deviation from baseline
+    
+  trend_analysis:
+    # Performance trend analysis configuration
+    enable_trend_analysis: true
+    trend_analysis_window_hours: 24      # Analyze trends over 24 hours
+    performance_degradation_threshold: 10.0  # Alert on 10% degradation trend
+    
+  automated_scaling_triggers:
+    # Automatic scaling based on performance metrics
+    enable_auto_scaling: true
+    scale_up_cpu_threshold: 75.0         # Scale up when CPU > 75%
+    scale_down_cpu_threshold: 40.0       # Scale down when CPU < 40%
+    scale_up_response_time_ms: 400       # Scale up when response time > 400ms

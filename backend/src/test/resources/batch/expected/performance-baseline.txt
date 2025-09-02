@@ -1,0 +1,306 @@
+# CardDemo Performance Baseline Metrics
+# =================================================================================
+# Performance benchmarks and expected metrics for the Spring Boot/PostgreSQL
+# modernized system, targeting mainframe-equivalent performance with cloud-native
+# scalability and the mandatory 4-hour batch processing window requirement.
+#
+# Document Version: 2.1.0
+# Last Updated: 2024-01-15
+# Target Architecture: Spring Boot 3.2.x + PostgreSQL 15+ + Kubernetes 1.28+
+# =================================================================================
+
+# =================================================================================
+# CRITICAL PERFORMANCE REQUIREMENTS
+# =================================================================================
+# Based on Technical Specification Section 0.5.1 VALIDATION CHECKLIST:
+# - Transaction response times under 200ms (95th percentile)
+# - Batch processing must complete within 4-hour window  
+# - Validate performance meets or exceeds mainframe benchmarks
+# - 10,000 TPS target for transaction processing rates
+# =================================================================================
+
+[INTERACTIVE_PERFORMANCE_TARGETS]
+# REST API Response Time Requirements (Section 6.6.6.1)
+rest_api_response_time_p50_ms=75
+rest_api_response_time_p95_ms=200
+rest_api_response_time_p99_ms=300
+rest_api_response_time_max_acceptable_ms=500
+
+# Transaction Processing Rates (Section 0.0 SUMMARY - Key Changes)
+transaction_processing_rate_target_tps=10000
+transaction_processing_rate_minimum_tps=5000
+transaction_processing_rate_peak_tps=15000
+
+# Authentication Flow Performance (Spring Security Integration)
+authentication_response_time_target_ms=100
+authentication_response_time_maximum_ms=150
+authentication_success_rate_minimum_percent=99.0
+
+# Account Query Performance (JPA Repository Operations)
+account_query_response_time_target_ms=50
+account_query_response_time_maximum_ms=100
+account_query_throughput_target_qps=2000
+
+# Card Management Operations Performance
+card_operation_response_time_target_ms=75
+card_operation_response_time_maximum_ms=150
+card_operation_throughput_target_ops=1500
+
+[BATCH_PROCESSING_PERFORMANCE]
+# Critical 4-Hour Window Requirement (Section 0.0 SUMMARY)
+daily_batch_window_maximum_hours=4.0
+daily_batch_window_target_hours=3.5
+daily_batch_window_alert_threshold_hours=3.8
+
+# Spring Batch Job Performance Targets
+interest_calculation_job_duration_target_minutes=45
+interest_calculation_job_duration_maximum_minutes=60
+interest_calculation_records_per_second=5000
+
+statement_generation_job_duration_target_minutes=90
+statement_generation_job_duration_maximum_minutes=120
+statement_generation_records_per_second=3000
+
+transaction_processing_job_duration_target_minutes=30
+transaction_processing_job_duration_maximum_minutes=45
+transaction_processing_records_per_second=8000
+
+# Batch Job Restart and Recovery Performance
+batch_job_restart_time_maximum_minutes=10
+batch_job_checkpoint_frequency_records=10000
+batch_job_failure_recovery_time_maximum_minutes=15
+
+[DATABASE_PERFORMANCE_METRICS]
+# PostgreSQL Performance Targets (Replacing VSAM Performance)
+database_connection_pool_size_minimum=20
+database_connection_pool_size_maximum=50
+database_connection_pool_utilization_target_percent=75
+
+# Query Performance Requirements
+database_simple_query_time_target_ms=5
+database_simple_query_time_maximum_ms=15
+database_complex_query_time_target_ms=25
+database_complex_query_time_maximum_ms=50
+
+# Transaction Isolation and ACID Performance
+database_transaction_commit_time_target_ms=10
+database_transaction_commit_time_maximum_ms=25
+database_transaction_rollback_time_target_ms=5
+
+# PostgreSQL Index Performance (Replacing VSAM Key Access)
+index_seek_time_target_ms=1
+index_seek_time_maximum_ms=3
+index_scan_throughput_target_rows_per_second=100000
+
+[MEMORY_UTILIZATION_TARGETS]
+# JVM Memory Management (Spring Boot Applications)
+jvm_heap_utilization_target_percent=70
+jvm_heap_utilization_maximum_percent=85
+jvm_heap_utilization_alert_threshold_percent=80
+
+# Container Memory Usage (Kubernetes Pods)
+container_memory_utilization_target_percent=75
+container_memory_utilization_maximum_percent=90
+container_memory_allocation_backend_mb=1024
+container_memory_allocation_frontend_mb=128
+
+# PostgreSQL Memory Configuration
+postgresql_shared_buffers_target_mb=512
+postgresql_work_mem_target_mb=16
+postgresql_maintenance_work_mem_target_mb=64
+
+# Redis Session Store Memory
+redis_memory_utilization_target_percent=70
+redis_memory_utilization_maximum_percent=85
+redis_memory_allocation_mb=512
+
+[CPU_UTILIZATION_BENCHMARKS]
+# System CPU Performance Targets (Section 6.6.6.1)
+system_cpu_utilization_target_percent=65
+system_cpu_utilization_maximum_percent=80
+system_cpu_utilization_alert_threshold_percent=75
+
+# Kubernetes Pod CPU Allocation
+pod_cpu_request_backend_millicores=250
+pod_cpu_limit_backend_millicores=500
+pod_cpu_request_database_millicores=500
+pod_cpu_limit_database_millicores=1000
+
+# Auto-scaling CPU Triggers (Section 8.4.7)
+hpa_cpu_threshold_scale_up_percent=70
+hpa_cpu_threshold_scale_down_percent=40
+hpa_scaling_stabilization_window_seconds=60
+
+[IO_PERFORMANCE_TARGETS]
+# Disk I/O Performance (PostgreSQL Storage)
+disk_read_iops_target=2000
+disk_read_iops_maximum=5000
+disk_write_iops_target=1500
+disk_write_iops_maximum=3000
+
+# Network I/O Performance
+network_throughput_target_mbps=100
+network_throughput_maximum_mbps=500
+network_latency_target_ms=1
+network_latency_maximum_ms=5
+
+# Storage Performance for Persistent Volumes
+storage_read_latency_target_ms=2
+storage_read_latency_maximum_ms=5
+storage_write_latency_target_ms=3
+storage_write_latency_maximum_ms=8
+
+[CONCURRENT_USER_METRICS]
+# User Session Management Performance
+concurrent_sessions_target=1000
+concurrent_sessions_maximum=2000
+session_creation_time_target_ms=50
+session_creation_time_maximum_ms=100
+
+# Spring Session (Redis) Performance
+session_lookup_time_target_ms=5
+session_lookup_time_maximum_ms=15
+session_persistence_time_target_ms=10
+session_persistence_time_maximum_ms=25
+
+# Load Balancing and Distribution
+load_balancer_response_time_overhead_ms=5
+load_balancer_health_check_interval_seconds=10
+pod_startup_time_target_seconds=30
+pod_startup_time_maximum_seconds=60
+
+[FINANCIAL_CALCULATION_PRECISION]
+# BigDecimal vs COBOL COMP-3 Precision Requirements
+calculation_precision_scale_digits=4
+calculation_precision_tolerance_zero=true
+calculation_rounding_mode=HALF_UP
+
+# Interest Calculation Performance
+interest_calculation_time_per_account_ms=2
+interest_calculation_accuracy_percent=100.0
+interest_calculation_throughput_accounts_per_second=500
+
+# Balance Update Performance  
+balance_update_time_target_ms=10
+balance_update_time_maximum_ms=25
+balance_validation_time_target_ms=5
+
+[SYSTEM_AVAILABILITY_TARGETS]
+# High Availability Requirements (Section 6.6.6.1)
+system_availability_target_percent=99.9
+system_availability_business_hours_percent=99.95
+planned_downtime_maximum_minutes_per_month=30
+
+# Service Recovery Performance
+service_restart_time_target_seconds=45
+service_restart_time_maximum_seconds=90
+health_check_response_time_target_ms=20
+health_check_response_time_maximum_ms=50
+
+# Kubernetes Pod Recovery
+pod_recovery_time_target_seconds=60
+pod_recovery_time_maximum_seconds=120
+container_crash_restart_time_seconds=30
+
+[MONITORING_AND_ALERTING_THRESHOLDS]
+# Prometheus Metrics Collection Performance
+metrics_collection_interval_seconds=15
+metrics_retention_days=30
+metrics_query_response_time_target_ms=100
+
+# Alert Response Time Requirements
+critical_alert_response_time_minutes=5
+warning_alert_response_time_minutes=15
+notification_delivery_time_target_seconds=30
+
+# Dashboard Refresh Performance
+dashboard_refresh_interval_seconds=30
+dashboard_load_time_target_seconds=3
+dashboard_query_timeout_seconds=10
+
+[SECURITY_PERFORMANCE_METRICS]
+# Authentication and Authorization Performance
+user_authentication_time_target_ms=100
+user_authentication_time_maximum_ms=200
+role_authorization_time_target_ms=20
+role_authorization_time_maximum_ms=50
+
+# Encryption/Decryption Performance
+data_encryption_time_per_kb_ms=1
+data_decryption_time_per_kb_ms=1
+jwt_token_validation_time_ms=10
+
+[INTEGRATION_PERFORMANCE_TARGETS]
+# External Service Integration Performance
+payment_network_integration_timeout_ms=5000
+payment_network_response_time_target_ms=1000
+external_api_connection_timeout_ms=3000
+
+# File-based Interface Performance
+file_generation_throughput_records_per_second=10000
+file_parsing_throughput_records_per_second=15000
+file_transfer_throughput_mbps=50
+
+[SCALING_AND_ELASTICITY_METRICS]
+# Horizontal Pod Autoscaler Performance
+scaling_decision_time_target_seconds=30
+scaling_decision_time_maximum_seconds=90
+pod_provisioning_time_target_seconds=45
+
+# Cluster Scaling Performance
+node_provisioning_time_target_minutes=5
+node_provisioning_time_maximum_minutes=10
+cluster_resource_allocation_time_seconds=30
+
+# Traffic Distribution Performance
+load_balancer_failover_time_seconds=10
+service_discovery_update_time_seconds=15
+endpoint_health_detection_time_seconds=20
+
+[PERFORMANCE_TESTING_SCENARIOS]
+# Load Testing Configuration
+load_test_concurrent_users=1000
+load_test_duration_minutes=30
+load_test_ramp_up_time_minutes=5
+
+# Stress Testing Thresholds
+stress_test_concurrent_users=2000
+stress_test_duration_minutes=15
+stress_test_failure_threshold_percent=5.0
+
+# Volume Testing Parameters
+volume_test_transactions_per_hour=50000
+volume_test_batch_records=1000000
+volume_test_duration_hours=4
+
+[BASELINE_COMPARISON_TARGETS]
+# Mainframe Performance Equivalence
+mainframe_equivalent_response_time_ms=150
+mainframe_equivalent_throughput_tps=8000
+mainframe_equivalent_availability_percent=99.8
+
+# Performance Improvement Targets
+performance_improvement_response_time_percent=25
+performance_improvement_throughput_percent=50
+performance_improvement_resource_efficiency_percent=30
+
+# Quality Gate Thresholds for CI/CD
+performance_regression_threshold_percent=10
+performance_test_pass_criteria_percent=95
+performance_sla_compliance_minimum_percent=99
+
+# =================================================================================
+# PERFORMANCE VALIDATION NOTES
+# =================================================================================
+# These metrics serve as the authoritative baseline for:
+# 1. Spring Batch job execution validation within 4-hour window
+# 2. REST API response time compliance (< 200ms for 95th percentile)
+# 3. Database performance optimization and query tuning
+# 4. Kubernetes resource allocation and auto-scaling policies
+# 5. Monitoring alert threshold configuration
+# 6. Load testing scenario validation
+# 7. CI/CD pipeline performance gate validation
+#
+# All metrics are designed to meet or exceed original mainframe performance
+# while providing cloud-native scalability and operational flexibility.
+# =================================================================================

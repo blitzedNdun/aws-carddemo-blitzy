@@ -1,0 +1,736 @@
+{
+  "_metadata": {
+    "description": "Comprehensive test fixtures for COBOL-to-Java migration project",
+    "version": "1.0.0",
+    "created_date": "2024-01-01",
+    "data_patterns": "Matches COBOL field formats and lengths for mainframe migration testing",
+    "precision_handling": "Financial amounts use proper decimal precision matching COBOL COMP-3",
+    "test_coverage": "Includes normal data, edge cases, error conditions, and boundary testing"
+  },
+  
+  "customers": {
+    "normal_cases": [
+      {
+        "customer_id": "000000001",
+        "first_name": "Immanuel",
+        "middle_name": "Madeline", 
+        "last_name": "Kessler",
+        "address_line_1": "618 Deshaun Route",
+        "address_line_2": "Apt. 802",
+        "address_line_3": "Altenwerthshire",
+        "state_code": "NC",
+        "country_code": "USA",
+        "zip_code": "12546",
+        "phone_number_1": "(908)119-8310",
+        "phone_number_2": "(373)693-8684",
+        "ssn": "020973888",
+        "government_id": "000000000000493684371",
+        "date_of_birth": "1961-06-08",
+        "eft_account_id": "0053581756",
+        "primary_card_holder": "Y",
+        "fico_score": 274
+      },
+      {
+        "customer_id": "000000002",
+        "first_name": "Enrico",
+        "middle_name": "April",
+        "last_name": "Rosenbaum",
+        "address_line_1": "4917 Myrna Flats",
+        "address_line_2": "Apt. 453",
+        "address_line_3": "West Bernita",
+        "state_code": "IN",
+        "country_code": "USA",
+        "zip_code": "22770",
+        "phone_number_1": "(429)706-9510",
+        "phone_number_2": "(744)950-5272",
+        "ssn": "587518382",
+        "government_id": "000000000005062103711",
+        "date_of_birth": "1961-10-08",
+        "eft_account_id": "0069194009",
+        "primary_card_holder": "Y",
+        "fico_score": 268
+      },
+      {
+        "customer_id": "000000003",
+        "first_name": "Larry",
+        "middle_name": "Cody",
+        "last_name": "Homenick",
+        "address_line_1": "362 Esta Parks",
+        "address_line_2": "Apt. 390",
+        "address_line_3": "New Gladys",
+        "state_code": "GA",
+        "country_code": "USA",
+        "zip_code": "19852-6716",
+        "phone_number_1": "(950)396-9024",
+        "phone_number_2": "(685)168-8826",
+        "ssn": "317460867",
+        "government_id": "000000000000524193031",
+        "date_of_birth": "1987-11-30",
+        "eft_account_id": "0006465789",
+        "primary_card_holder": "Y",
+        "fico_score": 616
+      }
+    ],
+    "edge_cases": [
+      {
+        "customer_id": "000000999",
+        "first_name": "A",
+        "middle_name": "",
+        "last_name": "Z",
+        "address_line_1": "1 Main St",
+        "address_line_2": "",
+        "address_line_3": "",
+        "state_code": "CA",
+        "country_code": "USA",
+        "zip_code": "90210",
+        "phone_number_1": "(555)555-5555",
+        "phone_number_2": "",
+        "ssn": "000000001",
+        "government_id": "000000000000000000001",
+        "date_of_birth": "1900-01-01",
+        "eft_account_id": "0000000001",
+        "primary_card_holder": "N",
+        "fico_score": 300
+      },
+      {
+        "customer_id": "000001000",
+        "first_name": "MaximumLengthFirstName20",
+        "middle_name": "MaximumLengthMiddleName2",
+        "last_name": "MaximumLengthLastName20",
+        "address_line_1": "12345678901234567890123456789012345678901234567890",
+        "address_line_2": "12345678901234567890123456789012345678901234567890",
+        "address_line_3": "12345678901234567890123456789012345678901234567890",
+        "state_code": "NY",
+        "country_code": "USA",
+        "zip_code": "12345-6789",
+        "phone_number_1": "(999)999-9999",
+        "phone_number_2": "(888)888-8888",
+        "ssn": "999999999",
+        "government_id": "999999999999999999999",
+        "date_of_birth": "2000-12-31",
+        "eft_account_id": "9999999999",
+        "primary_card_holder": "Y",
+        "fico_score": 850
+      }
+    ],
+    "error_conditions": [
+      {
+        "customer_id": "000000000",
+        "first_name": "InvalidCustomer",
+        "middle_name": "Bad",
+        "last_name": "Data",
+        "address_line_1": "",
+        "address_line_2": "",
+        "address_line_3": "",
+        "state_code": "XX",
+        "country_code": "XXX",
+        "zip_code": "",
+        "phone_number_1": "invalid-phone",
+        "phone_number_2": "",
+        "ssn": "000000000",
+        "government_id": "",
+        "date_of_birth": "0000-00-00",
+        "eft_account_id": "",
+        "primary_card_holder": "X",
+        "fico_score": 299
+      }
+    ]
+  },
+
+  "accounts": {
+    "normal_cases": [
+      {
+        "account_id": "00000000001",
+        "customer_id": "000000001",
+        "active_status": "Y",
+        "current_balance": "1940.00",
+        "credit_limit": "20200.00",
+        "cash_credit_limit": "10200.00",
+        "open_date": "2014-11-20",
+        "expiration_date": "2025-05-20",
+        "reissue_date": "2025-05-20",
+        "current_cycle_credit": "0.00",
+        "current_cycle_debit": "0.00",
+        "zip_code": "12546",
+        "group_id": "A000000000",
+        "disclosure_group_id": "1"
+      },
+      {
+        "account_id": "00000000002",
+        "customer_id": "000000002",
+        "active_status": "Y",
+        "current_balance": "1580.00",
+        "credit_limit": "61300.00",
+        "cash_credit_limit": "54480.00",
+        "open_date": "2013-06-19",
+        "expiration_date": "2024-08-11",
+        "reissue_date": "2024-08-11",
+        "current_cycle_credit": "0.00",
+        "current_cycle_debit": "0.00",
+        "zip_code": "22770",
+        "group_id": "A000000000",
+        "disclosure_group_id": "1"
+      },
+      {
+        "account_id": "00000000003",
+        "customer_id": "000000003",
+        "active_status": "Y",
+        "current_balance": "1470.00",
+        "credit_limit": "49090.00",
+        "cash_credit_limit": "5380.00",
+        "open_date": "2013-08-23",
+        "expiration_date": "2024-01-10",
+        "reissue_date": "2024-01-10",
+        "current_cycle_credit": "0.00",
+        "current_cycle_debit": "0.00",
+        "zip_code": "19852-6716",
+        "group_id": "A000000000",
+        "disclosure_group_id": "1"
+      }
+    ],
+    "edge_cases": [
+      {
+        "account_id": "00000000999",
+        "customer_id": "000000999",
+        "active_status": "N",
+        "current_balance": "0.00",
+        "credit_limit": "100.00",
+        "cash_credit_limit": "50.00",
+        "open_date": "1990-01-01",
+        "expiration_date": "1990-12-31",
+        "reissue_date": "1990-12-31",
+        "current_cycle_credit": "0.01",
+        "current_cycle_debit": "0.01",
+        "zip_code": "00000",
+        "group_id": "Z000000000",
+        "disclosure_group_id": "99"
+      },
+      {
+        "account_id": "99999999999",
+        "customer_id": "000001000",
+        "active_status": "Y",
+        "current_balance": "999999.99",
+        "credit_limit": "999999.99",
+        "cash_credit_limit": "999999.99",
+        "open_date": "2099-12-31",
+        "expiration_date": "2099-12-31",
+        "reissue_date": "2099-12-31",
+        "current_cycle_credit": "999999.99",
+        "current_cycle_debit": "999999.99",
+        "zip_code": "99999-9999",
+        "group_id": "Z999999999",
+        "disclosure_group_id": "1"
+      }
+    ],
+    "error_conditions": [
+      {
+        "account_id": "00000000000",
+        "customer_id": "000000000",
+        "active_status": "X",
+        "current_balance": "-999999.99",
+        "credit_limit": "0.00",
+        "cash_credit_limit": "0.00",
+        "open_date": "0000-00-00",
+        "expiration_date": "0000-00-00",
+        "reissue_date": "0000-00-00",
+        "current_cycle_credit": "-1.00",
+        "current_cycle_debit": "-1.00",
+        "zip_code": "",
+        "group_id": "",
+        "disclosure_group_id": "0"
+      }
+    ]
+  },
+
+  "cards": {
+    "normal_cases": [
+      {
+        "card_number": "0500024453765740",
+        "account_id": "00000000001",
+        "customer_id": "000000001",
+        "cvv_code": "123",
+        "embossed_name": "Aniya Von",
+        "expiration_date": "2023-03-09",
+        "active_status": "Y"
+      },
+      {
+        "card_number": "0683586198171516",
+        "account_id": "00000000002",
+        "customer_id": "000000002",
+        "cvv_code": "456",
+        "embossed_name": "Ward Jones",
+        "expiration_date": "2025-07-13",
+        "active_status": "Y"
+      },
+      {
+        "card_number": "0923877193247330",
+        "account_id": "00000000003",
+        "customer_id": "000000003",
+        "cvv_code": "789",
+        "embossed_name": "Enrico Rosenbaum",
+        "expiration_date": "2024-08-11",
+        "active_status": "Y"
+      }
+    ],
+    "edge_cases": [
+      {
+        "card_number": "0000000000000001",
+        "account_id": "00000000999",
+        "customer_id": "000000999",
+        "cvv_code": "001",
+        "embossed_name": "A Z",
+        "expiration_date": "1990-01-01",
+        "active_status": "N"
+      },
+      {
+        "card_number": "9999999999999999",
+        "account_id": "99999999999",
+        "customer_id": "000001000",
+        "cvv_code": "999",
+        "embossed_name": "MaximumLengthFirstName20 MaximumLengthLastName20",
+        "expiration_date": "2099-12-31",
+        "active_status": "Y"
+      }
+    ],
+    "error_conditions": [
+      {
+        "card_number": "0000000000000000",
+        "account_id": "00000000000",
+        "customer_id": "000000000",
+        "cvv_code": "000",
+        "embossed_name": "",
+        "expiration_date": "0000-00-00",
+        "active_status": "X"
+      },
+      {
+        "card_number": "invalid-card-num",
+        "account_id": "invalid-account",
+        "customer_id": "invalid-customer",
+        "cvv_code": "abc",
+        "embossed_name": "Invalid Card Data Testing",
+        "expiration_date": "invalid-date",
+        "active_status": "Z"
+      }
+    ]
+  },
+
+  "transactions": {
+    "normal_cases": [
+      {
+        "transaction_id": "0000000000683580",
+        "account_id": "00000000001",
+        "card_number": "0500024453765740",
+        "transaction_date": "2022-06-10",
+        "transaction_time": "19:27:53.000000",
+        "amount": "50.47",
+        "transaction_type_code": "01",
+        "category_code": "010001",
+        "description": "Purchase at Abshire-Lowe",
+        "merchant_name": "Abshire-Lowe",
+        "merchant_city": "North Enoshaven",
+        "merchant_zip": "72112",
+        "originating_terminal_id": "48594526128770652"
+      },
+      {
+        "transaction_id": "0000000001774260",
+        "account_id": "00000000002",
+        "card_number": "0683586198171516",
+        "transaction_date": "2022-06-10",
+        "transaction_time": "19:27:53.000000",
+        "amount": "91.90",
+        "transaction_type_code": "05",
+        "category_code": "050001",
+        "description": "Return item at Nitzsche, Nicolas and Lowe",
+        "merchant_name": "Nitzsche, Nicolas and Lowe",
+        "merchant_city": "Fidelshire",
+        "merchant_zip": "53378",
+        "originating_terminal_id": "09279871086362322"
+      },
+      {
+        "transaction_id": "0000000006292564",
+        "account_id": "00000000003",
+        "card_number": "0923877193247330",
+        "transaction_date": "2022-06-10",
+        "transaction_time": "19:27:53.000000",
+        "amount": "6.78",
+        "transaction_type_code": "01",
+        "category_code": "010001",
+        "description": "Purchase at Ernser, Roob and Gleason",
+        "merchant_name": "Ernser, Roob and Gleason",
+        "merchant_city": "North Makenziemouth",
+        "merchant_zip": "78487-7965",
+        "originating_terminal_id": "60096191506745262"
+      }
+    ],
+    "edge_cases": [
+      {
+        "transaction_id": "0000000000000001",
+        "account_id": "00000000999",
+        "card_number": "0000000000000001",
+        "transaction_date": "1990-01-01",
+        "transaction_time": "00:00:00.000000",
+        "amount": "0.01",
+        "transaction_type_code": "07",
+        "category_code": "070001",
+        "description": "Minimum amount test transaction",
+        "merchant_name": "Test Merchant",
+        "merchant_city": "Test City",
+        "merchant_zip": "00000",
+        "originating_terminal_id": "00000000000000001"
+      },
+      {
+        "transaction_id": "9999999999999999",
+        "account_id": "99999999999",
+        "card_number": "9999999999999999",
+        "transaction_date": "2099-12-31",
+        "transaction_time": "23:59:59.999999",
+        "amount": "999999.99",
+        "transaction_type_code": "01",
+        "category_code": "010001",
+        "description": "Maximum amount test transaction with very long description up to the limit",
+        "merchant_name": "MaximumLengthMerchantNameTestingBoundariesHere50",
+        "merchant_city": "MaximumLengthCityNameTestingBoundariesHereAtFifty",
+        "merchant_zip": "99999-9999",
+        "originating_terminal_id": "99999999999999999"
+      }
+    ],
+    "error_conditions": [
+      {
+        "transaction_id": "0000000000000000",
+        "account_id": "00000000000",
+        "card_number": "0000000000000000",
+        "transaction_date": "0000-00-00",
+        "transaction_time": "00:00:00.000000",
+        "amount": "-999999.99",
+        "transaction_type_code": "00",
+        "category_code": "000000",
+        "description": "",
+        "merchant_name": "",
+        "merchant_city": "",
+        "merchant_zip": "",
+        "originating_terminal_id": ""
+      },
+      {
+        "transaction_id": "invalid-txn-id",
+        "account_id": "invalid-account",
+        "card_number": "invalid-card",
+        "transaction_date": "invalid-date",
+        "transaction_time": "invalid-time",
+        "amount": "invalid-amount",
+        "transaction_type_code": "XX",
+        "category_code": "invalid",
+        "description": "Transaction with all invalid data for error testing purposes",
+        "merchant_name": "Invalid Merchant Testing Data",
+        "merchant_city": "Invalid City Testing Data",
+        "merchant_zip": "invalid-zip",
+        "originating_terminal_id": "invalid-terminal-id"
+      }
+    ]
+  },
+
+  "transaction_types": {
+    "valid_types": [
+      {
+        "transaction_type_code": "01",
+        "description": "Purchase",
+        "debit_credit_flag": "D"
+      },
+      {
+        "transaction_type_code": "02",
+        "description": "Payment",
+        "debit_credit_flag": "C"
+      },
+      {
+        "transaction_type_code": "03",
+        "description": "Credit",
+        "debit_credit_flag": "C"
+      },
+      {
+        "transaction_type_code": "04",
+        "description": "Authorization",
+        "debit_credit_flag": "D"
+      },
+      {
+        "transaction_type_code": "05",
+        "description": "Refund",
+        "debit_credit_flag": "C"
+      },
+      {
+        "transaction_type_code": "06",
+        "description": "Reversal",
+        "debit_credit_flag": "C"
+      },
+      {
+        "transaction_type_code": "07",
+        "description": "Adjustment",
+        "debit_credit_flag": "D"
+      }
+    ]
+  },
+
+  "transaction_categories": {
+    "valid_categories": [
+      {
+        "category_code": "010001",
+        "subcategory_code": "01",
+        "description": "Regular Sales Draft",
+        "category_name": "Sales"
+      },
+      {
+        "category_code": "010002",
+        "subcategory_code": "01",
+        "description": "Regular Cash Advance",
+        "category_name": "Cash Advance"
+      },
+      {
+        "category_code": "010003",
+        "subcategory_code": "01",
+        "description": "Convenience Check Debit",
+        "category_name": "Convenience Check"
+      },
+      {
+        "category_code": "010004",
+        "subcategory_code": "01",
+        "description": "ATM Cash Advance",
+        "category_name": "ATM"
+      },
+      {
+        "category_code": "010005",
+        "subcategory_code": "01",
+        "description": "Interest Amount",
+        "category_name": "Interest"
+      },
+      {
+        "category_code": "020001",
+        "subcategory_code": "02",
+        "description": "Cash payment",
+        "category_name": "Payment"
+      },
+      {
+        "category_code": "020002",
+        "subcategory_code": "02",
+        "description": "Electronic payment",
+        "category_name": "Payment"
+      },
+      {
+        "category_code": "020003",
+        "subcategory_code": "02",
+        "description": "Check payment",
+        "category_name": "Payment"
+      },
+      {
+        "category_code": "030001",
+        "subcategory_code": "03",
+        "description": "Credit to Account",
+        "category_name": "Credit"
+      },
+      {
+        "category_code": "040001",
+        "subcategory_code": "04",
+        "description": "Zero dollar authorization",
+        "category_name": "Authorization"
+      },
+      {
+        "category_code": "050001",
+        "subcategory_code": "05",
+        "description": "Refund credit",
+        "category_name": "Refund"
+      },
+      {
+        "category_code": "060001",
+        "subcategory_code": "06",
+        "description": "Fraud reversal",
+        "category_name": "Reversal"
+      },
+      {
+        "category_code": "070001",
+        "subcategory_code": "07",
+        "description": "Sales draft credit adjustment",
+        "category_name": "Adjustment"
+      }
+    ]
+  },
+
+  "disclosure_groups": {
+    "valid_groups": [
+      {
+        "disclosure_group_id": "1",
+        "group_name": "Standard Rate Group",
+        "interest_rate": "15.99",
+        "terms_text": "Standard terms and conditions apply for this account type."
+      },
+      {
+        "disclosure_group_id": "2",
+        "group_name": "Premium Rate Group",
+        "interest_rate": "12.99",
+        "terms_text": "Premium account with reduced interest rate and enhanced benefits."
+      },
+      {
+        "disclosure_group_id": "3",
+        "group_name": "Zero APR Group",
+        "interest_rate": "0.00",
+        "terms_text": "Promotional zero percent APR for qualifying accounts."
+      }
+    ]
+  },
+
+  "transaction_category_balances": {
+    "sample_balances": [
+      {
+        "account_id": "00000000001",
+        "category_code": "010001",
+        "balance_date": "2024-01-31",
+        "balance": "1234.56"
+      },
+      {
+        "account_id": "00000000001",
+        "category_code": "020001",
+        "balance_date": "2024-01-31",
+        "balance": "-567.89"
+      },
+      {
+        "account_id": "00000000002",
+        "category_code": "010001",
+        "balance_date": "2024-01-31",
+        "balance": "2345.67"
+      }
+    ]
+  },
+
+  "user_security": {
+    "valid_users": [
+      {
+        "user_id": "ADMIN001",
+        "password_hash": "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj1xPBFV6/HW",
+        "user_type": "ADMIN",
+        "active_status": "Y",
+        "last_signin_date": "2024-01-15",
+        "signin_count": 45,
+        "created_date": "2023-01-01"
+      },
+      {
+        "user_id": "USER001",
+        "password_hash": "$2b$12$M1v4c2yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj1xPBFV6/HX",
+        "user_type": "REGULAR",
+        "active_status": "Y",
+        "last_signin_date": "2024-01-14",
+        "signin_count": 12,
+        "created_date": "2023-06-01"
+      },
+      {
+        "user_id": "USER002",
+        "password_hash": "$2b$12$N2v5c3yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj1xPBFV6/HY",
+        "user_type": "REGULAR",
+        "active_status": "N",
+        "last_signin_date": "2023-12-20",
+        "signin_count": 3,
+        "created_date": "2023-12-01"
+      }
+    ]
+  },
+
+  "test_scenarios": {
+    "financial_calculations": {
+      "description": "Test data for validating COBOL COMP-3 to BigDecimal precision",
+      "precision_tests": [
+        {
+          "input_value": "123.45",
+          "pic_clause": "S9(5)V99 COMP-3",
+          "expected_scale": 2,
+          "expected_precision": 7,
+          "test_operation": "addition",
+          "second_operand": "67.89",
+          "expected_result": "191.34"
+        },
+        {
+          "input_value": "999999.99",
+          "pic_clause": "S9(7)V99 COMP-3",
+          "expected_scale": 2,
+          "expected_precision": 9,
+          "test_operation": "multiplication",
+          "second_operand": "0.125",
+          "expected_result": "124999.9988"
+        }
+      ]
+    },
+    "boundary_testing": {
+      "description": "Edge cases for COBOL field length limits",
+      "string_limits": [
+        {
+          "field_name": "customer_first_name",
+          "max_length": 20,
+          "test_value_valid": "John",
+          "test_value_boundary": "MaximumLengthName20X",
+          "test_value_invalid": "ThisNameIsTooLongForTheField"
+        },
+        {
+          "field_name": "account_balance",
+          "max_value": "9999999.99",
+          "min_value": "-9999999.99",
+          "test_value_valid": "1234.56",
+          "test_value_boundary_high": "9999999.99",
+          "test_value_boundary_low": "-9999999.99",
+          "test_value_invalid_high": "10000000.00",
+          "test_value_invalid_low": "-10000000.00"
+        }
+      ]
+    },
+    "integration_testing": {
+      "description": "Complete workflows for end-to-end testing",
+      "customer_account_card_chain": [
+        {
+          "customer": {
+            "customer_id": "000000001",
+            "first_name": "Test",
+            "last_name": "Customer"
+          },
+          "account": {
+            "account_id": "00000000001",
+            "customer_id": "000000001",
+            "current_balance": "1000.00",
+            "credit_limit": "5000.00"
+          },
+          "card": {
+            "card_number": "1234567890123456",
+            "account_id": "00000000001",
+            "active_status": "Y"
+          },
+          "transactions": [
+            {
+              "transaction_id": "0000000000000001",
+              "account_id": "00000000001",
+              "card_number": "1234567890123456",
+              "amount": "100.00",
+              "transaction_type_code": "01"
+            }
+          ]
+        }
+      ]
+    },
+    "error_scenarios": {
+      "description": "Invalid data for negative testing",
+      "validation_failures": [
+        {
+          "scenario": "invalid_customer_id_format",
+          "customer_id": "invalid",
+          "expected_error": "Customer ID must be 9 digits"
+        },
+        {
+          "scenario": "invalid_card_number_format",
+          "card_number": "1234",
+          "expected_error": "Card number must be 16 digits"
+        },
+        {
+          "scenario": "negative_credit_limit",
+          "credit_limit": "-1000.00",
+          "expected_error": "Credit limit cannot be negative"
+        },
+        {
+          "scenario": "future_birth_date",
+          "date_of_birth": "2030-01-01",
+          "expected_error": "Birth date cannot be in the future"
+        }
+      ]
+    }
+  }
+}

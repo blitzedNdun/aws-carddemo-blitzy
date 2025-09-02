@@ -1,0 +1,544 @@
+{
+  "dataGeneratorConfig": {
+    "metadata": {
+      "configVersion": "1.0.0",
+      "description": "High-volume load test data generator configuration for CardDemo performance testing",
+      "lastUpdated": "2024-01-15T10:00:00Z",
+      "targetEnvironment": "performance"
+    },
+    "volumeTargets": {
+      "accounts": {
+        "totalCount": 100000,
+        "description": "100K+ accounts for production-scale testing as per Section 0 requirements",
+        "batchSize": 1000,
+        "distribution": "production-like"
+      },
+      "transactions": {
+        "totalCount": 1000000,
+        "description": "1M+ transactions for comprehensive load testing coverage",
+        "batchSize": 5000,
+        "dailyVolume": 50000,
+        "distribution": "realistic-patterns"
+      },
+      "users": {
+        "totalCount": 25000,
+        "description": "25K users to support concurrent load testing scenarios",
+        "activePercentage": 60,
+        "distribution": "peak-load-patterns"
+      }
+    },
+    "performanceTargets": {
+      "tpsTarget": 10000,
+      "description": "10,000 TPS target load as specified in Section 0 requirements",
+      "responseTimeTarget": "200ms",
+      "batchProcessingWindow": "4-hours",
+      "peakLoadMultiplier": 2.5
+    },
+    "accountGeneration": {
+      "accountIdRange": {
+        "min": 10000000001,
+        "max": 10000100000,
+        "description": "11-digit account IDs following COBOL ACCT-ID PIC 9(11) format"
+      },
+      "statusDistribution": {
+        "active": 85,
+        "inactive": 10,
+        "suspended": 4,
+        "closed": 1,
+        "description": "Account status distribution percentages for realistic patterns"
+      },
+      "balanceDistribution": {
+        "ranges": [
+          {
+            "range": "0-500",
+            "percentage": 30,
+            "minAmount": "0.00",
+            "maxAmount": "500.00"
+          },
+          {
+            "range": "500-2000",
+            "percentage": 25,
+            "minAmount": "500.01",
+            "maxAmount": "2000.00"
+          },
+          {
+            "range": "2000-10000",
+            "percentage": 25,
+            "minAmount": "2000.01",
+            "maxAmount": "10000.00"
+          },
+          {
+            "range": "10000-50000",
+            "percentage": 15,
+            "minAmount": "10000.01",
+            "maxAmount": "50000.00"
+          },
+          {
+            "range": "50000+",
+            "percentage": 5,
+            "minAmount": "50000.01",
+            "maxAmount": "999999.99"
+          }
+        ],
+        "description": "Account balance distribution matching production patterns"
+      },
+      "creditLimitDistribution": {
+        "ranges": [
+          {
+            "range": "1000-5000",
+            "percentage": 40,
+            "minLimit": "1000.00",
+            "maxLimit": "5000.00"
+          },
+          {
+            "range": "5000-15000",
+            "percentage": 30,
+            "minLimit": "5000.01",
+            "maxLimit": "15000.00"
+          },
+          {
+            "range": "15000-50000",
+            "percentage": 20,
+            "minLimit": "15000.01",
+            "maxLimit": "50000.00"
+          },
+          {
+            "range": "50000+",
+            "percentage": 10,
+            "minLimit": "50000.01",
+            "maxLimit": "999999.99"
+          }
+        ],
+        "description": "Credit limit distribution for realistic account profiles"
+      },
+      "dateRanges": {
+        "openDate": {
+          "minDate": "2010-01-01",
+          "maxDate": "2024-01-01",
+          "distribution": "uniform",
+          "description": "Account opening date range for historical data"
+        },
+        "expirationDate": {
+          "minYearsFromOpen": 3,
+          "maxYearsFromOpen": 5,
+          "description": "Card expiration dates based on opening date"
+        },
+        "reissueDate": {
+          "probabilityOfReissue": 30,
+          "description": "Percentage of accounts with card reissue history"
+        }
+      },
+      "geographicDistribution": {
+        "zipCodeRanges": [
+          "10001-19999",
+          "20001-29999", 
+          "30001-39999",
+          "40001-49999",
+          "50001-59999",
+          "60001-69999",
+          "70001-79999",
+          "80001-89999",
+          "90001-99999"
+        ],
+        "description": "Geographic distribution across US ZIP code ranges"
+      }
+    },
+    "transactionGeneration": {
+      "transactionIdFormat": {
+        "pattern": "0000000000000000",
+        "description": "16-character transaction ID following COBOL TRAN-ID format",
+        "sequentialGeneration": true
+      },
+      "typeDistribution": {
+        "purchase": {
+          "percentage": 70,
+          "typeCode": "01",
+          "categoryCode": "0001",
+          "source": "POS TERM",
+          "description": "Standard purchase transactions"
+        },
+        "cashAdvance": {
+          "percentage": 10,
+          "typeCode": "02", 
+          "categoryCode": "0002",
+          "source": "ATM",
+          "description": "Cash advance transactions"
+        },
+        "return": {
+          "percentage": 15,
+          "typeCode": "03",
+          "categoryCode": "0001", 
+          "source": "OPERATOR",
+          "description": "Return/refund transactions"
+        },
+        "fee": {
+          "percentage": 3,
+          "typeCode": "04",
+          "categoryCode": "0003",
+          "source": "SYSTEM",
+          "description": "Fee transactions"
+        },
+        "payment": {
+          "percentage": 2,
+          "typeCode": "05",
+          "categoryCode": "0004",
+          "source": "WEB",
+          "description": "Payment transactions"
+        }
+      },
+      "amountDistribution": {
+        "purchase": {
+          "ranges": [
+            {
+              "range": "1-50",
+              "percentage": 40,
+              "minAmount": "1.00",
+              "maxAmount": "50.00"
+            },
+            {
+              "range": "50-200", 
+              "percentage": 35,
+              "minAmount": "50.01",
+              "maxAmount": "200.00"
+            },
+            {
+              "range": "200-1000",
+              "percentage": 20,
+              "minAmount": "200.01",
+              "maxAmount": "1000.00"
+            },
+            {
+              "range": "1000+",
+              "percentage": 5,
+              "minAmount": "1000.01",
+              "maxAmount": "99999.99"
+            }
+          ]
+        },
+        "cashAdvance": {
+          "ranges": [
+            {
+              "range": "20-100",
+              "percentage": 50,
+              "minAmount": "20.00",
+              "maxAmount": "100.00"
+            },
+            {
+              "range": "100-500",
+              "percentage": 40,
+              "minAmount": "100.01",
+              "maxAmount": "500.00"
+            },
+            {
+              "range": "500+",
+              "percentage": 10,
+              "minAmount": "500.01",
+              "maxAmount": "2000.00"
+            }
+          ]
+        },
+        "return": {
+          "percentageOfOriginal": "100",
+          "description": "Returns match original transaction amounts"
+        }
+      },
+      "merchantData": {
+        "merchantIdRange": {
+          "min": 800000000,
+          "max": 899999999,
+          "description": "9-digit merchant IDs following COBOL format"
+        },
+        "merchantNames": [
+          "Amazon Web Services",
+          "Walmart Supercenter",
+          "Target Corporation", 
+          "Best Buy Electronics",
+          "Home Depot Store",
+          "McDonald's Restaurant",
+          "Starbucks Coffee",
+          "Shell Gas Station",
+          "CVS Pharmacy",
+          "Kroger Grocery",
+          "Macy's Department Store",
+          "Apple Store",
+          "Nike Retail",
+          "Costco Wholesale",
+          "Subway Restaurant"
+        ],
+        "cityDistribution": [
+          "New York",
+          "Los Angeles", 
+          "Chicago",
+          "Houston",
+          "Phoenix",
+          "Philadelphia",
+          "San Antonio",
+          "San Diego",
+          "Dallas",
+          "San Jose",
+          "Austin",
+          "Jacksonville",
+          "Fort Worth",
+          "Columbus",
+          "Charlotte"
+        ],
+        "description": "Realistic merchant data for transaction generation"
+      },
+      "timeDistribution": {
+        "peakHours": {
+          "morning": "08:00-11:00",
+          "lunch": "11:30-13:30", 
+          "evening": "17:00-20:00",
+          "multiplier": 2.0,
+          "description": "Peak transaction hours with higher volume"
+        },
+        "offPeakHours": {
+          "overnight": "22:00-06:00",
+          "midday": "13:30-17:00",
+          "multiplier": 0.5,
+          "description": "Off-peak hours with lower volume"
+        },
+        "weekendMultiplier": 1.2,
+        "description": "Temporal distribution patterns for realistic load"
+      }
+    },
+    "loadTestingPatterns": {
+      "authorizationScenarios": {
+        "description": "Card authorization scenarios for testing payment processing",
+        "scenarios": [
+          {
+            "name": "standard-approval",
+            "percentage": 85,
+            "responseCode": "00",
+            "processingTime": "50-150ms",
+            "description": "Standard approved transactions"
+          },
+          {
+            "name": "insufficient-funds",
+            "percentage": 8,
+            "responseCode": "51", 
+            "processingTime": "75-200ms",
+            "description": "Declined for insufficient funds"
+          },
+          {
+            "name": "card-expired",
+            "percentage": 3,
+            "responseCode": "54",
+            "processingTime": "25-100ms",
+            "description": "Declined for expired card"
+          },
+          {
+            "name": "limit-exceeded",
+            "percentage": 2,
+            "responseCode": "61",
+            "processingTime": "100-250ms",
+            "description": "Declined for credit limit exceeded"
+          },
+          {
+            "name": "fraud-suspected",
+            "percentage": 1,
+            "responseCode": "59",
+            "processingTime": "200-500ms",
+            "description": "Declined for suspected fraud"
+          },
+          {
+            "name": "system-error",
+            "percentage": 1,
+            "responseCode": "96",
+            "processingTime": "1000-3000ms",
+            "description": "System error scenarios"
+          }
+        ]
+      },
+      "peakLoadPatterns": {
+        "description": "Peak load patterns for stress testing",
+        "patterns": [
+          {
+            "name": "black-friday",
+            "multiplier": 5.0,
+            "duration": "24-hours",
+            "description": "Black Friday shopping surge"
+          },
+          {
+            "name": "holiday-shopping",
+            "multiplier": 3.0,
+            "duration": "7-days",
+            "description": "Holiday shopping season"
+          },
+          {
+            "name": "payday-surge",
+            "multiplier": 2.5,
+            "duration": "3-days",
+            "description": "End-of-month payday surge"
+          },
+          {
+            "name": "weekend-peak",
+            "multiplier": 1.5,
+            "duration": "48-hours",
+            "description": "Weekend shopping increase"
+          }
+        ]
+      },
+      "concurrencyPatterns": {
+        "description": "Concurrent user patterns for realistic load simulation",
+        "rampUpTime": "5-minutes",
+        "sustainedLoadTime": "30-minutes",
+        "rampDownTime": "2-minutes",
+        "concurrentUsers": [
+          {
+            "level": "light",
+            "userCount": 100,
+            "tps": 500,
+            "description": "Light load testing"
+          },
+          {
+            "level": "moderate",
+            "userCount": 500,
+            "tps": 2500,
+            "description": "Moderate load testing"
+          },
+          {
+            "level": "heavy",
+            "userCount": 1000,
+            "tps": 5000,
+            "description": "Heavy load testing"
+          },
+          {
+            "level": "peak",
+            "userCount": 2000,
+            "tps": 10000,
+            "description": "Peak load testing - 10K TPS target"
+          }
+        ]
+      }
+    },
+    "batchProcessingData": {
+      "description": "Batch processing volume data for 4-hour window testing",
+      "dailyBatchTargets": {
+        "interestCalculation": {
+          "accountCount": 100000,
+          "processingTime": "120-minutes",
+          "description": "Daily interest calculation batch"
+        },
+        "statementGeneration": {
+          "accountCount": 25000,
+          "processingTime": "90-minutes", 
+          "description": "Monthly statement generation"
+        },
+        "transactionPosting": {
+          "transactionCount": 50000,
+          "processingTime": "45-minutes",
+          "description": "End-of-day transaction posting"
+        },
+        "reportGeneration": {
+          "reportCount": 50,
+          "processingTime": "30-minutes",
+          "description": "Regulatory and management reports"
+        }
+      },
+      "batchWindowConstraints": {
+        "totalWindowTime": "4-hours",
+        "startTime": "02:00",
+        "endTime": "06:00",
+        "allowedOverrun": "30-minutes",
+        "description": "Batch processing window as per Section 0 requirements"
+      }
+    },
+    "dataQualityRules": {
+      "description": "Data quality rules for realistic test data generation",
+      "businessLogicCoverage": {
+        "positiveScenarios": 70,
+        "negativeScenarios": 20, 
+        "edgeCases": 10,
+        "description": "Percentage distribution for comprehensive test coverage"
+      },
+      "edgeCaseGeneration": [
+        {
+          "scenario": "zero-balance-accounts",
+          "percentage": 5,
+          "description": "Accounts with zero balance"
+        },
+        {
+          "scenario": "maximum-credit-limit",
+          "percentage": 1,
+          "description": "Accounts at maximum credit limit"
+        },
+        {
+          "scenario": "expired-cards",
+          "percentage": 3,
+          "description": "Cards past expiration date"
+        },
+        {
+          "scenario": "high-frequency-transactions",
+          "percentage": 2,
+          "description": "Accounts with unusually high transaction frequency"
+        },
+        {
+          "scenario": "dormant-accounts",
+          "percentage": 8,
+          "description": "Accounts with no recent activity"
+        }
+      ],
+      "dataIntegrityConstraints": {
+        "referentialIntegrity": true,
+        "balanceConsistency": true,
+        "dateValidation": true,
+        "amountPrecision": "2-decimal-places",
+        "description": "Data integrity rules matching COBOL COMP-3 precision"
+      }
+    },
+    "environmentConfiguration": {
+      "development": {
+        "scalingFactor": 0.01,
+        "description": "1% of production volume for development testing"
+      },
+      "integration": {
+        "scalingFactor": 0.1,
+        "description": "10% of production volume for integration testing"
+      },
+      "staging": {
+        "scalingFactor": 0.5,
+        "description": "50% of production volume for staging testing"
+      },
+      "performance": {
+        "scalingFactor": 1.0,
+        "description": "Full production volume for performance testing"
+      }
+    },
+    "outputFormats": {
+      "description": "Output formats for different testing frameworks",
+      "formats": [
+        {
+          "type": "postgresql-insert",
+          "description": "PostgreSQL INSERT statements for database loading"
+        },
+        {
+          "type": "csv-export", 
+          "description": "CSV format for bulk data loading"
+        },
+        {
+          "type": "json-api",
+          "description": "JSON format for REST API testing"
+        },
+        {
+          "type": "spring-batch",
+          "description": "Spring Batch job input format"
+        }
+      ]
+    },
+    "monitoring": {
+      "description": "Monitoring configuration for data generation process",
+      "metricsCollection": {
+        "generationRate": "records-per-second",
+        "qualityMetrics": "validation-pass-rate",
+        "performanceMetrics": "generation-time",
+        "storageMetrics": "disk-usage"
+      },
+      "alerting": {
+        "slowGeneration": "< 1000 records/second",
+        "qualityIssues": "< 99% validation pass rate",
+        "storageConstraints": "> 80% disk usage"
+      }
+    }
+  }
+}

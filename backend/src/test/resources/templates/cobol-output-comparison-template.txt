@@ -1,0 +1,289 @@
+COBOL-TO-JAVA OUTPUT COMPARISON REPORT
+=====================================
+
+REPORT METADATA
+===============
+Test Execution ID: {TEST_EXECUTION_ID}
+Comparison Date: {COMPARISON_DATE}
+Comparison Time: {COMPARISON_TIME}
+COBOL Program: {COBOL_PROGRAM_NAME}
+Java Service: {JAVA_SERVICE_NAME}
+Test Case ID: {TEST_CASE_ID}
+Test Environment: {TEST_ENVIRONMENT}
+Operator: {OPERATOR_NAME}
+
+TEST CONFIGURATION
+==================
+COBOL Data Files:
+- Input File: {COBOL_INPUT_FILE}
+- Output File: {COBOL_OUTPUT_FILE}
+- Error File: {COBOL_ERROR_FILE}
+
+Java Data Sources:
+- Database: {JAVA_DATABASE_CONNECTION}
+- Input Format: {JAVA_INPUT_FORMAT}
+- Output Format: {JAVA_OUTPUT_FORMAT}
+
+Comparison Settings:
+- Precision Mode: {PRECISION_MODE}
+- Numeric Tolerance: {NUMERIC_TOLERANCE}
+- Date Format Validation: {DATE_FORMAT_VALIDATION}
+- Currency Format Validation: {CURRENCY_FORMAT_VALIDATION}
+- Ignore Whitespace: {IGNORE_WHITESPACE}
+
+EXECUTION SUMMARY
+=================
+COBOL Execution Status: {COBOL_STATUS}
+COBOL Runtime: {COBOL_RUNTIME_MS} ms
+COBOL Records Processed: {COBOL_RECORD_COUNT}
+COBOL Memory Usage: {COBOL_MEMORY_MB} MB
+
+Java Execution Status: {JAVA_STATUS}
+Java Runtime: {JAVA_RUNTIME_MS} ms
+Java Records Processed: {JAVA_RECORD_COUNT}
+Java Memory Usage: {JAVA_MEMORY_MB} MB
+
+Performance Comparison:
+- Runtime Difference: {RUNTIME_DIFFERENCE_MS} ms ({RUNTIME_DIFFERENCE_PERCENT}%)
+- Memory Difference: {MEMORY_DIFFERENCE_MB} MB ({MEMORY_DIFFERENCE_PERCENT}%)
+- Throughput Difference: {THROUGHPUT_DIFFERENCE_PERCENT}%
+
+COMPARISON RESULTS SUMMARY
+==========================
+Total Output Lines: {TOTAL_LINES}
+Matching Lines: {MATCHING_LINES}
+Differing Lines: {DIFFERING_LINES}
+Match Percentage: {MATCH_PERCENTAGE}%
+
+Line Type Breakdown:
+- Header Lines: {HEADER_LINES_TOTAL} (Matches: {HEADER_LINES_MATCH}, Differences: {HEADER_LINES_DIFF})
+- Data Lines: {DATA_LINES_TOTAL} (Matches: {DATA_LINES_MATCH}, Differences: {DATA_LINES_DIFF})
+- Summary Lines: {SUMMARY_LINES_TOTAL} (Matches: {SUMMARY_LINES_MATCH}, Differences: {SUMMARY_LINES_DIFF})
+- Footer Lines: {FOOTER_LINES_TOTAL} (Matches: {FOOTER_LINES_MATCH}, Differences: {FOOTER_LINES_DIFF})
+
+FINANCIAL PRECISION ANALYSIS
+=============================
+Monetary Fields Compared: {MONETARY_FIELDS_COUNT}
+Precision Matches: {PRECISION_MATCHES}
+Precision Differences: {PRECISION_DIFFERENCES}
+Financial Accuracy: {FINANCIAL_ACCURACY}%
+
+COMP-3 vs BigDecimal Analysis:
+- Interest Calculations: {INTEREST_CALC_MATCHES}/{INTEREST_CALC_TOTAL} ({INTEREST_CALC_PERCENT}%)
+- Balance Updates: {BALANCE_UPDATE_MATCHES}/{BALANCE_UPDATE_TOTAL} ({BALANCE_UPDATE_PERCENT}%)
+- Fee Calculations: {FEE_CALC_MATCHES}/{FEE_CALC_TOTAL} ({FEE_CALC_PERCENT}%)
+- Currency Conversions: {CURRENCY_CONV_MATCHES}/{CURRENCY_CONV_TOTAL} ({CURRENCY_CONV_PERCENT}%)
+
+Maximum Precision Deviation: {MAX_PRECISION_DEVIATION}
+Average Precision Deviation: {AVG_PRECISION_DEVIATION}
+Standard Deviation: {PRECISION_STD_DEVIATION}
+
+SIDE-BY-SIDE OUTPUT COMPARISON
+==============================
+
+Line {LINE_NUMBER}: {COMPARISON_STATUS}
+COBOL: {COBOL_OUTPUT_LINE}
+JAVA:  {JAVA_OUTPUT_LINE}
+DIFF:  {DIFFERENCE_INDICATORS}
+
+[REPEAT FOR EACH LINE WITH DIFFERENCES]
+
+DETAILED DIFFERENCE ANALYSIS
+============================
+
+{DIFFERENCE_SECTION_START}
+Line Number: {DIFF_LINE_NUMBER}
+Section: {DIFF_SECTION_NAME}
+Field: {DIFF_FIELD_NAME}
+Data Type: {DIFF_DATA_TYPE}
+
+COBOL Value: {COBOL_VALUE}
+Java Value:  {JAVA_VALUE}
+Difference:  {VALUE_DIFFERENCE}
+Tolerance:   {TOLERANCE_THRESHOLD}
+Status:      {DIFFERENCE_STATUS}
+
+Character Position Analysis:
+Position: {CHAR_POSITION}
+COBOL Char: '{COBOL_CHAR}' (ASCII: {COBOL_ASCII})
+Java Char:  '{JAVA_CHAR}' (ASCII: {JAVA_ASCII})
+{DIFFERENCE_SECTION_END}
+
+[REPEAT FOR EACH SIGNIFICANT DIFFERENCE]
+
+TIMESTAMP AND DATE ANALYSIS
+===========================
+Timestamp Fields Compared: {TIMESTAMP_FIELDS_COUNT}
+Date Format Matches: {DATE_FORMAT_MATCHES}
+Time Format Matches: {TIME_FORMAT_MATCHES}
+Timezone Handling: {TIMEZONE_HANDLING_STATUS}
+
+COBOL Timestamp Format: {COBOL_TIMESTAMP_FORMAT}
+Java Timestamp Format:  {JAVA_TIMESTAMP_FORMAT}
+Format Compatibility:   {TIMESTAMP_COMPATIBILITY}
+
+Sample Timestamp Comparison:
+COBOL: {SAMPLE_COBOL_TIMESTAMP}
+JAVA:  {SAMPLE_JAVA_TIMESTAMP}
+DIFF:  {TIMESTAMP_DIFFERENCE}
+
+BUSINESS LOGIC VALIDATION
+=========================
+Business Rules Validated: {BUSINESS_RULES_COUNT}
+Rules Passed: {BUSINESS_RULES_PASSED}
+Rules Failed: {BUSINESS_RULES_FAILED}
+Validation Success Rate: {BUSINESS_VALIDATION_RATE}%
+
+Failed Business Rules:
+{FAILED_BUSINESS_RULE_LIST}
+
+Data Integrity Checks:
+- Record Count Validation: {RECORD_COUNT_VALIDATION}
+- Cross-Reference Validation: {CROSS_REF_VALIDATION}
+- Balance Reconciliation: {BALANCE_RECONCILIATION}
+- Transaction Totals: {TRANSACTION_TOTALS_VALIDATION}
+
+STATISTICAL ANALYSIS
+====================
+Output Similarity Metrics:
+- Exact Match Score: {EXACT_MATCH_SCORE}%
+- Semantic Match Score: {SEMANTIC_MATCH_SCORE}%
+- Structural Match Score: {STRUCTURAL_MATCH_SCORE}%
+- Overall Similarity Index: {OVERALL_SIMILARITY_INDEX}%
+
+Character-Level Analysis:
+- Total Characters: {TOTAL_CHARACTERS}
+- Matching Characters: {MATCHING_CHARACTERS}
+- Character Accuracy: {CHARACTER_ACCURACY}%
+
+Data Type Accuracy:
+- Numeric Fields: {NUMERIC_ACCURACY}%
+- Text Fields: {TEXT_ACCURACY}%
+- Date Fields: {DATE_ACCURACY}%
+- Currency Fields: {CURRENCY_ACCURACY}%
+
+Distribution Analysis:
+- Minor Differences (< 1%): {MINOR_DIFF_COUNT}
+- Moderate Differences (1-5%): {MODERATE_DIFF_COUNT}
+- Major Differences (> 5%): {MAJOR_DIFF_COUNT}
+
+ERROR ANALYSIS
+==============
+Error Categories:
+- Data Type Mismatches: {DATA_TYPE_ERRORS}
+- Precision Errors: {PRECISION_ERRORS}
+- Format Errors: {FORMAT_ERRORS}
+- Logic Errors: {LOGIC_ERRORS}
+- Runtime Errors: {RUNTIME_ERRORS}
+
+Critical Issues Identified:
+{CRITICAL_ISSUES_LIST}
+
+Warning Issues Identified:
+{WARNING_ISSUES_LIST}
+
+Recommended Actions:
+{RECOMMENDED_ACTIONS_LIST}
+
+PERFORMANCE COMPARISON
+=====================
+Execution Time Analysis:
+- COBOL Initialization: {COBOL_INIT_TIME} ms
+- COBOL Processing: {COBOL_PROCESS_TIME} ms
+- COBOL Cleanup: {COBOL_CLEANUP_TIME} ms
+
+- Java Initialization: {JAVA_INIT_TIME} ms
+- Java Processing: {JAVA_PROCESS_TIME} ms
+- Java Cleanup: {JAVA_CLEANUP_TIME} ms
+
+Resource Utilization:
+- COBOL CPU Usage: {COBOL_CPU_PERCENT}%
+- Java CPU Usage: {JAVA_CPU_PERCENT}%
+- CPU Performance Ratio: {CPU_PERFORMANCE_RATIO}
+
+- COBOL I/O Operations: {COBOL_IO_OPS}
+- Java I/O Operations: {JAVA_IO_OPS}
+- I/O Efficiency Ratio: {IO_EFFICIENCY_RATIO}
+
+COMPLIANCE VERIFICATION
+=======================
+Regulatory Requirements:
+- Financial Accuracy: {FINANCIAL_ACCURACY_COMPLIANCE}
+- Audit Trail Completeness: {AUDIT_TRAIL_COMPLIANCE}
+- Data Privacy: {DATA_PRIVACY_COMPLIANCE}
+- Transaction Integrity: {TRANSACTION_INTEGRITY_COMPLIANCE}
+
+SLA Compliance:
+- Response Time SLA: {RESPONSE_TIME_SLA_STATUS}
+- Throughput SLA: {THROUGHPUT_SLA_STATUS}
+- Availability SLA: {AVAILABILITY_SLA_STATUS}
+- Accuracy SLA: {ACCURACY_SLA_STATUS}
+
+Quality Gates:
+- Unit Test Coverage: {UNIT_TEST_COVERAGE}%
+- Integration Test Pass Rate: {INTEGRATION_TEST_RATE}%
+- Code Quality Score: {CODE_QUALITY_SCORE}
+- Security Scan Results: {SECURITY_SCAN_STATUS}
+
+RECOMMENDATIONS
+===============
+Immediate Actions Required:
+{IMMEDIATE_ACTIONS}
+
+Performance Optimizations:
+{PERFORMANCE_OPTIMIZATIONS}
+
+Code Quality Improvements:
+{CODE_QUALITY_IMPROVEMENTS}
+
+Testing Enhancements:
+{TESTING_ENHANCEMENTS}
+
+APPENDIX A: RAW DATA COMPARISON
+===============================
+[Section for complete raw output dumps when needed for detailed analysis]
+
+COBOL Raw Output:
+{COBOL_RAW_OUTPUT}
+
+Java Raw Output:
+{JAVA_RAW_OUTPUT}
+
+APPENDIX B: CONFIGURATION FILES
+===============================
+COBOL JCL Configuration:
+{COBOL_JCL_CONFIG}
+
+Java Application Properties:
+{JAVA_CONFIG_PROPERTIES}
+
+Test Data Sets:
+{TEST_DATA_SETS}
+
+APPENDIX C: ENVIRONMENT DETAILS
+===============================
+COBOL Environment:
+- Platform: {COBOL_PLATFORM}
+- Compiler Version: {COBOL_COMPILER_VERSION}
+- Runtime Version: {COBOL_RUNTIME_VERSION}
+- Environment Variables: {COBOL_ENV_VARS}
+
+Java Environment:
+- JVM Version: {JAVA_JVM_VERSION}
+- Spring Boot Version: {SPRING_BOOT_VERSION}
+- Database Version: {DATABASE_VERSION}
+- Application Server: {APP_SERVER_VERSION}
+
+SIGNATURE BLOCK
+===============
+Report Generated By: {REPORT_GENERATOR}
+Generation Time: {GENERATION_TIMESTAMP}
+Report Version: {REPORT_VERSION}
+Approval Status: {APPROVAL_STATUS}
+Next Review Date: {NEXT_REVIEW_DATE}
+
+Digital Signature: {DIGITAL_SIGNATURE}
+Checksum: {REPORT_CHECKSUM}
+
+END OF REPORT
+=============

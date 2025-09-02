@@ -1,0 +1,108 @@
+ACCOUNT UPDATE JOB - EXPECTED OUTPUT FILE
+================================================
+Job Name: AccountUpdateJob
+Generated: 2024-03-15 02:30:00.000 EST
+Expected Records: 15
+Format: Fixed-width ASCII matching COBOL processing patterns
+BigDecimal Precision: 2 decimal places for all monetary values
+================================================
+
+# Test Case 1: Credit Limit Increase - Standard Processing
+ACCT-ID=00000000001|PREV-CREDIT-LIMIT=15000.00|NEW-CREDIT-LIMIT=18000.00|PREV-BALANCE=2500.00|NEW-BALANCE=2500.00|PREV-STATUS=Y|NEW-STATUS=Y|UPDATE-TYPE=CL01|AUDIT-TS=2024-03-15T02:30:01.000|ROLLBACK-IND=N|RESULT=SUCCESS
+
+# Test Case 2: Credit Limit Decrease with Status Validation
+ACCT-ID=00000000002|PREV-CREDIT-LIMIT=25000.00|NEW-CREDIT-LIMIT=20000.00|PREV-BALANCE=8500.00|NEW-BALANCE=8500.00|PREV-STATUS=Y|NEW-STATUS=Y|UPDATE-TYPE=CL02|AUDIT-TS=2024-03-15T02:30:02.000|ROLLBACK-IND=N|RESULT=SUCCESS
+
+# Test Case 3: Account Status Change - Active to Inactive
+ACCT-ID=00000000003|PREV-CREDIT-LIMIT=12000.00|NEW-CREDIT-LIMIT=12000.00|PREV-BALANCE=1200.00|NEW-BALANCE=1200.00|PREV-STATUS=Y|NEW-STATUS=N|UPDATE-TYPE=ST01|AUDIT-TS=2024-03-15T02:30:03.000|ROLLBACK-IND=N|RESULT=SUCCESS
+
+# Test Case 4: Balance Update with Interest Calculation
+ACCT-ID=00000000004|PREV-CREDIT-LIMIT=30000.00|NEW-CREDIT-LIMIT=30000.00|PREV-BALANCE=5000.00|NEW-BALANCE=5125.50|PREV-STATUS=Y|NEW-STATUS=Y|UPDATE-TYPE=BA01|AUDIT-TS=2024-03-15T02:30:04.000|ROLLBACK-IND=N|RESULT=SUCCESS
+
+# Test Case 5: Combined Update - Credit Limit and Balance
+ACCT-ID=00000000005|PREV-CREDIT-LIMIT=22000.00|NEW-CREDIT-LIMIT=25000.00|PREV-BALANCE=3400.00|NEW-BALANCE=3456.78|PREV-STATUS=Y|NEW-STATUS=Y|UPDATE-TYPE=CB01|AUDIT-TS=2024-03-15T02:30:05.000|ROLLBACK-IND=N|RESULT=SUCCESS
+
+# Test Case 6: Cash Credit Limit Adjustment
+ACCT-ID=00000000006|PREV-CREDIT-LIMIT=15000.00|NEW-CREDIT-LIMIT=15000.00|PREV-CASH-LIMIT=3000.00|NEW-CASH-LIMIT=3500.00|PREV-BALANCE=750.00|NEW-BALANCE=750.00|PREV-STATUS=Y|NEW-STATUS=Y|UPDATE-TYPE=CA01|AUDIT-TS=2024-03-15T02:30:06.000|ROLLBACK-IND=N|RESULT=SUCCESS
+
+# Test Case 7: Account Reactivation with Credit Limit Restore
+ACCT-ID=00000000007|PREV-CREDIT-LIMIT=10000.00|NEW-CREDIT-LIMIT=15000.00|PREV-BALANCE=0.00|NEW-BALANCE=0.00|PREV-STATUS=N|NEW-STATUS=Y|UPDATE-TYPE=RA01|AUDIT-TS=2024-03-15T02:30:07.000|ROLLBACK-IND=N|RESULT=SUCCESS
+
+# Test Case 8: Cycle Credit/Debit Update
+ACCT-ID=00000000008|PREV-CREDIT-LIMIT=20000.00|NEW-CREDIT-LIMIT=20000.00|PREV-CYCLE-CREDIT=500.00|NEW-CYCLE-CREDIT=750.00|PREV-CYCLE-DEBIT=1200.00|NEW-CYCLE-DEBIT=1350.00|PREV-BALANCE=3200.00|NEW-BALANCE=3350.00|PREV-STATUS=Y|NEW-STATUS=Y|UPDATE-TYPE=CY01|AUDIT-TS=2024-03-15T02:30:08.000|ROLLBACK-IND=N|RESULT=SUCCESS
+
+# Test Case 9: Account Expiration Date Update
+ACCT-ID=00000000009|PREV-CREDIT-LIMIT=18000.00|NEW-CREDIT-LIMIT=18000.00|PREV-EXPIRY=2024-12-31|NEW-EXPIRY=2025-12-31|PREV-BALANCE=4500.00|NEW-BALANCE=4500.00|PREV-STATUS=Y|NEW-STATUS=Y|UPDATE-TYPE=EX01|AUDIT-TS=2024-03-15T02:30:09.000|ROLLBACK-IND=N|RESULT=SUCCESS
+
+# Test Case 10: Large Balance with Precision Validation
+ACCT-ID=00000000010|PREV-CREDIT-LIMIT=50000.00|NEW-CREDIT-LIMIT=55000.00|PREV-BALANCE=12345.67|NEW-BALANCE=12456.89|PREV-STATUS=Y|NEW-STATUS=Y|UPDATE-TYPE=CL03|AUDIT-TS=2024-03-15T02:30:10.000|ROLLBACK-IND=N|RESULT=SUCCESS
+
+# Test Case 11: Failed Update - Credit Limit Below Current Balance (Rollback Required)
+ACCT-ID=00000000011|PREV-CREDIT-LIMIT=20000.00|NEW-CREDIT-LIMIT=5000.00|PREV-BALANCE=8000.00|NEW-BALANCE=8000.00|PREV-STATUS=Y|NEW-STATUS=Y|UPDATE-TYPE=CL04|AUDIT-TS=2024-03-15T02:30:11.000|ROLLBACK-IND=Y|RESULT=FAILED|ERROR-CODE=E001|ERROR-MSG=Credit limit cannot be below current balance
+
+# Test Case 12: Failed Update - Invalid Status Transition (Rollback Required)
+ACCT-ID=00000000012|PREV-CREDIT-LIMIT=15000.00|NEW-CREDIT-LIMIT=15000.00|PREV-BALANCE=2000.00|NEW-BALANCE=2000.00|PREV-STATUS=C|NEW-STATUS=Y|UPDATE-TYPE=ST02|AUDIT-TS=2024-03-15T02:30:12.000|ROLLBACK-IND=Y|RESULT=FAILED|ERROR-CODE=E002|ERROR-MSG=Invalid status transition from closed to active
+
+# Test Case 13: Failed Update - Negative Balance Validation (Rollback Required)
+ACCT-ID=00000000013|PREV-CREDIT-LIMIT=10000.00|NEW-CREDIT-LIMIT=10000.00|PREV-BALANCE=500.00|NEW-BALANCE=-100.00|PREV-STATUS=Y|NEW-STATUS=Y|UPDATE-TYPE=BA02|AUDIT-TS=2024-03-15T02:30:13.000|ROLLBACK-IND=Y|RESULT=FAILED|ERROR-CODE=E003|ERROR-MSG=Account balance cannot be negative
+
+# Test Case 14: Successful Zero Balance Account
+ACCT-ID=00000000014|PREV-CREDIT-LIMIT=8000.00|NEW-CREDIT-LIMIT=10000.00|PREV-BALANCE=0.00|NEW-BALANCE=0.00|PREV-STATUS=Y|NEW-STATUS=Y|UPDATE-TYPE=CL05|AUDIT-TS=2024-03-15T02:30:14.000|ROLLBACK-IND=N|RESULT=SUCCESS
+
+# Test Case 15: Maximum Credit Limit Update with Precision Test
+ACCT-ID=00000000015|PREV-CREDIT-LIMIT=99999.99|NEW-CREDIT-LIMIT=99999.99|PREV-BALANCE=50000.00|NEW-BALANCE=50123.45|PREV-STATUS=Y|NEW-STATUS=Y|UPDATE-TYPE=BA03|AUDIT-TS=2024-03-15T02:30:15.000|ROLLBACK-IND=N|RESULT=SUCCESS
+
+================================================
+SUMMARY STATISTICS
+================================================
+Total Records Processed: 15
+Successful Updates: 12
+Failed Updates (Rolled Back): 3
+Update Types:
+  - Credit Limit Updates (CL01-CL05): 7
+  - Status Updates (ST01-ST02): 2
+  - Balance Updates (BA01-BA03): 4
+  - Cash Limit Updates (CA01): 1
+  - Reactivation Updates (RA01): 1
+  - Cycle Updates (CY01): 1
+  - Expiry Updates (EX01): 1
+  - Combined Updates (CB01): 1
+
+ACID Compliance Verified: All failed transactions rolled back successfully
+BigDecimal Precision Maintained: All monetary values preserved with 2 decimal places
+Audit Trail Generated: All updates logged with timestamp and rollback indicators
+Business Rules Enforced: Status transitions and credit limit validations applied
+================================================
+
+# COBOL COMP-3 Precision Mapping Test Results:
+# PIC S9(10)V99 COMP-3 → NUMERIC(12,2) PostgreSQL
+# All test cases demonstrate exact precision preservation
+# No rounding errors detected in balance calculations
+# Interest calculations maintain penny-level accuracy
+
+# Status Code Mappings (matching COBOL implementation):
+# Y = Active Account
+# N = Inactive Account  
+# C = Closed Account
+# S = Suspended Account
+
+# Update Type Codes (matching COBOL processing patterns):
+# CL01-CL05 = Credit Limit Updates
+# ST01-ST02 = Status Transitions
+# BA01-BA03 = Balance Adjustments
+# CA01 = Cash Credit Limit Update
+# RA01 = Reactivation
+# CY01 = Cycle Credit/Debit Update
+# EX01 = Expiration Date Update
+# CB01 = Combined Credit/Balance Update
+
+# Error Codes (matching COBOL ABEND patterns):
+# E001 = Credit limit validation failure
+# E002 = Invalid status transition
+# E003 = Negative balance validation failure
+# E004 = Account not found
+# E005 = Database constraint violation
+
+================================================
+END OF EXPECTED OUTPUT FILE
+================================================

@@ -1,0 +1,533 @@
+# Parallel Run Testing Configuration for VSAM to PostgreSQL Migration
+# This configuration defines comparison criteria, tolerance levels, and matching strategies
+# for validating data consistency between legacy VSAM datasets and modern PostgreSQL tables
+
+parallel_run:
+  # Global configuration settings
+  config:
+    description: "VSAM to PostgreSQL Parallel Run Testing Framework"
+    version: "1.0.0"
+    execution_mode: "validation"
+    logging_level: "DEBUG"
+    max_concurrent_comparisons: 10
+    timeout_seconds: 300
+    
+  # Numeric precision tolerance configuration
+  tolerance:
+    # Financial fields require exact precision (0.00 tolerance)
+    financial_fields:
+      default_scale: 2
+      tolerance: 0.00
+      rounding_mode: "HALF_UP"
+      validation_mode: "EXACT"
+      
+    # Non-financial numeric fields
+    general_numeric:
+      default_tolerance: 0.001
+      percentage_tolerance: 0.01
+      
+    # Date and time comparisons
+    datetime_fields:
+      format_tolerance: "STRICT"
+      timezone_handling: "UTC"
+      
+  # String comparison configuration  
+  string_comparison:
+    # Handle COBOL fixed-width fields with trailing spaces
+    trailing_space_handling: "TRIM_AND_COMPARE"
+    case_sensitivity: "SENSITIVE"
+    null_handling: "EMPTY_AS_NULL"
+    encoding: "UTF-8"
+    
+  # Record matching strategies
+  matching_strategies:
+    # Primary key matching for direct record comparison
+    primary_key:
+      algorithm: "EXACT_MATCH"
+      composite_key_delimiter: "|"
+      key_validation: "STRICT"
+      
+    # Secondary key matching for alternate index comparisons
+    secondary_key:
+      algorithm: "FUZZY_MATCH"
+      similarity_threshold: 0.95
+      
+    # Sequence-based matching for ordered datasets
+    sequence_based:
+      algorithm: "POSITION_MATCH"
+      allow_gaps: false
+      
+  # Query pair definitions for VSAM vs PostgreSQL comparisons
+  query_pairs:
+    
+    # Customer data comparison (CUSTDAT KSDS vs customer_data table)
+    customer_data:
+      description: "Customer master file comparison"
+      vsam_dataset: "CUSTDAT"
+      postgresql_table: "customer_data"
+      
+      # VSAM READ equivalent vs JPA findById operations
+      single_record_access:
+        vsam_operation: "READ"
+        vsam_key: "CUSTOMER-ID"
+        postgresql_query: "SELECT * FROM customer_data WHERE customer_id = ?"
+        jpa_method: "customerRepository.findById"
+        comparison_fields:
+          - field_name: "customer_id"
+            vsam_field: "CUSTOMER-ID"
+            postgresql_column: "customer_id"
+            data_type: "BIGINT"
+            tolerance_type: "exact"
+            
+          - field_name: "first_name"
+            vsam_field: "FIRST-NAME"
+            postgresql_column: "first_name"
+            data_type: "VARCHAR"
+            tolerance_type: "string"
+            max_length: 20
+            
+          - field_name: "last_name"
+            vsam_field: "LAST-NAME"
+            postgresql_column: "last_name"
+            data_type: "VARCHAR"
+            tolerance_type: "string"
+            max_length: 20
+            
+          - field_name: "date_of_birth"
+            vsam_field: "DATE-OF-BIRTH"
+            postgresql_column: "date_of_birth"
+            data_type: "DATE"
+            tolerance_type: "datetime"
+            
+      # VSAM browse operations vs PostgreSQL pagination
+      browse_operations:
+        vsam_operations:
+          - operation: "STARTBR"
+            key_condition: ">="
+            postgresql_equivalent: "ORDER BY customer_id LIMIT ? OFFSET ?"
+            
+          - operation: "READNEXT"
+            postgresql_equivalent: "SELECT * FROM customer_data WHERE customer_id > ? ORDER BY customer_id LIMIT 1"
+            
+          - operation: "READPREV"
+            postgresql_equivalent: "SELECT * FROM customer_data WHERE customer_id < ? ORDER BY customer_id DESC LIMIT 1"
+            
+        pagination_config:
+          page_size: 100
+          max_pages: 1000
+          sort_order: "ASC"
+          
+    # Account data comparison (ACCTDAT KSDS vs account_data table)
+    account_data:
+      description: "Account master file comparison with financial precision validation"
+      vsam_dataset: "ACCTDAT"
+      postgresql_table: "account_data"
+      
+      single_record_access:
+        vsam_operation: "READ"
+        vsam_key: "ACCOUNT-ID"
+        postgresql_query: "SELECT * FROM account_data WHERE account_id = ?"
+        jpa_method: "accountRepository.findById"
+        comparison_fields:
+          - field_name: "account_id"
+            vsam_field: "ACCOUNT-ID"
+            postgresql_column: "account_id"
+            data_type: "BIGINT"
+            tolerance_type: "exact"
+            
+          - field_name: "current_balance"
+            vsam_field: "CURRENT-BAL"
+            postgresql_column: "current_balance"
+            data_type: "NUMERIC"
+            precision: 12
+            scale: 2
+            tolerance_type: "financial"
+            cobol_type: "COMP-3"
+            
+          - field_name: "credit_limit"
+            vsam_field: "CREDIT-LIMIT"
+            postgresql_column: "credit_limit"
+            data_type: "NUMERIC"
+            precision: 12
+            scale: 2
+            tolerance_type: "financial"
+            cobol_type: "COMP-3"
+            
+          - field_name: "customer_id"
+            vsam_field: "CUSTOMER-ID"
+            postgresql_column: "customer_id"
+            data_type: "BIGINT"
+            tolerance_type: "exact"
+            is_foreign_key: true
+            
+    # Transaction data comparison (TRANSACT KSDS vs transactions table)
+    transaction_data:
+      description: "Transaction history comparison with partitioned table handling"
+      vsam_dataset: "TRANSACT"
+      postgresql_table: "transactions"
+      partitioned: true
+      partition_key: "transaction_date"
+      
+      single_record_access:
+        vsam_operation: "READ"
+        vsam_key: "TRANSACTION-ID"
+        postgresql_query: "SELECT * FROM transactions WHERE transaction_id = ?"
+        jpa_method: "transactionRepository.findById"
+        comparison_fields:
+          - field_name: "transaction_id"
+            vsam_field: "TRANSACTION-ID"
+            postgresql_column: "transaction_id"
+            data_type: "BIGINT"
+            tolerance_type: "exact"
+            
+          - field_name: "amount"
+            vsam_field: "TRANSACTION-AMT"
+            postgresql_column: "amount"
+            data_type: "NUMERIC"
+            precision: 12
+            scale: 2
+            tolerance_type: "financial"
+            cobol_type: "COMP-3"
+            validation_critical: true
+            
+          - field_name: "transaction_date"
+            vsam_field: "TRANSACTION-DATE"
+            postgresql_column: "transaction_date"
+            data_type: "DATE"
+            tolerance_type: "datetime"
+            
+          - field_name: "account_id"
+            vsam_field: "ACCOUNT-ID"
+            postgresql_column: "account_id"
+            data_type: "BIGINT"
+            tolerance_type: "exact"
+            is_foreign_key: true
+            
+      # Range-based queries for date partitions
+      range_operations:
+        date_range_query:
+          vsam_operation: "STARTBR with date range"
+          postgresql_query: "SELECT * FROM transactions WHERE transaction_date BETWEEN ? AND ? ORDER BY transaction_date, transaction_id"
+          partition_pruning: true
+          max_range_days: 31
+          
+    # Card data comparison (CARDDAT KSDS vs card_data table)
+    card_data:
+      description: "Credit card master file comparison"
+      vsam_dataset: "CARDDAT"
+      postgresql_table: "card_data"
+      
+      single_record_access:
+        vsam_operation: "READ"
+        vsam_key: "CARD-NUMBER"
+        postgresql_query: "SELECT * FROM card_data WHERE card_number = ?"
+        jpa_method: "cardRepository.findById"
+        comparison_fields:
+          - field_name: "card_number"
+            vsam_field: "CARD-NUMBER"
+            postgresql_column: "card_number"
+            data_type: "VARCHAR"
+            max_length: 16
+            tolerance_type: "exact"
+            sensitive_data: true
+            
+          - field_name: "account_id"
+            vsam_field: "ACCOUNT-ID"
+            postgresql_column: "account_id"
+            data_type: "BIGINT"
+            tolerance_type: "exact"
+            is_foreign_key: true
+            
+          - field_name: "customer_id"
+            vsam_field: "CUSTOMER-ID"
+            postgresql_column: "customer_id"
+            data_type: "BIGINT"
+            tolerance_type: "exact"
+            is_foreign_key: true
+            
+      # Alternate index comparisons (CARDAIX equivalent)
+      alternate_index_access:
+        by_account_id:
+          vsam_operation: "STARTBR on CARDAIX"
+          postgresql_query: "SELECT * FROM card_data WHERE account_id = ? ORDER BY card_number"
+          index_name: "card_account_idx"
+          
+    # User security comparison (USRSEC KSDS vs user_security table)
+    user_security:
+      description: "Security user data comparison"
+      vsam_dataset: "USRSEC"
+      postgresql_table: "user_security"
+      
+      single_record_access:
+        vsam_operation: "READ"
+        vsam_key: "USER-ID"
+        postgresql_query: "SELECT * FROM user_security WHERE user_id = ?"
+        jpa_method: "userSecurityRepository.findById"
+        comparison_fields:
+          - field_name: "user_id"
+            vsam_field: "USER-ID"
+            postgresql_column: "user_id"
+            data_type: "BIGINT"
+            tolerance_type: "exact"
+            
+          - field_name: "password_hash"
+            vsam_field: "PASSWORD"
+            postgresql_column: "password_hash"
+            data_type: "VARCHAR"
+            tolerance_type: "exact"
+            sensitive_data: true
+            exclude_from_report: true
+            
+  # Composite key matching algorithms
+  composite_key_matching:
+    transaction_category_balance:
+      description: "Composite key matching for transaction category balances"
+      vsam_dataset: "TRNCTBAL"
+      postgresql_table: "transaction_category_balance"
+      
+      composite_keys:
+        - field: "account_id"
+          vsam_field: "ACCOUNT-ID"
+          data_type: "BIGINT"
+          position: 1
+          
+        - field: "category_code"
+          vsam_field: "CATEGORY-CODE"
+          data_type: "VARCHAR"
+          position: 2
+          
+        - field: "balance_date"
+          vsam_field: "BALANCE-DATE"
+          data_type: "DATE"
+          position: 3
+          
+      matching_algorithm: "CONCATENATED_KEY"
+      key_separator: "|"
+      
+    transaction_categories:
+      description: "Composite key matching for transaction categories"
+      vsam_dataset: "TRANCATG"
+      postgresql_table: "transaction_categories"
+      
+      composite_keys:
+        - field: "category_code"
+          vsam_field: "CATEGORY-CODE"
+          data_type: "VARCHAR"
+          position: 1
+          
+        - field: "subcategory_code"
+          vsam_field: "SUBCATEGORY-CODE"
+          data_type: "VARCHAR"
+          position: 2
+          
+  # Validation rules for data integrity
+  validation_rules:
+    
+    # Financial precision validation
+    financial_precision:
+      rule_name: "COBOL COMP-3 Precision Validation"
+      description: "Ensure BigDecimal precision matches COBOL COMP-3 fields exactly"
+      tolerance: 0.00
+      scale_validation: "STRICT"
+      rounding_validation: "HALF_UP"
+      
+    # Foreign key integrity
+    referential_integrity:
+      rule_name: "Foreign Key Consistency"
+      description: "Validate foreign key relationships match between systems"
+      validation_mode: "STRICT"
+      
+      relationships:
+        - parent_table: "customer_data"
+          child_table: "account_data"
+          foreign_key: "customer_id"
+          
+        - parent_table: "account_data"
+          child_table: "card_data"
+          foreign_key: "account_id"
+          
+        - parent_table: "account_data"
+          child_table: "transactions"
+          foreign_key: "account_id"
+          
+    # Record count validation
+    record_count:
+      rule_name: "Record Count Consistency"
+      description: "Validate total record counts match between VSAM and PostgreSQL"
+      tolerance_percentage: 0.0
+      
+    # Data completeness validation  
+    data_completeness:
+      rule_name: "Data Completeness Check"
+      description: "Ensure all required fields are populated"
+      null_tolerance: 0.0
+      
+  # HTML difference reporting configuration
+  reporting:
+    output_format: "HTML"
+    output_directory: "/tmp/parallel-run-reports"
+    report_name_template: "parallel-run-{dataset}-{timestamp}.html"
+    
+    # Side-by-side comparison layout
+    html_config:
+      title: "VSAM to PostgreSQL Parallel Run Comparison Report"
+      show_metadata: true
+      show_statistics: true
+      highlight_differences: true
+      include_raw_data: false
+      max_records_per_report: 1000
+      
+      # Color coding for differences
+      color_scheme:
+        exact_match: "#28a745"     # Green
+        within_tolerance: "#ffc107" # Yellow  
+        out_of_tolerance: "#dc3545" # Red
+        missing_record: "#6c757d"   # Gray
+        
+      # Table layout configuration
+      table_config:
+        show_line_numbers: true
+        show_field_names: true
+        show_data_types: true
+        show_tolerance_info: true
+        max_field_width: 50
+        
+      # Summary sections
+      summary_sections:
+        - name: "Comparison Summary"
+          include_record_counts: true
+          include_match_statistics: true
+          include_tolerance_analysis: true
+          
+        - name: "Financial Field Analysis"  
+          focus_area: "financial_fields"
+          show_precision_details: true
+          
+        - name: "Foreign Key Validation"
+          focus_area: "referential_integrity" 
+          show_relationship_diagram: true
+          
+        - name: "Performance Metrics"
+          include_execution_time: true
+          include_memory_usage: true
+          include_query_performance: true
+          
+    # Email notification configuration
+    notifications:
+      enabled: true
+      recipients:
+        - "migration-team@company.com"
+        - "database-admin@company.com"
+        - "qa-team@company.com"
+      
+      triggers:
+        - condition: "ANY_DIFFERENCES_FOUND"
+          severity: "WARNING"
+          
+        - condition: "FINANCIAL_PRECISION_ERRORS"
+          severity: "CRITICAL"
+          
+        - condition: "FOREIGN_KEY_VIOLATIONS"
+          severity: "CRITICAL"
+          
+        - condition: "RECORD_COUNT_MISMATCH"
+          severity: "HIGH"
+          
+  # Performance optimization settings
+  performance:
+    
+    # Parallel processing configuration
+    parallel_processing:
+      enabled: true
+      thread_pool_size: 8
+      batch_size: 1000
+      queue_capacity: 10000
+      
+    # Memory management
+    memory_management:
+      max_heap_size: "2g"
+      gc_algorithm: "G1GC"
+      result_cache_size: 100000
+      
+    # Database connection optimization
+    database_config:
+      vsam_connection_pool_size: 5
+      postgresql_connection_pool_size: 10
+      query_timeout_seconds: 30
+      fetch_size: 1000
+      
+  # Error handling and recovery
+  error_handling:
+    
+    # Retry configuration
+    retry_config:
+      max_retries: 3
+      retry_delay_seconds: 5
+      exponential_backoff: true
+      
+    # Skip strategies for known issues
+    skip_strategies:
+      - condition: "VSAM_DATASET_UNAVAILABLE"
+        action: "SKIP_AND_LOG"
+        
+      - condition: "POSTGRESQL_CONNECTION_FAILED"
+        action: "RETRY_WITH_DELAY"
+        
+      - condition: "TOLERANCE_EXCEEDED_NON_CRITICAL"
+        action: "LOG_AND_CONTINUE"
+        
+    # Failure thresholds
+    failure_thresholds:
+      max_failed_comparisons: 100
+      max_critical_errors: 5
+      max_timeout_errors: 10
+      
+  # Security and compliance
+  security:
+    
+    # Data masking for sensitive fields
+    data_masking:
+      enabled: true
+      mask_character: "*"
+      
+      sensitive_fields:
+        - table: "customer_data"
+          field: "ssn"
+          mask_pattern: "***-**-{last_4}"
+          
+        - table: "card_data"
+          field: "card_number"
+          mask_pattern: "****-****-****-{last_4}"
+          
+        - table: "user_security"
+          field: "password_hash"
+          mask_pattern: "{completely_masked}"
+          
+    # Audit logging
+    audit_logging:
+      enabled: true
+      log_level: "INFO"
+      include_execution_details: true
+      include_performance_metrics: true
+      retention_days: 90
+      
+  # Custom validation scripts
+  custom_validations:
+    
+    # COBOL data type conversion validation
+    cobol_conversion_validation:
+      script_name: "validate_cobol_precision.py"
+      description: "Validate COBOL COMP-3 to BigDecimal conversion accuracy"
+      timeout_seconds: 60
+      
+    # Business rule validation
+    business_rule_validation:
+      script_name: "validate_business_rules.py"
+      description: "Validate complex business logic consistency"
+      timeout_seconds: 120
+      
+    # Cross-reference validation
+    cross_reference_validation:
+      script_name: "validate_cross_references.py"
+      description: "Validate data relationships across multiple tables"
+      timeout_seconds: 180

@@ -1,0 +1,717 @@
+# Spring Batch Test Configuration for Customer Processor Job (CBCUS01C Migration)
+# This configuration provides comprehensive test settings for the customer master file processing
+# batch job migrated from COBOL program CBCUS01C maintaining functional parity
+
+spring:
+  batch:
+    job:
+      name: "customerProcessorJobTest"
+      enabled: true
+      
+  datasource:
+    # Test database configuration for customer processing validation
+    url: "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
+    driverClassName: "org.h2.Driver"
+    username: "sa"
+    password: ""
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 10000
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      leak-detection-threshold: 60000
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: false
+
+# Customer Processor Job Test Configuration
+customer-processor:
+  job:
+    # Job execution parameters matching COBOL CBCUS01C requirements
+    name: "customerProcessorJob"
+    description: "Customer master file processing with COBOL layout preservation"
+    restartable: true
+    
+    # Chunk processing configuration aligned with CICS SYNCPOINT intervals
+    chunk-size: 1000
+    skip-limit: 10
+    retry-limit: 3
+    commit-interval: 1000
+    
+    # Thread pool configuration for parallel processing
+    task-executor:
+      core-pool-size: 2
+      max-pool-size: 4
+      queue-capacity: 100
+      thread-name-prefix: "customer-batch-"
+      
+    # Step configuration for customer record processing
+    steps:
+      - name: "processCustomerRecords"
+        type: "chunk"
+        reader: "customerFileReader"
+        processor: "customerRecordProcessor"
+        writer: "customerDatabaseWriter"
+        
+      - name: "validateCustomerData"
+        type: "tasklet"
+        tasklet: "customerValidationTasklet"
+        
+      - name: "generateCustomerOutput"
+        type: "chunk"
+        reader: "customerDatabaseReader"
+        processor: "customerOutputProcessor"
+        writer: "customerFileWriter"
+
+# Input file configuration matching CUSTREC.cpy structure (500 byte records)
+input:
+  file:
+    path: "classpath:test-data/customers/customer-input-test.txt"
+    encoding: "UTF-8"
+    line-separator: "\n"
+    
+    # Fixed-width field mapping based on CUSTREC.cpy copybook
+    # Total record length: 500 bytes
+    field-mapping:
+      customer-id:
+        position: 1
+        length: 9
+        type: "NUMERIC"
+        required: true
+        validation: "9 digits"
+        
+      first-name:
+        position: 10
+        length: 25
+        type: "CHARACTER"
+        required: true
+        trim: true
+        validation: "alphanumeric with spaces"
+        
+      middle-name:
+        position: 35
+        length: 25
+        type: "CHARACTER"
+        required: false
+        trim: true
+        validation: "alphanumeric with spaces"
+        
+      last-name:
+        position: 60
+        length: 25
+        type: "CHARACTER"
+        required: true
+        trim: true
+        validation: "alphanumeric with spaces"
+        
+      address-line-1:
+        position: 85
+        length: 50
+        type: "CHARACTER"
+        required: true
+        trim: true
+        
+      address-line-2:
+        position: 135
+        length: 50
+        type: "CHARACTER"
+        required: false
+        trim: true
+        
+      address-line-3:
+        position: 185
+        length: 50
+        type: "CHARACTER"
+        required: false
+        trim: true
+        
+      state-code:
+        position: 235
+        length: 2
+        type: "CHARACTER"
+        required: true
+        validation: "valid US state code"
+        
+      country-code:
+        position: 237
+        length: 3
+        type: "CHARACTER"
+        required: true
+        validation: "valid ISO country code"
+        
+      zip-code:
+        position: 240
+        length: 10
+        type: "CHARACTER"
+        required: true
+        validation: "ZIP or ZIP+4 format"
+        
+      phone-number-1:
+        position: 250
+        length: 15
+        type: "CHARACTER"
+        required: false
+        validation: "phone number format"
+        
+      phone-number-2:
+        position: 265
+        length: 15
+        type: "CHARACTER"
+        required: false
+        validation: "phone number format"
+        
+      ssn:
+        position: 280
+        length: 9
+        type: "NUMERIC"
+        required: true
+        validation: "9 digits"
+        sensitive: true
+        
+      government-id:
+        position: 289
+        length: 20
+        type: "CHARACTER"
+        required: false
+        trim: true
+        sensitive: true
+        
+      date-of-birth:
+        position: 309
+        length: 10
+        type: "DATE"
+        required: true
+        format: "YYYY-MM-DD"
+        validation: "valid date, age >= 18"
+        
+      eft-account-id:
+        position: 319
+        length: 10
+        type: "CHARACTER"
+        required: false
+        trim: true
+        
+      primary-card-holder:
+        position: 329
+        length: 1
+        type: "CHARACTER"
+        required: true
+        validation: "Y or N"
+        
+      fico-credit-score:
+        position: 330
+        length: 3
+        type: "NUMERIC"
+        required: false
+        validation: "300-850 range"
+        
+      # FILLER field for record padding (matches COBOL layout)
+      filler:
+        position: 333
+        length: 168
+        type: "CHARACTER"
+        required: false
+
+# Data validation rules matching COBOL business logic
+validation:
+  rules:
+    # Customer ID validation
+    customer-id:
+      required: true
+      unique: true
+      range: "000000001-999999999"
+      
+    # Name validation rules
+    names:
+      first-name:
+        required: true
+        min-length: 1
+        max-length: 25
+        pattern: "^[a-zA-Z\\s\\-\\.]+$"
+        
+      last-name:
+        required: true
+        min-length: 1
+        max-length: 25
+        pattern: "^[a-zA-Z\\s\\-\\.]+$"
+        
+    # Address validation
+    address:
+      address-line-1:
+        required: true
+        min-length: 1
+        max-length: 50
+        
+      state-code:
+        required: true
+        values: ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", 
+                "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+                "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+                "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+                "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"]
+                
+      country-code:
+        required: true
+        values: ["USA", "CAN", "MEX"]
+        
+      zip-code:
+        required: true
+        pattern: "^\\d{5}(-\\d{4})?$"
+        
+    # Personal information validation
+    personal:
+      ssn:
+        required: true
+        pattern: "^\\d{9}$"
+        encryption: true
+        
+      date-of-birth:
+        required: true
+        format: "YYYY-MM-DD"
+        min-age: 18
+        max-age: 120
+        
+      fico-score:
+        required: false
+        range: "300-850"
+        
+    # Phone number validation
+    phone:
+      pattern: "^\\+?[1-9]\\d{1,14}$"
+      
+# Record transformation rules matching COBOL data conversion logic
+transformation:
+  rules:
+    # Data type conversions
+    conversions:
+      # Numeric field transformations
+      customer-id:
+        input-format: "text"
+        output-format: "bigint"
+        padding: "left-zero"
+        
+      ssn:
+        input-format: "text"
+        output-format: "bigint"
+        encryption: "AES-256"
+        masking: "***-**-####"
+        
+      fico-score:
+        input-format: "text"
+        output-format: "smallint"
+        default-value: 0
+        
+      # Date transformations
+      date-of-birth:
+        input-format: "YYYY-MM-DD"
+        output-format: "date"
+        validation: "past-date"
+        
+      # Character field transformations
+      text-fields:
+        trim: true
+        upper-case: false
+        remove-extra-spaces: true
+        
+    # Business logic transformations
+    business-rules:
+      # Primary card holder flag normalization
+      primary-card-holder:
+        input-values: ["Y", "y", "YES", "yes", "1", "TRUE", "true"]
+        output-value: "Y"
+        default-value: "N"
+        
+      # State code normalization
+      state-code:
+        transform: "upper-case"
+        validation: "us-state-codes"
+        
+      # Country code normalization
+      country-code:
+        transform: "upper-case"
+        default-value: "USA"
+
+# Output file configuration with identical COBOL formatting
+output:
+  file:
+    path: "target/test-output/customer-processed-test.txt"
+    encoding: "UTF-8"
+    line-separator: "\n"
+    backup-existing: true
+    
+    # Fixed-width output format matching COBOL layout requirements
+    format:
+      type: "fixed-width"
+      record-length: 500
+      padding-character: " "
+      
+    # Output field specifications preserving CUSTREC.cpy structure
+    fields:
+      - name: "customer-id"
+        position: 1
+        length: 9
+        type: "numeric"
+        alignment: "right"
+        padding: "zero"
+        
+      - name: "first-name"
+        position: 10
+        length: 25
+        type: "character"
+        alignment: "left"
+        padding: "space"
+        
+      - name: "middle-name"
+        position: 35
+        length: 25
+        type: "character"
+        alignment: "left"
+        padding: "space"
+        
+      - name: "last-name"
+        position: 60
+        length: 25
+        type: "character"
+        alignment: "left"
+        padding: "space"
+        
+      - name: "address-line-1"
+        position: 85
+        length: 50
+        type: "character"
+        alignment: "left"
+        padding: "space"
+        
+      - name: "address-line-2"
+        position: 135
+        length: 50
+        type: "character"
+        alignment: "left"
+        padding: "space"
+        
+      - name: "address-line-3"
+        position: 185
+        length: 50
+        type: "character"
+        alignment: "left"
+        padding: "space"
+        
+      - name: "state-code"
+        position: 235
+        length: 2
+        type: "character"
+        alignment: "left"
+        padding: "space"
+        
+      - name: "country-code"
+        position: 237
+        length: 3
+        type: "character"
+        alignment: "left"
+        padding: "space"
+        
+      - name: "zip-code"
+        position: 240
+        length: 10
+        type: "character"
+        alignment: "left"
+        padding: "space"
+        
+      - name: "phone-number-1"
+        position: 250
+        length: 15
+        type: "character"
+        alignment: "left"
+        padding: "space"
+        
+      - name: "phone-number-2"
+        position: 265
+        length: 15
+        type: "character"
+        alignment: "left"
+        padding: "space"
+        
+      - name: "ssn"
+        position: 280
+        length: 9
+        type: "numeric"
+        alignment: "right"
+        padding: "zero"
+        masking: true
+        
+      - name: "government-id"
+        position: 289
+        length: 20
+        type: "character"
+        alignment: "left"
+        padding: "space"
+        
+      - name: "date-of-birth"
+        position: 309
+        length: 10
+        type: "date"
+        format: "YYYY-MM-DD"
+        alignment: "left"
+        padding: "space"
+        
+      - name: "eft-account-id"
+        position: 319
+        length: 10
+        type: "character"
+        alignment: "left"
+        padding: "space"
+        
+      - name: "primary-card-holder"
+        position: 329
+        length: 1
+        type: "character"
+        alignment: "left"
+        
+      - name: "fico-credit-score"
+        position: 330
+        length: 3
+        type: "numeric"
+        alignment: "right"
+        padding: "zero"
+        
+      - name: "filler"
+        position: 333
+        length: 168
+        type: "character"
+        alignment: "left"
+        padding: "space"
+        fill-value: " "
+
+# Error handling configuration matching COBOL ABEND processing
+error-handling:
+  # Error categorization and processing
+  categories:
+    validation-errors:
+      action: "skip-and-log"
+      max-errors: 100
+      error-file: "target/test-output/customer-validation-errors.txt"
+      
+    data-conversion-errors:
+      action: "skip-and-log"
+      max-errors: 50
+      error-file: "target/test-output/customer-conversion-errors.txt"
+      
+    database-errors:
+      action: "fail-fast"
+      max-errors: 5
+      error-file: "target/test-output/customer-database-errors.txt"
+      
+    system-errors:
+      action: "fail-immediately"
+      retry-attempts: 0
+      
+  # Error record format for failed customer records
+  error-record:
+    include-original-record: true
+    include-error-details: true
+    include-timestamp: true
+    include-record-number: true
+    
+    format:
+      timestamp: "yyyy-MM-dd HH:mm:ss.SSS"
+      separator: "|"
+      
+  # Recovery and restart configuration
+  restart:
+    enabled: true
+    checkpoint-frequency: 1000
+    restart-from-failure-point: true
+    preserve-job-parameters: true
+
+# Test data configuration for validation scenarios
+test-data:
+  scenarios:
+    # Valid customer record scenarios
+    valid-records:
+      - name: "standard-customer"
+        customer-id: "000000001"
+        first-name: "John"
+        last-name: "Smith"
+        address-line-1: "123 Main Street"
+        state-code: "CA"
+        country-code: "USA"
+        zip-code: "90210"
+        ssn: "123456789"
+        date-of-birth: "1990-01-15"
+        primary-card-holder: "Y"
+        fico-score: "750"
+        
+      - name: "minimal-customer"
+        customer-id: "000000002"
+        first-name: "Jane"
+        last-name: "Doe"
+        address-line-1: "456 Oak Avenue"
+        state-code: "NY"
+        country-code: "USA"
+        zip-code: "10001"
+        ssn: "987654321"
+        date-of-birth: "1985-12-25"
+        primary-card-holder: "N"
+        
+    # Invalid record scenarios for error testing
+    invalid-records:
+      - name: "missing-required-fields"
+        customer-id: ""
+        first-name: ""
+        last-name: "TestError"
+        expected-error: "validation-error"
+        
+      - name: "invalid-ssn-format"
+        customer-id: "000000003"
+        first-name: "Error"
+        last-name: "Test"
+        ssn: "invalid"
+        expected-error: "validation-error"
+        
+      - name: "invalid-date-format"
+        customer-id: "000000004"
+        first-name: "Date"
+        last-name: "Error"
+        date-of-birth: "invalid-date"
+        expected-error: "conversion-error"
+        
+      - name: "out-of-range-fico"
+        customer-id: "000000005"
+        first-name: "Fico"
+        last-name: "Error"
+        fico-score: "999"
+        expected-error: "validation-error"
+
+# Performance testing configuration
+performance:
+  # Volume testing parameters
+  volume-testing:
+    record-count: 10000
+    concurrent-threads: 4
+    memory-limit: "512MB"
+    
+  # Performance benchmarks aligned with COBOL processing speeds
+  benchmarks:
+    records-per-second: 1000
+    max-processing-time: "30 minutes"
+    memory-usage-threshold: "80%"
+    cpu-usage-threshold: "75%"
+    
+  # Monitoring configuration
+  monitoring:
+    enabled: true
+    metrics:
+      - "processing-time"
+      - "memory-usage"
+      - "error-rate"
+      - "throughput"
+      - "database-connection-pool"
+      
+    thresholds:
+      error-rate-max: "5%"
+      processing-time-max: "200ms per record"
+      memory-usage-max: "512MB"
+
+# Database integration test configuration
+database:
+  # Test schema configuration
+  schema:
+    auto-create: true
+    auto-drop: true
+    validate-ddl: true
+    
+  # Customer table configuration for testing
+  customer-table:
+    name: "customer_data"
+    columns:
+      - name: "customer_id"
+        type: "BIGINT"
+        primary-key: true
+        
+      - name: "first_name"
+        type: "VARCHAR(25)"
+        nullable: false
+        
+      - name: "last_name"
+        type: "VARCHAR(25)"
+        nullable: false
+        
+      - name: "ssn"
+        type: "VARCHAR(256)"  # Encrypted field
+        nullable: false
+        
+    indexes:
+      - name: "idx_customer_name"
+        columns: ["last_name", "first_name"]
+        
+  # Transaction configuration for testing
+  transaction:
+    isolation-level: "READ_COMMITTED"
+    timeout: 30
+    rollback-on-error: true
+
+# Actuator endpoints for batch job testing
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,metrics,beans,batch"
+      base-path: "/actuator"
+      
+  endpoint:
+    health:
+      show-details: "always"
+      
+    batch:
+      enabled: true
+      
+  metrics:
+    export:
+      simple:
+        enabled: true
+        
+# Logging configuration for test execution
+logging:
+  level:
+    com.carddemo.batch: DEBUG
+    org.springframework.batch: INFO
+    org.springframework.jdbc: DEBUG
+    root: INFO
+    
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    
+  file:
+    name: "target/test-logs/customer-processor-test.log"
+    max-size: "10MB"
+    max-history: 5
+
+# Integration with Spring Boot Test framework
+spring-boot-test:
+  # Test slices configuration
+  test-slices:
+    batch-test: true
+    data-jpa-test: true
+    web-mvc-test: false
+    
+  # Test configuration
+  test-configuration:
+    use-test-database: true
+    disable-security: true
+    mock-external-services: true
+    
+  # Test execution configuration
+  execution:
+    parallel: false
+    timeout: "5 minutes"
+    cleanup-after-test: true
+    preserve-test-data: false

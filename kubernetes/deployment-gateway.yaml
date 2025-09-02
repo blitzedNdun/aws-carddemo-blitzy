@@ -1,0 +1,341 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: carddemo-gateway
+  labels:
+    app: carddemo-gateway
+    component: api-gateway
+    tier: gateway
+    version: v2.1.0
+    environment: production
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    description: "Spring Cloud Gateway deployment for CardDemo API gateway with request routing, load balancing, and security integration"
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: carddemo-gateway
+  template:
+    metadata:
+      labels:
+        app: carddemo-gateway
+        component: api-gateway
+        tier: gateway
+        version: v2.1.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/actuator/prometheus"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+      containers:
+      - name: gateway
+        image: carddemo/api-gateway:v2.1.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "kubernetes"
+        - name: BACKEND_SERVICE_URL
+          value: "http://carddemo-backend-service:8080"
+        - name: REDIS_URL
+          value: "redis://redis-service:6379"
+        - name: SERVER_PORT
+          value: "8080"
+        - name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
+          value: "health,metrics,info,prometheus"
+        - name: SPRING_CLOUD_GATEWAY_DISCOVERY_LOCATOR_ENABLED
+          value: "true"
+        - name: SPRING_CLOUD_GATEWAY_DISCOVERY_LOCATOR_LOWER_CASE_SERVICE_ID
+          value: "true"
+        envFrom:
+        - configMapRef:
+            name: carddemo-gateway-config
+            optional: true
+        - secretRef:
+            name: carddemo-gateway-secret
+            optional: true
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+            httpHeaders:
+            - name: Accept
+              value: application/json
+          initialDelaySeconds: 45
+          periodSeconds: 30
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+            httpHeaders:
+            - name: Accept
+              value: application/json
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 2
+        startupProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 12
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+        - name: gateway-config
+          mountPath: /app/config
+          readOnly: true
+      volumes:
+      - name: tmp-volume
+        emptyDir: {}
+      - name: gateway-config
+        configMap:
+          name: carddemo-gateway-config
+          optional: true
+      terminationGracePeriodSeconds: 30
+      restartPolicy: Always
+      dnsPolicy: ClusterFirst
+      serviceAccountName: carddemo-gateway
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: carddemo-gateway-service
+  labels:
+    app: carddemo-gateway
+    component: api-gateway
+    tier: gateway
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: carddemo-gateway
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: carddemo-gateway
+  labels:
+    app: carddemo-gateway
+    component: api-gateway
+  annotations:
+    description: "Service account for CardDemo API Gateway with minimal required permissions"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: carddemo-gateway-role
+  labels:
+    app: carddemo-gateway
+    component: api-gateway
+rules:
+- apiGroups: [""]
+  resources: ["services", "endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: carddemo-gateway-rolebinding
+  labels:
+    app: carddemo-gateway
+    component: api-gateway
+subjects:
+- kind: ServiceAccount
+  name: carddemo-gateway
+  namespace: default
+roleRef:
+  kind: Role
+  name: carddemo-gateway-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: carddemo-gateway-config
+  labels:
+    app: carddemo-gateway
+    component: api-gateway
+data:
+  application.yml: |
+    server:
+      port: 8080
+      shutdown: graceful
+    
+    spring:
+      application:
+        name: carddemo-gateway
+      cloud:
+        gateway:
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+          routes:
+          - id: carddemo-backend
+            uri: ${BACKEND_SERVICE_URL:http://carddemo-backend-service:8080}
+            predicates:
+            - Path=/api/**
+            filters:
+            - StripPrefix=1
+          - id: carddemo-auth
+            uri: ${BACKEND_SERVICE_URL:http://carddemo-backend-service:8080}
+            predicates:
+            - Path=/auth/**
+          globalcors:
+            corsConfigurations:
+              '[/**]':
+                allowedOrigins: "*"
+                allowedMethods:
+                - GET
+                - POST
+                - PUT
+                - DELETE
+                - OPTIONS
+                allowedHeaders: "*"
+                allowCredentials: true
+      session:
+        store-type: redis
+        redis:
+          namespace: "carddemo:session"
+      redis:
+        host: redis-service
+        port: 6379
+        timeout: 2000ms
+    
+    management:
+      server:
+        port: 8080
+      endpoints:
+        web:
+          exposure:
+            include: "health,metrics,info,prometheus"
+          base-path: "/actuator"
+      endpoint:
+        health:
+          show-details: when-authorized
+          probes:
+            enabled: true
+      health:
+        readiness-state:
+          enabled: true
+        liveness-state:
+          enabled: true
+      metrics:
+        export:
+          prometheus:
+            enabled: true
+    
+    logging:
+      level:
+        com.carddemo: INFO
+        org.springframework.cloud.gateway: DEBUG
+        org.springframework.security: INFO
+      pattern:
+        console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: carddemo-gateway-secret
+  labels:
+    app: carddemo-gateway
+    component: api-gateway
+type: Opaque
+stringData:
+  jwt-secret: "carddemo-jwt-signing-key-replace-in-production"
+  redis-password: ""
+  gateway-admin-password: "admin123"
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: carddemo-gateway-hpa
+  labels:
+    app: carddemo-gateway
+    component: api-gateway
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: carddemo-gateway
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 25
+        periodSeconds: 60
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: carddemo-gateway-pdb
+  labels:
+    app: carddemo-gateway
+    component: api-gateway
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: carddemo-gateway

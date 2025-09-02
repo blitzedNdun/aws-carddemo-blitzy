@@ -1,0 +1,475 @@
+# ============================================================================
+# CardDemo Backend Service - Kubernetes Deployment Manifest
+# ============================================================================
+# This deployment manifest defines the Kubernetes resources for deploying
+# the CardDemo Spring Boot backend service as part of the mainframe-to-cloud
+# migration initiative. It replaces CICS region configuration with modern
+# cloud-native deployment patterns while maintaining sub-200ms response SLA.
+# 
+# Key Features:
+# - High availability with 3 replicas across multiple nodes
+# - Zero-downtime rolling updates with surge and availability controls
+# - Spring Boot Actuator health probe integration for service reliability
+# - Resource management ensuring optimal performance and SLA compliance
+# - Environment configuration through ConfigMaps and Secrets
+# - Security context with non-root execution and file system permissions
+# ============================================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: carddemo-backend
+  namespace: carddemo
+  labels:
+    app: carddemo-backend
+    tier: application
+    component: backend-service
+    version: v2.1.0
+    environment: production
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    description: "CardDemo Spring Boot backend service deployment replacing CICS transaction processing"
+    migration.source: "CICS region configuration"
+    sla.target: "sub-200ms response time"
+spec:
+  # ========================================================================
+  # Deployment Strategy Configuration
+  # ========================================================================
+  # 3 replicas ensure high availability and load distribution across nodes
+  # This matches the minimum 3-node Kubernetes cluster requirement and
+  # provides adequate capacity for sub-200ms SLA compliance
+  replicas: 3
+  
+  # Rolling update strategy with zero-downtime deployment
+  # maxSurge: 1 allows one additional pod during updates for capacity maintenance
+  # maxUnavailable: 0 prevents service capacity reduction during deployments
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  
+  # Deployment selector matching pod template labels
+  selector:
+    matchLabels:
+      app: carddemo-backend
+      tier: application
+  
+  # ========================================================================
+  # Pod Template Specification
+  # ========================================================================
+  template:
+    metadata:
+      labels:
+        app: carddemo-backend
+        tier: application
+        component: backend-service
+        version: v2.1.0
+      annotations:
+        # Pod template annotations for monitoring and observability
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/actuator/prometheus"
+    spec:
+      # ====================================================================
+      # Security Context Configuration
+      # ====================================================================
+      # Security context ensures non-root execution and proper file permissions
+      # Following Kubernetes security best practices for enterprise deployment
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 2000
+        seccompProfile:
+          type: RuntimeDefault
+      
+      # ====================================================================
+      # Pod Placement and Scheduling
+      # ====================================================================
+      # Anti-affinity rules to distribute pods across different nodes
+      # This ensures high availability and fault tolerance
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - carddemo-backend
+              topologyKey: kubernetes.io/hostname
+      
+      # Tolerations for node scheduling flexibility
+      tolerations:
+      - key: "carddemo.io/backend"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+      
+      # ====================================================================
+      # Container Specification
+      # ====================================================================
+      containers:
+      - name: backend-service
+        # Spring Boot application image with Java 21 runtime
+        # Version tag references the latest stable build from CI/CD pipeline
+        image: carddemo/backend-service:v2.1.0
+        imagePullPolicy: Always
+        
+        # ================================================================
+        # Container Port Configuration
+        # ================================================================
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        - name: actuator
+          containerPort: 8080
+          protocol: TCP
+        
+        # ================================================================
+        # Resource Management Configuration
+        # ================================================================
+        # Resource requests and limits based on Section 8.4.7 specifications
+        # These values ensure optimal performance and SLA compliance
+        resources:
+          requests:
+            # CPU request: 250m (0.25 CPU cores) for baseline performance
+            cpu: "250m"
+            # Memory request: 512Mi for Spring Boot application startup
+            memory: "512Mi"
+          limits:
+            # CPU limit: 500m (0.5 CPU cores) prevents resource starvation
+            cpu: "500m"
+            # Memory limit: 1Gi accommodates peak load and JVM heap
+            memory: "1Gi"
+        
+        # ================================================================
+        # Health Probe Configuration
+        # ================================================================
+        # Spring Boot Actuator integration for comprehensive health monitoring
+        # These probes ensure service reliability and proper load balancing
+        
+        # Liveness probe validates application is running and responsive
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+            scheme: HTTP
+            httpHeaders:
+            - name: Accept
+              value: application/json
+          # Initial delay accounts for Spring Boot startup time
+          initialDelaySeconds: 60
+          # Check every 30 seconds for ongoing health validation
+          periodSeconds: 30
+          # Timeout after 5 seconds to detect hung processes
+          timeoutSeconds: 5
+          # Restart pod after 3 consecutive failures
+          failureThreshold: 3
+          # Single success confirms liveness restoration
+          successThreshold: 1
+        
+        # Readiness probe determines when pod can receive traffic
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+            scheme: HTTP
+            httpHeaders:
+            - name: Accept
+              value: application/json
+          # Shorter initial delay for faster service availability
+          initialDelaySeconds: 30
+          # Frequent checks during startup and normal operation
+          periodSeconds: 10
+          # Quick timeout for responsive traffic routing decisions
+          timeoutSeconds: 3
+          # Remove from load balancer after 2 consecutive failures
+          failureThreshold: 2
+          # Single success confirms readiness
+          successThreshold: 1
+        
+        # ================================================================
+        # Environment Configuration
+        # ================================================================
+        # Environment variables for Spring Boot configuration
+        env:
+        # Spring profile activation for Kubernetes-specific configuration
+        - name: SPRING_PROFILES_ACTIVE
+          value: "kubernetes,production"
+        
+        # JVM configuration for containerized environment
+        - name: JAVA_OPTS
+          value: >-
+            -XX:+UseContainerSupport
+            -XX:MaxRAMPercentage=75.0
+            -XX:+UseG1GC
+            -XX:+UseStringDeduplication
+            -XX:+ExitOnOutOfMemoryError
+            -Dspring.security.strategy=MODE_INHERITABLETHREADLOCAL
+        
+        # Application-specific environment variables
+        - name: SERVER_PORT
+          value: "8080"
+        - name: MANAGEMENT_SERVER_PORT
+          value: "8080"
+        
+        # ConfigMap-based configuration injection
+        envFrom:
+        - configMapRef:
+            name: carddemo-backend-config
+        # Secret-based sensitive configuration injection
+        - secretRef:
+            name: carddemo-backend-secret
+        
+        # ================================================================
+        # Volume Mounts Configuration
+        # ================================================================
+        volumeMounts:
+        # Temporary directory with write permissions
+        - name: tmp-volume
+          mountPath: /tmp
+        # Application logs directory
+        - name: logs-volume
+          mountPath: /app/logs
+        # Spring Boot application configuration override
+        - name: config-volume
+          mountPath: /app/config
+          readOnly: true
+        
+        # ================================================================
+        # Security Context for Container
+        # ================================================================
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+      
+      # ====================================================================
+      # Volume Definitions
+      # ====================================================================
+      volumes:
+      # Temporary volume for application temporary files
+      - name: tmp-volume
+        emptyDir:
+          sizeLimit: 1Gi
+      # Logs volume for application logging
+      - name: logs-volume
+        emptyDir:
+          sizeLimit: 2Gi
+      # Configuration volume from ConfigMap
+      - name: config-volume
+        configMap:
+          name: carddemo-backend-config
+          defaultMode: 0444
+      
+      # ====================================================================
+      # Pod-level Configuration
+      # ====================================================================
+      # Restart policy for failed containers
+      restartPolicy: Always
+      # DNS policy for service discovery
+      dnsPolicy: ClusterFirst
+      # Service account for RBAC integration
+      serviceAccountName: carddemo-backend-sa
+      # Termination grace period for graceful shutdown
+      terminationGracePeriodSeconds: 30
+      # Node selector for specific node placement if needed
+      nodeSelector:
+        kubernetes.io/os: linux
+        kubernetes.io/arch: amd64
+
+---
+# ============================================================================
+# CardDemo Backend Service - Kubernetes Service Manifest
+# ============================================================================
+# This service provides internal load balancing and service discovery for
+# the CardDemo backend deployment, enabling reliable communication with
+# frontend components and external systems while maintaining high availability.
+# ============================================================================
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: carddemo-backend-service
+  namespace: carddemo
+  labels:
+    app: carddemo-backend
+    tier: application
+    component: backend-service
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    description: "Internal service for CardDemo backend application"
+spec:
+  # ClusterIP service type for internal cluster communication
+  type: ClusterIP
+  
+  # Service port configuration
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  - name: actuator
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  
+  # Selector to match backend deployment pods
+  selector:
+    app: carddemo-backend
+    tier: application
+  
+  # Session affinity for stateful components if needed
+  sessionAffinity: None
+
+---
+# ============================================================================
+# CardDemo Backend Service - HorizontalPodAutoscaler Manifest
+# ============================================================================
+# This HPA ensures sub-200ms response time SLA compliance through intelligent
+# auto-scaling based on CPU utilization, memory usage, and request metrics.
+# Scaling policies support traffic spikes while preventing resource waste.
+# ============================================================================
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: carddemo-backend-hpa
+  namespace: carddemo
+  labels:
+    app: carddemo-backend
+    tier: application
+    component: autoscaling
+  annotations:
+    description: "Auto-scaling for CardDemo backend service to maintain sub-200ms SLA"
+spec:
+  # Target deployment for scaling
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: carddemo-backend
+  
+  # Scaling boundaries for high availability and cost optimization
+  minReplicas: 3
+  maxReplicas: 10
+  
+  # ========================================================================
+  # Scaling Metrics Configuration
+  # ========================================================================
+  metrics:
+  # CPU utilization metric for general load management
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  
+  # Memory utilization metric for JVM heap management
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  
+  # Custom metric for request rate monitoring (if available)
+  - type: Pods
+    pods:
+      metric:
+        name: http_requests_per_second
+      target:
+        type: AverageValue
+        averageValue: "1000"
+  
+  # ========================================================================
+  # Scaling Behavior Configuration
+  # ========================================================================
+  behavior:
+    # Scale-up behavior for handling traffic spikes
+    scaleUp:
+      # Stabilization window to prevent flapping
+      stabilizationWindowSeconds: 60
+      policies:
+      # Allow aggressive scale-up during traffic spikes
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+      # Maximum pods to add per scaling event
+      - type: Pods
+        value: 2
+        periodSeconds: 15
+      selectPolicy: Max
+    
+    # Scale-down behavior for gradual capacity reduction
+    scaleDown:
+      # Longer stabilization to ensure stable performance
+      stabilizationWindowSeconds: 300
+      policies:
+      # Conservative scale-down to maintain availability
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+      # Maximum pods to remove per scaling event
+      - type: Pods
+        value: 1
+        periodSeconds: 60
+      selectPolicy: Min
+
+---
+# ============================================================================
+# CardDemo Backend Service - ServiceAccount Manifest
+# ============================================================================
+# Service account for RBAC integration and secure access to Kubernetes APIs
+# and cluster resources as needed by the Spring Boot application.
+# ============================================================================
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: carddemo-backend-sa
+  namespace: carddemo
+  labels:
+    app: carddemo-backend
+    tier: application
+    component: security
+  annotations:
+    description: "Service account for CardDemo backend application with minimal required permissions"
+automountServiceAccountToken: true
+
+---
+# ============================================================================
+# CardDemo Backend Service - PodDisruptionBudget Manifest
+# ============================================================================
+# Pod disruption budget ensures minimum availability during voluntary
+# disruptions such as node maintenance, cluster upgrades, or scaling events.
+# This maintains service availability and SLA compliance.
+# ============================================================================
+
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: carddemo-backend-pdb
+  namespace: carddemo
+  labels:
+    app: carddemo-backend
+    tier: application
+    component: availability
+  annotations:
+    description: "Pod disruption budget for CardDemo backend service high availability"
+spec:
+  # Ensure at least 2 pods remain available during disruptions
+  minAvailable: 2
+  
+  # Selector matching the backend deployment
+  selector:
+    matchLabels:
+      app: carddemo-backend
+      tier: application

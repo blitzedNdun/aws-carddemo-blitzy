@@ -1,0 +1,555 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "K6 Load Test Profiles for CardDemo Spring Boot Application",
+  "description": "Load testing profiles for validating sub-200ms response times and 10,000 TPS requirements for card authorization and transaction processing",
+  "version": "1.0.0",
+  "profiles": {
+    "baseline": {
+      "name": "Baseline Load Test",
+      "description": "Standard load test for normal operating conditions with typical user patterns",
+      "target_rps": 500,
+      "duration": "10m",
+      "virtual_users": {
+        "min": 10,
+        "max": 50,
+        "ramp_up_duration": "2m",
+        "steady_state_duration": "6m",
+        "ramp_down_duration": "2m"
+      },
+      "think_time": {
+        "min": "1s",
+        "max": "3s",
+        "distribution": "uniform"
+      },
+      "stages": [
+        {
+          "duration": "2m",
+          "target": 10,
+          "description": "Ramp up to minimum load"
+        },
+        {
+          "duration": "2m",
+          "target": 30,
+          "description": "Gradual increase to baseline"
+        },
+        {
+          "duration": "6m",
+          "target": 50,
+          "description": "Maintain baseline load"
+        },
+        {
+          "duration": "2m",
+          "target": 0,
+          "description": "Graceful ramp down"
+        }
+      ],
+      "success_criteria": {
+        "response_time_p95": "200ms",
+        "response_time_p99": "500ms",
+        "error_rate": "1%",
+        "availability": "99.9%"
+      },
+      "endpoints": {
+        "authentication": {
+          "weight": 20,
+          "path": "/api/transactions/CC00",
+          "method": "POST"
+        },
+        "account_view": {
+          "weight": 30,
+          "path": "/api/transactions/CC01",
+          "method": "GET"
+        },
+        "transaction_history": {
+          "weight": 25,
+          "path": "/api/transactions/CC02",
+          "method": "GET"
+        },
+        "card_management": {
+          "weight": 15,
+          "path": "/api/transactions/CC03",
+          "method": "POST"
+        },
+        "menu_navigation": {
+          "weight": 10,
+          "path": "/api/menu",
+          "method": "GET"
+        }
+      }
+    },
+    "stress": {
+      "name": "Stress Test - 10,000 TPS Target",
+      "description": "High-load stress test targeting 10,000 transactions per second to validate system capacity limits",
+      "target_rps": 10000,
+      "duration": "15m",
+      "virtual_users": {
+        "min": 100,
+        "max": 2000,
+        "ramp_up_duration": "5m",
+        "steady_state_duration": "5m",
+        "ramp_down_duration": "5m"
+      },
+      "think_time": {
+        "min": "100ms",
+        "max": "500ms",
+        "distribution": "exponential"
+      },
+      "stages": [
+        {
+          "duration": "1m",
+          "target": 100,
+          "description": "Initial ramp up"
+        },
+        {
+          "duration": "2m",
+          "target": 500,
+          "description": "Medium load build-up"
+        },
+        {
+          "duration": "2m",
+          "target": 1000,
+          "description": "High load transition"
+        },
+        {
+          "duration": "2m",
+          "target": 1500,
+          "description": "Approach target load"
+        },
+        {
+          "duration": "3m",
+          "target": 2000,
+          "description": "Maximum stress load"
+        },
+        {
+          "duration": "2m",
+          "target": 1000,
+          "description": "Step down from peak"
+        },
+        {
+          "duration": "2m",
+          "target": 100,
+          "description": "Recovery phase"
+        },
+        {
+          "duration": "1m",
+          "target": 0,
+          "description": "Complete ramp down"
+        }
+      ],
+      "success_criteria": {
+        "response_time_p95": "200ms",
+        "response_time_p99": "1000ms",
+        "error_rate": "5%",
+        "availability": "99%",
+        "throughput_min": "8000",
+        "resource_cpu_max": "80%",
+        "resource_memory_max": "85%"
+      },
+      "endpoints": {
+        "card_authorization": {
+          "weight": 40,
+          "path": "/api/transactions/authorize",
+          "method": "POST",
+          "critical": true
+        },
+        "transaction_processing": {
+          "weight": 30,
+          "path": "/api/transactions/process",
+          "method": "POST",
+          "critical": true
+        },
+        "balance_inquiry": {
+          "weight": 20,
+          "path": "/api/accounts/balance",
+          "method": "GET"
+        },
+        "account_validation": {
+          "weight": 10,
+          "path": "/api/accounts/validate",
+          "method": "POST"
+        }
+      },
+      "resource_monitoring": {
+        "cpu_threshold": "80%",
+        "memory_threshold": "85%",
+        "database_connections_max": 50,
+        "redis_memory_threshold": "70%"
+      }
+    },
+    "soak": {
+      "name": "Soak Test - Sustained Load",
+      "description": "Extended duration test to identify memory leaks and degradation over time",
+      "target_rps": 1000,
+      "duration": "2h",
+      "virtual_users": {
+        "min": 50,
+        "max": 200,
+        "ramp_up_duration": "10m",
+        "steady_state_duration": "100m",
+        "ramp_down_duration": "10m"
+      },
+      "think_time": {
+        "min": "2s",
+        "max": "5s",
+        "distribution": "normal"
+      },
+      "stages": [
+        {
+          "duration": "5m",
+          "target": 50,
+          "description": "Gradual warm-up"
+        },
+        {
+          "duration": "5m",
+          "target": 100,
+          "description": "Build to operational load"
+        },
+        {
+          "duration": "100m",
+          "target": 200,
+          "description": "Sustained operational load"
+        },
+        {
+          "duration": "5m",
+          "target": 100,
+          "description": "Begin wind-down"
+        },
+        {
+          "duration": "5m",
+          "target": 0,
+          "description": "Complete shutdown"
+        }
+      ],
+      "success_criteria": {
+        "response_time_p95": "200ms",
+        "response_time_p99": "500ms",
+        "error_rate": "0.5%",
+        "availability": "99.95%",
+        "memory_growth_max": "5%",
+        "gc_pause_max": "100ms"
+      },
+      "endpoints": {
+        "user_sessions": {
+          "weight": 25,
+          "path": "/api/sessions",
+          "method": "GET"
+        },
+        "transaction_history": {
+          "weight": 25,
+          "path": "/api/transactions/history",
+          "method": "GET"
+        },
+        "account_summary": {
+          "weight": 20,
+          "path": "/api/accounts/summary",
+          "method": "GET"
+        },
+        "card_status": {
+          "weight": 15,
+          "path": "/api/cards/status",
+          "method": "GET"
+        },
+        "user_profile": {
+          "weight": 15,
+          "path": "/api/users/profile",
+          "method": "GET"
+        }
+      },
+      "memory_monitoring": {
+        "jvm_heap_max": "85%",
+        "metaspace_max": "75%",
+        "gc_frequency_max": "10/min",
+        "connection_pool_leaks": "0"
+      }
+    },
+    "spike": {
+      "name": "Spike Test - Sudden Traffic Surge",
+      "description": "Rapid load increase to test system elasticity and auto-scaling capabilities",
+      "target_rps": 5000,
+      "duration": "12m",
+      "virtual_users": {
+        "min": 10,
+        "max": 1000,
+        "spike_duration": "2m",
+        "recovery_duration": "5m"
+      },
+      "think_time": {
+        "min": "50ms",
+        "max": "200ms",
+        "distribution": "exponential"
+      },
+      "stages": [
+        {
+          "duration": "2m",
+          "target": 10,
+          "description": "Normal baseline load"
+        },
+        {
+          "duration": "30s",
+          "target": 500,
+          "description": "Rapid spike initiation"
+        },
+        {
+          "duration": "30s",
+          "target": 1000,
+          "description": "Peak spike load"
+        },
+        {
+          "duration": "1m",
+          "target": 1000,
+          "description": "Maintain spike load"
+        },
+        {
+          "duration": "1m",
+          "target": 500,
+          "description": "Initial recovery"
+        },
+        {
+          "duration": "2m",
+          "target": 100,
+          "description": "Gradual recovery"
+        },
+        {
+          "duration": "2m",
+          "target": 50,
+          "description": "Return to baseline"
+        },
+        {
+          "duration": "2m",
+          "target": 10,
+          "description": "Stabilization period"
+        },
+        {
+          "duration": "1m",
+          "target": 0,
+          "description": "Complete ramp down"
+        }
+      ],
+      "success_criteria": {
+        "response_time_p95": "300ms",
+        "response_time_p99": "1500ms",
+        "error_rate": "10%",
+        "availability": "95%",
+        "recovery_time": "5m",
+        "auto_scaling_trigger": "30s"
+      },
+      "endpoints": {
+        "emergency_auth": {
+          "weight": 50,
+          "path": "/api/transactions/emergency-auth",
+          "method": "POST",
+          "priority": "high"
+        },
+        "fraud_check": {
+          "weight": 25,
+          "path": "/api/security/fraud-check",
+          "method": "POST",
+          "priority": "high"
+        },
+        "account_lock": {
+          "weight": 15,
+          "path": "/api/accounts/lock",
+          "method": "POST",
+          "priority": "medium"
+        },
+        "notification_send": {
+          "weight": 10,
+          "path": "/api/notifications/send",
+          "method": "POST",
+          "priority": "low"
+        }
+      },
+      "auto_scaling": {
+        "cpu_scale_trigger": "70%",
+        "memory_scale_trigger": "80%",
+        "response_time_trigger": "500ms",
+        "error_rate_trigger": "5%"
+      }
+    },
+    "volume": {
+      "name": "Volume Test - Database Stress",
+      "description": "High-volume test focusing on database performance and connection pool management",
+      "target_rps": 2000,
+      "duration": "30m",
+      "virtual_users": {
+        "min": 100,
+        "max": 400,
+        "ramp_up_duration": "5m",
+        "steady_state_duration": "20m",
+        "ramp_down_duration": "5m"
+      },
+      "think_time": {
+        "min": "500ms",
+        "max": "2s",
+        "distribution": "uniform"
+      },
+      "stages": [
+        {
+          "duration": "5m",
+          "target": 100,
+          "description": "Database warm-up"
+        },
+        {
+          "duration": "5m",
+          "target": 200,
+          "description": "Increase query load"
+        },
+        {
+          "duration": "5m",
+          "target": 300,
+          "description": "High query volume"
+        },
+        {
+          "duration": "10m",
+          "target": 400,
+          "description": "Maximum database load"
+        },
+        {
+          "duration": "5m",
+          "target": 0,
+          "description": "Database cool-down"
+        }
+      ],
+      "success_criteria": {
+        "response_time_p95": "200ms",
+        "response_time_p99": "800ms",
+        "error_rate": "2%",
+        "availability": "99%",
+        "database_response_time_p95": "50ms",
+        "connection_pool_utilization": "80%"
+      },
+      "endpoints": {
+        "data_heavy_reports": {
+          "weight": 30,
+          "path": "/api/reports/transactions",
+          "method": "GET",
+          "database_intensive": true
+        },
+        "account_search": {
+          "weight": 25,
+          "path": "/api/accounts/search",
+          "method": "POST",
+          "database_intensive": true
+        },
+        "transaction_analytics": {
+          "weight": 20,
+          "path": "/api/analytics/transactions",
+          "method": "GET",
+          "database_intensive": true
+        },
+        "customer_history": {
+          "weight": 15,
+          "path": "/api/customers/history",
+          "method": "GET",
+          "database_intensive": true
+        },
+        "batch_data_export": {
+          "weight": 10,
+          "path": "/api/exports/batch",
+          "method": "POST",
+          "database_intensive": true
+        }
+      },
+      "database_monitoring": {
+        "connection_pool_max": "50",
+        "active_connections_max": "40",
+        "query_time_p95": "50ms",
+        "deadlock_count": "0"
+      }
+    }
+  },
+  "common_configuration": {
+    "base_url": "${__ENV.BASE_URL}",
+    "default_headers": {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+      "User-Agent": "K6-CardDemo-LoadTest/1.0"
+    },
+    "authentication": {
+      "type": "session_based",
+      "login_endpoint": "/api/transactions/CC00",
+      "session_duration": "30m",
+      "credentials": {
+        "username": "${__ENV.TEST_USERNAME}",
+        "password": "${__ENV.TEST_PASSWORD}"
+      }
+    },
+    "data_sources": {
+      "test_accounts": "test-data/accounts.csv",
+      "test_cards": "test-data/cards.csv",
+      "test_transactions": "test-data/transactions.csv"
+    },
+    "thresholds": {
+      "global": {
+        "http_req_duration": ["p(95)<200", "p(99)<500"],
+        "http_req_failed": ["rate<0.01"],
+        "checks": ["rate>0.99"]
+      },
+      "stress_test": {
+        "http_req_duration": ["p(95)<200", "p(99)<1000"],
+        "http_req_failed": ["rate<0.05"],
+        "checks": ["rate>0.95"]
+      },
+      "spike_test": {
+        "http_req_duration": ["p(95)<300", "p(99)<1500"],
+        "http_req_failed": ["rate<0.10"],
+        "checks": ["rate>0.90"]
+      }
+    },
+    "monitoring": {
+      "prometheus_endpoint": "${__ENV.PROMETHEUS_URL}",
+      "grafana_dashboard": "${__ENV.GRAFANA_URL}/d/carddemo-performance",
+      "actuator_endpoints": [
+        "/actuator/health",
+        "/actuator/metrics",
+        "/actuator/prometheus"
+      ]
+    },
+    "environment_variables": {
+      "BASE_URL": "https://carddemo-api.example.com",
+      "TEST_USERNAME": "loadtest_user",
+      "TEST_PASSWORD": "loadtest_pass",
+      "PROMETHEUS_URL": "https://prometheus.example.com",
+      "GRAFANA_URL": "https://grafana.example.com",
+      "DB_MONITORING": "true",
+      "REDIS_MONITORING": "true"
+    }
+  },
+  "execution_scenarios": {
+    "development": {
+      "profile": "baseline",
+      "scale_factor": 0.1,
+      "duration_override": "5m"
+    },
+    "staging": {
+      "profile": "stress",
+      "scale_factor": 0.5,
+      "duration_override": "10m"
+    },
+    "production_validation": {
+      "profile": "volume",
+      "scale_factor": 1.0,
+      "monitoring_required": true
+    },
+    "performance_regression": {
+      "profiles": ["baseline", "stress"],
+      "comparison_enabled": true,
+      "baseline_metrics_required": true
+    }
+  },
+  "reporting": {
+    "output_formats": ["json", "csv", "html"],
+    "metrics_export": {
+      "prometheus": true,
+      "grafana_annotations": true,
+      "performance_baseline": true
+    },
+    "success_criteria_validation": true,
+    "automated_pass_fail": true,
+    "performance_comparison": {
+      "baseline_comparison": true,
+      "trend_analysis": true,
+      "regression_detection": true
+    }
+  }
+}

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+
+    <changeSet id="007-add-foreign-key-constraints" author="CardDemo Migration Team" context="development,migration,test,production">
+        <comment>Add foreign key constraints to maintain referential integrity (VSAM relationships)</comment>
+        
+        <!-- Account to Customer relationship -->
+        <addForeignKeyConstraint baseTableName="account_data" 
+                               baseColumnNames="customer_id"
+                               constraintName="fk_account_customer"
+                               referencedTableName="customer_data"
+                               referencedColumnNames="customer_id"
+                               onDelete="RESTRICT"
+                               onUpdate="CASCADE"/>
+        
+        <!-- Transaction to Account relationship -->
+        <addForeignKeyConstraint baseTableName="transactions" 
+                               baseColumnNames="account_id"
+                               constraintName="fk_transaction_account"
+                               referencedTableName="account_data"
+                               referencedColumnNames="account_id"
+                               onDelete="RESTRICT"
+                               onUpdate="CASCADE"/>
+        
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="account_data" constraintName="fk_account_customer"/>
+            <dropForeignKeyConstraint baseTableName="transactions" constraintName="fk_transaction_account"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="007-add-data-validation-constraints" author="CardDemo Migration Team" context="development,migration,test,production">
+        <comment>Add data validation constraints matching COBOL field validation rules</comment>
+        
+        <!-- Account data constraints -->
+        <sql>ALTER TABLE account_data ADD CONSTRAINT chk_active_status CHECK (active_status IN ('Y', 'N'));</sql>
+        <sql>ALTER TABLE account_data ADD CONSTRAINT chk_credit_limit_positive CHECK (credit_limit &gt;= 0);</sql>
+        <sql>ALTER TABLE account_data ADD CONSTRAINT chk_current_balance CHECK (current_balance &gt;= -99999999.99 AND current_balance &lt;= 99999999.99);</sql>
+        
+        <!-- Transaction data constraints -->
+        <sql>ALTER TABLE transactions ADD CONSTRAINT chk_transaction_type_code CHECK (transaction_type_code IN ('00', '01', '05', '06', '10', '11', '15', '16', '20', '25'));</sql>
+        <sql>ALTER TABLE transactions ADD CONSTRAINT chk_transaction_amount CHECK (amount != 0);</sql>
+        
+        <!-- Customer data constraints -->
+        <sql>ALTER TABLE customer_data ADD CONSTRAINT chk_state_code_format CHECK (state_code ~ '^[A-Z]{2}$' OR state_code IS NULL);</sql>
+        <sql>ALTER TABLE customer_data ADD CONSTRAINT chk_country_code_format CHECK (country_code ~ '^[A-Z]{3}$' OR country_code IS NULL);</sql>
+        <sql>ALTER TABLE customer_data ADD CONSTRAINT chk_primary_card_holder_indicator CHECK (primary_card_holder_indicator IN ('Y', 'N') OR primary_card_holder_indicator IS NULL);</sql>
+        
+        <rollback>
+            <sql>ALTER TABLE account_data DROP CONSTRAINT chk_active_status;</sql>
+            <sql>ALTER TABLE account_data DROP CONSTRAINT chk_credit_limit_positive;</sql>
+            <sql>ALTER TABLE account_data DROP CONSTRAINT chk_current_balance;</sql>
+            <sql>ALTER TABLE transactions DROP CONSTRAINT chk_transaction_type_code;</sql>
+            <sql>ALTER TABLE transactions DROP CONSTRAINT chk_transaction_amount;</sql>
+            <sql>ALTER TABLE customer_data DROP CONSTRAINT chk_state_code_format;</sql>
+            <sql>ALTER TABLE customer_data DROP CONSTRAINT chk_country_code_format;</sql>
+            <sql>ALTER TABLE customer_data DROP CONSTRAINT chk_primary_card_holder_indicator;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="007-add-unique-constraints" author="CardDemo Migration Team" context="development,migration,test,production">
+        <comment>Add unique constraints for business keys (VSAM key fields)</comment>
+        
+        <!-- Account ID must be unique (VSAM key field) -->
+        <addUniqueConstraint tableName="account_data" 
+                           columnNames="account_id" 
+                           constraintName="uk_account_id"/>
+        
+        <!-- Transaction ID must be unique (VSAM key field) -->
+        <addUniqueConstraint tableName="transactions" 
+                           columnNames="transaction_id" 
+                           constraintName="uk_transaction_id"/>
+        
+        <!-- SSN should be unique when present -->
+        <addUniqueConstraint tableName="customer_data" 
+                           columnNames="ssn" 
+                           constraintName="uk_customer_ssn"/>
+        
+        <rollback>
+            <dropUniqueConstraint tableName="account_data" constraintName="uk_account_id"/>
+            <dropUniqueConstraint tableName="transactions" constraintName="uk_transaction_id"/>
+            <dropUniqueConstraint tableName="customer_data" constraintName="uk_customer_ssn"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

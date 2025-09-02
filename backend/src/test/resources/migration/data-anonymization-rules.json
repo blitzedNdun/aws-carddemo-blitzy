@@ -1,0 +1,362 @@
+{
+  "anonymization_rules": {
+    "version": "1.0",
+    "description": "Data anonymization rules for VSAM exports used in testing, ensuring PII protection while preserving data patterns for validation",
+    "created_date": "2024-01-15",
+    "compliance": [
+      "GDPR",
+      "CCPA", 
+      "PCI-DSS"
+    ],
+    "fields": {
+      "customer_fields": {
+        "CUST-SSN": {
+          "anonymization_type": "pattern_mask",
+          "pattern": "XXX-XX-XXXX",
+          "preserve_format": true,
+          "description": "Mask SSN preserving format structure for validation logic",
+          "validation_pattern": "^\\d{3}-\\d{2}-\\d{4}$",
+          "replacement_strategy": "random_digits_with_format",
+          "business_rules": {
+            "maintain_checksum_validity": false,
+            "preserve_area_number_range": false,
+            "avoid_known_invalid_combinations": true
+          }
+        },
+        "CUST-FIRST-NAME": {
+          "anonymization_type": "name_substitution",
+          "source": "approved_first_names_list",
+          "preserve_length": true,
+          "preserve_gender_distribution": true,
+          "description": "Replace with random first name from approved list maintaining length constraints",
+          "approved_names": [
+            "JOHN", "JANE", "MICHAEL", "SARAH", "DAVID", "EMILY", "ROBERT", "JESSICA",
+            "WILLIAM", "ASHLEY", "JAMES", "AMANDA", "CHARLES", "MELISSA", "JOSEPH", "NICOLE",
+            "THOMAS", "KIMBERLY", "DANIEL", "DONNA", "MATTHEW", "CAROL", "ANTHONY", "RUTH",
+            "MARK", "SHARON", "DONALD", "MICHELLE", "STEVEN", "LAURA", "PAUL", "SANDRA"
+          ],
+          "max_length": 25
+        },
+        "CUST-MIDDLE-NAME": {
+          "anonymization_type": "name_substitution", 
+          "source": "approved_middle_names_list",
+          "preserve_length": true,
+          "nullable_percentage": 30,
+          "description": "Replace with random middle name or null, maintaining distribution",
+          "approved_names": [
+            "A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "L", "M", "N", "P", "R", "S", "T", "W",
+            "ANNE", "LYNN", "MARIE", "ROSE", "JEAN", "LEE", "RAY", "ALAN", "DEAN", "EARL", "GENE", "HUGH"
+          ],
+          "max_length": 25
+        },
+        "CUST-LAST-NAME": {
+          "anonymization_type": "name_substitution",
+          "source": "approved_last_names_list", 
+          "preserve_length": true,
+          "description": "Replace with random last name from approved list maintaining length constraints",
+          "approved_names": [
+            "SMITH", "JOHNSON", "WILLIAMS", "BROWN", "JONES", "GARCIA", "MILLER", "DAVIS",
+            "RODRIGUEZ", "MARTINEZ", "HERNANDEZ", "LOPEZ", "GONZALEZ", "WILSON", "ANDERSON", "THOMAS",
+            "TAYLOR", "MOORE", "JACKSON", "MARTIN", "LEE", "PEREZ", "THOMPSON", "WHITE", "HARRIS",
+            "SANCHEZ", "CLARK", "RAMIREZ", "LEWIS", "ROBINSON", "WALKER", "YOUNG", "ALLEN", "KING"
+          ],
+          "max_length": 25
+        },
+        "CUST-ADDR-LINE-1": {
+          "anonymization_type": "address_generalization",
+          "strategy": "street_number_and_generic_name",
+          "preserve_format": true,
+          "description": "Replace with generic street address maintaining format",
+          "patterns": [
+            "{RANDOM_NUMBER_1_9999} MAIN ST",
+            "{RANDOM_NUMBER_1_9999} FIRST AVE", 
+            "{RANDOM_NUMBER_1_9999} SECOND ST",
+            "{RANDOM_NUMBER_1_9999} THIRD AVE",
+            "{RANDOM_NUMBER_1_9999} PARK DR",
+            "{RANDOM_NUMBER_1_9999} OAK ST",
+            "{RANDOM_NUMBER_1_9999} ELM AVE",
+            "{RANDOM_NUMBER_1_9999} MAPLE DR"
+          ],
+          "max_length": 50
+        },
+        "CUST-ADDR-LINE-2": {
+          "anonymization_type": "address_generalization",
+          "strategy": "apartment_suite_generic",
+          "nullable_percentage": 60,
+          "description": "Replace with generic apartment/suite or null maintaining distribution",
+          "patterns": [
+            "APT {RANDOM_NUMBER_1_999}",
+            "SUITE {RANDOM_NUMBER_1_999}",
+            "UNIT {RANDOM_NUMBER_1_999}",
+            "#{RANDOM_NUMBER_1_999}",
+            ""
+          ],
+          "max_length": 50
+        },
+        "CUST-ADDR-LINE-3": {
+          "anonymization_type": "null_replacement",
+          "strategy": "always_null",
+          "description": "Set to null as typically unused in US addresses",
+          "max_length": 50
+        },
+        "CUST-ADDR-STATE-CD": {
+          "anonymization_type": "category_substitution",
+          "strategy": "us_state_codes",
+          "preserve_distribution": true,
+          "description": "Replace with random US state code maintaining distribution",
+          "valid_values": [
+            "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA",
+            "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+            "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT",
+            "VA", "WA", "WV", "WI", "WY"
+          ],
+          "max_length": 2
+        },
+        "CUST-ADDR-COUNTRY-CD": {
+          "anonymization_type": "fixed_value",
+          "value": "USA",
+          "description": "Set to USA for all test records",
+          "max_length": 3
+        },
+        "CUST-ADDR-ZIP": {
+          "anonymization_type": "pattern_mask",
+          "pattern": "XXXXX-XXXX",
+          "preserve_format": true,
+          "description": "Replace with random ZIP code maintaining format",
+          "validation_pattern": "^\\d{5}(-\\d{4})?$",
+          "replacement_strategy": "random_digits_with_format",
+          "business_rules": {
+            "maintain_state_zip_correlation": false,
+            "use_valid_zip_ranges": true
+          },
+          "max_length": 10
+        },
+        "CUST-PHONE-NUM-1": {
+          "anonymization_type": "phone_number_mask",
+          "pattern": "(XXX) XXX-XXXX",
+          "preserve_format": true,
+          "description": "Replace with random phone number maintaining North American format",
+          "validation_pattern": "^\\(\\d{3}\\) \\d{3}-\\d{4}$",
+          "business_rules": {
+            "avoid_reserved_area_codes": true,
+            "use_valid_area_codes": true,
+            "avoid_555_exchanges": true
+          },
+          "max_length": 15
+        },
+        "CUST-PHONE-NUM-2": {
+          "anonymization_type": "phone_number_mask",
+          "pattern": "(XXX) XXX-XXXX",
+          "preserve_format": true,
+          "nullable_percentage": 40,
+          "description": "Replace with random phone number or null maintaining distribution",
+          "validation_pattern": "^\\(\\d{3}\\) \\d{3}-\\d{4}$",
+          "business_rules": {
+            "avoid_reserved_area_codes": true,
+            "use_valid_area_codes": true,
+            "avoid_555_exchanges": true
+          },
+          "max_length": 15
+        },
+        "CUST-GOVT-ISSUED-ID": {
+          "anonymization_type": "id_obfuscation",
+          "strategy": "random_alphanumeric_with_checksum",
+          "preserve_length": true,
+          "preserve_format": true,
+          "description": "Replace with random government ID maintaining format and length",
+          "patterns": [
+            "DL{STATE_CODE}{RANDOM_ALPHANUMERIC_12}",
+            "ID{STATE_CODE}{RANDOM_ALPHANUMERIC_12}",
+            "PP{RANDOM_NUMERIC_9}",
+            "{RANDOM_ALPHANUMERIC_16}"
+          ],
+          "max_length": 20
+        },
+        "CUST-DOB-YYYYMMDD": {
+          "anonymization_type": "date_shifting",
+          "strategy": "random_shift_within_range",
+          "shift_range_days": 365,
+          "preserve_age_distribution": true,
+          "description": "Shift date of birth within range to preserve age demographics",
+          "format": "YYYY-MM-DD",
+          "business_rules": {
+            "maintain_age_brackets": true,
+            "minimum_age": 18,
+            "maximum_age": 90,
+            "preserve_birth_year_decade": true
+          },
+          "max_length": 10
+        },
+        "CUST-EFT-ACCOUNT-ID": {
+          "anonymization_type": "account_masking",
+          "strategy": "random_numeric_with_checksum",
+          "preserve_length": true,
+          "description": "Replace with random account ID maintaining format",
+          "format": "XXXXXXXXXX",
+          "validation_rules": {
+            "mod_10_checksum": true,
+            "no_sequential_numbers": true
+          },
+          "max_length": 10
+        },
+        "CUST-FICO-CREDIT-SCORE": {
+          "anonymization_type": "range_substitution",
+          "strategy": "credit_score_bands",
+          "preserve_distribution": true,
+          "description": "Replace with score from same credit band to preserve risk characteristics",
+          "score_bands": {
+            "poor": {"range": [300, 579], "probability": 0.20},
+            "fair": {"range": [580, 669], "probability": 0.25},
+            "good": {"range": [670, 739], "probability": 0.30},
+            "very_good": {"range": [740, 799], "probability": 0.15},
+            "excellent": {"range": [800, 850], "probability": 0.10}
+          },
+          "max_length": 3
+        }
+      },
+      "card_fields": {
+        "CARD-NUM": {
+          "anonymization_type": "credit_card_mask",
+          "strategy": "show_last_four_digits",
+          "preserve_format": true,
+          "description": "Mask credit card number showing only last 4 digits",
+          "pattern": "XXXX-XXXX-XXXX-{LAST_4}",
+          "business_rules": {
+            "maintain_card_type": true,
+            "preserve_luhn_algorithm": false,
+            "use_test_card_prefixes": true
+          },
+          "test_prefixes": {
+            "visa": "4000",
+            "mastercard": "5555",
+            "amex": "3400",
+            "discover": "6011"
+          },
+          "max_length": 16
+        },
+        "CARD-ACCT-ID": {
+          "anonymization_type": "numeric_hash",
+          "strategy": "deterministic_hash_preserving_format",
+          "preserve_length": true,
+          "description": "Replace with hashed account ID maintaining numeric format",
+          "format": "XXXXXXXXXXX",
+          "business_rules": {
+            "maintain_referential_integrity": true,
+            "consistent_mapping": true
+          },
+          "max_length": 11
+        },
+        "CARD-CVV-CD": {
+          "anonymization_type": "security_code_mask",
+          "strategy": "random_three_digit",
+          "preserve_format": true,
+          "description": "Replace with random 3-digit CVV code",
+          "format": "XXX",
+          "business_rules": {
+            "avoid_sequential": true,
+            "avoid_repeating": true
+          },
+          "max_length": 3
+        },
+        "CARD-EMBOSSED-NAME": {
+          "anonymization_type": "name_substitution",
+          "strategy": "match_customer_name",
+          "preserve_format": true,
+          "description": "Replace with anonymized customer name in uppercase format",
+          "format": "{LAST_NAME}, {FIRST_NAME} {MIDDLE_INITIAL}",
+          "business_rules": {
+            "match_customer_record": true,
+            "uppercase_format": true,
+            "truncate_if_needed": true
+          },
+          "max_length": 50
+        },
+        "CARD-EXPIRAION-DATE": {
+          "anonymization_type": "date_shifting",
+          "strategy": "shift_within_validity_period",
+          "preserve_format": true,
+          "description": "Shift expiration date within valid range maintaining business logic",
+          "format": "MM/YY",
+          "business_rules": {
+            "maintain_future_expiration": true,
+            "typical_validity_period": 36,
+            "shift_range_months": 12
+          },
+          "max_length": 10
+        }
+      }
+    },
+    "processing_rules": {
+      "referential_integrity": {
+        "customer_card_relationship": {
+          "description": "Maintain relationship between anonymized customer and card records",
+          "strategy": "consistent_hash_mapping",
+          "key_fields": ["CUST-ID", "CARD-ACCT-ID"]
+        }
+      },
+      "business_logic_preservation": {
+        "age_calculation": {
+          "description": "Ensure anonymized dates support age-based business rules",
+          "affected_fields": ["CUST-DOB-YYYYMMDD"],
+          "validation": "age_bracket_consistency"
+        },
+        "credit_scoring": {
+          "description": "Preserve credit risk characteristics in anonymized scores",
+          "affected_fields": ["CUST-FICO-CREDIT-SCORE"],
+          "validation": "risk_band_distribution"
+        },
+        "geographic_validation": {
+          "description": "Maintain realistic geographic data relationships",
+          "affected_fields": ["CUST-ADDR-STATE-CD", "CUST-ADDR-ZIP"],
+          "validation": "state_zip_validity"
+        }
+      },
+      "format_validation": {
+        "cobol_compatibility": {
+          "description": "Ensure anonymized data maintains COBOL PIC clause compatibility",
+          "validation_rules": {
+            "numeric_fields": "validate_pic_9_format",
+            "alphanumeric_fields": "validate_pic_x_format",
+            "field_lengths": "enforce_max_length_constraints"
+          }
+        }
+      }
+    },
+    "quality_assurance": {
+      "anonymization_verification": {
+        "pii_detection_scan": {
+          "description": "Verify no original PII remains in anonymized data",
+          "methods": ["pattern_matching", "hash_comparison", "sample_validation"]
+        },
+        "format_compliance": {
+          "description": "Validate anonymized data meets format requirements",
+          "methods": ["regex_validation", "length_checking", "type_validation"]
+        },
+        "business_rule_compliance": {
+          "description": "Verify anonymized data supports business logic validation",
+          "methods": ["age_range_validation", "credit_score_distribution", "geographic_consistency"]
+        }
+      },
+      "testing_validation": {
+        "functional_parity": {
+          "description": "Ensure anonymized data supports all test scenarios",
+          "validation_areas": ["calculation_accuracy", "validation_logic", "business_rule_processing"]
+        }
+      }
+    },
+    "security_controls": {
+      "access_control": {
+        "description": "Controls for accessing anonymization configuration and processes",
+        "requirements": ["role_based_access", "audit_logging", "configuration_versioning"]
+      },
+      "data_retention": {
+        "description": "Retention policies for anonymized test data",
+        "policies": {
+          "test_data_retention_days": 90,
+          "anonymization_log_retention_days": 365,
+          "secure_deletion_required": true
+        }
+      }
+    }
+  }
+}

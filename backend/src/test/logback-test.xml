@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    
+    <!-- 
+    Logback Test Configuration for CardDemo System
+    ==============================================
+    
+    This configuration provides comprehensive logging support for the test environment:
+    - DEBUG level logging for com.carddemo packages to capture detailed test execution
+    - INFO level for Spring framework components to track test context setup
+    - WARN level for third-party libraries to reduce noise while capturing issues
+    - Special appenders for test metrics and SQL query logging
+    - Structured JSON output for test execution analysis
+    
+    Designed to support:
+    - Unit testing with JUnit 5 and detailed failure analysis
+    - Integration testing with Testcontainers and database validation
+    - Performance testing with metrics capture and analysis
+    - End-to-end testing with comprehensive request/response logging
+    -->
+    
+    <!-- Console Appender for immediate test feedback -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+    </appender>
+    
+    <!-- JSON File Appender for structured test log analysis -->
+    <appender name="TEST_JSON_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>target/test-logs/carddemo-test.json</file>
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp/>
+                <logLevel/>
+                <loggerName/>
+                <message/>
+                <mdc/>
+                <arguments/>
+                <stackTrace/>
+                <pattern>
+                    <pattern>
+                        {
+                            "test_context": "%X{testClass:-unknown}",
+                            "test_method": "%X{testMethod:-unknown}",
+                            "correlation_id": "%X{correlationId:-}",
+                            "thread": "%thread",
+                            "component": "%logger{36}"
+                        }
+                    </pattern>
+                </pattern>
+            </providers>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>target/test-logs/carddemo-test.%d{yyyy-MM-dd}.%i.json</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>7</maxHistory>
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+    
+    <!-- SQL Query Appender for database integration test validation -->
+    <appender name="SQL_QUERY_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>target/test-logs/sql-queries-test.log</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{testClass:-unknown}::%X{testMethod:-unknown}] - %msg%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>target/test-logs/sql-queries-test.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>7</maxHistory>
+        </rollingPolicy>
+    </appender>
+    
+    <!-- Performance Metrics Appender for load and performance testing -->
+    <appender name="PERFORMANCE_METRICS_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>target/test-logs/performance-metrics-test.log</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] METRICS [%X{testClass:-unknown}::%X{testMethod:-unknown}] - %msg%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>target/test-logs/performance-metrics-test.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>7</maxHistory>
+        </rollingPolicy>
+    </appender>
+    
+    <!-- Test Execution Appender for detailed test flow tracking -->
+    <appender name="TEST_EXECUTION_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>target/test-logs/test-execution.log</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{testClass:-unknown}::%X{testMethod:-unknown}] %logger{36} - %msg%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>target/test-logs/test-execution.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>7</maxHistory>
+        </rollingPolicy>
+    </appender>
+    
+    <!-- CardDemo Application Packages - DEBUG level for detailed test analysis -->
+    <logger name="com.carddemo" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_JSON_FILE"/>
+        <appender-ref ref="TEST_EXECUTION_FILE"/>
+    </logger>
+    
+    <!-- CardDemo Service Layer - Enhanced debugging for business logic testing -->
+    <logger name="com.carddemo.service" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_JSON_FILE"/>
+        <appender-ref ref="TEST_EXECUTION_FILE"/>
+    </logger>
+    
+    <!-- CardDemo Controller Layer - REST endpoint testing -->
+    <logger name="com.carddemo.controller" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_JSON_FILE"/>
+        <appender-ref ref="TEST_EXECUTION_FILE"/>
+    </logger>
+    
+    <!-- CardDemo Repository Layer - Data access testing -->
+    <logger name="com.carddemo.repository" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_JSON_FILE"/>
+        <appender-ref ref="TEST_EXECUTION_FILE"/>
+    </logger>
+    
+    <!-- CardDemo Batch Jobs - Spring Batch testing -->
+    <logger name="com.carddemo.batch" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_JSON_FILE"/>
+        <appender-ref ref="TEST_EXECUTION_FILE"/>
+    </logger>
+    
+    <!-- CardDemo Utilities - Helper classes and converters -->
+    <logger name="com.carddemo.util" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_JSON_FILE"/>
+        <appender-ref ref="TEST_EXECUTION_FILE"/>
+    </logger>
+    
+    <!-- Spring Framework Components - INFO level for test context tracking -->
+    <logger name="org.springframework" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_JSON_FILE"/>
+    </logger>
+    
+    <!-- Spring Boot - Test application startup and configuration -->
+    <logger name="org.springframework.boot" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_JSON_FILE"/>
+    </logger>
+    
+    <!-- Spring Test Framework - Test execution lifecycle -->
+    <logger name="org.springframework.test" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_JSON_FILE"/>
+    </logger>
+    
+    <!-- Spring Security - Authentication and authorization testing -->
+    <logger name="org.springframework.security" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_JSON_FILE"/>
+    </logger>
+    
+    <!-- Spring Batch - Batch job testing and validation -->
+    <logger name="org.springframework.batch" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_JSON_FILE"/>
+    </logger>
+    
+    <!-- Hibernate SQL - Capture SQL queries for integration test validation -->
+    <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+        <appender-ref ref="SQL_QUERY_FILE"/>
+        <appender-ref ref="TEST_JSON_FILE"/>
+    </logger>
+    
+    <!-- Hibernate SQL Parameters - Capture bound parameters for debugging -->
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE" additivity="false">
+        <appender-ref ref="SQL_QUERY_FILE"/>
+    </logger>
+    
+    <!-- JPA/Hibernate - Data access layer testing -->
+    <logger name="org.hibernate" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_JSON_FILE"/>
+    </logger>
+    
+    <!-- HikariCP Connection Pool - Database connection testing -->
+    <logger name="com.zaxxer.hikari" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_JSON_FILE"/>
+    </logger>
+    
+    <!-- Testcontainers - Container-based integration testing -->
+    <logger name="org.testcontainers" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_JSON_FILE"/>
+    </logger>
+    
+    <!-- PostgreSQL JDBC Driver - Database connectivity testing -->
+    <logger name="org.postgresql" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_JSON_FILE"/>
+    </logger>
+    
+    <!-- Redis Session Store - Session management testing -->
+    <logger name="org.springframework.session" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_JSON_FILE"/>
+    </logger>
+    
+    <!-- Micrometer Metrics - Performance testing metrics capture -->
+    <logger name="io.micrometer" level="INFO" additivity="false">
+        <appender-ref ref="PERFORMANCE_METRICS_FILE"/>
+        <appender-ref ref="TEST_JSON_FILE"/>
+    </logger>
+    
+    <!-- Spring Boot Actuator - Health checks and metrics in tests -->
+    <logger name="org.springframework.boot.actuate" level="INFO" additivity="false">
+        <appender-ref ref="PERFORMANCE_METRICS_FILE"/>
+        <appender-ref ref="TEST_JSON_FILE"/>
+    </logger>
+    
+    <!-- Jackson JSON Processing - API serialization testing -->
+    <logger name="com.fasterxml.jackson" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Apache Commons - Third-party utility libraries -->
+    <logger name="org.apache.commons" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Mockito - Unit testing framework -->
+    <logger name="org.mockito" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- JUnit - Testing framework -->
+    <logger name="org.junit" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- AssertJ - Assertion library -->
+    <logger name="org.assertj" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- H2 Database - In-memory database for unit tests -->
+    <logger name="org.h2" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Liquibase/Flyway - Database migration testing -->
+    <logger name="liquibase" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    <logger name="org.flywaydb" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Apache HTTP Client - REST client testing -->
+    <logger name="org.apache.http" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Netty - Async I/O framework -->
+    <logger name="io.netty" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Lettuce Redis Client - Redis connectivity testing -->
+    <logger name="io.lettuce" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Root Logger - Catch-all for unspecified packages -->
+    <root level="WARN">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_JSON_FILE"/>
+    </root>
+    
+    <!-- Test Performance Markers -->
+    <turboFilter class="ch.qos.logback.classic.turbo.MarkerFilter">
+        <marker>PERFORMANCE</marker>
+        <onMatch>ACCEPT</onMatch>
+    </turboFilter>
+    
+    <!-- Test Execution Context Filter -->
+    <turboFilter class="ch.qos.logback.classic.turbo.MDCFilter">
+        <MDCKey>testContext</MDCKey>
+        <value>active</value>
+        <onMatch>ACCEPT</onMatch>
+    </turboFilter>
+
+</configuration>

@@ -1,0 +1,360 @@
+---
+# CardDemo Application Namespace
+# Kubernetes Namespace manifest for organizing CardDemo application resources
+# Provides logical isolation and resource quota boundaries for the modernized credit card management system
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: carddemo
+  labels:
+    # Application identification labels
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: namespace
+    app.kubernetes.io/part-of: carddemo-system
+    app.kubernetes.io/managed-by: kubernetes
+    app.kubernetes.io/version: "2.1.0"
+    
+    # Environment classification - default to production
+    # Override this label for different environments (development, qa, staging, production)
+    environment: production
+    tier: application
+    
+    # Resource management labels
+    resource-quota.enabled: "true"
+    network-policy.enabled: "true"
+    monitoring.enabled: "true"
+    
+    # Business domain labels
+    domain: financial-services
+    system: credit-card-management
+    migration-source: cobol-cics
+    
+    # Operational labels
+    team: platform
+    cost-center: engineering
+    backup-policy: daily
+    
+  annotations:
+    # GitOps and deployment annotations
+    deployment.strategy: "namespace-based-promotion"
+    gitops.sync: "argocd"
+    
+    # Migration tracking
+    migration.from: "mainframe-cobol-cics"
+    migration.to: "spring-boot-kubernetes"
+    migration.version: "v2.1.0"
+    
+    # Resource management annotations
+    resource-quota.description: "Resource limits for CardDemo Spring Boot applications"
+    network-policy.description: "Network isolation for financial transaction processing"
+    
+    # Documentation and support
+    documentation.url: "https://docs.carddemo.example.com"
+    support.team: "platform-engineering"
+    support.escalation: "financial-systems-team"
+    
+    # Compliance and security
+    compliance.frameworks: "SOX,PCI-DSS,Basel-III"
+    security.classification: "confidential"
+    data.classification: "financial"
+    
+spec:
+  # Namespace finalizers for proper cleanup
+  finalizers:
+    - kubernetes
+
+---
+# Resource Quota for CardDemo Namespace
+# Defines resource limits to prevent resource starvation and enable capacity planning
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: carddemo-resource-quota
+  namespace: carddemo
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: resource-quota
+    app.kubernetes.io/part-of: carddemo-system
+    environment: production
+  annotations:
+    description: "Resource quota for CardDemo application components"
+    resource-planning.based-on: "spring-boot-performance-requirements"
+spec:
+  hard:
+    # Pod limits based on Spring Boot application scaling requirements
+    # Supports 3-15 pod replicas as per HorizontalPodAutoscaler configuration
+    pods: "20"
+    
+    # CPU limits aligned with Spring Boot service requirements
+    # Backend services: 250m-500m CPU per pod * 15 max pods = 7.5 CPU max
+    # Gateway services: 100m-250m CPU per pod * 6 max pods = 1.5 CPU max  
+    # Frontend services: 50m-100m CPU per pod * 5 max pods = 0.5 CPU max
+    requests.cpu: "10"
+    limits.cpu: "15"
+    
+    # Memory limits aligned with Spring Boot JVM requirements
+    # Backend services: 512Mi-1Gi memory per pod * 15 max pods = 15Gi max
+    # Gateway services: 256Mi-512Mi memory per pod * 6 max pods = 3Gi max
+    # Frontend services: 64Mi-128Mi memory per pod * 5 max pods = 640Mi max
+    requests.memory: "20Gi"
+    limits.memory: "25Gi"
+    
+    # Storage for PostgreSQL StatefulSet and persistent volumes
+    # PostgreSQL: 100Gi-500Gi as per tech spec requirements
+    # Logs and temporary storage: 50Gi
+    persistentvolumeclaims: "5"
+    requests.storage: "600Gi"
+    
+    # Service limits for load balancers and internal networking
+    services: "10"
+    services.loadbalancers: "2"
+    
+    # ConfigMap and Secret limits for application configuration
+    configmaps: "20"
+    secrets: "15"
+    
+    # Ingress rules for external traffic management
+    count/ingresses.networking.k8s.io: "5"
+
+---
+# Limit Range for Default Pod Resource Constraints
+# Provides default and maximum resource limits for pods in the namespace
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: carddemo-limit-range
+  namespace: carddemo
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: limit-range
+    app.kubernetes.io/part-of: carddemo-system
+    environment: production
+  annotations:
+    description: "Default and maximum resource limits for CardDemo pods"
+    performance.target: "sub-200ms-response-time"
+spec:
+  limits:
+    # Default limits for containers that don't specify resources
+    - type: Container
+      default:
+        cpu: "500m"
+        memory: "1Gi"
+      defaultRequest:
+        cpu: "250m"
+        memory: "512Mi"
+      max:
+        cpu: "2000m"
+        memory: "4Gi"
+      min:
+        cpu: "50m"
+        memory: "64Mi"
+      
+    # Pod-level limits
+    - type: Pod
+      max:
+        cpu: "4000m"
+        memory: "8Gi"
+      min:
+        cpu: "100m"
+        memory: "128Mi"
+        
+    # Persistent Volume Claim limits
+    - type: PersistentVolumeClaim
+      max:
+        storage: "1Ti"
+      min:
+        storage: "1Gi"
+
+---
+# Network Policy for CardDemo Application Security
+# Implements network isolation for financial transaction processing
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: carddemo-network-policy
+  namespace: carddemo
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: network-policy
+    app.kubernetes.io/part-of: carddemo-system
+    environment: production
+  annotations:
+    description: "Network security policy for CardDemo financial services"
+    compliance: "PCI-DSS-network-isolation"
+spec:
+  # Apply to all pods in the carddemo namespace
+  podSelector: {}
+  
+  policyTypes:
+    - Ingress
+    - Egress
+  
+  # Ingress rules - allow traffic from specific sources
+  ingress:
+    # Allow traffic from ingress controllers
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 80
+    
+    # Allow inter-pod communication within the namespace
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 5432
+        - protocol: TCP
+          port: 6379
+    
+    # Allow monitoring traffic from prometheus
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 9090
+  
+  # Egress rules - allow traffic to specific destinations
+  egress:
+    # Allow DNS resolution
+    - to: []
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    
+    # Allow HTTPS for external integrations
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 443
+    
+    # Allow inter-pod communication within namespace
+    - to:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 5432
+        - protocol: TCP
+          port: 6379
+    
+    # Allow communication to system services
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - protocol: TCP
+          port: 443
+
+---
+# Priority Class for CardDemo Critical Components
+# Ensures critical financial services components get scheduling priority
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: carddemo-critical
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: priority-class
+    app.kubernetes.io/part-of: carddemo-system
+  annotations:
+    description: "High priority class for critical CardDemo components"
+    use-case: "financial-transaction-processing"
+value: 1000
+globalDefault: false
+description: "Priority class for critical CardDemo financial transaction processing components"
+
+---
+# Service Account for CardDemo Applications
+# Provides identity and RBAC permissions for CardDemo pods
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: carddemo-service-account
+  namespace: carddemo
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: service-account
+    app.kubernetes.io/part-of: carddemo-system
+    environment: production
+  annotations:
+    description: "Service account for CardDemo Spring Boot applications"
+    rbac.permissions: "read-configmaps,read-secrets,write-metrics"
+automountServiceAccountToken: true
+
+---
+# Role for CardDemo Application Permissions
+# Defines permissions needed by CardDemo applications within the namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: carddemo-application-role
+  namespace: carddemo
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: rbac-role
+    app.kubernetes.io/part-of: carddemo-system
+  annotations:
+    description: "RBAC role for CardDemo application operations"
+rules:
+  # Allow reading ConfigMaps for application configuration
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch"]
+  
+  # Allow reading Secrets for database credentials and certificates
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch"]
+  
+  # Allow reading Services for service discovery
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list", "watch"]
+  
+  # Allow reading Pods for health checks and monitoring
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  
+  # Allow creating Events for application logging
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create"]
+
+---
+# RoleBinding to associate Service Account with Role
+# Grants the defined permissions to the CardDemo service account
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: carddemo-application-rolebinding
+  namespace: carddemo
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: rbac-rolebinding
+    app.kubernetes.io/part-of: carddemo-system
+  annotations:
+    description: "Role binding for CardDemo application service account"
+subjects:
+  - kind: ServiceAccount
+    name: carddemo-service-account
+    namespace: carddemo
+roleRef:
+  kind: Role
+  name: carddemo-application-role
+  apiGroup: rbac.authorization.k8s.io

@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Maven Surefire Plugin Configuration for CardDemo Application
+  
+  This configuration provides optimized test execution for the Spring Boot-based
+  CardDemo credit card management system migrated from IBM mainframe COBOL/CICS.
+  
+  Features:
+  - Parallel test execution with 4 threads for performance
+  - JVM memory optimization for large test suites
+  - Test categorization separating unit from integration tests
+  - Comprehensive failure reporting with detailed stack traces
+  - Timeout configuration for long-running tests
+  - Enterprise-grade test execution standards
+  
+  Compatible with:
+  - Java 21 LTS runtime environment
+  - Spring Boot 3.2.x test framework
+  - JUnit 5.x test execution engine
+  - Maven Surefire Plugin 3.2.x
+-->
+<configuration>
+  
+  <!-- ================================== -->
+  <!-- PARALLEL EXECUTION CONFIGURATION  -->
+  <!-- ================================== -->
+  
+  <!-- Enable parallel test execution for improved performance -->
+  <parallel>methods</parallel>
+  
+  <!-- Use 4 parallel threads as specified in requirements -->
+  <threadCount>4</threadCount>
+  
+  <!-- Distribute tests evenly across available threads -->
+  <useUnlimitedThreads>false</useUnlimitedThreads>
+  
+  <!-- Parallel execution scope for methods and classes -->
+  <parallelMavenExecution>false</parallelMavenExecution>
+  
+  <!-- Thread timeout for hanging tests (15 minutes) -->
+  <parallelTestsTimeoutInSeconds>900</parallelTestsTimeoutInSeconds>
+  
+  <!-- Fork configuration for test isolation -->
+  <forkCount>1</forkCount>
+  <reuseForks>true</reuseForks>
+  
+  
+  <!-- ================================== -->
+  <!-- JVM MEMORY AND PERFORMANCE SETTINGS -->
+  <!-- ================================== -->
+  
+  <!-- JVM arguments optimized for Spring Boot testing with large datasets -->
+  <argLine>
+    <!-- Memory allocation for large test suites -->
+    -Xms512m -Xmx2048m
+    
+    <!-- Metaspace configuration for Spring Boot class loading -->
+    -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=512m
+    
+    <!-- Garbage collection optimization for test execution -->
+    -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+    
+    <!-- Performance monitoring and profiling -->
+    -XX:+PrintGCDetails -XX:+PrintGCTimeStamps
+    
+    <!-- File encoding for consistent test behavior -->
+    -Dfile.encoding=UTF-8
+    
+    <!-- Spring test configuration -->
+    -Dspring.test.context.cache.maxSize=50
+    
+    <!-- Testcontainers optimization for Docker-based integration tests -->
+    -Dtestcontainers.reuse.enable=true
+    
+    <!-- Timezone setting for consistent date/time testing -->
+    -Duser.timezone=UTC
+    
+    <!-- Security manager permissions for Spring Security tests -->
+    -Djava.security.manager=default
+  </argLine>
+  
+  
+  <!-- ================================== -->
+  <!-- TEST CATEGORIZATION AND FILTERING -->
+  <!-- ================================== -->
+  
+  <!-- Include patterns for unit tests -->
+  <includes>
+    <include>**/*Test.java</include>
+    <include>**/*Tests.java</include>
+    <include>**/*UnitTest.java</include>
+    <include>**/*ServiceTest.java</include>
+    <include>**/*RepositoryTest.java</include>
+    <include>**/*ControllerTest.java</include>
+    <include>**/*UtilTest.java</include>
+  </includes>
+  
+  <!-- Exclude integration tests from unit test execution -->
+  <excludes>
+    <exclude>**/*IntegrationTest.java</exclude>
+    <exclude>**/*IT.java</exclude>
+    <exclude>**/*E2ETest.java</exclude>
+    <exclude>**/*AcceptanceTest.java</exclude>
+    <exclude>**/*PerformanceTest.java</exclude>
+    <exclude>**/*LoadTest.java</exclude>
+  </excludes>
+  
+  <!-- Group tests by category for better organization -->
+  <groups>unit,fast</groups>
+  <excludedGroups>integration,slow,performance</excludedGroups>
+  
+  
+  <!-- ================================== -->
+  <!-- DETAILED REPORTING CONFIGURATION  -->
+  <!-- ================================== -->
+  
+  <!-- Enable comprehensive test reporting -->
+  <trimStackTrace>false</trimStackTrace>
+  
+  <!-- Detailed failure reporting with full stack traces -->
+  <printSummary>true</printSummary>
+  
+  <!-- Report format configuration -->
+  <reportFormat>xml</reportFormat>
+  
+  <!-- Include test names in failure reports -->
+  <useFile>true</useFile>
+  
+  <!-- Redirect test output to files -->
+  <redirectTestOutputToFile>true</redirectTestOutputToFile>
+  
+  <!-- Report directory configuration -->
+  <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
+  
+  <!-- Enable detailed system properties in reports -->
+  <systemPropertyVariables>
+    <spring.profiles.active>test</spring.profiles.active>
+    <logging.level.org.springframework>INFO</logging.level.org.springframework>
+    <logging.level.com.carddemo>DEBUG</logging.level.com.carddemo>
+    <maven.test.redirectTestOutputToFile>true</maven.test.redirectTestOutputToFile>
+  </systemPropertyVariables>
+  
+  
+  <!-- ================================== -->
+  <!-- TIMEOUT AND STABILITY SETTINGS    -->
+  <!-- ================================== -->
+  
+  <!-- Global test timeout for long-running tests (10 minutes) -->
+  <forkedProcessTimeoutInSeconds>600</forkedProcessTimeoutInSeconds>
+  
+  <!-- Individual test method timeout (5 minutes) -->
+  <forkedProcessExitTimeoutInSeconds>300</forkedProcessExitTimeoutInSeconds>
+  
+  <!-- Retry configuration for flaky tests -->
+  <rerunFailingTestsCount>2</rerunFailingTestsCount>
+  
+  <!-- Skip tests on compilation failure -->
+  <skipAfterFailureCount>0</skipAfterFailureCount>
+  
+  <!-- Test failure behavior -->
+  <testFailureIgnore>false</testFailureIgnore>
+  
+  
+  <!-- ================================== -->
+  <!-- SPRING BOOT TEST CONFIGURATION    -->
+  <!-- ================================== -->
+  
+  <!-- Additional properties for Spring Boot testing -->
+  <properties>
+    <!-- JUnit 5 configuration -->
+    <configurationParameters>
+      junit.jupiter.execution.parallel.enabled=true
+      junit.jupiter.execution.parallel.mode.default=concurrent
+      junit.jupiter.execution.parallel.mode.classes.default=concurrent
+      junit.jupiter.execution.parallel.config.strategy=dynamic
+      junit.jupiter.execution.parallel.config.dynamic.factor=1.0
+      junit.jupiter.displayname.generator.default=org.junit.jupiter.api.DisplayNameGenerator$ReplaceUnderscores
+      junit.jupiter.testinstance.lifecycle.default=per_class
+    </configurationParameters>
+  </properties>
+  
+  
+  <!-- ================================== -->
+  <!-- ENVIRONMENT VARIABLES             -->
+  <!-- ================================== -->
+  
+  <!-- Environment variables for test execution -->
+  <environmentVariables>
+    <!-- Test database configuration -->
+    <SPRING_DATASOURCE_URL>jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE</SPRING_DATASOURCE_URL>
+    <SPRING_DATASOURCE_USERNAME>sa</SPRING_DATASOURCE_USERNAME>
+    <SPRING_DATASOURCE_PASSWORD></SPRING_DATASOURCE_PASSWORD>
+    
+    <!-- Redis test configuration -->
+    <SPRING_DATA_REDIS_HOST>localhost</SPRING_DATA_REDIS_HOST>
+    <SPRING_DATA_REDIS_PORT>6379</SPRING_DATA_REDIS_PORT>
+    
+    <!-- Test profile activation -->
+    <SPRING_PROFILES_ACTIVE>test</SPRING_PROFILES_ACTIVE>
+    
+    <!-- Logging configuration -->
+    <LOGGING_LEVEL_ROOT>WARN</LOGGING_LEVEL_ROOT>
+    <LOGGING_LEVEL_COM_CARDDEMO>DEBUG</LOGGING_LEVEL_COM_CARDDEMO>
+    
+    <!-- Test-specific feature flags -->
+    <CARDDEMO_TEST_MODE>true</CARDDEMO_TEST_MODE>
+    <CARDDEMO_MOCK_EXTERNAL_SERVICES>true</CARDDEMO_MOCK_EXTERNAL_SERVICES>
+  </environmentVariables>
+  
+  
+  <!-- ================================== -->
+  <!-- ADVANCED CONFIGURATION OPTIONS    -->
+  <!-- ================================== -->
+  
+  <!-- Class path configuration -->
+  <useModulePath>false</useModulePath>
+  <useManifestOnlyJar>true</useManifestOnlyJar>
+  
+  <!-- Working directory for test execution -->
+  <workingDirectory>${project.build.directory}</workingDirectory>
+  
+  <!-- Test classpath dependencies -->
+  <classpathDependencyExcludes>
+    <classpathDependencyExclude>org.springframework.boot:spring-boot-devtools</classpathDependencyExclude>
+  </classpathDependencyExcludes>
+  
+  <!-- Additional classpath elements for test resources -->
+  <additionalClasspathElements>
+    <additionalClasspathElement>${project.build.testOutputDirectory}</additionalClasspathElement>
+  </additionalClasspathElements>
+  
+  <!-- Debugging configuration for test troubleshooting -->
+  <debugForkedProcess>false</debugForkedProcess>
+  
+  <!-- Enable debugging by setting this property: mvn test -Dmaven.surefire.debug -->
+  
+</configuration>

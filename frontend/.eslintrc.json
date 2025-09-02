@@ -1,0 +1,174 @@
+{
+  "env": {
+    "browser": true,
+    "es2022": true,
+    "node": true,
+    "jest": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:react/recommended",
+    "plugin:react-hooks/recommended",
+    "plugin:import/recommended"
+  ],
+  "parserOptions": {
+    "ecmaFeatures": {
+      "jsx": true
+    },
+    "ecmaVersion": 2022,
+    "sourceType": "module"
+  },
+  "plugins": [
+    "react",
+    "react-hooks",
+    "import"
+  ],
+  "settings": {
+    "react": {
+      "version": "18.2"
+    },
+    "import/resolver": {
+      "node": {
+        "extensions": [".js", ".jsx", ".ts", ".tsx"]
+      }
+    }
+  },
+  "rules": {
+    "react/react-in-jsx-scope": "off",
+    "react/prop-types": "error",
+    "react/jsx-uses-react": "off",
+    "react/jsx-uses-vars": "error",
+    "react/jsx-no-target-blank": "error",
+    "react/jsx-key": "error",
+    "react/no-array-index-key": "warn",
+    "react/no-unused-state": "error",
+    "react/no-deprecated": "error",
+    "react/self-closing-comp": "error",
+    "react/jsx-pascal-case": "error",
+    "react/jsx-curly-brace-presence": ["error", "never"],
+    "react/jsx-boolean-value": ["error", "never"],
+    "react/no-unescaped-entities": "error",
+    "react/display-name": "error",
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
+    "no-unused-vars": ["error", {
+      "argsIgnorePattern": "^_",
+      "varsIgnorePattern": "^_"
+    }],
+    "import/order": ["error", {
+      "groups": [
+        "builtin",
+        "external",
+        "internal",
+        "parent",
+        "sibling",
+        "index"
+      ],
+      "newlines-between": "always",
+      "alphabetize": {
+        "order": "asc",
+        "caseInsensitive": true
+      }
+    }],
+    "import/no-unresolved": "error",
+    "import/no-duplicates": "error",
+    "import/no-unused-modules": "warn",
+    "import/first": "error",
+    "import/newline-after-import": "error",
+    "import/no-default-export": "off",
+    "no-console": ["warn", {
+      "allow": ["warn", "error"]
+    }],
+    "no-debugger": "error",
+    "no-alert": "warn",
+    "no-var": "error",
+    "prefer-const": "error",
+    "prefer-arrow-callback": "error",
+    "arrow-spacing": "error",
+    "object-shorthand": "error",
+    "prefer-template": "error",
+    "template-curly-spacing": "error",
+    "no-trailing-spaces": "error",
+    "eol-last": "error",
+    "comma-dangle": ["error", "always-multiline"],
+    "semi": ["error", "always"],
+    "quotes": ["error", "single", {
+      "avoidEscape": true,
+      "allowTemplateLiterals": true
+    }],
+    "indent": ["error", 2, {
+      "SwitchCase": 1
+    }],
+    "max-len": ["warn", {
+      "code": 120,
+      "ignoreUrls": true,
+      "ignoreStrings": true,
+      "ignoreTemplateLiterals": true
+    }],
+    "no-multiple-empty-lines": ["error", {
+      "max": 1,
+      "maxEOF": 0
+    }],
+    "object-curly-spacing": ["error", "always"],
+    "array-bracket-spacing": ["error", "never"],
+    "computed-property-spacing": ["error", "never"],
+    "space-in-parens": ["error", "never"],
+    "space-before-function-paren": ["error", {
+      "anonymous": "always",
+      "named": "never",
+      "asyncArrow": "always"
+    }],
+    "keyword-spacing": "error",
+    "space-infix-ops": "error",
+    "space-unary-ops": "error",
+    "spaced-comment": ["error", "always"],
+    "brace-style": ["error", "1tbs", {
+      "allowSingleLine": true
+    }],
+    "curly": ["error", "all"],
+    "eqeqeq": ["error", "always"],
+    "no-eq-null": "error",
+    "no-eval": "error",
+    "no-implied-eval": "error",
+    "no-new-func": "error",
+    "no-script-url": "error",
+    "no-void": "error",
+    "no-with": "error",
+    "radix": "error",
+    "wrap-iife": ["error", "inside"],
+    "yoda": "error",
+    "no-undef": "error",
+    "no-unused-expressions": "error",
+    "no-sequences": "error",
+    "no-nested-ternary": "warn",
+    "complexity": ["warn", 15],
+    "max-depth": ["warn", 4],
+    "max-params": ["warn", 5]
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.{js,jsx,ts,tsx}", "**/__tests__/**/*.{js,jsx,ts,tsx}"],
+      "env": {
+        "jest": true
+      },
+      "rules": {
+        "react/prop-types": "off"
+      }
+    },
+    {
+      "files": ["jest.config.js"],
+      "rules": {
+        "import/no-default-export": "off"
+      }
+    }
+  ],
+  "ignorePatterns": [
+    "dist/",
+    "build/",
+    "node_modules/",
+    "coverage/",
+    "*.min.js",
+    "*.min.css",
+    "public/"
+  ]
+}

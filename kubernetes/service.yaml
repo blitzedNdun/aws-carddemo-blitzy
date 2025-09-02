@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: carddemo-backend-service
+  labels:
+    app: carddemo-backend
+    tier: application
+    component: spring-boot-service
+    version: v2.1.0
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/actuator/prometheus"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+    # Enable service discovery via named port
+  selector:
+    app: carddemo-backend
+    tier: application
+  # Enable session affinity for stateful components (Spring Session with Redis)
+  # Commented out as Redis handles session state, allowing better load distribution
+  # sessionAffinity: ClientIP
+  # sessionAffinityConfig:
+  #   clientIP:
+  #     timeoutSeconds: 10800  # 3 hours session timeout
+  
+  # DNS-based service resolution enabled by default
+  # Service name: carddemo-backend-service
+  # FQDN: carddemo-backend-service.default.svc.cluster.local
+  # Short name: carddemo-backend-service (within same namespace)
+  
+  # Health-based routing integration:
+  # - Kubernetes automatically routes traffic only to pods passing readiness probes
+  # - Readiness probe endpoint: /actuator/health/readiness on port 8080
+  # - Failed readiness probes remove pods from service endpoints
+  # - Service load balances across healthy pods using round-robin algorithm
+  
+  # Load balancing configuration:
+  # - Default round-robin distribution across healthy backend pods
+  # - Supports 3-10 pod replicas as defined in HPA configuration
+  # - Intelligent traffic routing based on pod readiness state
+  # - Maintains sub-200ms response time SLA through health-aware distribution

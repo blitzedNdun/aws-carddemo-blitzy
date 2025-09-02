@@ -1,0 +1,337 @@
+# Spring Batch Test Configuration for Card Reader Job (CBACT02C migration)
+# This configuration defines test parameters for the CardReaderJob Spring Batch implementation
+# that replaces the COBOL batch program CBACT02C for sequential card file reading
+
+# Spring Boot Test Configuration
+spring:
+  batch:
+    job:
+      enabled: false  # Prevent auto-execution during tests
+  datasource:
+    # H2 in-memory test database configuration
+    url: jdbc:h2:mem:card-reader-test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driverClassName: org.h2.Driver
+    username: sa
+    password: 
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          batch_size: 100
+
+# Card Reader Job Test Configuration (CBACT02C Migration)
+card-reader-job:
+  # Test job parameters matching CBACT02C functionality
+  parameters:
+    # Input file path for test card data
+    input-file-path: "classpath:test-data/card-data-test.txt"
+    # Console output setting to match COBOL DISPLAY statements
+    console-output-enabled: true
+    # Chunk size for reading card records (optimized for test performance)
+    chunk-size: 100
+    # Skip limit for malformed records during testing
+    skip-limit: 5
+    # Test mode flag to enable additional validation
+    test-mode: true
+    # Job execution timeout (30 seconds for tests)
+    execution-timeout: 30000
+
+  # Card file configuration matching VSAM KSDS structure from CBACT02C
+  card-file:
+    # Record key specifications matching FD-CARD-NUM (16 characters)
+    key-field:
+      name: "cardNumber"
+      length: 16
+      position: 1
+      type: "CHAR"
+      description: "16-character card number key field matching COBOL PIC X(16)"
+      validation-pattern: "^[A-Z0-9]{16}$"
+    
+    # Record data field matching FD-CARD-DATA (134 characters)  
+    data-field:
+      name: "cardData"
+      length: 134
+      position: 17
+      type: "CHAR"
+      description: "Card data field containing account and customer information"
+    
+    # Total record length matching COBOL FD structure (150 bytes)
+    record-length: 150
+    
+    # File organization matching VSAM KSDS configuration
+    organization: "INDEXED"
+    access-mode: "SEQUENTIAL"
+    file-status-field: "cardFileStatus"
+
+  # I/O status handling matching COBOL CARDFILE-STATUS values
+  io-status:
+    # Successful read status matching COBOL '00'
+    success-code: "00"
+    # End of file status matching COBOL '10'  
+    eof-code: "10"
+    # Error status codes for various I/O conditions
+    error-codes:
+      record-not-found: "23"
+      boundary-violation: "24"
+      file-locked: "96"
+      file-unavailable: "97"
+    
+    # Application result codes matching COBOL APPL-RESULT values
+    application-results:
+      success: 0      # APPL-AOK condition
+      eof: 16         # APPL-EOF condition  
+      error: 12       # General error condition
+      open-error: 8   # File open error
+
+  # Test data validation rules
+  validation:
+    # Card number format validation (16 alphanumeric characters)
+    card-number-pattern: "^[A-Z0-9]{16}$"
+    # Required fields for complete card record
+    required-fields:
+      - "cardNumber"
+      - "accountId" 
+      - "customerId"
+      - "cardExpiryDate"
+    # Record format validation flag
+    record-format-validation: true
+    # Field length validation
+    field-length-validation: true
+
+  # Console output configuration matching COBOL DISPLAY statements
+  console:
+    # Enable console output for test verification
+    enabled: true
+    # Format for card record display matching COBOL output
+    record-display-format: "CARD-RECORD: %s"
+    # Program execution messages matching CBACT02C
+    start-message: "START OF EXECUTION OF PROGRAM CBACT02C"
+    end-message: "END OF EXECUTION OF PROGRAM CBACT02C"
+    error-message-prefix: "ERROR READING CARDFILE"
+    # I/O status display format matching COBOL 9910-DISPLAY-IO-STATUS
+    io-status-format: "FILE STATUS IS: NNNN %s"
+
+  # Spring Batch specific test configuration
+  batch:
+    # Job repository configuration for test execution
+    job-repository:
+      table-prefix: "BATCH_"
+      isolation-level: "ISOLATION_READ_COMMITTED"
+      increment-generator: "sequence"
+    
+    # Step configuration for card file reading
+    step:
+      # File reader configuration
+      reader:
+        name: "cardFileReader"
+        resource: "classpath:test-data/card-data-test.txt"
+        line-mapper: "fixedLengthLineMapper"
+        field-set-mapper: "cardRecordFieldSetMapper"
+        encoding: "UTF-8"
+        strict: true
+        
+      # Record processor configuration (validation and transformation)
+      processor:
+        name: "cardRecordProcessor"
+        validation-enabled: true
+        transformation-enabled: false
+        
+      # Console writer configuration matching COBOL DISPLAY
+      writer:
+        name: "cardRecordConsoleWriter"
+        format: "CARD-RECORD: %s"
+        append-newline: true
+
+# Test-specific logging configuration
+logging:
+  level:
+    com.carddemo.batch.jobs.CardReaderJob: DEBUG
+    com.carddemo.batch.reader.CardFileReader: DEBUG
+    com.carddemo.batch.processor.CardRecordProcessor: DEBUG
+    com.carddemo.batch.writer.CardRecordConsoleWriter: DEBUG
+    org.springframework.batch: INFO
+    org.springframework.jdbc: WARN
+    org.hibernate.SQL: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Test profiles activation
+spring.profiles.active: test
+
+# Test data configuration for card records
+test-data:
+  # Sample card records for comprehensive testing
+  card-records:
+    # Valid test records with proper format
+    valid-records:
+      - card-number: "4000000000000001"
+        account-id: "0000000001"
+        customer-id: "0000000001"
+        expiry-date: "202512"
+        record-data: "TEST CARDHOLDER ONE    ACTIVE  "
+      - card-number: "4000000000000002" 
+        account-id: "0000000002"
+        customer-id: "0000000002"
+        expiry-date: "202612"
+        record-data: "TEST CARDHOLDER TWO    ACTIVE  "
+      - card-number: "5500000000000003"
+        account-id: "0000000003"
+        customer-id: "0000000003"
+        expiry-date: "202712"
+        record-data: "TEST CARDHOLDER THREE  INACTIVE"
+    
+    # Invalid test records for error handling validation
+    invalid-records:
+      - card-number: "INVALID_CARD_"  # Invalid length
+        account-id: ""
+        customer-id: ""
+        record-data: "Invalid card number format test"
+      - card-number: "400000000000000X"  # Invalid character
+        account-id: "0000000004"
+        customer-id: "0000000004"
+        record-data: "Invalid character in card number"
+
+  # Test file paths
+  file-paths:
+    valid-data: "classpath:test-data/card-data-valid.txt"
+    invalid-data: "classpath:test-data/card-data-invalid.txt"
+    empty-file: "classpath:test-data/card-data-empty.txt"
+    large-file: "classpath:test-data/card-data-large.txt"
+
+# Performance testing configuration
+performance:
+  # Maximum execution time for batch job (milliseconds)
+  max-execution-time: 30000
+  # Expected records per second processing rate
+  expected-throughput: 1000
+  # Memory usage monitoring enabled
+  memory-monitoring: true
+  # JVM metrics collection
+  jvm-metrics: true
+  # Performance assertion thresholds
+  thresholds:
+    max-memory-usage: "512MB"
+    max-processing-time-per-record: 10  # milliseconds
+
+# Error handling configuration matching COBOL error processing
+error-handling:
+  # Skip policy for invalid records
+  skip-policy:
+    skip-limit: 5
+    skip-on-parse-error: true
+    skippable-exceptions:
+      - "java.lang.IllegalArgumentException"
+      - "org.springframework.batch.item.file.FlatFileParseException"
+      - "org.springframework.batch.item.validator.ValidationException"
+  
+  # Retry policy for transient errors
+  retry-policy:
+    max-attempts: 3
+    backoff-period: 1000  # milliseconds
+    retry-exceptions:
+      - "java.io.IOException"
+      - "org.springframework.dao.TransientDataAccessException"
+      - "java.net.ConnectException"
+
+# Job execution configuration
+job-execution:
+  # Restart configuration matching COBOL batch behavior
+  restartable: true
+  # Allow start if complete (for testing)
+  allow-start-if-complete: true
+  # Prevent restart for test isolation
+  prevent-restart: false
+  # Job parameter validation
+  validate-parameters: true
+  
+  # Execution context configuration
+  execution-context:
+    # Maximum size for execution context
+    max-size: 1024
+    # Persist execution context for restart capability
+    persist: true
+
+# Test assertions configuration
+test-assertions:
+  # Expected record counts for validation
+  expected-counts:
+    total-records: 1000
+    valid-records: 950
+    invalid-records: 50
+    skipped-records: 5
+  
+  # Performance assertions
+  performance-assertions:
+    max-execution-time: 30000  # 30 seconds
+    min-throughput: 500        # records per second
+    max-memory-usage: 536870912  # 512 MB in bytes
+  
+  # Functional assertions
+  functional-assertions:
+    # Verify console output format
+    console-output-format: true
+    # Verify I/O status handling
+    io-status-handling: true
+    # Verify EOF detection
+    eof-detection: true
+    # Verify error message formatting
+    error-message-format: true
+
+# Database test configuration
+database:
+  # Schema initialization for testing
+  schema:
+    # Create test tables if needed
+    create-tables: true
+    # Populate reference data
+    populate-reference-data: true
+  
+  # Connection pool settings for tests
+  connection-pool:
+    initial-size: 1
+    max-active: 5
+    max-wait: 5000
+    
+# Spring Boot Actuator configuration for test monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,info,batch
+  endpoint:
+    health:
+      show-details: always
+    metrics:
+      enabled: true
+
+# Test environment specific properties
+test:
+  # Test data generation settings
+  data-generation:
+    generate-test-files: true
+    record-count: 1000
+    include-invalid-records: true
+    
+  # Test execution settings
+  execution:
+    # Run performance tests
+    performance-tests: true
+    # Run error handling tests
+    error-handling-tests: true
+    # Run boundary condition tests
+    boundary-tests: true
+    
+  # Test reporting configuration
+  reporting:
+    # Generate test execution report
+    generate-report: true
+    # Include performance metrics
+    include-performance: true
+    # Include error statistics
+    include-errors: true

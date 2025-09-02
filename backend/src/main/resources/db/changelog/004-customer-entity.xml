@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+
+    <changeSet id="004-create-customer-table" author="CardDemo Migration Team" context="development,migration,test,production">
+        <comment>Create customer_data table for Customer entity (VSAM CUSTDAT migration)</comment>
+        
+        <createTable tableName="customer_data">
+            <column name="customer_id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            
+            <column name="first_name" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="middle_name" type="VARCHAR(20)"/>
+            
+            <column name="last_name" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="address_line_1" type="VARCHAR(50)"/>
+            
+            <column name="address_line_2" type="VARCHAR(50)"/>
+            
+            <column name="address_line_3" type="VARCHAR(50)"/>
+            
+            <column name="state_code" type="VARCHAR(2)"/>
+            
+            <column name="country_code" type="VARCHAR(3)"/>
+            
+            <column name="zip_code" type="VARCHAR(10)"/>
+            
+            <column name="phone_number_1" type="VARCHAR(15)"/>
+            
+            <column name="phone_number_2" type="VARCHAR(15)"/>
+            
+            <column name="ssn" type="VARCHAR(9)"/>
+            
+            <column name="government_issued_id" type="VARCHAR(20)"/>
+            
+            <column name="date_of_birth" type="DATE"/>
+            
+            <column name="eft_account_id" type="VARCHAR(10)"/>
+            
+            <column name="primary_card_holder_indicator" type="CHAR(1)"/>
+            
+            <column name="fico_score" type="SMALLINT">
+                <constraints checkConstraint="fico_score >= 300 AND fico_score &lt;= 850"/>
+            </column>
+            
+            <column name="credit_limit" type="DECIMAL(15,2)"/>
+            
+            <column name="last_update_timestamp" type="TIMESTAMP"/>
+            
+            <column name="created_timestamp" type="TIMESTAMP"/>
+        </createTable>
+        
+        <rollback>
+            <dropTable tableName="customer_data"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="004-add-customer-comments" author="CardDemo Migration Team" context="development,migration,test,production">
+        <comment>Add column comments for customer_data table documentation</comment>
+        
+        <setTableRemarks tableName="customer_data" remarks="Customer profile data migrated from VSAM CUSTDAT dataset"/>
+        
+        <setColumnRemarks tableName="customer_data" columnName="customer_id" 
+                         remarks="Customer ID - Primary key, maps to CUST-ID (PIC 9(9))"/>
+        <setColumnRemarks tableName="customer_data" columnName="first_name" 
+                         remarks="Customer first name, maps to CUST-FIRST-NAME (PIC X(25))"/>
+        <setColumnRemarks tableName="customer_data" columnName="middle_name" 
+                         remarks="Customer middle name, maps to CUST-MIDDLE-NAME (PIC X(25))"/>
+        <setColumnRemarks tableName="customer_data" columnName="last_name" 
+                         remarks="Customer last name, maps to CUST-LAST-NAME (PIC X(25))"/>
+        <setColumnRemarks tableName="customer_data" columnName="address_line_1" 
+                         remarks="Customer address line 1, maps to CUST-ADDR-LINE-1 (PIC X(50))"/>
+        <setColumnRemarks tableName="customer_data" columnName="address_line_2" 
+                         remarks="Customer address line 2, maps to CUST-ADDR-LINE-2 (PIC X(50))"/>
+        <setColumnRemarks tableName="customer_data" columnName="address_line_3" 
+                         remarks="Customer address line 3, maps to CUST-ADDR-LINE-3 (PIC X(50))"/>
+        <setColumnRemarks tableName="customer_data" columnName="state_code" 
+                         remarks="Customer state code, maps to CUST-ADDR-STATE-CD (PIC X(02))"/>
+        <setColumnRemarks tableName="customer_data" columnName="country_code" 
+                         remarks="Customer country code, maps to CUST-ADDR-COUNTRY-CD (PIC X(03))"/>
+        <setColumnRemarks tableName="customer_data" columnName="zip_code" 
+                         remarks="Customer ZIP code, maps to CUST-ADDR-ZIP (PIC X(10))"/>
+        <setColumnRemarks tableName="customer_data" columnName="phone_number_1" 
+                         remarks="Customer primary phone, maps to CUST-PHONE-NUM-1 (PIC X(15))"/>
+        <setColumnRemarks tableName="customer_data" columnName="phone_number_2" 
+                         remarks="Customer secondary phone, maps to CUST-PHONE-NUM-2 (PIC X(15))"/>
+        <setColumnRemarks tableName="customer_data" columnName="ssn" 
+                         remarks="Customer SSN (encrypted), maps to CUST-SSN (PIC X(9))"/>
+        <setColumnRemarks tableName="customer_data" columnName="government_issued_id" 
+                         remarks="Government issued ID, maps to CUST-GOVT-ISSUED-ID (PIC X(20))"/>
+        <setColumnRemarks tableName="customer_data" columnName="date_of_birth" 
+                         remarks="Customer date of birth, maps to CUST-DOB-YYYY-MM-DD (PIC X(10))"/>
+        <setColumnRemarks tableName="customer_data" columnName="eft_account_id" 
+                         remarks="EFT account ID, maps to CUST-EFT-ACCOUNT-ID (PIC X(10))"/>
+        <setColumnRemarks tableName="customer_data" columnName="primary_card_holder_indicator" 
+                         remarks="Primary card holder indicator, maps to CUST-PRI-CARD-HOLDER-IND (PIC X)"/>
+        <setColumnRemarks tableName="customer_data" columnName="fico_score" 
+                         remarks="FICO credit score (300-850), maps to CUST-FICO-CREDIT-SCORE (PIC 9(3))"/>
+        <setColumnRemarks tableName="customer_data" columnName="credit_limit" 
+                         remarks="Customer credit limit for qualification and account management"/>
+        <setColumnRemarks tableName="customer_data" columnName="last_update_timestamp" 
+                         remarks="Timestamp when customer record was last modified"/>
+        <setColumnRemarks tableName="customer_data" columnName="created_timestamp" 
+                         remarks="Timestamp when customer record was created"/>
+    </changeSet>
+
+</databaseChangeLog>

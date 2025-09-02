@@ -1,0 +1,1624 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
+  <hashTree>
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="CardDemo Performance Test Plan" enabled="true">
+      <elementProp name="TestPlan.arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+        <collectionProp name="Arguments.arguments">
+          <elementProp name="BASE_URL" elementType="Argument">
+            <stringProp name="Argument.name">BASE_URL</stringProp>
+            <stringProp name="Argument.value">${__P(BASE_URL,http://localhost:8080)}</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="RAMP_UP_PERIOD" elementType="Argument">
+            <stringProp name="Argument.name">RAMP_UP_PERIOD</stringProp>
+            <stringProp name="Argument.value">${__P(RAMP_UP_PERIOD,300)}</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="TEST_DURATION" elementType="Argument">
+            <stringProp name="Argument.name">TEST_DURATION</stringProp>
+            <stringProp name="Argument.value">${__P(TEST_DURATION,1800)}</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="RESPONSE_TIME_SLA" elementType="Argument">
+            <stringProp name="Argument.name">RESPONSE_TIME_SLA</stringProp>
+            <stringProp name="Argument.value">${__P(RESPONSE_TIME_SLA,200)}</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+        </collectionProp>
+      </elementProp>
+      <stringProp name="TestPlan.comments">CardDemo Application Performance Test Plan
+      
+This JMeter test plan validates the performance characteristics of the modernized CardDemo application
+with comprehensive coverage of all 24 REST endpoints migrated from CICS transactions.
+
+Test Objectives:
+- Validate &lt; 200ms response time SLA for 95% of transactions
+- Simulate realistic user load patterns with 1000 concurrent users
+- Test all critical business workflows including authentication, account management, 
+  credit card operations, transaction processing, and user administration
+- Ensure system can handle peak load scenarios matching mainframe capacity
+
+Architecture Under Test:
+- Spring Boot 3.2.x REST API controllers
+- PostgreSQL 15.x database with composite key optimization  
+- Redis 7.x session management (Spring Session)
+- Kubernetes horizontal pod autoscaling
+- React 18.x single page application frontend
+
+Performance Targets:
+- Response Time: &lt; 200ms for 95% of REST API calls
+- Throughput: 10,000+ transactions per hour during peak operations
+- Concurrent Users: 1000+ active sessions
+- Error Rate: &lt; 0.1% for all transaction types
+
+Test Scenarios:
+1. Authentication Flow - Sign-on and role-based menu access
+2. Account Management - View/update customer and account data
+3. Credit Card Operations - Card lifecycle management and cross-reference validation
+4. Transaction Processing - Real-time transaction entry and payment processing
+5. User Administration - System user management operations
+6. Mixed Workload - Realistic distribution of all transaction types
+      </stringProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
+    </TestPlan>
+    <hashTree>
+      <!-- Global HTTP Configuration -->
+      <ConfigTestElement guiclass="HttpDefaultsGui" testclass="ConfigTestElement" testname="HTTP Request Defaults" enabled="true">
+        <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+          <collectionProp name="Arguments.arguments"/>
+        </elementProp>
+        <stringProp name="HTTPSampler.domain">${__BeanShell(vars.get("BASE_URL").replaceAll("https?://","").split(":")[0])}</stringProp>
+        <stringProp name="HTTPSampler.port">${__BeanShell(vars.get("BASE_URL").contains(":") ? vars.get("BASE_URL").replaceAll("https?://","").split(":")[1] : (vars.get("BASE_URL").startsWith("https") ? "443" : "8080"))}</stringProp>
+        <stringProp name="HTTPSampler.protocol">${__BeanShell(vars.get("BASE_URL").startsWith("https") ? "https" : "http")}</stringProp>
+        <stringProp name="HTTPSampler.contentEncoding">UTF-8</stringProp>
+        <stringProp name="HTTPSampler.path"></stringProp>
+        <stringProp name="HTTPSampler.concurrentPool">6</stringProp>
+        <stringProp name="HTTPSampler.connect_timeout">10000</stringProp>
+        <stringProp name="HTTPSampler.response_timeout">30000</stringProp>
+      </ConfigTestElement>
+      <hashTree/>
+      
+      <!-- HTTP Cookie Manager for Session Management -->
+      <CookieManager guiclass="CookiePanel" testclass="CookieManager" testname="HTTP Cookie Manager" enabled="true">
+        <collectionProp name="CookieManager.cookies"/>
+        <boolProp name="CookieManager.clearEachIteration">false</boolProp>
+        <boolProp name="CookieManager.controlledByThreadGroup">false</boolProp>
+        <stringProp name="CookieManager.policy">standard</stringProp>
+        <stringProp name="CookieManager.implementation">org.apache.jmeter.protocol.http.control.HC4CookieHandler</stringProp>
+      </CookieManager>
+      <hashTree/>
+
+      <!-- HTTP Cache Manager -->
+      <CacheManager guiclass="CacheManagerGui" testclass="CacheManager" testname="HTTP Cache Manager" enabled="true">
+        <boolProp name="clearEachIteration">false</boolProp>
+        <boolProp name="useExpires">true</boolProp>
+        <boolProp name="CacheManager.controlledByThread">false</boolProp>
+      </CacheManager>
+      <hashTree/>
+
+      <!-- HTTP Header Manager -->
+      <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+        <collectionProp name="HeaderManager.headers">
+          <elementProp name="" elementType="Header">
+            <stringProp name="Header.name">Accept</stringProp>
+            <stringProp name="Header.value">application/json, text/plain, */*</stringProp>
+          </elementProp>
+          <elementProp name="" elementType="Header">
+            <stringProp name="Header.name">Content-Type</stringProp>
+            <stringProp name="Header.value">application/json</stringProp>
+          </elementProp>
+          <elementProp name="" elementType="Header">
+            <stringProp name="Header.name">User-Agent</stringProp>
+            <stringProp name="Header.value">CardDemo-PerformanceTest/1.0</stringProp>
+          </elementProp>
+          <elementProp name="" elementType="Header">
+            <stringProp name="Header.name">Accept-Encoding</stringProp>
+            <stringProp name="Header.value">gzip, deflate</stringProp>
+          </elementProp>
+        </collectionProp>
+      </HeaderManager>
+      <hashTree/>
+
+      <!-- Test Data Sets for Realistic Load Testing -->
+      <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="User Credentials Dataset" enabled="true">
+        <stringProp name="delimiter">,</stringProp>
+        <stringProp name="fileEncoding">UTF-8</stringProp>
+        <stringProp name="filename">${__P(TEST_DATA_DIR,src/test/resources)}/test-users.csv</stringProp>
+        <boolProp name="ignoreFirstLine">true</boolProp>
+        <boolProp name="quotedData">false</boolProp>
+        <boolProp name="recycle">true</boolProp>
+        <stringProp name="shareMode">shareMode.all</stringProp>
+        <boolProp name="stopThread">false</boolProp>
+        <stringProp name="variableNames">USERNAME,PASSWORD,USER_TYPE,ACCOUNT_ID,CARD_NUMBER</stringProp>
+      </CSVDataSet>
+      <hashTree/>
+
+      <!-- Authentication Flow Thread Group -->
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Authentication Flow Tests" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlGui" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <intProp name="LoopController.loops">-1</intProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">200</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">${RAMP_UP_PERIOD}</stringProp>
+        <boolProp name="ThreadGroup.scheduler">true</boolProp>
+        <stringProp name="ThreadGroup.duration">${TEST_DURATION}</stringProp>
+        <stringProp name="ThreadGroup.delay">0</stringProp>
+        <stringProp name="TestPlan.comments">Authentication Flow: 200 users (20% of total load)
+        Tests sign-on functionality (CC00/COSGN00), role-based menu access,
+        and session management via Spring Session with Redis backend.
+        
+        Critical Performance Requirements:
+        - Response time &lt; 200ms for 95% of authentication requests
+        - Session establishment and JWT token validation
+        - Role-based redirection to appropriate menu controllers</stringProp>
+      </ThreadGroup>
+      <hashTree>
+        <!-- Authentication - Sign On (CC00/COSGN00) -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="POST /api/auth/signon - Authentication" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain"></stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol"></stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/api/auth/signon</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+          <stringProp name="HTTPSampler.postBodyRaw">{"userId": "${USERNAME}", "password": "${PASSWORD}"}</stringProp>
+          <stringProp name="TestPlan.comments">Maps to COSGN00C.cbl - Sign-on transaction (CC00)
+          Validates user credentials against USRSEC dataset via PostgreSQL
+          Establishes session context through Spring Session with Redis
+          Returns JWT token for subsequent API calls
+          
+          Expected Response: 200 OK with user session data and role information</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <!-- Response Time Assertion for 200ms SLA -->
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Response Time &lt; 200ms SLA" enabled="true">
+            <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+          </DurationAssertion>
+          <hashTree/>
+          
+          <!-- JSON Response Assertion -->
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Valid JSON Response" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="49586">200</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.custom_message">Authentication should return 200 OK</stringProp>
+            <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+            <boolProp name="Assertion.assume_success">false</boolProp>
+            <intProp name="Assertion.test_type">1</intProp>
+          </ResponseAssertion>
+          <hashTree/>
+          
+          <!-- Extract JWT Token -->
+          <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="Extract JWT Token" enabled="true">
+            <stringProp name="JSONPostProcessor.referenceNames">JWT_TOKEN</stringProp>
+            <stringProp name="JSONPostProcessor.jsonPathExprs">$.token</stringProp>
+            <stringProp name="JSONPostProcessor.match_numbers">1</stringProp>
+            <stringProp name="JSONPostProcessor.defaultValues">NONE</stringProp>
+          </JSONPostProcessor>
+          <hashTree/>
+        </hashTree>
+
+        <!-- Menu Navigation Based on User Role -->
+        <IfController guiclass="IfControllerPanel" testclass="IfController" testname="Admin User Flow" enabled="true">
+          <stringProp name="IfController.condition">"${USER_TYPE}".equals("ADMIN")</stringProp>
+          <boolProp name="IfController.evaluateAll">false</boolProp>
+          <boolProp name="IfController.useExpression">true</boolProp>
+        </IfController>
+        <hashTree>
+          <!-- Admin Menu Access (CA00/COADM01) -->
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="GET /menus/admin - Admin Menu" enabled="true">
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+              <collectionProp name="Arguments.arguments"/>
+            </elementProp>
+            <stringProp name="HTTPSampler.domain"></stringProp>
+            <stringProp name="HTTPSampler.port"></stringProp>
+            <stringProp name="HTTPSampler.protocol"></stringProp>
+            <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+            <stringProp name="HTTPSampler.path">/menus/admin</stringProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+            <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+            <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+            <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+            <stringProp name="HTTPSampler.response_timeout"></stringProp>
+            <stringProp name="TestPlan.comments">Maps to COADM01C.cbl - Admin menu transaction (CA00)
+            Displays administrative functions menu for privileged users
+            Role-based access control via Spring Security</stringProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Response Time &lt; 200ms SLA" enabled="true">
+              <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+            </DurationAssertion>
+            <hashTree/>
+          </hashTree>
+        </hashTree>
+
+        <!-- Regular User Flow -->
+        <IfController guiclass="IfControllerPanel" testclass="IfController" testname="Regular User Flow" enabled="true">
+          <stringProp name="IfController.condition">"${USER_TYPE}".equals("USER")</stringProp>
+          <boolProp name="IfController.evaluateAll">false</boolProp>
+          <boolProp name="IfController.useExpression">true</boolProp>
+        </IfController>
+        <hashTree>
+          <!-- Main Menu Access (CM00/COMEN01) -->
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="GET /menus/main - Main Menu" enabled="true">
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+              <collectionProp name="Arguments.arguments"/>
+            </elementProp>
+            <stringProp name="HTTPSampler.domain"></stringProp>
+            <stringProp name="HTTPSampler.port"></stringProp>
+            <stringProp name="HTTPSampler.protocol"></stringProp>
+            <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+            <stringProp name="HTTPSampler.path">/menus/main</stringProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+            <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+            <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+            <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+            <stringProp name="HTTPSampler.response_timeout"></stringProp>
+            <stringProp name="TestPlan.comments">Maps to COMEN01C.cbl - Main menu transaction (CM00)
+            Displays standard user functions menu
+            Session context maintained via Spring Session</stringProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Response Time &lt; 200ms SLA" enabled="true">
+              <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+            </DurationAssertion>
+            <hashTree/>
+          </hashTree>
+        </hashTree>
+
+        <!-- Think Time Between Authentication Steps -->
+        <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="User Think Time" enabled="true">
+          <stringProp name="ConstantTimer.delay">1000</stringProp>
+          <stringProp name="TestPlan.comments">Simulate realistic user think time between authentication and menu access</stringProp>
+        </ConstantTimer>
+        <hashTree/>
+      </hashTree>
+
+      <!-- Account Management Thread Group -->
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Account Management Tests" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlGui" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <intProp name="LoopController.loops">-1</intProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">250</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">${RAMP_UP_PERIOD}</stringProp>
+        <boolProp name="ThreadGroup.scheduler">true</boolProp>
+        <stringProp name="ThreadGroup.duration">${TEST_DURATION}</stringProp>
+        <stringProp name="ThreadGroup.delay">30</stringProp>
+        <stringProp name="TestPlan.comments">Account Management: 250 users (25% of total load)
+        Tests account viewing and updating operations with comprehensive field validation
+        
+        Operations Tested:
+        - Account View (CAVW/COACTVW) - Read-only account information display
+        - Account Update (CAUP/COACTUP) - Comprehensive account editing with validation
+        
+        Performance Requirements:
+        - Sub-200ms response for account lookups via PostgreSQL composite keys
+        - Optimistic locking for concurrent update prevention
+        - Cross-reference validation with customer datasets</stringProp>
+      </ThreadGroup>
+      <hashTree>
+        <!-- Account View Operation (CAVW/COACTVW) -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="GET /api/accounts/view - Account View" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">${ACCOUNT_ID}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+                <stringProp name="Argument.name">accountId</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain"></stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol"></stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/api/accounts/view</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+          <stringProp name="TestPlan.comments">Maps to COACTVW - Account view transaction (CAVW)
+          Retrieves account information via 11-digit account filter
+          SELECT FROM acct_dat USING composite PK via JPA repository
+          Cross-references customer data from CUSTDAT</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Response Time &lt; 200ms SLA" enabled="true">
+            <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+          </DurationAssertion>
+          <hashTree/>
+          
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Valid Account Data Response" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="49586">200</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.custom_message">Account view should return 200 OK with account data</stringProp>
+            <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+            <boolProp name="Assertion.assume_success">false</boolProp>
+            <intProp name="Assertion.test_type">1</intProp>
+          </ResponseAssertion>
+          <hashTree/>
+        </hashTree>
+
+        <!-- Account Update Operation (CAUP/COACTUP) -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="PUT /api/accounts/update - Account Update" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain"></stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol"></stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/api/accounts/update/${ACCOUNT_ID}</stringProp>
+          <stringProp name="HTTPSampler.method">PUT</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+          <stringProp name="HTTPSampler.postBodyRaw">{
+  "accountId": "${ACCOUNT_ID}",
+  "customerId": 1000000001,
+  "accountStatus": "A",
+  "accountOpenDate": "2024-01-15",
+  "accountCreditLimit": 5000.00,
+  "accountCashCreditLimit": 1000.00,
+  "currentBalance": 1250.75,
+  "lastModified": "${__time(yyyy-MM-dd'T'HH:mm:ss)}"
+}</stringProp>
+          <stringProp name="TestPlan.comments">Maps to COACTUP - Account update transaction (CAUP)
+          Updates account information with comprehensive field validation
+          SELECT with UPDATE Lock via JPA, then UPDATE operation
+          Implements optimistic locking and cross-reference validation</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Response Time &lt; 200ms SLA" enabled="true">
+            <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+          </DurationAssertion>
+          <hashTree/>
+          
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Successful Account Update" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="49586">200</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.custom_message">Account update should return 200 OK</stringProp>
+            <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+            <boolProp name="Assertion.assume_success">false</boolProp>
+            <intProp name="Assertion.test_type">1</intProp>
+          </ResponseAssertion>
+          <hashTree/>
+        </hashTree>
+
+        <!-- Think Time Between Account Operations -->
+        <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Account Operation Think Time" enabled="true">
+          <stringProp name="ConstantTimer.delay">2000</stringProp>
+          <stringProp name="TestPlan.comments">Realistic user think time between account operations</stringProp>
+        </ConstantTimer>
+        <hashTree/>
+      </hashTree>
+
+      <!-- Credit Card Operations Thread Group -->
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Credit Card Operations Tests" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlGui" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <intProp name="LoopController.loops">-1</intProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">200</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">${RAMP_UP_PERIOD}</stringProp>
+        <boolProp name="ThreadGroup.scheduler">true</boolProp>
+        <stringProp name="ThreadGroup.duration">${TEST_DURATION}</stringProp>
+        <stringProp name="ThreadGroup.delay">60</stringProp>
+        <stringProp name="TestPlan.comments">Credit Card Operations: 200 users (20% of total load)
+        Tests credit card lifecycle management and cross-reference validation
+        
+        Operations Tested:
+        - Card List (CCLI/COCRDLI) - Paginated card browse with search filters
+        - Card Detail (CCDL/COCRDSL) - Comprehensive card information display  
+        - Card Update (CCUP/COCRDUP) - Status changes and information maintenance
+        
+        Performance Requirements:
+        - Cursor-based pagination for large card datasets
+        - Cross-reference validation with account linkage
+        - Real-time card status updates</stringProp>
+      </ThreadGroup>
+      <hashTree>
+        <!-- Card List Operation (CCLI/COCRDLI) -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="GET /api/cards/list - Card List" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">0</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+                <stringProp name="Argument.name">page</stringProp>
+              </elementProp>
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">7</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+                <stringProp name="Argument.name">size</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain"></stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol"></stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/api/cards/list</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+          <stringProp name="TestPlan.comments">Maps to COCRDLI - Card listing transaction (CCLI)
+          Cursor-based pagination query on card_dat table
+          Up to 7 cards per page with search filters
+          Implements STARTBR/READNEXT browse pattern equivalent</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Response Time &lt; 200ms SLA" enabled="true">
+            <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+          </DurationAssertion>
+          <hashTree/>
+        </hashTree>
+
+        <!-- Card Detail Operation (CCDL/COCRDSL) -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="GET /api/cards/detail - Card Detail" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">${CARD_NUMBER}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+                <stringProp name="Argument.name">cardNumber</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain"></stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol"></stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/api/cards/detail</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+          <stringProp name="TestPlan.comments">Maps to COCRDSL - Card detail transaction (CCDL)
+          SELECT FROM card_dat via JPA Repository using card number
+          Comprehensive card information display with cross-references</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Response Time &lt; 200ms SLA" enabled="true">
+            <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+          </DurationAssertion>
+          <hashTree/>
+        </hashTree>
+
+        <!-- Card Update Operation (CCUP/COCRDUP) -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="PUT /api/cards/update - Card Update" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain"></stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol"></stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/api/cards/update/${CARD_NUMBER}</stringProp>
+          <stringProp name="HTTPSampler.method">PUT</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+          <stringProp name="HTTPSampler.postBodyRaw">{
+  "cardNumber": "${CARD_NUMBER}",
+  "accountId": "${ACCOUNT_ID}",
+  "cardStatus": "A",
+  "expiryDate": "2026-12",
+  "cardType": "CREDIT",
+  "creditLimit": 5000.00,
+  "lastModified": "${__time(yyyy-MM-dd'T'HH:mm:ss)}"
+}</stringProp>
+          <stringProp name="TestPlan.comments">Maps to COCRDUP - Card update transaction (CCUP)
+          Status changes and information maintenance with validation
+          UPDATE with change detection via JPA
+          Cross-reference validation with account linkage</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Response Time &lt; 200ms SLA" enabled="true">
+            <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+          </DurationAssertion>
+          <hashTree/>
+        </hashTree>
+
+        <!-- Think Time Between Card Operations -->
+        <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Card Operation Think Time" enabled="true">
+          <stringProp name="ConstantTimer.delay">1500</stringProp>
+        </ConstantTimer>
+        <hashTree/>
+      </hashTree>
+
+      <!-- Transaction Processing Thread Group -->
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Transaction Processing Tests" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlGui" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <intProp name="LoopController.loops">-1</intProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">200</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">${RAMP_UP_PERIOD}</stringProp>
+        <boolProp name="ThreadGroup.scheduler">true</boolProp>
+        <stringProp name="ThreadGroup.duration">${TEST_DURATION}</stringProp>
+        <stringProp name="ThreadGroup.delay">90</stringProp>
+        <stringProp name="TestPlan.comments">Transaction Processing: 200 users (20% of total load)
+        Tests real-time transaction management and payment processing
+        
+        Operations Tested:
+        - Transaction List (CT00/COTRN00) - Historical transaction browsing
+        - Transaction Detail (CT01/COTRN01) - Individual transaction examination  
+        - Add Transaction (CT02/COTRN02) - Real-time transaction entry
+        - Bill Payment (CB00/COBIL00) - Customer payment processing
+        
+        Performance Requirements:
+        - Sub-200ms response for transaction lookups and creation
+        - Real-time balance updates with ACID transaction integrity
+        - Cross-reference validation for account-card linkage</stringProp>
+      </ThreadGroup>
+      <hashTree>
+        <!-- Transaction List Operation (CT00/COTRN00) -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="GET /api/transactions/list - Transaction List" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">${ACCOUNT_ID}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+                <stringProp name="Argument.name">accountId</stringProp>
+              </elementProp>
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">0</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+                <stringProp name="Argument.name">page</stringProp>
+              </elementProp>
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">10</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+                <stringProp name="Argument.name">size</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain"></stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol"></stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/api/transactions/list</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+          <stringProp name="TestPlan.comments">Maps to COTRN00 - Transaction list transaction (CT00)
+          Cursor-based pagination query on transact table
+          Historical transaction browsing with account filter</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Response Time &lt; 200ms SLA" enabled="true">
+            <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+          </DurationAssertion>
+          <hashTree/>
+        </hashTree>
+
+        <!-- Transaction Detail Operation (CT01/COTRN01) -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="GET /api/transactions/detail - Transaction Detail" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">${__Random(1000000,9999999)}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+                <stringProp name="Argument.name">transactionId</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain"></stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol"></stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/api/transactions/detail</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+          <stringProp name="TestPlan.comments">Maps to COTRN01 - Transaction detail transaction (CT01)
+          Individual transaction examination by transaction ID
+          SELECT FROM transact via JPA Repository</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Response Time &lt; 200ms SLA" enabled="true">
+            <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+          </DurationAssertion>
+          <hashTree/>
+        </hashTree>
+
+        <!-- Add Transaction Operation (CT02/COTRN02) -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="POST /api/transactions/add - Add Transaction" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain"></stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol"></stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/api/transactions/add</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+          <stringProp name="HTTPSampler.postBodyRaw">{
+  "accountId": "${ACCOUNT_ID}",
+  "cardNumber": "${CARD_NUMBER}",
+  "transactionAmount": ${__Random(10,500)}.${__Random(10,99)},
+  "transactionType": "PURCHASE",
+  "merchantName": "Test Merchant ${__Random(1,100)}",
+  "transactionDate": "${__time(yyyy-MM-dd)}",
+  "description": "Performance Test Transaction"
+}</stringProp>
+          <stringProp name="TestPlan.comments">Maps to COTRN02 - Add transaction transaction (CT02)
+          Real-time transaction entry with validation and balance updates
+          Cross-reference validation against CARDXREF for account-card linkage
+          INSERT INTO transact table with balance update coordination</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Response Time &lt; 200ms SLA" enabled="true">
+            <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+          </DurationAssertion>
+          <hashTree/>
+          
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Successful Transaction Creation" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="51511">201</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.custom_message">Transaction creation should return 201 Created</stringProp>
+            <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+            <boolProp name="Assertion.assume_success">false</boolProp>
+            <intProp name="Assertion.test_type">1</intProp>
+          </ResponseAssertion>
+          <hashTree/>
+        </hashTree>
+
+        <!-- Bill Payment Operation (CB00/COBIL00) -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="POST /api/payments/process - Bill Payment" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain"></stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol"></stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/api/payments/process</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+          <stringProp name="HTTPSampler.postBodyRaw">{
+  "accountId": "${ACCOUNT_ID}",
+  "paymentAmount": ${__Random(50,1000)}.${__Random(10,99)},
+  "paymentDate": "${__time(yyyy-MM-dd)}",
+  "paymentMethod": "BANK_TRANSFER",
+  "confirmationRequired": false
+}</stringProp>
+          <stringProp name="TestPlan.comments">Maps to COBIL00 - Bill payment transaction (CB00)
+          Customer payment processing with validation and balance updates
+          Payment validation and account balance update coordination</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Response Time &lt; 200ms SLA" enabled="true">
+            <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+          </DurationAssertion>
+          <hashTree/>
+          
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Successful Payment Processing" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="49586">200</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.custom_message">Payment processing should return 200 OK</stringProp>
+            <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+            <boolProp name="Assertion.assume_success">false</boolProp>
+            <intProp name="Assertion.test_type">1</intProp>
+          </ResponseAssertion>
+          <hashTree/>
+        </hashTree>
+
+        <!-- Think Time Between Transaction Operations -->
+        <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Transaction Operation Think Time" enabled="true">
+          <stringProp name="ConstantTimer.delay">3000</stringProp>
+          <stringProp name="TestPlan.comments">Realistic user think time between transaction operations</stringProp>
+        </ConstantTimer>
+        <hashTree/>
+      </hashTree>
+
+      <!-- User Administration Thread Group -->
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="User Administration Tests" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlGui" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <intProp name="LoopController.loops">-1</intProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">100</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">${RAMP_UP_PERIOD}</stringProp>
+        <boolProp name="ThreadGroup.scheduler">true</boolProp>
+        <stringProp name="ThreadGroup.duration">${TEST_DURATION}</stringProp>
+        <stringProp name="ThreadGroup.delay">120</stringProp>
+        <stringProp name="TestPlan.comments">User Administration: 100 users (10% of total load)
+        Tests system user lifecycle management operations
+        
+        Operations Tested:
+        - List Users (CU00/COUSR00) - Paginated user directory
+        - Add User (CU01/COUSR01) - New user creation with validation
+        - Update User (CU02/COUSR02) - User information maintenance
+        - Delete User (CU03/COUSR03) - Secure user removal procedures
+        
+        Performance Requirements:
+        - User management operations with role-based access control
+        - Security validation and audit logging
+        - Real-time user directory updates</stringProp>
+      </ThreadGroup>
+      <hashTree>
+        <!-- List Users Operation (CU00/COUSR00) -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="GET /api/users/list - List Users" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">0</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+                <stringProp name="Argument.name">page</stringProp>
+              </elementProp>
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">10</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+                <stringProp name="Argument.name">size</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain"></stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol"></stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/api/users/list</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+          <stringProp name="TestPlan.comments">Maps to COUSR00 - List users transaction (CU00)
+          Paginated user directory with role-based access control
+          SELECT FROM usrsec via JPA Repository</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Response Time &lt; 200ms SLA" enabled="true">
+            <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+          </DurationAssertion>
+          <hashTree/>
+        </hashTree>
+
+        <!-- Add User Operation (CU01/COUSR01) -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="POST /api/users/add - Add User" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain"></stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol"></stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/api/users/add</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+          <stringProp name="HTTPSampler.postBodyRaw">{
+  "userId": "TESTUSER${__Random(1000,9999)}",
+  "password": "TempPass123!",
+  "userType": "USER",
+  "firstName": "Test",
+  "lastName": "User${__Random(1,100)}",
+  "email": "testuser${__Random(1000,9999)}@carddemo.com",
+  "active": true
+}</stringProp>
+          <stringProp name="TestPlan.comments">Maps to COUSR01 - Add user transaction (CU01)
+          New user creation with validation and security controls
+          INSERT INTO usrsec with password hashing and role assignment</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Response Time &lt; 200ms SLA" enabled="true">
+            <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+          </DurationAssertion>
+          <hashTree/>
+          
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Successful User Creation" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="51511">201</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.custom_message">User creation should return 201 Created</stringProp>
+            <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+            <boolProp name="Assertion.assume_success">false</boolProp>
+            <intProp name="Assertion.test_type">1</intProp>
+          </ResponseAssertion>
+          <hashTree/>
+
+          <!-- Extract Created User ID -->
+          <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="Extract Created User ID" enabled="true">
+            <stringProp name="JSONPostProcessor.referenceNames">CREATED_USER_ID</stringProp>
+            <stringProp name="JSONPostProcessor.jsonPathExprs">$.userId</stringProp>
+            <stringProp name="JSONPostProcessor.match_numbers">1</stringProp>
+            <stringProp name="JSONPostProcessor.defaultValues">NONE</stringProp>
+          </JSONPostProcessor>
+          <hashTree/>
+        </hashTree>
+
+        <!-- Update User Operation (CU02/COUSR02) -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="PUT /api/users/update - Update User" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain"></stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol"></stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/api/users/update/${CREATED_USER_ID}</stringProp>
+          <stringProp name="HTTPSampler.method">PUT</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+          <stringProp name="HTTPSampler.postBodyRaw">{
+  "userId": "${CREATED_USER_ID}",
+  "firstName": "Updated",
+  "lastName": "TestUser",
+  "email": "updated.${CREATED_USER_ID}@carddemo.com",
+  "active": true,
+  "lastModified": "${__time(yyyy-MM-dd'T'HH:mm:ss)}"
+}</stringProp>
+          <stringProp name="TestPlan.comments">Maps to COUSR02 - Update user transaction (CU02)
+          User information maintenance with validation
+          UPDATE usrsec with change tracking and audit logging</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Response Time &lt; 200ms SLA" enabled="true">
+            <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+          </DurationAssertion>
+          <hashTree/>
+        </hashTree>
+
+        <!-- Delete User Operation (CU03/COUSR03) -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="DELETE /api/users/delete - Delete User" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain"></stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol"></stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/api/users/delete/${CREATED_USER_ID}</stringProp>
+          <stringProp name="HTTPSampler.method">DELETE</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+          <stringProp name="TestPlan.comments">Maps to COUSR03 - Delete user transaction (CU03)
+          Secure user removal procedures with cascading cleanup
+          DELETE FROM usrsec with referential integrity checks</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Response Time &lt; 200ms SLA" enabled="true">
+            <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+          </DurationAssertion>
+          <hashTree/>
+        </hashTree>
+
+        <!-- Think Time Between User Operations -->
+        <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="User Administration Think Time" enabled="true">
+          <stringProp name="ConstantTimer.delay">2500</stringProp>
+          <stringProp name="TestPlan.comments">Realistic administrator think time between user operations</stringProp>
+        </ConstantTimer>
+        <hashTree/>
+      </hashTree>
+
+      <!-- Mixed Workload Thread Group -->
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Mixed Workload Simulation" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlGui" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <intProp name="LoopController.loops">-1</intProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">250</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">${RAMP_UP_PERIOD}</stringProp>
+        <boolProp name="ThreadGroup.scheduler">true</boolProp>
+        <stringProp name="ThreadGroup.duration">${TEST_DURATION}</stringProp>
+        <stringProp name="ThreadGroup.delay">150</stringProp>
+        <stringProp name="TestPlan.comments">Mixed Workload: 250 users (25% of total load)
+        Simulates realistic user patterns with weighted distribution of all transaction types
+        
+        Workload Distribution:
+        - 40% Account/Card inquiries (read operations)
+        - 30% Transaction processing (write operations)  
+        - 20% User authentication and navigation
+        - 10% Administrative operations
+        
+        This thread group uses throughput controllers to simulate realistic business patterns
+        and validates system performance under mixed operational loads.</stringProp>
+      </ThreadGroup>
+      <hashTree>
+        <!-- Weighted Transaction Distribution using Throughput Controllers -->
+        <ThroughputController guiclass="ThroughputControllerGui" testclass="ThroughputController" testname="Account Inquiry Operations (40%)" enabled="true">
+          <intProp name="ThroughputController.style">1</intProp>
+          <boolProp name="ThroughputController.perThread">false</boolProp>
+          <intProp name="ThroughputController.maxThroughput">1</intProp>
+          <floatProp name="ThroughputController.percentThroughput">40.0</floatProp>
+        </ThroughputController>
+        <hashTree>
+          <!-- Account View Operation -->
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Mixed - Account View" enabled="true">
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+              <collectionProp name="Arguments.arguments">
+                <elementProp name="" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                  <stringProp name="Argument.value">${ACCOUNT_ID}</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                  <stringProp name="Argument.name">accountId</stringProp>
+                </elementProp>
+              </collectionProp>
+            </elementProp>
+            <stringProp name="HTTPSampler.domain"></stringProp>
+            <stringProp name="HTTPSampler.port"></stringProp>
+            <stringProp name="HTTPSampler.protocol"></stringProp>
+            <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+            <stringProp name="HTTPSampler.path">/api/accounts/view</stringProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+            <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+            <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+            <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+            <stringProp name="HTTPSampler.response_timeout"></stringProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Response Time &lt; 200ms SLA" enabled="true">
+              <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+            </DurationAssertion>
+            <hashTree/>
+          </hashTree>
+
+          <!-- Card List Operation -->
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Mixed - Card List" enabled="true">
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+              <collectionProp name="Arguments.arguments">
+                <elementProp name="" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                  <stringProp name="Argument.value">0</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                  <stringProp name="Argument.name">page</stringProp>
+                </elementProp>
+                <elementProp name="" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                  <stringProp name="Argument.value">5</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                  <stringProp name="Argument.name">size</stringProp>
+                </elementProp>
+              </collectionProp>
+            </elementProp>
+            <stringProp name="HTTPSampler.domain"></stringProp>
+            <stringProp name="HTTPSampler.port"></stringProp>
+            <stringProp name="HTTPSampler.protocol"></stringProp>
+            <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+            <stringProp name="HTTPSampler.path">/api/cards/list</stringProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+            <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+            <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+            <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+            <stringProp name="HTTPSampler.response_timeout"></stringProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Response Time &lt; 200ms SLA" enabled="true">
+              <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+            </DurationAssertion>
+            <hashTree/>
+          </hashTree>
+        </hashTree>
+
+        <ThroughputController guiclass="ThroughputControllerGui" testclass="ThroughputController" testname="Transaction Processing Operations (30%)" enabled="true">
+          <intProp name="ThroughputController.style">1</intProp>
+          <boolProp name="ThroughputController.perThread">false</boolProp>
+          <intProp name="ThroughputController.maxThroughput">1</intProp>
+          <floatProp name="ThroughputController.percentThroughput">30.0</floatProp>
+        </ThroughputController>
+        <hashTree>
+          <!-- Transaction List -->
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Mixed - Transaction List" enabled="true">
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+              <collectionProp name="Arguments.arguments">
+                <elementProp name="" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                  <stringProp name="Argument.value">${ACCOUNT_ID}</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                  <stringProp name="Argument.name">accountId</stringProp>
+                </elementProp>
+              </collectionProp>
+            </elementProp>
+            <stringProp name="HTTPSampler.domain"></stringProp>
+            <stringProp name="HTTPSampler.port"></stringProp>
+            <stringProp name="HTTPSampler.protocol"></stringProp>
+            <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+            <stringProp name="HTTPSampler.path">/api/transactions/list</stringProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+            <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+            <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+            <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+            <stringProp name="HTTPSampler.response_timeout"></stringProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Response Time &lt; 200ms SLA" enabled="true">
+              <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+            </DurationAssertion>
+            <hashTree/>
+          </hashTree>
+
+          <!-- Add Transaction -->
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Mixed - Add Transaction" enabled="true">
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+              <collectionProp name="Arguments.arguments"/>
+            </elementProp>
+            <stringProp name="HTTPSampler.domain"></stringProp>
+            <stringProp name="HTTPSampler.port"></stringProp>
+            <stringProp name="HTTPSampler.protocol"></stringProp>
+            <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+            <stringProp name="HTTPSampler.path">/api/transactions/add</stringProp>
+            <stringProp name="HTTPSampler.method">POST</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+            <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+            <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+            <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+            <stringProp name="HTTPSampler.response_timeout"></stringProp>
+            <stringProp name="HTTPSampler.postBodyRaw">{
+  "accountId": "${ACCOUNT_ID}",
+  "cardNumber": "${CARD_NUMBER}",
+  "transactionAmount": ${__Random(5,100)}.${__Random(10,99)},
+  "transactionType": "PURCHASE",
+  "merchantName": "Mixed Test Merchant ${__Random(1,50)}",
+  "transactionDate": "${__time(yyyy-MM-dd)}"
+}</stringProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Response Time &lt; 200ms SLA" enabled="true">
+              <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+            </DurationAssertion>
+            <hashTree/>
+          </hashTree>
+        </hashTree>
+
+        <ThroughputController guiclass="ThroughputControllerGui" testclass="ThroughputController" testname="Authentication and Navigation (20%)" enabled="true">
+          <intProp name="ThroughputController.style">1</intProp>
+          <boolProp name="ThroughputController.perThread">false</boolProp>
+          <intProp name="ThroughputController.maxThroughput">1</intProp>
+          <floatProp name="ThroughputController.percentThroughput">20.0</floatProp>
+        </ThroughputController>
+        <hashTree>
+          <!-- Authentication -->
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Mixed - Authentication" enabled="true">
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+              <collectionProp name="Arguments.arguments"/>
+            </elementProp>
+            <stringProp name="HTTPSampler.domain"></stringProp>
+            <stringProp name="HTTPSampler.port"></stringProp>
+            <stringProp name="HTTPSampler.protocol"></stringProp>
+            <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+            <stringProp name="HTTPSampler.path">/api/auth/signon</stringProp>
+            <stringProp name="HTTPSampler.method">POST</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+            <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+            <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+            <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+            <stringProp name="HTTPSampler.response_timeout"></stringProp>
+            <stringProp name="HTTPSampler.postBodyRaw">{"userId": "${USERNAME}", "password": "${PASSWORD}"}</stringProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Response Time &lt; 200ms SLA" enabled="true">
+              <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+            </DurationAssertion>
+            <hashTree/>
+          </hashTree>
+
+          <!-- Menu Navigation -->
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Mixed - Main Menu" enabled="true">
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+              <collectionProp name="Arguments.arguments"/>
+            </elementProp>
+            <stringProp name="HTTPSampler.domain"></stringProp>
+            <stringProp name="HTTPSampler.port"></stringProp>
+            <stringProp name="HTTPSampler.protocol"></stringProp>
+            <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+            <stringProp name="HTTPSampler.path">/menus/main</stringProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+            <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+            <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+            <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+            <stringProp name="HTTPSampler.response_timeout"></stringProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Response Time &lt; 200ms SLA" enabled="true">
+              <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+            </DurationAssertion>
+            <hashTree/>
+          </hashTree>
+        </hashTree>
+
+        <ThroughputController guiclass="ThroughputControllerGui" testclass="ThroughputController" testname="Administrative Operations (10%)" enabled="true">
+          <intProp name="ThroughputController.style">1</intProp>
+          <boolProp name="ThroughputController.perThread">false</boolProp>
+          <intProp name="ThroughputController.maxThroughput">1</intProp>
+          <floatProp name="ThroughputController.percentThroughput">10.0</floatProp>
+        </ThroughputController>
+        <hashTree>
+          <!-- User List -->
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Mixed - User List" enabled="true">
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+              <collectionProp name="Arguments.arguments">
+                <elementProp name="" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                  <stringProp name="Argument.value">0</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                  <stringProp name="Argument.name">page</stringProp>
+                </elementProp>
+                <elementProp name="" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                  <stringProp name="Argument.value">5</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                  <stringProp name="Argument.name">size</stringProp>
+                </elementProp>
+              </collectionProp>
+            </elementProp>
+            <stringProp name="HTTPSampler.domain"></stringProp>
+            <stringProp name="HTTPSampler.port"></stringProp>
+            <stringProp name="HTTPSampler.protocol"></stringProp>
+            <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+            <stringProp name="HTTPSampler.path">/api/users/list</stringProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+            <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+            <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+            <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+            <stringProp name="HTTPSampler.response_timeout"></stringProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Response Time &lt; 200ms SLA" enabled="true">
+              <stringProp name="DurationAssertion.duration">${RESPONSE_TIME_SLA}</stringProp>
+            </DurationAssertion>
+            <hashTree/>
+          </hashTree>
+        </hashTree>
+
+        <!-- Mixed Workload Think Time -->
+        <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Mixed Workload Think Time" enabled="true">
+          <stringProp name="ConstantTimer.delay">1000</stringProp>
+          <stringProp name="TestPlan.comments">Realistic think time for mixed workload scenarios</stringProp>
+        </ConstantTimer>
+        <hashTree/>
+      </hashTree>
+
+      <!-- Test Results Listeners and Reporting Components -->
+      
+      <!-- Summary Report for Overall Performance Metrics -->
+      <SummaryReport guiclass="SummaryReportGui" testclass="SummaryReport" testname="Summary Report" enabled="true">
+        <stringProp name="TestPlan.comments">Overall performance summary including:
+        - Total samples, average response time, minimum/maximum response times
+        - Throughput (requests per second)
+        - Error percentage
+        - Standard deviation
+        - 95% confidence level
+        - Data transfer rates (KB/sec)
+        
+        Critical metrics to monitor:
+        - Average response time &lt; 200ms for 95% of requests
+        - Error rate &lt; 0.1%
+        - Throughput &gt; 10,000 requests/hour during peak load</stringProp>
+      </SummaryReport>
+      <hashTree/>
+
+      <!-- View Results Tree for Detailed Request/Response Analysis -->
+      <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
+        <boolProp name="ResultCollector.error_logging">false</boolProp>
+        <objProp>
+          <name>saveConfig</name>
+          <value class="SampleSaveConfiguration">
+            <time>true</time>
+            <latency>true</latency>
+            <timestamp>true</timestamp>
+            <success>true</success>
+            <label>true</label>
+            <code>true</code>
+            <message>true</message>
+            <threadName>true</threadName>
+            <dataType>true</dataType>
+            <encoding>false</encoding>
+            <assertions>true</assertions>
+            <subresults>true</subresults>
+            <responseData>false</responseData>
+            <samplerData>false</samplerData>
+            <xml>false</xml>
+            <fieldNames>false</fieldNames>
+            <responseHeaders>false</responseHeaders>
+            <requestHeaders>false</requestHeaders>
+            <responseDataOnError>false</responseDataOnError>
+            <saveAssertionResultsFailureMessage>false</saveAssertionResultsFailureMessage>
+            <assertionsResultsToSave>0</assertionsResultsToSave>
+            <bytes>true</bytes>
+            <threadCounts>true</threadCounts>
+          </value>
+        </objProp>
+        <stringProp name="filename"></stringProp>
+        <stringProp name="TestPlan.comments">Detailed view of individual requests and responses for debugging and analysis.
+        
+        Use this listener to:
+        - Debug failed requests and response data
+        - Validate JSON response structures
+        - Analyze response headers and HTTP status codes
+        - Troubleshoot performance issues at the request level
+        
+        Note: Disable during high-load testing to conserve resources.</stringProp>
+      </ResultCollector>
+      <hashTree/>
+
+      <!-- Response Time Graph for Performance Visualization -->
+      <ResultCollector guiclass="RespTimeGraphVisualizer" testclass="ResultCollector" testname="Response Time Graph" enabled="true">
+        <boolProp name="ResultCollector.error_logging">false</boolProp>
+        <objProp>
+          <name>saveConfig</name>
+          <value class="SampleSaveConfiguration">
+            <time>true</time>
+            <latency>true</latency>
+            <timestamp>true</timestamp>
+            <success>true</success>
+            <label>true</label>
+            <code>false</code>
+            <message>false</message>
+            <threadName>false</threadName>
+            <dataType>false</dataType>
+            <encoding>false</encoding>
+            <assertions>false</assertions>
+            <subresults>false</subresults>
+            <responseData>false</responseData>
+            <samplerData>false</samplerData>
+            <xml>false</xml>
+            <fieldNames>false</fieldNames>
+            <responseHeaders>false</responseHeaders>
+            <requestHeaders>false</requestHeaders>
+            <responseDataOnError>false</responseDataOnError>
+            <saveAssertionResultsFailureMessage>false</saveAssertionResultsFailureMessage>
+            <assertionsResultsToSave>0</assertionsResultsToSave>
+            <bytes>false</bytes>
+            <threadCounts>false</threadCounts>
+          </value>
+        </objProp>
+        <stringProp name="filename"></stringProp>
+        <stringProp name="TestPlan.comments">Real-time visualization of response time trends over the duration of the test.
+        
+        Key metrics displayed:
+        - Average response time over time intervals
+        - Response time spikes and patterns
+        - SLA adherence visualization (200ms threshold)
+        
+        Use to identify:
+        - Performance degradation patterns
+        - System warm-up periods
+        - Load-related performance impacts</stringProp>
+      </ResultCollector>
+      <hashTree/>
+
+      <!-- Aggregate Report for Detailed Performance Metrics -->
+      <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="Aggregate Report" enabled="true">
+        <boolProp name="ResultCollector.error_logging">false</boolProp>
+        <objProp>
+          <name>saveConfig</name>
+          <value class="SampleSaveConfiguration">
+            <time>true</time>
+            <latency>true</latency>
+            <timestamp>true</timestamp>
+            <success>true</success>
+            <label>true</label>
+            <code>true</code>
+            <message>true</message>
+            <threadName>true</threadName>
+            <dataType>true</dataType>
+            <encoding>false</encoding>
+            <assertions>true</assertions>
+            <subresults>true</subresults>
+            <responseData>false</responseData>
+            <samplerData>false</samplerData>
+            <xml>false</xml>
+            <fieldNames>false</fieldNames>
+            <responseHeaders>false</responseHeaders>
+            <requestHeaders>false</requestHeaders>
+            <responseDataOnError>false</responseDataOnError>
+            <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+            <assertionsResultsToSave>0</assertionsResultsToSave>
+            <bytes>true</bytes>
+            <threadCounts>true</threadCounts>
+          </value>
+        </objProp>
+        <stringProp name="filename"></stringProp>
+        <stringProp name="TestPlan.comments">Comprehensive aggregate performance statistics including percentiles and detailed metrics.
+        
+        Detailed metrics provided:
+        - Sample count, average, median, 90%/95%/99% lines
+        - Min/Max response times
+        - Error percentage by request type
+        - Throughput (requests/sec)
+        - Received/Sent data rates (KB/sec)
+        
+        Critical for SLA validation:
+        - Verify 95% of requests &lt; 200ms
+        - Monitor error rates &lt; 0.1%
+        - Validate throughput targets</stringProp>
+      </ResultCollector>
+      <hashTree/>
+
+      <!-- Simple Data Writer for CSV Export -->
+      <ResultCollector guiclass="SimpleDataWriter" testclass="ResultCollector" testname="CSV Results Export" enabled="true">
+        <boolProp name="ResultCollector.error_logging">false</boolProp>
+        <objProp>
+          <name>saveConfig</name>
+          <value class="SampleSaveConfiguration">
+            <time>true</time>
+            <latency>true</latency>
+            <timestamp>true</timestamp>
+            <success>true</success>
+            <label>true</label>
+            <code>true</code>
+            <message>true</message>
+            <threadName>true</threadName>
+            <dataType>false</dataType>
+            <encoding>false</encoding>
+            <assertions>false</assertions>
+            <subresults>false</subresults>
+            <responseData>false</responseData>
+            <samplerData>false</samplerData>
+            <xml>false</xml>
+            <fieldNames>true</fieldNames>
+            <responseHeaders>false</responseHeaders>
+            <requestHeaders>false</requestHeaders>
+            <responseDataOnError>false</responseDataOnError>
+            <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+            <assertionsResultsToSave>0</assertionsResultsToSave>
+            <bytes>true</bytes>
+            <threadCounts>true</threadCounts>
+          </value>
+        </objProp>
+        <stringProp name="filename">${__P(RESULTS_DIR,target/jmeter-results)}/carddemo-performance-${__time(yyyy-MM-dd-HHmmss)}.csv</stringProp>
+        <stringProp name="TestPlan.comments">Exports detailed test results to CSV file for offline analysis and reporting.
+        
+        File contains:
+        - Timestamp, elapsed time, response code, response message
+        - Thread name, data type, success flag
+        - Request label, latency, and data transfer information
+        
+        Use exported data for:
+        - Historical performance trend analysis
+        - Integration with monitoring systems
+        - Detailed statistical analysis with external tools
+        - Performance baseline documentation</stringProp>
+      </ResultCollector>
+      <hashTree/>
+
+      <!-- Backend Listener for Real-time Monitoring Integration -->
+      <BackendListener guiclass="BackendListenerGui" testclass="BackendListener" testname="InfluxDB Backend Listener" enabled="false">
+        <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+          <collectionProp name="Arguments.arguments">
+            <elementProp name="influxdbMetricsSender" elementType="Argument">
+              <stringProp name="Argument.name">influxdbMetricsSender</stringProp>
+              <stringProp name="Argument.value">org.apache.jmeter.visualizers.backend.influxdb.HttpMetricsSender</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="influxdbUrl" elementType="Argument">
+              <stringProp name="Argument.name">influxdbUrl</stringProp>
+              <stringProp name="Argument.value">${__P(INFLUXDB_URL,http://localhost:8086/write?db=jmeter)}</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="application" elementType="Argument">
+              <stringProp name="Argument.name">application</stringProp>
+              <stringProp name="Argument.value">CardDemo</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="measurement" elementType="Argument">
+              <stringProp name="Argument.name">measurement</stringProp>
+              <stringProp name="Argument.value">jmeter</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="summaryOnly" elementType="Argument">
+              <stringProp name="Argument.name">summaryOnly</stringProp>
+              <stringProp name="Argument.value">false</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="samplersRegex" elementType="Argument">
+              <stringProp name="Argument.name">samplersRegex</stringProp>
+              <stringProp name="Argument.value">.*</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="percentiles" elementType="Argument">
+              <stringProp name="Argument.name">percentiles</stringProp>
+              <stringProp name="Argument.value">90;95;99</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="testTitle" elementType="Argument">
+              <stringProp name="Argument.name">testTitle</stringProp>
+              <stringProp name="Argument.value">CardDemo Performance Test</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="eventTags" elementType="Argument">
+              <stringProp name="Argument.name">eventTags</stringProp>
+              <stringProp name="Argument.value">environment=${__P(TEST_ENV,development)};version=${__P(APP_VERSION,1.0)}</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+          </collectionProp>
+        </elementProp>
+        <stringProp name="classname">org.apache.jmeter.visualizers.backend.influxdb.InfluxdbBackendListenerClient</stringProp>
+        <stringProp name="TestPlan.comments">Optional backend listener for real-time metrics streaming to InfluxDB/Grafana.
+        
+        Features:
+        - Real-time performance dashboard integration
+        - Historical trend storage and analysis
+        - Alerting on SLA violations
+        - Integration with existing monitoring infrastructure
+        
+        Configuration:
+        - INFLUXDB_URL: InfluxDB endpoint for metrics storage
+        - TEST_ENV: Environment tag for metric categorization
+        - APP_VERSION: Application version for trend analysis
+        
+        Enable this listener when real-time monitoring is required.
+        Disable during load testing to minimize resource overhead.</stringProp>
+      </BackendListener>
+      <hashTree/>
+
+      <!-- Comprehensive Performance Assertions and Monitoring -->
+      
+      <!-- Global Response Time Assertion -->
+      <kg.apc.jmeter.assertions.ResponseTimeAssertion guiclass="kg.apc.jmeter.assertions.gui.ResponseTimeAssertionGui" testclass="kg.apc.jmeter.assertions.ResponseTimeAssertion" testname="Global SLA Assertion (95th Percentile &lt; 200ms)" enabled="true">
+        <stringProp name="TestPlan.comments">Global assertion to ensure 95% of all requests complete within 200ms SLA.
+        
+        This assertion validates the primary performance requirement:
+        - 95th percentile response time must be &lt; 200ms
+        - Applied across all request types and thread groups
+        - Critical for production readiness validation
+        
+        Failure of this assertion indicates SLA violation requiring investigation.</stringProp>
+        <stringProp name="percentile">95</stringProp>
+        <stringProp name="value">200</stringProp>
+      </kg.apc.jmeter.assertions.ResponseTimeAssertion>
+      <hashTree/>
+
+      <!-- Throughput Shaping Timer for Realistic Load Patterns -->
+      <kg.apc.jmeter.timers.VariableThroughputTimer guiclass="kg.apc.jmeter.timers.VariableThroughputTimerGui" testclass="kg.apc.jmeter.timers.VariableThroughputTimer" testname="Throughput Shaping Timer" enabled="true">
+        <collectionProp name="load_profile">
+          <collectionProp name="1400929988">
+            <stringProp name="1598">1</stringProp>
+            <stringProp name="1598">1</stringProp>
+            <stringProp name="49586">120</stringProp>
+          </collectionProp>
+          <collectionProp name="1400929988">
+            <stringProp name="1598">1</stringProp>
+            <stringProp name="49690">100</stringProp>
+            <stringProp name="49586">120</stringProp>
+          </collectionProp>
+          <collectionProp name="1400929988">
+            <stringProp name="49690">100</stringProp>
+            <stringProp name="49690">100</stringProp>
+            <stringProp name="1507062">1200</stringProp>
+          </collectionProp>
+          <collectionProp name="1400929988">
+            <stringProp name="49690">100</stringProp>
+            <stringProp name="1598">1</stringProp>
+            <stringProp name="49586">120</stringProp>
+          </collectionProp>
+        </collectionProp>
+        <stringProp name="TestPlan.comments">Throughput shaping timer to simulate realistic load patterns:
+        
+        Phase 1 (0-2 min): Ramp up from 1 to 100 TPS (warm-up period)
+        Phase 2 (2-4 min): Maintain 100 TPS (steady state)
+        Phase 3 (4-24 min): Peak load at 100 TPS (sustained performance validation)
+        Phase 4 (24-26 min): Ramp down from 100 to 1 TPS (graceful degradation)
+        
+        Total test duration: 26 minutes
+        Peak throughput: 100 TPS (360,000 requests/hour)
+        
+        This pattern validates system performance under realistic business load profiles.</stringProp>
+      </kg.apc.jmeter.timers.VariableThroughputTimer>
+      <hashTree/>
+      
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>

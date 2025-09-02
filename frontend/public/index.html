@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CardDemo - Modern Credit Card Management System migrated from COBOL/CICS to React/Spring Boot">
+    <meta name="theme-color" content="#1976d2">
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>CardDemo - Credit Card Management System</title>
+    <!--
+        This HTML file serves as the entry point for the CardDemo React Single Page Application.
+        It replaces the original 3270 terminal interface with a modern browser-based interface
+        while maintaining complete functional parity with the COBOL/CICS system.
+        
+        Key Features:
+        - Root mounting point for React 18.x components
+        - Responsive design support for modern devices  
+        - Progressive Web App capabilities via manifest.json
+        - Proper charset and viewport configuration
+        - Material Design theme color integration
+        
+        The React application provides screen-for-screen conversion of 18 BMS mapsets
+        into modern components located under frontend/src/components/screens/
+    -->
+</head>
+<body>
+    <noscript>
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: Arial, sans-serif; text-align: center; padding: 20px;">
+            <h1 style="color: #d32f2f; margin-bottom: 20px;">JavaScript Required</h1>
+            <p style="margin-bottom: 10px;">CardDemo requires JavaScript to be enabled in your browser.</p>
+            <p style="margin-bottom: 20px;">This modern credit card management system replaces the legacy COBOL/CICS terminal interface with an interactive web application.</p>
+            <p style="color: #666;">Please enable JavaScript and refresh the page to continue.</p>
+        </div>
+    </noscript>
+    
+    <!-- Root element where React application mounts -->
+    <!-- This div replaces the 3270 terminal screen and serves as the container for all React components -->
+    <div id="root"></div>
+    
+    <!--
+        React application will be injected here by the build process.
+        The bundled JavaScript will:
+        1. Mount the React application to the #root element
+        2. Initialize routing with React Router 6.x
+        3. Establish session management via Spring Session/Redis
+        4. Load 18 screen components matching original BMS mapsets
+        5. Connect to Spring Boot REST APIs via Axios HTTP client
+    -->
+</body>
+</html>

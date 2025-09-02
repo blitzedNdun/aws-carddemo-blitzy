@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CardDemo Account Statement</title>
+    <style>
+        /* Embedded CSS for professional appearance */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.4;
+        }
+        
+        .statement-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+        
+        .header .statement-date {
+            margin-top: 10px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .customer-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #2a5298;
+        }
+        
+        .customer-section h2 {
+            margin: 0 0 15px 0;
+            color: #2a5298;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .customer-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .customer-info div {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .customer-info .label {
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .customer-info .value {
+            color: #333;
+        }
+        
+        .account-summary {
+            margin-bottom: 30px;
+        }
+        
+        .account-summary h2 {
+            margin: 0 0 20px 0;
+            color: #2a5298;
+            font-size: 18px;
+            font-weight: 600;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+        
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background-color: #fff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .summary-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .summary-table td {
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+            font-weight: 500;
+        }
+        
+        .amount {
+            text-align: right;
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+        }
+        
+        .amount.positive {
+            color: #28a745;
+        }
+        
+        .amount.negative {
+            color: #dc3545;
+        }
+        
+        .transactions-section h2 {
+            margin: 0 0 20px 0;
+            color: #2a5298;
+            font-size: 18px;
+            font-weight: 600;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+        
+        .transactions-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            background-color: #fff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .transactions-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .transactions-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 13px;
+        }
+        
+        .transactions-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        .transactions-table tr:nth-child(odd) {
+            background-color: #ffffff;
+        }
+        
+        .transactions-table tr:hover {
+            background-color: #e3f2fd;
+            transition: background-color 0.3s ease;
+        }
+        
+        .transaction-date {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .transaction-description {
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .transaction-amount {
+            text-align: right;
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+        }
+        
+        .transaction-amount.debit {
+            color: #dc3545;
+        }
+        
+        .transaction-amount.credit {
+            color: #28a745;
+        }
+        
+        .balance-calculations {
+            margin-top: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .balance-calculations h3 {
+            margin: 0 0 15px 0;
+            color: #2a5298;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .balance-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px 0;
+        }
+        
+        .balance-row:last-child {
+            margin-bottom: 0;
+            padding-top: 15px;
+            border-top: 2px solid #2a5298;
+            font-weight: 700;
+            font-size: 16px;
+        }
+        
+        .balance-label {
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .balance-value {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .footer .statement-info {
+            margin-bottom: 10px;
+        }
+        
+        .footer .timestamp {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            color: #2a5298;
+        }
+        
+        @media (max-width: 768px) {
+            .customer-info {
+                grid-template-columns: 1fr;
+            }
+            
+            .statement-container {
+                margin: 10px;
+                border-radius: 0;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .transactions-table {
+                font-size: 12px;
+            }
+            
+            .transactions-table th,
+            .transactions-table td {
+                padding: 8px 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="statement-container">
+        <!-- Header Section -->
+        <div class="header">
+            <h1>CardDemo Account Statement</h1>
+            <div class="statement-date">Statement Period: January 01, 2024 - January 31, 2024</div>
+        </div>
+        
+        <div class="content">
+            <!-- Customer Information Section -->
+            <div class="customer-section">
+                <h2>Customer Information</h2>
+                <div class="customer-info">
+                    <div>
+                        <span class="label">Customer ID:</span>
+                        <span class="value">000001001</span>
+                    </div>
+                    <div>
+                        <span class="label">Account Number:</span>
+                        <span class="value">00000000001</span>
+                    </div>
+                    <div>
+                        <span class="label">Name:</span>
+                        <span class="value">John Michael Smith</span>
+                    </div>
+                    <div>
+                        <span class="label">Phone:</span>
+                        <span class="value">(555) 123-4567</span>
+                    </div>
+                    <div>
+                        <span class="label">Address:</span>
+                        <span class="value">123 Main Street</span>
+                    </div>
+                    <div>
+                        <span class="label">City, State:</span>
+                        <span class="value">Springfield, IL 62701</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Account Summary Section -->
+            <div class="account-summary">
+                <h2>Account Summary</h2>
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Account Details</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Previous Balance</td>
+                            <td class="amount positive">$2,345.67</td>
+                        </tr>
+                        <tr>
+                            <td>Total Credits</td>
+                            <td class="amount positive">$1,200.00</td>
+                        </tr>
+                        <tr>
+                            <td>Total Debits</td>
+                            <td class="amount negative">($987.54)</td>
+                        </tr>
+                        <tr>
+                            <td>Interest Charges</td>
+                            <td class="amount negative">($23.45)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Current Balance</strong></td>
+                            <td class="amount positive"><strong>$2,534.68</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Available Credit</td>
+                            <td class="amount positive">$7,465.32</td>
+                        </tr>
+                        <tr>
+                            <td>Credit Limit</td>
+                            <td class="amount">$10,000.00</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Transaction Listing Section -->
+            <div class="transactions-section">
+                <h2>Transaction History</h2>
+                <table class="transactions-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Transaction ID</th>
+                            <th>Description</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="transaction-date">2024-01-31</td>
+                            <td>TXN0000000012345</td>
+                            <td class="transaction-description">Interest Charge</td>
+                            <td>INT</td>
+                            <td class="transaction-amount debit">($23.45)</td>
+                        </tr>
+                        <tr>
+                            <td class="transaction-date">2024-01-30</td>
+                            <td>TXN0000000012344</td>
+                            <td class="transaction-description">Payment - Thank You</td>
+                            <td>PMT</td>
+                            <td class="transaction-amount credit">$500.00</td>
+                        </tr>
+                        <tr>
+                            <td class="transaction-date">2024-01-28</td>
+                            <td>TXN0000000012343</td>
+                            <td class="transaction-description">Amazon Online Purchase</td>
+                            <td>PUR</td>
+                            <td class="transaction-amount debit">($89.99)</td>
+                        </tr>
+                        <tr>
+                            <td class="transaction-date">2024-01-25</td>
+                            <td>TXN0000000012342</td>
+                            <td class="transaction-description">Grocery Store - Kroger</td>
+                            <td>PUR</td>
+                            <td class="transaction-amount debit">($156.78)</td>
+                        </tr>
+                        <tr>
+                            <td class="transaction-date">2024-01-22</td>
+                            <td>TXN0000000012341</td>
+                            <td class="transaction-description">Gas Station - Shell</td>
+                            <td>PUR</td>
+                            <td class="transaction-amount debit">($45.23)</td>
+                        </tr>
+                        <tr>
+                            <td class="transaction-date">2024-01-20</td>
+                            <td>TXN0000000012340</td>
+                            <td class="transaction-description">Restaurant - Olive Garden</td>
+                            <td>PUR</td>
+                            <td class="transaction-amount debit">($67.89)</td>
+                        </tr>
+                        <tr>
+                            <td class="transaction-date">2024-01-18</td>
+                            <td>TXN0000000012339</td>
+                            <td class="transaction-description">ATM Cash Advance</td>
+                            <td>ADV</td>
+                            <td class="transaction-amount debit">($200.00)</td>
+                        </tr>
+                        <tr>
+                            <td class="transaction-date">2024-01-15</td>
+                            <td>TXN0000000012338</td>
+                            <td class="transaction-description">Online Bill Payment</td>
+                            <td>PMT</td>
+                            <td class="transaction-amount credit">$700.00</td>
+                        </tr>
+                        <tr>
+                            <td class="transaction-date">2024-01-12</td>
+                            <td>TXN0000000012337</td>
+                            <td class="transaction-description">Department Store - Macy's</td>
+                            <td>PUR</td>
+                            <td class="transaction-amount debit">($234.56)</td>
+                        </tr>
+                        <tr>
+                            <td class="transaction-date">2024-01-08</td>
+                            <td>TXN0000000012336</td>
+                            <td class="transaction-description">Auto Service - Jiffy Lube</td>
+                            <td>PUR</td>
+                            <td class="transaction-amount debit">($78.95)</td>
+                        </tr>
+                        <tr>
+                            <td class="transaction-date">2024-01-05</td>
+                            <td>TXN0000000012335</td>
+                            <td class="transaction-description">Pharmacy - CVS</td>
+                            <td>PUR</td>
+                            <td class="transaction-amount debit">($23.67)</td>
+                        </tr>
+                        <tr>
+                            <td class="transaction-date">2024-01-03</td>
+                            <td>TXN0000000012334</td>
+                            <td class="transaction-description">Coffee Shop - Starbucks</td>
+                            <td>PUR</td>
+                            <td class="transaction-amount debit">($12.45)</td>
+                        </tr>
+                        <tr>
+                            <td class="transaction-date">2024-01-01</td>
+                            <td>TXN0000000012333</td>
+                            <td class="transaction-description">Annual Fee</td>
+                            <td>FEE</td>
+                            <td class="transaction-amount debit">($95.00)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Balance Calculations Section -->
+            <div class="balance-calculations">
+                <h3>Statement Summary</h3>
+                <div class="balance-row">
+                    <span class="balance-label">Previous Statement Balance:</span>
+                    <span class="balance-value">$2,345.67</span>
+                </div>
+                <div class="balance-row">
+                    <span class="balance-label">Total Payments and Credits:</span>
+                    <span class="balance-value">$1,200.00</span>
+                </div>
+                <div class="balance-row">
+                    <span class="balance-label">Total Purchases and Debits:</span>
+                    <span class="balance-value">$987.54</span>
+                </div>
+                <div class="balance-row">
+                    <span class="balance-label">Interest and Fees:</span>
+                    <span class="balance-value">$118.45</span>
+                </div>
+                <div class="balance-row">
+                    <span class="balance-label">New Statement Balance:</span>
+                    <span class="balance-value">$2,534.68</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer Section -->
+        <div class="footer">
+            <div class="statement-info">
+                CardDemo Financial Services | Customer Service: 1-800-CARDDEMO | carddemo.com
+            </div>
+            <div class="statement-info">
+                This statement was generated by CBSTM03B batch processing system
+            </div>
+            <div class="timestamp">
+                Statement Generated: 2024-02-01 08:30:15.123456
+            </div>
+        </div>
+    </div>
+</body>
+</html>

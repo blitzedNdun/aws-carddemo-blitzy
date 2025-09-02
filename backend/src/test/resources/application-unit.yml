@@ -1,0 +1,308 @@
+# Spring Boot Unit Test Configuration
+# Purpose: Configure H2 in-memory database, disable security, mock external dependencies,
+# and set minimal logging for fast unit test execution
+
+spring:
+  # H2 In-Memory Database Configuration for Unit Tests
+  # Replaces PostgreSQL with H2 using PostgreSQL compatibility mode
+  # to maintain VSAM-to-PostgreSQL data structure compatibility
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driverClassName: org.h2.Driver
+    username: sa
+    password: ""
+    hikari:
+      # Minimal connection pool for unit tests
+      maximum-pool-size: 2
+      minimum-idle: 1
+      connection-timeout: 5000
+      idle-timeout: 30000
+      max-lifetime: 600000
+
+  # JPA Configuration for Unit Tests
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      # Always recreate schema for clean unit tests
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        # Disable SQL logging for fast execution
+        show_sql: false
+        format_sql: false
+        # Use in-memory storage for better performance
+        cache:
+          use_second_level_cache: false
+          use_query_cache: false
+        # Disable statistics collection
+        generate_statistics: false
+    # Disable JPA repositories scanning for faster startup
+    repositories:
+      enabled: true
+
+  # H2 Console Configuration (disabled for unit tests)
+  h2:
+    console:
+      enabled: false
+
+  # Disable Liquibase for unit tests - Hibernate DDL handles schema
+  liquibase:
+    enabled: false
+
+  # Security Configuration - DISABLED for Unit Tests
+  # Allows isolated testing of controllers without authentication
+  security:
+    user:
+      name: testuser
+      password: testpass
+      roles: USER
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+
+  # Redis Configuration - MOCKED for Unit Tests
+  # Disables actual Redis connection for Spring Session
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 1000ms
+      database: 0
+      # Disable Redis connection for unit tests
+  session:
+    store-type: none
+    timeout: 30m
+
+  # Spring Cloud Configuration - DISABLED for Unit Tests
+  cloud:
+    config:
+      enabled: false
+      discovery:
+        enabled: false
+    discovery:
+      enabled: false
+
+  # Test Transaction Configuration
+  # Ensures automatic rollback for test isolation
+  transaction:
+    rollback-on-commit-failure: true
+    default-timeout: 30
+
+  # Application Configuration for Unit Tests
+  application:
+    name: carddemo-backend-unit-test
+
+  # Profiles Configuration
+  profiles:
+    active: unit-test
+    include: 
+      - test-data
+      - mock-external
+
+  # Main Configuration - disable banner for faster startup
+  main:
+    banner-mode: off
+    lazy-initialization: true
+    web-application-type: servlet
+
+  # Batch Job Configuration for Unit Tests
+  # Simplified configuration for testing Spring Batch components
+  batch:
+    # Use in-memory job repository for unit tests
+    job:
+      enabled: false  # Disable automatic job execution
+    jdbc:
+      initialize-schema: embedded
+      # Use H2 for batch metadata
+      platform: h2
+
+  # Validation Configuration
+  # Enable validation for testing input validation logic
+  validation:
+    enabled: true
+
+  # Cache Configuration - DISABLED for Unit Tests
+  cache:
+    type: none
+    cache-names: []
+
+  # JSON Configuration for Unit Tests
+  jackson:
+    # Configure Jackson for COBOL data compatibility
+    serialization:
+      write-dates-as-timestamps: false
+      write-date-timestamps-as-nanoseconds: false
+    deserialization:
+      fail-on-unknown-properties: false
+      accept-single-value-as-array: true
+    default-property-inclusion: non_null
+    # Configure BigDecimal handling for COMP-3 precision
+    parser:
+      allow-numeric-leading-zeros: true
+      allow-non-numeric-numbers: false
+
+  # Test Environment Variables
+  # Override any environment-specific configurations
+  config:
+    import: optional:classpath:test-override.properties
+
+# Logging Configuration for Unit Tests
+# Minimal logging to reduce test execution time
+logging:
+  level:
+    # Application logging - DEBUG for debugging test failures
+    com.carddemo: INFO
+    # Spring framework - minimal logging
+    org.springframework: WARN
+    org.springframework.boot: WARN
+    org.springframework.web: WARN
+    org.springframework.security: WARN
+    org.springframework.transaction: WARN
+    # Hibernate/JPA - minimal logging
+    org.hibernate: WARN
+    org.hibernate.SQL: WARN
+    org.hibernate.type: WARN
+    # Database drivers - minimal logging
+    org.h2: WARN
+    # Test frameworks - minimal logging
+    org.junit: WARN
+    org.mockito: WARN
+    org.testcontainers: WARN
+    # Root level
+    root: WARN
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# External Service Mock Configuration
+# Mocks all external dependencies for isolated unit testing
+external:
+  services:
+    # Mock payment gateway endpoints
+    payment-gateway:
+      enabled: false
+      base-url: http://localhost:8090/mock
+      timeout: 1000ms
+      
+    # Mock credit bureau services
+    credit-bureau:
+      enabled: false
+      base-url: http://localhost:8091/mock
+      timeout: 1000ms
+      
+    # Mock card issuer services
+    card-issuer:
+      enabled: false
+      base-url: http://localhost:8092/mock
+      timeout: 1000ms
+
+# Test-Specific Configuration
+test:
+  # Test data configuration
+  data:
+    # Load test fixtures automatically
+    auto-load: true
+    # Use small datasets for unit tests
+    volume: minimal
+    # Generate deterministic test data
+    random-seed: 12345
+    
+  # Performance testing configuration
+  performance:
+    # Disable performance monitoring for unit tests
+    enabled: false
+    response-time-threshold: 100ms
+    
+  # Database testing configuration
+  database:
+    # Use H2 for all unit tests
+    type: h2
+    # Disable connection pooling optimizations
+    pool-optimization: false
+    # Enable constraint checking
+    referential-integrity: true
+    
+  # Mock configuration
+  mocks:
+    # Enable all external service mocks
+    external-services: true
+    # Mock Redis session store
+    session-store: true
+    # Mock email services
+    email-service: true
+    # Mock file system operations
+    file-operations: false
+
+# Management and Actuator Configuration
+# Disabled for unit tests to reduce overhead
+management:
+  endpoints:
+    enabled-by-default: false
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      enabled: true
+      show-details: never
+  metrics:
+    enabled: false
+  tracing:
+    enabled: false
+
+# Server Configuration for Unit Tests
+# Minimal configuration since unit tests don't start full server
+server:
+  port: 0  # Random port for parallel test execution
+  servlet:
+    context-path: /
+  error:
+    include-stacktrace: never
+    whitelabel:
+      enabled: false
+
+
+
+
+
+
+
+
+
+# COBOL Compatibility Configuration for Unit Tests
+cobol:
+  # Data conversion settings matching COBOL COMP-3 behavior
+  data-conversion:
+    decimal-precision: 15
+    decimal-scale: 2
+    rounding-mode: HALF_UP
+    preserve-trailing-zeros: true
+    
+  # Date format compatibility with COBOL date routines
+  date-formats:
+    default: "yyyyMMdd"
+    display: "MM/dd/yyyy"
+    century-window: 50
+    
+  # String handling compatibility
+  string-handling:
+    pad-character: " "
+    truncate-on-overflow: false
+    preserve-case: true
+
+# Unit Test Specific Overrides
+# Override any production configurations that interfere with testing
+debug: false
+trace: false
+
+# Spring main configuration moved to proper nested location under spring: section
+
+# Test-specific feature flags
+features:
+  # Disable all optional features for unit tests
+  advanced-monitoring: false
+  real-time-updates: false
+  external-integrations: false
+  batch-processing: false
+  distributed-caching: false

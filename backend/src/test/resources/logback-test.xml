@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Logback Test Configuration for CardDemo Application
+COBOL-to-Java Migration Project
+
+Purpose: Test environment logging configuration optimized for:
+- Debugging test failures with detailed application logging
+- Performance test metrics collection
+- SQL query validation for database integration tests
+- Suppression of verbose framework output
+
+Configuration Strategy:
+- DEBUG level for com.carddemo packages to capture business logic details
+- INFO level for Spring framework to see key lifecycle events
+- WARN level for third-party libraries to reduce noise
+- SQL query logging enabled for database operation validation
+- Test-specific appenders for metrics and debugging
+-->
+<configuration>
+    
+    <!-- ================================================================ -->
+    <!-- APPENDERS - Output destinations for log messages                 -->
+    <!-- ================================================================ -->
+    
+    <!-- Console Appender - Primary output for test execution -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+        <!-- Filter to prevent excessive output during tests -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>DEBUG</level>
+        </filter>
+    </appender>
+    
+    <!-- Test Metrics File Appender - Captures performance and metrics data -->
+    <appender name="TEST_METRICS" class="ch.qos.logback.core.FileAppender">
+        <file>target/test-logs/test-metrics.log</file>
+        <append>false</append>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</pattern>
+        </encoder>
+        <!-- Only capture specific metrics and performance data -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+    </appender>
+    
+    <!-- SQL Query File Appender - Database operation validation -->
+    <appender name="SQL_QUERIES" class="ch.qos.logback.core.FileAppender">
+        <file>target/test-logs/sql-queries.log</file>
+        <append>false</append>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] SQL: %msg%n</pattern>
+        </encoder>
+    </appender>
+    
+    <!-- Test Failures File Appender - Detailed debugging information -->
+    <appender name="TEST_FAILURES" class="ch.qos.logback.core.FileAppender">
+        <file>target/test-logs/test-failures.log</file>
+        <append>false</append>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n%ex</pattern>
+        </encoder>
+        <!-- Only capture ERROR and WARN levels for failure analysis -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+    </appender>
+    
+    <!-- ================================================================ -->
+    <!-- LOGGERS - Package-specific logging configuration                 -->
+    <!-- ================================================================ -->
+    
+    <!-- CardDemo Application Packages - DEBUG level for comprehensive coverage -->
+    <logger name="com.carddemo" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_METRICS"/>
+        <appender-ref ref="TEST_FAILURES"/>
+    </logger>
+    
+    <!-- CardDemo Service Layer - Detailed business logic debugging -->
+    <logger name="com.carddemo.service" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_FAILURES"/>
+    </logger>
+    
+    <!-- CardDemo Repository Layer - Database operation debugging -->
+    <logger name="com.carddemo.repository" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="SQL_QUERIES"/>
+        <appender-ref ref="TEST_FAILURES"/>
+    </logger>
+    
+    <!-- CardDemo Controller Layer - REST endpoint testing -->
+    <logger name="com.carddemo.controller" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_FAILURES"/>
+    </logger>
+    
+    <!-- CardDemo Batch Processing - Spring Batch job debugging -->
+    <logger name="com.carddemo.batch" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_METRICS"/>
+        <appender-ref ref="TEST_FAILURES"/>
+    </logger>
+    
+    <!-- CardDemo Utilities - COBOL data conversion and utilities -->
+    <logger name="com.carddemo.util" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_FAILURES"/>
+    </logger>
+    
+    <!-- ================================================================ -->
+    <!-- SPRING FRAMEWORK LOGGING - INFO level for lifecycle events      -->
+    <!-- ================================================================ -->
+    
+    <!-- Spring Boot - Application startup and configuration -->
+    <logger name="org.springframework.boot" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Spring Context - Bean creation and dependency injection -->
+    <logger name="org.springframework.context" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Spring Data JPA - Repository creation and query generation -->
+    <logger name="org.springframework.data.jpa" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="SQL_QUERIES"/>
+    </logger>
+    
+    <!-- Spring Security - Authentication and authorization flow -->
+    <logger name="org.springframework.security" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_FAILURES"/>
+    </logger>
+    
+    <!-- Spring Web MVC - REST controller mapping and request handling -->
+    <logger name="org.springframework.web" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Spring Batch - Job execution and step processing -->
+    <logger name="org.springframework.batch" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_METRICS"/>
+    </logger>
+    
+    <!-- Spring Transaction Management - Transaction boundaries -->
+    <logger name="org.springframework.transaction" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="SQL_QUERIES"/>
+    </logger>
+    
+    <!-- ================================================================ -->
+    <!-- DATABASE AND SQL LOGGING - For integration test validation      -->
+    <!-- ================================================================ -->
+    
+    <!-- Hibernate Core - Entity operations and session management -->
+    <logger name="org.hibernate" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Hibernate SQL - Actual SQL statements executed -->
+    <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+        <appender-ref ref="SQL_QUERIES"/>
+    </logger>
+    
+    <!-- Hibernate SQL Parameter Binding - Parameter values in queries -->
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE" additivity="false">
+        <appender-ref ref="SQL_QUERIES"/>
+    </logger>
+    
+    <!-- PostgreSQL JDBC Driver - Database connection and execution -->
+    <logger name="org.postgresql" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- HikariCP Connection Pool - Connection management for tests -->
+    <logger name="com.zaxxer.hikari" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- ================================================================ -->
+    <!-- TESTING FRAMEWORK LOGGING - JUnit and Test execution           -->
+    <!-- ================================================================ -->
+    
+    <!-- JUnit Platform - Test discovery and execution -->
+    <logger name="org.junit" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Spring Test Context - Test configuration and setup -->
+    <logger name="org.springframework.test" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- TestContainers - Docker container management for integration tests -->
+    <logger name="org.testcontainers" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Mockito - Mock object behavior during unit tests -->
+    <logger name="org.mockito" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- ================================================================ -->
+    <!-- THIRD-PARTY LIBRARIES - WARN level to reduce verbosity          -->
+    <!-- ================================================================ -->
+    
+    <!-- Apache Commons - Utility libraries -->
+    <logger name="org.apache.commons" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Jackson JSON Processing - Serialization/deserialization -->
+    <logger name="com.fasterxml.jackson" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Lombok - Annotation processing -->
+    <logger name="lombok" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Tomcat Embedded - Servlet container for tests -->
+    <logger name="org.apache.tomcat" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Apache HTTP Client - External service communication -->
+    <logger name="org.apache.http" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Netty - Asynchronous network application framework -->
+    <logger name="io.netty" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- ================================================================ -->
+    <!-- ROOT LOGGER - Default logging configuration                     -->
+    <!-- ================================================================ -->
+    
+    <!-- Default root logger - catches anything not explicitly configured -->
+    <root level="WARN">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TEST_FAILURES"/>
+    </root>
+    
+</configuration>

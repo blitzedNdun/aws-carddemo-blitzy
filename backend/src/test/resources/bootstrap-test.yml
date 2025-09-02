@@ -1,0 +1,350 @@
+# ==============================================================================
+# Spring Cloud Config Bootstrap Configuration for Test Environment
+# ==============================================================================
+# This configuration file provides Spring Cloud Config client settings for
+# distributed testing scenarios in the CardDemo application migration project.
+# 
+# Purpose: Enables centralized configuration management during testing phases
+# while supporting both unit testing (with disabled cloud config) and
+# integration testing (with enabled cloud config) scenarios.
+#
+# Migration Context: Replaces traditional CICS configuration parameters with
+# cloud-native configuration management for modernized Spring Boot application.
+# ==============================================================================
+
+spring:
+  # Application identification for config server
+  application:
+    name: carddemo-test
+  
+  # Spring Cloud Config client configuration
+  cloud:
+    config:
+      # Conditional enabling based on test profile
+      # Unit tests: config disabled for isolation
+      # Integration tests: config enabled for distributed scenarios
+      enabled: ${SPRING_CLOUD_CONFIG_ENABLED:false}
+      
+      # Configuration server discovery and connection
+      discovery:
+        enabled: false  # Direct URI configuration for test stability
+        service-id: config-server
+      
+      # Config server URI - uses test environment endpoint
+      uri: ${SPRING_CLOUD_CONFIG_URI:http://localhost:8888}
+      
+      # Fail fast disabled for unit tests to prevent blocking
+      fail-fast: false
+      
+      # Configuration refresh and retry settings
+      retry:
+        initial-interval: 1000
+        max-interval: 2000
+        max-attempts: 3
+        multiplier: 1.1
+      
+      # Request timeout for test stability
+      request-connect-timeout: 5000
+      request-read-timeout: 10000
+      
+      # Profile and label configuration
+      profile: ${SPRING_PROFILES_ACTIVE:test}
+      label: ${SPRING_CLOUD_CONFIG_LABEL:main}
+      
+      # Username and password for config server authentication (test env)
+      username: ${SPRING_CLOUD_CONFIG_USERNAME:testuser}
+      password: ${SPRING_CLOUD_CONFIG_PASSWORD:testpass}
+
+  # Profile configuration for test environment
+  profiles:
+    # Default active profiles for testing
+    active: test,h2,mock-external
+    
+    # Additional profiles for specific test scenarios
+    include:
+      - actuator-test      # Spring Boot Actuator test configuration
+      - security-test      # Spring Security test settings
+      - batch-test         # Spring Batch test configuration
+      - integration-test   # Integration testing profile
+
+# ==============================================================================
+# Test Environment Configuration Properties
+# ==============================================================================
+
+# Management and monitoring configuration for testing
+management:
+  endpoints:
+    web:
+      exposure:
+        # Expose all actuator endpoints for testing
+        include: "*"
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+    configprops:
+      show-values: always
+  
+  # Metrics configuration for test monitoring
+  metrics:
+    export:
+      prometheus:
+        enabled: false  # Disabled for unit tests, enabled via profile for integration
+    tags:
+      environment: test
+      application: carddemo
+
+# Logging configuration for test environment
+logging:
+  level:
+    org.springframework.cloud.config: DEBUG
+    org.springframework.boot.context.config: DEBUG
+    org.springframework.test: INFO
+    com.carddemo: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%logger{36}] - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%logger{36}] - %msg%n"
+
+# ==============================================================================
+# Profile-Specific Configurations
+# ==============================================================================
+
+---
+# Unit Test Profile Configuration
+spring:
+  config:
+    activate:
+      on-profile: unit-test
+  cloud:
+    config:
+      # Disable cloud config for unit tests to ensure isolation
+      enabled: false
+      import-check:
+        enabled: false
+
+# Local H2 database for unit testing
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driverClassName: org.h2.Driver
+    username: sa
+    password: 
+  
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+
+  # Disable Redis for unit tests
+  session:
+    store-type: none
+
+---
+# Integration Test Profile Configuration  
+spring:
+  config:
+    activate:
+      on-profile: integration-test
+  cloud:
+    config:
+      # Enable cloud config for integration tests
+      enabled: true
+      fail-fast: true
+      retry:
+        max-attempts: 5
+
+# Testcontainers configuration for integration testing
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/carddemo_test}
+    username: ${DB_USERNAME:carddemo_test}
+    password: ${DB_PASSWORD:test123}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+  # Redis configuration for session testing
+  session:
+    store-type: redis
+    redis:
+      namespace: spring:session:test
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      database: 1  # Use different database for testing
+
+---
+# Performance Test Profile Configuration
+spring:
+  config:
+    activate:
+      on-profile: performance-test
+  cloud:
+    config:
+      enabled: true
+      uri: ${PERF_CONFIG_SERVER_URI:http://config-server:8888}
+
+# Performance test specific settings
+management:
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+        step: PT10S  # 10-second metrics collection for performance monitoring
+
+# Connection pool settings for performance testing
+  datasource:
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 5000
+      idle-timeout: 300000
+
+---
+# End-to-End Test Profile Configuration
+spring:
+  config:
+    activate:
+      on-profile: e2e-test
+  cloud:
+    config:
+      enabled: true
+      profile: e2e
+      
+# External service mock configurations
+mock:
+  external-services:
+    enabled: true
+    payment-gateway:
+      url: http://localhost:8080/mock-payment
+    credit-bureau:
+      url: http://localhost:8080/mock-credit-bureau
+      
+# Security test configuration
+  security:
+    oauth2:
+      client:
+        registration:
+          test-client:
+            client-id: test-client
+            client-secret: test-secret
+            authorization-grant-type: client_credentials
+
+# ==============================================================================
+# Test-Specific Configuration Overrides
+# ==============================================================================
+
+# Server configuration for test environment
+server:
+  port: ${SERVER_PORT:0}  # Random port for test isolation
+  servlet:
+    context-path: /carddemo-test
+
+# Actuator security for testing
+management:
+  server:
+    port: ${MANAGEMENT_PORT:0}  # Random management port
+  security:
+    enabled: false  # Disable security for easier testing
+
+# Test database connection validation
+spring:
+  datasource:
+    test-while-idle: true
+    test-on-borrow: true
+    validation-query: SELECT 1
+
+# Async processing configuration for testing
+  task:
+    execution:
+      pool:
+        core-size: 2
+        max-size: 4
+        queue-capacity: 100
+    scheduling:
+      pool:
+        size: 2
+
+# ==============================================================================
+# CardDemo Application Test Configuration
+# ==============================================================================
+
+# Application-specific test settings
+carddemo:
+  test:
+    # Enable test data generation
+    data:
+      generate-test-accounts: true
+      test-account-count: 100
+      generate-test-transactions: true
+      test-transaction-count: 1000
+    
+    # Mock external service endpoints
+    external:
+      payment-processor:
+        enabled: false
+        mock-url: http://localhost:${wiremock.server.port:/8089}/payment
+      credit-bureau:
+        enabled: false  
+        mock-url: http://localhost:${wiremock.server.port:/8089}/credit
+    
+    # Batch job test configuration
+    batch:
+      # Disable scheduled jobs during testing
+      scheduling:
+        enabled: false
+      # Test job parameters
+      chunk-size: 10
+      thread-count: 2
+    
+    # Security test configuration
+    security:
+      # Test user credentials
+      test-users:
+        - username: testuser1
+          password: test123
+          roles: [USER]
+        - username: testadmin
+          password: admin123
+          roles: [ADMIN, USER]
+      # JWT test configuration
+      jwt:
+        test-secret: test-secret-key-for-jwt-tokens-in-test-environment-only
+        test-expiration: 3600000  # 1 hour for testing
+
+# ==============================================================================
+# Additional Test Framework Configuration
+# ==============================================================================
+
+# JUnit and testing framework configuration
+junit:
+  jupiter:
+    execution:
+      parallel:
+        enabled: true
+        mode:
+          default: concurrent
+    
+# Spring Boot Test configuration
+spring:
+  test:
+    # Database test configuration
+    database:
+      replace: none  # Don't replace datasource for integration tests
+    # Web test configuration
+    mockmvc:
+      print: system-out
+    # Context configuration
+    context:
+      cache:
+        maxSize: 3  # Limit context cache for memory efficiency
+
+# Test container configuration
+testcontainers:
+  reuse:
+    enable: true  # Reuse containers for faster test execution

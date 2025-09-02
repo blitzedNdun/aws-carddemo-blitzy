@@ -1,0 +1,158 @@
+# Node.js dependencies - excluded to ensure clean installation in container
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build artifacts - excluded as they will be generated during container build
+build/
+dist/
+.next/
+out/
+
+# Development and testing files
+coverage/
+.nyc_output/
+test-results/
+.coverage/
+*.lcov
+
+# Environment and configuration files - excluded for security
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.development
+.env.production
+.env.test
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+
+# Documentation and project files
+README.md
+CHANGELOG.md
+LICENSE
+*.md
+docs/
+
+# Linting and formatting
+.eslintrc*
+.prettierrc*
+.stylelintrc*
+.editorconfig
+
+# Package manager files
+package-lock.json
+yarn.lock
+.npmrc
+.yarnrc
+
+# Development tools and scripts
+.dockerignore
+Dockerfile*
+docker-compose*.yml
+Makefile
+
+# TypeScript build info
+*.tsbuildinfo
+.tscache/
+
+# Testing configuration
+jest.config.*
+cypress.json
+.cypress/
+e2e/
+
+# Storybook
+.storybook/
+storybook-static/
+
+# Logs
+logs/
+*.log
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Runtime data
+.cache/
+.tmp/
+.temp/
+tmp/
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows system files
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux system files
+*~
+
+# Temporary files
+*.tmp
+*.temp
+.sass-cache/
+
+# Source maps (if not needed in production)
+*.map
+
+# Performance monitoring files
+.clinic/
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Parcel cache
+.parcel-cache/
+
+# Vite cache
+.vite/
+
+# Webpack cache
+.cache/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# Zero-installs Yarn
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*

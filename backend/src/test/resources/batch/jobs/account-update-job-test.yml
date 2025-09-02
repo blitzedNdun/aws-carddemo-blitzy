@@ -1,0 +1,548 @@
+# Spring Batch Test Configuration for AccountUpdateJob
+# Comprehensive test job configuration for batch account master updates, credit limit adjustments,
+# status changes, balance reconciliation, and audit trail generation with transaction-level consistency
+#
+# This configuration supports testing of:
+# - Credit limit validation and adjustment processing
+# - Account status transitions matching COBOL business rules
+# - Balance updates with BigDecimal precision equivalent to COBOL COMP-3
+# - Optimistic locking mechanisms for concurrent access scenarios
+# - Audit record generation for compliance and tracking
+# - Rollback testing for failed update scenarios
+#
+# Per Section 0 requirements: Maintain exact calculation results, complete batch processing
+# within 4-hour window, preserve ACID compliance for financial data consistency
+
+spring:
+  batch:
+    job:
+      enabled: false  # Disable auto-start for test environment
+    
+  # Test-specific datasource configuration for isolation
+  test:
+    database:
+      replace: none  # Use real database for integration testing
+      
+  # Test transaction configuration matching production ACID compliance
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQL15Dialect
+        jdbc:
+          batch_size: 50  # Optimized batch size for test performance
+          batch_versioned_data: true  # Enable optimistic locking
+        show_sql: false  # Disable for test performance
+        format_sql: false
+    hibernate:
+      ddl-auto: validate  # Ensure schema matches in tests
+
+# AccountUpdateJob Test Configuration
+batch:
+  jobs:
+    account-update-job:
+      name: "accountUpdateJob"
+      description: "Test configuration for batch account master updates with full business rule validation"
+      
+      # Job execution parameters for testing scenarios
+      parameters:
+        # Processing date parameter for test scenarios
+        processing_date:
+          type: "java.time.LocalDate"
+          default: "2024-01-15"
+          description: "Business date for account update processing"
+          
+        # Batch size for chunk processing optimization
+        chunk_size:
+          type: "java.lang.Integer"
+          default: 100
+          description: "Number of accounts processed per transaction chunk"
+          
+        # Maximum retry attempts for failed account updates
+        max_retry_attempts:
+          type: "java.lang.Integer"
+          default: 3
+          description: "Maximum retry attempts for failed account processing"
+          
+        # Skip limit for non-critical validation failures
+        skip_limit:
+          type: "java.lang.Integer"
+          default: 10
+          description: "Maximum number of account records that can be skipped"
+          
+        # Test mode flag for enhanced validation
+        test_mode:
+          type: "java.lang.Boolean"
+          default: true
+          description: "Enable comprehensive test validation and logging"
+          
+        # Audit trail generation flag
+        generate_audit_trail:
+          type: "java.lang.Boolean"
+          default: true
+          description: "Generate audit records for all account modifications"
+
+      # Step configuration for modular testing
+      steps:
+        # Step 1: Account Data Validation and Reading
+        account_validation_step:
+          name: "accountValidationStep"
+          description: "Validate account records and prepare for processing"
+          chunk_size: "${batch.jobs.account-update-job.parameters.chunk_size.default}"
+          
+          reader:
+            type: "AccountJpaItemReader"
+            query: "SELECT a FROM Account a WHERE a.lastUpdated <= :processingDate ORDER BY a.accountId"
+            parameters:
+              processingDate: "${batch.jobs.account-update-job.parameters.processing_date.default}"
+              
+          processor:
+            type: "AccountValidationProcessor"
+            validation_rules:
+              - account_id_format: "^\\d{11}$"  # 11-digit account ID from COBOL PIC 9(11)
+              - active_status_values: ["Y", "N", "S", "C"]  # Active, Inactive, Suspended, Closed
+              - balance_precision: 2  # Two decimal places for currency
+              - credit_limit_minimum: 0.00
+              - credit_limit_maximum: 999999999.99  # COBOL PIC S9(10)V99 limit
+              
+          writer:
+            type: "NoOpItemWriter"  # Validation only, no persistence in this step
+
+        # Step 2: Credit Limit Adjustment Processing
+        credit_limit_adjustment_step:
+          name: "creditLimitAdjustmentStep"
+          description: "Process credit limit adjustments with business rule validation"
+          chunk_size: "${batch.jobs.account-update-job.parameters.chunk_size.default}"
+          
+          reader:
+            type: "AccountJpaItemReader"
+            query: "SELECT a FROM Account a WHERE a.creditLimitReviewFlag = 'Y' ORDER BY a.accountId"
+            
+          processor:
+            type: "CreditLimitAdjustmentProcessor"
+            business_rules:
+              # Credit limit increase validation
+              max_increase_percentage: 50.0  # Maximum 50% increase per adjustment
+              min_credit_score: 650  # Minimum credit score for increases
+              max_debt_to_income_ratio: 0.40  # Maximum 40% debt-to-income ratio
+              
+              # Credit limit decrease validation  
+              min_credit_limit: 500.00  # Minimum credit limit after decrease
+              notice_period_days: 30  # Required notice period for decreases
+              
+              # BigDecimal precision configuration for financial calculations
+              calculation_precision:
+                scale: 2  # Two decimal places
+                rounding_mode: "HALF_UP"  # Match COBOL ROUNDED behavior
+                
+            audit_configuration:
+              track_old_values: true
+              track_new_values: true
+              include_justification: true
+              
+          writer:
+            type: "AccountJpaItemWriter"
+            update_strategy: "optimistic_locking"  # Prevent concurrent modification conflicts
+
+        # Step 3: Account Status Transition Processing
+        status_transition_step:
+          name: "statusTransitionStep"
+          description: "Process account status changes with state machine validation"
+          chunk_size: "${batch.jobs.account-update-job.parameters.chunk_size.default}"
+          
+          reader:
+            type: "AccountJpaItemReader"
+            query: "SELECT a FROM Account a WHERE a.statusChangeFlag = 'Y' ORDER BY a.accountId"
+            
+          processor:
+            type: "AccountStatusTransitionProcessor"
+            state_machine:
+              # Valid status transitions matching COBOL business rules
+              valid_transitions:
+                "Y":  # Active
+                  - "S"  # Can suspend active accounts
+                  - "C"  # Can close active accounts
+                "N":  # Inactive
+                  - "Y"  # Can reactivate inactive accounts
+                  - "C"  # Can close inactive accounts
+                "S":  # Suspended
+                  - "Y"  # Can reactivate suspended accounts
+                  - "C"  # Can close suspended accounts
+                "C": []  # Closed accounts cannot transition to other states
+                
+              # Business rule validations for status changes
+              validation_rules:
+                suspend_account:
+                  - zero_balance_required: false
+                  - no_pending_transactions: true
+                  - notification_sent: true
+                close_account:
+                  - zero_balance_required: true
+                  - no_pending_transactions: true
+                  - no_outstanding_disputes: true
+                  - closure_notice_period: 30
+                reactivate_account:
+                  - identity_verification: true
+                  - credit_check_current: true
+                  - no_fraud_flags: true
+                  
+          writer:
+            type: "AccountJpaItemWriter"
+            update_strategy: "optimistic_locking"
+
+        # Step 4: Balance Reconciliation and Update
+        balance_reconciliation_step:
+          name: "balanceReconciliationStep"
+          description: "Reconcile account balances with transaction history"
+          chunk_size: "${batch.jobs.account-update-job.parameters.chunk_size.default}"
+          
+          reader:
+            type: "AccountJpaItemReader"
+            query: "SELECT a FROM Account a WHERE a.reconciliationFlag = 'Y' ORDER BY a.accountId"
+            
+          processor:
+            type: "BalanceReconciliationProcessor"
+            reconciliation_rules:
+              # Balance calculation precision matching COBOL COMP-3
+              precision_config:
+                scale: 2
+                rounding_mode: "HALF_UP"
+                precision: 12  # Total precision for COBOL PIC S9(10)V99
+                
+              # Tolerance for balance discrepancies
+              tolerance_threshold: 0.01  # One cent tolerance
+              
+              # Reconciliation validation rules
+              validation_checks:
+                - verify_transaction_sum: true
+                - check_pending_authorizations: true
+                - validate_interest_calculations: true
+                - confirm_fee_applications: true
+                
+              # Action on discrepancies
+              discrepancy_handling:
+                auto_correct_under_threshold: true
+                flag_for_manual_review: true
+                generate_exception_report: true
+                
+          writer:
+            type: "AccountJpaItemWriter"
+            update_strategy: "optimistic_locking"
+            validation:
+              verify_balance_precision: true
+
+        # Step 5: Audit Trail Generation
+        audit_trail_step:
+          name: "auditTrailStep"
+          description: "Generate comprehensive audit records for all account modifications"
+          chunk_size: "${batch.jobs.account-update-job.parameters.chunk_size.default}"
+          
+          reader:
+            type: "ModifiedAccountReader"
+            query: "SELECT a FROM Account a WHERE a.lastUpdated >= :jobStartTime ORDER BY a.accountId"
+            
+          processor:
+            type: "AuditTrailProcessor"
+            audit_configuration:
+              # Audit record structure
+              audit_fields:
+                - account_id
+                - modification_type  # CREDIT_LIMIT, STATUS_CHANGE, BALANCE_UPDATE
+                - old_values
+                - new_values
+                - modification_timestamp
+                - user_id
+                - justification
+                - business_rule_applied
+                
+              # Compliance requirements
+              retention_requirements:
+                retention_period_years: 7
+                encryption_required: true
+                access_logging: true
+                
+              # Data classification
+              sensitivity_level: "CONFIDENTIAL"
+              regulatory_requirements:
+                - "SOX_COMPLIANCE"
+                - "PCI_DSS"
+                - "GDPR_AUDIT_TRAIL"
+                
+          writer:
+            type: "AuditTrailJpaItemWriter"
+            table_name: "account_audit_log"
+
+      # Test scenarios for comprehensive validation
+      test_scenarios:
+        # Test Scenario 1: Successful credit limit increase
+        credit_limit_increase_success:
+          description: "Test successful credit limit increase with all validations passing"
+          test_data:
+            account_id: "12345678901"
+            current_credit_limit: 5000.00
+            new_credit_limit: 7500.00
+            credit_score: 720
+            debt_to_income_ratio: 0.25
+          expected_results:
+            credit_limit_updated: true
+            audit_record_generated: true
+            status: "SUCCESS"
+            
+        # Test Scenario 2: Credit limit increase rejected
+        credit_limit_increase_rejected:
+          description: "Test credit limit increase rejection due to business rule violation"
+          test_data:
+            account_id: "12345678902"
+            current_credit_limit: 5000.00
+            new_credit_limit: 15000.00  # Exceeds 50% increase limit
+            credit_score: 720
+            debt_to_income_ratio: 0.25
+          expected_results:
+            credit_limit_updated: false
+            audit_record_generated: true
+            status: "REJECTED"
+            rejection_reason: "EXCEEDS_MAXIMUM_INCREASE_PERCENTAGE"
+            
+        # Test Scenario 3: Account status transition from Active to Suspended
+        status_transition_suspend:
+          description: "Test account suspension with proper validation"
+          test_data:
+            account_id: "12345678903"
+            current_status: "Y"  # Active
+            new_status: "S"      # Suspended
+            pending_transactions: false
+            notification_sent: true
+          expected_results:
+            status_updated: true
+            audit_record_generated: true
+            status: "SUCCESS"
+            
+        # Test Scenario 4: Invalid status transition
+        status_transition_invalid:
+          description: "Test rejection of invalid status transition"
+          test_data:
+            account_id: "12345678904"
+            current_status: "C"  # Closed
+            new_status: "Y"      # Active (invalid transition)
+          expected_results:
+            status_updated: false
+            audit_record_generated: true
+            status: "REJECTED"
+            rejection_reason: "INVALID_STATUS_TRANSITION"
+            
+        # Test Scenario 5: Balance reconciliation with discrepancy
+        balance_reconciliation_discrepancy:
+          description: "Test balance reconciliation with small discrepancy within tolerance"
+          test_data:
+            account_id: "12345678905"
+            current_balance: 1000.00
+            calculated_balance: 1000.01  # One cent discrepancy
+            tolerance_threshold: 0.01
+          expected_results:
+            balance_updated: true
+            auto_corrected: true
+            audit_record_generated: true
+            status: "SUCCESS"
+            
+        # Test Scenario 6: Optimistic locking conflict
+        optimistic_locking_conflict:
+          description: "Test optimistic locking behavior during concurrent updates"
+          test_data:
+            account_id: "12345678906"
+            concurrent_updates: true
+            version_conflict: true
+          expected_results:
+            retry_attempted: true
+            final_status: "SUCCESS"  # After retry
+            audit_record_generated: true
+            
+        # Test Scenario 7: Rollback scenario
+        rollback_scenario:
+          description: "Test transaction rollback on critical validation failure"
+          test_data:
+            account_id: "12345678907"
+            credit_limit_update: 10000.00
+            validation_failure: "CREDIT_SCORE_INSUFFICIENT"
+            rollback_required: true
+          expected_results:
+            transaction_rolled_back: true
+            original_values_preserved: true
+            error_logged: true
+            audit_record_generated: true
+
+      # Performance and monitoring configuration for tests
+      monitoring:
+        metrics:
+          # Job execution metrics
+          job_execution_time: true
+          step_execution_time: true
+          items_processed_per_second: true
+          
+          # Error and retry metrics
+          retry_count: true
+          skip_count: true
+          failure_rate: true
+          
+          # Business metrics
+          accounts_processed: true
+          credit_limits_adjusted: true
+          status_changes_processed: true
+          balances_reconciled: true
+          audit_records_generated: true
+          
+        # Performance thresholds for test validation
+        performance_thresholds:
+          max_job_execution_time: "PT2H"  # 2 hours maximum
+          min_processing_rate: 50  # Minimum 50 accounts per minute
+          max_error_rate: 0.01     # Maximum 1% error rate
+          
+        # Test-specific logging configuration
+        logging:
+          level:
+            com.carddemo.batch: DEBUG
+            com.carddemo.service: INFO
+            org.springframework.batch: INFO
+          pattern:
+            console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+            
+# Test database configuration for account update testing
+test:
+  datasource:
+    # Test data setup configuration
+    initialization:
+      # Sample account data for testing scenarios
+      test_accounts:
+        - account_id: "12345678901"
+          active_status: "Y"
+          current_balance: 1250.75
+          credit_limit: 5000.00
+          cash_credit_limit: 1000.00
+          open_date: "2020-01-15"
+          expiration_date: "2027-01-15"
+          current_cycle_credit: 0.00
+          current_cycle_debit: 250.75
+          addr_zip: "12345"
+          group_id: "GRP001"
+          version: 1
+          
+        - account_id: "12345678902"
+          active_status: "Y"
+          current_balance: 875.25
+          credit_limit: 3000.00
+          cash_credit_limit: 600.00
+          open_date: "2021-03-10"
+          expiration_date: "2028-03-10"
+          current_cycle_credit: 100.00
+          current_cycle_debit: 175.25
+          addr_zip: "67890"
+          group_id: "GRP002"
+          version: 1
+          
+        - account_id: "12345678903"
+          active_status: "Y"
+          current_balance: 0.00
+          credit_limit: 2500.00
+          cash_credit_limit: 500.00
+          open_date: "2019-06-20"
+          expiration_date: "2026-06-20"
+          current_cycle_credit: 0.00
+          current_cycle_debit: 0.00
+          addr_zip: "54321"
+          group_id: "GRP001"
+          version: 1
+          
+        - account_id: "12345678904"
+          active_status: "C"  # Closed account for invalid transition test
+          current_balance: 0.00
+          credit_limit: 0.00
+          cash_credit_limit: 0.00
+          open_date: "2018-01-01"
+          expiration_date: "2025-01-01"
+          current_cycle_credit: 0.00
+          current_cycle_debit: 0.00
+          addr_zip: "98765"
+          group_id: "GRP003"
+          version: 1
+          
+      # Test audit log data
+      audit_log_retention: "P30D"  # 30 days for test data
+      
+    # Cleanup configuration for test isolation
+    cleanup:
+      truncate_tables:
+        - "account_audit_log"
+        - "batch_job_execution"
+        - "batch_job_execution_context"
+        - "batch_job_execution_params"
+        - "batch_job_instance"
+        - "batch_step_execution"
+        - "batch_step_execution_context"
+      reset_sequences: true
+      
+# Transaction configuration for test scenarios
+transaction:
+  # Optimistic locking configuration
+  optimistic_locking:
+    enabled: true
+    max_retries: 3
+    retry_delay: "PT0.1S"  # 100ms delay between retries
+    
+  # Isolation level for financial data consistency
+  isolation_level: "READ_COMMITTED"
+  
+  # Timeout configuration
+  timeout: "PT30S"  # 30 second transaction timeout
+  
+  # Rollback configuration
+  rollback_on:
+    - "java.lang.Exception"
+    - "org.springframework.dao.DataIntegrityViolationException"
+    - "javax.persistence.OptimisticLockException"
+
+# Validation configuration matching COBOL business rules
+validation:
+  # Account ID validation (COBOL PIC 9(11))
+  account_id:
+    pattern: "^\\d{11}$"
+    error_message: "Account ID must be exactly 11 digits"
+    
+  # Currency amount validation (COBOL PIC S9(10)V99)
+  currency_amount:
+    min_value: -9999999999.99
+    max_value: 9999999999.99
+    decimal_places: 2
+    error_message: "Currency amount must have exactly 2 decimal places"
+    
+  # Status code validation
+  account_status:
+    valid_values: ["Y", "N", "S", "C"]
+    error_message: "Account status must be Y (Active), N (Inactive), S (Suspended), or C (Closed)"
+    
+  # Date format validation (COBOL PIC X(10))
+  date_format:
+    pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+    error_message: "Date must be in YYYY-MM-DD format"
+    
+  # ZIP code validation (COBOL PIC X(10))
+  zip_code:
+    pattern: "^[A-Za-z0-9\\s-]{1,10}$"
+    error_message: "ZIP code must be 1-10 alphanumeric characters"
+
+# Test reporting configuration
+reporting:
+  # Test result output configuration
+  output:
+    format: "JSON"
+    include_metrics: true
+    include_audit_trail: true
+    
+  # Test coverage reporting
+  coverage:
+    business_rules: true
+    error_scenarios: true
+    performance_metrics: true
+    
+  # Compliance reporting
+  compliance:
+    generate_sox_report: true
+    generate_pci_report: true
+    include_audit_evidence: true

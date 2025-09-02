@@ -1,0 +1,377 @@
+# Spring Batch Test Configuration for DailyTransactionJob (CBTRN01C Migration)
+# Replicates daily transaction file processing with validation, authorization, and balance updates
+# Maintains CICS SYNCPOINT behavior through chunk-oriented processing with 1000-record boundaries
+
+spring:
+  batch:
+    job:
+      name: "dailyTransactionJobTest"
+      enabled: true
+      restart-on-completion: true
+      
+    # Job configuration matching CBTRN01C COBOL program structure
+    jobs:
+      daily-transaction-job-test:
+        description: "Test configuration for daily transaction processing migrated from CBTRN01C"
+        restartable: true
+        incrementer: "org.springframework.batch.core.launch.support.RunIdIncrementer"
+        
+        # Job execution parameters
+        parameters:
+          # Input file configuration
+          input.file.path: "classpath:batch/test-data/dailytran-test.txt"
+          input.file.encoding: "UTF-8"
+          input.file.line-separator: "\n"
+          
+          # Transaction processing parameters
+          transaction.chunk.size: 1000                    # Matches CICS SYNCPOINT intervals
+          transaction.validation.enabled: true
+          transaction.authorization.enabled: true
+          
+          # Account balance update configuration
+          balance.update.enabled: true
+          balance.precision.scale: 2                      # BigDecimal scale matching COBOL COMP-3
+          balance.rounding.mode: "HALF_UP"               # COBOL ROUNDED clause equivalent
+          
+          # Output file configuration
+          output.file.path: "${java.io.tmpdir}/daily-transaction-output-test.txt"
+          output.file.encoding: "UTF-8"
+          output.status.codes.enabled: true
+          
+          # Job Repository and restart configuration
+          job.repository.table.prefix: "BATCH_"
+          job.restart.enabled: true
+          job.checkpoint.frequency: 5000                 # Every 5000 records for restart capability
+          
+          # Performance and monitoring
+          job.execution.timeout: "PT2H"                  # 2-hour timeout for test execution
+          job.metrics.enabled: true
+          
+        # Step definitions replicating COBOL program flow
+        steps:
+          # Step 1: Initialize and validate input file
+          - name: "initializeStep"
+            type: "tasklet"
+            description: "Initialize job parameters and validate input file existence"
+            configuration:
+              tasklet-class: "com.carddemo.batch.tasklet.FileValidationTasklet"
+              parameters:
+                validate.file.exists: true
+                validate.file.readable: true
+                validate.file.size.minimum: 1
+                expected.record.format: "FIXED_WIDTH"
+                expected.record.length: 350                # TRAN-RECORD length from CVTRA05Y.cpy
+                
+          # Step 2: Main transaction processing (chunk-oriented)
+          - name: "processTransactionsStep"
+            type: "chunk"
+            description: "Process daily transactions with validation and balance updates"
+            configuration:
+              chunk-size: 1000                            # CICS boundary matching
+              reader:
+                type: "FlatFileItemReader"
+                class: "com.carddemo.batch.reader.DailyTransactionReader"
+                parameters:
+                  resource: "${input.file.path}"
+                  encoding: "${input.file.encoding}"
+                  line-mapper:
+                    type: "FixedLengthTokenizer"
+                    field-ranges:
+                      - "TRAN-ID: 1-16"                    # PIC X(16)
+                      - "TRAN-TYPE-CD: 17-18"             # PIC X(02)
+                      - "TRAN-CAT-CD: 19-22"              # PIC 9(04)
+                      - "TRAN-SOURCE: 23-32"              # PIC X(10)
+                      - "TRAN-DESC: 33-132"               # PIC X(100)
+                      - "TRAN-AMT: 133-143"               # PIC S9(09)V99
+                      - "TRAN-MERCHANT-ID: 144-152"       # PIC 9(09)
+                      - "TRAN-MERCHANT-NAME: 153-202"     # PIC X(50)
+                      - "TRAN-MERCHANT-CITY: 203-252"     # PIC X(50)
+                      - "TRAN-MERCHANT-ZIP: 253-262"      # PIC X(10)
+                      - "TRAN-CARD-NUM: 263-278"          # PIC X(16)
+                      - "TRAN-ORIG-TS: 279-304"           # PIC X(26)
+                      - "TRAN-PROC-TS: 305-330"           # PIC X(26)
+                      - "FILLER: 331-350"                 # PIC X(20)
+                  skip-lines: 0
+                  strict: true
+                  
+              processor:
+                type: "ItemProcessor"
+                class: "com.carddemo.batch.processor.DailyTransactionProcessor"
+                parameters:
+                  # Transaction validation rules
+                  validation.tran-id.required: true
+                  validation.tran-type.valid-codes: ["01", "02", "03", "04", "05"]
+                  validation.tran-cat.range.min: 1000
+                  validation.tran-cat.range.max: 9999
+                  validation.tran-amt.min: 0.01
+                  validation.tran-amt.max: 99999999.99
+                  validation.card-num.length: 16
+                  validation.card-num.format: "NUMERIC"
+                  
+                  # Authorization checks
+                  authorization.account.status.check: true
+                  authorization.credit.limit.check: true
+                  authorization.daily.limit.check: true
+                  authorization.merchant.blacklist.check: true
+                  
+                  # Business logic parameters
+                  business.duplicate.transaction.window: "PT5M"  # 5-minute duplicate window
+                  business.fraud.velocity.check: true
+                  business.merchant.category.validation: true
+                  
+              writer:
+                type: "CompositeItemWriter"
+                class: "com.carddemo.batch.writer.DailyTransactionCompositeWriter"
+                delegates:
+                  # Database writer for transaction records
+                  - type: "JpaItemWriter"
+                    class: "com.carddemo.batch.writer.TransactionJpaWriter"
+                    parameters:
+                      entity-manager-factory: "entityManagerFactory"
+                      use-persist: false
+                      clear-persistence-context: true
+                      
+                  # Account balance update writer
+                  - type: "ItemWriter"
+                    class: "com.carddemo.batch.writer.AccountBalanceUpdateWriter"
+                    parameters:
+                      balance.precision.scale: 2
+                      balance.rounding.mode: "HALF_UP"
+                      balance.validation.enabled: true
+                      balance.audit.enabled: true
+                      
+                  # Output file writer for status reporting
+                  - type: "FlatFileItemWriter"
+                    class: "com.carddemo.batch.writer.TransactionStatusFileWriter"
+                    parameters:
+                      resource: "${output.file.path}"
+                      encoding: "${output.file.encoding}"
+                      line-aggregator:
+                        type: "FormatterLineAggregator"
+                        format: "%-16s|%-2s|%-10s|%-26s|%12.2f|%-3s|%-100s"
+                        field-names:
+                          - "transactionId"
+                          - "typeCode"
+                          - "statusCode"
+                          - "processTimestamp"
+                          - "amount"
+                          - "resultCode"
+                          - "errorMessage"
+                      append: false
+                      force-sync: true
+                      
+            # Transaction configuration for ACID compliance
+            transaction:
+              isolation: "READ_COMMITTED"
+              propagation: "REQUIRED"
+              timeout: 300                                 # 5-minute timeout per chunk
+              rollback-for: ["java.lang.Exception"]
+              
+            # Skip and retry policies
+            skip:
+              limit: 100                                   # Maximum skippable records
+              skippable-exception-classes:
+                - "com.carddemo.batch.exception.TransactionValidationException"
+                - "com.carddemo.batch.exception.DuplicateTransactionException"
+                - "org.springframework.dao.DataIntegrityViolationException"
+                
+            retry:
+              limit: 3                                     # Maximum retry attempts
+              retryable-exception-classes:
+                - "org.springframework.dao.DataAccessResourceFailureException"
+                - "org.springframework.dao.DeadlockLoserDataAccessException"
+                - "java.sql.SQLException"
+              backoff:
+                policy: "exponential"
+                delay: 1000                                # 1 second initial delay
+                multiplier: 2.0
+                max-delay: 30000                           # 30 second maximum delay
+                
+          # Step 3: Generate processing summary and reconciliation
+          - name: "generateSummaryStep"
+            type: "tasklet"
+            description: "Generate processing summary and reconciliation report"
+            configuration:
+              tasklet-class: "com.carddemo.batch.tasklet.ProcessingSummaryTasklet"
+              parameters:
+                summary.output.path: "${java.io.tmpdir}/daily-transaction-summary-test.txt"
+                summary.include.counts: true
+                summary.include.amounts: true
+                summary.include.errors: true
+                summary.format: "FIXED_WIDTH"
+                
+        # Job flow configuration
+        flow:
+          - step: "initializeStep"
+            next: "processTransactionsStep"
+            on: "COMPLETED"
+            
+          - step: "processTransactionsStep"
+            next: "generateSummaryStep"
+            on: "COMPLETED"
+            
+          - step: "processTransactionsStep"
+            end: true
+            on: "FAILED"
+            exit-code: "FAILED"
+            
+          - step: "generateSummaryStep"
+            end: true
+            on: "COMPLETED"
+            exit-code: "COMPLETED"
+            
+        # Job listeners for monitoring and metrics
+        listeners:
+          - type: "JobExecutionListener"
+            class: "com.carddemo.batch.listener.DailyTransactionJobListener"
+            parameters:
+              metrics.enabled: true
+              logging.level: "INFO"
+              notification.enabled: false
+              
+          - type: "StepExecutionListener"
+            class: "com.carddemo.batch.listener.DailyTransactionStepListener"
+            parameters:
+              step.metrics.enabled: true
+              step.timing.enabled: true
+              step.memory.monitoring: true
+
+  # Test-specific configuration
+  test:
+    # Test data configuration
+    data:
+      # Sample transaction records for testing
+      input-file: "classpath:batch/test-data/dailytran-test.txt"
+      
+      # Expected output validation
+      expected-outputs:
+        - type: "transaction-count"
+          value: 301                                       # Expected number of transactions
+          
+        - type: "successful-transactions"
+          min-percentage: 95.0                            # Minimum 95% success rate
+          
+        - type: "balance-updates"
+          precision-check: true                           # Verify BigDecimal precision
+          
+        - type: "output-file-format"
+          validate-structure: true                        # Verify output file format
+          
+    # Mock configuration for external dependencies
+    mocks:
+      authorization-service:
+        enabled: true
+        default-response: "APPROVED"
+        failure-rate: 0.05                                # 5% authorization failures
+        
+      fraud-detection-service:
+        enabled: true
+        default-response: "CLEAR"
+        alert-rate: 0.02                                  # 2% fraud alerts
+        
+    # Performance testing parameters
+    performance:
+      target-throughput: 1000                             # Records per second
+      max-execution-time: "PT30M"                         # 30-minute maximum
+      memory-threshold: "80%"                             # 80% heap usage threshold
+      
+    # Assertion configuration
+    assertions:
+      # Functional assertions
+      functional:
+        - name: "transaction-processing-accuracy"
+          type: "database-comparison"
+          description: "Verify all valid transactions are processed correctly"
+          
+        - name: "balance-update-precision"
+          type: "bigdecimal-precision"
+          description: "Verify account balance updates maintain penny-level precision"
+          scale: 2
+          rounding-mode: "HALF_UP"
+          
+        - name: "error-handling-completeness"
+          type: "exception-coverage"
+          description: "Verify all error scenarios are handled appropriately"
+          
+        - name: "restart-capability"
+          type: "job-restart"
+          description: "Verify job can restart from last successful checkpoint"
+          
+      # Performance assertions
+      performance:
+        - name: "chunk-processing-timing"
+          type: "timing-assertion"
+          description: "Verify chunk processing meets performance targets"
+          max-duration-per-chunk: "PT5S"                  # 5 seconds per 1000 records
+          
+        - name: "database-connection-efficiency"
+          type: "connection-pool-monitoring"
+          description: "Verify efficient database connection usage"
+          max-active-connections: 10
+          
+        - name: "memory-usage-stability"
+          type: "memory-monitoring"
+          description: "Verify stable memory usage throughout processing"
+          max-heap-increase: "20%"                        # Maximum 20% heap growth
+          
+      # Integration assertions
+      integration:
+        - name: "acid-compliance"
+          type: "transaction-integrity"
+          description: "Verify ACID compliance for all database operations"
+          
+        - name: "concurrent-processing"
+          type: "concurrency-safety"
+          description: "Verify safe concurrent processing of transactions"
+          
+        - name: "file-output-consistency"
+          type: "file-validation"
+          description: "Verify output file format matches COBOL specifications"
+          
+    # Environment configuration for testing
+    environment:
+      database:
+        url: "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
+        driver: "org.h2.Driver"
+        username: "sa"
+        password: ""
+        jpa:
+          hibernate:
+            ddl-auto: "create-drop"
+          show-sql: false
+          
+      # Temporary file locations
+      temp-directory: "${java.io.tmpdir}/daily-transaction-test"
+      
+      # Logging configuration
+      logging:
+        level:
+          com.carddemo.batch: DEBUG
+          org.springframework.batch: INFO
+          org.springframework.transaction: DEBUG
+
+# Job configuration metadata
+metadata:
+  migration:
+    source-program: "CBTRN01C"
+    source-copybooks: ["CVTRA05Y.cpy"]
+    migration-date: "2024-01-15"
+    functional-parity: true
+    
+  performance:
+    target-throughput: "1000 records/second"
+    max-execution-time: "4 hours"
+    chunk-size: 1000
+    restart-capability: true
+    
+  compliance:
+    acid-transactions: true
+    precision-handling: "COBOL COMP-3 equivalent"
+    error-handling: "CEE3ABD equivalent"
+    audit-trail: true
+    
+  testing:
+    test-categories: ["unit", "integration", "performance", "regression"]
+    coverage-target: "100% business logic"
+    data-scenarios: ["happy-path", "error-conditions", "edge-cases", "volume-testing"]
+    validation-methods: ["output-comparison", "database-verification", "performance-benchmarking"]

@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CardDemo Application Error</title>
+    <style>
+        /* BMS Screen Layout Framework */
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: black;
+            color: #00ff00;
+            margin: 0;
+            padding: 20px;
+            font-size: 14px;
+            line-height: 1.2;
+        }
+
+        .container {
+            width: 80ch;
+            margin: 0 auto;
+            background-color: black;
+            border: 1px solid #00ff00;
+        }
+
+        /* Header Area (Lines 1-2) - Transaction identification, title, timestamp */
+        .header-area {
+            background-color: black;
+            color: #00ff00;
+            padding: 10px 15px;
+            border-bottom: 1px solid #00ff00;
+        }
+
+        .header-line1 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-line2 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 5px;
+        }
+
+        .transaction-code {
+            font-weight: bold;
+            color: #00ff00;
+        }
+
+        .system-title {
+            font-weight: bold;
+            color: #00ff00;
+            text-align: center;
+            flex: 1;
+        }
+
+        .timestamp {
+            color: #00ff00;
+        }
+
+        /* Separator Line (Line 3) - Visual separation using repeated dash characters */
+        .separator-line {
+            background-color: black;
+            color: #00ff00;
+            text-align: center;
+            padding: 5px 0;
+            font-family: 'Courier New', monospace;
+            border-bottom: 1px solid #00ff00;
+        }
+
+        /* Content Area (Lines 4-20) - Primary error information display */
+        .content-area {
+            background-color: black;
+            padding: 20px 15px;
+            min-height: 300px;
+        }
+
+        .error-title {
+            color: #ff0000; /* RED (DFHRED) for error messages */
+            font-weight: bold;
+            text-align: center;
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-decoration: underline;
+        }
+
+        .error-details {
+            margin: 20px 0;
+        }
+
+        .error-field {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .error-label {
+            color: #00ff00; /* GREEN (DFHGREEN) for field labels */
+            min-width: 150px;
+            margin-right: 10px;
+        }
+
+        .error-value {
+            color: #ffff00; /* YELLOW (DFHYELLOW) for highlighted values */
+            font-weight: bold;
+            background-color: #333333;
+            padding: 2px 5px;
+            border: 1px solid #ffff00;
+        }
+
+        .error-description {
+            color: #ff0000; /* RED for error description */
+            margin: 15px 0;
+            padding: 10px;
+            border: 1px solid #ff0000;
+            background-color: #1a0000;
+        }
+
+        .cobol-mapping {
+            color: #00ffff; /* BLUE (DFHBLUE) for informational messages */
+            margin: 15px 0;
+            padding: 10px;
+            border: 1px solid #00ffff;
+            background-color: #001a1a;
+        }
+
+        .navigation-section {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .nav-button {
+            background-color: #333333;
+            color: #00ff00;
+            border: 2px solid #00ff00;
+            padding: 8px 20px;
+            margin: 0 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .nav-button:hover {
+            background-color: #00ff00;
+            color: black;
+        }
+
+        .nav-button.primary {
+            background-color: #0066cc;
+            border-color: #0066cc;
+            color: white;
+        }
+
+        .nav-button.primary:hover {
+            background-color: #004499;
+        }
+
+        /* Message Area (Lines 21-23) - System messages and informational text */
+        .message-area {
+            background-color: black;
+            color: #00ffff; /* BLUE for informational messages */
+            padding: 15px;
+            border-top: 1px solid #00ff00;
+            border-bottom: 1px solid #00ff00;
+        }
+
+        .system-message {
+            text-align: center;
+            margin: 5px 0;
+        }
+
+        /* Footer Area (Line 24) - Function key instructions and navigation help */
+        .footer-area {
+            background-color: black;
+            color: #00ff00;
+            padding: 10px 15px;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .function-keys {
+            margin: 5px 0;
+        }
+
+        /* Responsive design for modern screens while maintaining mainframe feel */
+        @media (max-width: 900px) {
+            .container {
+                width: 95%;
+                margin: 10px auto;
+            }
+            
+            body {
+                padding: 10px;
+                font-size: 12px;
+            }
+        }
+
+        /* Placeholder styling for dynamic content */
+        .placeholder {
+            background-color: #444444;
+            color: #cccccc;
+            padding: 2px 5px;
+            border: 1px dashed #666666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Area (Lines 1-2) - Transaction identification, title, timestamp -->
+        <div class="header-area">
+            <div class="header-line1">
+                <span class="transaction-code">ERROR</span>
+                <span class="system-title">CREDIT CARD DEMO</span>
+                <span class="timestamp" id="current-date">{{ERROR_DATE}}</span>
+            </div>
+            <div class="header-line2">
+                <span class="transaction-code">CERR001</span>
+                <span class="system-title"></span>
+                <span class="timestamp" id="current-time">{{ERROR_TIME}}</span>
+            </div>
+        </div>
+
+        <!-- Separator Line (Line 3) - Visual separation using repeated dash characters -->
+        <div class="separator-line">
+            ──────────────────────────────────────────────────────────────────────────────
+        </div>
+
+        <!-- Content Area (Lines 4-20) - Primary error information display -->
+        <div class="content-area">
+            <div class="error-title">
+                SYSTEM ERROR OCCURRED
+            </div>
+
+            <div class="error-details">
+                <div class="error-field">
+                    <span class="error-label">Error Code:</span>
+                    <span class="error-value" id="error-code">{{ERROR_CODE}}</span>
+                </div>
+
+                <div class="error-field">
+                    <span class="error-label">COBOL ABEND Code:</span>
+                    <span class="error-value" id="abend-code">{{ABEND_CODE}}</span>
+                </div>
+
+                <div class="error-field">
+                    <span class="error-label">Transaction ID:</span>
+                    <span class="error-value" id="transaction-id">{{TRANSACTION_ID}}</span>
+                </div>
+
+                <div class="error-field">
+                    <span class="error-label">User ID:</span>
+                    <span class="error-value" id="user-id">{{USER_ID}}</span>
+                </div>
+
+                <div class="error-field">
+                    <span class="error-label">Program Name:</span>
+                    <span class="error-value" id="program-name">{{PROGRAM_NAME}}</span>
+                </div>
+
+                <div class="error-field">
+                    <span class="error-label">Error Timestamp:</span>
+                    <span class="error-value" id="error-timestamp">{{ERROR_TIMESTAMP}}</span>
+                </div>
+            </div>
+
+            <div class="error-description">
+                <strong>Error Description:</strong><br>
+                <span id="error-message">{{ERROR_MESSAGE}}</span>
+            </div>
+
+            <div class="cobol-mapping">
+                <strong>COBOL Error Mapping:</strong><br>
+                Original COBOL Program: <span id="cobol-program">{{COBOL_PROGRAM}}</span><br>
+                CICS Transaction Code: <span id="cics-transaction">{{CICS_TRANSACTION}}</span><br>
+                ABEND Reason: <span id="abend-reason">{{ABEND_REASON}}</span>
+            </div>
+
+            <div class="navigation-section">
+                <a href="/main-menu" class="nav-button primary">Return to Main Menu</a>
+                <a href="/login" class="nav-button">Sign On</a>
+                <a href="javascript:history.back()" class="nav-button">Go Back</a>
+                <a href="/help" class="nav-button">Help</a>
+            </div>
+        </div>
+
+        <!-- Message Area (Lines 21-23) - System messages and informational text -->
+        <div class="message-area">
+            <div class="system-message">
+                If this error persists, please contact your system administrator.
+            </div>
+            <div class="system-message">
+                Error details have been logged for support analysis.
+            </div>
+            <div class="system-message">
+                Session ID: <span id="session-id">{{SESSION_ID}}</span>
+            </div>
+        </div>
+
+        <!-- Footer Area (Line 24) - Function key instructions and navigation help -->
+        <div class="footer-area">
+            <div class="function-keys">
+                ENTER=Continue  PF3=Exit  PF7=Page Up  PF8=Page Down  PF12=Cancel
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize error page with current timestamp if not provided
+        document.addEventListener('DOMContentLoaded', function() {
+            const now = new Date();
+            
+            // Set current date and time if placeholders are present
+            const dateElement = document.getElementById('current-date');
+            const timeElement = document.getElementById('current-time');
+            
+            if (dateElement && dateElement.textContent.includes('{{ERROR_DATE}}')) {
+                dateElement.textContent = now.toLocaleDateString('en-US', {
+                    month: '2-digit',
+                    day: '2-digit', 
+                    year: 'numeric'
+                });
+            }
+            
+            if (timeElement && timeElement.textContent.includes('{{ERROR_TIME}}')) {
+                timeElement.textContent = now.toLocaleTimeString('en-US', {
+                    hour12: false,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            }
+
+            // Handle keyboard navigation (replicating PF-key functionality)
+            document.addEventListener('keydown', function(event) {
+                switch(event.key) {
+                    case 'F3':
+                        event.preventDefault();
+                        window.location.href = '/login';
+                        break;
+                    case 'F7':
+                        event.preventDefault();
+                        window.scrollBy(0, -200);
+                        break;
+                    case 'F8':
+                        event.preventDefault();
+                        window.scrollBy(0, 200);
+                        break;
+                    case 'F12':
+                        event.preventDefault();
+                        history.back();
+                        break;
+                    case 'Enter':
+                        event.preventDefault();
+                        window.location.href = '/main-menu';
+                        break;
+                }
+            });
+        });
+
+        // Function to populate error details (for testing purposes)
+        function populateErrorDetails(errorData) {
+            const fields = {
+                'error-code': errorData.errorCode || 'HTTP-500',
+                'abend-code': errorData.abendCode || 'ASRA',
+                'transaction-id': errorData.transactionId || 'TXN-' + Date.now(),
+                'user-id': errorData.userId || 'TESTUSER',
+                'program-name': errorData.programName || 'COSGN00C',
+                'error-timestamp': errorData.errorTimestamp || new Date().toISOString(),
+                'error-message': errorData.errorMessage || 'An unexpected system error has occurred. Please try again or contact support.',
+                'cobol-program': errorData.cobolProgram || 'COSGN00C.cbl',
+                'cics-transaction': errorData.cicsTransaction || 'CC00',
+                'abend-reason': errorData.abendReason || 'Data exception in COBOL program execution',
+                'session-id': errorData.sessionId || 'SES-' + Math.random().toString(36).substr(2, 9).toUpperCase()
+            };
+
+            Object.keys(fields).forEach(function(fieldId) {
+                const element = document.getElementById(fieldId);
+                if (element) {
+                    element.textContent = fields[fieldId];
+                }
+            });
+        }
+
+        // Example error data for testing
+        const sampleErrorData = {
+            errorCode: 'HTTP-500',
+            abendCode: 'ASRA',
+            transactionId: 'TXN-20250813143015001',
+            userId: 'TESTUSER',
+            programName: 'COSGN00C',
+            errorTimestamp: '2025-08-13T14:30:15.123Z',
+            errorMessage: 'Data exception occurred during COBOL COMP-3 field processing. Invalid packed decimal format detected.',
+            cobolProgram: 'COSGN00C.cbl',
+            cicsTransaction: 'CC00',
+            abendReason: 'S0C7 - Data exception in arithmetic operation',
+            sessionId: 'SES-ABC123DEF'
+        };
+
+        // Auto-populate for testing if URL contains test parameter
+        if (window.location.search.includes('test=true')) {
+            setTimeout(function() {
+                populateErrorDetails(sampleErrorData);
+            }, 100);
+        }
+    </script>
+</body>
+</html>

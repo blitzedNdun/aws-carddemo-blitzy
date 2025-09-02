@@ -1,0 +1,670 @@
+{
+  "validation_rules": {
+    "metadata": {
+      "description": "Validation rules for testing COBOL-to-Java data conversions in CardDemo migration",
+      "version": "1.0.0",
+      "last_updated": "2024-01-01",
+      "purpose": "Ensure data conversion accuracy and precision matching between COBOL mainframe and Java Spring Boot implementations"
+    },
+    
+    "cobol_data_type_mappings": {
+      "comp3_decimal_rules": {
+        "description": "COMP-3 packed decimal to BigDecimal conversion rules with exact precision matching",
+        "conversion_class": "com.carddemo.util.CobolDataConverter",
+        "rules": [
+          {
+            "cobol_picture": "S9(10)V99 COMP-3",
+            "java_type": "BigDecimal",
+            "precision": 12,
+            "scale": 2,
+            "rounding_mode": "HALF_UP",
+            "validation_pattern": "^-?\\d{1,10}(\\.\\d{1,2})?$",
+            "test_values": [
+              {
+                "cobol_hex": "123456789012C",
+                "expected_decimal": "1234567890.12",
+                "description": "Positive amount with cents"
+              },
+              {
+                "cobol_hex": "123456789012D", 
+                "expected_decimal": "-1234567890.12",
+                "description": "Negative amount with cents"
+              },
+              {
+                "cobol_hex": "000000000000C",
+                "expected_decimal": "0.00",
+                "description": "Zero amount"
+              }
+            ],
+            "fields_using_this_pattern": [
+              "ACCT-CURR-BAL",
+              "ACCT-CREDIT-LIMIT", 
+              "ACCT-CASH-CREDIT-LIMIT",
+              "ACCT-CURR-CYC-CREDIT",
+              "ACCT-CURR-CYC-DEBIT"
+            ]
+          },
+          {
+            "cobol_picture": "S9(09)V99 COMP-3",
+            "java_type": "BigDecimal",
+            "precision": 11,
+            "scale": 2,
+            "rounding_mode": "HALF_UP", 
+            "validation_pattern": "^-?\\d{1,9}(\\.\\d{1,2})?$",
+            "test_values": [
+              {
+                "cobol_hex": "12345678901C",
+                "expected_decimal": "123456789.01",
+                "description": "Transaction amount positive"
+              },
+              {
+                "cobol_hex": "12345678901D",
+                "expected_decimal": "-123456789.01", 
+                "description": "Transaction amount negative"
+              }
+            ],
+            "fields_using_this_pattern": [
+              "TRAN-AMT"
+            ]
+          }
+        ]
+      },
+      
+      "pic_clause_formatting": {
+        "description": "PIC clause string formatting patterns for character fields",
+        "rules": [
+          {
+            "cobol_picture": "PIC 9(11)",
+            "java_type": "String",
+            "length": 11,
+            "padding": "LEFT_ZERO",
+            "validation_pattern": "^\\d{11}$",
+            "test_values": [
+              {
+                "input": "12345",
+                "expected": "00000012345",
+                "description": "Left zero padding to 11 digits"
+              },
+              {
+                "input": "12345678901",
+                "expected": "12345678901",
+                "description": "Full 11 digit number"
+              }
+            ],
+            "fields_using_this_pattern": [
+              "ACCT-ID"
+            ]
+          },
+          {
+            "cobol_picture": "PIC 9(09)",
+            "java_type": "String",
+            "length": 9,
+            "padding": "LEFT_ZERO",
+            "validation_pattern": "^\\d{9}$",
+            "test_values": [
+              {
+                "input": "123456789",
+                "expected": "123456789",
+                "description": "9 digit customer ID"
+              },
+              {
+                "input": "12345",
+                "expected": "000012345", 
+                "description": "Left zero padding to 9 digits"
+              }
+            ],
+            "fields_using_this_pattern": [
+              "CUST-ID",
+              "CUST-SSN",
+              "TRAN-MERCHANT-ID"
+            ]
+          },
+          {
+            "cobol_picture": "PIC X(01)",
+            "java_type": "String",
+            "length": 1,
+            "padding": "NONE",
+            "validation_pattern": "^[A-Z0-9]$",
+            "test_values": [
+              {
+                "input": "Y",
+                "expected": "Y",
+                "description": "Active status indicator"
+              },
+              {
+                "input": "N",
+                "expected": "N",
+                "description": "Inactive status indicator"
+              }
+            ],
+            "fields_using_this_pattern": [
+              "ACCT-ACTIVE-STATUS",
+              "CUST-PRI-CARD-HOLDER-IND"
+            ]
+          },
+          {
+            "cobol_picture": "PIC X(10)",
+            "java_type": "String", 
+            "length": 10,
+            "padding": "RIGHT_SPACE",
+            "validation_pattern": "^.{1,10}$",
+            "test_values": [
+              {
+                "input": "YYYYMMDD",
+                "expected": "YYYYMMDD  ",
+                "description": "Date field with space padding"
+              },
+              {
+                "input": "12345-6789",
+                "expected": "12345-6789",
+                "description": "Full 10 character field"
+              }
+            ],
+            "fields_using_this_pattern": [
+              "ACCT-OPEN-DATE",
+              "ACCT-EXPIRAION-DATE",
+              "ACCT-REISSUE-DATE",
+              "ACCT-ADDR-ZIP",
+              "ACCT-GROUP-ID",
+              "CUST-ADDR-ZIP",
+              "CUST-DOB-YYYYMMDD",
+              "CUST-EFT-ACCOUNT-ID",
+              "TRAN-MERCHANT-ZIP"
+            ]
+          },
+          {
+            "cobol_picture": "PIC X(16)",
+            "java_type": "String",
+            "length": 16,
+            "padding": "RIGHT_SPACE",
+            "validation_pattern": "^.{1,16}$",
+            "test_values": [
+              {
+                "input": "TRAN123456789012",
+                "expected": "TRAN123456789012",
+                "description": "Full 16 character transaction ID"
+              },
+              {
+                "input": "4111111111111111",
+                "expected": "4111111111111111",
+                "description": "16 digit credit card number"
+              }
+            ],
+            "fields_using_this_pattern": [
+              "TRAN-ID",
+              "TRAN-CARD-NUM"
+            ]
+          },
+          {
+            "cobol_picture": "PIC X(25)",
+            "java_type": "String",
+            "length": 25,
+            "padding": "RIGHT_SPACE",
+            "validation_pattern": "^.{1,25}$",
+            "test_values": [
+              {
+                "input": "John",
+                "expected": "John                     ",
+                "description": "Name field with space padding"
+              },
+              {
+                "input": "Christopher Alexander",
+                "expected": "Christopher Alexander    ",
+                "description": "Long name with padding"
+              }
+            ],
+            "fields_using_this_pattern": [
+              "CUST-FIRST-NAME",
+              "CUST-MIDDLE-NAME", 
+              "CUST-LAST-NAME"
+            ]
+          },
+          {
+            "cobol_picture": "PIC 9(04)",
+            "java_type": "String",
+            "length": 4,
+            "padding": "LEFT_ZERO",
+            "validation_pattern": "^\\d{4}$",
+            "test_values": [
+              {
+                "input": "1234",
+                "expected": "1234",
+                "description": "4 digit category code"
+              },
+              {
+                "input": "1",
+                "expected": "0001",
+                "description": "Single digit with zero padding"
+              }
+            ],
+            "fields_using_this_pattern": [
+              "TRAN-CAT-CD"
+            ]
+          },
+          {
+            "cobol_picture": "PIC 9(03)",
+            "java_type": "String",
+            "length": 3,
+            "padding": "LEFT_ZERO",
+            "validation_pattern": "^\\d{3}$", 
+            "test_values": [
+              {
+                "input": "850",
+                "expected": "850",
+                "description": "FICO score maximum"
+              },
+              {
+                "input": "300",
+                "expected": "300",
+                "description": "FICO score minimum"
+              }
+            ],
+            "fields_using_this_pattern": [
+              "CUST-FICO-CREDIT-SCORE"
+            ]
+          }
+        ]
+      }
+    },
+    
+    "vsam_key_structure_validation": {
+      "description": "Validation rules for VSAM KSDS composite key structures converted to PostgreSQL primary keys",
+      "composite_key_patterns": [
+        {
+          "table_name": "customer_data",
+          "vsam_dataset": "CUSTDAT",
+          "primary_key": {
+            "fields": ["customer_id"],
+            "key_structure": "SIMPLE",
+            "validation_rules": [
+              {
+                "field": "customer_id",
+                "type": "BIGINT",
+                "cobol_source": "CUST-ID PIC 9(09)",
+                "validation_pattern": "^\\d{9}$",
+                "test_keys": [
+                  "000000001",
+                  "123456789",
+                  "999999999"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "table_name": "account_data", 
+          "vsam_dataset": "ACCTDAT",
+          "primary_key": {
+            "fields": ["account_id"],
+            "key_structure": "SIMPLE",
+            "validation_rules": [
+              {
+                "field": "account_id",
+                "type": "BIGINT",
+                "cobol_source": "ACCT-ID PIC 9(11)",
+                "validation_pattern": "^\\d{11}$",
+                "test_keys": [
+                  "00000000001",
+                  "12345678901",
+                  "99999999999"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "table_name": "transactions",
+          "vsam_dataset": "TRANSACT", 
+          "primary_key": {
+            "fields": ["transaction_id"],
+            "key_structure": "SIMPLE",
+            "validation_rules": [
+              {
+                "field": "transaction_id",
+                "type": "BIGINT",
+                "cobol_source": "Generated sequence",
+                "validation_pattern": "^\\d+$",
+                "test_keys": [
+                  "1",
+                  "1000000",
+                  "9999999999"
+                ]
+              }
+            ]
+          },
+          "alternate_keys": [
+            {
+              "name": "transaction_date_account_idx",
+              "fields": ["transaction_date", "account_id"],
+              "key_structure": "COMPOSITE",
+              "validation_rules": [
+                {
+                  "field": "transaction_date",
+                  "type": "DATE",
+                  "cobol_source": "TRAN-ORIG-TS date portion",
+                  "validation_pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "test_values": ["2024-01-01", "2024-12-31"]
+                },
+                {
+                  "field": "account_id", 
+                  "type": "BIGINT",
+                  "cobol_source": "Account cross-reference",
+                  "validation_pattern": "^\\d{11}$",
+                  "test_values": ["12345678901"]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "table_name": "card_data",
+          "vsam_dataset": "CARDDAT",
+          "primary_key": {
+            "fields": ["card_number"],
+            "key_structure": "SIMPLE", 
+            "validation_rules": [
+              {
+                "field": "card_number",
+                "type": "VARCHAR(16)",
+                "cobol_source": "Card number field",
+                "validation_pattern": "^\\d{16}$",
+                "test_keys": [
+                  "4111111111111111",
+                  "5555555555554444",
+                  "4000000000000002"
+                ]
+              }
+            ]
+          },
+          "alternate_keys": [
+            {
+              "name": "card_account_idx",
+              "fields": ["account_id"],
+              "key_structure": "SIMPLE",
+              "validation_rules": [
+                {
+                  "field": "account_id",
+                  "type": "BIGINT", 
+                  "cobol_source": "CVACT03Y cross-reference",
+                  "validation_pattern": "^\\d{11}$",
+                  "test_values": ["12345678901"]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "table_name": "transaction_category_balance",
+          "vsam_dataset": "TRANTYPE",
+          "primary_key": {
+            "fields": ["account_id", "category_code", "balance_date"],
+            "key_structure": "COMPOSITE",
+            "validation_rules": [
+              {
+                "field": "account_id",
+                "type": "BIGINT",
+                "cobol_source": "Account reference",
+                "validation_pattern": "^\\d{11}$",
+                "test_keys": ["12345678901"]
+              },
+              {
+                "field": "category_code",
+                "type": "VARCHAR(4)",
+                "cobol_source": "TRAN-CAT-CD PIC 9(04)", 
+                "validation_pattern": "^\\d{4}$",
+                "test_keys": ["0001", "9999"]
+              },
+              {
+                "field": "balance_date",
+                "type": "DATE",
+                "cobol_source": "Balance calculation date",
+                "validation_pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "test_keys": ["2024-01-01", "2024-12-31"]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    
+    "financial_precision_requirements": {
+      "description": "Financial calculation precision requirements matching COBOL COMP-3 behavior",
+      "calculation_rules": [
+        {
+          "operation": "BALANCE_CALCULATION",
+          "description": "Account balance calculation with exact precision",
+          "precision": 12,
+          "scale": 2,
+          "rounding_mode": "HALF_UP",
+          "test_scenarios": [
+            {
+              "description": "Credit transaction posting",
+              "initial_balance": "1000.00",
+              "transaction_amount": "50.45",
+              "operation": "ADD",
+              "expected_result": "1050.45"
+            },
+            {
+              "description": "Debit transaction posting", 
+              "initial_balance": "1000.00",
+              "transaction_amount": "25.67",
+              "operation": "SUBTRACT", 
+              "expected_result": "974.33"
+            },
+            {
+              "description": "Interest calculation with rounding",
+              "principal": "1000.00",
+              "rate": "0.0199",
+              "operation": "MULTIPLY",
+              "expected_result": "19.90"
+            }
+          ]
+        },
+        {
+          "operation": "INTEREST_CALCULATION",
+          "description": "Daily interest calculation matching COBOL logic",
+          "precision": 12,
+          "scale": 2,
+          "rounding_mode": "HALF_UP",
+          "test_scenarios": [
+            {
+              "description": "Daily interest on credit balance",
+              "principal": "5000.00",
+              "annual_rate": "0.1999",
+              "days": "30",
+              "expected_result": "82.46"
+            },
+            {
+              "description": "Compound interest calculation",
+              "principal": "10000.00", 
+              "annual_rate": "0.2499",
+              "days": "365",
+              "expected_result": "2499.00"
+            }
+          ]
+        },
+        {
+          "operation": "CURRENCY_CONVERSION",
+          "description": "Currency amount formatting and validation",
+          "precision": 12,
+          "scale": 2,
+          "rounding_mode": "HALF_UP",
+          "test_scenarios": [
+            {
+              "description": "Format for display",
+              "input": "1234.56",
+              "format": "CURRENCY_USD",
+              "expected_result": "$1,234.56"
+            },
+            {
+              "description": "Parse from input",
+              "input": "$1,234.56",
+              "format": "PARSE_CURRENCY",
+              "expected_result": "1234.56"
+            }
+          ]
+        }
+      ],
+      
+      "validation_tolerances": {
+        "description": "Acceptable precision tolerances for test validation",
+        "balance_calculations": "0.00",
+        "interest_calculations": "0.01", 
+        "percentage_calculations": "0.001",
+        "currency_formatting": "0.00"
+      }
+    },
+    
+    "data_validation_patterns": {
+      "description": "Field-level validation patterns for data integrity",
+      "validation_categories": [
+        {
+          "category": "DATE_VALIDATION",
+          "rules": [
+            {
+              "field_pattern": "CCYYMMDD",
+              "format": "yyyyMMdd",
+              "java_validation": "DateTimeFormatter.ofPattern(\"yyyyMMdd\")",
+              "test_values": [
+                {
+                  "input": "20240101",
+                  "expected": "2024-01-01",
+                  "valid": true
+                },
+                {
+                  "input": "20240230",
+                  "expected": null,
+                  "valid": false,
+                  "error": "Invalid date"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "category": "SSN_VALIDATION", 
+          "rules": [
+            {
+              "field_pattern": "PIC 9(09)",
+              "format": "nnnnnnnnn",
+              "java_validation": "Pattern.compile(\"^\\\\d{9}$\")",
+              "test_values": [
+                {
+                  "input": "123456789",
+                  "expected": "123456789",
+                  "valid": true
+                },
+                {
+                  "input": "123-45-6789",
+                  "expected": "123456789", 
+                  "valid": true,
+                  "preprocessing": "Remove dashes"
+                },
+                {
+                  "input": "12345678",
+                  "expected": null,
+                  "valid": false,
+                  "error": "Invalid SSN length"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "category": "FICO_SCORE_VALIDATION",
+          "rules": [
+            {
+              "field_pattern": "PIC 9(03)",
+              "range": {
+                "min": 300,
+                "max": 850
+              },
+              "java_validation": "Range.between(300, 850)",
+              "test_values": [
+                {
+                  "input": "750",
+                  "expected": 750,
+                  "valid": true
+                },
+                {
+                  "input": "299",
+                  "expected": null,
+                  "valid": false,
+                  "error": "FICO score below minimum"
+                },
+                {
+                  "input": "851",
+                  "expected": null,
+                  "valid": false,
+                  "error": "FICO score above maximum"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    
+    "test_data_generation": {
+      "description": "Test data generation patterns for validation testing",
+      "data_sets": [
+        {
+          "entity": "customer",
+          "cobol_source": "CUSTREC.cpy",
+          "sample_records": [
+            {
+              "cust_id": "000000001",
+              "first_name": "John                     ",
+              "last_name": "Smith                    ",
+              "ssn": "123456789",
+              "fico_score": "750"
+            },
+            {
+              "cust_id": "000000002", 
+              "first_name": "Jane                     ",
+              "last_name": "Doe                      ",
+              "ssn": "987654321",
+              "fico_score": "680"
+            }
+          ]
+        },
+        {
+          "entity": "account",
+          "cobol_source": "CVACT01Y.cpy",
+          "sample_records": [
+            {
+              "acct_id": "00000000001",
+              "current_balance": "1250.75",
+              "credit_limit": "5000.00",
+              "active_status": "Y"
+            },
+            {
+              "acct_id": "00000000002",
+              "current_balance": "0.00", 
+              "credit_limit": "2500.00",
+              "active_status": "N"
+            }
+          ]
+        },
+        {
+          "entity": "transaction",
+          "cobol_source": "CVTRA05Y.cpy", 
+          "sample_records": [
+            {
+              "tran_id": "TRAN000000000001",
+              "tran_amt": "125.50",
+              "tran_type_cd": "01",
+              "tran_cat_cd": "5541"
+            },
+            {
+              "tran_id": "TRAN000000000002",
+              "tran_amt": "-75.25",
+              "tran_type_cd": "02", 
+              "tran_cat_cd": "5542"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

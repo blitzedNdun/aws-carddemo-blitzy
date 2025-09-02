@@ -1,0 +1,706 @@
+{
+  "testDataConfiguration": {
+    "description": "JSON configuration for generating batch test data with specifications for creating fixed-width records matching VSAM layouts, COMP-3 numeric formats, transaction volumes for performance testing, and edge cases for boundary condition validation",
+    "version": "1.0.0",
+    "generatedBy": "Blitzy CardDemo Migration Test Data Generator",
+    "lastUpdated": "2024-01-01",
+    
+    "datasetConfiguration": {
+      "accountData": {
+        "description": "Account test data matching CVACT01Y.cpy COBOL record layout",
+        "sourceCopybook": "app/cpy/CVACT01Y.cpy",
+        "targetFile": "backend/src/test/resources/data/test-acctdata.txt",
+        "recordLength": 300,
+        "recordCount": {
+          "minimal": 1000,
+          "standard": 10000,
+          "performance": 100000,
+          "stress": 1000000
+        },
+        "fieldDefinitions": {
+          "ACCT-ID": {
+            "position": "1-11",
+            "type": "NUMERIC",
+            "picture": "9(11)",
+            "description": "11-digit account identifier",
+            "dataGeneration": {
+              "pattern": "SEQUENTIAL",
+              "startValue": "10000000001",
+              "increment": 1,
+              "padding": "ZERO_FILL"
+            }
+          },
+          "ACCT-ACTIVE-STATUS": {
+            "position": "12-12", 
+            "type": "CHARACTER",
+            "picture": "X(01)",
+            "description": "Account active status flag",
+            "dataGeneration": {
+              "pattern": "WEIGHTED_RANDOM",
+              "values": [
+                {"value": "Y", "weight": 85},
+                {"value": "N", "weight": 10},
+                {"value": "S", "weight": 5}
+              ]
+            }
+          },
+          "ACCT-CURR-BAL": {
+            "position": "13-24",
+            "type": "COMP3_MONETARY",
+            "picture": "S9(10)V99",
+            "description": "Current account balance",
+            "dataGeneration": {
+              "pattern": "REALISTIC_FINANCIAL",
+              "range": {
+                "min": "-999999999.99",
+                "max": "999999999.99"
+              },
+              "distribution": [
+                {"range": "0.00-5000.00", "weight": 40},
+                {"range": "5000.01-25000.00", "weight": 35},
+                {"range": "25000.01-100000.00", "weight": 20},
+                {"range": "100000.01-999999999.99", "weight": 5}
+              ],
+              "negativePercentage": 15,
+              "precision": 2,
+              "rounding": "HALF_UP"
+            }
+          },
+          "ACCT-CREDIT-LIMIT": {
+            "position": "25-36",
+            "type": "COMP3_MONETARY", 
+            "picture": "S9(10)V99",
+            "description": "Account credit limit",
+            "dataGeneration": {
+              "pattern": "REALISTIC_FINANCIAL",
+              "range": {
+                "min": "500.00",
+                "max": "500000.00"
+              },
+              "distribution": [
+                {"range": "500.00-5000.00", "weight": 30},
+                {"range": "5000.01-15000.00", "weight": 40},
+                {"range": "15000.01-50000.00", "weight": 25},
+                {"range": "50000.01-500000.00", "weight": 5}
+              ],
+              "precision": 2,
+              "rounding": "HALF_UP"
+            }
+          },
+          "ACCT-CASH-CREDIT-LIMIT": {
+            "position": "37-48",
+            "type": "COMP3_MONETARY",
+            "picture": "S9(10)V99", 
+            "description": "Cash advance credit limit",
+            "dataGeneration": {
+              "pattern": "DERIVED_FROM_CREDIT_LIMIT",
+              "calculation": "ACCT-CREDIT-LIMIT * 0.25",
+              "precision": 2,
+              "rounding": "HALF_UP"
+            }
+          },
+          "ACCT-OPEN-DATE": {
+            "position": "49-58",
+            "type": "DATE",
+            "picture": "X(10)",
+            "format": "CCYY-MM-DD",
+            "description": "Account opening date",
+            "dataGeneration": {
+              "pattern": "DATE_RANGE",
+              "startDate": "2015-01-01",
+              "endDate": "2023-12-31",
+              "distribution": "UNIFORM"
+            }
+          },
+          "ACCT-EXPIRAION-DATE": {
+            "position": "59-68",
+            "type": "DATE",
+            "picture": "X(10)",
+            "format": "CCYY-MM-DD",
+            "description": "Account expiration date",
+            "dataGeneration": {
+              "pattern": "DERIVED_FROM_OPEN_DATE",
+              "calculation": "ACCT-OPEN-DATE + 5 YEARS",
+              "format": "CCYY-MM-DD"
+            }
+          },
+          "ACCT-REISSUE-DATE": {
+            "position": "69-78",
+            "type": "DATE",
+            "picture": "X(10)",
+            "format": "CCYY-MM-DD",
+            "description": "Account reissue date",
+            "dataGeneration": {
+              "pattern": "CONDITIONAL",
+              "condition": "30% of records",
+              "value": "RANDOM_DATE_BETWEEN_OPEN_AND_EXPIRATION",
+              "nullValue": "0000-00-00"
+            }
+          },
+          "ACCT-CURR-CYC-CREDIT": {
+            "position": "79-90",
+            "type": "COMP3_MONETARY",
+            "picture": "S9(10)V99",
+            "description": "Current cycle credit amount",
+            "dataGeneration": {
+              "pattern": "REALISTIC_FINANCIAL",
+              "range": {
+                "min": "0.00",
+                "max": "50000.00"
+              },
+              "distribution": [
+                {"range": "0.00-1000.00", "weight": 60},
+                {"range": "1000.01-5000.00", "weight": 25},
+                {"range": "5000.01-15000.00", "weight": 10},
+                {"range": "15000.01-50000.00", "weight": 5}
+              ],
+              "precision": 2,
+              "rounding": "HALF_UP"
+            }
+          },
+          "ACCT-CURR-CYC-DEBIT": {
+            "position": "91-102",
+            "type": "COMP3_MONETARY",
+            "picture": "S9(10)V99",
+            "description": "Current cycle debit amount", 
+            "dataGeneration": {
+              "pattern": "REALISTIC_FINANCIAL",
+              "range": {
+                "min": "0.00",
+                "max": "50000.00"
+              },
+              "distribution": [
+                {"range": "0.00-1000.00", "weight": 60},
+                {"range": "1000.01-5000.00", "weight": 25},
+                {"range": "5000.01-15000.00", "weight": 10},
+                {"range": "15000.01-50000.00", "weight": 5}
+              ],
+              "precision": 2,
+              "rounding": "HALF_UP"
+            }
+          },
+          "ACCT-ADDR-ZIP": {
+            "position": "103-112",
+            "type": "CHARACTER",
+            "picture": "X(10)",
+            "description": "Account zip code",
+            "dataGeneration": {
+              "pattern": "REALISTIC_ZIP_CODES",
+              "format": "NNNNN-NNNN",
+              "distribution": "US_POPULATION_WEIGHTED"
+            }
+          },
+          "ACCT-GROUP-ID": {
+            "position": "113-122",
+            "type": "CHARACTER", 
+            "picture": "X(10)",
+            "description": "Account group identifier",
+            "dataGeneration": {
+              "pattern": "WEIGHTED_RANDOM",
+              "values": [
+                {"value": "PREMIUM   ", "weight": 15},
+                {"value": "GOLD      ", "weight": 25},
+                {"value": "SILVER    ", "weight": 35},
+                {"value": "STANDARD  ", "weight": 25}
+              ]
+            }
+          },
+          "FILLER": {
+            "position": "123-300",
+            "type": "CHARACTER",
+            "picture": "X(178)",
+            "description": "Reserved space",
+            "dataGeneration": {
+              "pattern": "FIXED_VALUE",
+              "value": "SPACES"
+            }
+          }
+        }
+      },
+      
+      "transactionData": {
+        "description": "Transaction test data matching CVTRA05Y.cpy COBOL record layout",
+        "sourceCopybook": "app/cpy/CVTRA05Y.cpy", 
+        "targetFile": "backend/src/test/resources/data/test-dailytran.txt",
+        "recordLength": 350,
+        "recordCount": {
+          "minimal": 5000,
+          "standard": 50000,
+          "performance": 500000,
+          "stress": 10000000
+        },
+        "relationshipConstraints": {
+          "referentialIntegrity": true,
+          "accountIdMustExist": true,
+          "cardNumberMustExist": true
+        },
+        "fieldDefinitions": {
+          "TRAN-ID": {
+            "position": "1-16",
+            "type": "CHARACTER",
+            "picture": "X(16)",
+            "description": "Transaction identifier",
+            "dataGeneration": {
+              "pattern": "UUID_BASED",
+              "format": "NNNNNNNNNNNNNNNN",
+              "uniqueness": "GUARANTEED"
+            }
+          },
+          "TRAN-TYPE-CD": {
+            "position": "17-18",
+            "type": "CHARACTER",
+            "picture": "X(02)",
+            "description": "Transaction type code",
+            "dataGeneration": {
+              "pattern": "REFERENCE_TABLE",
+              "sourceFile": "app/data/ASCII/trantype.txt",
+              "distribution": [
+                {"value": "01", "weight": 40, "description": "Purchase"},
+                {"value": "02", "weight": 25, "description": "Payment"},
+                {"value": "03", "weight": 15, "description": "Cash Advance"},
+                {"value": "04", "weight": 10, "description": "Fee"},
+                {"value": "05", "weight": 5, "description": "Interest"},
+                {"value": "06", "weight": 3, "description": "Credit"},
+                {"value": "07", "weight": 2, "description": "Adjustment"}
+              ]
+            }
+          },
+          "TRAN-CAT-CD": {
+            "position": "19-22",
+            "type": "NUMERIC",
+            "picture": "9(04)",
+            "description": "Transaction category code",
+            "dataGeneration": {
+              "pattern": "WEIGHTED_RANDOM",
+              "values": [
+                {"value": "5411", "weight": 20, "description": "Grocery Stores"},
+                {"value": "5812", "weight": 15, "description": "Restaurants"},
+                {"value": "5541", "weight": 12, "description": "Gas Stations"},
+                {"value": "5999", "weight": 10, "description": "Miscellaneous"},
+                {"value": "5311", "weight": 8, "description": "Department Stores"},
+                {"value": "4111", "weight": 8, "description": "Transportation"},
+                {"value": "5651", "weight": 7, "description": "Clothing"},
+                {"value": "5732", "weight": 6, "description": "Electronics"},
+                {"value": "8062", "weight": 6, "description": "Medical"},
+                {"value": "5912", "weight": 8, "description": "Pharmacies"}
+              ]
+            }
+          },
+          "TRAN-SOURCE": {
+            "position": "23-32",
+            "type": "CHARACTER",
+            "picture": "X(10)",
+            "description": "Transaction source",
+            "dataGeneration": {
+              "pattern": "WEIGHTED_RANDOM",
+              "values": [
+                {"value": "POS       ", "weight": 70},
+                {"value": "ONLINE    ", "weight": 20},
+                {"value": "ATM       ", "weight": 8},
+                {"value": "PHONE     ", "weight": 2}
+              ]
+            }
+          },
+          "TRAN-DESC": {
+            "position": "33-132",
+            "type": "CHARACTER",
+            "picture": "X(100)",
+            "description": "Transaction description",
+            "dataGeneration": {
+              "pattern": "CONTEXTUAL",
+              "basedOn": "TRAN-CAT-CD",
+              "templates": {
+                "5411": ["GROCERY STORE #{MERCHANT_ID}", "SUPERMARKET #{MERCHANT_ID}", "FOOD MART #{MERCHANT_ID}"],
+                "5812": ["RESTAURANT #{MERCHANT_ID}", "FAST FOOD #{MERCHANT_ID}", "CAFE #{MERCHANT_ID}"],
+                "5541": ["GAS STATION #{MERCHANT_ID}", "FUEL #{MERCHANT_ID}", "SERVICE STATION #{MERCHANT_ID}"],
+                "5999": ["RETAIL PURCHASE #{MERCHANT_ID}", "MERCHANDISE #{MERCHANT_ID}", "GENERAL #{MERCHANT_ID}"],
+                "DEFAULT": ["PURCHASE #{MERCHANT_ID}", "TRANSACTION #{MERCHANT_ID}"]
+              },
+              "padding": "RIGHT_SPACE"
+            }
+          },
+          "TRAN-AMT": {
+            "position": "133-143",
+            "type": "COMP3_MONETARY",
+            "picture": "S9(09)V99",
+            "description": "Transaction amount",
+            "dataGeneration": {
+              "pattern": "REALISTIC_FINANCIAL",
+              "range": {
+                "min": "-9999999.99",
+                "max": "9999999.99"
+              },
+              "distribution": [
+                {"range": "0.01-25.00", "weight": 30},
+                {"range": "25.01-100.00", "weight": 35},
+                {"range": "100.01-500.00", "weight": 25},
+                {"range": "500.01-2000.00", "weight": 8},
+                {"range": "2000.01-9999999.99", "weight": 2}
+              ],
+              "negativePercentage": 5,
+              "precision": 2,
+              "rounding": "HALF_UP",
+              "edgeCases": [
+                {"value": "0.01", "frequency": "RARE"},
+                {"value": "999999999.99", "frequency": "RARE"},
+                {"value": "-999999999.99", "frequency": "RARE"}
+              ]
+            }
+          },
+          "TRAN-MERCHANT-ID": {
+            "position": "144-152",
+            "type": "NUMERIC",
+            "picture": "9(09)",
+            "description": "Merchant identifier",
+            "dataGeneration": {
+              "pattern": "SEQUENTIAL_RANGE",
+              "startValue": "100000001",
+              "endValue": "999999999",
+              "distribution": "RANDOM"
+            }
+          },
+          "TRAN-MERCHANT-NAME": {
+            "position": "153-202",
+            "type": "CHARACTER",
+            "picture": "X(50)",
+            "description": "Merchant name",
+            "dataGeneration": {
+              "pattern": "REALISTIC_MERCHANT_NAMES",
+              "basedOn": "TRAN-CAT-CD",
+              "templates": {
+                "5411": ["ACME GROCERY", "SUPER FOODS MART", "FRESH MARKET", "CITY GROCERY"],
+                "5812": ["PIZZA PALACE", "BURGER KING", "FAMILY RESTAURANT", "QUICK BITE"],
+                "5541": ["SHELL GAS", "MOBIL STATION", "BP FUEL", "TEXACO"],
+                "5999": ["GENERAL STORE", "VARIETY SHOP", "DISCOUNT MART", "RETAIL OUTLET"],
+                "DEFAULT": ["MERCHANT STORE", "RETAIL LOCATION", "BUSINESS NAME"]
+              },
+              "padding": "RIGHT_SPACE"
+            }
+          },
+          "TRAN-MERCHANT-CITY": {
+            "position": "203-252",
+            "type": "CHARACTER",
+            "picture": "X(50)",
+            "description": "Merchant city",
+            "dataGeneration": {
+              "pattern": "REALISTIC_CITY_NAMES",
+              "distribution": "US_POPULATION_WEIGHTED",
+              "examples": ["NEW YORK", "LOS ANGELES", "CHICAGO", "HOUSTON", "PHOENIX", "PHILADELPHIA"],
+              "padding": "RIGHT_SPACE"
+            }
+          },
+          "TRAN-MERCHANT-ZIP": {
+            "position": "253-262",
+            "type": "CHARACTER",
+            "picture": "X(10)",
+            "description": "Merchant zip code",
+            "dataGeneration": {
+              "pattern": "CORRELATED_WITH_CITY",
+              "format": "NNNNN-NNNN",
+              "distribution": "REALISTIC"
+            }
+          },
+          "TRAN-CARD-NUM": {
+            "position": "263-278", 
+            "type": "CHARACTER",
+            "picture": "X(16)",
+            "description": "Credit card number",
+            "dataGeneration": {
+              "pattern": "LUHN_ALGORITHM",
+              "prefixes": ["4532", "5555", "3782", "6011"],
+              "format": "NNNNNNNNNNNNNNNN",
+              "validation": "LUHN_CHECK",
+              "referentialIntegrity": "MUST_EXIST_IN_CARD_DATA"
+            }
+          },
+          "TRAN-ORIG-TS": {
+            "position": "279-304",
+            "type": "TIMESTAMP",
+            "picture": "X(26)",
+            "format": "CCYY-MM-DD-HH.MM.SS.NNNNNN",
+            "description": "Original transaction timestamp",
+            "dataGeneration": {
+              "pattern": "REALISTIC_TIMESTAMP",
+              "dateRange": {
+                "start": "2023-01-01-00.00.00.000000",
+                "end": "2023-12-31-23.59.59.999999"
+              },
+              "businessHours": {
+                "weight": 70,
+                "hours": "06:00-22:00"
+              },
+              "weekendAdjustment": {
+                "saturdayMultiplier": 1.2,
+                "sundayMultiplier": 0.8
+              }
+            }
+          },
+          "TRAN-PROC-TS": {
+            "position": "305-330",
+            "type": "TIMESTAMP", 
+            "picture": "X(26)",
+            "format": "CCYY-MM-DD-HH.MM.SS.NNNNNN",
+            "description": "Processing timestamp",
+            "dataGeneration": {
+              "pattern": "DERIVED_FROM_ORIG_TS",
+              "calculation": "TRAN-ORIG-TS + RANDOM(1-300) SECONDS",
+              "format": "CCYY-MM-DD-HH.MM.SS.NNNNNN"
+            }
+          },
+          "FILLER": {
+            "position": "331-350",
+            "type": "CHARACTER",
+            "picture": "X(20)",
+            "description": "Reserved space",
+            "dataGeneration": {
+              "pattern": "FIXED_VALUE",
+              "value": "SPACES"
+            }
+          }
+        }
+      },
+      
+      "transactionTypeData": {
+        "description": "Transaction type reference data",
+        "sourceFile": "app/data/ASCII/trantype.txt",
+        "targetFile": "backend/src/test/resources/data/test-trantype.txt",
+        "staticData": true,
+        "records": [
+          {"code": "01", "description": "Purchase"},
+          {"code": "02", "description": "Payment"},
+          {"code": "03", "description": "Cash Advance"}, 
+          {"code": "04", "description": "Fee"},
+          {"code": "05", "description": "Interest"},
+          {"code": "06", "description": "Credit"},
+          {"code": "07", "description": "Adjustment"},
+          {"code": "08", "description": "Refund"},
+          {"code": "09", "description": "Chargeback"},
+          {"code": "10", "description": "Transfer"}
+        ]
+      }
+    },
+    
+    "performanceTesting": {
+      "description": "Volume settings for performance testing per Section 0 requirements",
+      "scenarios": {
+        "minimal": {
+          "description": "Basic functional testing",
+          "accounts": 1000,
+          "transactions": 5000,
+          "duration": "15 minutes",
+          "target": "Functional validation"
+        },
+        "standard": {
+          "description": "Integration testing volume",
+          "accounts": 10000,
+          "transactions": 50000,
+          "duration": "1 hour",
+          "target": "Integration test validation"
+        },
+        "performance": {
+          "description": "Performance baseline testing",
+          "accounts": 100000,
+          "transactions": 500000,
+          "duration": "2 hours",
+          "target": "Sub-200ms REST API response validation"
+        },
+        "stress": {
+          "description": "4-hour processing window testing",
+          "accounts": 1000000,
+          "transactions": 10000000,
+          "duration": "4 hours",
+          "target": "Batch processing window validation",
+          "batchSize": 10000,
+          "parallelThreads": 4
+        }
+      }
+    },
+    
+    "edgeCases": {
+      "description": "Edge cases for COMP-3 precision validation and boundary condition testing",
+      "monetaryPrecision": {
+        "description": "COMP-3 decimal precision edge cases",
+        "testCases": [
+          {
+            "name": "Maximum positive value",
+            "field": "ACCT-CURR-BAL",
+            "value": "9999999999.99",
+            "expected": "Maximum COMP-3 precision"
+          },
+          {
+            "name": "Maximum negative value", 
+            "field": "ACCT-CURR-BAL",
+            "value": "-9999999999.99",
+            "expected": "Maximum negative COMP-3 precision"
+          },
+          {
+            "name": "Minimum positive value",
+            "field": "TRAN-AMT",
+            "value": "0.01",
+            "expected": "Minimum monetary precision"
+          },
+          {
+            "name": "Zero value handling",
+            "field": "TRAN-AMT", 
+            "value": "0.00",
+            "expected": "Zero amount processing"
+          },
+          {
+            "name": "Rounding precision test",
+            "field": "ACCT-CURR-BAL",
+            "value": "1234567890.996",
+            "expected": "1234567890.99",
+            "note": "HALF_UP rounding to 2 decimal places"
+          }
+        ]
+      },
+      "fieldBoundaries": {
+        "description": "Field length and format boundary testing",
+        "testCases": [
+          {
+            "name": "Maximum account ID",
+            "field": "ACCT-ID",
+            "value": "99999999999",
+            "expected": "11-digit maximum value"
+          },
+          {
+            "name": "Date format validation",
+            "field": "ACCT-OPEN-DATE",
+            "value": "2024-02-29",
+            "expected": "Leap year date handling"
+          },
+          {
+            "name": "Maximum merchant name",
+            "field": "TRAN-MERCHANT-NAME",
+            "value": "VERY LONG MERCHANT NAME THAT REACHES EXACTLY MAX",
+            "expected": "50-character field limit"
+          },
+          {
+            "name": "Credit card validation",
+            "field": "TRAN-CARD-NUM",
+            "value": "4532123456789012",
+            "expected": "Valid Luhn algorithm check"
+          }
+        ]
+      },
+      "referentialIntegrity": {
+        "description": "Cross-dataset referential integrity validation",
+        "constraints": [
+          {
+            "name": "Account ID consistency",
+            "rule": "All transaction ACCT-ID values must exist in account data",
+            "validation": "FK_CONSTRAINT_CHECK"
+          },
+          {
+            "name": "Card number consistency", 
+            "rule": "All transaction TRAN-CARD-NUM values must be valid card numbers",
+            "validation": "LUHN_ALGORITHM_CHECK"
+          },
+          {
+            "name": "Transaction type validation",
+            "rule": "All TRAN-TYPE-CD values must exist in transaction type reference",
+            "validation": "REFERENCE_TABLE_CHECK"
+          },
+          {
+            "name": "Date logical consistency",
+            "rule": "TRAN-PROC-TS must be >= TRAN-ORIG-TS",
+            "validation": "TEMPORAL_CONSTRAINT_CHECK"
+          }
+        ]
+      }
+    },
+    
+    "cobolCompatibility": {
+      "description": "COBOL-specific formatting and precision requirements",
+      "comp3Handling": {
+        "description": "COMP-3 packed decimal precision configuration",
+        "javaMapping": "java.math.BigDecimal",
+        "precision": "EXACT_MATCH",
+        "rounding": "HALF_UP",
+        "scaleHandling": "FIXED_SCALE",
+        "examples": [
+          {
+            "cobolPicture": "S9(10)V99",
+            "javaType": "BigDecimal",
+            "scale": 2,
+            "precision": 12,
+            "range": "-9999999999.99 to 9999999999.99"
+          },
+          {
+            "cobolPicture": "S9(09)V99", 
+            "javaType": "BigDecimal",
+            "scale": 2,
+            "precision": 11,
+            "range": "-999999999.99 to 999999999.99"
+          }
+        ]
+      },
+      "fixedWidthFormatting": {
+        "description": "Fixed-width record formatting matching COBOL PIC clauses",
+        "paddingRules": {
+          "numeric": "ZERO_FILL_LEFT",
+          "character": "SPACE_FILL_RIGHT",
+          "monetary": "ZERO_FILL_LEFT_WITH_SIGN"
+        },
+        "characterSet": "ASCII",
+        "lineTermination": "CRLF"
+      },
+      "dateFieldHandling": {
+        "description": "Date field formatting in CCYYMMDD format",
+        "inputFormat": "CCYY-MM-DD",
+        "outputFormat": "CCYYMMDD",
+        "validation": "STRICT_DATE_VALIDATION",
+        "leapYearHandling": "ENABLED",
+        "businessDayLogic": "DISABLED"
+      }
+    },
+    
+    "validationRules": {
+      "description": "Data validation and integrity checks",
+      "accountValidation": {
+        "accountIdFormat": "NUMERIC_11_DIGITS",
+        "statusValues": ["Y", "N", "S"],
+        "balanceRange": "-9999999999.99 to 9999999999.99",
+        "creditLimitMinimum": "500.00",
+        "dateLogicalConsistency": "OPEN_DATE <= EXPIRATION_DATE"
+      },
+      "transactionValidation": {
+        "transactionIdFormat": "ALPHANUMERIC_16_CHARS",
+        "amountRange": "-999999999.99 to 999999999.99",
+        "timestampFormat": "CCYY-MM-DD-HH.MM.SS.NNNNNN",
+        "cardNumberValidation": "LUHN_ALGORITHM",
+        "merchantIdFormat": "NUMERIC_9_DIGITS"
+      },
+      "crossTableValidation": {
+        "foreignKeyChecks": "ENABLED",
+        "orphanRecordPrevention": "ENABLED",
+        "duplicateKeyPrevention": "ENABLED",
+        "dataTypeConsistency": "ENFORCED"
+      }
+    },
+    
+    "outputConfiguration": {
+      "description": "Generated test data file configuration",
+      "fileFormat": {
+        "type": "FIXED_WIDTH",
+        "characterSet": "ASCII",
+        "lineEnding": "CRLF",
+        "recordTermination": "NEWLINE"
+      },
+      "compression": {
+        "enabled": false,
+        "reason": "Maintains compatibility with batch processing requirements"
+      },
+      "fileNaming": {
+        "pattern": "test-{dataset}-{scenario}-{timestamp}.txt",
+        "timestamp": "YYYYMMDD-HHMMSS"
+      },
+      "documentation": {
+        "generateMetadata": true,
+        "includeFieldMappings": true,
+        "recordStatistics": true,
+        "validationReport": true
+      }
+    }
+  }
+}

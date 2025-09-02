@@ -1,0 +1,349 @@
+{
+  "cardIssuance": {
+    "description": "Template for credit card issuance request - corresponds to COCRDLI screen functionality",
+    "request": {
+      "accountId": "12345678901",
+      "cardType": "01",
+      "cardholderName": "JOHN DOE",
+      "requestedExpiryDate": "1225",
+      "issueDate": "20231201",
+      "initialStatus": "Y",
+      "cvvCode": "123",
+      "embossedName": "JOHN DOE"
+    },
+    "validation": {
+      "accountId": {
+        "type": "string",
+        "pattern": "^[0-9]{11}$",
+        "description": "Must be exactly 11 digits - matches CARD-ACCT-ID from CVACT02Y copybook"
+      },
+      "cardType": {
+        "type": "string",
+        "enum": ["01", "02", "03", "04"],
+        "description": "Predefined card type codes: 01=Standard, 02=Gold, 03=Platinum, 04=Business"
+      },
+      "cardholderName": {
+        "type": "string",
+        "maxLength": 50,
+        "description": "Cardholder name - matches CARD-EMBOSSED-NAME field length"
+      },
+      "requestedExpiryDate": {
+        "type": "string",
+        "pattern": "^(0[1-9]|1[0-2])[0-9]{2}$",
+        "description": "MMYY format - month (01-12) + 2-digit year"
+      },
+      "issueDate": {
+        "type": "string",
+        "pattern": "^[0-9]{8}$",
+        "description": "CCYYMMDD format - matches COBOL date standards"
+      },
+      "initialStatus": {
+        "type": "string",
+        "pattern": "^[YN]$",
+        "description": "Single character: Y=Active, N=Inactive - matches CARD-ACTIVE-STATUS"
+      },
+      "cvvCode": {
+        "type": "string",
+        "pattern": "^[0-9]{3}$",
+        "description": "3-digit CVV code - matches CARD-CVV-CD field"
+      },
+      "embossedName": {
+        "type": "string",
+        "maxLength": 50,
+        "description": "Name to be embossed on card - matches CARD-EMBOSSED-NAME"
+      }
+    }
+  },
+  "cardActivation": {
+    "description": "Template for credit card activation request - corresponds to COCRDSL/COCRDUP screen functionality",
+    "request": {
+      "cardNumber": "1234567890123456",
+      "accountId": "12345678901",
+      "activationDate": "20231201",
+      "newStatus": "Y"
+    },
+    "validation": {
+      "cardNumber": {
+        "type": "string",
+        "pattern": "^[0-9]{16}$",
+        "description": "Must be exactly 16 digits - matches CARD-NUM from CVACT02Y copybook"
+      },
+      "accountId": {
+        "type": "string", 
+        "pattern": "^[0-9]{11}$",
+        "description": "Must be exactly 11 digits for account linkage"
+      },
+      "activationDate": {
+        "type": "string",
+        "pattern": "^[0-9]{8}$",
+        "description": "CCYYMMDD format activation date"
+      },
+      "newStatus": {
+        "type": "string",
+        "pattern": "^[YN]$",
+        "description": "Y=Active, N=Inactive - single character code"
+      }
+    }
+  },
+  "cardDeactivation": {
+    "description": "Template for credit card deactivation request - corresponds to COCRDUP screen functionality",
+    "request": {
+      "cardNumber": "1234567890123456",
+      "accountId": "12345678901",
+      "deactivationDate": "20231201",
+      "deactivationReason": "01",
+      "newStatus": "N"
+    },
+    "validation": {
+      "cardNumber": {
+        "type": "string",
+        "pattern": "^[0-9]{16}$",
+        "description": "Must be exactly 16 digits"
+      },
+      "accountId": {
+        "type": "string",
+        "pattern": "^[0-9]{11}$", 
+        "description": "Must be exactly 11 digits for account linkage"
+      },
+      "deactivationDate": {
+        "type": "string",
+        "pattern": "^[0-9]{8}$",
+        "description": "CCYYMMDD format deactivation date"
+      },
+      "deactivationReason": {
+        "type": "string",
+        "enum": ["01", "02", "03", "04", "05"],
+        "description": "Reason codes: 01=Lost, 02=Stolen, 03=Damaged, 04=Expired, 05=CustomerRequest"
+      },
+      "newStatus": {
+        "type": "string",
+        "pattern": "^[N]$",
+        "description": "Must be N for deactivation"
+      }
+    }
+  },
+  "cardUpdate": {
+    "description": "Template for credit card information update - corresponds to COCRDUP screen functionality",
+    "request": {
+      "cardNumber": "1234567890123456",
+      "accountId": "12345678901",
+      "cardholderName": "JANE DOE",
+      "expiryDate": "1227",
+      "activeStatus": "Y",
+      "updateDate": "20231201"
+    },
+    "validation": {
+      "cardNumber": {
+        "type": "string",
+        "pattern": "^[0-9]{16}$",
+        "description": "Must be exactly 16 digits - cannot be changed after issuance"
+      },
+      "accountId": {
+        "type": "string",
+        "pattern": "^[0-9]{11}$",
+        "description": "Must be exactly 11 digits - read-only for linking"
+      },
+      "cardholderName": {
+        "type": "string",
+        "maxLength": 50,
+        "description": "Updated cardholder name - matches CRDNAME field from COCRDUP"
+      },
+      "expiryDate": {
+        "type": "string", 
+        "pattern": "^(0[1-9]|1[0-2])[0-9]{2}$",
+        "description": "MMYY format - corresponds to EXPMON/EXPYEAR fields"
+      },
+      "activeStatus": {
+        "type": "string",
+        "pattern": "^[YN]$",
+        "description": "Y=Active, N=Inactive - matches CRDSTCD field"
+      },
+      "updateDate": {
+        "type": "string",
+        "pattern": "^[0-9]{8}$",
+        "description": "CCYYMMDD format update timestamp"
+      }
+    }
+  },
+  "cardLimitChange": {
+    "description": "Template for credit card limit change request - extends card management functionality",
+    "request": {
+      "cardNumber": "1234567890123456",
+      "accountId": "12345678901",
+      "newCreditLimit": "500000",
+      "newCashLimit": "100000",
+      "effectiveDate": "20231201",
+      "approvalCode": "APP123"
+    },
+    "validation": {
+      "cardNumber": {
+        "type": "string",
+        "pattern": "^[0-9]{16}$",
+        "description": "Must be exactly 16 digits"
+      },
+      "accountId": {
+        "type": "string",
+        "pattern": "^[0-9]{11}$",
+        "description": "Must be exactly 11 digits for account linkage"
+      },
+      "newCreditLimit": {
+        "type": "string",
+        "pattern": "^[0-9]+$",
+        "description": "New credit limit in cents (no decimal points)"
+      },
+      "newCashLimit": {
+        "type": "string",
+        "pattern": "^[0-9]+$",
+        "description": "New cash advance limit in cents (no decimal points)"
+      },
+      "effectiveDate": {
+        "type": "string",
+        "pattern": "^[0-9]{8}$",
+        "description": "CCYYMMDD format effective date for limit change"
+      },
+      "approvalCode": {
+        "type": "string",
+        "maxLength": 10,
+        "description": "Authorization code for limit change approval"
+      }
+    }
+  },
+  "cardInquiry": {
+    "description": "Template for credit card inquiry request - corresponds to COCRDSL screen functionality",
+    "request": {
+      "cardNumber": "1234567890123456",
+      "accountId": "12345678901"
+    },
+    "validation": {
+      "cardNumber": {
+        "type": "string",
+        "pattern": "^[0-9]{16}$",
+        "description": "Must be exactly 16 digits - matches CARDSID field"
+      },
+      "accountId": {
+        "type": "string",
+        "pattern": "^[0-9]{11}$",
+        "description": "Must be exactly 11 digits - matches ACCTSID field"
+      }
+    }
+  },
+  "cardListing": {
+    "description": "Template for card listing request - corresponds to COCRDLI screen functionality",
+    "request": {
+      "accountId": "12345678901",
+      "cardNumberFilter": "",
+      "statusFilter": "",
+      "pageNumber": "1",
+      "pageSize": "7"
+    },
+    "validation": {
+      "accountId": {
+        "type": "string",
+        "pattern": "^[0-9]{11}$",
+        "description": "Must be exactly 11 digits - matches ACCTSID field"
+      },
+      "cardNumberFilter": {
+        "type": "string",
+        "pattern": "^[0-9]{0,16}$",
+        "description": "Optional partial card number filter - up to 16 digits"
+      },
+      "statusFilter": {
+        "type": "string",
+        "pattern": "^[YN]?$",
+        "description": "Optional status filter: Y=Active, N=Inactive, empty=All"
+      },
+      "pageNumber": {
+        "type": "string",
+        "pattern": "^[0-9]+$",
+        "description": "Page number for pagination - COCRDLI shows 7 cards per page"
+      },
+      "pageSize": {
+        "type": "string",
+        "pattern": "^[1-9][0-9]*$",
+        "description": "Records per page - default 7 to match COCRDLI display"
+      }
+    }
+  },
+  "commonFieldTypes": {
+    "description": "Common field definitions used across all card API requests",
+    "definitions": {
+      "cardNumber": {
+        "type": "string",
+        "pattern": "^[0-9]{16}$",
+        "description": "16-digit card number - matches CARD-NUM from CVACT02Y copybook",
+        "example": "1234567890123456"
+      },
+      "accountId": {
+        "type": "string",
+        "pattern": "^[0-9]{11}$",
+        "description": "11-digit account ID - matches CARD-ACCT-ID from CVACT02Y copybook",
+        "example": "12345678901"
+      },
+      "customerId": {
+        "type": "string",
+        "pattern": "^[0-9]{9}$",
+        "description": "9-digit customer ID - matches CC-CUST-ID from CVCRD01Y copybook",
+        "example": "123456789"
+      },
+      "expiryDate": {
+        "type": "string",
+        "pattern": "^(0[1-9]|1[0-2])[0-9]{2}$",
+        "description": "MMYY format - derived from EXPMON/EXPYEAR BMS fields",
+        "example": "1225"
+      },
+      "ccyymmddDate": {
+        "type": "string",
+        "pattern": "^[0-9]{8}$",
+        "description": "CCYYMMDD format date - standard COBOL date format",
+        "example": "20231201"
+      },
+      "activeStatus": {
+        "type": "string",
+        "pattern": "^[YN]$",
+        "description": "Single character status - matches CARD-ACTIVE-STATUS",
+        "example": "Y"
+      },
+      "cardType": {
+        "type": "string",
+        "enum": ["01", "02", "03", "04"],
+        "description": "Card type codes: 01=Standard, 02=Gold, 03=Platinum, 04=Business",
+        "example": "01"
+      }
+    }
+  },
+  "responseTemplates": {
+    "description": "Expected response structures for card API operations",
+    "success": {
+      "cardNumber": "1234567890123456",
+      "accountId": "12345678901",
+      "status": "SUCCESS",
+      "message": "Operation completed successfully",
+      "timestamp": "20231201120000"
+    },
+    "error": {
+      "cardNumber": "1234567890123456",
+      "accountId": "12345678901", 
+      "status": "ERROR",
+      "errorCode": "CARD001",
+      "message": "Invalid card number format",
+      "timestamp": "20231201120000"
+    },
+    "validation": {
+      "timestamp": {
+        "type": "string",
+        "pattern": "^[0-9]{14}$",
+        "description": "CCYYMMDDHHMMSS format timestamp"
+      },
+      "status": {
+        "type": "string",
+        "enum": ["SUCCESS", "ERROR", "WARNING"],
+        "description": "Operation result status"
+      },
+      "errorCode": {
+        "type": "string",
+        "pattern": "^[A-Z]{4}[0-9]{3}$",
+        "description": "7-character error code: 4 letters + 3 digits"
+      }
+    }
+  }
+}

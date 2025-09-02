@@ -1,0 +1,491 @@
+{
+  "_template_info": {
+    "description": "JSON template for customer REST API responses including customer details, account relationships, credit history, and validation error responses matching COBOL customer processing logic",
+    "version": "1.0",
+    "created_date": "2025-01-13",
+    "source_programs": ["COUSR00C.cbl", "COUSR01C.cbl", "COUSR02C.cbl"],
+    "database_tables": ["customer_data", "account_data", "card_data", "transactions"],
+    "usage": "Template for Spring Boot REST API responses in customer management operations"
+  },
+  
+  "success_responses": {
+    "customer_profile": {
+      "status": "success",
+      "message": "Customer details retrieved successfully",
+      "timestamp": "2025-01-13T10:30:00.000Z",
+      "data": {
+        "customer": {
+          "customer_id": 1000000001,
+          "first_name": "John",
+          "middle_name": "Michael",
+          "last_name": "Smith",
+          "full_name": "John Michael Smith",
+          "ssn": "123456789",
+          "government_id": "DL123456789",
+          "date_of_birth": "1985-03-15",
+          "customer_since": "2018-05-20",
+          "tenure_years": 6,
+          "tenure_months": 7,
+          "primary_card_holder": "Y",
+          "contact_info": {
+            "address": {
+              "address_line_1": "1234 Main Street",
+              "address_line_2": "Apt 5B",
+              "address_line_3": "",
+              "state_code": "TX",
+              "country_code": "USA",
+              "zip_code": "75001"
+            },
+            "phone_numbers": {
+              "primary": "(214) 555-0123",
+              "secondary": "(214) 555-0124"
+            }
+          },
+          "banking_info": {
+            "eft_account_id": "CHK1234567"
+          },
+          "credit_profile": {
+            "fico_score": 745,
+            "score_range": "Good (670-739)",
+            "last_updated": "2024-12-15",
+            "score_history": [
+              {
+                "date": "2024-12-15",
+                "score": 745
+              },
+              {
+                "date": "2024-09-15",
+                "score": 742
+              },
+              {
+                "date": "2024-06-15",
+                "score": 738
+              }
+            ]
+          }
+        },
+        "account_summary": {
+          "total_accounts": 2,
+          "active_accounts": 2,
+          "total_credit_limit": 25000.00,
+          "total_available_credit": 18450.75,
+          "total_balance": 6549.25,
+          "accounts": [
+            {
+              "account_id": 1000000001,
+              "active_status": "Y",
+              "account_type": "Credit Card",
+              "current_balance": 3245.50,
+              "credit_limit": 15000.00,
+              "available_credit": 11754.50,
+              "cash_credit_limit": 3000.00,
+              "utilization_percentage": 21.64,
+              "open_date": "2018-05-20",
+              "expiration_date": "2026-05-31",
+              "reissue_date": "2023-05-15",
+              "current_cycle_credit": 0.00,
+              "current_cycle_debit": 125.75,
+              "group_id": "STANDARD",
+              "disclosure_group_id": 1001,
+              "cards_count": 2,
+              "primary_card": {
+                "card_number": "4000000000001234",
+                "masked_number": "****-****-****-1234",
+                "embossed_name": "JOHN M SMITH",
+                "expiration_date": "2026-05-31",
+                "active_status": "Y"
+              }
+            },
+            {
+              "account_id": 1000000002,
+              "active_status": "Y",
+              "account_type": "Credit Card",
+              "current_balance": 3303.75,
+              "credit_limit": 10000.00,
+              "available_credit": 6696.25,
+              "cash_credit_limit": 2000.00,
+              "utilization_percentage": 33.04,
+              "open_date": "2020-08-10",
+              "expiration_date": "2025-08-31",
+              "reissue_date": "2022-08-05",
+              "current_cycle_credit": 0.00,
+              "current_cycle_debit": 89.50,
+              "group_id": "PREMIUM",
+              "disclosure_group_id": 1002,
+              "cards_count": 1,
+              "primary_card": {
+                "card_number": "4000000000005678",
+                "masked_number": "****-****-****-5678",
+                "embossed_name": "JOHN M SMITH",
+                "expiration_date": "2025-08-31",
+                "active_status": "Y"
+              }
+            }
+          ]
+        },
+        "recent_activity": {
+          "last_transaction_date": "2025-01-12",
+          "last_payment_date": "2025-01-05",
+          "last_payment_amount": 500.00,
+          "monthly_transactions": 15,
+          "average_monthly_spending": 1250.75
+        },
+        "risk_indicators": {
+          "account_status": "Good Standing",
+          "payment_history": "Current",
+          "overlimit_status": "No",
+          "days_past_due": 0,
+          "minimum_payment_due": 135.50,
+          "next_due_date": "2025-02-01"
+        }
+      }
+    },
+    
+    "customer_list": {
+      "status": "success",
+      "message": "Customer list retrieved successfully",
+      "timestamp": "2025-01-13T10:30:00.000Z",
+      "pagination": {
+        "page": 1,
+        "per_page": 10,
+        "total_pages": 25,
+        "total_records": 248,
+        "has_next_page": true,
+        "has_previous_page": false
+      },
+      "data": {
+        "customers": [
+          {
+            "customer_id": 1000000001,
+            "first_name": "John",
+            "last_name": "Smith",
+            "ssn_masked": "***-**-6789",
+            "fico_score": 745,
+            "active_accounts": 2,
+            "total_balance": 6549.25,
+            "customer_since": "2018-05-20",
+            "last_activity": "2025-01-12"
+          }
+        ]
+      }
+    },
+    
+    "customer_created": {
+      "status": "success",
+      "message": "Customer created successfully",
+      "timestamp": "2025-01-13T10:30:00.000Z",
+      "data": {
+        "customer_id": 1000000123,
+        "confirmation_number": "CC25013100123",
+        "next_steps": [
+          "Customer profile established",
+          "Account application can now be processed",
+          "Credit card issuance pending account approval"
+        ]
+      }
+    },
+    
+    "customer_updated": {
+      "status": "success",
+      "message": "Customer information updated successfully",
+      "timestamp": "2025-01-13T10:30:00.000Z",
+      "data": {
+        "customer_id": 1000000001,
+        "updated_fields": [
+          "address_line_1",
+          "phone_number_1",
+          "fico_score"
+        ],
+        "effective_date": "2025-01-13",
+        "confirmation_number": "UPD25013100001"
+      }
+    }
+  },
+  
+  "error_responses": {
+    "validation_errors": {
+      "status": "error",
+      "message": "Validation failed for customer data",
+      "timestamp": "2025-01-13T10:30:00.000Z",
+      "error_code": "VALIDATION_ERROR",
+      "errors": [
+        {
+          "field": "ssn",
+          "code": "DUPLICATE_SSN",
+          "message": "Social Security Number already exists in the system",
+          "rejected_value": "123456789",
+          "suggested_action": "Verify SSN or check for existing customer record"
+        },
+        {
+          "field": "date_of_birth",
+          "code": "INVALID_DATE_FORMAT",
+          "message": "Date must be in CCYYMMDD format",
+          "rejected_value": "03/15/1985",
+          "suggested_action": "Enter date as 19850315"
+        },
+        {
+          "field": "fico_score",
+          "code": "SCORE_OUT_OF_RANGE",
+          "message": "FICO score must be between 300 and 850",
+          "rejected_value": "925",
+          "suggested_action": "Enter valid FICO score (300-850)"
+        },
+        {
+          "field": "phone_number_1",
+          "code": "INVALID_PHONE_FORMAT",
+          "message": "Phone number format invalid",
+          "rejected_value": "214-555-ABCD",
+          "suggested_action": "Enter phone number in (XXX) XXX-XXXX format"
+        },
+        {
+          "field": "state_code",
+          "code": "INVALID_STATE_CODE",
+          "message": "State code not found in lookup table",
+          "rejected_value": "ZZ",
+          "suggested_action": "Enter valid 2-character state code"
+        },
+        {
+          "field": "zip_code",
+          "code": "ZIP_STATE_MISMATCH",
+          "message": "ZIP code does not match selected state",
+          "rejected_value": "90210",
+          "suggested_action": "Verify ZIP code for state TX"
+        }
+      ]
+    },
+    
+    "business_rule_errors": {
+      "status": "error",
+      "message": "Business rule validation failed",
+      "timestamp": "2025-01-13T10:30:00.000Z",
+      "error_code": "BUSINESS_RULE_ERROR",
+      "errors": [
+        {
+          "rule": "AGE_VERIFICATION",
+          "code": "UNDERAGE_APPLICANT",
+          "message": "Customer must be at least 18 years old",
+          "details": "Customer age: 17 years, 5 months"
+        },
+        {
+          "rule": "CREDIT_ELIGIBILITY",
+          "code": "INSUFFICIENT_CREDIT_SCORE",
+          "message": "FICO score below minimum requirement",
+          "details": "Score: 580, Minimum required: 600"
+        }
+      ]
+    },
+    
+    "system_errors": {
+      "customer_not_found": {
+        "status": "error",
+        "message": "Customer not found",
+        "timestamp": "2025-01-13T10:30:00.000Z",
+        "error_code": "CUSTOMER_NOT_FOUND",
+        "details": {
+          "customer_id": 9999999999,
+          "search_criteria": "Customer ID not found in CUSTDAT table"
+        }
+      },
+      
+      "record_locked": {
+        "status": "error",
+        "message": "Customer record is currently being updated by another user",
+        "timestamp": "2025-01-13T10:30:00.000Z",
+        "error_code": "RECORD_LOCKED",
+        "details": {
+          "customer_id": 1000000001,
+          "locked_by_user": "ADMIN01",
+          "lock_time": "2025-01-13T10:25:00.000Z",
+          "suggested_action": "Please try again in a few minutes"
+        }
+      },
+      
+      "database_error": {
+        "status": "error",
+        "message": "Database operation failed",
+        "timestamp": "2025-01-13T10:30:00.000Z",
+        "error_code": "DATABASE_ERROR",
+        "details": {
+          "operation": "SELECT FROM customer_data",
+          "sql_state": "08001",
+          "suggested_action": "Please contact system administrator"
+        }
+      },
+      
+      "authorization_error": {
+        "status": "error",
+        "message": "Insufficient privileges for customer operation",
+        "timestamp": "2025-01-13T10:30:00.000Z",
+        "error_code": "AUTHORIZATION_ERROR",
+        "details": {
+          "user_id": "USER01",
+          "user_type": "U",
+          "required_privilege": "CUSTOMER_UPDATE",
+          "suggested_action": "Contact administrator for access"
+        }
+      }
+    },
+    
+    "pagination_errors": {
+      "status": "error",
+      "message": "You are already at the top of the page",
+      "timestamp": "2025-01-13T10:30:00.000Z",
+      "error_code": "PAGINATION_BOUNDARY",
+      "details": {
+        "current_page": 1,
+        "action_attempted": "previous_page",
+        "total_pages": 25
+      }
+    },
+    
+    "session_errors": {
+      "status": "error",
+      "message": "Session has expired",
+      "timestamp": "2025-01-13T10:30:00.000Z",
+      "error_code": "SESSION_EXPIRED",
+      "details": {
+        "session_id": "sess_abc123",
+        "expired_at": "2025-01-13T10:00:00.000Z",
+        "suggested_action": "Please sign in again"
+      }
+    }
+  },
+  
+  "field_definitions": {
+    "customer_fields": {
+      "customer_id": {
+        "type": "BIGINT",
+        "max_length": 19,
+        "required": true,
+        "description": "Unique customer identifier - Primary Key"
+      },
+      "first_name": {
+        "type": "VARCHAR",
+        "max_length": 20,
+        "required": true,
+        "description": "Customer first name"
+      },
+      "middle_name": {
+        "type": "VARCHAR",
+        "max_length": 20,
+        "required": false,
+        "description": "Customer middle name"
+      },
+      "last_name": {
+        "type": "VARCHAR",
+        "max_length": 20,
+        "required": true,
+        "description": "Customer last name"
+      },
+      "ssn": {
+        "type": "VARCHAR",
+        "max_length": 9,
+        "required": true,
+        "format": "XXXXXXXXX",
+        "description": "Social Security Number - must be unique"
+      },
+      "government_id": {
+        "type": "VARCHAR",
+        "max_length": 20,
+        "required": false,
+        "description": "Government issued ID (DL, Passport, etc.)"
+      },
+      "date_of_birth": {
+        "type": "DATE",
+        "format": "CCYYMMDD",
+        "required": true,
+        "description": "Customer date of birth"
+      },
+      "fico_score": {
+        "type": "SMALLINT",
+        "min_value": 300,
+        "max_value": 850,
+        "required": false,
+        "description": "Credit score (FICO scale)"
+      },
+      "eft_account_id": {
+        "type": "VARCHAR",
+        "max_length": 10,
+        "required": false,
+        "description": "Electronic Funds Transfer account identifier"
+      },
+      "primary_card_holder": {
+        "type": "CHAR",
+        "max_length": 1,
+        "valid_values": ["Y", "N"],
+        "required": true,
+        "description": "Primary card holder flag"
+      }
+    },
+    "address_fields": {
+      "address_line_1": {
+        "type": "VARCHAR",
+        "max_length": 50,
+        "required": true,
+        "description": "Primary address line"
+      },
+      "address_line_2": {
+        "type": "VARCHAR",
+        "max_length": 50,
+        "required": false,
+        "description": "Secondary address line"
+      },
+      "address_line_3": {
+        "type": "VARCHAR",
+        "max_length": 50,
+        "required": false,
+        "description": "Tertiary address line"
+      },
+      "state_code": {
+        "type": "VARCHAR",
+        "max_length": 2,
+        "required": true,
+        "description": "Two-character state code"
+      },
+      "country_code": {
+        "type": "VARCHAR",
+        "max_length": 3,
+        "required": true,
+        "description": "Three-character country code"
+      },
+      "zip_code": {
+        "type": "VARCHAR",
+        "max_length": 10,
+        "required": true,
+        "description": "ZIP/Postal code"
+      }
+    },
+    "contact_fields": {
+      "phone_number_1": {
+        "type": "VARCHAR",
+        "max_length": 15,
+        "format": "(XXX) XXX-XXXX",
+        "required": true,
+        "description": "Primary phone number"
+      },
+      "phone_number_2": {
+        "type": "VARCHAR",
+        "max_length": 15,
+        "format": "(XXX) XXX-XXXX",
+        "required": false,
+        "description": "Secondary phone number"
+      }
+    }
+  },
+  
+  "response_metadata": {
+    "content_type": "application/json",
+    "character_encoding": "UTF-8",
+    "cache_control": "no-cache",
+    "cors_headers": {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization"
+    },
+    "security_headers": {
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "X-XSS-Protection": "1; mode=block"
+    }
+  }
+}

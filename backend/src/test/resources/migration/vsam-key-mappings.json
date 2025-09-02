@@ -1,0 +1,589 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VSAM KSDS to PostgreSQL Key Mapping Configuration",
+  "description": "Complete mapping configuration for migrating VSAM KSDS key structures to PostgreSQL primary and composite keys, maintaining data access patterns and supporting B-tree index optimization",
+  "version": "1.0.0",
+  "metadata": {
+    "migration_type": "VSAM_KSDS_TO_POSTGRESQL",
+    "source_environment": "IBM_MAINFRAME_ZOS",
+    "target_environment": "POSTGRESQL_15_CLOUD_NATIVE",
+    "created_date": "2024-01-01",
+    "last_modified": "2024-01-01",
+    "migration_scope": "CARDDEMO_APPLICATION_COMPLETE_DATASET_MIGRATION"
+  },
+  "vsam_dataset_mappings": {
+    "ACCTDAT": {
+      "vsam_properties": {
+        "dataset_name": "AWS.M2.CARDDEMO.ACCTDAT.VSAM.KSDS",
+        "key_length": 11,
+        "record_length": 300,
+        "record_position": 0,
+        "key_position": 0,
+        "access_method": "KSDS",
+        "organization": "INDEXED",
+        "sharing_options": "SHROPTNS(1,3)",
+        "recovery": "RECOVERY",
+        "unique": "UNIQUE",
+        "cisize": 8192,
+        "average_record_length": 300,
+        "maximum_record_length": 300
+      },
+      "postgresql_mapping": {
+        "target_table": "account_data",
+        "primary_key": {
+          "type": "simple",
+          "column_name": "account_id",
+          "postgresql_type": "BIGINT",
+          "cobol_picture": "PIC 9(11)",
+          "byte_length": 11,
+          "numeric_precision": 11,
+          "nullable": false,
+          "auto_increment": false,
+          "constraint_name": "pk_account_data"
+        },
+        "key_extraction": {
+          "source_field": "ACCT-ID",
+          "field_position": 1,
+          "field_length": 11,
+          "conversion_rule": "COBOL_NUMERIC_TO_BIGINT",
+          "validation_rule": "POSITIVE_INTEGER_RANGE_CHECK"
+        },
+        "indexes": {
+          "primary_index": {
+            "index_name": "pk_account_data",
+            "index_type": "BTREE",
+            "unique": true,
+            "columns": ["account_id"],
+            "storage_parameters": "FILLFACTOR=90"
+          },
+          "secondary_indexes": [
+            {
+              "index_name": "idx_account_customer",
+              "index_type": "BTREE",
+              "unique": false,
+              "columns": ["customer_id"],
+              "purpose": "FOREIGN_KEY_OPTIMIZATION"
+            }
+          ]
+        }
+      },
+      "field_position_mappings": [
+        {
+          "field_name": "ACCT-ID",
+          "start_position": 1,
+          "length": 11,
+          "cobol_type": "PIC 9(11)",
+          "postgresql_column": "account_id",
+          "postgresql_type": "BIGINT"
+        },
+        {
+          "field_name": "ACCT-ACTIVE-STATUS",
+          "start_position": 12,
+          "length": 1,
+          "cobol_type": "PIC X(01)",
+          "postgresql_column": "active_status",
+          "postgresql_type": "CHAR(1)"
+        },
+        {
+          "field_name": "ACCT-CURR-BAL",
+          "start_position": 13,
+          "length": 12,
+          "cobol_type": "PIC S9(10)V99",
+          "postgresql_column": "current_balance",
+          "postgresql_type": "NUMERIC(12,2)"
+        }
+      ]
+    },
+    "CARDDAT": {
+      "vsam_properties": {
+        "dataset_name": "AWS.M2.CARDDEMO.CARDDAT.VSAM.KSDS",
+        "key_length": 16,
+        "record_length": 350,
+        "record_position": 0,
+        "key_position": 0,
+        "access_method": "KSDS",
+        "organization": "INDEXED",
+        "sharing_options": "SHROPTNS(2,3)",
+        "recovery": "RECOVERY",
+        "unique": "UNIQUE",
+        "cisize": 18432,
+        "average_record_length": 350,
+        "maximum_record_length": 350
+      },
+      "postgresql_mapping": {
+        "target_table": "card_data",
+        "primary_key": {
+          "type": "simple",
+          "column_name": "card_number",
+          "postgresql_type": "VARCHAR(16)",
+          "cobol_picture": "PIC X(16)",
+          "byte_length": 16,
+          "nullable": false,
+          "constraint_name": "pk_card_data"
+        },
+        "key_extraction": {
+          "source_field": "CARD-NUM",
+          "field_position": 1,
+          "field_length": 16,
+          "conversion_rule": "COBOL_ALPHANUMERIC_TO_VARCHAR",
+          "validation_rule": "CARD_NUMBER_FORMAT_CHECK"
+        },
+        "indexes": {
+          "primary_index": {
+            "index_name": "pk_card_data",
+            "index_type": "BTREE",
+            "unique": true,
+            "columns": ["card_number"],
+            "storage_parameters": "FILLFACTOR=90"
+          },
+          "secondary_indexes": [
+            {
+              "index_name": "idx_card_account",
+              "index_type": "BTREE",
+              "unique": false,
+              "columns": ["account_id"],
+              "purpose": "FOREIGN_KEY_OPTIMIZATION"
+            },
+            {
+              "index_name": "idx_card_customer",
+              "index_type": "BTREE",
+              "unique": false,
+              "columns": ["customer_id"],
+              "purpose": "CUSTOMER_CARD_LOOKUP"
+            }
+          ]
+        }
+      }
+    },
+    "CUSTDAT": {
+      "vsam_properties": {
+        "dataset_name": "AWS.M2.CARDDEMO.CUSTDAT.VSAM.KSDS",
+        "key_length": 9,
+        "record_length": 500,
+        "record_position": 0,
+        "key_position": 0,
+        "access_method": "KSDS",
+        "organization": "INDEXED",
+        "sharing_options": "SHROPTNS(1,3)",
+        "recovery": "RECOVERY",
+        "unique": "UNIQUE",
+        "cisize": 8192
+      },
+      "postgresql_mapping": {
+        "target_table": "customer_data",
+        "primary_key": {
+          "type": "simple",
+          "column_name": "customer_id",
+          "postgresql_type": "BIGINT",
+          "cobol_picture": "PIC 9(9)",
+          "byte_length": 9,
+          "numeric_precision": 9,
+          "nullable": false,
+          "constraint_name": "pk_customer_data"
+        },
+        "key_extraction": {
+          "source_field": "CUST-ID",
+          "field_position": 1,
+          "field_length": 9,
+          "conversion_rule": "COBOL_NUMERIC_TO_BIGINT",
+          "validation_rule": "POSITIVE_INTEGER_RANGE_CHECK"
+        },
+        "indexes": {
+          "primary_index": {
+            "index_name": "pk_customer_data",
+            "index_type": "BTREE",
+            "unique": true,
+            "columns": ["customer_id"],
+            "storage_parameters": "FILLFACTOR=90"
+          },
+          "secondary_indexes": [
+            {
+              "index_name": "idx_customer_name",
+              "index_type": "BTREE",
+              "unique": false,
+              "columns": ["last_name", "first_name"],
+              "purpose": "NAME_BASED_SEARCH"
+            }
+          ]
+        }
+      }
+    },
+    "TRANSACT": {
+      "vsam_properties": {
+        "dataset_name": "AWS.M2.CARDDEMO.TRANSACT.VSAM.KSDS",
+        "key_length": 16,
+        "record_length": 350,
+        "record_position": 0,
+        "key_position": 0,
+        "access_method": "KSDS",
+        "organization": "INDEXED",
+        "sharing_options": "SHROPTNS(2,3)",
+        "recovery": "RECOVERY",
+        "unique": "UNIQUE",
+        "cisize": 18432,
+        "alternate_index": {
+          "aix_name": "AWS.M2.CARDDEMO.TRANSACT.VSAM.AIX",
+          "aix_key_length": 26,
+          "aix_key_position": 5,
+          "aix_record_position": 304,
+          "upgrade": true,
+          "nonunique_key": true
+        }
+      },
+      "postgresql_mapping": {
+        "target_table": "transactions",
+        "primary_key": {
+          "type": "simple",
+          "column_name": "transaction_id",
+          "postgresql_type": "BIGINT",
+          "cobol_picture": "PIC 9(16)",
+          "byte_length": 16,
+          "numeric_precision": 16,
+          "nullable": false,
+          "auto_increment": true,
+          "constraint_name": "pk_transactions"
+        },
+        "composite_keys": [
+          {
+            "key_name": "uk_trans_composite",
+            "key_type": "UNIQUE",
+            "columns": ["account_id", "transaction_date", "transaction_time", "amount"],
+            "purpose": "BUSINESS_UNIQUE_CONSTRAINT"
+          }
+        ],
+        "partitioning": {
+          "partition_type": "RANGE",
+          "partition_column": "transaction_date",
+          "partition_strategy": "MONTHLY",
+          "partition_retention": "13_MONTHS"
+        },
+        "indexes": {
+          "primary_index": {
+            "index_name": "pk_transactions",
+            "index_type": "BTREE",
+            "unique": true,
+            "columns": ["transaction_id"],
+            "storage_parameters": "FILLFACTOR=90"
+          },
+          "secondary_indexes": [
+            {
+              "index_name": "idx_trans_account_date",
+              "index_type": "BTREE",
+              "unique": false,
+              "columns": ["account_id", "transaction_date"],
+              "purpose": "ACCOUNT_TRANSACTION_HISTORY"
+            },
+            {
+              "index_name": "idx_trans_card_date",
+              "index_type": "BTREE", 
+              "unique": false,
+              "columns": ["card_number", "transaction_date"],
+              "purpose": "CARD_TRANSACTION_HISTORY"
+            },
+            {
+              "index_name": "idx_trans_date",
+              "index_type": "BTREE",
+              "unique": false,
+              "columns": ["transaction_date"],
+              "purpose": "BATCH_PROCESSING_OPTIMIZATION"
+            }
+          ]
+        }
+      }
+    },
+    "USRSEC": {
+      "vsam_properties": {
+        "dataset_name": "AWS.M2.CARDDEMO.USRSEC.VSAM.KSDS",
+        "key_length": 8,
+        "record_length": 80,
+        "record_position": 0,
+        "key_position": 0,
+        "access_method": "KSDS",
+        "organization": "INDEXED",
+        "sharing_options": "SHROPTNS(1,3)",
+        "recovery": "RECOVERY",
+        "unique": "UNIQUE",
+        "cisize": 8192,
+        "reuse": "REUSE"
+      },
+      "postgresql_mapping": {
+        "target_table": "user_security",
+        "primary_key": {
+          "type": "simple",
+          "column_name": "user_id",
+          "postgresql_type": "BIGINT",
+          "cobol_picture": "PIC X(8)",
+          "byte_length": 8,
+          "nullable": false,
+          "constraint_name": "pk_user_security"
+        },
+        "key_extraction": {
+          "source_field": "SEC-USR-ID",
+          "field_position": 1,
+          "field_length": 8,
+          "conversion_rule": "COBOL_ALPHANUMERIC_TO_BIGINT",
+          "validation_rule": "USER_ID_FORMAT_CHECK"
+        },
+        "indexes": {
+          "primary_index": {
+            "index_name": "pk_user_security",
+            "index_type": "BTREE",
+            "unique": true,
+            "columns": ["user_id"],
+            "storage_parameters": "FILLFACTOR=90"
+          }
+        }
+      }
+    },
+    "TRANTYPE": {
+      "vsam_properties": {
+        "dataset_name": "AWS.M2.CARDDEMO.TRANTYPE.VSAM.KSDS",
+        "key_length": 2,
+        "record_length": 60,
+        "record_position": 0,
+        "key_position": 0,
+        "access_method": "KSDS",
+        "organization": "INDEXED",
+        "sharing_options": "SHROPTNS(1,4)",
+        "recovery": "RECOVERY",
+        "unique": "UNIQUE",
+        "cisize": 18432
+      },
+      "postgresql_mapping": {
+        "target_table": "transaction_types",
+        "primary_key": {
+          "type": "simple",
+          "column_name": "transaction_type_code",
+          "postgresql_type": "VARCHAR(2)",
+          "cobol_picture": "PIC X(2)",
+          "byte_length": 2,
+          "nullable": false,
+          "constraint_name": "pk_transaction_types"
+        },
+        "key_extraction": {
+          "source_field": "TRAN-TYPE-CD",
+          "field_position": 1,
+          "field_length": 2,
+          "conversion_rule": "COBOL_ALPHANUMERIC_TO_VARCHAR",
+          "validation_rule": "TRANSACTION_TYPE_CODE_CHECK"
+        },
+        "indexes": {
+          "primary_index": {
+            "index_name": "pk_transaction_types",
+            "index_type": "BTREE",
+            "unique": true,
+            "columns": ["transaction_type_code"],
+            "storage_parameters": "FILLFACTOR=95"
+          }
+        }
+      }
+    }
+  },
+  "composite_key_structures": {
+    "transaction_category_balance": {
+      "source_copybook": "CVTRA01Y",
+      "target_table": "transaction_category_balance",
+      "composite_primary_key": {
+        "key_name": "pk_tran_cat_bal_composite",
+        "columns": [
+          {
+            "column_name": "account_id",
+            "postgresql_type": "BIGINT",
+            "cobol_source": "TRANCAT-ACCT-ID",
+            "cobol_picture": "PIC 9(11)",
+            "position_in_key": 1,
+            "foreign_key_reference": "account_data.account_id"
+          },
+          {
+            "column_name": "category_code",
+            "postgresql_type": "VARCHAR(4)",
+            "cobol_source": "TRANCAT-CD",
+            "cobol_picture": "PIC 9(04)",
+            "position_in_key": 2,
+            "foreign_key_reference": "transaction_categories.category_code"
+          },
+          {
+            "column_name": "balance_date",
+            "postgresql_type": "DATE",
+            "cobol_source": "DERIVED_FROM_PROCESSING_DATE",
+            "position_in_key": 3,
+            "nullable": false
+          }
+        ],
+        "key_extraction": {
+          "source_field": "TRAN-CAT-KEY",
+          "field_position": 1,
+          "field_length": 17,
+          "conversion_rule": "COMPOSITE_KEY_EXTRACTION",
+          "validation_rule": "COMPOSITE_KEY_INTEGRITY_CHECK"
+        }
+      }
+    }
+  },
+  "alternate_index_mappings": {
+    "CARDAIX": {
+      "description": "Card alternate index for account-based lookup",
+      "vsam_aix_name": "AWS.M2.CARDDEMO.CARDDAT.VSAM.AIX",
+      "base_cluster": "CARDDAT",
+      "aix_key_field": "CARD-ACCT-ID",
+      "aix_key_position": 17,
+      "aix_key_length": 11,
+      "postgresql_equivalent": {
+        "index_name": "idx_card_account",
+        "table_name": "card_data",
+        "index_columns": ["account_id"],
+        "index_type": "BTREE",
+        "unique": false,
+        "purpose": "REPLACES_VSAM_AIX_FUNCTIONALITY"
+      }
+    },
+    "CXACAIX": {
+      "description": "Customer cross-reference alternate index",
+      "vsam_aix_name": "AWS.M2.CARDDEMO.CUSTDAT.VSAM.AIX",
+      "base_cluster": "CUSTDAT",
+      "aix_key_field": "CUST-ACCT-XREF-KEY",
+      "aix_key_position": 10,
+      "aix_key_length": 20,
+      "postgresql_equivalent": {
+        "index_name": "idx_customer_account",
+        "table_name": "account_data",
+        "index_columns": ["customer_id"],
+        "index_type": "BTREE",
+        "unique": false,
+        "purpose": "CUSTOMER_ACCOUNT_CROSS_REFERENCE"
+      }
+    },
+    "TRANSACT_AIX": {
+      "description": "Transaction alternate index for date-based access",
+      "vsam_aix_name": "AWS.M2.CARDDEMO.TRANSACT.VSAM.AIX",
+      "base_cluster": "TRANSACT",
+      "aix_key_field": "TRANS-DATE-TIME-KEY",
+      "aix_key_position": 305,
+      "aix_key_length": 26,
+      "postgresql_equivalent": {
+        "index_name": "idx_trans_date_account",
+        "table_name": "transactions",
+        "index_columns": ["transaction_date", "account_id"],
+        "index_type": "BTREE",
+        "unique": false,
+        "purpose": "DATE_RANGE_BATCH_PROCESSING"
+      }
+    }
+  },
+  "data_type_conversion_rules": {
+    "cobol_to_postgresql_mappings": {
+      "PIC 9(n)": {
+        "postgresql_type": "BIGINT",
+        "conversion_function": "CobolNumericToBigInt",
+        "precision_handling": "EXACT_MATCH",
+        "range_validation": "POSITIVE_INTEGER_CHECK"
+      },
+      "PIC S9(n)V99": {
+        "postgresql_type": "NUMERIC(n+2,2)",
+        "conversion_function": "CobolComp3ToNumeric",
+        "precision_handling": "EXACT_DECIMAL_PRECISION",
+        "scale": 2,
+        "rounding_mode": "HALF_UP"
+      },
+      "PIC X(n)": {
+        "postgresql_type": "VARCHAR(n)",
+        "conversion_function": "CobolAlphanumericToVarchar",
+        "character_set": "UTF8",
+        "trimming": "RIGHT_TRIM_SPACES"
+      },
+      "PIC 9(8) COMP": {
+        "postgresql_type": "DATE",
+        "conversion_function": "CobolDateToPostgresDate",
+        "format": "YYYYMMDD",
+        "validation": "DATE_RANGE_CHECK"
+      },
+      "PIC 9(6) COMP": {
+        "postgresql_type": "TIME",
+        "conversion_function": "CobolTimeToPostgresTime",
+        "format": "HHMMSS",
+        "validation": "TIME_RANGE_CHECK"
+      }
+    }
+  },
+  "migration_transformation_rules": {
+    "key_extraction_algorithms": {
+      "fixed_width_record_parsing": {
+        "algorithm": "POSITIONAL_FIELD_EXTRACTION",
+        "byte_order": "BIG_ENDIAN",
+        "character_encoding": "EBCDIC_TO_UTF8",
+        "numeric_conversion": "PACKED_DECIMAL_TO_NUMERIC"
+      },
+      "composite_key_assembly": {
+        "algorithm": "MULTI_FIELD_CONCATENATION",
+        "separator": "PIPE_DELIMITER",
+        "field_padding": "PRESERVE_ORIGINAL_LENGTH",
+        "validation": "COMPONENT_FIELD_VALIDATION"
+      }
+    },
+    "index_optimization_strategies": {
+      "btree_configuration": {
+        "fillfactor": 90,
+        "maintenance_work_mem": "512MB",
+        "effective_cache_size": "2GB",
+        "random_page_cost": 1.1
+      },
+      "partition_strategy": {
+        "transactions_table": {
+          "partition_type": "RANGE",
+          "partition_key": "transaction_date",
+          "partition_interval": "MONTHLY",
+          "retention_policy": "13_MONTHS",
+          "pruning_enabled": true
+        }
+      }
+    }
+  },
+  "performance_optimization_settings": {
+    "cursor_pagination_config": {
+      "startbr_equivalent": {
+        "method": "ORDER_BY_WITH_LIMIT_OFFSET",
+        "page_size": 1000,
+        "cursor_field": "PRIMARY_KEY_COLUMN",
+        "direction": "ASC_DESC_SUPPORT"
+      },
+      "readnext_equivalent": {
+        "method": "SEQUENTIAL_PAGINATION",
+        "fetch_ahead": 10,
+        "cache_strategy": "LRU_CACHE"
+      },
+      "readprev_equivalent": {
+        "method": "REVERSE_PAGINATION",
+        "implementation": "ORDER_BY_DESC_WITH_OFFSET"
+      }
+    },
+    "connection_pool_settings": {
+      "hikaricp_configuration": {
+        "maximum_pool_size": 20,
+        "minimum_idle": 5,
+        "connection_timeout": 30000,
+        "idle_timeout": 600000,
+        "max_lifetime": 1800000,
+        "leak_detection_threshold": 60000
+      }
+    }
+  },
+  "validation_and_testing": {
+    "migration_verification_points": {
+      "key_uniqueness_validation": {
+        "check_type": "PRIMARY_KEY_UNIQUENESS",
+        "validation_query": "SELECT COUNT(*) FROM (SELECT primary_key_column, COUNT(*) FROM target_table GROUP BY primary_key_column HAVING COUNT(*) > 1) duplicates",
+        "expected_result": 0
+      },
+      "data_integrity_validation": {
+        "check_type": "REFERENTIAL_INTEGRITY",
+        "foreign_key_checks": "ENABLED",
+        "constraint_validation": "IMMEDIATE"
+      },
+      "performance_validation": {
+        "response_time_target": "200ms",
+        "throughput_target": "10000_TPS",
+        "batch_processing_window": "4_HOURS"
+      }
+    }
+  }
+}

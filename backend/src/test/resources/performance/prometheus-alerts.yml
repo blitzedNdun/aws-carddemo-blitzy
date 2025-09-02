@@ -1,0 +1,305 @@
+# Prometheus Alert Rules for CardDemo Performance Monitoring
+# Defines performance thresholds and SLA monitoring for the cloud-native migration
+# Ensures compliance with sub-200ms response times and 4-hour batch processing windows
+# Based on Technical Specification Section 8.6 Infrastructure Monitoring
+
+groups:
+  - name: carddemo.performance.rules
+    interval: 30s
+    rules:
+      # HTTP Response Time SLA Monitoring
+      # Target: Sub-200ms response times for all REST endpoints
+      # Alert when 95th percentile exceeds 200ms threshold
+      - alert: HTTPResponseTimeSLAViolation
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="carddemo-backend"}[5m])) by (le)) > 0.2
+        for: 2m
+        labels:
+          severity: critical
+          component: application-performance
+          service: carddemo-backend
+          sla_type: response_time
+        annotations:
+          summary: "HTTP response time SLA violation detected"
+          description: "95th percentile response time ({{ $value }}s) exceeds 200ms SLA threshold for {{ $labels.job }}"
+          impact: "User experience degradation, potential SLA breach"
+          runbook_url: "https://carddemo-docs/runbooks/performance-tuning"
+
+      # HTTP Response Time Warning
+      # Early warning at 150ms to prevent SLA violations
+      - alert: HTTPResponseTimeWarning
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="carddemo-backend"}[5m])) by (le)) > 0.15
+        for: 5m
+        labels:
+          severity: warning
+          component: application-performance
+          service: carddemo-backend
+          sla_type: response_time
+        annotations:
+          summary: "HTTP response time approaching SLA threshold"
+          description: "95th percentile response time ({{ $value }}s) approaching 200ms SLA limit for {{ $labels.job }}"
+          impact: "Performance degradation trending toward SLA violation"
+
+      # Batch Job Duration SLA Monitoring
+      # Target: Complete all batch jobs within 4-hour processing window
+      # Alert when any job exceeds 14400 seconds (4 hours)
+      - alert: BatchJobDurationSLAViolation
+        expr: spring_batch_job_duration_seconds > 14400
+        for: 1m
+        labels:
+          severity: critical
+          component: batch-processing
+          service: carddemo-batch
+          sla_type: batch_completion
+        annotations:
+          summary: "Batch job duration SLA violation"
+          description: "Batch job {{ $labels.job_name }} duration ({{ $value }}s) exceeds 4-hour SLA window"
+          impact: "Daily processing window at risk, potential business impact"
+          runbook_url: "https://carddemo-docs/runbooks/batch-job-optimization"
+
+      # Batch Job Duration Warning
+      # Early warning at 3 hours to prevent SLA violations
+      - alert: BatchJobDurationWarning
+        expr: spring_batch_job_duration_seconds > 10800
+        for: 1m
+        labels:
+          severity: warning
+          component: batch-processing
+          service: carddemo-batch
+          sla_type: batch_completion
+        annotations:
+          summary: "Batch job duration approaching SLA threshold"
+          description: "Batch job {{ $labels.job_name }} duration ({{ $value }}s) approaching 4-hour SLA limit"
+          impact: "Risk of exceeding daily processing window"
+
+      # Transaction Throughput Monitoring
+      # Target: Maintain minimum 10,000 TPS for peak processing
+      # Alert when throughput falls below threshold
+      - alert: ThroughputDegradation
+        expr: sum(rate(http_requests_total{job="carddemo-backend"}[5m])) < 10000
+        for: 2m
+        labels:
+          severity: warning
+          component: application-performance
+          service: carddemo-backend
+          sla_type: throughput
+        annotations:
+          summary: "Transaction throughput below target threshold"
+          description: "Current throughput ({{ $value }} TPS) below 10,000 TPS target for {{ $labels.job }}"
+          impact: "Reduced processing capacity, potential performance bottleneck"
+          runbook_url: "https://carddemo-docs/runbooks/throughput-optimization"
+
+      # Critical Throughput Degradation
+      # Critical alert when throughput drops severely
+      - alert: CriticalThroughputDegradation
+        expr: sum(rate(http_requests_total{job="carddemo-backend"}[5m])) < 5000
+        for: 1m
+        labels:
+          severity: critical
+          component: application-performance
+          service: carddemo-backend
+          sla_type: throughput
+        annotations:
+          summary: "Critical transaction throughput degradation"
+          description: "Current throughput ({{ $value }} TPS) critically low for {{ $labels.job }}"
+          impact: "Severe performance degradation, immediate investigation required"
+
+  - name: carddemo.infrastructure.rules
+    interval: 30s
+    rules:
+      # CPU Utilization Monitoring
+      # Target: Maintain CPU usage below 80% sustained
+      # Alert when exceeding threshold for extended period
+      - alert: HighCPUUtilization
+        expr: process_cpu_usage{job="carddemo-backend"} > 0.80
+        for: 15m
+        labels:
+          severity: warning
+          component: infrastructure
+          service: carddemo-backend
+          resource_type: cpu
+        annotations:
+          summary: "High CPU utilization detected"
+          description: "CPU usage ({{ $value | humanizePercentage }}) exceeds 80% threshold for {{ $labels.job }}"
+          impact: "Resource constraint may affect application performance"
+          runbook_url: "https://carddemo-docs/runbooks/cpu-optimization"
+
+      # Critical CPU Utilization
+      # Critical alert for sustained high CPU usage
+      - alert: CriticalCPUUtilization
+        expr: process_cpu_usage{job="carddemo-backend"} > 0.90
+        for: 5m
+        labels:
+          severity: critical
+          component: infrastructure
+          service: carddemo-backend
+          resource_type: cpu
+        annotations:
+          summary: "Critical CPU utilization detected"
+          description: "CPU usage ({{ $value | humanizePercentage }}) critically high for {{ $labels.job }}"
+          impact: "Severe resource constraint, immediate action required"
+
+      # Memory Utilization Monitoring
+      # Target: Maintain JVM heap usage below 85%
+      # Alert when approaching memory limits
+      - alert: HighMemoryUsage
+        expr: (jvm_memory_used_bytes{area="heap",job="carddemo-backend"} / jvm_memory_max_bytes{area="heap",job="carddemo-backend"}) > 0.85
+        for: 5m
+        labels:
+          severity: critical
+          component: infrastructure
+          service: carddemo-backend
+          resource_type: memory
+        annotations:
+          summary: "High JVM heap memory usage detected"
+          description: "Heap memory usage ({{ $value | humanizePercentage }}) exceeds 85% threshold for {{ $labels.job }}"
+          impact: "Risk of OutOfMemoryError, potential application instability"
+          runbook_url: "https://carddemo-docs/runbooks/memory-optimization"
+
+      # Memory Usage Warning
+      # Early warning for memory consumption
+      - alert: MemoryUsageWarning
+        expr: (jvm_memory_used_bytes{area="heap",job="carddemo-backend"} / jvm_memory_max_bytes{area="heap",job="carddemo-backend"}) > 0.75
+        for: 10m
+        labels:
+          severity: warning
+          component: infrastructure
+          service: carddemo-backend
+          resource_type: memory
+        annotations:
+          summary: "JVM heap memory usage approaching threshold"
+          description: "Heap memory usage ({{ $value | humanizePercentage }}) approaching 85% limit for {{ $labels.job }}"
+          impact: "Memory usage trending toward critical threshold"
+
+      # Pod Restart Monitoring
+      # Target: Maintain container stability with minimal restarts
+      # Alert when restart frequency indicates instability
+      - alert: PodRestartThreshold
+        expr: increase(kube_pod_container_status_restarts_total{namespace="carddemo"}[1h]) > 3
+        for: 1m
+        labels:
+          severity: warning
+          component: kubernetes
+          service: "{{ $labels.pod }}"
+          resource_type: container_stability
+        annotations:
+          summary: "Pod restart threshold exceeded"
+          description: "Pod {{ $labels.pod }} has restarted {{ $value }} times in the last hour"
+          impact: "Container instability, potential service disruption"
+          runbook_url: "https://carddemo-docs/runbooks/pod-stability"
+
+      # Critical Pod Restart Pattern
+      # Critical alert for excessive restart patterns
+      - alert: CriticalPodRestartPattern
+        expr: increase(kube_pod_container_status_restarts_total{namespace="carddemo"}[1h]) > 5
+        for: 1m
+        labels:
+          severity: critical
+          component: kubernetes
+          service: "{{ $labels.pod }}"
+          resource_type: container_stability
+        annotations:
+          summary: "Critical pod restart pattern detected"
+          description: "Pod {{ $labels.pod }} has restarted {{ $value }} times in the last hour"
+          impact: "Severe container instability, immediate investigation required"
+
+  - name: carddemo.database.rules
+    interval: 30s
+    rules:
+      # Database Connection Pool Monitoring
+      # Monitor PostgreSQL connection pool health
+      - alert: DatabaseConnectionPoolExhaustion
+        expr: hikari_connections_active{job="carddemo-backend"} / hikari_connections_max{job="carddemo-backend"} > 0.90
+        for: 2m
+        labels:
+          severity: critical
+          component: database
+          service: carddemo-backend
+          resource_type: connection_pool
+        annotations:
+          summary: "Database connection pool near exhaustion"
+          description: "Active connections ({{ $value | humanizePercentage }}) approaching pool limit for {{ $labels.job }}"
+          impact: "Risk of connection timeouts, database access issues"
+          runbook_url: "https://carddemo-docs/runbooks/database-optimization"
+
+      # Database Query Response Time
+      # Monitor database query performance
+      - alert: DatabaseQueryResponseTimeDegradation
+        expr: histogram_quantile(0.95, sum(rate(spring_data_repository_invocations_seconds_bucket{job="carddemo-backend"}[5m])) by (le)) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+          service: carddemo-backend
+          resource_type: query_performance
+        annotations:
+          summary: "Database query response time degradation"
+          description: "95th percentile database query time ({{ $value }}s) exceeds 1 second threshold"
+          impact: "Database performance degradation affecting application response times"
+
+  - name: carddemo.security.rules
+    interval: 30s
+    rules:
+      # Authentication Failure Rate Monitoring
+      # Monitor for potential security threats
+      - alert: HighAuthenticationFailureRate
+        expr: sum(rate(spring_security_authentication_failures_total{job="carddemo-backend"}[5m])) > 10
+        for: 2m
+        labels:
+          severity: warning
+          component: security
+          service: carddemo-backend
+          security_type: authentication
+        annotations:
+          summary: "High authentication failure rate detected"
+          description: "Authentication failures ({{ $value }} per second) exceed normal threshold"
+          impact: "Potential security threat, brute force attack possibility"
+          runbook_url: "https://carddemo-docs/runbooks/security-response"
+
+      # Session Timeout Monitoring
+      # Monitor session management health
+      - alert: SessionTimeoutErrors
+        expr: sum(rate(spring_session_timeout_errors_total{job="carddemo-backend"}[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: security
+          service: carddemo-backend
+          security_type: session_management
+        annotations:
+          summary: "Elevated session timeout error rate"
+          description: "Session timeout errors ({{ $value }} per second) above normal levels"
+          impact: "User experience issues, potential session management problems"
+
+  - name: carddemo.business.rules
+    interval: 30s
+    rules:
+      # Transaction Processing Error Rate
+      # Monitor business transaction success rates
+      - alert: TransactionProcessingErrorRate
+        expr: sum(rate(http_requests_total{job="carddemo-backend",status=~"5.."}[5m])) / sum(rate(http_requests_total{job="carddemo-backend"}[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: business-logic
+          service: carddemo-backend
+          metric_type: error_rate
+        annotations:
+          summary: "Transaction processing error rate exceeds threshold"
+          description: "Error rate ({{ $value | humanizePercentage }}) exceeds 5% threshold"
+          impact: "Business transaction failures affecting customer operations"
+          runbook_url: "https://carddemo-docs/runbooks/transaction-troubleshooting"
+
+      # Credit Card Transaction Volume Anomaly
+      # Monitor for unusual transaction patterns
+      - alert: CreditCardTransactionVolumeAnomaly
+        expr: abs(sum(rate(carddemo_credit_transactions_total[5m])) - avg_over_time(sum(rate(carddemo_credit_transactions_total[5m]))[1h:5m])) > 1000
+        for: 10m
+        labels:
+          severity: warning
+          component: business-logic
+          service: carddemo-backend
+          metric_type: transaction_volume
+        annotations:
+          summary: "Credit card transaction volume anomaly detected"
+          description: "Transaction volume deviation ({{ $value }}) from normal patterns"
+          impact: "Unusual business activity pattern requiring investigation"

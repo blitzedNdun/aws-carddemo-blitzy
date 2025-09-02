@@ -1,0 +1,169 @@
+# CardDemo Application Configuration
+# COBOL to Java Migration - Spring Boot Backend
+# Version compatible with Java 21 and Spring Boot 3.2.x
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: carddemo-backend
+    
+  profiles:
+    active: development
+    
+  config:
+    import: "optional:configserver:"
+    
+  # Database Configuration (PostgreSQL 16.x compatible with 15.x)
+  datasource:
+    url: jdbc:postgresql://localhost:5432/carddemo
+    username: carddemo
+    password: carddemo123
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      
+  # JPA Configuration
+  jpa:
+    database: postgresql
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: false
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+        
+  # Security Configuration
+  security:
+    user:
+      name: admin
+      password: admin123
+      roles: ADMIN
+      
+  # Batch Configuration
+  batch:
+    job:
+      enabled: false # Disable auto-start for batch jobs
+    initialize-schema: embedded
+    
+  # Session Configuration (Replaces CICS COMMAREA)
+  session:
+    store-type: none # Will be configured for Redis in production
+    timeout: 30m
+    
+  # Jackson Configuration for JSON processing
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      fail-on-empty-beans: false
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+    
+# Management and Monitoring (Spring Actuator)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Logging Configuration
+logging:
+  level:
+    com.carddemo: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: INFO
+    org.hibernate.type.descriptor.sql.BasicBinder: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/carddemo-backend.log
+
+# Custom Application Properties (Matching COBOL Constants)
+carddemo:
+  application:
+    version: "1.0.0"
+    title: "CardDemo Backend API"
+    description: "COBOL to Java Migration - Credit Card Management System"
+  
+  # COBOL Data Type Conversion Settings
+  cobol:
+    comp3:
+      default-scale: 2
+      rounding-mode: HALF_UP
+    pic-x:
+      trim-spaces: true
+      preserve-case: false
+  
+  # Transaction Processing Settings (Replaces CICS)
+  transaction:
+    timeout: 30000 # 30 seconds (matching CICS TIMEOUT)
+    retry-attempts: 3
+    
+  # Batch Processing Settings (Replaces JCL)
+  batch:
+    chunk-size: 1000
+    thread-pool-size: 5
+    max-wait-time: 14400 # 4 hours (matching mainframe batch window)
+
+---
+# Development Profile
+spring:
+  config:
+    activate:
+      on-profile: development
+  datasource:
+    url: jdbc:postgresql://localhost:5432/carddemo_dev
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        show_sql: true
+logging:
+  level:
+    com.carddemo: DEBUG
+
+---
+# Test Profile  
+spring:
+  config:
+    activate:
+      on-profile: test
+    import: "optional:configserver:"
+  cloud:
+    config:
+      enabled: false
+      discovery:
+        enabled: false
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop

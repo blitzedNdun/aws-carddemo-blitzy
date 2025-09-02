@@ -1,0 +1,404 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Spring Batch Job Configuration Template for Monthly Statement Generation
+Replaces CBSTM03A and CBSTM03B COBOL batch programs
+
+This template demonstrates the Spring Batch configuration pattern for the CardDemo
+statement generation process, converting the original mainframe COBOL programs
+into a modern, cloud-native batch processing solution.
+
+Original COBOL Programs:
+- CBSTM03A.CBL: Main statement generation orchestrator
+- CBSTM03B.CBL: File I/O utility subroutine for VSAM dataset access
+
+Key Migration Points:
+- VSAM KSDS files → PostgreSQL JPA repositories
+- COBOL paragraph structure → Spring Batch steps
+- Mainframe file I/O → Spring Batch readers/writers
+- Fixed-length records → JSON/PDF output formats
+-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans 
+           http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/batch 
+           http://www.springframework.org/schema/batch/spring-batch.xsd
+           http://www.springframework.org/schema/context
+           http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <!-- Enable component scanning for Spring Batch services -->
+    <context:component-scan base-package="com.carddemo.batch.statement" />
+
+    <!-- 
+    ================================================================
+    MAIN STATEMENT GENERATION JOB
+    Equivalent to CBSTM03A.CBL main processing logic
+    ================================================================
+    -->
+    
+    <batch:job id="statementGenerationJob" restartable="true">
+        <batch:description>
+            Monthly statement generation job that processes all active accounts,
+            generates transaction summaries, calculates minimum payments,
+            and produces PDF statements for customer delivery.
+            
+            Replaces COBOL programs: CBSTM03A (orchestrator) and CBSTM03B (file I/O)
+            Original job parameters: Processing date, cycle end date, statement format
+        </batch:description>
+        
+        <!-- Step 1: Account Data Preparation - Equivalent to CBSTM03A 0000-MAIN-PROCESSING -->
+        <batch:step id="accountDataPreparationStep" next="transactionHistoryStep">
+            <batch:description>
+                Read all active accounts and prepare statement processing context.
+                Equivalent to CBSTM03A opening ACCTFILE and CUSTFILE for processing.
+                
+                Original COBOL logic:
+                - CALL 'CBSTM03B' USING 'OPEN' ACCTFILE
+                - CALL 'CBSTM03B' USING 'OPEN' CUSTFILE
+                - Browse through account records for active accounts
+            </batch:description>
+            
+            <batch:tasklet>
+                <batch:chunk reader="activeAccountReader" 
+                           processor="accountStatementContextProcessor" 
+                           writer="statementContextWriter" 
+                           commit-interval="100">
+                    <batch:streams>
+                        <batch:stream ref="activeAccountReader"/>
+                        <batch:stream ref="statementContextWriter"/>
+                    </batch:streams>
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+
+        <!-- Step 2: Transaction History Aggregation - Equivalent to CBSTM03A 1000-PROCESS-TRANSACTIONS -->
+        <batch:step id="transactionHistoryStep" next="statementCalculationStep">
+            <batch:description>
+                Aggregate transaction history for each account within the billing cycle.
+                Equivalent to CBSTM03A reading TRNXFILE and XREFFILE for transaction details.
+                
+                Original COBOL logic:
+                - CALL 'CBSTM03B' USING 'OPEN' TRNXFILE
+                - CALL 'CBSTM03B' USING 'OPEN' XREFFILE
+                - Sequential read through transactions for date range
+                - Cross-reference validation with XREFFILE
+            </batch:description>
+            
+            <batch:tasklet>
+                <batch:chunk reader="transactionHistoryReader" 
+                           processor="transactionAggregationProcessor" 
+                           writer="statementTransactionWriter" 
+                           commit-interval="250">
+                    <batch:streams>
+                        <batch:stream ref="transactionHistoryReader"/>
+                        <batch:stream ref="statementTransactionWriter"/>
+                    </batch:streams>
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+
+        <!-- Step 3: Statement Calculation - Equivalent to CBSTM03A 2000-CALCULATE-BALANCES -->
+        <batch:step id="statementCalculationStep" next="pdfGenerationStep">
+            <batch:description>
+                Calculate statement balances, minimum payments, due dates, and interest charges.
+                Equivalent to CBSTM03A financial calculation paragraphs with COMP-3 precision.
+                
+                Original COBOL logic:
+                - Calculate previous balance + new charges - payments
+                - Compute minimum payment based on balance and payment terms
+                - Determine due date based on cycle and business rules
+                - Apply interest calculations for outstanding balances
+            </batch:description>
+            
+            <batch:tasklet>
+                <batch:chunk reader="statementDataReader" 
+                           processor="statementCalculationProcessor" 
+                           writer="calculatedStatementWriter" 
+                           commit-interval="50">
+                    <batch:streams>
+                        <batch:stream ref="statementDataReader"/>
+                        <batch:stream ref="calculatedStatementWriter"/>
+                    </batch:streams>
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+
+        <!-- Step 4: PDF Statement Generation - Equivalent to CBSTM03A 3000-GENERATE-OUTPUT -->
+        <batch:step id="pdfGenerationStep" next="deliveryPreparationStep">
+            <batch:description>
+                Generate PDF statements with formatted transaction details and account summaries.
+                Modernizes CBSTM03A plain text and HTML output to professional PDF format.
+                
+                Original COBOL logic:
+                - Format account header information
+                - List transaction details with dates, descriptions, amounts
+                - Display balance summary and payment information
+                - Output to both plain text (.txt) and HTML (.html) files
+            </batch:description>
+            
+            <batch:tasklet>
+                <batch:chunk reader="calculatedStatementReader" 
+                           processor="pdfStatementProcessor" 
+                           writer="pdfStatementWriter" 
+                           commit-interval="25">
+                    <batch:streams>
+                        <batch:stream ref="calculatedStatementReader"/>
+                        <batch:stream ref="pdfStatementWriter"/>
+                    </batch:streams>
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+
+        <!-- Step 5: Delivery Preparation - Equivalent to CBSTM03A 9000-CLOSE-FILES -->
+        <batch:step id="deliveryPreparationStep">
+            <batch:description>
+                Prepare generated statements for delivery and update processing status.
+                Equivalent to CBSTM03A closing all files and updating process control records.
+                
+                Original COBOL logic:
+                - CALL 'CBSTM03B' USING 'CLOSE' for all opened files
+                - Update process control table with completion status
+                - Generate processing summary report
+            </batch:description>
+            
+            <batch:tasklet>
+                <batch:chunk reader="generatedStatementReader" 
+                           processor="deliveryPreparationProcessor" 
+                           writer="statementDeliveryWriter" 
+                           commit-interval="100">
+                    <batch:streams>
+                        <batch:stream ref="generatedStatementReader"/>
+                        <batch:stream ref="statementDeliveryWriter"/>
+                    </batch:streams>
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+
+        <!-- Job-level listeners for monitoring and error handling -->
+        <batch:listeners>
+            <batch:listener ref="statementJobExecutionListener"/>
+        </batch:listeners>
+
+        <!-- Job parameters validation -->
+        <batch:validator ref="statementJobParametersValidator"/>
+    </batch:job>
+
+    <!-- 
+    ================================================================
+    SPRING BATCH COMPONENTS CONFIGURATION
+    Equivalent to CBSTM03B.CBL file I/O operations converted to Spring Data JPA
+    ================================================================
+    -->
+
+    <!-- Step 1 Components: Account Data Preparation -->
+    
+    <!-- ActiveAccountReader - Equivalent to CBSTM03B ACCTFILE operations -->
+    <bean id="activeAccountReader" class="com.carddemo.batch.statement.reader.ActiveAccountReader" scope="step">
+        <property name="dataSource" ref="cardDemoDataSource"/>
+        <property name="pageSize" value="100"/>
+        <property name="sql">
+            <value>
+                <![CDATA[
+                    SELECT acct.acct_id, acct.acct_active_status, acct.acct_curr_bal,
+                           acct.acct_credit_limit, acct.acct_cash_credit_limit,
+                           acct.acct_open_date, acct.acct_expiry_date, acct.acct_reissue_date,
+                           cust.cust_id, cust.cust_first_name, cust.cust_middle_name,
+                           cust.cust_last_name, cust.cust_addr_line_1, cust.cust_addr_line_2,
+                           cust.cust_addr_line_3, cust.cust_addr_state_cd, cust.cust_addr_country_cd,
+                           cust.cust_addr_zip, cust.cust_phone_num_1, cust.cust_phone_num_2,
+                           cust.cust_ssn, cust.cust_govt_issued_id, cust.cust_dob_yyyy_mm_dd,
+                           cust.cust_fico_credit_score
+                    FROM account_data acct
+                    INNER JOIN customer_data cust ON acct.cust_id = cust.cust_id
+                    WHERE acct.acct_active_status = 'Y'
+                      AND acct.acct_curr_bal > 0
+                    ORDER BY acct.acct_id
+                ]]>
+            </value>
+        </property>
+        <property name="rowMapper" ref="accountCustomerRowMapper"/>
+    </bean>
+
+    <bean id="accountStatementContextProcessor" class="com.carddemo.batch.statement.processor.AccountStatementContextProcessor">
+        <property name="statementCycleService" ref="statementCycleService"/>
+        <property name="accountValidationService" ref="accountValidationService"/>
+    </bean>
+
+    <bean id="statementContextWriter" class="com.carddemo.batch.statement.writer.StatementContextWriter">
+        <property name="statementContextRepository" ref="statementContextRepository"/>
+    </bean>
+
+    <!-- Step 2 Components: Transaction History Aggregation -->
+    
+    <!-- TransactionHistoryReader - Equivalent to CBSTM03B TRNXFILE operations -->
+    <bean id="transactionHistoryReader" class="com.carddemo.batch.statement.reader.TransactionHistoryReader" scope="step">
+        <property name="dataSource" ref="cardDemoDataSource"/>
+        <property name="pageSize" value="250"/>
+        <property name="cycleStartDate" value="#{jobParameters['cycleStartDate']}"/>
+        <property name="cycleEndDate" value="#{jobParameters['cycleEndDate']}"/>
+        <property name="sql">
+            <value>
+                <![CDATA[
+                    SELECT trn.tranid, trn.acct_id, trn.card_num, trn.tran_type_cd,
+                           trn.tran_cat_cd, trn.tran_source, trn.tran_desc, trn.tran_amt,
+                           trn.tran_merchant_id, trn.tran_merchant_name, trn.tran_merchant_city,
+                           trn.tran_merchant_zip, trn.tran_date, trn.tran_time,
+                           trn.tran_orig_ts, trn.tran_proc_ts,
+                           xrf.xref_acct_id, xrf.xref_card_num, xrf.xref_cust_id,
+                           tcat.tran_cat_desc, ttyp.tran_type_desc
+                    FROM transaction_data trn
+                    INNER JOIN card_xref_data xrf ON trn.acct_id = xrf.xref_acct_id 
+                                                  AND trn.card_num = xrf.xref_card_num
+                    LEFT JOIN transaction_category_data tcat ON trn.tran_cat_cd = tcat.tran_cat_cd
+                    LEFT JOIN transaction_type_data ttyp ON trn.tran_type_cd = ttyp.tran_type_cd
+                    WHERE trn.tran_date >= ? AND trn.tran_date <= ?
+                      AND EXISTS (SELECT 1 FROM statement_context sc WHERE sc.acct_id = trn.acct_id)
+                    ORDER BY trn.acct_id, trn.tran_date, trn.tran_time
+                ]]>
+            </value>
+        </property>
+        <property name="rowMapper" ref="transactionWithXrefRowMapper"/>
+    </bean>
+
+    <bean id="transactionAggregationProcessor" class="com.carddemo.batch.statement.processor.TransactionAggregationProcessor">
+        <property name="transactionCategorizationService" ref="transactionCategorizationService"/>
+        <property name="merchantLookupService" ref="merchantLookupService"/>
+    </bean>
+
+    <bean id="statementTransactionWriter" class="com.carddemo.batch.statement.writer.StatementTransactionWriter">
+        <property name="statementTransactionRepository" ref="statementTransactionRepository"/>
+    </bean>
+
+    <!-- Step 3 Components: Statement Calculation -->
+    
+    <bean id="statementDataReader" class="com.carddemo.batch.statement.reader.StatementDataReader" scope="step">
+        <property name="statementContextRepository" ref="statementContextRepository"/>
+        <property name="statementTransactionRepository" ref="statementTransactionRepository"/>
+    </bean>
+
+    <bean id="statementCalculationProcessor" class="com.carddemo.batch.statement.processor.StatementCalculationProcessor">
+        <property name="interestCalculationService" ref="interestCalculationService"/>
+        <property name="minimumPaymentService" ref="minimumPaymentService"/>
+        <property name="dueDateCalculationService" ref="dueDateCalculationService"/>
+        <!-- Ensure BigDecimal precision matches COBOL COMP-3 behavior -->
+        <property name="mathContext" ref="cobolMathContext"/>
+    </bean>
+
+    <bean id="calculatedStatementWriter" class="com.carddemo.batch.statement.writer.CalculatedStatementWriter">
+        <property name="statementSummaryRepository" ref="statementSummaryRepository"/>
+    </bean>
+
+    <!-- Step 4 Components: PDF Statement Generation -->
+    
+    <bean id="calculatedStatementReader" class="com.carddemo.batch.statement.reader.CalculatedStatementReader">
+        <property name="statementSummaryRepository" ref="statementSummaryRepository"/>
+    </bean>
+
+    <bean id="pdfStatementProcessor" class="com.carddemo.batch.statement.processor.PdfStatementProcessor">
+        <property name="pdfTemplateService" ref="pdfTemplateService"/>
+        <property name="logoImagePath" value="#{jobParameters['logoImagePath'] ?: 'classpath:images/carddemo-logo.png'}"/>
+        <property name="outputDirectory" value="#{jobParameters['outputDirectory'] ?: '/tmp/statements'}"/>
+    </bean>
+
+    <bean id="pdfStatementWriter" class="com.carddemo.batch.statement.writer.PdfStatementWriter">
+        <property name="fileSystemResource" ref="statementOutputFileResource"/>
+    </bean>
+
+    <!-- Step 5 Components: Delivery Preparation -->
+    
+    <bean id="generatedStatementReader" class="com.carddemo.batch.statement.reader.GeneratedStatementReader">
+        <property name="statementOutputRepository" ref="statementOutputRepository"/>
+    </bean>
+
+    <bean id="deliveryPreparationProcessor" class="com.carddemo.batch.statement.processor.DeliveryPreparationProcessor">
+        <property name="statementDeliveryService" ref="statementDeliveryService"/>
+        <property name="emailNotificationService" ref="emailNotificationService"/>
+    </bean>
+
+    <bean id="statementDeliveryWriter" class="com.carddemo.batch.statement.writer.StatementDeliveryWriter">
+        <property name="statementDeliveryRepository" ref="statementDeliveryRepository"/>
+    </bean>
+
+    <!-- 
+    ================================================================
+    SUPPORTING SERVICES AND UTILITIES
+    ================================================================
+    -->
+
+    <!-- COBOL Math Context for BigDecimal precision matching -->
+    <bean id="cobolMathContext" class="java.math.MathContext">
+        <constructor-arg value="15"/>  <!-- COBOL PIC S9(13)V99 precision -->
+        <constructor-arg value="HALF_UP"/>  <!-- COBOL ROUNDED behavior -->
+    </bean>
+
+    <!-- Row Mappers for database result set mapping -->
+    <bean id="accountCustomerRowMapper" class="com.carddemo.batch.statement.mapper.AccountCustomerRowMapper"/>
+    <bean id="transactionWithXrefRowMapper" class="com.carddemo.batch.statement.mapper.TransactionWithXrefRowMapper"/>
+
+    <!-- Job Execution Listener for monitoring and logging -->
+    <bean id="statementJobExecutionListener" class="com.carddemo.batch.statement.listener.StatementJobExecutionListener">
+        <property name="notificationService" ref="batchNotificationService"/>
+        <property name="metricsService" ref="batchMetricsService"/>
+    </bean>
+
+    <!-- Job Parameters Validator -->
+    <bean id="statementJobParametersValidator" class="com.carddemo.batch.statement.validator.StatementJobParametersValidator">
+        <property name="requiredKeys">
+            <list>
+                <value>cycleStartDate</value>
+                <value>cycleEndDate</value>
+                <value>processingDate</value>
+            </list>
+        </property>
+        <property name="optionalKeys">
+            <list>
+                <value>outputDirectory</value>
+                <value>logoImagePath</value>
+                <value>testMode</value>
+            </list>
+        </property>
+    </bean>
+
+    <!-- 
+    ================================================================
+    STEP-SCOPED RESOURCES AND FILE HANDLING
+    ================================================================
+    -->
+
+    <bean id="statementOutputFileResource" class="org.springframework.core.io.FileSystemResource" scope="step">
+        <constructor-arg value="#{jobParameters['outputDirectory']}/statements-#{jobParameters['processingDate']}.pdf"/>
+    </bean>
+
+    <!-- 
+    ================================================================
+    ERROR HANDLING AND RETRY CONFIGURATION
+    Equivalent to COBOL ABEND handling with restart capability
+    ================================================================
+    -->
+
+    <!-- Retry template for transient database errors -->
+    <bean id="statementRetryTemplate" class="org.springframework.retry.support.RetryTemplate">
+        <property name="retryPolicy">
+            <bean class="org.springframework.retry.policy.SimpleRetryPolicy">
+                <property name="maxAttempts" value="3"/>
+            </bean>
+        </property>
+        <property name="backOffPolicy">
+            <bean class="org.springframework.retry.backoff.ExponentialBackOffPolicy">
+                <property name="initialInterval" value="1000"/>
+                <property name="multiplier" value="2"/>
+                <property name="maxInterval" value="10000"/>
+            </bean>
+        </property>
+    </bean>
+
+    <!-- Skip listeners for error handling -->
+    <bean id="statementSkipListener" class="com.carddemo.batch.statement.listener.StatementSkipListener">
+        <property name="errorReportingService" ref="batchErrorReportingService"/>
+    </bean>
+
+</beans>

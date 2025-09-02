@@ -1,0 +1,139 @@
+# =============================================================================
+# CardDemo PersistentVolumeClaim Resources
+# =============================================================================
+# Purpose: Define storage requirements for PostgreSQL database and Redis session store
+# Target: Credit Card Management System - Cloud Migration from COBOL/CICS to Java/Spring Boot
+# Infrastructure: Kubernetes containerized deployment with persistent storage
+# =============================================================================
+
+---
+# =============================================================================
+# PostgreSQL PersistentVolumeClaim
+# =============================================================================
+# Purpose: Primary database storage for Spring Boot application
+# Replaces: VSAM KSDS datasets from mainframe environment
+# Storage Requirements: 100GB high-performance SSD storage
+# =============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgresql-pvc
+  labels:
+    app: carddemo
+    component: database
+    tier: data
+    migration-source: vsam-ksds
+  annotations:
+    description: "PostgreSQL persistent storage for CardDemo credit card management system"
+    migration.carddemo.com/source: "VSAM KSDS datasets"
+    migration.carddemo.com/target: "PostgreSQL relational database"
+    storage.carddemo.com/purpose: "Primary database storage"
+    storage.carddemo.com/performance-tier: "high"
+spec:
+  # Storage access mode - ReadWriteOnce for single-node database access
+  accessModes:
+    - ReadWriteOnce
+  
+  # Storage class - fast-ssd for optimal database performance
+  # Supports high IOPS required for financial transaction processing
+  storageClassName: fast-ssd
+  
+  # Storage capacity - 100GB as specified in Section 8.1.3 resource requirements
+  # Accommodates:
+  # - Core financial data (accounts, customers, cards, transactions)
+  # - Transaction history with monthly partitioning
+  # - Audit trails and compliance data
+  # - Index storage for optimal query performance
+  resources:
+    requests:
+      storage: 100Gi
+  
+  # Volume mode - Filesystem for standard database operations
+  volumeMode: Filesystem
+
+---
+# =============================================================================  
+# Redis PersistentVolumeClaim
+# =============================================================================
+# Purpose: Session storage for distributed session management
+# Replaces: CICS COMMAREA structures from mainframe environment
+# Storage Requirements: 10GB standard storage for session persistence
+# =============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  labels:
+    app: carddemo
+    component: session-store
+    tier: cache
+    migration-source: cics-commarea
+  annotations:
+    description: "Redis persistent storage for CardDemo session management"
+    migration.carddemo.com/source: "CICS COMMAREA structures"
+    migration.carddemo.com/target: "Redis distributed session store"
+    storage.carddemo.com/purpose: "Session state persistence"
+    storage.carddemo.com/performance-tier: "standard"
+spec:
+  # Storage access mode - ReadWriteOnce for single Redis instance
+  accessModes:
+    - ReadWriteOnce
+  
+  # Storage class - standard for cost-optimized session storage
+  # Session data doesn't require premium storage performance
+  storageClassName: standard
+  
+  # Storage capacity - 10GB as specified in resource requirements
+  # Accommodates:
+  # - User session data (Spring Session framework)
+  # - Redis RDB snapshots for persistence
+  # - Redis AOF (Append Only File) logging
+  # - Session timeout and cleanup operations
+  resources:
+    requests:
+      storage: 10Gi
+  
+  # Volume mode - Filesystem for Redis data persistence
+  volumeMode: Filesystem
+
+---
+# =============================================================================
+# Storage Configuration Notes
+# =============================================================================
+# 
+# Dynamic Provisioning:
+# - Both PVCs support dynamic provisioning in cloud environments
+# - Storage classes (fast-ssd, standard) are cloud provider specific
+# - Automatic volume expansion supported via allowVolumeExpansion
+#
+# Access Patterns:
+# - PostgreSQL: Mixed read/write with high transaction volume
+# - Redis: Burst write patterns for session updates and RDB snapshots
+#
+# Backup Integration:
+# - PostgreSQL: Volume snapshots for point-in-time recovery
+# - Redis: RDB/AOF files persisted to PVC for session recovery
+#
+# High Availability:
+# - PostgreSQL: Primary-standby with streaming replication
+# - Redis: Single instance with persistence (cluster mode available)
+#
+# Performance Optimization:
+# - PostgreSQL fast-ssd: High IOPS for B-tree index operations
+# - Redis standard storage: Adequate for session data I/O patterns
+#
+# Capacity Planning:
+# - PostgreSQL 100GB: Initial capacity with expansion capability
+# - Redis 10GB: Session storage with configurable retention
+#
+# Security Considerations:
+# - Encryption at rest supported via storage class configuration
+# - Volume access restricted to specific service accounts
+# - Network policies control pod-to-volume access
+#
+# Migration Context:
+# - Replaces mainframe VSAM (PostgreSQL) and CICS (Redis) storage
+# - Maintains data durability and ACID compliance requirements
+# - Supports identical transaction patterns in cloud-native architecture
+#
+# =============================================================================

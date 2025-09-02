@@ -1,0 +1,505 @@
+# Performance Load Testing Profiles Configuration
+# CardDemo Application - Spring Boot Load Testing Framework
+# 
+# This configuration defines comprehensive load testing scenarios for the CardDemo
+# modernized application, ensuring performance validation meets enterprise requirements
+# for transaction processing, response times, and system scalability.
+#
+# Performance Requirements:
+# - Sub-200ms response times for 95th percentile
+# - Support for 10,000 transactions per second peak load
+# - 4-hour batch processing window compliance
+# - Realistic user behavior simulation
+#
+# Testing Framework Integration:
+# - K6 Load Testing execution
+# - Spring Boot Actuator metrics collection
+# - Prometheus monitoring integration
+# - Grafana dashboard validation
+
+# =============================================================================
+# BASELINE LOAD PROFILE
+# =============================================================================
+# Purpose: Establishes performance baseline for normal operating conditions
+# Validates: Normal transaction throughput and response time consistency
+baseline_load:
+  profile_name: "Baseline Steady State"
+  description: "Continuous steady-state load testing for baseline performance measurement"
+  
+  # Load Configuration
+  target_vus: 100                    # Virtual users (concurrent sessions)
+  target_tps: 1000                   # Target transactions per second
+  duration: "30m"                    # Test execution duration
+  ramp_up_duration: "2m"            # Gradual user ramp-up period
+  ramp_down_duration: "2m"           # Graceful user ramp-down period
+  
+  # Performance Thresholds
+  response_time_p95: "200ms"         # 95th percentile response time SLA
+  response_time_p99: "500ms"         # 99th percentile response time limit
+  error_rate_threshold: "1%"         # Maximum acceptable error rate
+  throughput_minimum: "950tps"       # Minimum required throughput
+  
+  # Test Scenarios
+  scenarios:
+    authentication_flow:
+      weight: 15                     # 15% of total load
+      endpoints:
+        - "/api/transactions/CC00"   # Sign-on endpoint
+      think_time: "2s"              # User think time between requests
+      
+    account_operations:
+      weight: 40                     # 40% of total load  
+      endpoints:
+        - "/api/transactions/CC01"   # Account view
+        - "/api/transactions/CC02"   # Transaction history
+      think_time: "3s"
+      
+    transaction_processing:
+      weight: 35                     # 35% of total load
+      endpoints:
+        - "/api/transactions/CC03"   # Card management
+        - "/api/transactions/CC04"   # Payment processing
+      think_time: "5s"
+      
+    administrative_functions:
+      weight: 10                     # 10% of total load
+      endpoints:
+        - "/api/admin/users"         # User management
+        - "/api/reports/daily"       # Report generation
+      think_time: "10s"
+  
+  # Resource Monitoring
+  monitoring:
+    metrics_collection_interval: "15s"
+    jvm_heap_threshold: "80%"
+    cpu_utilization_threshold: "75%"
+    database_connection_pool_threshold: "85%"
+
+# =============================================================================
+# PEAK LOAD PROFILE  
+# =============================================================================
+# Purpose: Validates system capacity at maximum expected production load
+# Validates: Peak hour performance and system stability under high load
+peak_load:
+  profile_name: "Peak Load Validation"
+  description: "High-volume load testing simulating peak business hours"
+  
+  # Load Configuration
+  target_vus: 1000                   # Virtual users for peak load
+  target_tps: 10000                  # Maximum target transactions per second
+  duration: "15m"                    # Sustained peak load duration
+  ramp_up_duration: "5m"             # Gradual scaling to peak load
+  ramp_down_duration: "3m"           # Graceful load reduction
+  
+  # Performance Thresholds
+  response_time_p95: "200ms"         # Maintained SLA under peak load
+  response_time_p99: "800ms"         # Degraded but acceptable 99th percentile
+  error_rate_threshold: "2%"         # Slightly higher error tolerance
+  throughput_minimum: "9500tps"      # Minimum required peak throughput
+  
+  # Test Scenarios - Peak hour distribution
+  scenarios:
+    authentication_surge:
+      weight: 20                     # Higher authentication during peak
+      endpoints:
+        - "/api/transactions/CC00"
+      think_time: "1s"              # Faster user actions during peak
+      
+    high_volume_inquiries:
+      weight: 50                     # Primary peak activity
+      endpoints:
+        - "/api/transactions/CC01"
+        - "/api/transactions/CC02"
+      think_time: "2s"
+      
+    payment_transactions:
+      weight: 25                     # Critical payment processing
+      endpoints:
+        - "/api/transactions/CC03"
+        - "/api/transactions/CC04"
+      think_time: "3s"
+      
+    system_operations:
+      weight: 5                      # Reduced admin during peak
+      endpoints:
+        - "/api/admin/users"
+      think_time: "15s"
+  
+  # Enhanced Monitoring for Peak Load
+  monitoring:
+    metrics_collection_interval: "10s"  # More frequent monitoring
+    jvm_heap_threshold: "85%"
+    cpu_utilization_threshold: "85%"
+    database_connection_pool_threshold: "90%"
+    response_time_alerting: true
+
+# =============================================================================
+# SPIKE LOAD PROFILE
+# =============================================================================
+# Purpose: Tests system resilience during sudden traffic spikes
+# Validates: Auto-scaling capabilities and graceful degradation
+spike_load:
+  profile_name: "Traffic Spike Testing"
+  description: "Sudden load increase simulation for system resilience validation"
+  
+  # Load Configuration
+  target_vus: 1500                   # Maximum spike virtual users
+  target_tps: 15000                  # Spike transactions per second
+  duration: "10m"                    # Total test duration
+  spike_duration: "3m"               # Duration of spike load
+  baseline_vus: 200                  # Baseline users before spike
+  ramp_up_duration: "30s"            # Rapid spike escalation
+  ramp_down_duration: "1m"           # Spike recovery period
+  
+  # Performance Thresholds - Relaxed for spike conditions
+  response_time_p95: "500ms"         # Degraded but acceptable during spike
+  response_time_p99: "2s"            # Maximum tolerable response time
+  error_rate_threshold: "5%"         # Higher error tolerance during spike
+  throughput_minimum: "12000tps"     # Minimum spike throughput
+  
+  # Spike Test Phases
+  phases:
+    baseline_phase:
+      duration: "3m"
+      vus: 200
+      tps: 2000
+      
+    spike_phase:
+      duration: "3m"
+      vus: 1500
+      tps: 15000
+      
+    recovery_phase:
+      duration: "4m"
+      vus: 200
+      tps: 2000
+  
+  # Spike-focused Scenarios
+  scenarios:
+    rapid_authentication:
+      weight: 30                     # Heavy authentication load
+      endpoints:
+        - "/api/transactions/CC00"
+      think_time: "0.5s"            # Minimal think time during spike
+      
+    concurrent_inquiries:
+      weight: 60                     # Overwhelming inquiry volume
+      endpoints:
+        - "/api/transactions/CC01"
+        - "/api/transactions/CC02"
+      think_time: "1s"
+      
+    critical_transactions:
+      weight: 10                     # Essential transactions only
+      endpoints:
+        - "/api/transactions/CC04"   # Payment processing priority
+      think_time: "2s"
+  
+  # Spike Monitoring Configuration
+  monitoring:
+    metrics_collection_interval: "5s"   # Rapid metric collection
+    auto_scaling_validation: true       # Monitor Kubernetes scaling
+    circuit_breaker_monitoring: true    # Track circuit breaker activation
+    resource_exhaustion_alerts: true    # Resource limit monitoring
+
+# =============================================================================
+# ENDURANCE LOAD PROFILE
+# =============================================================================
+# Purpose: Validates system stability over extended periods
+# Validates: Memory leak detection and resource degradation over time
+endurance_load:
+  profile_name: "Endurance Stability Testing"
+  description: "Extended duration testing for memory leaks and resource stability"
+  
+  # Load Configuration
+  target_vus: 500                    # Moderate sustained load
+  target_tps: 5000                   # Sustained transaction rate
+  duration: "4h"                     # Extended test duration (batch window)
+  ramp_up_duration: "10m"            # Gradual system warm-up
+  ramp_down_duration: "5m"           # Controlled shutdown
+  
+  # Performance Thresholds - Stability focus
+  response_time_p95: "200ms"         # Consistent performance requirement
+  response_time_p99: "600ms"         # Performance degradation detection
+  error_rate_threshold: "1%"         # Low error rate for stability
+  throughput_minimum: "4800tps"      # Sustained minimum throughput
+  
+  # Memory and Resource Monitoring
+  stability_monitoring:
+    memory_leak_detection: true       # JVM heap growth monitoring
+    garbage_collection_analysis: true # GC performance tracking
+    connection_pool_monitoring: true  # Database connection stability
+    session_store_monitoring: true    # Redis memory usage tracking
+  
+  # Endurance Test Scenarios
+  scenarios:
+    sustained_authentication:
+      weight: 10                     # Steady authentication flow
+      endpoints:
+        - "/api/transactions/CC00"
+      think_time: "5s"
+      
+    continuous_operations:
+      weight: 70                     # Primary sustained operations
+      endpoints:
+        - "/api/transactions/CC01"
+        - "/api/transactions/CC02"
+        - "/api/transactions/CC03"
+      think_time: "4s"
+      
+    periodic_batch_simulation:
+      weight: 15                     # Simulated batch operations
+      endpoints:
+        - "/api/batch/daily"
+        - "/api/reports/generate"
+      think_time: "30s"
+      
+    maintenance_operations:
+      weight: 5                      # Background maintenance
+      endpoints:
+        - "/api/admin/health"
+        - "/api/admin/metrics"
+      think_time: "60s"
+  
+  # Extended Monitoring Configuration
+  monitoring:
+    metrics_collection_interval: "30s"  # Balanced monitoring frequency
+    trending_analysis: true             # Long-term trend detection
+    resource_baseline_validation: true  # Performance baseline comparison
+    automated_health_checks: true       # Periodic health validation
+
+# =============================================================================
+# STRESS LOAD PROFILE
+# =============================================================================
+# Purpose: Determines system breaking point and failure modes
+# Validates: System limits and graceful degradation behavior
+stress_load:
+  profile_name: "System Stress Testing"
+  description: "Progressive load increase to determine system breaking point"
+  
+  # Progressive Load Configuration
+  initial_vus: 100                   # Starting virtual users
+  max_vus: 2000                      # Maximum virtual users
+  initial_tps: 1000                  # Starting transaction rate
+  max_tps: 20000                     # Maximum transaction rate
+  duration: "45m"                    # Total stress test duration
+  step_duration: "5m"                # Duration per load step
+  step_increment: 200                # User increment per step
+  
+  # Stress Test Phases
+  stress_phases:
+    phase_1:
+      vus: 100
+      tps: 1000
+      duration: "5m"
+      
+    phase_2:
+      vus: 300
+      tps: 3000
+      duration: "5m"
+      
+    phase_3:
+      vus: 500
+      tps: 5000
+      duration: "5m"
+      
+    phase_4:
+      vus: 800
+      tps: 8000
+      duration: "5m"
+      
+    phase_5:
+      vus: 1200
+      tps: 12000
+      duration: "5m"
+      
+    phase_6:
+      vus: 1600
+      tps: 16000
+      duration: "5m"
+      
+    phase_7:
+      vus: 2000
+      tps: 20000
+      duration: "5m"
+      
+    recovery_phase:
+      vus: 100
+      tps: 1000
+      duration: "10m"
+  
+  # Breaking Point Detection
+  failure_criteria:
+    response_time_p95: "5s"           # System overload indicator
+    response_time_p99: "10s"          # Critical failure threshold
+    error_rate_threshold: "20%"       # High error rate tolerance
+    consecutive_failures: 10          # Consecutive failure limit
+    resource_exhaustion: true         # CPU/Memory exhaustion detection
+  
+  # Stress Test Scenarios
+  scenarios:
+    system_overload:
+      weight: 80                     # Primary overload testing
+      endpoints:
+        - "/api/transactions/CC01"
+        - "/api/transactions/CC02"
+        - "/api/transactions/CC03"
+        - "/api/transactions/CC04"
+      think_time: "0.1s"            # Minimal think time for stress
+      
+    critical_functions:
+      weight: 20                     # Essential function validation
+      endpoints:
+        - "/api/transactions/CC00"   # Authentication resilience
+      think_time: "0.5s"
+  
+  # Comprehensive Stress Monitoring
+  monitoring:
+    metrics_collection_interval: "5s"   # High-frequency monitoring
+    breaking_point_detection: true      # Automated failure detection
+    recovery_time_measurement: true     # System recovery tracking
+    graceful_degradation_validation: true # Service degradation analysis
+
+# =============================================================================
+# GLOBAL CONFIGURATION
+# =============================================================================
+# Shared configuration settings across all load profiles
+global_config:
+  # Test Environment Settings
+  base_url: "http://localhost:8080"    # Default test target
+  timeout: "30s"                       # Request timeout
+  user_agent: "CardDemo-LoadTest/1.0"  # Test identification
+  
+  # Authentication Configuration
+  auth_config:
+    enabled: true
+    endpoint: "/api/transactions/CC00"
+    username_pattern: "testuser{}"      # Pattern for test users
+    password: "testpass123"             # Test password
+    session_duration: "30m"             # Session validity period
+  
+  # Data Generation
+  test_data:
+    account_ids: 
+      - "1000000001"
+      - "1000000002" 
+      - "1000000003"
+      - "1000000004"
+      - "1000000005"
+    card_numbers:
+      - "4532123456789012"
+      - "4532123456789013"
+      - "4532123456789014"
+    transaction_amounts:
+      min: 10.00
+      max: 1000.00
+      currency: "USD"
+  
+  # Monitoring Integration
+  metrics_export:
+    prometheus_enabled: true
+    prometheus_endpoint: "/metrics"
+    custom_metrics:
+      - "carddemo_transaction_duration"
+      - "carddemo_authentication_success_rate"
+      - "carddemo_error_rate_by_endpoint"
+      - "carddemo_concurrent_users"
+  
+  # Alerting Configuration
+  alerts:
+    enable_real_time_alerts: true
+    alert_endpoints:
+      - "http://alertmanager:9093/api/v1/alerts"
+    critical_thresholds:
+      response_time: "1s"
+      error_rate: "5%"
+      cpu_utilization: "90%"
+      memory_utilization: "90%"
+  
+  # Results Storage
+  results_storage:
+    output_format: "json"
+    export_prometheus_metrics: true
+    generate_html_report: true
+    store_raw_results: true
+    retention_period: "30d"
+
+# =============================================================================
+# VALIDATION RULES
+# =============================================================================
+# Performance validation criteria and acceptance thresholds
+validation_rules:
+  # Response Time Validation
+  response_time_sla:
+    p50_threshold: "100ms"            # Median response time
+    p95_threshold: "200ms"            # 95th percentile SLA
+    p99_threshold: "500ms"            # 99th percentile limit
+    max_acceptable: "2s"              # Absolute maximum
+  
+  # Throughput Validation  
+  throughput_requirements:
+    minimum_tps: 1000                 # Baseline requirement
+    target_tps: 10000                 # Peak capacity requirement
+    sustained_tps: 5000               # Endurance requirement
+    spike_tps: 15000                  # Spike handling requirement
+  
+  # Error Rate Validation
+  error_rate_limits:
+    baseline_max: "1%"                # Normal operations
+    peak_max: "2%"                    # Peak load tolerance
+    spike_max: "5%"                   # Spike tolerance
+    stress_max: "20%"                 # Stress test tolerance
+  
+  # Resource Utilization Validation
+  resource_limits:
+    cpu_warning: "75%"                # CPU utilization warning
+    cpu_critical: "90%"               # CPU utilization critical
+    memory_warning: "80%"             # Memory usage warning
+    memory_critical: "95%"            # Memory usage critical
+    disk_io_threshold: "80%"          # Disk I/O threshold
+    network_threshold: "80%"          # Network utilization
+  
+  # Business Logic Validation
+  business_requirements:
+    authentication_success_rate: "99%" # Authentication SLA
+    transaction_accuracy: "100%"       # Financial accuracy requirement
+    data_consistency: "100%"           # Data integrity requirement
+    batch_processing_window: "4h"      # Batch completion requirement
+
+# =============================================================================
+# REPORTING CONFIGURATION
+# =============================================================================
+# Performance test reporting and analysis configuration
+reporting:
+  # Report Generation
+  generate_reports:
+    executive_summary: true           # High-level summary report
+    detailed_analysis: true           # Comprehensive analysis
+    performance_trends: true          # Historical trend analysis
+    resource_utilization: true        # Resource usage analysis
+    error_analysis: true              # Error pattern analysis
+  
+  # Report Formats
+  output_formats:
+    - "html"                         # Interactive HTML reports
+    - "json"                         # Machine-readable results
+    - "csv"                          # Spreadsheet import format
+    - "pdf"                          # Executive presentation format
+  
+  # Dashboard Integration
+  dashboard_config:
+    grafana_enabled: true
+    grafana_datasource: "prometheus"
+    real_time_dashboard: true
+    historical_dashboard: true
+    alert_dashboard: true
+  
+  # SLA Reporting
+  sla_tracking:
+    response_time_compliance: true
+    availability_tracking: true
+    throughput_achievement: true
+    error_rate_compliance: true
+    business_metric_tracking: true
+
+# End of load-profiles.yml configuration

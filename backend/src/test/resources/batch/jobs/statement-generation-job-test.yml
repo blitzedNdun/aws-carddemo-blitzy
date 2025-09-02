@@ -1,0 +1,454 @@
+# Spring Batch Test Configuration for Statement Generation Job
+# Migrated from COBOL Programs: CBSTM03A.CBL and CBSTM03B.CBL
+# Test configuration for dual-format statement generation with transaction grouping
+
+spring:
+  # Test-specific Spring Batch configuration
+  batch:
+    job:
+      names: statement-generation-job-test
+    initialize-schema: always
+    
+  # Test database configuration for VSAM-equivalent data access
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+    hikari:
+      # Connection pool optimized for batch processing tests
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 30000
+      
+  # JPA configuration for testing entity mappings
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        
+  # Test data initialization
+  sql:
+    init:
+      mode: always
+      data-locations:
+        - classpath:test-data/statement-generation-test-data.sql
+
+# Statement Generation Job Test Configuration
+# Replicates CBSTM03A/CBSTM03B multi-step processing logic
+statement-generation-job-test:
+  # Job-level configuration matching COBOL program structure
+  job-name: "statementGenerationJobTest"
+  
+  # Step configuration mapping to COBOL program paragraphs
+  steps:
+    
+    # Step 1: Transaction Data Loading (CBSTM03A 8100-TRNXFILE-OPEN, 8500-READTRNX-READ)
+    # Replicates WS-TRNX-TABLE two-dimensional array building
+    transaction-loading:
+      name: "transactionLoadingStep"
+      chunk-size: 1000
+      reader:
+        type: "database"
+        sql: |
+          SELECT t.trnx_id, t.card_num, t.trnx_desc, t.trnx_amt, t.trnx_date,
+                 t.trnx_type_cd, t.trnx_cat_cd, t.trnx_source, t.trnx_merchant_id,
+                 t.trnx_merchant_name, t.trnx_merchant_city, t.trnx_merchant_zip
+          FROM transact t 
+          ORDER BY t.card_num, t.trnx_date
+        parameters:
+          fetch-size: 1000
+      processor:
+        type: "transaction-grouping"
+        # Simulates COBOL two-dimensional table WS-TRNX-TABLE logic
+        configuration:
+          max-cards: 51          # WS-CARD-TBL OCCURS 51 TIMES
+          max-transactions: 10   # WS-TRAN-TBL OCCURS 10 TIMES
+          group-by-card: true
+      writer:
+        type: "in-memory"
+        target: "transaction-table"
+        
+    # Step 2: Cross-Reference Processing (CBSTM03A 8200-XREFFILE-OPEN, 1000-XREFFILE-GET-NEXT)  
+    # Replicates XREF-FILE sequential read for statement generation trigger
+    cross-reference-processing:
+      name: "crossReferenceProcessingStep"
+      chunk-size: 100
+      reader:
+        type: "database"
+        sql: |
+          SELECT x.card_num, x.cust_id, x.acct_id
+          FROM card_xref x
+          ORDER BY x.card_num
+        parameters:
+          fetch-size: 100
+      processor:
+        type: "reference-validation"
+        # Validates customer and account existence before statement generation
+        configuration:
+          validate-customer: true
+          validate-account: true
+      writer:
+        type: "statement-trigger"
+        target: "statement-generation-queue"
+        
+    # Step 3: Customer Data Retrieval (CBSTM03A 2000-CUSTFILE-GET)
+    # Replicates CBSTM03B CUSTFILE random access by key
+    customer-data-retrieval:
+      name: "customerDataRetrievalStep"
+      chunk-size: 100
+      reader:
+        type: "triggered"
+        source: "statement-generation-queue"
+      processor:
+        type: "customer-lookup"
+        # Simulates CBSTM03B M03B-READ-K operation for CUSTFILE
+        configuration:
+          access-mode: "random-by-key"
+          key-field: "cust_id"
+          sql: |
+            SELECT c.cust_id, c.cust_first_name, c.cust_middle_name, c.cust_last_name,
+                   c.cust_addr_line_1, c.cust_addr_line_2, c.cust_addr_line_3,
+                   c.cust_addr_state_cd, c.cust_addr_country_cd, c.cust_addr_zip,
+                   c.cust_phone_num_1, c.cust_phone_num_2, c.cust_ssn,
+                   c.cust_govt_issued_id, c.cust_dob_yyyymmdd, c.cust_eft_account_id,
+                   c.cust_pri_card_holder_ind, c.cust_fico_credit_score
+            FROM customer c WHERE c.cust_id = ?
+      writer:
+        type: "in-memory"
+        target: "customer-data-cache"
+        
+    # Step 4: Account Data Retrieval (CBSTM03A 3000-ACCTFILE-GET)
+    # Replicates CBSTM03B ACCTFILE random access by key  
+    account-data-retrieval:
+      name: "accountDataRetrievalStep"
+      chunk-size: 100
+      reader:
+        type: "triggered"
+        source: "statement-generation-queue"
+      processor:
+        type: "account-lookup"
+        # Simulates CBSTM03B M03B-READ-K operation for ACCTFILE
+        configuration:
+          access-mode: "random-by-key"
+          key-field: "acct_id"
+          sql: |
+            SELECT a.acct_id, a.acct_active_status, a.acct_curr_bal,
+                   a.acct_credit_limit, a.acct_cash_credit_limit, a.acct_open_date,
+                   a.acct_expiration_date, a.acct_reissue_date, a.acct_curr_cyc_credit,
+                   a.acct_curr_cyc_debit, a.acct_addr_zip, a.acct_group_id
+            FROM account a WHERE a.acct_id = ?
+      writer:
+        type: "in-memory" 
+        target: "account-data-cache"
+        
+    # Step 5: Statement Content Generation (CBSTM03A 5000-CREATE-STATEMENT, 4000-TRNXFILE-GET)
+    # Replicates statement header and transaction detail formatting
+    statement-content-generation:
+      name: "statementContentGenerationStep"
+      chunk-size: 1
+      reader:
+        type: "triggered"
+        source: "statement-generation-queue"
+      processor:
+        type: "statement-formatter"
+        # Simulates COBOL statement line formatting (ST-LINE0 through ST-LINE15)
+        configuration:
+          # Header formatting (CBSTM03A lines 460-502)
+          header-lines:
+            - name: "ST-LINE0"
+              format: "*********************START OF STATEMENT*********************"
+            - name: "ST-LINE6" 
+              format: "                                 Basic Details                                 "
+            - name: "ST-LINE11"
+              format: "                              TRANSACTION SUMMARY                               "
+          
+          # Customer address formatting (CBSTM03A lines 462-481)
+          customer-formatting:
+            name-format: "${cust_first_name} ${cust_middle_name} ${cust_last_name}"
+            address-format: "${cust_addr_line_3} ${cust_addr_state_cd} ${cust_addr_country_cd} ${cust_addr_zip}"
+            
+          # Account details formatting (CBSTM03A lines 483-485)
+          account-formatting:
+            account-id-format: "Account ID         : ${acct_id}"
+            current-balance-format: "Current Balance    : ${acct_curr_bal}"
+            fico-score-format: "FICO Score         : ${cust_fico_credit_score}"
+            
+          # Transaction detail formatting (CBSTM03A lines 675-679)
+          transaction-formatting:
+            detail-format: "${trnx_id} ${trnx_desc} $${trnx_amt}"
+            
+          # COMP-3 amount calculation configuration
+          # Replicates COBOL COMP-3 packed decimal precision (line 65: PIC S9(9)V99)
+          comp3-arithmetic:
+            precision: 11           # S9(9)V99 = 11 total digits
+            scale: 2               # V99 = 2 decimal places
+            rounding-mode: "HALF_UP"  # COBOL default rounding
+            total-accumulation: true  # ADD TRNX-AMT TO WS-TOTAL-AMT (line 429)
+            
+      writer:
+        type: "in-memory"
+        target: "statement-content-cache"
+        
+    # Step 6: Plain Text Output Generation (CBSTM03A STMT-FILE writes)
+    # Replicates fixed-width 80-character statement file output
+    plain-text-output:
+      name: "plainTextOutputStep"
+      chunk-size: 1
+      reader:
+        type: "in-memory"
+        source: "statement-content-cache"
+      processor:
+        type: "plain-text-formatter"
+        # Simulates COBOL WRITE FD-STMTFILE-REC operations
+        configuration:
+          file-format: "fixed-width"
+          record-length: 80        # FD-STMTFILE-REC PIC X(80) 
+          line-formatting:
+            header-lines: true     # ST-LINE0, ST-LINE6, ST-LINE11, etc.
+            customer-details: true # ST-LINE1 through ST-LINE4
+            account-details: true  # ST-LINE7 through ST-LINE9
+            transaction-details: true # ST-LINE14 for each transaction
+            footer-lines: true     # ST-LINE14A (total), ST-LINE15
+      writer:
+        type: "file"
+        resource: "file:target/test-output/statements.txt"
+        format: "fixed-width"
+        line-aggregator: "delimited"
+        
+    # Step 7: HTML Output Generation (CBSTM03A HTML-FILE writes)  
+    # Replicates HTML table-based statement formatting
+    html-output:
+      name: "htmlOutputStep" 
+      chunk-size: 1
+      reader:
+        type: "in-memory"
+        source: "statement-content-cache"
+      processor:
+        type: "html-formatter"
+        # Simulates COBOL HTML line generation (HTML-L01 through HTML-L80)
+        configuration:
+          file-format: "html"
+          record-length: 100       # FD-HTMLFILE-REC PIC X(100)
+          html-template:
+            doctype: "<!DOCTYPE html>"
+            html-open: "<html lang=\"en\">"
+            head-section: |
+              <head>
+              <meta charset="utf-8">
+              <title>HTML Table Layout</title>
+              </head>
+            body-style: "<body style=\"margin:0px;\">"
+            table-style: "<table align=\"center\" frame=\"box\" style=\"width:70%; font:12px Segoe UI,sans-serif;\">"
+            # Bank header styling (HTML-L10, HTML-L15, HTML-L16-L18)
+            bank-header:
+              background-color: "#1d1d96b3"
+              content: |
+                <p style="font-size:16px">Bank of XYZ</p>
+                <p>410 Terry Ave N</p>
+                <p>Seattle WA 99999</p>
+            # Basic details section styling (HTML-L30-42, HTML-L31)
+            basic-details-header:
+              background-color: "#33FFD1"
+              content: "<p style=\"font-size:16px\">Basic Details</p>"
+            # Transaction summary styling (HTML-L47-L54)
+            transaction-header:
+              background-color: "#33FF5E"
+              columns:
+                - header: "Tran ID"
+                  width: "25%"
+                - header: "Tran Details" 
+                  width: "55%"
+                - header: "Amount"
+                  width: "20%"
+            # Data row styling (HTML-L58, HTML-L61, HTML-L64)
+            data-rows:
+              background-color: "#f2f2f2"
+              text-align: "left"
+      writer:
+        type: "file"
+        resource: "file:target/test-output/statements.html"
+        format: "html"
+        
+  # Checkpoint and Restart Configuration
+  # Replicates COBOL file positioning and restart capabilities
+  checkpoint-policy:
+    commit-interval: 100
+    restart-completable: true
+    # Simulates COBOL ALTER/GO TO flow control through step execution sequence
+    step-execution-order:
+      - transaction-loading
+      - cross-reference-processing  
+      - customer-data-retrieval
+      - account-data-retrieval
+      - statement-content-generation
+      - plain-text-output
+      - html-output
+    
+    # Step dependency configuration matching COBOL program flow
+    step-dependencies:
+      cross-reference-processing:
+        depends-on: [transaction-loading]
+      customer-data-retrieval:
+        depends-on: [cross-reference-processing]
+      account-data-retrieval:
+        depends-on: [cross-reference-processing]
+      statement-content-generation:
+        depends-on: [customer-data-retrieval, account-data-retrieval]
+      plain-text-output:
+        depends-on: [statement-content-generation]
+      html-output:
+        depends-on: [statement-content-generation]
+        
+  # Monitoring and Metrics Configuration  
+  # Enables testing of batch job execution metrics
+  monitoring:
+    job-execution-listener: true
+    step-execution-listener: true
+    chunk-listener: true
+    item-read-listener: true
+    item-process-listener: true
+    item-write-listener: true
+    
+    # Metrics collection for performance validation
+    metrics:
+      execution-time: true
+      throughput: true
+      error-rate: true
+      checkpoint-frequency: true
+      
+  # Error Handling Configuration
+  # Replicates COBOL error handling patterns (9999-ABEND-PROGRAM)
+  error-handling:
+    skip-policy:
+      skip-limit: 0              # No skipping - fail fast like COBOL ABEND
+    retry-policy:
+      retry-limit: 3
+      retry-exceptions:
+        - "org.springframework.dao.DataAccessException"
+        - "java.sql.SQLException"
+    rollback-policy:
+      rollback-exceptions:
+        - "java.lang.Exception"
+        
+  # Test Data Configuration
+  # Defines test datasets for validating COBOL logic migration
+  test-data:
+    
+    # Transaction test data (TRNXFILE equivalent)
+    transactions:
+      - card_num: "4000123456789012"
+        trnx_id: "T000000000000001"
+        trnx_desc: "GROCERY STORE PURCHASE"
+        trnx_amt: 125.50
+        trnx_date: "2023-10-01"
+        trnx_type_cd: "PURCHASE"
+        
+    # Cross-reference test data (XREFFILE equivalent)  
+    card_xref:
+      - card_num: "4000123456789012"
+        cust_id: 123456789
+        acct_id: 12345678901
+        
+    # Customer test data (CUSTFILE equivalent)
+    customers:
+      - cust_id: 123456789
+        cust_first_name: "JOHN"
+        cust_middle_name: "DAVID"
+        cust_last_name: "DOE"
+        cust_addr_line_1: "123 MAIN STREET"
+        cust_addr_line_2: "APT 4B"
+        cust_addr_line_3: "ANYTOWN"
+        cust_addr_state_cd: "TX"
+        cust_addr_country_cd: "USA"
+        cust_addr_zip: "75201-1234"
+        cust_fico_credit_score: 750
+        
+    # Account test data (ACCTFILE equivalent)
+    accounts:
+      - acct_id: 12345678901
+        acct_active_status: "A"
+        acct_curr_bal: 1500.75
+        acct_credit_limit: 5000.00
+        acct_cash_credit_limit: 1000.00
+        acct_open_date: "2020-01-15"
+        
+  # Expected Output Validation
+  # Defines expected results for statement generation testing
+  validation:
+    
+    # Plain text statement validation
+    plain-text-output:
+      file-path: "target/test-output/statements.txt"
+      expected-lines:
+        - "*********************START OF STATEMENT*********************"
+        - "JOHN DAVID DOE"
+        - "123 MAIN STREET"
+        - "APT 4B"  
+        - "ANYTOWN TX USA 75201-1234"
+        - "                                 Basic Details                                 "
+        - "Account ID         : 12345678901"
+        - "Current Balance    : 1500.75"
+        - "FICO Score         : 750"
+        - "                              TRANSACTION SUMMARY                               "
+        - "T000000000000001 GROCERY STORE PURCHASE                                $125.50"
+        - "Total EXP:                                                            $125.50"
+        
+    # HTML statement validation  
+    html-output:
+      file-path: "target/test-output/statements.html"
+      expected-elements:
+        - "<!DOCTYPE html>"
+        - "<title>HTML Table Layout</title>"
+        - "<p style=\"font-size:16px\">Bank of XYZ</p>"
+        - "<h3>Statement for Account Number: 12345678901</h3>"
+        - "<p style=\"font-size:16px\">Basic Details</p>"
+        - "<p style=\"font-size:16px\">Transaction Summary</p>"
+        - "<h3>End of Statement</h3>"
+        
+    # COMP-3 arithmetic validation
+    # Ensures BigDecimal calculations match COBOL COMP-3 precision
+    comp3-calculations:
+      total-amount-precision:
+        input: [125.50]
+        expected: 125.50
+        scale: 2
+        rounding: "HALF_UP"
+        
+  # Performance Test Configuration
+  # Validates batch processing within COBOL-equivalent time windows
+  performance:
+    batch-window: "4h"           # Maximum processing time window
+    target-throughput: "1000 records/minute"
+    memory-usage-limit: "512MB"
+    cpu-usage-limit: "80%"
+    
+    # Load testing scenarios
+    load-tests:
+      small-dataset:
+        transaction-count: 1000
+        account-count: 100
+        expected-duration: "30s"
+      medium-dataset:
+        transaction-count: 10000
+        account-count: 1000  
+        expected-duration: "5m"
+      large-dataset:
+        transaction-count: 100000
+        account-count: 10000
+        expected-duration: "30m"
+
+# Logging Configuration for Test Execution
+logging:
+  level:
+    org.springframework.batch: DEBUG
+    com.carddemo.batch: DEBUG
+    org.springframework.jdbc: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+  file:
+    name: "target/test-logs/statement-generation-job-test.log"

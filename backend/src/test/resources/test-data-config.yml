@@ -1,0 +1,747 @@
+# Test Data Configuration for CardDemo System Migration
+# Configuration file for test data generation utilities specifying data patterns,
+# volume settings, and randomization rules for creating realistic test datasets
+# matching production patterns
+
+# Global Test Data Settings
+test_data:
+  # Data volume configurations for different test scenarios
+  volumes:
+    unit_test:
+      customers: 10
+      accounts_per_customer: 1-2
+      cards_per_account: 1-3
+      transactions_per_card: 5-20
+      
+    integration_test:
+      customers: 100
+      accounts_per_customer: 1-3
+      cards_per_account: 1-4
+      transactions_per_card: 10-50
+      
+    performance_test:
+      customers: 10000
+      accounts_per_customer: 1-4
+      cards_per_customer: 1-5
+      transactions_per_card: 50-500
+      
+    load_test:
+      customers: 100000
+      accounts_per_customer: 1-5
+      cards_per_customer: 1-6
+      transactions_per_card: 100-1000
+
+  # Date range configurations
+  date_ranges:
+    customer_registration:
+      start_date: "1960-01-01"
+      end_date: "2023-12-31"
+    
+    account_opening:
+      start_date: "2010-01-01"
+      end_date: "2023-12-31"
+    
+    card_issuance:
+      start_date: "2020-01-01"
+      end_date: "2025-12-31"
+    
+    transactions:
+      start_date: "2022-01-01"
+      end_date: "2024-12-31"
+
+  # Referential integrity settings
+  referential_integrity:
+    enforce_strict: true
+    cascade_deletes: false
+    orphan_records_allowed: false
+    cross_reference_validation: true
+
+# Customer Data Generation Configuration
+customer_data:
+  # Field specifications matching custdata.txt structure (312 characters)
+  fields:
+    customer_id:
+      type: "numeric"
+      length: 9
+      format: "zero_padded"
+      range:
+        min: 1
+        max: 999999999
+      unique: true
+      
+    first_name:
+      type: "text"
+      length: 20
+      padding: "right_spaces"
+      source: "first_names_pool"
+      
+    middle_name:
+      type: "text"
+      length: 20
+      padding: "right_spaces"
+      source: "middle_names_pool"
+      nullable_probability: 0.3
+      
+    last_name:
+      type: "text"
+      length: 20
+      padding: "right_spaces"
+      source: "last_names_pool"
+      
+    street_address:
+      type: "text"
+      length: 50
+      padding: "right_spaces"
+      source: "street_addresses_pool"
+      
+    unit:
+      type: "text"
+      length: 50
+      padding: "right_spaces"
+      source: "apartment_units_pool"
+      nullable_probability: 0.4
+      
+    city:
+      type: "text"
+      length: 50
+      padding: "right_spaces"
+      source: "cities_pool"
+      
+    state:
+      type: "text"
+      length: 2
+      source: "us_states_pool"
+      
+    country:
+      type: "text"
+      length: 3
+      default: "USA"
+      
+    zip_code:
+      type: "text"
+      length: 10
+      format: "zip_code"
+      patterns:
+        - "##### "
+        - "#####-####"
+        
+    phone_primary:
+      type: "text"
+      length: 14
+      format: "(###)###-####"
+      
+    phone_secondary:
+      type: "text"
+      length: 14
+      format: "(###)###-####"
+      nullable_probability: 0.2
+      
+    account_reference:
+      type: "numeric"
+      length: 30
+      format: "zero_padded"
+      relationship: "account.account_id"
+      
+    registration_date:
+      type: "date"
+      format: "yyyy-MM-dd"
+      length: 10
+      date_range: "customer_registration"
+      
+    reference_number:
+      type: "numeric"
+      length: 10
+      format: "zero_padded"
+      
+    status_flag:
+      type: "text"
+      length: 1
+      values: ["Y", "N"]
+      weights: [0.95, 0.05]  # 95% active, 5% inactive
+      
+    region_code:
+      type: "numeric"
+      length: 3
+      format: "zero_padded"
+      range:
+        min: 1
+        max: 999
+
+  # Edge cases and boundary conditions
+  boundary_conditions:
+    empty_middle_names: 0.3
+    empty_units: 0.4
+    min_customer_id: 1
+    max_customer_id: 999999999
+    invalid_zip_codes: 0.01  # 1% invalid for negative testing
+    invalid_phone_numbers: 0.01  # 1% invalid for negative testing
+
+# Card Data Generation Configuration
+card_data:
+  # Field specifications matching carddata.txt structure
+  fields:
+    card_number:
+      type: "numeric"
+      length: 16
+      format: "card_number"
+      algorithms: ["luhn"]  # Luhn algorithm for valid card numbers
+      prefixes:
+        - "4"     # Visa (40% probability)
+        - "5"     # MasterCard (35% probability)
+        - "3"     # American Express (15% probability)
+        - "6"     # Discover (10% probability)
+      weights: [0.4, 0.35, 0.15, 0.1]
+      
+    account_id:
+      type: "numeric"
+      length: 11
+      format: "zero_padded"
+      relationship: "account.account_id"
+      
+    card_limit:
+      type: "numeric"
+      length: 11
+      format: "zero_padded"
+      distributions:
+        - value_range: [50000, 100000]    # $500-$1000
+          probability: 0.3
+        - value_range: [100000, 250000]   # $1000-$2500
+          probability: 0.4
+        - value_range: [250000, 500000]   # $2500-$5000
+          probability: 0.2
+        - value_range: [500000, 1000000]  # $5000-$10000
+          probability: 0.1
+          
+    cardholder_name:
+      type: "text"
+      length: 50
+      padding: "right_spaces"
+      source: "customer.full_name"
+      
+    expiration_date:
+      type: "date"
+      format: "yyyy-MM-dd"
+      length: 10
+      date_range: "card_issuance"
+      expiry_years_ahead: [2, 3, 4, 5]  # Cards expire 2-5 years after issuance
+      
+    status:
+      type: "text"
+      length: 1
+      values: ["Y", "N", "S"]  # Active, Inactive, Suspended
+      weights: [0.90, 0.08, 0.02]
+
+  # Card limit distributions for different customer segments
+  limit_distributions:
+    premium_customers:
+      percentage: 0.1
+      limits: [500000, 1000000, 1500000, 2000000]  # $5K-$20K
+      
+    standard_customers:
+      percentage: 0.7
+      limits: [100000, 250000, 500000]  # $1K-$5K
+      
+    starter_customers:
+      percentage: 0.2
+      limits: [25000, 50000, 75000]  # $250-$750
+
+# Account Data Generation Configuration
+account_data:
+  # Field specifications matching acctdata.txt structure
+  fields:
+    account_id:
+      type: "numeric"
+      length: 11
+      format: "zero_padded"
+      range:
+        min: 1
+        max: 99999999999
+      unique: true
+      
+    status:
+      type: "text"
+      length: 1
+      values: ["Y", "N"]
+      weights: [0.95, 0.05]
+      
+    credit_limit:
+      type: "numeric"
+      length: 11
+      format: "zero_padded"
+      distributions:
+        - value_range: [100000, 200000]   # $1000-$2000
+          probability: 0.3
+        - value_range: [200000, 500000]   # $2000-$5000
+          probability: 0.4
+        - value_range: [500000, 1000000]  # $5000-$10000
+          probability: 0.2
+        - value_range: [1000000, 2000000] # $10000-$20000
+          probability: 0.1
+          
+    current_balance:
+      type: "numeric"
+      length: 11
+      format: "zero_padded"
+      relationship: "derived_from_credit_limit"
+      utilization_rates:
+        - rate_range: [0.0, 0.3]         # 0-30% utilization
+          probability: 0.4
+        - rate_range: [0.3, 0.6]         # 30-60% utilization
+          probability: 0.3
+        - rate_range: [0.6, 0.8]         # 60-80% utilization
+          probability: 0.2
+        - rate_range: [0.8, 1.0]         # 80-100% utilization
+          probability: 0.1
+          
+    cash_limit:
+      type: "numeric"
+      length: 11
+      format: "zero_padded"
+      percentage_of_credit_limit: [0.2, 0.3, 0.4]  # 20-40% of credit limit
+      
+    open_date:
+      type: "date"
+      format: "yyyy-MM-dd"
+      length: 10
+      date_range: "account_opening"
+      
+    last_statement_date:
+      type: "date"
+      format: "yyyy-MM-dd"
+      length: 10
+      derived_from: "open_date"
+      months_after_opening: [1, 12]
+      
+    next_due_date:
+      type: "date"
+      format: "yyyy-MM-dd"
+      length: 10
+      derived_from: "last_statement_date"
+      days_after_statement: [21, 30]
+      
+    account_type:
+      type: "text"
+      length: 1
+      values: ["A", "B", "C"]  # Account types
+      weights: [0.7, 0.2, 0.1]
+
+  # Balance distribution scenarios
+  balance_scenarios:
+    zero_balance:
+      percentage: 0.15
+      balance: 0
+      
+    low_utilization:
+      percentage: 0.40
+      utilization_range: [0.1, 0.3]
+      
+    medium_utilization:
+      percentage: 0.30
+      utilization_range: [0.3, 0.7]
+      
+    high_utilization:
+      percentage: 0.15
+      utilization_range: [0.7, 1.0]
+
+# Transaction Data Generation Configuration
+transaction_data:
+  # Field specifications matching dailytran.txt structure
+  fields:
+    transaction_id:
+      type: "numeric"
+      length: 16
+      format: "zero_padded"
+      unique: true
+      sequential: true
+      
+    branch_code:
+      type: "numeric"
+      length: 3
+      format: "zero_padded"
+      range:
+        min: 1
+        max: 999
+        
+    terminal_code:
+      type: "numeric"
+      length: 2
+      format: "zero_padded"
+      range:
+        min: 1
+        max: 99
+        
+    transaction_type:
+      type: "text"
+      length: 8
+      values: ["POS TERM", "OPERATOR", "ATM     ", "ONLINE  "]
+      weights: [0.6, 0.2, 0.15, 0.05]
+      
+    description:
+      type: "text"
+      length: 50
+      patterns:
+        - "Purchase at {merchant_name}"
+        - "Return item at {merchant_name}"
+        - "Cash advance at {merchant_name}"
+        - "Payment received"
+        - "Interest charge"
+        - "Late fee"
+      source: "transaction_descriptions_pool"
+      
+    amount:
+      type: "numeric"
+      length: 10
+      format: "zero_padded"
+      distributions:
+        - value_range: [100, 5000]        # $1-$50
+          probability: 0.5
+        - value_range: [5000, 20000]      # $50-$200
+          probability: 0.3
+        - value_range: [20000, 100000]    # $200-$1000
+          probability: 0.15
+        - value_range: [100000, 500000]   # $1000-$5000
+          probability: 0.05
+          
+    control_flag:
+      type: "text"
+      length: 1
+      values: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "P", "Q"]
+      weights: [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.05, 0.025, 0.025]
+      
+    merchant_name:
+      type: "text"
+      length: 50
+      padding: "right_spaces"
+      source: "merchant_names_pool"
+      
+    merchant_city:
+      type: "text"
+      length: 50
+      padding: "right_spaces"
+      source: "cities_pool"
+      
+    postal_code:
+      type: "text"
+      length: 10
+      format: "zip_code"
+      patterns:
+        - "#####     "
+        - "#####-####"
+        
+    card_number:
+      type: "numeric"
+      length: 17
+      format: "zero_padded"
+      relationship: "card.card_number"
+      
+    timestamp:
+      type: "datetime"
+      format: "yyyy-MM-dd HH:mm:ss.SSSSSS"
+      length: 26
+      date_range: "transactions"
+      time_patterns:
+        business_hours:
+          probability: 0.7
+          hours: [9, 17]
+        evening_hours:
+          probability: 0.2
+          hours: [17, 22]
+        night_hours:
+          probability: 0.1
+          hours: [22, 9]
+
+  # Transaction patterns and frequencies
+  transaction_patterns:
+    daily_spending:
+      transactions_per_day: [0, 5]
+      peak_days: ["monday", "friday", "saturday"]
+      
+    seasonal_variations:
+      holiday_multiplier: 1.5
+      summer_multiplier: 1.2
+      winter_multiplier: 0.9
+      
+    merchant_categories:
+      grocery:
+        percentage: 0.25
+        avg_amount: 7500  # $75
+        frequency: "high"
+      gas:
+        percentage: 0.15
+        avg_amount: 4500  # $45
+        frequency: "medium"
+      restaurant:
+        percentage: 0.20
+        avg_amount: 3500  # $35
+        frequency: "high"
+      retail:
+        percentage: 0.25
+        avg_amount: 12000  # $120
+        frequency: "medium"
+      entertainment:
+        percentage: 0.10
+        avg_amount: 6500  # $65
+        frequency: "low"
+      other:
+        percentage: 0.05
+        avg_amount: 8000  # $80
+        frequency: "low"
+
+# Reference Data Configuration
+reference_data:
+  # Transaction types (from trantype.txt)
+  transaction_types:
+    - code: "01"
+      name: "Purchase"
+      description: "Regular purchase transaction"
+      
+    - code: "02"
+      name: "Payment"
+      description: "Payment to account"
+      
+    - code: "03"
+      name: "Credit"
+      description: "Credit adjustment"
+      
+    - code: "04"
+      name: "Authorization"
+      description: "Authorization hold"
+      
+    - code: "05"
+      name: "Refund"
+      description: "Refund transaction"
+      
+    - code: "06"
+      name: "Reversal"
+      description: "Transaction reversal"
+      
+    - code: "07"
+      name: "Adjustment"
+      description: "Account adjustment"
+
+  # Transaction categories (from trancatg.txt)
+  transaction_categories:
+    - code: "010001"
+      description: "Regular Sales Draft"
+      
+    - code: "010002"
+      description: "Regular Cash Advance"
+      
+    - code: "010003"
+      description: "Convenience Check Debit"
+      
+    - code: "010004"
+      description: "ATM Cash Advance"
+      
+    - code: "010005"
+      description: "Interest Amount"
+      
+    - code: "020001"
+      description: "Cash payment"
+      
+    - code: "020002"
+      description: "Electronic payment"
+      
+    - code: "020003"
+      description: "Check payment"
+      
+    - code: "030001"
+      description: "Credit to Account"
+      
+    - code: "030002"
+      description: "Credit to Purchase balance"
+      
+    - code: "030003"
+      description: "Credit to Cash balance"
+      
+    - code: "040001"
+      description: "Zero dollar authorization"
+      
+    - code: "040002"
+      description: "Online purchase authorization"
+      
+    - code: "040003"
+      description: "Travel booking authorization"
+      
+    - code: "050001"
+      description: "Refund credit"
+      
+    - code: "060001"
+      description: "Fraud reversal"
+      
+    - code: "060002"
+      description: "Non-fraud reversal"
+      
+    - code: "070001"
+      description: "Sales draft credit adjustment"
+
+# Edge Cases and Boundary Testing Configuration
+edge_cases:
+  # Boundary value testing
+  boundary_values:
+    customer_id:
+      values: [1, 999999999, 500000000]
+      
+    account_balance:
+      values: [0, 1, 999999999, 500000000]
+      
+    transaction_amount:
+      values: [1, 999999999, 500000000]  # Minimum $0.01, maximum amounts
+      
+    dates:
+      values: 
+        - "1900-01-01"  # Far past date
+        - "2099-12-31"  # Far future date
+        - "2000-02-29"  # Leap year date
+        - "2023-12-31"  # Year end date
+
+  # Invalid data for negative testing
+  invalid_data:
+    percentage: 0.01  # 1% of generated data should be invalid
+    
+    invalid_patterns:
+      phone_numbers:
+        - "000-000-0000"
+        - "123-456-7890"
+        - "(   )   -    "
+        
+      zip_codes:
+        - "00000"
+        - "99999-9999"
+        - "     "
+        
+      dates:
+        - "2023-13-01"  # Invalid month
+        - "2023-02-30"  # Invalid day
+        - "0000-00-00"  # Zero date
+
+  # Data consistency violations for testing
+  consistency_violations:
+    percentage: 0.005  # 0.5% of data should have consistency issues
+    
+    violation_types:
+      orphaned_cards: 0.002        # Cards without valid accounts
+      orphaned_transactions: 0.002  # Transactions without valid cards
+      future_dates: 0.001          # Dates in the future
+
+# Performance Testing Configuration
+performance_testing:
+  # Large dataset configurations
+  stress_test_volumes:
+    customers: 1000000
+    accounts: 2000000
+    cards: 3000000
+    transactions: 50000000
+    
+  # Data generation batching
+  batch_processing:
+    batch_size: 10000
+    parallel_threads: 4
+    memory_limit: "2GB"
+    
+  # Query optimization test data
+  query_test_scenarios:
+    customer_lookup:
+      indexed_fields: ["customer_id", "last_name", "zip_code"]
+      test_queries: 100000
+      
+    account_search:
+      indexed_fields: ["account_id", "customer_id", "status"]
+      test_queries: 100000
+      
+    transaction_analysis:
+      indexed_fields: ["card_number", "timestamp", "amount"]
+      test_queries: 100000
+
+# Data Quality and Validation Rules
+data_quality:
+  # Validation rules
+  validation_rules:
+    customer_data:
+      required_fields: ["customer_id", "first_name", "last_name", "zip_code"]
+      format_validation: true
+      length_validation: true
+      
+    account_data:
+      required_fields: ["account_id", "credit_limit", "open_date"]
+      business_rules:
+        - "current_balance <= credit_limit"
+        - "cash_limit <= credit_limit"
+        - "open_date <= last_statement_date"
+        
+    transaction_data:
+      required_fields: ["transaction_id", "amount", "timestamp", "card_number"]
+      business_rules:
+        - "amount > 0"
+        - "timestamp >= card.issue_date"
+        - "amount <= card.credit_limit"
+
+  # Data consistency checks
+  consistency_checks:
+    referential_integrity: true
+    date_consistency: true
+    amount_precision: true
+    field_length_compliance: true
+
+# Test Scenario Templates
+test_scenarios:
+  # Unit test scenarios
+  unit_test_templates:
+    new_customer_signup:
+      customers: 5
+      accounts_per_customer: 1
+      cards_per_account: 1
+      transactions_per_card: 0
+      
+    active_customer:
+      customers: 10
+      accounts_per_customer: 2
+      cards_per_account: 2
+      transactions_per_card: 20
+      
+    high_balance_customer:
+      customers: 2
+      credit_limit_range: [500000, 1000000]  # $5K-$10K
+      utilization_rate: 0.8
+      
+  # Integration test scenarios
+  integration_test_templates:
+    payment_processing:
+      customers: 50
+      payment_transactions: 100
+      authorization_transactions: 50
+      
+    statement_generation:
+      customers: 100
+      months_of_transactions: 3
+      transactions_per_month: 50
+      
+    fraud_detection:
+      customers: 20
+      suspicious_patterns: true
+      unusual_amounts: true
+      foreign_transactions: true
+
+# Data Export Configuration
+data_export:
+  # Output formats
+  formats:
+    - csv
+    - json
+    - sql_insert
+    - fixed_width
+    
+  # File naming conventions
+  file_naming:
+    prefix: "carddemo_test_data"
+    timestamp: true
+    scenario_name: true
+    
+  # Export settings
+  export_settings:
+    include_headers: true
+    delimiter: ","
+    quote_character: "\""
+    null_value: "NULL"
+    date_format: "yyyy-MM-dd"
+    datetime_format: "yyyy-MM-dd HH:mm:ss"

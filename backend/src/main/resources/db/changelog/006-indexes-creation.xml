@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+
+    <changeSet id="006-create-performance-indexes-accounts" author="CardDemo Migration Team" context="development,migration,test,production">
+        <comment>Create performance indexes for account_data table (VSAM ACCTDAT access patterns)</comment>
+        
+        <!-- Account ID search (most common query) -->
+        <createIndex tableName="account_data" indexName="idx_account_data_account_id">
+            <column name="account_id"/>
+        </createIndex>
+        
+        <!-- Customer account lookup -->
+        <createIndex tableName="account_data" indexName="idx_account_data_customer_id">
+            <column name="customer_id"/>
+        </createIndex>
+        
+        <!-- Account status filtering -->
+        <createIndex tableName="account_data" indexName="idx_account_data_active_status">
+            <column name="active_status"/>
+        </createIndex>
+        
+        <!-- Credit limit range queries -->
+        <createIndex tableName="account_data" indexName="idx_account_data_credit_limit">
+            <column name="credit_limit"/>
+        </createIndex>
+        
+        <!-- Account opening date queries -->
+        <createIndex tableName="account_data" indexName="idx_account_data_open_date">
+            <column name="open_date"/>
+        </createIndex>
+        
+        <rollback>
+            <dropIndex tableName="account_data" indexName="idx_account_data_account_id"/>
+            <dropIndex tableName="account_data" indexName="idx_account_data_customer_id"/>
+            <dropIndex tableName="account_data" indexName="idx_account_data_active_status"/>
+            <dropIndex tableName="account_data" indexName="idx_account_data_credit_limit"/>
+            <dropIndex tableName="account_data" indexName="idx_account_data_open_date"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="006-create-performance-indexes-transactions" author="CardDemo Migration Team" context="development,migration,test,production">
+        <comment>Create performance indexes for transactions table (VSAM TRANSACT access patterns)</comment>
+        
+        <!-- Transaction ID search -->
+        <createIndex tableName="transactions" indexName="idx_transactions_transaction_id">
+            <column name="transaction_id"/>
+        </createIndex>
+        
+        <!-- Account-based transaction lookup (most common) -->
+        <createIndex tableName="transactions" indexName="idx_transactions_account_id">
+            <column name="account_id"/>
+        </createIndex>
+        
+        <!-- Date range queries for transaction history -->
+        <createIndex tableName="transactions" indexName="idx_transactions_transaction_date">
+            <column name="transaction_date"/>
+        </createIndex>
+        
+        <!-- Transaction type filtering -->
+        <createIndex tableName="transactions" indexName="idx_transactions_transaction_type_code">
+            <column name="transaction_type_code"/>
+        </createIndex>
+        
+        <!-- Composite index for account + date queries (most common pattern) -->
+        <createIndex tableName="transactions" indexName="idx_transactions_account_date">
+            <column name="account_id"/>
+            <column name="transaction_date"/>
+        </createIndex>
+        
+        <!-- Transaction amount range queries -->
+        <createIndex tableName="transactions" indexName="idx_transactions_amount">
+            <column name="amount"/>
+        </createIndex>
+        
+        <!-- Card number lookup for fraud detection -->
+        <createIndex tableName="transactions" indexName="idx_transactions_card_number">
+            <column name="card_number"/>
+        </createIndex>
+        
+        <!-- Category code filtering for reporting -->
+        <createIndex tableName="transactions" indexName="idx_transactions_category_code">
+            <column name="category_code"/>
+        </createIndex>
+        
+        <rollback>
+            <dropIndex tableName="transactions" indexName="idx_transactions_transaction_id"/>
+            <dropIndex tableName="transactions" indexName="idx_transactions_account_id"/>
+            <dropIndex tableName="transactions" indexName="idx_transactions_transaction_date"/>
+            <dropIndex tableName="transactions" indexName="idx_transactions_transaction_type_code"/>
+            <dropIndex tableName="transactions" indexName="idx_transactions_account_date"/>
+            <dropIndex tableName="transactions" indexName="idx_transactions_amount"/>
+            <dropIndex tableName="transactions" indexName="idx_transactions_card_number"/>
+            <dropIndex tableName="transactions" indexName="idx_transactions_category_code"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="006-create-performance-indexes-customers" author="CardDemo Migration Team" context="development,migration,test,production">
+        <comment>Create performance indexes for customer_data table (VSAM CUSTDAT access patterns)</comment>
+        
+        <!-- Last name search (common customer lookup) -->
+        <createIndex tableName="customer_data" indexName="idx_customer_data_last_name">
+            <column name="last_name"/>
+        </createIndex>
+        
+        <!-- Full name composite search -->
+        <createIndex tableName="customer_data" indexName="idx_customer_data_full_name">
+            <column name="last_name"/>
+            <column name="first_name"/>
+        </createIndex>
+        
+        <!-- SSN lookup (encrypted but indexed for performance) -->
+        <createIndex tableName="customer_data" indexName="idx_customer_data_ssn">
+            <column name="ssn"/>
+        </createIndex>
+        
+        <!-- State/region queries -->
+        <createIndex tableName="customer_data" indexName="idx_customer_data_state_code">
+            <column name="state_code"/>
+        </createIndex>
+        
+        <!-- FICO score range queries -->
+        <createIndex tableName="customer_data" indexName="idx_customer_data_fico_score">
+            <column name="fico_score"/>
+        </createIndex>
+        
+        <!-- Phone number lookup -->
+        <createIndex tableName="customer_data" indexName="idx_customer_data_phone_1">
+            <column name="phone_number_1"/>
+        </createIndex>
+        
+        <rollback>
+            <dropIndex tableName="customer_data" indexName="idx_customer_data_last_name"/>
+            <dropIndex tableName="customer_data" indexName="idx_customer_data_full_name"/>
+            <dropIndex tableName="customer_data" indexName="idx_customer_data_ssn"/>
+            <dropIndex tableName="customer_data" indexName="idx_customer_data_state_code"/>
+            <dropIndex tableName="customer_data" indexName="idx_customer_data_fico_score"/>
+            <dropIndex tableName="customer_data" indexName="idx_customer_data_phone_1"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

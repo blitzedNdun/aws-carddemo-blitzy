@@ -1,0 +1,496 @@
+# Service Level Agreement Definitions for Performance Testing
+# CardDemo Application - Mainframe to Spring Boot Migration
+# 
+# This file defines the performance SLA thresholds that must be met
+# to ensure the modernized system maintains equivalent service levels
+# to the original COBOL/CICS mainframe implementation.
+
+metadata:
+  version: "1.0.0"
+  description: "Performance SLA definitions for CardDemo Spring Boot application"
+  created_date: "2024-01-15"
+  updated_date: "2024-01-15"
+  compliance_framework: "Mainframe Parity Requirements"
+  regulatory_requirements:
+    - "Financial Services Performance Standards"
+    - "Payment Card Industry Compliance"
+    - "Customer Service Level Agreements"
+
+# =============================================================================
+# INTERACTIVE TRANSACTION PERFORMANCE SLAs
+# Maintains < 200ms response time requirement from Section 0
+# =============================================================================
+interactive_transactions:
+  description: "REST API transaction processing performance requirements"
+  
+  response_time:
+    description: "HTTP request-response latency measurements"
+    metrics:
+      - name: "95th_percentile_response_time"
+        target: "< 200ms"
+        critical_threshold: "> 500ms"
+        warning_threshold: "> 300ms"
+        measurement_window: "5 minutes"
+        prometheus_query: "histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{uri=~'/api/.*'}[5m]))"
+        
+      - name: "99th_percentile_response_time"
+        target: "< 500ms"
+        critical_threshold: "> 1000ms"
+        warning_threshold: "> 750ms"
+        measurement_window: "5 minutes"
+        prometheus_query: "histogram_quantile(0.99, rate(http_server_requests_seconds_bucket{uri=~'/api/.*'}[5m]))"
+        
+      - name: "average_response_time"
+        target: "< 100ms"
+        critical_threshold: "> 300ms"
+        warning_threshold: "> 200ms"
+        measurement_window: "1 minute"
+        prometheus_query: "rate(http_server_requests_seconds_sum{uri=~'/api/.*'}[1m]) / rate(http_server_requests_seconds_count{uri=~'/api/.*'}[1m])"
+
+  throughput:
+    description: "Transaction processing rate requirements"
+    metrics:
+      - name: "transactions_per_second"
+        target: "> 10000 TPS"
+        critical_threshold: "< 5000 TPS"
+        warning_threshold: "< 8000 TPS"
+        measurement_window: "1 minute"
+        prometheus_query: "sum(rate(http_server_requests_total{uri=~'/api/.*', status=~'2..'}[1m]))"
+        
+      - name: "concurrent_users"
+        target: "> 1000 users"
+        critical_threshold: "< 500 users"
+        warning_threshold: "< 800 users"
+        measurement_window: "5 minutes"
+        prometheus_query: "spring_session_sessions_total"
+
+  error_rate:
+    description: "Transaction failure rate limits"
+    metrics:
+      - name: "http_error_rate"
+        target: "< 0.1%"
+        critical_threshold: "> 1.0%"
+        warning_threshold: "> 0.5%"
+        measurement_window: "5 minutes"
+        prometheus_query: "sum(rate(http_server_requests_total{uri=~'/api/.*', status=~'[45]..'}[5m])) / sum(rate(http_server_requests_total{uri=~'/api/.*'}[5m])) * 100"
+        
+      - name: "business_logic_error_rate"
+        target: "< 0.05%"
+        critical_threshold: "> 0.5%"
+        warning_threshold: "> 0.2%"
+        measurement_window: "10 minutes"
+        prometheus_query: "sum(rate(application_errors_total{type='business_logic'}[10m])) / sum(rate(http_server_requests_total[10m])) * 100"
+
+# =============================================================================
+# SYSTEM AVAILABILITY SLAs
+# Maintains > 99.9% uptime requirement from Section 0
+# =============================================================================
+system_availability:
+  description: "Application and infrastructure availability requirements"
+  
+  uptime:
+    description: "Service availability percentage"
+    metrics:
+      - name: "application_availability"
+        target: "> 99.9%"
+        critical_threshold: "< 99.0%"
+        warning_threshold: "< 99.5%"
+        measurement_window: "24 hours"
+        prometheus_query: "avg_over_time(up{job='carddemo-service'}[24h]) * 100"
+        
+      - name: "business_hours_availability"
+        target: "> 99.95%"
+        critical_threshold: "< 99.5%"
+        warning_threshold: "< 99.8%"
+        measurement_window: "8 hours"
+        time_range: "08:00-17:00 EST"
+        prometheus_query: "avg_over_time(up{job='carddemo-service'}[8h]) * 100"
+
+  recovery_time:
+    description: "System recovery and failover requirements"
+    metrics:
+      - name: "mean_time_to_recovery"
+        target: "< 15 minutes"
+        critical_threshold: "> 60 minutes"
+        warning_threshold: "> 30 minutes"
+        measurement_type: "incident_based"
+        
+      - name: "pod_restart_time"
+        target: "< 2 minutes"
+        critical_threshold: "> 10 minutes"
+        warning_threshold: "> 5 minutes"
+        prometheus_query: "kubernetes_pod_start_time - kubernetes_pod_created"
+
+# =============================================================================
+# BATCH PROCESSING SLAs
+# Maintains < 4 hour completion window from Section 0
+# =============================================================================
+batch_processing:
+  description: "Spring Batch job execution performance requirements"
+  
+  job_completion:
+    description: "Batch job execution time limits"
+    metrics:
+      - name: "daily_processing_window"
+        target: "< 4 hours"
+        critical_threshold: "> 6 hours"
+        warning_threshold: "> 5 hours"
+        measurement_window: "daily"
+        prometheus_query: "max(spring_batch_job_seconds{status='COMPLETED'}) / 3600"
+        
+      - name: "interest_calculation_duration"
+        target: "< 30 minutes"
+        critical_threshold: "> 120 minutes"
+        warning_threshold: "> 60 minutes"
+        prometheus_query: "spring_batch_job_seconds{job_name='interestCalculationJob', status='COMPLETED'} / 60"
+        
+      - name: "statement_generation_duration"
+        target: "< 60 minutes"
+        critical_threshold: "> 180 minutes"
+        warning_threshold: "> 120 minutes"
+        prometheus_query: "spring_batch_job_seconds{job_name='statementGenerationJob', status='COMPLETED'} / 60"
+
+  job_success_rate:
+    description: "Batch job completion success requirements"
+    metrics:
+      - name: "overall_job_success_rate"
+        target: "> 99.5%"
+        critical_threshold: "< 95.0%"
+        warning_threshold: "< 98.0%"
+        measurement_window: "weekly"
+        prometheus_query: "sum(spring_batch_job_total{status='COMPLETED'}) / sum(spring_batch_job_total) * 100"
+        
+      - name: "critical_job_success_rate"
+        target: "100%"
+        critical_threshold: "< 100%"
+        warning_threshold: "< 100%"
+        measurement_window: "daily"
+        jobs: ["interestCalculationJob", "statementGenerationJob", "dailyReconciliationJob"]
+
+# =============================================================================
+# DATABASE PERFORMANCE SLAs
+# PostgreSQL performance equivalent to VSAM KSDS access patterns
+# =============================================================================
+database_performance:
+  description: "PostgreSQL database operation performance requirements"
+  
+  query_performance:
+    description: "Database query execution time limits"
+    metrics:
+      - name: "average_query_duration"
+        target: "< 50ms"
+        critical_threshold: "> 200ms"
+        warning_threshold: "> 100ms"
+        measurement_window: "5 minutes"
+        prometheus_query: "rate(spring_data_repository_invocations_seconds_sum[5m]) / rate(spring_data_repository_invocations_seconds_count[5m]) * 1000"
+        
+      - name: "slow_query_percentage"
+        target: "< 1%"
+        critical_threshold: "> 5%"
+        warning_threshold: "> 2%"
+        slow_query_threshold: "1 second"
+        measurement_window: "10 minutes"
+
+  connection_pool:
+    description: "Database connection management performance"
+    metrics:
+      - name: "connection_pool_utilization"
+        target: "< 80%"
+        critical_threshold: "> 95%"
+        warning_threshold: "> 90%"
+        measurement_window: "5 minutes"
+        prometheus_query: "hikaricp_connections_active / hikaricp_connections_max * 100"
+        
+      - name: "connection_wait_time"
+        target: "< 10ms"
+        critical_threshold: "> 100ms"
+        warning_threshold: "> 50ms"
+        prometheus_query: "hikaricp_connections_pending"
+
+# =============================================================================
+# SECURITY PERFORMANCE SLAs
+# Spring Security authentication and authorization performance
+# =============================================================================
+security_performance:
+  description: "Authentication and authorization performance requirements"
+  
+  authentication:
+    description: "User authentication processing performance"
+    metrics:
+      - name: "authentication_response_time"
+        target: "< 500ms"
+        critical_threshold: "> 2000ms"
+        warning_threshold: "> 1000ms"
+        measurement_window: "5 minutes"
+        prometheus_query: "rate(spring_security_authentication_duration_seconds_sum[5m]) / rate(spring_security_authentication_duration_seconds_count[5m]) * 1000"
+        
+      - name: "authentication_success_rate"
+        target: "> 95%"
+        critical_threshold: "< 90%"
+        warning_threshold: "< 93%"
+        measurement_window: "15 minutes"
+        prometheus_query: "sum(rate(spring_security_authentication_total{result='success'}[15m])) / sum(rate(spring_security_authentication_total[15m])) * 100"
+
+  session_management:
+    description: "Session handling and Redis performance"
+    metrics:
+      - name: "session_creation_time"
+        target: "< 100ms"
+        critical_threshold: "> 500ms"
+        warning_threshold: "> 250ms"
+        prometheus_query: "redis_commands_duration_seconds{command='set'}"
+        
+      - name: "session_lookup_time"
+        target: "< 50ms"
+        critical_threshold: "> 200ms"
+        warning_threshold: "> 100ms"
+        prometheus_query: "redis_commands_duration_seconds{command='get'}"
+
+# =============================================================================
+# RESOURCE UTILIZATION SLAs
+# JVM and container resource consumption limits
+# =============================================================================
+resource_utilization:
+  description: "System resource consumption limits"
+  
+  cpu_performance:
+    description: "Processor utilization constraints"
+    metrics:
+      - name: "jvm_cpu_utilization"
+        target: "< 70%"
+        critical_threshold: "> 90%"
+        warning_threshold: "> 80%"
+        measurement_window: "10 minutes"
+        prometheus_query: "process_cpu_usage * 100"
+        
+      - name: "system_load_average"
+        target: "< 2.0"
+        critical_threshold: "> 4.0"
+        warning_threshold: "> 3.0"
+        prometheus_query: "system_load_average_1m"
+
+  memory_performance:
+    description: "Memory utilization constraints"
+    metrics:
+      - name: "jvm_heap_utilization"
+        target: "< 75%"
+        critical_threshold: "> 90%"
+        warning_threshold: "> 85%"
+        measurement_window: "5 minutes"
+        prometheus_query: "jvm_memory_used_bytes{area='heap'} / jvm_memory_max_bytes{area='heap'} * 100"
+        
+      - name: "garbage_collection_frequency"
+        target: "< 10 per minute"
+        critical_threshold: "> 50 per minute"
+        warning_threshold: "> 30 per minute"
+        prometheus_query: "rate(jvm_gc_collection_seconds_count[1m])"
+
+  storage_performance:
+    description: "Disk and persistent storage requirements"
+    metrics:
+      - name: "disk_utilization"
+        target: "< 80%"
+        critical_threshold: "> 95%"
+        warning_threshold: "> 90%"
+        prometheus_query: "node_filesystem_avail_bytes / node_filesystem_size_bytes * 100"
+
+# =============================================================================
+# BUSINESS TRANSACTION SLAs
+# Financial operation accuracy and completeness requirements
+# =============================================================================
+business_transactions:
+  description: "Financial transaction processing accuracy requirements"
+  
+  calculation_accuracy:
+    description: "Financial calculation precision requirements"
+    metrics:
+      - name: "interest_calculation_accuracy"
+        target: "100%"
+        critical_threshold: "< 100%"
+        tolerance: "0 penny discrepancy"
+        verification_method: "BigDecimal precision comparison"
+        
+      - name: "balance_reconciliation_accuracy"
+        target: "100%"
+        critical_threshold: "< 100%"
+        tolerance: "0 cent variance"
+        verification_frequency: "real-time"
+
+  transaction_completeness:
+    description: "Transaction processing completeness requirements"
+    metrics:
+      - name: "transaction_completion_rate"
+        target: "> 99.9%"
+        critical_threshold: "< 99.0%"
+        warning_threshold: "< 99.5%"
+        measurement_window: "1 hour"
+        
+      - name: "audit_trail_completeness"
+        target: "100%"
+        critical_threshold: "< 100%"
+        requirement: "Every transaction must have complete audit record"
+
+# =============================================================================
+# PERFORMANCE TEST CONFIGURATION
+# Test execution parameters and validation criteria
+# =============================================================================
+performance_test_configuration:
+  description: "Performance testing execution parameters"
+  
+  load_testing:
+    duration: "30 minutes"
+    ramp_up_time: "5 minutes"
+    ramp_down_time: "2 minutes"
+    virtual_users:
+      minimum: 100
+      target: 1000
+      maximum: 2000
+    
+    transaction_mix:
+      authentication: "10%"
+      account_inquiry: "40%"
+      transaction_history: "30%"
+      card_management: "15%"
+      administrative: "5%"
+
+  stress_testing:
+    duration: "15 minutes"
+    target_tps: 15000
+    max_response_time: "1 second"
+    acceptable_error_rate: "< 0.5%"
+
+  endurance_testing:
+    duration: "4 hours"
+    sustained_load: "8000 TPS"
+    memory_leak_threshold: "5% heap growth per hour"
+    connection_leak_threshold: "0 leaked connections"
+
+# =============================================================================
+# MONITORING AND ALERTING CONFIGURATION
+# Prometheus alert rules and notification thresholds
+# =============================================================================
+alerting_configuration:
+  description: "Performance monitoring alert rules"
+  
+  critical_alerts:
+    - name: "HighResponseTime"
+      condition: "95th percentile > 500ms for 2 minutes"
+      action: "Immediate escalation to operations team"
+      
+    - name: "SystemUnavailable"
+      condition: "Application availability < 99%"
+      action: "Emergency response activation"
+      
+    - name: "BatchJobFailure"
+      condition: "Any critical batch job failure"
+      action: "Immediate management notification"
+      
+    - name: "FinancialAccuracyError"
+      condition: "Any calculation discrepancy detected"
+      action: "Emergency processing halt and investigation"
+
+  warning_alerts:
+    - name: "ElevatedResponseTime"
+      condition: "95th percentile > 300ms for 5 minutes"
+      action: "Performance investigation"
+      
+    - name: "HighResourceUtilization"
+      condition: "CPU > 80% or Memory > 85% for 10 minutes"
+      action: "Resource monitoring and capacity planning"
+      
+    - name: "ErrorRateIncrease"
+      condition: "Error rate > 0.5% for 10 minutes"
+      action: "Application health investigation"
+
+# =============================================================================
+# REPORTING AND COMPLIANCE
+# SLA reporting requirements and compliance validation
+# =============================================================================
+reporting_requirements:
+  description: "SLA compliance reporting and validation requirements"
+  
+  daily_reports:
+    - "Transaction response time compliance"
+    - "System availability percentage"
+    - "Batch job completion status"
+    - "Error rate summary"
+    - "Resource utilization trends"
+
+  weekly_reports:
+    - "SLA compliance dashboard"
+    - "Performance trend analysis"
+    - "Capacity utilization review"
+    - "Security performance metrics"
+
+  monthly_reports:
+    - "Executive SLA summary"
+    - "Performance baseline review"
+    - "Capacity planning recommendations"
+    - "Continuous improvement initiatives"
+
+  compliance_validation:
+    mainframe_parity: "All SLAs must meet or exceed original COBOL/CICS performance"
+    regulatory_requirements: "Maintain audit trail for all performance measurements"
+    customer_sla: "Ensure customer-facing response times remain under contract thresholds"
+    business_continuity: "Validate disaster recovery performance meets RTO/RPO requirements"
+
+# =============================================================================
+# SLA VALIDATION CRITERIA
+# Pass/fail criteria for performance test acceptance
+# =============================================================================
+validation_criteria:
+  description: "Performance test pass/fail criteria"
+  
+  mandatory_requirements:
+    - criterion: "95th percentile response time < 200ms"
+      weight: "critical"
+      failure_action: "Reject deployment"
+      
+    - criterion: "System availability > 99.9%"
+      weight: "critical"
+      failure_action: "Reject deployment"
+      
+    - criterion: "Batch completion < 4 hours"
+      weight: "critical"
+      failure_action: "Reject deployment"
+      
+    - criterion: "Error rate < 0.1%"
+      weight: "critical"
+      failure_action: "Reject deployment"
+      
+    - criterion: "Throughput > 10,000 TPS"
+      weight: "critical"
+      failure_action: "Reject deployment"
+
+  performance_goals:
+    - criterion: "Average response time < 100ms"
+      weight: "important"
+      failure_action: "Performance review required"
+      
+    - criterion: "CPU utilization < 70%"
+      weight: "important"
+      failure_action: "Capacity planning review"
+      
+    - criterion: "Memory utilization < 75%"
+      weight: "important"
+      failure_action: "Memory optimization review"
+
+  business_requirements:
+    - criterion: "Financial calculation accuracy = 100%"
+      weight: "critical"
+      failure_action: "Immediate investigation and fix required"
+      
+    - criterion: "Audit trail completeness = 100%"
+      weight: "critical"
+      failure_action: "Compliance review required"
+
+# =============================================================================
+# REVISION HISTORY
+# =============================================================================
+revision_history:
+  - version: "1.0.0"
+    date: "2024-01-15"
+    author: "Blitzy Platform Development Team"
+    changes: "Initial SLA definitions based on Section 0 requirements"
+    approval: "Technical Architecture Review Board"
+    effective_date: "2024-01-15"

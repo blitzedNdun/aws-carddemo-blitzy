@@ -1,0 +1,233 @@
+{
+  "comment": "JSON template for transaction management REST API requests including transaction creation, search, and listing operations with COBOL-compliant transaction formats matching BMS maps COTRN00/COTRN01/COTRN02",
+  
+  "transactionCreateRequest": {
+    "description": "Template for creating new transactions (maps to COTRN02.bms Add Transaction screen)",
+    "accountId": "00000000001",
+    "cardNumber": "4000000000000002",
+    "transactionTypeCode": "DB",
+    "categoryCode": "5010",
+    "source": "ONLINE",
+    "description": "Test transaction for API validation with extended description field supporting up to 100 characters as defined in CVTRA05Y copybook",
+    "amount": "123.45",
+    "originalDate": "2024-01-15",
+    "processDate": "2024-01-15", 
+    "merchantId": "123456789",
+    "merchantName": "TEST MERCHANT CORPORATION AMERICA",
+    "merchantCity": "NEW YORK",
+    "merchantZip": "10001-1234",
+    "_notes": {
+      "accountId": "11 characters max as per COTRN02 ACTIDIN field",
+      "cardNumber": "16 characters - matches TRAN-CARD-NUM PIC X(16) from CVTRA05Y",
+      "transactionTypeCode": "2 characters - matches TRAN-TYPE-CD PIC X(02)",
+      "categoryCode": "4 digits - matches TRAN-CAT-CD PIC 9(04)",
+      "source": "10 characters max - matches TRAN-SOURCE PIC X(10)",
+      "description": "100 characters max - matches TRAN-DESC PIC X(100) from CVTRA05Y copybook",
+      "amount": "String format to preserve COMP-3 precision - maps to TRAN-AMT PIC S9(09)V99",
+      "originalDate": "CCYYMMDD format as required - maps to TRAN-ORIG-TS",
+      "processDate": "CCYYMMDD format as required - maps to TRAN-PROC-TS",
+      "merchantId": "9 digits - matches TRAN-MERCHANT-ID PIC 9(09)",
+      "merchantName": "50 characters max - matches TRAN-MERCHANT-NAME PIC X(50)",
+      "merchantCity": "50 characters max - matches TRAN-MERCHANT-CITY PIC X(50)",
+      "merchantZip": "10 characters max - matches TRAN-MERCHANT-ZIP PIC X(10)"
+    }
+  },
+  
+  "transactionSearchRequest": {
+    "description": "Template for searching transactions by ID (maps to COTRN01.bms View Transaction screen)",
+    "transactionId": "1234567890123456",
+    "_notes": {
+      "transactionId": "16 characters - matches TRAN-ID PIC X(16) from CVTRA05Y copybook and TRNIDIN field from COTRN01"
+    }
+  },
+  
+  "transactionListRequest": {
+    "description": "Template for listing transactions with optional search criteria (maps to COTRN00.bms List Transactions screen)",
+    "searchTransactionId": "1234567890123456", 
+    "accountId": "00000000001",
+    "cardNumber": "4000000000000002",
+    "dateFrom": "20240101",
+    "dateTo": "20241231",
+    "pageSize": 10,
+    "pageNumber": 1,
+    "_notes": {
+      "searchTransactionId": "16 characters optional - matches TRNIDIN field from COTRN00",
+      "accountId": "Filter by account ID for transaction listing",
+      "cardNumber": "Filter by card number for transaction listing", 
+      "dateFrom": "CCYYMMDD format - start date for transaction range",
+      "dateTo": "CCYYMMDD format - end date for transaction range",
+      "pageSize": "Number of transactions per page (COTRN00 shows 10 rows)",
+      "pageNumber": "Page number for pagination"
+    }
+  },
+  
+  "transactionUpdateRequest": {
+    "description": "Template for updating existing transactions (derived from COTRN01/COTRN02 field combinations)",
+    "transactionId": "1234567890123456",
+    "transactionTypeCode": "CR",
+    "categoryCode": "5020", 
+    "source": "MOBILE",
+    "description": "Updated transaction description maintaining COBOL copybook field length compatibility",
+    "amount": "456.78",
+    "originalDate": "2024-01-15",
+    "processDate": "2024-01-16",
+    "merchantId": "987654321",
+    "merchantName": "UPDATED MERCHANT NAME LIMITED",
+    "merchantCity": "LOS ANGELES", 
+    "merchantZip": "90210-5678",
+    "_notes": {
+      "transactionId": "Required 16-character ID for transaction to update",
+      "amount": "String format preserving decimal precision as per COBOL COMP-3 requirements",
+      "dates": "All dates in CCYYMMDD format maintaining COBOL compatibility"
+    }
+  },
+  
+  "transactionDeleteRequest": {
+    "description": "Template for deleting transactions by ID",
+    "transactionId": "1234567890123456",
+    "confirmDelete": true,
+    "_notes": {
+      "transactionId": "Required 16-character ID for transaction to delete",
+      "confirmDelete": "Boolean confirmation flag to prevent accidental deletions"
+    }
+  },
+  
+  "bulkTransactionRequest": {
+    "description": "Template for bulk transaction operations supporting batch processing scenarios",
+    "operation": "CREATE",
+    "transactions": [
+      {
+        "cardNumber": "4000000000000002",
+        "transactionTypeCode": "DB", 
+        "categoryCode": "5010",
+        "source": "BATCH",
+        "description": "Bulk transaction 1 - automated processing from batch job",
+        "amount": "100.00",
+        "originalDate": "2024-01-15",
+        "processDate": "2024-01-15",
+        "merchantId": "111111111",
+        "merchantName": "BULK MERCHANT ONE",
+        "merchantCity": "CHICAGO",
+        "merchantZip": "60601-1111"
+      },
+      {
+        "cardNumber": "4000000000000003",
+        "transactionTypeCode": "CR",
+        "categoryCode": "5020", 
+        "source": "BATCH",
+        "description": "Bulk transaction 2 - automated processing from batch job",
+        "amount": "200.00",
+        "originalDate": "2024-01-15", 
+        "processDate": "2024-01-15",
+        "merchantId": "222222222",
+        "merchantName": "BULK MERCHANT TWO",
+        "merchantCity": "HOUSTON",
+        "merchantZip": "77001-2222"
+      }
+    ],
+    "_notes": {
+      "operation": "CREATE, UPDATE, or DELETE for bulk operations",
+      "transactions": "Array of transaction objects following same field structure as individual requests",
+      "bulkProcessing": "Supports Spring Batch job scenarios and high-volume transaction processing"
+    }
+  },
+  
+  "transactionValidationRules": {
+    "description": "Validation rules derived from COBOL copybook and BMS field definitions",
+    "transactionId": {
+      "type": "string",
+      "length": 16,
+      "pattern": "^[A-Z0-9]{16}$",
+      "required": true,
+      "cobolMapping": "TRAN-ID PIC X(16)"
+    },
+    "transactionTypeCode": {
+      "type": "string", 
+      "length": 2,
+      "allowedValues": ["DB", "CR", "AD", "FE", "IN", "PA", "RF", "RT"],
+      "required": true,
+      "cobolMapping": "TRAN-TYPE-CD PIC X(02)"
+    },
+    "categoryCode": {
+      "type": "string",
+      "length": 4,
+      "pattern": "^[0-9]{4}$",
+      "required": true,
+      "cobolMapping": "TRAN-CAT-CD PIC 9(04)"
+    },
+    "source": {
+      "type": "string",
+      "maxLength": 10,
+      "allowedValues": ["ONLINE", "MOBILE", "ATM", "BRANCH", "BATCH", "PHONE"],
+      "required": true,
+      "cobolMapping": "TRAN-SOURCE PIC X(10)"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 100,
+      "required": true,
+      "cobolMapping": "TRAN-DESC PIC X(100)"
+    },
+    "amount": {
+      "type": "string",
+      "pattern": "^-?[0-9]{1,9}\\.[0-9]{2}$",
+      "required": true,
+      "cobolMapping": "TRAN-AMT PIC S9(09)V99",
+      "precision": "COMP-3 decimal precision with 2 decimal places",
+      "range": "-999999999.99 to 999999999.99"
+    },
+    "cardNumber": {
+      "type": "string",
+      "length": 16,
+      "pattern": "^[0-9]{16}$",
+      "required": true,
+      "cobolMapping": "TRAN-CARD-NUM PIC X(16)"
+    },
+    "merchantId": {
+      "type": "string",
+      "length": 9,
+      "pattern": "^[0-9]{9}$",
+      "required": false,
+      "cobolMapping": "TRAN-MERCHANT-ID PIC 9(09)"
+    },
+    "merchantName": {
+      "type": "string",
+      "maxLength": 50,
+      "required": false,
+      "cobolMapping": "TRAN-MERCHANT-NAME PIC X(50)"
+    },
+    "merchantCity": {
+      "type": "string", 
+      "maxLength": 50,
+      "required": false,
+      "cobolMapping": "TRAN-MERCHANT-CITY PIC X(50)"
+    },
+    "merchantZip": {
+      "type": "string",
+      "maxLength": 10,
+      "pattern": "^[0-9]{5}(-[0-9]{4})?$",
+      "required": false,
+      "cobolMapping": "TRAN-MERCHANT-ZIP PIC X(10)"
+    },
+    "dateFields": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "format": "CCYY-MM-DD (converts to CCYYMMDD for COBOL compatibility)",
+      "cobolMapping": "TRAN-ORIG-TS, TRAN-PROC-TS PIC X(26)"
+    }
+  },
+  
+  "_metadata": {
+    "version": "1.0",
+    "purpose": "REST API request templates for transaction management operations",
+    "cobolCompatibility": "Maintains field lengths and data types from CVTRA05Y.cpy copybook",
+    "bmsMapping": "Field structures derived from COTRN00.bms, COTRN01.bms, COTRN02.bms",
+    "lastUpdated": "2024-01-15",
+    "compliance": {
+      "transactionIdLength": "16 characters as required",
+      "amountPrecision": "COMP-3 decimal precision maintained",
+      "dateFormat": "CCYYMMDD format for COBOL compatibility",
+      "typeCodeCompliance": "COBOL transaction type codes supported"
+    }
+  }
+}

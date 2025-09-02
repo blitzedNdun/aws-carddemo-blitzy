@@ -1,0 +1,350 @@
+# Spring Batch Test Configuration for Daily Transaction Processing
+# Migrated from CBTRN01C.cbl and CBTRN02C.cbl COBOL batch programs
+# Test configuration for DailyTransactionJob with VSAM-compatible data processing
+
+spring:
+  batch:
+    job:
+      # Daily Transaction Processing Job Configuration
+      daily-transaction-job:
+        name: "dailyTransactionJob"
+        description: "Daily transaction processing job migrated from CBTRN01C and CBTRN02C"
+        restartable: true
+        # Job execution timeout - 4 hour window requirement
+        timeout: PT4H
+        
+        # Job Parameters for Test Execution
+        parameters:
+          processDate: "2024-01-15"
+          batchMode: "TEST"
+          inputValidation: "STRICT"
+          outputFormat: "VSAM_COMPATIBLE"
+          chunkSize: 1000
+          
+        # Step Configuration
+        steps:
+          # Step 1: Transaction File Reading and Initial Processing (CBTRN01C equivalent)
+          transaction-read-step:
+            name: "transactionReadStep"
+            chunk-size: 1000
+            retry-limit: 3
+            skip-limit: 10
+            
+            # Input Configuration - Daily Transaction File
+            reader:
+              type: "FlatFileItemReader"
+              resource: "classpath:test-data/batch/daily-transaction-input.txt"
+              line-mapper:
+                type: "FixedLengthTokenizer"
+                # TRAN-RECORD structure from CVTRA05Y.cpy (350 bytes)
+                columns:
+                  - name: "tranId"
+                    start: 1
+                    end: 16
+                  - name: "tranTypeCd"
+                    start: 17
+                    end: 18
+                  - name: "tranCatCd"
+                    start: 19
+                    end: 22
+                  - name: "tranSource"
+                    start: 23
+                    end: 32
+                  - name: "tranDesc"
+                    start: 33
+                    end: 132
+                  - name: "tranAmt"
+                    start: 133
+                    end: 143
+                    type: "COMP3_DECIMAL"
+                  - name: "tranMerchantId"
+                    start: 144
+                    end: 152
+                  - name: "tranMerchantName"
+                    start: 153
+                    end: 202
+                  - name: "tranMerchantCity"
+                    start: 203
+                    end: 252
+                  - name: "tranMerchantZip"
+                    start: 253
+                    end: 262
+                  - name: "tranCardNum"
+                    start: 263
+                    end: 278
+                  - name: "tranOrigTs"
+                    start: 279
+                    end: 304
+                  - name: "tranProcTs"
+                    start: 305
+                    end: 330
+                  
+            # Processing Configuration
+            processor:
+              type: "CompositeItemProcessor"
+              delegates:
+                - type: "TransactionValidationProcessor"
+                  validation-rules:
+                    # COMP-3 decimal precision validation
+                    amount-precision:
+                      scale: 2
+                      rounding-mode: "HALF_UP"
+                    # Card number validation
+                    card-validation:
+                      luhn-check: true
+                      length: 16
+                    # Cross-reference validation (XREF-FILE lookup)
+                    xref-validation:
+                      enabled: true
+                      lookup-table: "CARD_XREF"
+                    # Account validation
+                    account-validation:
+                      enabled: true
+                      lookup-table: "ACCOUNT"
+                      
+                - type: "TransactionEnrichmentProcessor"
+                  enrichment-rules:
+                    # Customer information lookup
+                    customer-lookup:
+                      enabled: true
+                      source-table: "CUSTOMER"
+                    # Account balance calculation
+                    balance-calculation:
+                      precision: "COBOL_COMP3"
+                      scale: 2
+                      
+            # Output Configuration - Dual Output (Valid and Rejected Transactions)
+            writer:
+              type: "CompositeItemWriter"
+              delegates:
+                # Valid transactions writer (TRANSACT-FILE equivalent)
+                - type: "JdbcBatchItemWriter"
+                  sql: "INSERT INTO transaction_history (tran_id, tran_type_cd, tran_cat_cd, tran_source, tran_desc, tran_amt, tran_merchant_id, tran_merchant_name, tran_merchant_city, tran_merchant_zip, tran_card_num, tran_orig_ts, tran_proc_ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                  
+                # Rejected transactions writer (DALYREJS-FILE equivalent)
+                - type: "FlatFileItemWriter"
+                  resource: "file:test-output/batch/daily-transaction-rejects.txt"
+                  line-aggregator:
+                    type: "FixedLengthLineAggregator"
+                    format: "%-16s%-2s%-4s%-10s%-100s%011.2f%-9s%-50s%-50s%-10s%-16s%-26s%-26s%-20s"
+                    
+          # Step 2: Account Balance Updates (CBTRN02C equivalent)
+          account-update-step:
+            name: "accountUpdateStep"
+            chunk-size: 1000
+            depends-on: "transactionReadStep"
+            
+            # Account balance update processing
+            reader:
+              type: "JdbcCursorItemReader"
+              sql: "SELECT * FROM transaction_staging WHERE status = 'VALIDATED' ORDER BY tran_id"
+              
+            processor:
+              type: "AccountBalanceUpdateProcessor"
+              update-rules:
+                # COMP-3 precision matching COBOL behavior
+                balance-precision:
+                  scale: 2
+                  rounding-mode: "HALF_UP"
+                  overflow-check: true
+                # Transaction category balance updates (TCATBAL-FILE equivalent)
+                category-balance-update:
+                  enabled: true
+                  table: "transaction_category_balance"
+                  
+            writer:
+              type: "CompositeItemWriter"
+              delegates:
+                # Account balance updates
+                - type: "JdbcBatchItemWriter"
+                  sql: "UPDATE account SET acct_curr_bal = ?, acct_curr_cyl_credit = ?, acct_curr_cyl_debit = ? WHERE acct_id = ?"
+                # Transaction category balance updates
+                - type: "JdbcBatchItemWriter"
+                  sql: "UPDATE transaction_category_balance SET balance_amt = balance_amt + ? WHERE tran_cat_cd = ?"
+                  
+        # Job Repository Configuration for Restart Capabilities
+        job-repository:
+          type: "JdbcJobRepository"
+          table-prefix: "BATCH_"
+          isolation-level: "REPEATABLE_READ"
+          
+        # Transaction Manager Configuration
+        transaction-manager:
+          type: "DataSourceTransactionManager"
+          timeout: 300
+          isolation: "READ_COMMITTED"
+          
+    # Test Data Configuration
+    test-data:
+      # Input file configuration
+      input-files:
+        daily-transaction-input:
+          path: "classpath:test-data/batch/daily-transaction-input.txt"
+          record-count: 5000
+          record-length: 350
+          format: "FIXED_WIDTH"
+          
+        # Reference data files
+        customer-data:
+          path: "classpath:test-data/batch/customer-test-data.csv"
+          format: "CSV"
+          
+        account-data:
+          path: "classpath:test-data/batch/account-test-data.csv"
+          format: "CSV"
+          
+        card-xref-data:
+          path: "classpath:test-data/batch/card-xref-test-data.csv"
+          format: "CSV"
+          
+      # Expected output configuration
+      expected-outputs:
+        valid-transactions:
+          count: 4750
+          total-amount: 125000.00
+          precision: 2
+          
+        rejected-transactions:
+          count: 250
+          rejection-reasons:
+            - "INVALID_CARD"
+            - "INSUFFICIENT_FUNDS"
+            - "ACCOUNT_CLOSED"
+            - "INVALID_AMOUNT"
+            
+        account-balance-updates:
+          updated-accounts: 500
+          total-balance-change: 125000.00
+          
+    # Performance Testing Configuration
+    performance:
+      # 4-hour window requirement compliance
+      max-execution-time: "PT4H"
+      chunk-processing-time: "PT30S"
+      
+      # Memory usage monitoring
+      memory:
+        heap-threshold: "80%"
+        gc-frequency-threshold: 5
+        
+      # Database performance
+      database:
+        connection-pool-size: 10
+        query-timeout: 30
+        batch-size: 1000
+        
+    # Validation Configuration
+    validation:
+      # COMP-3 decimal precision validation
+      decimal-precision:
+        enabled: true
+        scale: 2
+        rounding-mode: "HALF_UP"
+        overflow-detection: true
+        
+      # Business rule validation
+      business-rules:
+        amount-limits:
+          min-amount: 0.01
+          max-amount: 999999.99
+        transaction-types:
+          valid-codes: ["01", "02", "03", "04", "05"]
+        card-validation:
+          luhn-algorithm: true
+          expiry-check: true
+          
+      # Data integrity validation
+      data-integrity:
+        referential-integrity: true
+        balance-reconciliation: true
+        audit-trail: true
+        
+    # Monitoring Configuration
+    monitoring:
+      metrics:
+        enabled: true
+        export:
+          prometheus:
+            enabled: true
+            step: "PT30S"
+            
+      # Custom metrics for batch processing
+      custom-metrics:
+        - name: "batch_transaction_processed_total"
+          type: "counter"
+          description: "Total number of transactions processed"
+          
+        - name: "batch_transaction_rejected_total"
+          type: "counter"
+          description: "Total number of transactions rejected"
+          
+        - name: "batch_processing_duration_seconds"
+          type: "timer"
+          description: "Time taken to process batch"
+          
+        - name: "batch_account_balance_precision_errors"
+          type: "counter"
+          description: "Number of precision errors in balance calculations"
+          
+    # Error Handling Configuration
+    error-handling:
+      retry-policy:
+        max-attempts: 3
+        backoff-delay: "PT5S"
+        multiplier: 2.0
+        
+      skip-policy:
+        skip-limit: 100
+        skippable-exceptions:
+          - "DataFormatException"
+          - "ValidationException"
+          - "NonFatalProcessingException"
+          
+      failure-handling:
+        stop-on-fatal-error: true
+        fatal-exceptions:
+          - "DatabaseConnectionException"
+          - "FileSystemException"
+          - "SecurityException"
+          
+# Test Environment Specific Configuration
+test:
+  environment: "INTEGRATION"
+  
+  # Database configuration for testing
+  datasource:
+    url: "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
+    driver-class-name: "org.h2.Driver"
+    username: "sa"
+    password: ""
+    
+  # H2 database initialization
+  h2:
+    console:
+      enabled: true
+    initialization-mode: "always"
+    schema: "classpath:schema/batch-test-schema.sql"
+    data: "classpath:data/batch-test-data.sql"
+    
+  # Logging configuration for test execution
+  logging:
+    level:
+      com.carddemo.batch: "DEBUG"
+      org.springframework.batch: "INFO"
+      org.springframework.jdbc: "DEBUG"
+    pattern:
+      console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+      
+# JMX Configuration for monitoring during tests
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,metrics,batch,prometheus"
+  endpoint:
+    health:
+      show-details: "always"
+  metrics:
+    export:
+      prometheus:
+        enabled: true

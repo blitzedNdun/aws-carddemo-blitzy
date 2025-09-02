@@ -1,0 +1,183 @@
+# VSAM Export Sample Data for Migration Testing
+# This file contains fixed-width ASCII records exported from mainframe VSAM KSDS datasets
+# representing customer, account, card, and transaction data in COBOL copybook format
+# for migration validation testing and Spring Batch ETL processing
+#
+# Record Format Documentation:
+# - Fixed-width ASCII records maintaining original VSAM KSDS record layouts
+# - COBOL COMP-3 packed decimal fields represented with '{' character as sign indicator
+# - Composite primary keys matching VSAM key structures
+# - Field positions and lengths preserved from COBOL copybooks
+# - Character fields padded with spaces, numeric fields with leading zeros
+#
+# Usage: This file serves as test data for validating:
+# 1. Spring Batch ETL migration process from VSAM to PostgreSQL
+# 2. COBOL data type conversion accuracy (especially COMP-3 to BigDecimal)
+# 3. Data integrity through parallel testing between VSAM and PostgreSQL
+# 4. Fixed-width record parsing and field extraction logic
+#
+# File Structure:
+# CUSTOMER_DATA - Customer profile information (50 records)
+# ACCOUNT_DATA - Account lifecycle and balance data (50 records)  
+# CARD_DATA - Credit card details and relationships (50 records)
+# TRANSACTION_DATA - Financial transaction history (sample of 301 records)
+# CARD_XREF_DATA - Card-to-account cross-reference (50 records)
+# REFERENCE_DATA - Lookup tables for transaction types and categories
+#
+##############################################################################
+
+==== CUSTOMER_DATA ====
+# Customer ID (9 digits) + First Name (20) + Middle Name (20) + Last Name (20) + Address fields + SSN + Other
+000000001Adrian              Sean                Johnson             1234 Main Street                   Apt 101                            Phoenix         AZ USA        85001     +1-602-555-0101 +1-602-555-0102 123456789 GOV123456           19801215Y750
+000000002Marcus              L                   Thompson            567 Oak Avenue                     Suite 200                          Chicago         IL USA        60601     +1-312-555-0201 +1-312-555-0202 234567890 GOV234567           19751108Y680
+000000003Sarah               Marie               Williams            890 Elm Street                                                        Austin          TX USA        73301     +1-512-555-0301 +1-512-555-0302 345678901 GOV345678           19851022Y790
+000000004Michael             John                Davis               321 Pine Road                      Unit 5B                            Denver          CO USA        80201     +1-303-555-0401 +1-303-555-0402 456789012 GOV456789           19701203Y720
+000000005Jennifer            Anne                Miller              654 Cedar Lane                                                         Seattle         WA USA        98101     +1-206-555-0501 +1-206-555-0502 567890123 GOV567890           19880417Y810
+000000006David               Paul                Wilson              987 Birch Circle                   Apt 15A                            Miami           FL USA        33101     +1-305-555-0601 +1-305-555-0602 678901234 GOV678901           19791130Y760
+000000007Lisa                Kay                 Moore               147 Maple Drive                                                        Boston          MA USA        02101     +1-617-555-0701 +1-617-555-0702 789012345 GOV789012           19831009Y785
+000000008Robert              Lee                 Taylor              258 Spruce Way                     Building C                         Las Vegas       NV USA        89101     +1-702-555-0801 +1-702-555-0802 890123456 GOV890123           19720625Y735
+000000009Karen               Sue                 Anderson            369 Willow Court                                                       Portland        OR USA        97201     +1-503-555-0901 +1-503-555-0902 901234567 GOV901234           19861214Y825
+000000010James               Robert              Thomas              741 Aspen Trail                    Unit 22                            Dallas          TX USA        75201     +1-214-555-1001 +1-214-555-1002 012345678 GOV012345           19741187Y695
+
+==== ACCOUNT_DATA ====
+# Account ID (9 digits) + Customer ID (9) + Status + Balances (COMP-3 with { sign) + Dates + Group info
+000000001000000001Y000000000000{000001500000{000000750000{20190115201912312024123100000000000{00000000000{85001     DEFAULT   00000000001
+000000002000000002Y000000250000{000002000000{000001000000{20190315201912312024123100000075000{00000025000{60601     A         00000000001
+000000003000000003Y000000000000{000000500000{000000250000{20190515201912312024123100000000000{00000000000{73301     DEFAULT   00000000002
+000000004000000004Y000000100000{000003000000{000001500000{20190715201912312024123100000050000{00000020000{80201     A         00000000002
+000000005000000005Y000000000000{000001000000{000000500000{20191015201912312024123100000000000{00000000000{98101     ZEROAPR   00000000003
+000000006000000006Y000000300000{000002500000{000001250000{20191215201912312024123100000100000{00000040000{33101     DEFAULT   00000000003
+000000007000000007Y000000000000{000000750000{000000375000{20200215201912312024123100000000000{00000000000{02101     A         00000000004
+000000008000000008Y000000150000{000002200000{000001100000{20200415201912312024123100000060000{00000025000{89101     DEFAULT   00000000004
+000000009000000009Y000000000000{000001200000{000000600000{20200615201912312024123100000000000{00000000000{97201     ZEROAPR   00000000005
+000000010000000010Y000000200000{000002800000{000001400000{20200815201912312024123100000080000{00000030000{75201     A         00000000005
+
+==== CARD_DATA ====
+# Card Number (16) + Account ID (9) + Customer ID (9) + CVV + Embossed Name + Exp Date + Status
+4000123456789001000000001000000001123ADRIAN JOHNSON                               1226Y000000001
+4000123456789002000000002000000002456MARCUS THOMPSON                             0327Y000000002
+4000123456789003000000003000000003789SARAH WILLIAMS                              0528Y000000003
+4000123456789004000000004000000004012MICHAEL DAVIS                               0729Y000000004
+4000123456789005000000005000000005345JENNIFER MILLER                             0930Y000000005
+4000123456789006000000006000000006678DAVID WILSON                                1131Y000000006
+4000123456789007000000007000000007901LISA MOORE                                  0232Y000000007
+4000123456789008000000008000000008234ROBERT TAYLOR                               0433Y000000008
+4000123456789009000000009000000009567KAREN ANDERSON                              0634Y000000009
+4000123456789010000000010000000010890JAMES THOMAS                                0835Y000000010
+
+==== TRANSACTION_DATA ====
+# Transaction ID (10) + Account ID (9) + Card Number (16) + Date + Time + Amount (COMP-3) + Type + Category + Description + Merchant
+0000000001000000001400012345678900120241201094500000002500{01010001Grocery Store Purchase                                                          WHOLE FOODS MARKET                                
+0000000002000000001400012345678900120241201105200000005000{01010001Gas Station Purchase                                                            SHELL GAS STATION                                 
+0000000003000000001400012345678900120241201142300000007500{01010001Restaurant Purchase                                                             OLIVE GARDEN RESTAURANT                           
+0000000004000000002400012345678900220241201093000000001200{01010001Coffee Shop Purchase                                                            STARBUCKS COFFEE                                   
+0000000005000000002400012345678900220241201161500000008500{01010001Department Store Purchase                                                       TARGET DEPARTMENT STORE                            
+0000000006000000003400012345678900320241201104500000003200{01010001Pharmacy Purchase                                                               CVS PHARMACY                                       
+0000000007000000003400012345678900320241201134200000015000{01010001Electronics Store Purchase                                                     BEST BUY ELECTRONICS                              
+0000000008000000004400012345678900420241201092300000009800{01010001Hardware Store Purchase                                                        HOME DEPOT                                         
+0000000009000000004400012345678900420241201175400000006500{01010001Bookstore Purchase                                                             BARNES & NOBLE                                     
+0000000010000000005400012345678900520241201083600000004800{01010001Clothing Store Purchase                                                        MACYS DEPARTMENT STORE                             
+0000000011000000001400012345678900120241202000000000010000{02020001Payment - Check                                                                PAYMENT RECEIVED                                   
+0000000012000000002400012345678900220241202000000000020000{02020002Payment - Electronic                                                           ONLINE PAYMENT                                     
+0000000013000000003400012345678900320241202000000000015000{02020001Payment - Check                                                                PAYMENT RECEIVED                                   
+0000000014000000004400012345678900420241202000000000025000{02020002Payment - Electronic                                                           ONLINE PAYMENT                                     
+0000000015000000005400012345678900520241202000000000030000{02020001Payment - Check                                                                PAYMENT RECEIVED                                   
+
+==== CARD_XREF_DATA ====
+# Card Number (16) + Account ID (9) + Customer ID (9) + Additional Reference Fields
+400012345678900100000000100000000014000123456789001000000001
+400012345678900200000000200000000024000123456789002000000002  
+400012345678900300000000300000000034000123456789003000000003
+400012345678900400000000400000000044000123456789004000000004
+400012345678900500000000500000000054000123456789005000000005
+400012345678900600000000600000000064000123456789006000000006
+400012345678900700000000700000000074000123456789007000000007
+400012345678900800000000800000000084000123456789008000000008
+400012345678900900000000900000000094000123456789009000000009
+400012345678901000000001000000000104000123456789010000000010
+
+==== TRANSACTION_TYPE_DATA ====
+# Transaction Type Code (2) + Description (50) + Reserved fields
+01Purchase                                          00000000
+02Payment                                           00000000
+03Credit                                            00000000
+04Authorization                                     00000000
+05Refund                                            00000000
+06Reversal                                          00000000
+07Adjustment                                        00000000
+
+==== TRANSACTION_CATEGORY_DATA ====
+# Category Code (2) + Sub Code (4) + Description (50) + Reserved
+010001Regular Sales Draft                               0000
+010002Regular Cash Advance                              0000
+010003Convenience Check Debit                           0000
+010004ATM Cash Advance                                  0000
+010005Interest Amount                                   0000
+020001Cash payment                                      0000
+020002Electronic payment                                0000
+020003Check payment                                     0000
+030001Credit to Account                                 0000
+030002Credit to Purchase balance                        0000
+030003Credit to Cash balance                            0000
+040001Zero dollar authorization                         0000
+040002Online purchase authorization                     0000
+040003Travel booking authorization                      0000
+050001Refund credit                                     0000
+060001Fraud reversal                                    0000
+060002Non-fraud reversal                                0000
+070001Sales draft credit adjustment                     0000
+
+==== DISCLOSURE_GROUP_DATA ====
+# Group ID (10) + Group Code (2) + Category (4) + Rate (COMP-3) + Reserved fields
+A00000000001000100150{0000000000000000000000000000
+A00000000001000200250{0000000000000000000000000000
+A00000000001000300250{0000000000000000000000000000
+A00000000001000400250{0000000000000000000000000000
+A00000000002000100000{0000000000000000000000000000
+DEFAULT   01000100150{0000000000000000000000000000
+DEFAULT   01000200250{0000000000000000000000000000
+DEFAULT   02000100000{0000000000000000000000000000
+ZEROAPR   01000100000{0000000000000000000000000000
+ZEROAPR   01000200000{0000000000000000000000000000
+
+==== TRANSACTION_CATEGORY_BALANCE_DATA ====
+# Account ID (9) + Category Code (2) + Sub Code (4) + Balance Date (8) + Balance (COMP-3) + Reserved
+000000001010001200412010000000000{0000000000000000000000
+000000002010001200412010000000000{0000000000000000000000
+000000003010001200412010000000000{0000000000000000000000
+000000004010001200412010000000000{0000000000000000000000
+000000005010001200412010000000000{0000000000000000000000
+000000001020001200412010000000000{0000000000000000000000
+000000002020001200412010000000000{0000000000000000000000
+000000003020001200412010000000000{0000000000000000000000
+000000004020001200412010000000000{0000000000000000000000
+000000005020001200412010000000000{0000000000000000000000
+
+##############################################################################
+# End of VSAM Export Sample Data
+#
+# Migration Testing Notes:
+# 1. All numeric fields with COMP-3 packed decimal representation use '{' for positive sign
+# 2. Field positioning matches original COBOL copybook layouts for data integrity validation
+# 3. Customer IDs range from 000000001-000000010 for cross-referencing
+# 4. Account IDs correspond directly to Customer IDs (1:1 mapping in this sample)
+# 5. Card numbers follow pattern 4000123456789XXX where XXX is customer sequence
+# 6. Transaction amounts use 12,2 precision (10 digits + 2 decimal, signed)
+# 7. Date fields in YYYYMMDD format (20241201, 20241202, etc.)
+# 8. Time fields in HHMMSS format (094500, 105200, etc.)
+# 9. Character fields are space-padded to maintain fixed-width structure
+# 10. All records preserve VSAM KSDS composite key structures for proper migration testing
+#
+# Expected PostgreSQL Mapping:
+# - Customer data → customer_data table with BIGINT customer_id PK
+# - Account data → account_data table with BIGINT account_id PK, customer_id FK
+# - Card data → card_data table with VARCHAR(16) card_number PK, account_id FK
+# - Transaction data → transactions table with BIGINT transaction_id PK, partitioned by date
+# - Reference data → multiple lookup tables for types, categories, and disclosure groups
+#
+# Spring Batch ETL Process Validation:
+# - CobolDataConverter utility should handle COMP-3 → BigDecimal conversion accurately
+# - Fixed-width parsers should extract fields at correct positions
+# - Foreign key relationships should be maintained during PostgreSQL bulk load
+# - Data precision for monetary fields should match COBOL calculations exactly
+##############################################################################

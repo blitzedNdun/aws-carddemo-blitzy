@@ -1,0 +1,539 @@
+# Spring Batch Migration Validation Configuration
+# Purpose: Comprehensive VSAM-to-PostgreSQL data migration validation testing
+# Implements parallel run comparison ensuring 100% functional parity
+#
+# This configuration supports:
+# - FlatFileItemReader for VSAM export processing
+# - CobolDataConverter for COMP-3 precision preservation
+# - JdbcBatchItemWriter for PostgreSQL bulk operations
+# - Automated comparison between source and target data
+# - Metrics collection for migration accuracy reporting
+# - Error handling for data conversion failures
+
+spring:
+  batch:
+    # Enable Spring Batch auto-configuration for migration validation
+    initialize-schema: always
+    
+    # Job repository configuration for validation tracking
+    job:
+      repository:
+        table-prefix: BATCH_VALIDATION_
+        isolation-level-for-create: SERIALIZABLE
+        
+    # Chunk-oriented processing configuration optimized for large datasets
+    chunk:
+      size: 1000  # Process 1000 records per chunk for optimal memory usage
+      commit-interval: 5000  # Commit every 5000 records for restart capability
+      skip-limit: 100  # Allow up to 100 conversion errors before job failure
+      
+  # Database configuration for validation testing
+  datasource:
+    validation:
+      # Target PostgreSQL database for validation
+      url: jdbc:postgresql://localhost:5432/carddemo_validation
+      username: carddemo_test
+      password: ${VALIDATION_DB_PASSWORD:testpass}
+      driver-class-name: org.postgresql.Driver
+      hikari:
+        maximum-pool-size: 20
+        minimum-idle: 5
+        connection-timeout: 30000
+        leak-detection-threshold: 60000
+        
+    # Source comparison database (read-only access)
+    source-comparison:
+      url: jdbc:postgresql://localhost:5432/carddemo_source
+      username: carddemo_readonly
+      password: ${SOURCE_DB_PASSWORD:readonlypass}
+      driver-class-name: org.postgresql.Driver
+
+# Migration Validation Job Configurations
+migration-validation:
+  jobs:
+    # Account Data Migration Validation Job
+    account-data-validation:
+      name: accountDataValidationJob
+      description: "Validates ACCTDAT VSAM to account_data PostgreSQL migration"
+      
+      # Input configuration for VSAM export files
+      input:
+        file-path: "/migration/exports/acctdata.txt"
+        resource-pattern: "acctdata*.txt"
+        encoding: "ASCII"
+        line-length: 289  # Fixed-width record length from CVACT01Y copybook
+        skip-lines: 0
+        
+        # Field mappings from COBOL copybook to PostgreSQL columns
+        field-mappings:
+          account-id:
+            start-position: 1
+            length: 11
+            type: "BIGINT"
+            target-column: "account_id"
+          customer-id:
+            start-position: 12
+            length: 9
+            type: "BIGINT"
+            target-column: "customer_id"
+          active-status:
+            start-position: 21
+            length: 1
+            type: "CHAR"
+            target-column: "active_status"
+          account-balance:
+            start-position: 22
+            length: 12
+            type: "COMP3"  # Requires CobolDataConverter
+            scale: 2
+            target-column: "current_balance"
+          credit-limit:
+            start-position: 34
+            length: 12
+            type: "COMP3"
+            scale: 2
+            target-column: "credit_limit"
+          cash-credit-limit:
+            start-position: 46
+            length: 12
+            type: "COMP3"
+            scale: 2
+            target-column: "cash_credit_limit"
+          open-date:
+            start-position: 58
+            length: 10
+            type: "DATE"
+            format: "YYYY-MM-DD"
+            target-column: "open_date"
+            
+      # Processing configuration
+      processing:
+        parallel-processing: true
+        thread-pool-size: 4
+        partition-size: 10000
+        
+        # Data conversion settings
+        conversion:
+          cobol-converter-class: "com.carddemo.util.CobolDataConverter"
+          precision-validation: true
+          scale-preservation: true
+          
+        # Validation rules
+        validation:
+          required-fields: ["account_id", "customer_id", "active_status"]
+          date-format-validation: true
+          numeric-range-validation: true
+          referential-integrity-check: true
+          
+      # Output configuration for PostgreSQL
+      output:
+        target-table: "account_data"
+        batch-size: 1000
+        insert-mode: "INSERT_IGNORE"  # Skip duplicates during validation
+        
+        # Index creation after bulk load
+        post-load-indexes:
+          - "CREATE INDEX IF NOT EXISTS idx_account_customer ON account_data(customer_id)"
+          - "CREATE INDEX IF NOT EXISTS idx_account_status ON account_data(active_status)"
+          
+      # Comparison validation settings
+      comparison:
+        enabled: true
+        source-query: |
+          SELECT account_id, customer_id, active_status, current_balance, 
+                 credit_limit, cash_credit_limit, open_date 
+          FROM source_account_data ORDER BY account_id
+        target-query: |
+          SELECT account_id, customer_id, active_status, current_balance,
+                 credit_limit, cash_credit_limit, open_date
+          FROM account_data ORDER BY account_id
+        tolerance:
+          numeric-precision: 0.01  # Penny-level accuracy for financial data
+          date-variance: 0  # Exact date matching required
+        
+    # Customer Data Migration Validation Job  
+    customer-data-validation:
+      name: customerDataValidationJob
+      description: "Validates CUSTDAT VSAM to customer_data PostgreSQL migration"
+      
+      input:
+        file-path: "/migration/exports/custdata.txt"
+        resource-pattern: "custdata*.txt"
+        encoding: "ASCII"
+        line-length: 502  # Fixed-width record length from CUSTREC copybook
+        
+        field-mappings:
+          customer-id:
+            start-position: 1
+            length: 9
+            type: "BIGINT"
+            target-column: "customer_id"
+          first-name:
+            start-position: 10
+            length: 20
+            type: "VARCHAR"
+            target-column: "first_name"
+          last-name:
+            start-position: 30
+            length: 20
+            type: "VARCHAR"
+            target-column: "last_name"
+          address-line-1:
+            start-position: 50
+            length: 50
+            type: "VARCHAR"
+            target-column: "address_line_1"
+          ssn:
+            start-position: 150
+            length: 9
+            type: "VARCHAR"
+            target-column: "ssn"
+            sensitive-data: true
+          date-of-birth:
+            start-position: 159
+            length: 10
+            type: "DATE"
+            format: "YYYY-MM-DD"
+            target-column: "date_of_birth"
+          fico-score:
+            start-position: 169
+            length: 3
+            type: "SMALLINT"
+            target-column: "fico_score"
+            
+      processing:
+        parallel-processing: true
+        thread-pool-size: 4
+        
+        # Data masking for sensitive information during testing
+        data-masking:
+          enabled: true
+          mask-fields: ["ssn", "government_id"]
+          mask-pattern: "XXX-XX-####"
+          
+        validation:
+          required-fields: ["customer_id", "first_name", "last_name"]
+          ssn-format-validation: true
+          fico-score-range: [300, 850]
+          
+      output:
+        target-table: "customer_data"
+        batch-size: 1000
+        
+      comparison:
+        enabled: true
+        exclude-sensitive-fields: true  # Skip SSN comparison in test environment
+        
+    # Transaction Data Migration Validation Job
+    transaction-data-validation:
+      name: transactionDataValidationJob
+      description: "Validates TRANSACT VSAM to transactions PostgreSQL migration"
+      
+      input:
+        file-path: "/migration/exports/transact.txt"
+        resource-pattern: "transact*.txt"
+        encoding: "ASCII"
+        line-length: 189  # Fixed-width record length from CVTRA05Y copybook
+        
+        field-mappings:
+          transaction-id:
+            start-position: 1
+            length: 16
+            type: "BIGINT"
+            target-column: "transaction_id"
+          account-id:
+            start-position: 17
+            length: 11
+            type: "BIGINT"
+            target-column: "account_id"
+          card-number:
+            start-position: 28
+            length: 16
+            type: "VARCHAR"
+            target-column: "card_number"
+          transaction-date:
+            start-position: 44
+            length: 10
+            type: "DATE"
+            format: "YYYY-MM-DD"
+            target-column: "transaction_date"
+          transaction-amount:
+            start-position: 54
+            length: 12
+            type: "COMP3"
+            scale: 2
+            target-column: "amount"
+          transaction-type:
+            start-position: 66
+            length: 2
+            type: "VARCHAR"
+            target-column: "transaction_type_code"
+          category-code:
+            start-position: 68
+            length: 4
+            type: "VARCHAR"
+            target-column: "category_code"
+            
+      processing:
+        parallel-processing: true
+        thread-pool-size: 6  # Higher concurrency for large transaction volume
+        partition-column: "transaction_date"
+        
+        # Special handling for financial precision
+        financial-validation:
+          amount-precision-check: true
+          comp3-conversion-validation: true
+          decimal-scale-verification: true
+          
+        validation:
+          required-fields: ["transaction_id", "account_id", "transaction_date", "amount"]
+          amount-range: [-999999.99, 999999.99]
+          date-range-validation: true
+          foreign-key-validation:
+            - table: "account_data"
+              column: "account_id"
+            - table: "card_data"
+              column: "card_number"
+              
+      output:
+        target-table: "transactions"
+        batch-size: 2000  # Larger batch for high-volume transaction data
+        partition-aware: true
+        
+        # Partitioned table support
+        partition-strategy: "RANGE"
+        partition-column: "transaction_date"
+        partition-interval: "MONTH"
+        
+      comparison:
+        enabled: true
+        precision-critical: true  # Enforce exact financial amount matching
+        
+    # Card Data Migration Validation Job
+    card-data-validation:
+      name: cardDataValidationJob
+      description: "Validates CARDDAT VSAM to card_data PostgreSQL migration"
+      
+      input:
+        file-path: "/migration/exports/carddata.txt"
+        resource-pattern: "carddata*.txt"
+        encoding: "ASCII"
+        line-length: 150  # Fixed-width record length from CVACT02Y copybook
+        
+        field-mappings:
+          card-number:
+            start-position: 1
+            length: 16
+            type: "VARCHAR"
+            target-column: "card_number"
+            sensitive-data: true
+          account-id:
+            start-position: 17
+            length: 11
+            type: "BIGINT"
+            target-column: "account_id"
+          customer-id:
+            start-position: 28
+            length: 9
+            type: "BIGINT"
+            target-column: "customer_id"
+          cvv-code:
+            start-position: 37
+            length: 3
+            type: "VARCHAR"
+            target-column: "cvv_code"
+            sensitive-data: true
+          expiration-date:
+            start-position: 40
+            length: 10
+            type: "DATE"
+            format: "YYYY-MM-DD"
+            target-column: "expiration_date"
+          active-status:
+            start-position: 50
+            length: 1
+            type: "CHAR"
+            target-column: "active_status"
+            
+      processing:
+        parallel-processing: true
+        thread-pool-size: 4
+        
+        # Security handling for sensitive card data
+        security:
+          mask-card-numbers: true
+          mask-cvv-codes: true
+          encryption-validation: true
+          
+        validation:
+          required-fields: ["card_number", "account_id", "customer_id"]
+          card-number-format: "LUHN"  # Luhn algorithm validation
+          cvv-format-validation: true
+          expiration-date-future: true
+          
+      output:
+        target-table: "card_data"
+        batch-size: 1000
+        
+      comparison:
+        enabled: true
+        mask-sensitive-data: true
+
+# Metrics and Monitoring Configuration
+metrics:
+  collection:
+    enabled: true
+    
+    # Migration accuracy metrics
+    accuracy:
+      record-count-comparison: true
+      field-value-comparison: true
+      precision-validation: true
+      
+    # Performance metrics  
+    performance:
+      processing-time: true
+      throughput-rate: true
+      error-rate: true
+      memory-usage: true
+      
+    # Data quality metrics
+    quality:
+      completeness-check: true
+      validity-check: true
+      consistency-check: true
+      
+  # Reporting configuration
+  reporting:
+    output-format: "JSON"
+    include-details: true
+    error-threshold: 0.01  # 1% error threshold for job failure
+    
+    # Report destinations
+    destinations:
+      - type: "FILE"
+        path: "/validation/reports/migration-validation-report.json"
+      - type: "DATABASE"
+        table: "migration_validation_results"
+      - type: "CONSOLE"
+        format: "SUMMARY"
+
+# Error Handling Configuration
+error-handling:
+  # Retry configuration for transient failures
+  retry:
+    max-attempts: 3
+    backoff-delay: 1000  # 1 second
+    backoff-multiplier: 2.0
+    
+  # Skip configuration for data conversion errors
+  skip:
+    enabled: true
+    max-skip-count: 100
+    log-skipped-items: true
+    
+    # Skip policies for different error types
+    policies:
+      - error-type: "DATA_CONVERSION_ERROR"
+        action: "SKIP_AND_LOG"
+      - error-type: "VALIDATION_ERROR"
+        action: "SKIP_AND_LOG"
+      - error-type: "PRECISION_ERROR"
+        action: "FAIL_JOB"  # Critical for financial data
+        
+  # Exception handling
+  exceptions:
+    critical-errors:
+      - "PRECISION_LOSS_ERROR"
+      - "FINANCIAL_CALCULATION_ERROR"
+      - "DATABASE_INTEGRITY_ERROR"
+    
+    recoverable-errors:
+      - "NETWORK_TIMEOUT_ERROR"
+      - "TEMPORARY_DATABASE_ERROR"
+      - "FILE_ACCESS_ERROR"
+
+# Parallel Comparison Configuration
+parallel-comparison:
+  enabled: true
+  
+  # Comparison execution settings
+  execution:
+    thread-pool-size: 8
+    batch-size: 5000
+    timeout: 3600  # 1 hour timeout for large comparisons
+    
+  # Comparison criteria
+  criteria:
+    exact-match-fields: ["account_id", "customer_id", "card_number", "transaction_id"]
+    tolerance-fields:
+      - field: "current_balance"
+        tolerance: 0.01
+        type: "NUMERIC"
+      - field: "credit_limit"
+        tolerance: 0.01
+        type: "NUMERIC"
+    exclude-fields: ["created_date", "modified_date"]  # System-generated fields
+    
+  # Difference reporting
+  difference-reporting:
+    enabled: true
+    max-differences: 1000  # Limit difference reporting
+    detail-level: "FIELD_LEVEL"
+    
+    output:
+      format: "CSV"
+      path: "/validation/differences/comparison-differences.csv"
+
+# Test Environment Configuration
+test-environment:
+  # Test data generation
+  data-generation:
+    synthetic-data: false  # Use real migrated data for validation
+    anonymization: true
+    volume-multiplier: 1.0  # Full data volume for comprehensive testing
+    
+  # Environment isolation
+  isolation:
+    dedicated-schema: true
+    schema-name: "migration_validation"
+    cleanup-after-test: false  # Preserve for investigation
+    
+  # Resource limits
+  resources:
+    max-memory: "4GB"
+    max-execution-time: "2h"
+    max-file-size: "10GB"
+
+# Logging Configuration
+logging:
+  level:
+    com.carddemo.batch: DEBUG
+    com.carddemo.util.CobolDataConverter: DEBUG
+    org.springframework.batch: INFO
+    
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    
+  file:
+    name: "/logs/migration-validation.log"
+    max-size: "100MB"
+    max-history: 10
+
+# Integration with Spring Boot Testing
+spring-boot-test:
+  # Testcontainers configuration for isolated testing
+  testcontainers:
+    postgresql:
+      image: "postgres:15-alpine"
+      init-script: "/sql/init-validation-schema.sql"
+      
+  # Test profiles
+  profiles:
+    active: "migration-validation,test"
+    
+  # Auto-configuration exclusions
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration

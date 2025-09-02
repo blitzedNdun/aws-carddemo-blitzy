@@ -1,0 +1,628 @@
+{
+  "description": "Service Level Agreement thresholds configuration for CardDemo application performance monitoring and validation",
+  "version": "1.0.0",
+  "lastUpdated": "2024-01-15",
+  "environment": "production",
+  
+  "responseTimeThresholds": {
+    "description": "Response time SLA thresholds for different transaction types",
+    "cardAuthorization": {
+      "description": "Critical card authorization transactions requiring sub-200ms response times",
+      "p50": {
+        "target": 100,
+        "warning": 150,
+        "critical": 180,
+        "unit": "milliseconds"
+      },
+      "p95": {
+        "target": 200,
+        "warning": 250,
+        "critical": 300,
+        "unit": "milliseconds"
+      },
+      "p99": {
+        "target": 300,
+        "warning": 400,
+        "critical": 500,
+        "unit": "milliseconds"
+      },
+      "endpoints": [
+        "/api/v1/transactions/authorize",
+        "/api/v1/cards/validate"
+      ]
+    },
+    "accountQueries": {
+      "description": "Account lookup and balance inquiry transactions",
+      "p50": {
+        "target": 500,
+        "warning": 750,
+        "critical": 900,
+        "unit": "milliseconds"
+      },
+      "p95": {
+        "target": 1000,
+        "warning": 1500,
+        "critical": 2000,
+        "unit": "milliseconds"
+      },
+      "p99": {
+        "target": 2000,
+        "warning": 3000,
+        "critical": 5000,
+        "unit": "milliseconds"
+      },
+      "endpoints": [
+        "/api/v1/accounts/*/balance",
+        "/api/v1/accounts/*/details",
+        "/api/v1/accounts/*/transactions"
+      ]
+    },
+    "customerOperations": {
+      "description": "Customer management and administrative operations",
+      "p50": {
+        "target": 800,
+        "warning": 1200,
+        "critical": 1500,
+        "unit": "milliseconds"
+      },
+      "p95": {
+        "target": 1500,
+        "warning": 2000,
+        "critical": 3000,
+        "unit": "milliseconds"
+      },
+      "p99": {
+        "target": 3000,
+        "warning": 4000,
+        "critical": 6000,
+        "unit": "milliseconds"
+      },
+      "endpoints": [
+        "/api/v1/customers/*",
+        "/api/v1/users/*",
+        "/api/v1/admin/*"
+      ]
+    },
+    "reportGeneration": {
+      "description": "Report generation and data export operations",
+      "p50": {
+        "target": 2000,
+        "warning": 3000,
+        "critical": 4000,
+        "unit": "milliseconds"
+      },
+      "p95": {
+        "target": 5000,
+        "warning": 8000,
+        "critical": 10000,
+        "unit": "milliseconds"
+      },
+      "p99": {
+        "target": 10000,
+        "warning": 15000,
+        "critical": 20000,
+        "unit": "milliseconds"
+      },
+      "endpoints": [
+        "/api/v1/reports/*",
+        "/api/v1/statements/*"
+      ]
+    }
+  },
+
+  "throughputThresholds": {
+    "description": "Throughput and transaction per second SLA requirements",
+    "systemWide": {
+      "description": "Overall system throughput requirements",
+      "target": 10000,
+      "minimum": 8000,
+      "warning": 6000,
+      "critical": 4000,
+      "unit": "transactions_per_second",
+      "measurementWindow": "1_minute"
+    },
+    "perServiceInstance": {
+      "description": "Per individual service instance throughput",
+      "target": 1000,
+      "minimum": 800,
+      "warning": 600,
+      "critical": 400,
+      "unit": "transactions_per_second",
+      "measurementWindow": "1_minute"
+    },
+    "cardAuthorization": {
+      "description": "Critical card authorization endpoint throughput",
+      "target": 5000,
+      "minimum": 4000,
+      "warning": 3000,
+      "critical": 2000,
+      "unit": "transactions_per_second",
+      "measurementWindow": "1_minute"
+    },
+    "peakHourMultiplier": {
+      "description": "Peak hour traffic multiplier for scaling calculations",
+      "factor": 1.5,
+      "timeWindows": [
+        "09:00-11:00",
+        "13:00-15:00",
+        "19:00-21:00"
+      ]
+    }
+  },
+
+  "availabilityThresholds": {
+    "description": "System availability and uptime SLA requirements",
+    "interactive": {
+      "description": "Interactive transaction services availability",
+      "target": 99.9,
+      "warning": 99.5,
+      "critical": 99.0,
+      "unit": "percent",
+      "measurementPeriod": "business_hours",
+      "businessHours": {
+        "timezone": "UTC",
+        "weekdays": "Monday-Friday",
+        "hours": "08:00-18:00"
+      }
+    },
+    "database": {
+      "description": "PostgreSQL database availability requirements",
+      "target": 99.95,
+      "warning": 99.9,
+      "critical": 99.5,
+      "unit": "percent",
+      "measurementPeriod": "continuous",
+      "rto": {
+        "target": 60,
+        "maximum": 300,
+        "unit": "seconds"
+      },
+      "rpo": {
+        "target": 300,
+        "maximum": 900,
+        "unit": "seconds"
+      }
+    },
+    "sessionStore": {
+      "description": "Redis session store availability",
+      "target": 99.9,
+      "warning": 99.5,
+      "critical": 99.0,
+      "unit": "percent",
+      "measurementPeriod": "continuous",
+      "rto": {
+        "target": 120,
+        "maximum": 600,
+        "unit": "seconds"
+      },
+      "rpo": {
+        "target": 60,
+        "maximum": 300,
+        "unit": "seconds"
+      }
+    },
+    "kubernetesCluster": {
+      "description": "Kubernetes orchestration platform availability",
+      "target": 99.9,
+      "warning": 99.7,
+      "critical": 99.0,
+      "unit": "percent",
+      "measurementPeriod": "continuous",
+      "rto": {
+        "target": 300,
+        "maximum": 900,
+        "unit": "seconds"
+      }
+    }
+  },
+
+  "errorRateThresholds": {
+    "description": "Error rate and failure percentage SLA thresholds",
+    "overall": {
+      "description": "System-wide error rate thresholds",
+      "target": 0.5,
+      "warning": 1.0,
+      "critical": 2.0,
+      "emergency": 5.0,
+      "unit": "percent",
+      "measurementWindow": "5_minutes"
+    },
+    "cardAuthorization": {
+      "description": "Critical card authorization error rates",
+      "target": 0.1,
+      "warning": 0.5,
+      "critical": 1.0,
+      "emergency": 2.0,
+      "unit": "percent",
+      "measurementWindow": "1_minute"
+    },
+    "financialCalculations": {
+      "description": "Interest calculation and balance update error rates",
+      "target": 0.0,
+      "warning": 0.01,
+      "critical": 0.1,
+      "emergency": 0.5,
+      "unit": "percent",
+      "requiresZeroErrors": true,
+      "measurementWindow": "1_hour"
+    },
+    "authentication": {
+      "description": "User authentication and authorization error rates",
+      "target": 1.0,
+      "warning": 2.0,
+      "critical": 5.0,
+      "emergency": 10.0,
+      "unit": "percent",
+      "measurementWindow": "5_minutes"
+    },
+    "httpStatusCodes": {
+      "description": "HTTP status code error classification",
+      "clientErrors": {
+        "4xx": {
+          "target": 2.0,
+          "warning": 5.0,
+          "critical": 10.0,
+          "unit": "percent"
+        }
+      },
+      "serverErrors": {
+        "5xx": {
+          "target": 0.5,
+          "warning": 1.0,
+          "critical": 2.0,
+          "unit": "percent"
+        }
+      }
+    }
+  },
+
+  "batchProcessingThresholds": {
+    "description": "Batch job processing SLA requirements and time windows",
+    "dailyProcessingWindow": {
+      "description": "Daily batch processing completion requirements",
+      "target": 14400,
+      "warning": 18000,
+      "critical": 21600,
+      "maximum": 28800,
+      "unit": "seconds",
+      "equivalentHours": {
+        "target": 4,
+        "warning": 5,
+        "critical": 6,
+        "maximum": 8
+      },
+      "startTime": "02:00",
+      "timezone": "UTC"
+    },
+    "interestCalculation": {
+      "description": "Monthly interest calculation batch job",
+      "target": 7200,
+      "warning": 10800,
+      "critical": 14400,
+      "unit": "seconds",
+      "equivalentHours": {
+        "target": 2,
+        "warning": 3,
+        "critical": 4
+      },
+      "frequency": "monthly",
+      "scheduledDay": "last_business_day"
+    },
+    "statementGeneration": {
+      "description": "Customer statement generation processing",
+      "target": 3600,
+      "warning": 5400,
+      "critical": 7200,
+      "unit": "seconds",
+      "equivalentHours": {
+        "target": 1,
+        "warning": 1.5,
+        "critical": 2
+      },
+      "frequency": "monthly",
+      "scheduledDay": "first_business_day"
+    },
+    "dataBackup": {
+      "description": "Database backup and archival operations",
+      "target": 1800,
+      "warning": 3600,
+      "critical": 5400,
+      "unit": "seconds",
+      "equivalentHours": {
+        "target": 0.5,
+        "warning": 1,
+        "critical": 1.5
+      },
+      "frequency": "daily",
+      "scheduledTime": "01:00"
+    },
+    "jobDependencies": {
+      "description": "Batch job execution sequence and dependencies",
+      "sequentialJobs": [
+        "dataBackup",
+        "interestCalculation",
+        "statementGeneration",
+        "reportGeneration"
+      ],
+      "parallelJobs": [
+        "transactionProcessing",
+        "balanceReconciliation"
+      ]
+    }
+  },
+
+  "resourceUtilizationThresholds": {
+    "description": "System resource utilization SLA thresholds",
+    "cpu": {
+      "description": "CPU utilization thresholds for Spring Boot applications",
+      "target": 70.0,
+      "warning": 80.0,
+      "critical": 90.0,
+      "emergency": 95.0,
+      "unit": "percent",
+      "measurementWindow": "5_minutes",
+      "sustainedDuration": "10_minutes"
+    },
+    "memory": {
+      "description": "JVM heap memory utilization thresholds",
+      "target": 75.0,
+      "warning": 85.0,
+      "critical": 90.0,
+      "emergency": 95.0,
+      "unit": "percent",
+      "measurementWindow": "5_minutes",
+      "sustainedDuration": "5_minutes"
+    },
+    "jvmGarbageCollection": {
+      "description": "JVM garbage collection performance thresholds",
+      "maxPauseTime": {
+        "target": 100,
+        "warning": 200,
+        "critical": 500,
+        "unit": "milliseconds"
+      },
+      "gcFrequency": {
+        "target": 10,
+        "warning": 20,
+        "critical": 50,
+        "unit": "collections_per_minute"
+      }
+    },
+    "database": {
+      "description": "PostgreSQL database resource utilization",
+      "connections": {
+        "target": 70.0,
+        "warning": 80.0,
+        "critical": 90.0,
+        "emergency": 95.0,
+        "unit": "percent",
+        "maxConnections": 200
+      },
+      "storage": {
+        "target": 70.0,
+        "warning": 80.0,
+        "critical": 90.0,
+        "emergency": 95.0,
+        "unit": "percent"
+      },
+      "iops": {
+        "target": 80.0,
+        "warning": 90.0,
+        "critical": 95.0,
+        "unit": "percent"
+      }
+    },
+    "sessionStore": {
+      "description": "Redis session store resource utilization",
+      "memory": {
+        "target": 70.0,
+        "warning": 80.0,
+        "critical": 90.0,
+        "emergency": 95.0,
+        "unit": "percent"
+      },
+      "connections": {
+        "target": 80.0,
+        "warning": 90.0,
+        "critical": 95.0,
+        "unit": "percent",
+        "maxConnections": 1000
+      },
+      "hitRatio": {
+        "target": 95.0,
+        "warning": 90.0,
+        "critical": 85.0,
+        "unit": "percent"
+      }
+    }
+  },
+
+  "businessMetricThresholds": {
+    "description": "Business-specific performance and quality SLA requirements",
+    "authenticationSuccess": {
+      "description": "User authentication success rate requirements",
+      "target": 99.5,
+      "warning": 99.0,
+      "critical": 98.0,
+      "unit": "percent",
+      "measurementWindow": "1_hour"
+    },
+    "transactionCompletionRate": {
+      "description": "Financial transaction completion success rate",
+      "target": 99.9,
+      "warning": 99.5,
+      "critical": 99.0,
+      "unit": "percent",
+      "measurementWindow": "5_minutes"
+    },
+    "financialAccuracy": {
+      "description": "Financial calculation accuracy requirements",
+      "target": 100.0,
+      "tolerance": 0.0,
+      "unit": "percent",
+      "requiresZeroErrors": true,
+      "validationTypes": [
+        "interest_calculations",
+        "balance_updates",
+        "transaction_amounts",
+        "currency_conversions"
+      ]
+    },
+    "dataIntegrity": {
+      "description": "Data consistency and referential integrity",
+      "target": 100.0,
+      "tolerance": 0.0,
+      "unit": "percent",
+      "requiresZeroErrors": true,
+      "validationFrequency": "continuous"
+    },
+    "complianceReporting": {
+      "description": "Regulatory compliance reporting SLA",
+      "target": 100.0,
+      "deliveryTime": {
+        "target": 86400,
+        "warning": 129600,
+        "critical": 172800,
+        "unit": "seconds",
+        "equivalentHours": {
+          "target": 24,
+          "warning": 36,
+          "critical": 48
+        }
+      },
+      "accuracy": {
+        "target": 100.0,
+        "tolerance": 0.0,
+        "unit": "percent",
+        "requiresZeroErrors": true
+      }
+    }
+  },
+
+  "monitoringConfiguration": {
+    "description": "Configuration for SLA monitoring and alerting systems",
+    "prometheusMetrics": {
+      "description": "Prometheus metrics collection configuration",
+      "scrapeInterval": "15s",
+      "evaluationInterval": "15s",
+      "retentionPeriod": "30d",
+      "alertRules": [
+        "response_time_high",
+        "error_rate_high",
+        "cpu_utilization_high",
+        "memory_utilization_high",
+        "service_down"
+      ]
+    },
+    "alerting": {
+      "description": "Alert routing and escalation configuration",
+      "responseTimeouts": {
+        "low": 3600,
+        "medium": 1800,
+        "high": 900,
+        "critical": 300,
+        "emergency": 60,
+        "unit": "seconds"
+      },
+      "escalationPaths": {
+        "operations": "level1@carddemo.com",
+        "engineering": "level2@carddemo.com",
+        "management": "level3@carddemo.com"
+      },
+      "notificationChannels": [
+        "email",
+        "slack",
+        "pagerduty",
+        "webhook"
+      ]
+    },
+    "dashboards": {
+      "description": "Grafana dashboard configuration for SLA monitoring",
+      "refreshInterval": "30s",
+      "timeRange": "1h",
+      "panels": [
+        "response_time_percentiles",
+        "throughput_metrics",
+        "error_rate_trends",
+        "availability_status",
+        "resource_utilization"
+      ]
+    }
+  },
+
+  "testingConfiguration": {
+    "description": "Performance testing configuration using these SLA thresholds",
+    "loadTesting": {
+      "description": "Load testing parameters based on SLA requirements",
+      "normalLoad": {
+        "concurrentUsers": 1000,
+        "rampUpTime": 300,
+        "duration": 1800,
+        "unit": "seconds"
+      },
+      "peakLoad": {
+        "concurrentUsers": 5000,
+        "rampUpTime": 600,
+        "duration": 3600,
+        "unit": "seconds"
+      },
+      "stressLoad": {
+        "concurrentUsers": 10000,
+        "rampUpTime": 900,
+        "duration": 1800,
+        "unit": "seconds"
+      }
+    },
+    "performanceAssertions": {
+      "description": "Automated performance test assertions",
+      "responseTime": {
+        "cardAuthorization": "p95 < 200ms",
+        "accountQueries": "p95 < 1000ms",
+        "generalOperations": "p95 < 1500ms"
+      },
+      "throughput": {
+        "minimum": "8000 TPS",
+        "target": "10000 TPS",
+        "sustained": "1 hour"
+      },
+      "errorRate": {
+        "maximum": "1.0%",
+        "cardAuthorization": "0.5%",
+        "financialOperations": "0.0%"
+      }
+    }
+  },
+
+  "complianceRequirements": {
+    "description": "Regulatory compliance requirements affecting SLA thresholds",
+    "auditTrail": {
+      "description": "Audit trail and logging requirements",
+      "retention": {
+        "operational": 30,
+        "compliance": 2555,
+        "unit": "days"
+      },
+      "completeness": {
+        "target": 100.0,
+        "tolerance": 0.0,
+        "unit": "percent"
+      }
+    },
+    "dataResidency": {
+      "description": "Data residency and sovereignty requirements",
+      "allowedRegions": [
+        "us-east-1",
+        "us-west-2",
+        "eu-west-1"
+      ],
+      "crossBorderRestrictions": true
+    },
+    "changeManagement": {
+      "description": "Change management process for SLA threshold updates",
+      "approvalRequired": true,
+      "testingRequired": true,
+      "rollbackPlan": true,
+      "documentationRequired": true
+    }
+  }
+}

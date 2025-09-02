@@ -1,0 +1,467 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Spring Batch Job Configuration Template for Daily Transaction Processing
+    
+    This template replaces COBOL batch programs CBTRN01C and CBTRN02C with Spring Batch
+    processing framework, maintaining identical business logic and transaction integrity.
+    
+    Key Features:
+    - Processes daily transaction files with 4-hour completion window
+    - Validates card numbers and account integrity
+    - Posts transactions with balance updates  
+    - Generates rejection files for invalid transactions
+    - Supports restart and recovery capabilities
+    - Maintains transaction order for balance calculations
+    - Provides comprehensive monitoring and metrics
+    
+    Business Logic Preserved from COBOL:
+    - CBTRN01C: Transaction validation and card/account lookup
+    - CBTRN02C: Transaction posting, balance updates, and rejection handling
+    
+    Template Variables:
+    ${job.name} - Daily transaction job identifier
+    ${chunk.size} - Processing chunk size (recommended: 1000)
+    ${reader.datasource} - Input transaction file datasource
+    ${processor.validation} - Validation service bean reference  
+    ${writer.database} - Database writer configuration
+    ${listener.monitoring} - Job execution monitoring listener
+    ${restart.policy} - Job restart configuration policy
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/batch
+           http://www.springframework.org/schema/batch/spring-batch.xsd
+           http://www.springframework.org/schema/context
+           http://www.springframework.org/schema/context/spring-context.xsd
+           http://www.springframework.org/schema/tx
+           http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+    <!-- Enable Spring annotations and transaction management -->
+    <context:annotation-config />
+    <tx:annotation-driven />
+
+    <!-- Job Repository Configuration for Restart and Recovery -->
+    <batch:job-repository id="jobRepository" 
+                          data-source="${batch.datasource}"
+                          transaction-manager="transactionManager"
+                          isolation-level-for-create="SERIALIZABLE"
+                          table-prefix="BATCH_"
+                          max-varchar-length="10000" />
+
+    <!-- Job Launcher for Execution Management -->
+    <bean id="jobLauncher" class="org.springframework.batch.core.launch.support.TaskExecutorJobLauncher">
+        <property name="jobRepository" ref="jobRepository" />
+        <property name="taskExecutor" ref="asyncTaskExecutor" />
+    </bean>
+
+    <!-- Async Task Executor for Performance Optimization -->
+    <bean id="asyncTaskExecutor" class="org.springframework.core.task.SimpleAsyncTaskExecutor">
+        <property name="concurrencyLimit" value="10" />
+        <property name="threadNamePrefix" value="DailyTransactionJob-" />
+    </bean>
+
+    <!-- Daily Transaction Processing Job Definition -->
+    <batch:job id="${job.name}" job-repository="jobRepository" restartable="true">
+        
+        <!-- Job-Level Listeners for Monitoring and Metrics -->
+        <batch:listeners>
+            <batch:listener ref="jobExecutionTimeListener" />
+            <batch:listener ref="jobPerformanceMetricsListener" />
+            <batch:listener ref="jobRestartRecoveryListener" />
+        </batch:listeners>
+
+        <!-- Main Transaction Processing Step -->
+        <batch:step id="processTransactionsStep" next="generateSummaryReportStep">
+            
+            <!-- Step-Level Listeners for Transaction Processing Monitoring -->
+            <batch:listeners>
+                <batch:listener ref="stepExecutionTimeListener" />
+                <batch:listener ref="transactionValidationListener" />
+                <batch:listener ref="balanceUpdateAuditListener" />
+                <batch:listener ref="stepRestartCapabilityListener" />
+            </batch:listeners>
+            
+            <!-- Chunk-Oriented Processing Configuration -->
+            <batch:tasklet transaction-manager="transactionManager">
+                <batch:chunk reader="dailyTransactionItemReader"
+                            processor="transactionValidationProcessor"
+                            writer="transactionPostingWriter"
+                            commit-interval="${chunk.size}"
+                            chunk-completion-policy="simpleCompletionPolicy"
+                            retry-policy="transactionRetryPolicy"
+                            skip-policy="transactionSkipPolicy">
+                    
+                    <!-- Retry Configuration for Transient Failures -->
+                    <batch:retryable-exception-classes>
+                        <batch:include class="org.springframework.dao.DeadlockLoserDataAccessException" />
+                        <batch:include class="org.springframework.dao.CannotAcquireLockException" />
+                        <batch:include class="java.sql.SQLTransientException" />
+                    </batch:retryable-exception-classes>
+                    
+                    <!-- Skip Configuration for Business Rule Violations -->
+                    <batch:skippable-exception-classes>
+                        <batch:include class="com.carddemo.batch.exception.InvalidCardNumberException" />
+                        <batch:include class="com.carddemo.batch.exception.AccountNotFoundException" />
+                        <batch:include class="com.carddemo.batch.exception.CreditLimitExceededException" />
+                        <batch:include class="com.carddemo.batch.exception.ExpiredAccountException" />
+                    </batch:skippable-exception-classes>
+                    
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+
+        <!-- Summary Report Generation Step -->
+        <batch:step id="generateSummaryReportStep" next="archiveProcessedFilesStep">
+            
+            <batch:listeners>
+                <batch:listener ref="reportGenerationListener" />
+            </batch:listeners>
+            
+            <batch:tasklet ref="summaryReportTasklet" transaction-manager="transactionManager" />
+        </batch:step>
+
+        <!-- File Archival Step -->
+        <batch:step id="archiveProcessedFilesStep">
+            <batch:tasklet ref="fileArchivalTasklet" transaction-manager="transactionManager" />
+        </batch:step>
+
+    </batch:job>
+
+    <!-- Daily Transaction ItemReader Configuration -->
+    <!-- Reads daily transaction records from input file, replacing COBOL sequential file processing -->
+    <bean id="dailyTransactionItemReader" class="org.springframework.batch.item.file.FlatFileItemReader">
+        <property name="resource" value="${reader.datasource}" />
+        <property name="strict" value="true" />
+        <property name="linesToSkip" value="0" />
+        <property name="lineMapper" ref="dailyTransactionLineMapper" />
+        <property name="recordSeparatorPolicy" ref="defaultRecordSeparatorPolicy" />
+        <property name="encoding" value="UTF-8" />
+    </bean>
+
+    <!-- Line Mapper for Daily Transaction Records -->
+    <!-- Maps fixed-width transaction records to Java objects (DALYTRAN-RECORD equivalent) -->
+    <bean id="dailyTransactionLineMapper" class="org.springframework.batch.item.file.mapping.DefaultLineMapper">
+        <property name="lineTokenizer" ref="dailyTransactionTokenizer" />
+        <property name="fieldSetMapper" ref="dailyTransactionFieldSetMapper" />
+    </bean>
+
+    <!-- Fixed Width Tokenizer for Transaction Records -->
+    <!-- Replicates COBOL copybook field definitions for CVTRA06Y -->
+    <bean id="dailyTransactionTokenizer" class="org.springframework.batch.item.file.transform.FixedLengthTokenizer">
+        <property name="names">
+            <list>
+                <value>transactionId</value>
+                <value>typeCode</value>
+                <value>categoryCode</value>
+                <value>source</value>
+                <value>description</value>
+                <value>amount</value>
+                <value>merchantId</value>
+                <value>merchantName</value>
+                <value>merchantCity</value>
+                <value>merchantZip</value>
+                <value>cardNumber</value>
+                <value>originalTimestamp</value>
+            </list>
+        </property>
+        <property name="columns">
+            <list>
+                <value>1-16</value>      <!-- FD-TRAN-ID PIC X(16) -->
+                <value>17-18</value>     <!-- DALYTRAN-TYPE-CD PIC X(02) -->
+                <value>19-22</value>     <!-- DALYTRAN-CAT-CD PIC 9(04) -->
+                <value>23-30</value>     <!-- DALYTRAN-SOURCE PIC X(08) -->
+                <value>31-80</value>     <!-- DALYTRAN-DESC PIC X(50) -->
+                <value>81-92</value>     <!-- DALYTRAN-AMT PIC S9(09)V99 -->
+                <value>93-108</value>    <!-- DALYTRAN-MERCHANT-ID PIC X(16) -->
+                <value>109-158</value>   <!-- DALYTRAN-MERCHANT-NAME PIC X(50) -->
+                <value>159-183</value>   <!-- DALYTRAN-MERCHANT-CITY PIC X(25) -->
+                <value>184-188</value>   <!-- DALYTRAN-MERCHANT-ZIP PIC X(05) -->
+                <value>189-204</value>   <!-- DALYTRAN-CARD-NUM PIC X(16) -->
+                <value>205-230</value>   <!-- DALYTRAN-ORIG-TS PIC X(26) -->
+            </list>
+        </property>
+        <property name="strict" value="true" />
+    </bean>
+
+    <!-- Field Set Mapper for Transaction Objects -->
+    <!-- Converts tokenized fields to DailyTransactionRecord domain objects -->
+    <bean id="dailyTransactionFieldSetMapper" class="com.carddemo.batch.mapper.DailyTransactionFieldSetMapper" />
+
+    <!-- Transaction Validation and Processing Component -->
+    <!-- Combines CBTRN01C validation logic and CBTRN02C business processing -->
+    <bean id="transactionValidationProcessor" class="com.carddemo.batch.processor.DailyTransactionProcessor">
+        <property name="cardXrefService" ref="cardXrefValidationService" />
+        <property name="accountService" ref="accountValidationService" />
+        <property name="creditLimitService" ref="creditLimitValidationService" />
+        <property name="expirationDateService" ref="expirationDateValidationService" />
+        <property name="businessRuleService" ref="transactionBusinessRuleService" />
+        <property name="auditService" ref="transactionAuditService" />
+        <property name="rejectionService" ref="transactionRejectionService" />
+        
+        <!-- Validation Rule Configuration -->
+        <property name="validationRules">
+            <list>
+                <value>CARD_NUMBER_VALIDATION</value>    <!-- WS-VALIDATION-FAIL-REASON 100 -->
+                <value>ACCOUNT_EXISTENCE_CHECK</value>   <!-- WS-VALIDATION-FAIL-REASON 101 -->
+                <value>CREDIT_LIMIT_VERIFICATION</value> <!-- WS-VALIDATION-FAIL-REASON 102 -->
+                <value>EXPIRATION_DATE_CHECK</value>     <!-- WS-VALIDATION-FAIL-REASON 103 -->
+            </list>
+        </property>
+        
+        <!-- Processing Mode Configuration -->
+        <property name="processingMode" value="VALIDATE_AND_POST" />
+        <property name="generateTimestamp" value="true" />
+        <property name="preserveTransactionOrder" value="true" />
+    </bean>
+
+    <!-- Transaction Posting Writer Configuration -->
+    <!-- Handles database updates for valid transactions (CBTRN02C equivalent) -->
+    <bean id="transactionPostingWriter" class="org.springframework.batch.item.support.CompositeItemWriter">
+        <property name="delegates">
+            <list>
+                <!-- Write to Transaction Table -->
+                <ref bean="transactionTableWriter" />
+                <!-- Update Account Balances -->
+                <ref bean="accountBalanceUpdateWriter" />
+                <!-- Update Transaction Category Balances -->
+                <ref bean="transactionCategoryBalanceWriter" />
+                <!-- Write Rejected Transactions -->
+                <ref bean="rejectedTransactionWriter" />
+            </list>
+        </property>
+    </bean>
+
+    <!-- Transaction Table Writer -->
+    <!-- Writes validated transactions to TRANSACT table -->
+    <bean id="transactionTableWriter" class="org.springframework.batch.item.database.JdbcBatchItemWriter">
+        <property name="dataSource" ref="${writer.database}" />
+        <property name="itemSqlParameterSourceProvider" ref="transactionParameterSourceProvider" />
+        <property name="sql">
+            <value>
+                <![CDATA[
+                INSERT INTO TRANSACT (
+                    TRAN_ID, TRAN_TYPE_CD, TRAN_CAT_CD, TRAN_SOURCE, TRAN_DESC,
+                    TRAN_AMT, TRAN_MERCHANT_ID, TRAN_MERCHANT_NAME, TRAN_MERCHANT_CITY,
+                    TRAN_MERCHANT_ZIP, TRAN_CARD_NUM, TRAN_ORIG_TS, TRAN_PROC_TS
+                ) VALUES (
+                    :transactionId, :typeCode, :categoryCode, :source, :description,
+                    :amount, :merchantId, :merchantName, :merchantCity,
+                    :merchantZip, :cardNumber, :originalTimestamp, :processingTimestamp
+                )
+                ]]>
+            </value>
+        </property>
+        <property name="assertUpdates" value="true" />
+    </bean>
+
+    <!-- Account Balance Update Writer -->
+    <!-- Updates ACCOUNT table balances (ACCT-CURR-BAL, ACCT-CURR-CYC-CREDIT, ACCT-CURR-CYC-DEBIT) -->
+    <bean id="accountBalanceUpdateWriter" class="org.springframework.batch.item.database.JdbcBatchItemWriter">
+        <property name="dataSource" ref="${writer.database}" />
+        <property name="itemSqlParameterSourceProvider" ref="accountUpdateParameterSourceProvider" />
+        <property name="sql">
+            <value>
+                <![CDATA[
+                UPDATE ACCOUNT SET
+                    ACCT_CURR_BAL = ACCT_CURR_BAL + :amount,
+                    ACCT_CURR_CYC_CREDIT = CASE WHEN :amount >= 0 THEN ACCT_CURR_CYC_CREDIT + :amount ELSE ACCT_CURR_CYC_CREDIT END,
+                    ACCT_CURR_CYC_DEBIT = CASE WHEN :amount < 0 THEN ACCT_CURR_CYC_DEBIT + :amount ELSE ACCT_CURR_CYC_DEBIT END,
+                    ACCT_UPDATE_TS = CURRENT_TIMESTAMP
+                WHERE ACCT_ID = :accountId
+                ]]>
+            </value>
+        </property>
+        <property name="assertUpdates" value="true" />
+    </bean>
+
+    <!-- Transaction Category Balance Writer -->
+    <!-- Updates or creates TCATBAL records (Transaction Category Balance) -->
+    <bean id="transactionCategoryBalanceWriter" class="com.carddemo.batch.writer.TransactionCategoryBalanceWriter">
+        <property name="dataSource" ref="${writer.database}" />
+        <property name="transactionManager" ref="transactionManager" />
+        <!-- Replicates CBTRN02C 2700-UPDATE-TCATBAL logic -->
+        <property name="createIfNotExists" value="true" />
+        <property name="lockTimeout" value="30" />
+    </bean>
+
+    <!-- Rejected Transaction Writer -->
+    <!-- Writes invalid transactions to rejection file (DALYREJS-FILE equivalent) -->
+    <bean id="rejectedTransactionWriter" class="org.springframework.batch.item.file.FlatFileItemWriter">
+        <property name="resource" value="${rejection.output.file}" />
+        <property name="encoding" value="UTF-8" />
+        <property name="lineAggregator" ref="rejectedTransactionLineAggregator" />
+        <property name="headerCallback" ref="rejectionFileHeaderCallback" />
+        <property name="footerCallback" ref="rejectionFileFooterCallback" />
+        <property name="shouldDeleteIfExists" value="true" />
+        <property name="appendAllowed" value="false" />
+    </bean>
+
+    <!-- Rejected Transaction Line Aggregator -->
+    <!-- Formats rejected transactions with validation failure reasons -->
+    <bean id="rejectedTransactionLineAggregator" class="org.springframework.batch.item.file.transform.DelimitedLineAggregator">
+        <property name="delimiter" value="|" />
+        <property name="fieldExtractor" ref="rejectedTransactionFieldExtractor" />
+    </bean>
+
+    <!-- Field Extractor for Rejected Transactions -->
+    <bean id="rejectedTransactionFieldExtractor" class="org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor">
+        <property name="names">
+            <list>
+                <value>originalRecord</value>
+                <value>validationFailureReason</value>
+                <value>validationFailureDescription</value>
+                <value>rejectionTimestamp</value>
+            </list>
+        </property>
+    </bean>
+
+    <!-- Summary Report Generation Tasklet -->
+    <!-- Generates processing summary matching CBTRN02C output format -->
+    <bean id="summaryReportTasklet" class="com.carddemo.batch.tasklet.DailyTransactionSummaryTasklet">
+        <property name="dataSource" ref="${writer.database}" />
+        <property name="reportOutputPath" value="${summary.report.output.path}" />
+        <property name="templatePath" value="templates/daily-transaction-summary.ftl" />
+        
+        <!-- Summary Statistics Configuration -->
+        <property name="includeStatistics">
+            <list>
+                <value>TRANSACTIONS_PROCESSED</value>  <!-- WS-TRANSACTION-COUNT -->
+                <value>TRANSACTIONS_REJECTED</value>   <!-- WS-REJECT-COUNT -->
+                <value>TOTAL_AMOUNT_PROCESSED</value>
+                <value>ACCOUNT_UPDATES_PERFORMED</value>
+                <value>TCATBAL_RECORDS_UPDATED</value>
+                <value>PROCESSING_DURATION</value>
+                <value>THROUGHPUT_METRICS</value>
+            </list>
+        </property>
+    </bean>
+
+    <!-- File Archival Tasklet -->
+    <!-- Archives processed input files for audit compliance -->
+    <bean id="fileArchivalTasklet" class="com.carddemo.batch.tasklet.FileArchivalTasklet">
+        <property name="sourceFilePath" value="${reader.datasource}" />
+        <property name="archiveDirectory" value="${archive.directory}" />
+        <property name="archivePattern" value="DALYTRAN_{timestamp}.archived" />
+        <property name="compressionEnabled" value="true" />
+        <property name="retentionDays" value="2555" /> <!-- 7 years for financial compliance -->
+    </bean>
+
+    <!-- Job Execution Monitoring Listeners -->
+    
+    <!-- Job-Level Performance and Time Tracking -->
+    <bean id="jobExecutionTimeListener" class="com.carddemo.batch.listener.JobExecutionTimeListener">
+        <property name="maxExecutionTimeMinutes" value="240" /> <!-- 4-hour window requirement -->
+        <property name="alertThresholdMinutes" value="210" />   <!-- Alert at 3.5 hours -->
+    </bean>
+
+    <bean id="jobPerformanceMetricsListener" class="com.carddemo.batch.listener.JobPerformanceMetricsListener">
+        <property name="metricsCollectionService" ref="batchMetricsService" />
+        <property name="alertingService" ref="batchAlertingService" />
+    </bean>
+
+    <bean id="jobRestartRecoveryListener" class="com.carddemo.batch.listener.JobRestartRecoveryListener">
+        <property name="restartPolicy" value="${restart.policy}" />
+        <property name="maxRestartAttempts" value="3" />
+        <property name="restartInterval" value="300" /> <!-- 5 minutes between restart attempts -->
+    </bean>
+
+    <!-- Step-Level Monitoring and Auditing -->
+    <bean id="stepExecutionTimeListener" class="com.carddemo.batch.listener.StepExecutionTimeListener">
+        <property name="performanceTrackingEnabled" value="true" />
+        <property name="chunkPerformanceThreshold" value="1000" /> <!-- Alert if chunk takes > 1 second -->
+    </bean>
+
+    <bean id="transactionValidationListener" class="com.carddemo.batch.listener.TransactionValidationListener">
+        <property name="validationMetricsService" ref="validationMetricsService" />
+        <property name="auditService" ref="transactionAuditService" />
+    </bean>
+
+    <bean id="balanceUpdateAuditListener" class="com.carddemo.batch.listener.BalanceUpdateAuditListener">
+        <property name="auditTrail" value="true" />
+        <property name="balanceReconciliationService" ref="balanceReconciliationService" />
+    </bean>
+
+    <bean id="stepRestartCapabilityListener" class="com.carddemo.batch.listener.StepRestartCapabilityListener">
+        <property name="checkpointInterval" value="${chunk.size}" />
+        <property name="restartDataPersistence" value="true" />
+    </bean>
+
+    <bean id="reportGenerationListener" class="com.carddemo.batch.listener.ReportGenerationListener">
+        <property name="reportValidationEnabled" value="true" />
+        <property name="outputFormatValidation" value="true" />
+    </bean>
+
+    <!-- Completion and Retry Policies -->
+    
+    <!-- Simple Completion Policy for Chunk Processing -->
+    <bean id="simpleCompletionPolicy" class="org.springframework.batch.repeat.policy.SimpleCompletionPolicy">
+        <property name="chunkSize" value="${chunk.size}" />
+    </bean>
+
+    <!-- Transaction Retry Policy for Transient Failures -->
+    <bean id="transactionRetryPolicy" class="org.springframework.batch.retry.policy.SimpleRetryPolicy">
+        <property name="maxAttempts" value="3" />
+        <property name="retryableExceptions">
+            <map>
+                <entry key="org.springframework.dao.DeadlockLoserDataAccessException" value="true" />
+                <entry key="org.springframework.dao.CannotAcquireLockException" value="true" />
+                <entry key="java.sql.SQLTransientException" value="true" />
+            </map>
+        </property>
+    </bean>
+
+    <!-- Transaction Skip Policy for Business Validation Failures -->
+    <bean id="transactionSkipPolicy" class="org.springframework.batch.core.step.skip.LimitCheckingItemSkipPolicy">
+        <property name="skipLimit" value="1000" /> <!-- Allow up to 1000 invalid transactions -->
+        <property name="skippableExceptionMap">
+            <map>
+                <entry key="com.carddemo.batch.exception.InvalidCardNumberException" value="true" />
+                <entry key="com.carddemo.batch.exception.AccountNotFoundException" value="true" />
+                <entry key="com.carddemo.batch.exception.CreditLimitExceededException" value="true" />
+                <entry key="com.carddemo.batch.exception.ExpiredAccountException" value="true" />
+            </map>
+        </property>
+    </bean>
+
+    <!-- Parameter Source Providers for SQL Writers -->
+    <bean id="transactionParameterSourceProvider" 
+          class="org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider" />
+    
+    <bean id="accountUpdateParameterSourceProvider" 
+          class="org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider" />
+
+    <!-- Record Separator Policy -->
+    <bean id="defaultRecordSeparatorPolicy" 
+          class="org.springframework.batch.item.file.separator.DefaultRecordSeparatorPolicy" />
+
+    <!-- Header and Footer Callbacks for Rejection File -->
+    <bean id="rejectionFileHeaderCallback" class="com.carddemo.batch.callback.RejectionFileHeaderCallback" />
+    <bean id="rejectionFileFooterCallback" class="com.carddemo.batch.callback.RejectionFileFooterCallback" />
+
+    <!-- Service Bean References -->
+    <!-- These beans should be defined in the main application context -->
+    
+    <!-- Validation Services (CBTRN01C equivalent logic) -->
+    <bean id="cardXrefValidationService" class="com.carddemo.service.CardXrefValidationService" />
+    <bean id="accountValidationService" class="com.carddemo.service.AccountValidationService" />
+    <bean id="creditLimitValidationService" class="com.carddemo.service.CreditLimitValidationService" />
+    <bean id="expirationDateValidationService" class="com.carddemo.service.ExpirationDateValidationService" />
+    
+    <!-- Business Logic Services (CBTRN02C equivalent logic) -->
+    <bean id="transactionBusinessRuleService" class="com.carddemo.service.TransactionBusinessRuleService" />
+    <bean id="transactionAuditService" class="com.carddemo.service.TransactionAuditService" />
+    <bean id="transactionRejectionService" class="com.carddemo.service.TransactionRejectionService" />
+    
+    <!-- Metrics and Monitoring Services -->
+    <bean id="batchMetricsService" class="com.carddemo.service.BatchMetricsService" />
+    <bean id="batchAlertingService" class="com.carddemo.service.BatchAlertingService" />
+    <bean id="validationMetricsService" class="com.carddemo.service.ValidationMetricsService" />
+    <bean id="balanceReconciliationService" class="com.carddemo.service.BalanceReconciliationService" />
+
+</beans>

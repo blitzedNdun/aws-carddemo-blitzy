@@ -1,0 +1,550 @@
+# CardDemo System Stress Test Configuration
+# Purpose: Define parameters for pushing the system beyond normal operating capacity
+# to identify breaking points, including maximum concurrent users, request rates
+# exceeding 10,000 TPS, and resource exhaustion scenarios.
+
+# Test Configuration Metadata
+test_configuration:
+  name: "CardDemo Stress Test Suite"
+  version: "2.1.0"
+  description: "Comprehensive stress testing configuration for modernized CardDemo credit card management system"
+  target_environment: "performance"
+  created_date: "2024-01-15"
+  last_modified: "2024-01-15"
+
+# Global Test Parameters
+global_settings:
+  # Base test duration and ramp-up configuration
+  total_test_duration: "45m"  # 30 minutes sustained + 15 minutes for ramp-up/down
+  ramp_up_duration: "10m"     # Gradual increase to peak load
+  sustained_duration: "30m"   # Peak load maintenance period per requirements
+  ramp_down_duration: "5m"    # Graceful load decrease
+  
+  # Target Performance Thresholds (from Section 0.5.1 and 6.6.6.2)
+  max_response_time_ms: 200   # Sub-200ms response time SLA requirement
+  error_rate_threshold: 0.01  # 1% maximum error rate
+  availability_target: 99.9   # 99.9% availability requirement
+  
+  # Test Data Configuration
+  test_data_pool_size: 50000  # Anonymized test records for realistic load
+  data_rotation_enabled: true  # Rotate test data to prevent cache warming
+  
+# Load Profile Configuration
+load_profiles:
+  # Primary stress test targeting 15,000 TPS peak
+  stress_profile:
+    name: "Peak Load Stress Test"
+    description: "Ramp up to 15,000 TPS with 5000 concurrent users"
+    
+    # User and Request Configuration
+    concurrent_users:
+      initial: 100
+      peak: 5000              # 5000 concurrent users per requirements
+      ramp_up_rate: 50        # Users added per 30-second interval
+    
+    # Transaction Per Second Configuration  
+    target_tps:
+      baseline: 1000          # Starting TPS
+      peak: 15000             # 15,000 TPS peak per Section 0 requirements
+      ramp_up_increment: 500  # TPS increase per minute during ramp-up
+    
+    # Request Distribution Patterns
+    request_patterns:
+      - endpoint: "/api/transactions/CC00"  # Sign-on transaction
+        weight: 15
+        description: "User authentication and session establishment"
+      - endpoint: "/api/transactions/CC01"  # Account view
+        weight: 25  
+        description: "Account inquiry and balance display"
+      - endpoint: "/api/transactions/CC02"  # Transaction history
+        weight: 30
+        description: "Transaction list retrieval with pagination"
+      - endpoint: "/api/transactions/CC03"  # Card management
+        weight: 15
+        description: "Card operations and maintenance"
+      - endpoint: "/api/admin/users"       # Administrative functions
+        weight: 5
+        description: "User management operations"
+      - endpoint: "/api/reports/statements" # Report generation
+        weight: 10
+        description: "Statement and report generation"
+
+  # Baseline performance validation profile
+  baseline_profile:
+    name: "Baseline Performance Validation"
+    description: "10,000 TPS baseline requirement validation"
+    
+    concurrent_users:
+      initial: 50
+      peak: 2000
+      ramp_up_rate: 25
+    
+    target_tps:
+      baseline: 500
+      peak: 10000             # 10,000 TPS baseline requirement
+      ramp_up_increment: 250
+    
+    # Same request distribution as stress profile
+    request_patterns:
+      - endpoint: "/api/transactions/CC00"
+        weight: 15
+      - endpoint: "/api/transactions/CC01"
+        weight: 25
+      - endpoint: "/api/transactions/CC02"
+        weight: 30
+      - endpoint: "/api/transactions/CC03"
+        weight: 15
+      - endpoint: "/api/admin/users"
+        weight: 5
+      - endpoint: "/api/reports/statements"
+        weight: 10
+
+# Resource Monitoring Configuration
+resource_monitoring:
+  # Memory leak detection parameters
+  memory_monitoring:
+    enable_heap_tracking: true
+    heap_usage_threshold: 85    # Alert when JVM heap usage exceeds 85%
+    heap_growth_rate_limit: 5   # Maximum 5% heap growth per minute
+    gc_frequency_threshold: 10  # Alert if GC runs more than 10 times per minute
+    memory_leak_detection: true
+    leak_detection_interval: "2m"
+    
+    # Memory pressure points to monitor
+    monitoring_points:
+      - metric: "jvm_memory_used_bytes{area='heap'}"
+        threshold: 85
+        unit: "percent"
+      - metric: "jvm_gc_collection_seconds"
+        threshold: 1.0
+        unit: "seconds"
+      - metric: "jvm_memory_pool_allocated_bytes"
+        threshold: 90
+        unit: "percent"
+
+  # Connection pool exhaustion monitoring
+  connection_monitoring:
+    enable_pool_tracking: true
+    
+    # PostgreSQL connection pool monitoring
+    database_connections:
+      max_pool_size: 20          # HikariCP maximum pool size
+      warning_threshold: 15      # Alert when 75% of connections in use
+      critical_threshold: 18     # Alert when 90% of connections in use
+      connection_leak_timeout: "30s"
+      
+      monitoring_metrics:
+        - metric: "hikaricp_active_connections"
+          threshold: 15
+        - metric: "hikaricp_pending_threads"  
+          threshold: 5
+        - metric: "hikaricp_timeout_rate"
+          threshold: 0.01
+    
+    # Redis session store connection monitoring
+    redis_connections:
+      max_pool_size: 50
+      warning_threshold: 35
+      critical_threshold: 45
+      connection_timeout: "5s"
+      
+      monitoring_metrics:
+        - metric: "redis_connected_clients"
+          threshold: 35
+        - metric: "redis_blocked_clients"
+          threshold: 10
+
+  # System resource degradation monitoring
+  system_monitoring:
+    cpu_utilization:
+      warning_threshold: 70      # CPU usage warning at 70%
+      critical_threshold: 85     # CPU usage critical at 85%
+      sustained_duration: "5m"   # Alert if sustained for 5 minutes
+    
+    memory_utilization:
+      warning_threshold: 75
+      critical_threshold: 90
+      sustained_duration: "3m"
+    
+    network_monitoring:
+      bandwidth_threshold: 80    # Network bandwidth utilization
+      packet_loss_threshold: 0.1 # 0.1% packet loss threshold
+      connection_errors_threshold: 5
+
+# Performance Degradation Detection
+degradation_detection:
+  # Response time degradation monitoring
+  response_time_monitoring:
+    enable_percentile_tracking: true
+    percentiles: [50, 75, 90, 95, 99]
+    degradation_thresholds:
+      p50: 100   # 50th percentile threshold (ms)
+      p95: 200   # 95th percentile threshold (ms) - SLA requirement
+      p99: 500   # 99th percentile threshold (ms)
+    
+    # Progressive degradation detection
+    degradation_stages:
+      - stage: "warning"
+        p95_threshold: 150
+        duration: "2m"
+      - stage: "critical"  
+        p95_threshold: 200
+        duration: "1m"
+      - stage: "emergency"
+        p95_threshold: 300
+        duration: "30s"
+
+  # Throughput degradation monitoring
+  throughput_monitoring:
+    baseline_tps: 10000
+    degradation_thresholds:
+      warning: 8000    # 20% degradation
+      critical: 7000   # 30% degradation
+      emergency: 5000  # 50% degradation
+    
+    measurement_window: "1m"
+    consecutive_failures: 3
+
+  # Error rate escalation monitoring
+  error_monitoring:
+    baseline_error_rate: 0.001  # 0.1% baseline
+    escalation_thresholds:
+      warning: 0.01     # 1%
+      critical: 0.05    # 5%
+      emergency: 0.10   # 10%
+    
+    error_categories:
+      - type: "4xx_client_errors"
+        weight: 0.5     # Client errors weighted less
+      - type: "5xx_server_errors"
+        weight: 1.0     # Server errors full weight
+      - type: "timeout_errors"
+        weight: 1.5     # Timeouts weighted more heavily
+
+# Test Execution Phases
+execution_phases:
+  # Phase 1: System warm-up and baseline establishment
+  warmup_phase:
+    name: "System Warmup"
+    duration: "5m"
+    concurrent_users: 50
+    target_tps: 500
+    purpose: "JVM warm-up and connection pool initialization"
+    
+    validation_criteria:
+      - metric: "response_time_p95"
+        threshold: 200
+      - metric: "error_rate"
+        threshold: 0.001
+  
+  # Phase 2: Progressive load increase
+  ramp_up_phase:
+    name: "Progressive Load Ramp-up"
+    duration: "10m"
+    
+    # Progressive load stages
+    load_stages:
+      - stage: 1
+        duration: "2m"
+        users: 500
+        tps: 2500
+      - stage: 2
+        duration: "2m"
+        users: 1500
+        tps: 7500
+      - stage: 3
+        duration: "3m"
+        users: 3000
+        tps: 12000
+      - stage: 4
+        duration: "3m"
+        users: 5000
+        tps: 15000
+    
+    validation_criteria:
+      - metric: "response_time_p95"
+        threshold: 250    # Slightly relaxed during ramp-up
+      - metric: "error_rate"
+        threshold: 0.01
+      - metric: "cpu_utilization"
+        threshold: 80
+
+  # Phase 3: Sustained peak load 
+  peak_load_phase:
+    name: "Sustained Peak Load"
+    duration: "30m"          # 30 minutes sustained per requirements
+    concurrent_users: 5000   # 5000 concurrent users
+    target_tps: 15000        # 15,000 TPS peak
+    
+    # Stress testing scenarios within peak load
+    stress_scenarios:
+      # Scenario 1: Authentication storm
+      - name: "authentication_storm"
+        duration: "5m"
+        start_time: "5m"      # Start 5 minutes into peak phase
+        additional_load:
+          endpoint: "/api/transactions/CC00"
+          extra_tps: 2000     # Additional 2000 TPS on sign-on
+      
+      # Scenario 2: Database-intensive operations
+      - name: "database_intensive"
+        duration: "5m"
+        start_time: "15m"
+        additional_load:
+          endpoint: "/api/transactions/CC02"
+          extra_tps: 1500     # Additional 1500 TPS on transaction history
+      
+      # Scenario 3: Memory-intensive reporting
+      - name: "memory_intensive"
+        duration: "5m"
+        start_time: "25m"
+        additional_load:
+          endpoint: "/api/reports/statements"
+          extra_tps: 1000     # Additional 1000 TPS on report generation
+    
+    validation_criteria:
+      - metric: "response_time_p95"
+        threshold: 200        # Strict SLA enforcement
+      - metric: "error_rate"
+        threshold: 0.01
+      - metric: "system_availability"
+        threshold: 99.9
+
+  # Phase 4: Graceful load reduction
+  ramp_down_phase:
+    name: "Graceful Load Reduction"
+    duration: "5m"
+    
+    reduction_stages:
+      - stage: 1
+        duration: "2m"
+        users: 2500
+        tps: 7500
+      - stage: 2
+        duration: "3m"
+        users: 100
+        tps: 500
+
+# Monitoring Integration
+monitoring_integration:
+  # Prometheus metrics collection
+  prometheus:
+    scrape_interval: "5s"     # High-frequency scraping during stress test
+    metrics_retention: "24h"  # Retain detailed metrics for analysis
+    
+    # Custom stress test metrics
+    custom_metrics:
+      - name: "stress_test_active_users"
+        type: "gauge"
+        description: "Current number of active virtual users"
+      - name: "stress_test_target_tps"
+        type: "gauge"
+        description: "Current target transactions per second"
+      - name: "stress_test_actual_tps"
+        type: "gauge"
+        description: "Actual transactions per second achieved"
+      - name: "stress_test_degradation_score"
+        type: "gauge"
+        description: "Performance degradation score (0-100)"
+  
+  # Grafana dashboard configuration
+  grafana:
+    dashboard_refresh: "5s"
+    real_time_alerts: true
+    
+    # Dashboard panels for stress test monitoring
+    dashboard_panels:
+      - panel: "Response Time Percentiles"
+        queries:
+          - "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket[1m])) by (le))"
+          - "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[1m])) by (le))"
+          - "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket[1m])) by (le))"
+      
+      - panel: "System Resource Utilization"
+        queries:
+          - "process_cpu_usage"
+          - "jvm_memory_used_bytes{area='heap'} / jvm_memory_max_bytes{area='heap'} * 100"
+          - "hikaricp_active_connections"
+      
+      - panel: "Error Rate Analysis"
+        queries:
+          - "sum(rate(http_server_requests_total{status=~'4..'}[1m])) / sum(rate(http_server_requests_total[1m])) * 100"
+          - "sum(rate(http_server_requests_total{status=~'5..'}[1m])) / sum(rate(http_server_requests_total[1m])) * 100"
+
+# Test Environment Configuration
+test_environment:
+  # Kubernetes cluster configuration for stress testing
+  kubernetes:
+    namespace: "carddemo-performance"
+    resource_limits:
+      cpu_limit: "4000m"      # 4 CPU cores maximum
+      memory_limit: "8Gi"     # 8GB memory maximum
+      cpu_request: "2000m"    # 2 CPU cores guaranteed
+      memory_request: "4Gi"   # 4GB memory guaranteed
+    
+    # Auto-scaling configuration
+    hpa_config:
+      min_replicas: 3
+      max_replicas: 15        # Allow scaling up to 15 replicas during stress
+      target_cpu: 60         # Target 60% CPU to allow headroom
+      target_memory: 70       # Target 70% memory utilization
+  
+  # Database configuration for stress testing
+  database:
+    # PostgreSQL performance configuration
+    postgresql:
+      max_connections: 200    # Increased connection limit
+      shared_buffers: "2GB"   # Increased buffer size
+      effective_cache_size: "6GB"
+      checkpoint_timeout: "15min"
+      wal_buffers: "64MB"
+    
+    # Connection pool optimization
+    hikaricp:
+      maximum_pool_size: 20
+      minimum_idle: 5
+      connection_timeout: 30000    # 30 seconds
+      idle_timeout: 600000         # 10 minutes
+      max_lifetime: 1800000        # 30 minutes
+  
+  # Redis configuration for session handling under load
+  redis:
+    max_memory: "2gb"
+    max_clients: 10000
+    timeout: 0
+    tcp_keepalive: 60
+    # Memory optimization for high session volume
+    memory_policy: "allkeys-lru"
+
+# Test Data Configuration
+test_data:
+  # User account data for load testing
+  user_accounts:
+    total_accounts: 10000
+    account_types:
+      - type: "checking"
+        percentage: 40
+      - type: "savings"
+        percentage: 35
+      - type: "credit_card"
+        percentage: 25
+    
+    # Balance distribution for realistic testing
+    balance_ranges:
+      - range: "0-1000"
+        percentage: 30
+      - range: "1000-10000"
+        percentage: 50
+      - range: "10000-100000"
+        percentage: 20
+  
+  # Transaction data for history queries
+  transaction_history:
+    transactions_per_account: 100   # Average transactions per account
+    date_range: "12months"           # 12 months of transaction history
+    transaction_types:
+      - type: "purchase"
+        percentage: 60
+      - type: "payment"
+        percentage: 25
+      - type: "transfer"
+        percentage: 10
+      - type: "fee"
+        percentage: 5
+
+# Success Criteria and Failure Conditions
+success_criteria:
+  # Primary success requirements
+  primary_requirements:
+    - requirement: "Sustained 15,000 TPS for 30 minutes"
+      metric: "actual_tps"
+      threshold: 15000
+      duration: "30m"
+    
+    - requirement: "5000 concurrent users supported"
+      metric: "active_users"
+      threshold: 5000
+      duration: "30m"
+    
+    - requirement: "95th percentile response time under 200ms"
+      metric: "response_time_p95"
+      threshold: 200
+      unit: "ms"
+    
+    - requirement: "Error rate below 1%"
+      metric: "error_rate"
+      threshold: 0.01
+      unit: "percentage"
+  
+  # System stability requirements
+  stability_requirements:
+    - requirement: "No memory leaks detected"
+      metric: "heap_growth_rate"
+      threshold: 5
+      unit: "percent_per_minute"
+    
+    - requirement: "No connection pool exhaustion"
+      metric: "connection_pool_utilization"
+      threshold: 90
+      unit: "percentage"
+    
+    - requirement: "System availability above 99.9%"
+      metric: "availability"
+      threshold: 99.9
+      unit: "percentage"
+
+# Failure conditions that terminate the test
+failure_conditions:
+  # Critical failure scenarios
+  critical_failures:
+    - condition: "Response time P95 > 500ms for 2 minutes"
+      action: "immediate_termination"
+    
+    - condition: "Error rate > 10% for 1 minute"
+      action: "immediate_termination"
+    
+    - condition: "System availability < 95% for 30 seconds"
+      action: "immediate_termination"
+    
+    - condition: "Memory usage > 95% for 1 minute"
+      action: "immediate_termination"
+  
+  # Warning conditions that trigger alerts
+  warning_conditions:
+    - condition: "Response time P95 > 200ms for 5 minutes"
+      action: "alert_and_monitor"
+    
+    - condition: "Error rate > 1% for 2 minutes"
+      action: "alert_and_monitor"
+    
+    - condition: "CPU utilization > 90% for 5 minutes"
+      action: "alert_and_monitor"
+
+# Post-test Analysis Configuration
+post_test_analysis:
+  # Automated report generation
+  reports:
+    - type: "performance_summary"
+      include_metrics: ["response_times", "throughput", "error_rates"]
+      export_format: ["json", "csv", "html"]
+    
+    - type: "resource_utilization"
+      include_metrics: ["cpu", "memory", "network", "disk"]
+      export_format: ["json", "csv"]
+    
+    - type: "degradation_analysis"
+      include_metrics: ["degradation_points", "failure_modes"]
+      export_format: ["html", "pdf"]
+  
+  # Data retention for analysis
+  data_retention:
+    metrics_retention: "30d"     # Keep detailed metrics for 30 days
+    logs_retention: "7d"         # Keep logs for 7 days
+    reports_retention: "90d"     # Keep reports for 90 days
+  
+  # Comparison with previous test runs
+  baseline_comparison:
+    enable_comparison: true
+    baseline_test_id: "previous_run"
+    comparison_metrics: ["response_time_p95", "max_tps", "error_rate"]
+    threshold_deviation: 10      # Alert if metrics deviate > 10% from baseline

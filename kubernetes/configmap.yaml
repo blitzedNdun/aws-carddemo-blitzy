@@ -1,0 +1,253 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: carddemo-backend-config
+  labels:
+    app: carddemo-backend
+    component: configuration
+    tier: application
+data:
+  application.yml: |
+    # CardDemo Spring Boot Application Configuration
+    # Kubernetes ConfigMap - Production Configuration
+    
+    server:
+      port: 8080
+      servlet:
+        context-path: /
+      compression:
+        enabled: true
+        mime-types: application/json,application/xml,text/html,text/xml,text/plain
+      tomcat:
+        threads:
+          max: 200
+          min-spare: 10
+        max-connections: 8192
+        accept-count: 100
+        connection-timeout: 20000
+    
+    spring:
+      application:
+        name: carddemo-backend
+      
+      # Database Configuration - PostgreSQL with HikariCP
+      datasource:
+        url: ${DATABASE_URL}
+        username: ${DATABASE_USERNAME}
+        password: ${DATABASE_PASSWORD}
+        driver-class-name: org.postgresql.Driver
+        hikari:
+          # Connection Pool Configuration as specified in Section 8.4.3
+          maximum-pool-size: 20
+          minimum-idle: 5
+          connection-timeout: 30000
+          idle-timeout: 600000
+          max-lifetime: 1800000
+          leak-detection-threshold: 60000
+          pool-name: CardDemoCP
+          auto-commit: false
+          connection-test-query: SELECT 1
+          validation-timeout: 5000
+      
+      # JPA/Hibernate Configuration
+      jpa:
+        hibernate:
+          ddl-auto: validate
+          naming:
+            physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        show-sql: false
+        properties:
+          hibernate:
+            dialect: org.hibernate.dialect.PostgreSQLDialect
+            format_sql: false
+            use_sql_comments: false
+            jdbc:
+              batch_size: 20
+              fetch_size: 50
+              time_zone: UTC
+            connection:
+              provider_disables_autocommit: true
+            cache:
+              use_second_level_cache: false
+              use_query_cache: false
+    
+      # Session Management - Redis Session Store
+      session:
+        store-type: redis
+        timeout: 1800
+        redis:
+          namespace: spring:session:carddemo
+          flush-mode: on_save
+          save-mode: on_set_attribute
+      
+      # Redis Configuration
+      redis:
+        host: ${REDIS_HOST:redis-service}
+        port: ${REDIS_PORT:6379}
+        password: ${REDIS_PASSWORD:}
+        database: 0
+        timeout: 2000
+        jedis:
+          pool:
+            max-active: 20
+            max-idle: 8
+            min-idle: 2
+            max-wait: 2000
+      
+      # Spring Security Configuration
+      security:
+        user:
+          name: admin
+          password: ${ADMIN_PASSWORD:admin}
+          roles: ADMIN
+    
+      # Spring Batch Configuration
+      batch:
+        job:
+          enabled: true
+        jdbc:
+          initialize-schema: never
+          table-prefix: BATCH_
+    
+      # Transaction Management
+      transaction:
+        default-timeout: 30
+        rollback-on-commit-failure: true
+    
+    # Management and Monitoring Configuration - Spring Boot Actuator
+    management:
+      # Actuator Endpoints Configuration as specified in Section 6.5
+      endpoints:
+        web:
+          base-path: /actuator
+          exposure:
+            include: "health,metrics,info,prometheus,beans,env,configprops"
+          cors:
+            allowed-origins: "*"
+            allowed-methods: GET,POST
+      
+      endpoint:
+        health:
+          enabled: true
+          show-details: when-authorized
+          show-components: always
+          group:
+            readiness:
+              include: "readinessState,db,redis"
+            liveness:
+              include: "livenessState,ping"
+        metrics:
+          enabled: true
+        prometheus:
+          enabled: true
+        info:
+          enabled: true
+        beans:
+          enabled: true
+        env:
+          enabled: true
+          show-values: when-authorized
+        configprops:
+          enabled: true
+          show-values: when-authorized
+      
+      # Health Indicators Configuration for Kubernetes Probes
+      health:
+        readiness-state:
+          enabled: true
+        liveness-state:
+          enabled: true
+        db:
+          enabled: true
+        redis:
+          enabled: true
+        diskspace:
+          enabled: true
+          threshold: 100MB
+        ping:
+          enabled: true
+      
+      # Metrics Configuration for Prometheus Integration
+      metrics:
+        export:
+          prometheus:
+            enabled: true
+            descriptions: true
+            step: 15s
+        distribution:
+          percentiles-histogram:
+            http.server.requests: true
+          percentiles:
+            http.server.requests: 0.50,0.90,0.95,0.99
+          sla:
+            http.server.requests: 100ms,200ms,500ms,1s,2s
+        tags:
+          application: carddemo-backend
+          environment: ${SPRING_PROFILES_ACTIVE:default}
+        web:
+          server:
+            request:
+              autotime:
+                enabled: true
+                percentiles: 0.50,0.90,0.95,0.99
+      
+      # Info Endpoint Configuration
+      info:
+        git:
+          mode: full
+        build:
+          enabled: true
+        java:
+          enabled: true
+        os:
+          enabled: true
+    
+    # Logging Configuration
+    logging:
+      level:
+        com.carddemo: INFO
+        org.springframework.security: WARN
+        org.springframework.web: WARN
+        org.springframework.batch: INFO
+        org.hibernate.SQL: WARN
+        org.hibernate.type.descriptor.sql.BasicBinder: WARN
+        org.springframework.data.jpa: WARN
+        com.zaxxer.hikari: WARN
+        org.springframework.session: WARN
+      pattern:
+        console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}] - %msg%n"
+        file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}] - %msg%n"
+      file:
+        name: /tmp/carddemo-backend.log
+        max-size: 100MB
+        max-history: 30
+    
+    # Application-Specific Configuration
+    carddemo:
+      # Business Configuration
+      transaction:
+        timeout: 30
+        max-retry-attempts: 3
+        retry-delay: 1000
+      
+      # Security Configuration
+      session:
+        timeout: 1800
+        max-concurrent-sessions: 5
+      
+      # Batch Processing Configuration
+      batch:
+        chunk-size: 1000
+        thread-pool-size: 4
+        max-execution-time: 14400
+      
+      # Performance Configuration
+      cache:
+        ttl: 3600
+        max-entries: 10000
+      
+      # Integration Configuration
+      api:
+        timeout: 30000
+        max-connections: 50
+        connection-request-timeout: 5000

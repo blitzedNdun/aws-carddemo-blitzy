@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+
+    <changeSet id="008-create-data-validation-functions" author="CardDemo Migration Team" context="!test"
+               dbms="postgresql">
+        <comment>Create PostgreSQL functions for data validation matching COBOL edit routines</comment>
+        
+        <!-- Function to validate US phone numbers -->
+        <sql>
+            CREATE OR REPLACE FUNCTION validate_us_phone(phone_number VARCHAR(15))
+            RETURNS BOOLEAN AS $$
+            BEGIN
+                -- Allow NULL values
+                IF phone_number IS NULL THEN
+                    RETURN TRUE;
+                END IF;
+                
+                -- Check format: NXX-NXX-XXXX or NXXXXXXXXX (where N = 2-9, X = 0-9)
+                RETURN phone_number ~ '^\([2-9][0-9]{2}\) [2-9][0-9]{2}-[0-9]{4}$' OR
+                       phone_number ~ '^[2-9][0-9]{2}[2-9][0-9]{6}$';
+            END;
+            $$ LANGUAGE plpgsql IMMUTABLE;
+        </sql>
+        
+        <!-- Function to validate ZIP codes -->
+        <sql>
+            CREATE OR REPLACE FUNCTION validate_us_zip(zip_code VARCHAR(10))
+            RETURNS BOOLEAN AS $$
+            BEGIN
+                -- Allow NULL values
+                IF zip_code IS NULL THEN
+                    RETURN TRUE;
+                END IF;
+                
+                -- Check format: NNNNN or NNNNN-NNNN
+                RETURN zip_code ~ '^[0-9]{5}(-[0-9]{4})?$';
+            END;
+            $$ LANGUAGE plpgsql IMMUTABLE;
+        </sql>
+        
+        <!-- Function to validate SSN format (for encrypted values) -->
+        <sql>
+            CREATE OR REPLACE FUNCTION validate_ssn_format(ssn_value VARCHAR(9))
+            RETURNS BOOLEAN AS $$
+            BEGIN
+                -- Allow NULL values
+                IF ssn_value IS NULL THEN
+                    RETURN TRUE;
+                END IF;
+                
+                -- For encrypted SSN, just check length (actual validation happens in application)
+                RETURN LENGTH(ssn_value) = 9;
+            END;
+            $$ LANGUAGE plpgsql IMMUTABLE;
+        </sql>
+        
+        <rollback>
+            <sql>DROP FUNCTION IF EXISTS validate_us_phone(VARCHAR);</sql>
+            <sql>DROP FUNCTION IF EXISTS validate_us_zip(VARCHAR);</sql>
+            <sql>DROP FUNCTION IF EXISTS validate_ssn_format(VARCHAR);</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="008-add-phone-validation-constraints" author="CardDemo Migration Team" context="!test"
+               dbms="postgresql">
+        <comment>Add phone number validation constraints using custom function</comment>
+        
+        <sql>ALTER TABLE customer_data ADD CONSTRAINT chk_phone_number_1_format CHECK (validate_us_phone(phone_number_1));</sql>
+        <sql>ALTER TABLE customer_data ADD CONSTRAINT chk_phone_number_2_format CHECK (validate_us_phone(phone_number_2));</sql>
+        
+        <rollback>
+            <sql>ALTER TABLE customer_data DROP CONSTRAINT chk_phone_number_1_format;</sql>
+            <sql>ALTER TABLE customer_data DROP CONSTRAINT chk_phone_number_2_format;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="008-add-zip-validation-constraints" author="CardDemo Migration Team" context="!test"
+               dbms="postgresql">
+        <comment>Add ZIP code validation constraints using custom function</comment>
+        
+        <sql>ALTER TABLE customer_data ADD CONSTRAINT chk_zip_code_format CHECK (validate_us_zip(zip_code));</sql>
+        
+        <rollback>
+            <sql>ALTER TABLE customer_data DROP CONSTRAINT chk_zip_code_format;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="008-add-audit-triggers" author="CardDemo Migration Team" context="!test"
+               dbms="postgresql">
+        <comment>Add audit triggers for tracking data changes (COBOL audit trail equivalent)</comment>
+        
+        <!-- Create audit log table -->
+        <createTable tableName="audit_log">
+            <column name="audit_id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="table_name" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="operation" type="VARCHAR(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="record_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="old_values" type="JSONB"/>
+            <column name="new_values" type="JSONB"/>
+            <column name="changed_by" type="VARCHAR(50)"/>
+            <column name="changed_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        
+        <!-- Create audit trigger function -->
+        <sql>
+            CREATE OR REPLACE FUNCTION audit_trigger_function()
+            RETURNS TRIGGER AS $$
+            BEGIN
+                IF TG_OP = 'DELETE' THEN
+                    INSERT INTO audit_log (table_name, operation, record_id, old_values, changed_by)
+                    VALUES (TG_TABLE_NAME, TG_OP, OLD.id, to_jsonb(OLD), current_user);
+                    RETURN OLD;
+                ELSIF TG_OP = 'UPDATE' THEN
+                    INSERT INTO audit_log (table_name, operation, record_id, old_values, new_values, changed_by)
+                    VALUES (TG_TABLE_NAME, TG_OP, NEW.id, to_jsonb(OLD), to_jsonb(NEW), current_user);
+                    RETURN NEW;
+                ELSIF TG_OP = 'INSERT' THEN
+                    INSERT INTO audit_log (table_name, operation, record_id, new_values, changed_by)
+                    VALUES (TG_TABLE_NAME, TG_OP, NEW.id, to_jsonb(NEW), current_user);
+                    RETURN NEW;
+                END IF;
+                RETURN NULL;
+            END;
+            $$ LANGUAGE plpgsql;
+        </sql>
+        
+        <rollback>
+            <sql>DROP FUNCTION IF EXISTS audit_trigger_function();</sql>
+            <dropTable tableName="audit_log"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="008-create-audit-triggers" author="CardDemo Migration Team" context="!test"
+               dbms="postgresql">
+        <comment>Create audit triggers on main tables</comment>
+        
+        <sql>
+            CREATE TRIGGER audit_account_data
+                AFTER INSERT OR UPDATE OR DELETE ON account_data
+                FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+        </sql>
+        
+        <sql>
+            CREATE TRIGGER audit_transactions
+                AFTER INSERT OR UPDATE OR DELETE ON transactions
+                FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+        </sql>
+        
+        <sql>
+            CREATE TRIGGER audit_customer_data
+                AFTER INSERT OR UPDATE OR DELETE ON customer_data
+                FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+        </sql>
+        
+        <sql>
+            CREATE TRIGGER audit_user_security
+                AFTER INSERT OR UPDATE OR DELETE ON user_security
+                FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+        </sql>
+        
+        <rollback>
+            <sql>DROP TRIGGER IF EXISTS audit_account_data ON account_data;</sql>
+            <sql>DROP TRIGGER IF EXISTS audit_transactions ON transactions;</sql>
+            <sql>DROP TRIGGER IF EXISTS audit_customer_data ON customer_data;</sql>
+            <sql>DROP TRIGGER IF EXISTS audit_user_security ON user_security;</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

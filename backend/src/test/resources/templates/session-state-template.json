@@ -1,0 +1,672 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CardDemo Spring Session State Template",
+  "description": "JSON template for Spring Session state management replicating CICS COMMAREA structure with 32KB limit. Provides user context, transaction state, navigation history, and temporary data storage for CardDemo application.",
+  "type": "object",
+  "maxProperties": 50,
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "description": "Session metadata and size control information",
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "maxLength": 36,
+          "description": "Spring Session Redis session identifier"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Session creation timestamp"
+        },
+        "lastAccessedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last access timestamp for timeout management"
+        },
+        "maxSizeBytes": {
+          "type": "integer",
+          "const": 32768,
+          "description": "Maximum session size limit (32KB COMMAREA equivalent)"
+        },
+        "currentSizeBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 32768,
+          "description": "Current session state size in bytes"
+        },
+        "version": {
+          "type": "string",
+          "const": "1.0",
+          "description": "Session state template version"
+        }
+      },
+      "required": ["sessionId", "createdAt", "lastAccessedAt", "maxSizeBytes"]
+    },
+
+    "userContext": {
+      "type": "object",
+      "description": "User authentication and authorization context (CDEMO-GENERAL-INFO equivalent)",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 8,
+          "pattern": "^[A-Z0-9]{1,8}$",
+          "description": "User ID (CDEMO-USER-ID) - uppercase alphanumeric, max 8 chars"
+        },
+        "userType": {
+          "type": "string",
+          "enum": ["A", "U"],
+          "description": "User type (CDEMO-USER-TYPE): A=Admin, U=User"
+        },
+        "userRole": {
+          "type": "string",
+          "enum": ["ROLE_ADMIN", "ROLE_USER"],
+          "description": "Spring Security role mapping from userType"
+        },
+        "firstName": {
+          "type": "string",
+          "maxLength": 20,
+          "description": "User first name for display purposes"
+        },
+        "lastName": {
+          "type": "string",
+          "maxLength": 20,
+          "description": "User last name for display purposes"
+        },
+        "lastLoginAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last successful login timestamp"
+        },
+        "timeoutMinutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 480,
+          "default": 30,
+          "description": "Session timeout in minutes"
+        }
+      },
+      "required": ["userId", "userType", "userRole"]
+    },
+
+    "transactionContext": {
+      "type": "object",
+      "description": "Current transaction state and navigation context (CICS XCTL equivalent)",
+      "properties": {
+        "fromTransactionId": {
+          "type": "string",
+          "maxLength": 4,
+          "pattern": "^[A-Z0-9]{4}$",
+          "description": "Source transaction ID (CDEMO-FROM-TRANID)"
+        },
+        "fromProgramName": {
+          "type": "string",
+          "maxLength": 8,
+          "pattern": "^[A-Z0-9]{1,8}$",
+          "description": "Source program name (CDEMO-FROM-PROGRAM)"
+        },
+        "toTransactionId": {
+          "type": "string",
+          "maxLength": 4,
+          "pattern": "^[A-Z0-9]{4}$",
+          "description": "Target transaction ID (CDEMO-TO-TRANID)"
+        },
+        "toProgramName": {
+          "type": "string",
+          "maxLength": 8,
+          "pattern": "^[A-Z0-9]{1,8}$",
+          "description": "Target program name (CDEMO-TO-PROGRAM)"
+        },
+        "programContext": {
+          "type": "integer",
+          "enum": [0, 1],
+          "description": "Program context (CDEMO-PGM-CONTEXT): 0=Enter, 1=Re-enter"
+        },
+        "currentScreen": {
+          "type": "string",
+          "maxLength": 20,
+          "description": "Current React component screen identifier"
+        },
+        "requestMethod": {
+          "type": "string",
+          "enum": ["GET", "POST", "PUT", "DELETE", "PATCH"],
+          "description": "Current HTTP request method"
+        },
+        "requestPath": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Current REST API endpoint path"
+        },
+        "jwtToken": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Current JWT authentication token"
+        },
+        "csrfToken": {
+          "type": "string",
+          "maxLength": 36,
+          "description": "CSRF protection token"
+        }
+      }
+    },
+
+    "navigationHistory": {
+      "type": "object",
+      "description": "Screen navigation stack matching CICS XCTL flow",
+      "properties": {
+        "currentMapset": {
+          "type": "string",
+          "maxLength": 7,
+          "description": "Current mapset (CDEMO-LAST-MAPSET)"
+        },
+        "currentMap": {
+          "type": "string",
+          "maxLength": 7,
+          "description": "Current map (CDEMO-LAST-MAP)"
+        },
+        "breadcrumbs": {
+          "type": "array",
+          "maxItems": 10,
+          "description": "Navigation breadcrumb trail",
+          "items": {
+            "type": "object",
+            "properties": {
+              "screenId": {
+                "type": "string",
+                "maxLength": 20,
+                "description": "Screen identifier"
+              },
+              "screenTitle": {
+                "type": "string",
+                "maxLength": 50,
+                "description": "Human-readable screen title"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Screen access timestamp"
+              },
+              "transactionId": {
+                "type": "string",
+                "maxLength": 4,
+                "description": "Associated transaction ID"
+              }
+            },
+            "required": ["screenId", "timestamp"]
+          }
+        },
+        "returnStack": {
+          "type": "array",
+          "maxItems": 5,
+          "description": "Return navigation stack for nested operations",
+          "items": {
+            "type": "object",
+            "properties": {
+              "returnToScreen": {
+                "type": "string",
+                "maxLength": 20,
+                "description": "Screen to return to"
+              },
+              "returnContext": {
+                "type": "object",
+                "description": "Context data for return navigation",
+                "additionalProperties": true
+              }
+            },
+            "required": ["returnToScreen"]
+          }
+        }
+      }
+    },
+
+    "businessContext": {
+      "type": "object",
+      "description": "Current business entity context (Customer, Account, Card data)",
+      "properties": {
+        "customerInfo": {
+          "type": "object",
+          "description": "Customer context (CDEMO-CUSTOMER-INFO equivalent)",
+          "properties": {
+            "customerId": {
+              "type": "string",
+              "maxLength": 9,
+              "pattern": "^[0-9]{9}$",
+              "description": "Customer ID (CDEMO-CUST-ID) - 9 digits"
+            },
+            "firstName": {
+              "type": "string",
+              "maxLength": 25,
+              "description": "Customer first name (CDEMO-CUST-FNAME)"
+            },
+            "middleName": {
+              "type": "string",
+              "maxLength": 25,
+              "description": "Customer middle name (CDEMO-CUST-MNAME)"
+            },
+            "lastName": {
+              "type": "string",
+              "maxLength": 25,
+              "description": "Customer last name (CDEMO-CUST-LNAME)"
+            }
+          }
+        },
+        "accountInfo": {
+          "type": "object",
+          "description": "Account context (CDEMO-ACCOUNT-INFO equivalent)",
+          "properties": {
+            "accountId": {
+              "type": "string",
+              "maxLength": 11,
+              "pattern": "^[0-9]{11}$",
+              "description": "Account ID (CDEMO-ACCT-ID) - 11 digits"
+            },
+            "accountStatus": {
+              "type": "string",
+              "maxLength": 1,
+              "pattern": "^[A-Z]$",
+              "description": "Account status (CDEMO-ACCT-STATUS) - single character"
+            }
+          }
+        },
+        "cardInfo": {
+          "type": "object",
+          "description": "Card context (CDEMO-CARD-INFO equivalent)",
+          "properties": {
+            "cardNumber": {
+              "type": "string",
+              "maxLength": 16,
+              "pattern": "^[0-9]{16}$",
+              "description": "Card number (CDEMO-CARD-NUM) - 16 digits"
+            },
+            "maskedCardNumber": {
+              "type": "string",
+              "maxLength": 19,
+              "pattern": "^\\*{4}-\\*{4}-\\*{4}-[0-9]{4}$",
+              "description": "Masked card number for display (****-****-****-1234)"
+            }
+          }
+        }
+      }
+    },
+
+    "workAreas": {
+      "type": "object",
+      "description": "Temporary work areas for multi-step processes",
+      "properties": {
+        "searchCriteria": {
+          "type": "object",
+          "description": "Current search parameters and filters",
+          "properties": {
+            "searchType": {
+              "type": "string",
+              "enum": ["customer", "account", "card", "transaction"],
+              "description": "Type of search being performed"
+            },
+            "criteria": {
+              "type": "object",
+              "description": "Search criteria fields",
+              "additionalProperties": {
+                "type": "string",
+                "maxLength": 50
+              }
+            },
+            "resultCount": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of search results"
+            },
+            "pageNumber": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "description": "Current pagination page"
+            },
+            "pageSize": {
+              "type": "integer",
+              "minimum": 10,
+              "maximum": 100,
+              "default": 20,
+              "description": "Results per page"
+            }
+          }
+        },
+        "formData": {
+          "type": "object",
+          "description": "Temporary form data for multi-step operations",
+          "properties": {
+            "step": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Current step in multi-step process"
+            },
+            "totalSteps": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Total number of steps"
+            },
+            "data": {
+              "type": "object",
+              "description": "Form field data",
+              "additionalProperties": true
+            },
+            "validationErrors": {
+              "type": "array",
+              "description": "Current validation errors",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "description": "Field name with error"
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "Error message"
+                  }
+                },
+                "required": ["field", "message"]
+              }
+            }
+          }
+        },
+        "calculationWorkArea": {
+          "type": "object",
+          "description": "Financial calculation work area",
+          "properties": {
+            "precision": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 10,
+              "default": 2,
+              "description": "Decimal precision for BigDecimal calculations"
+            },
+            "roundingMode": {
+              "type": "string",
+              "enum": ["HALF_UP", "HALF_DOWN", "HALF_EVEN", "UP", "DOWN"],
+              "default": "HALF_UP",
+              "description": "BigDecimal rounding mode"
+            },
+            "tempAmounts": {
+              "type": "object",
+              "description": "Temporary calculation amounts",
+              "additionalProperties": {
+                "type": "string",
+                "pattern": "^[0-9]+\\.[0-9]{2}$",
+                "description": "Monetary amount with 2 decimal places"
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "errorContext": {
+      "type": "object",
+      "description": "Error handling and recovery context",
+      "properties": {
+        "lastError": {
+          "type": "object",
+          "description": "Last error information",
+          "properties": {
+            "errorCode": {
+              "type": "string",
+              "maxLength": 10,
+              "description": "Application error code"
+            },
+            "errorMessage": {
+              "type": "string",
+              "maxLength": 200,
+              "description": "Error message"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Error occurrence timestamp"
+            },
+            "stackTrace": {
+              "type": "string",
+              "maxLength": 1000,
+              "description": "Error stack trace (truncated for size limit)"
+            },
+            "httpStatus": {
+              "type": "integer",
+              "minimum": 400,
+              "maximum": 599,
+              "description": "HTTP status code"
+            }
+          }
+        },
+        "recoveryActions": {
+          "type": "array",
+          "maxItems": 5,
+          "description": "Available recovery actions",
+          "items": {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "maxLength": 50,
+                "description": "Recovery action description"
+              },
+              "url": {
+                "type": "string",
+                "maxLength": 100,
+                "description": "Recovery action URL or path"
+              }
+            },
+            "required": ["action"]
+          }
+        },
+        "retryCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3,
+          "default": 0,
+          "description": "Number of retry attempts for current operation"
+        }
+      }
+    },
+
+    "securityContext": {
+      "type": "object",
+      "description": "Security and audit context",
+      "properties": {
+        "sessionToken": {
+          "type": "string",
+          "maxLength": 36,
+          "description": "Spring Session token"
+        },
+        "authorities": {
+          "type": "array",
+          "maxItems": 10,
+          "description": "User authorities/permissions",
+          "items": {
+            "type": "string",
+            "maxLength": 50
+          }
+        },
+        "accessAttempts": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Failed access attempts counter"
+        },
+        "lastSecurityEvent": {
+          "type": "object",
+          "description": "Last security event",
+          "properties": {
+            "eventType": {
+              "type": "string",
+              "enum": ["LOGIN", "LOGOUT", "ACCESS_DENIED", "PASSWORD_CHANGE"],
+              "description": "Security event type"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Event timestamp"
+            },
+            "ipAddress": {
+              "type": "string",
+              "maxLength": 45,
+              "description": "Client IP address"
+            },
+            "userAgent": {
+              "type": "string",
+              "maxLength": 200,
+              "description": "Client user agent"
+            }
+          }
+        }
+      }
+    },
+
+    "preferences": {
+      "type": "object",
+      "description": "User session preferences and settings",
+      "properties": {
+        "language": {
+          "type": "string",
+          "maxLength": 5,
+          "default": "en-US",
+          "description": "User language preference"
+        },
+        "timezone": {
+          "type": "string",
+          "maxLength": 50,
+          "default": "America/New_York",
+          "description": "User timezone preference"
+        },
+        "dateFormat": {
+          "type": "string",
+          "maxLength": 20,
+          "default": "MM/dd/yyyy",
+          "description": "User date format preference"
+        },
+        "pageSize": {
+          "type": "integer",
+          "minimum": 10,
+          "maximum": 100,
+          "default": 20,
+          "description": "Default page size for lists"
+        },
+        "theme": {
+          "type": "string",
+          "enum": ["light", "dark"],
+          "default": "light",
+          "description": "UI theme preference"
+        }
+      }
+    }
+  },
+
+  "required": [
+    "metadata",
+    "userContext",
+    "transactionContext",
+    "navigationHistory",
+    "businessContext",
+    "workAreas",
+    "errorContext",
+    "securityContext"
+  ],
+
+  "examples": [
+    {
+      "metadata": {
+        "sessionId": "12345678-1234-1234-1234-123456789012",
+        "createdAt": "2024-01-15T10:30:00Z",
+        "lastAccessedAt": "2024-01-15T10:45:00Z",
+        "maxSizeBytes": 32768,
+        "currentSizeBytes": 2048,
+        "version": "1.0"
+      },
+      "userContext": {
+        "userId": "ADMIN001",
+        "userType": "A",
+        "userRole": "ROLE_ADMIN",
+        "firstName": "John",
+        "lastName": "Administrator",
+        "lastLoginAt": "2024-01-15T10:30:00Z",
+        "timeoutMinutes": 30
+      },
+      "transactionContext": {
+        "fromTransactionId": "CC00",
+        "fromProgramName": "COSGN00C",
+        "toTransactionId": "CM00",
+        "toProgramName": "COMEN01C",
+        "programContext": 0,
+        "currentScreen": "AdminMenu",
+        "requestMethod": "GET",
+        "requestPath": "/api/admin/menu",
+        "jwtToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "csrfToken": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      },
+      "navigationHistory": {
+        "currentMapset": "COMEN01",
+        "currentMap": "COMEN0A",
+        "breadcrumbs": [
+          {
+            "screenId": "SignOn",
+            "screenTitle": "Sign On",
+            "timestamp": "2024-01-15T10:30:00Z",
+            "transactionId": "CC00"
+          },
+          {
+            "screenId": "AdminMenu",
+            "screenTitle": "Administrator Menu",
+            "timestamp": "2024-01-15T10:31:00Z",
+            "transactionId": "CM00"
+          }
+        ],
+        "returnStack": []
+      },
+      "businessContext": {
+        "customerInfo": {},
+        "accountInfo": {},
+        "cardInfo": {}
+      },
+      "workAreas": {
+        "searchCriteria": {
+          "searchType": "customer",
+          "criteria": {},
+          "resultCount": 0,
+          "pageNumber": 1,
+          "pageSize": 20
+        },
+        "formData": {
+          "step": 1,
+          "totalSteps": 1,
+          "data": {},
+          "validationErrors": []
+        },
+        "calculationWorkArea": {
+          "precision": 2,
+          "roundingMode": "HALF_UP",
+          "tempAmounts": {}
+        }
+      },
+      "errorContext": {
+        "recoveryActions": [],
+        "retryCount": 0
+      },
+      "securityContext": {
+        "sessionToken": "12345678-1234-1234-1234-123456789012",
+        "authorities": ["ROLE_ADMIN", "ADMIN_USER_MANAGEMENT"],
+        "accessAttempts": 0,
+        "lastSecurityEvent": {
+          "eventType": "LOGIN",
+          "timestamp": "2024-01-15T10:30:00Z",
+          "ipAddress": "192.168.1.100",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        }
+      },
+      "preferences": {
+        "language": "en-US",
+        "timezone": "America/New_York",
+        "dateFormat": "MM/dd/yyyy",
+        "pageSize": 20,
+        "theme": "light"
+      }
+    }
+  ]
+}

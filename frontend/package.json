@@ -1,0 +1,73 @@
+{
+  "name": "carddemo-frontend",
+  "version": "1.0.0",
+  "description": "COBOL to Java Migration - React Frontend",
+  "private": true,
+  "dependencies": {
+    "@emotion/react": "^11.13.3",
+    "@emotion/styled": "^11.13.0",
+    "@mui/icons-material": "^6.1.6",
+    "@mui/material": "^6.1.6",
+    "@mui/x-data-grid": "^8.10.1",
+    "axios": "^1.7.7",
+    "axios-retry": "^4.5.0",
+    "date-fns": "^4.1.0",
+    "decimal.js": "^10.6.0",
+    "formik": "^2.4.6",
+    "lodash": "^4.17.21",
+    "loglevel": "^1.9.2",
+    "opossum": "^9.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0",
+    "react-scripts": "5.0.1",
+    "yup": "^1.4.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^5.17.0",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/lodash": "^4.17.13",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "axios-mock-adapter": "^2.1.0",
+    "eslint": "^8.57.1",
+    "eslint-plugin-react": "^7.37.2",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "prettier": "^3.3.3",
+    "text-encoding": "^0.7.0",
+    "web-vitals": "^2.1.4"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --watchAll=false --ci --passWithNoTests",
+    "eject": "react-scripts eject",
+    "lint": "eslint src/ --ext .js,.jsx",
+    "lint:fix": "eslint src/ --ext .js,.jsx --fix",
+    "format": "prettier --write src/"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "proxy": "http://localhost:8080",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}

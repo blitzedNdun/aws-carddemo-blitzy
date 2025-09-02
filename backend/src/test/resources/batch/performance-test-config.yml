@@ -1,0 +1,307 @@
+# Performance Test Configuration for Spring Batch Jobs
+# Validates 4-hour processing window requirement for migrated COBOL batch programs
+# Section 0 requirement: Batch processing must complete within 4-hour window
+
+performance:
+  test:
+    name: "CardDemo Batch Performance Validation"
+    description: "Comprehensive performance testing configuration for Spring Batch jobs validating mainframe baseline equivalence"
+    
+    # Data Volume Configuration - Section 0: 1M transactions, 100K accounts
+    data:
+      volumes:
+        transactions: 1000000          # 1M transaction records for realistic volume testing
+        accounts: 100000               # 100K account records matching production scale
+        customers: 25000               # Customer base supporting account structure
+        cards: 150000                  # Card inventory for transaction processing
+        statements: 100000             # Monthly statement generation volume
+        interest_calculations: 100000   # Account interest calculation volume
+        
+      # Test data generation settings
+      generation:
+        batch_size: 10000              # Records per batch during test data creation
+        parallel_threads: 4            # Parallel data generation threads
+        seed_value: 12345             # Reproducible test data generation
+        anonymization: true           # PII anonymization for test safety
+        
+    # Thread Pool Configuration - Optimized for 4-hour window
+    threading:
+      core_pool_size: 8               # Base thread pool size for job execution
+      max_pool_size: 16               # Maximum threads during peak processing
+      queue_capacity: 1000            # Task queue depth
+      keep_alive_seconds: 300         # Thread idle timeout
+      thread_name_prefix: "perf-test-"
+      
+      # Job-specific thread pools
+      jobs:
+        daily_processing:
+          core_threads: 6
+          max_threads: 12
+          queue_capacity: 500
+        interest_calculation:
+          core_threads: 4
+          max_threads: 8
+          queue_capacity: 200
+        statement_generation:
+          core_threads: 4
+          max_threads: 8
+          queue_capacity: 200
+          
+    # Chunk Processing Optimization
+    chunk:
+      sizes:
+        transaction_processing: 5000   # Optimal chunk size for transaction batch jobs
+        account_processing: 2000       # Account update chunk size
+        statement_generation: 1000     # Statement processing chunk size
+        interest_calculation: 2500     # Interest calculation chunk size
+        report_generation: 1500        # Report processing chunk size
+        
+      # Chunk processing tuning
+      skip_limit: 100                 # Maximum skippable records per chunk
+      retry_limit: 3                  # Retry attempts for failed records
+      commit_interval: 1000           # Database commit frequency
+      
+    # SLA Thresholds - 4-hour window validation per Section 0
+    sla:
+      max_processing_window_hours: 4.0    # Critical 4-hour window requirement
+      warning_threshold_hours: 3.5        # Warning threshold at 87.5% of window
+      critical_threshold_hours: 3.8       # Critical threshold at 95% of window
+      
+      # Individual job SLA targets (contributing to overall 4-hour window)
+      job_targets:
+        daily_transaction_processing:
+          max_duration_minutes: 90      # 1.5 hours for transaction processing
+          target_throughput_tps: 185    # Transactions per second target
+        interest_calculation:
+          max_duration_minutes: 60      # 1 hour for interest calculations
+          target_throughput_aps: 28     # Accounts per second target
+        statement_generation:
+          max_duration_minutes: 75      # 1.25 hours for statement generation
+          target_throughput_sps: 22     # Statements per second target
+        report_generation:
+          max_duration_minutes: 15      # 15 minutes for report generation
+          target_throughput_rps: 100    # Reports per second target
+          
+    # Metrics Collection Configuration
+    metrics:
+      collection:
+        enabled: true
+        interval_seconds: 15           # Metrics collection frequency
+        detailed_timing: true          # Capture detailed step timing
+        memory_monitoring: true        # JVM memory usage tracking
+        thread_monitoring: true        # Thread pool utilization tracking
+        
+      # Spring Boot Actuator integration
+      actuator:
+        endpoints:
+          - "health"
+          - "metrics" 
+          - "prometheus"
+          - "batch"
+        batch_metrics:
+          job_execution_time: true
+          step_execution_time: true
+          read_write_counts: true
+          skip_retry_counts: true
+          
+      # Custom business metrics
+      business_metrics:
+        transaction_throughput: true    # Transactions processed per second
+        account_processing_rate: true   # Accounts processed per second
+        error_rates: true              # Processing error percentages
+        data_quality_metrics: true     # Data validation success rates
+        resource_utilization: true     # CPU/Memory utilization during processing
+        
+      # Prometheus metric export
+      prometheus:
+        enabled: true
+        pushgateway_url: "http://prometheus-pushgateway:9091"
+        job_name: "batch-performance-test"
+        instance_name: "performance-test-instance"
+        
+    # Database Configuration for Performance Testing
+    database:
+      connection_pool:
+        initial_size: 10               # Initial connection pool size
+        max_active: 25                 # Maximum active connections
+        max_idle: 15                   # Maximum idle connections
+        min_idle: 5                    # Minimum idle connections
+        validation_query: "SELECT 1"   # Connection validation
+        test_on_borrow: true
+        test_while_idle: true
+        
+      # Transaction configuration
+      transaction:
+        isolation_level: "READ_COMMITTED"
+        timeout_seconds: 300           # 5-minute transaction timeout
+        read_only: false
+        
+      # Performance tuning
+      tuning:
+        batch_size: 1000              # JDBC batch size
+        fetch_size: 1000              # ResultSet fetch size
+        query_timeout: 30             # Query timeout in seconds
+        
+    # Memory Management Configuration
+    memory:
+      jvm:
+        heap_size_gb: 4               # JVM heap size for performance testing
+        gc_algorithm: "G1GC"          # Garbage collector algorithm
+        gc_tuning:
+          max_gc_pause_ms: 200        # Target maximum GC pause
+          gc_parallel_threads: 4      # Parallel GC threads
+          
+      # Spring Batch memory settings
+      batch:
+        commit_interval: 1000         # Commit frequency to manage memory
+        page_size: 1000              # Database paging size
+        savepoint_enabled: true       # Enable savepoints for large jobs
+        
+    # Monitoring and Alerting Configuration
+    monitoring:
+      alerts:
+        enabled: true
+        
+        # Processing time alerts
+        processing_time:
+          warning_percentage: 87.5    # Alert at 87.5% of SLA
+          critical_percentage: 95.0   # Critical alert at 95% of SLA
+          
+        # Throughput alerts  
+        throughput:
+          min_tps_warning: 150        # Minimum transactions per second warning
+          min_tps_critical: 120       # Minimum transactions per second critical
+          
+        # Error rate alerts
+        error_rates:
+          warning_percentage: 2.0     # Warning at 2% error rate
+          critical_percentage: 5.0    # Critical at 5% error rate
+          
+        # Resource utilization alerts
+        resources:
+          cpu_warning_percentage: 80.0
+          cpu_critical_percentage: 90.0
+          memory_warning_percentage: 75.0
+          memory_critical_percentage: 85.0
+          
+      # Log configuration for performance analysis
+      logging:
+        level: "INFO"
+        detailed_timing: true
+        sql_logging: false            # Disable SQL logging for performance
+        performance_markers: true     # Enable performance timing markers
+        
+    # Validation and Quality Checks
+    validation:
+      data_quality:
+        enabled: true
+        
+        # Data integrity checks
+        integrity:
+          referential_integrity: true   # Validate foreign key relationships
+          data_consistency: true        # Cross-table consistency checks
+          balance_reconciliation: true  # Financial balance validation
+          
+        # Performance validation
+        performance:
+          baseline_comparison: true     # Compare against mainframe baseline
+          regression_detection: true    # Detect performance regressions
+          sla_compliance_check: true    # Validate SLA compliance
+          
+        # Business rule validation  
+        business_rules:
+          interest_calculation_accuracy: true   # Validate interest calculations
+          statement_completeness: true          # Ensure all statements generated
+          transaction_processing_rules: true    # Validate transaction business rules
+          
+    # Test Execution Configuration
+    execution:
+      # Test phases
+      phases:
+        warmup:
+          enabled: true
+          duration_minutes: 10        # 10-minute warmup period
+          reduced_volume: 10000       # Reduced data volume for warmup
+          
+        load_test:
+          enabled: true
+          full_volume: true          # Use full 1M transaction volume
+          duration_target: "4 hours" # Target 4-hour processing window
+          
+        cooldown:
+          enabled: true
+          duration_minutes: 5        # 5-minute cooldown period
+          metrics_collection: true   # Continue metrics during cooldown
+          
+      # Retry and recovery configuration
+      retry:
+        max_attempts: 3              # Maximum test retry attempts
+        retry_interval_minutes: 30   # Wait time between retries
+        
+      # Test data cleanup
+      cleanup:
+        enabled: true
+        immediate: false             # Retain data for analysis
+        retention_hours: 24          # Keep test data for 24 hours
+        
+    # Reporting Configuration
+    reporting:
+      # Performance report generation
+      performance_report:
+        enabled: true
+        format: ["json", "html", "csv"]  # Multiple report formats
+        include_charts: true         # Generate performance charts
+        
+      # SLA compliance report
+      sla_report:
+        enabled: true
+        detailed_breakdown: true     # Detailed SLA analysis by job
+        trend_analysis: true         # Historical trend comparison
+        
+      # Resource utilization report
+      resource_report:
+        enabled: true
+        memory_analysis: true        # Memory usage analysis
+        cpu_analysis: true           # CPU utilization analysis
+        io_analysis: true            # I/O performance analysis
+        
+      # Output configuration
+      output:
+        directory: "test-results/performance"
+        filename_prefix: "batch-performance"
+        timestamp_suffix: true
+        compression: true            # Compress large result files
+
+# Environment-specific overrides
+environments:
+  development:
+    data:
+      volumes:
+        transactions: 10000          # Reduced volume for dev testing
+        accounts: 1000
+    sla:
+      max_processing_window_hours: 0.5  # 30-minute window for dev
+      
+  integration:
+    data:
+      volumes:
+        transactions: 100000         # Medium volume for integration testing
+        accounts: 10000
+    sla:
+      max_processing_window_hours: 1.0  # 1-hour window for integration
+      
+  staging:
+    data:
+      volumes:
+        transactions: 500000         # Near-production volume
+        accounts: 50000
+    sla:
+      max_processing_window_hours: 2.5  # 2.5-hour window for staging
+      
+  production:
+    data:
+      volumes:
+        transactions: 1000000        # Full production volume
+        accounts: 100000
+    sla:
+      max_processing_window_hours: 4.0  # Full 4-hour production window

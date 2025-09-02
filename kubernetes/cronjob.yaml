@@ -1,0 +1,1014 @@
+# Kubernetes CronJob resources for CardDemo Spring Batch jobs
+# Replaces JCL batch processing workflows with cloud-native scheduled execution
+# Ensures completion within 4-hour processing window (2:00 AM - 6:00 AM)
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: carddemo-batch
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: batch
+    app.kubernetes.io/part-of: carddemo-system
+---
+# Daily Transaction Posting Batch Job
+# Processes daily transaction file (DALYTRAN) and posts to TRANSACT dataset
+# Equivalent to CBTRN01C COBOL batch program
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: transaction-posting-batch
+  namespace: carddemo-batch
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: batch
+    app.kubernetes.io/instance: transaction-posting
+    app.kubernetes.io/version: v2.1.0
+spec:
+  # Run at 2:00 AM daily (start of 4-hour processing window)
+  schedule: "0 2 * * *"
+  timeZone: "America/New_York"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300  # 5 minutes grace period
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: carddemo
+        app.kubernetes.io/component: batch
+        app.kubernetes.io/instance: transaction-posting
+    spec:
+      # 4-hour completion deadline (14400 seconds)
+      activeDeadlineSeconds: 14400
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: carddemo
+            app.kubernetes.io/component: batch
+            app.kubernetes.io/instance: transaction-posting
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: carddemo-batch-sa
+          containers:
+          - name: transaction-posting
+            image: carddemo/backend:v2.1.0
+            imagePullPolicy: IfNotPresent
+            command: ["java"]
+            args: [
+              "-jar", "/app/carddemo-backend.jar",
+              "--spring.batch.job.names=transactionPostingJob",
+              "--spring.profiles.active=batch",
+              "--logging.level.com.carddemo.batch=DEBUG"
+            ]
+            env:
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: carddemo-secret
+                  key: database-url
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-secret
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-secret
+                  key: password
+            - name: JOB_EXECUTION_DATE
+              value: "$(date +%Y-%m-%d)"
+            resources:
+              requests:
+                memory: "1Gi"
+                cpu: "500m"
+              limits:
+                memory: "2Gi"
+                cpu: "1000m"
+            volumeMounts:
+            - name: batch-data
+              mountPath: /app/data
+            - name: batch-logs
+              mountPath: /app/logs
+          volumes:
+          - name: batch-data
+            persistentVolumeClaim:
+              claimName: batch-data-pvc
+          - name: batch-logs
+            persistentVolumeClaim:
+              claimName: batch-logs-pvc
+          nodeSelector:
+            kubernetes.io/os: linux
+          tolerations:
+          - effect: NoSchedule
+            key: node-role.kubernetes.io/batch
+            operator: Equal
+            value: "true"
+---
+# Transaction Processing and Validation Batch Job
+# Validates posted transactions and updates category balances
+# Equivalent to CBTRN02C COBOL batch program
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: transaction-processing-batch
+  namespace: carddemo-batch
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: batch
+    app.kubernetes.io/instance: transaction-processing
+    app.kubernetes.io/version: v2.1.0
+spec:
+  # Run at 2:30 AM daily (after transaction posting)
+  schedule: "30 2 * * *"
+  timeZone: "America/New_York"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 600  # 10 minutes grace period
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: carddemo
+        app.kubernetes.io/component: batch
+        app.kubernetes.io/instance: transaction-processing
+    spec:
+      activeDeadlineSeconds: 10800  # 3-hour completion deadline
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: carddemo
+            app.kubernetes.io/component: batch
+            app.kubernetes.io/instance: transaction-processing
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: carddemo-batch-sa
+          containers:
+          - name: transaction-processing
+            image: carddemo/backend:v2.1.0
+            imagePullPolicy: IfNotPresent
+            command: ["java"]
+            args: [
+              "-jar", "/app/carddemo-backend.jar",
+              "--spring.batch.job.names=transactionProcessingJob",
+              "--spring.profiles.active=batch",
+              "--logging.level.com.carddemo.batch=DEBUG"
+            ]
+            env:
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: carddemo-secret
+                  key: database-url
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-secret
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-secret
+                  key: password
+            - name: PROCESSING_DATE
+              value: "$(date +%Y-%m-%d)"
+            - name: CHUNK_SIZE
+              value: "1000"
+            resources:
+              requests:
+                memory: "1.5Gi"
+                cpu: "750m"
+              limits:
+                memory: "3Gi"
+                cpu: "1500m"
+            volumeMounts:
+            - name: batch-data
+              mountPath: /app/data
+            - name: batch-logs
+              mountPath: /app/logs
+          volumes:
+          - name: batch-data
+            persistentVolumeClaim:
+              claimName: batch-data-pvc
+          - name: batch-logs
+            persistentVolumeClaim:
+              claimName: batch-logs-pvc
+          nodeSelector:
+            kubernetes.io/os: linux
+---
+# Interest Calculation Batch Job
+# Calculates monthly interest on account balances and generates interest transactions
+# Equivalent to CBACT04C COBOL batch program
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: interest-calculation-batch
+  namespace: carddemo-batch
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: batch
+    app.kubernetes.io/instance: interest-calculation
+    app.kubernetes.io/version: v2.1.0
+spec:
+  # Run at 3:30 AM daily (after transaction processing)
+  schedule: "30 3 * * *"
+  timeZone: "America/New_York"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: carddemo
+        app.kubernetes.io/component: batch
+        app.kubernetes.io/instance: interest-calculation
+    spec:
+      activeDeadlineSeconds: 7200  # 2-hour completion deadline
+      backoffLimit: 3
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: carddemo
+            app.kubernetes.io/component: batch
+            app.kubernetes.io/instance: interest-calculation
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: carddemo-batch-sa
+          containers:
+          - name: interest-calculation
+            image: carddemo/backend:v2.1.0
+            imagePullPolicy: IfNotPresent
+            command: ["java"]
+            args: [
+              "-jar", "/app/carddemo-backend.jar",
+              "--spring.batch.job.names=interestCalculationJob",
+              "--spring.profiles.active=batch",
+              "--logging.level.com.carddemo.batch=DEBUG",
+              "--logging.level.com.carddemo.service.InterestService=TRACE"
+            ]
+            env:
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: carddemo-secret
+                  key: database-url
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-secret
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-secret
+                  key: password
+            - name: INTEREST_CALC_DATE
+              value: "$(date +%Y-%m-%d)"
+            - name: PRECISION_MODE
+              value: "STRICT"  # Ensures COBOL COMP-3 precision parity
+            resources:
+              requests:
+                memory: "2Gi"
+                cpu: "1000m"
+              limits:
+                memory: "4Gi"
+                cpu: "2000m"
+            volumeMounts:
+            - name: batch-data
+              mountPath: /app/data
+            - name: batch-logs
+              mountPath: /app/logs
+          volumes:
+          - name: batch-data
+            persistentVolumeClaim:
+              claimName: batch-data-pvc
+          - name: batch-logs
+            persistentVolumeClaim:
+              claimName: batch-logs-pvc
+          nodeSelector:
+            kubernetes.io/os: linux
+---
+# Statement Generation Batch Job
+# Generates customer account statements in both plain text and HTML formats
+# Equivalent to CBSTM03A and CBSTM03B COBOL batch programs
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: statement-generation-batch
+  namespace: carddemo-batch
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: batch
+    app.kubernetes.io/instance: statement-generation
+    app.kubernetes.io/version: v2.1.0
+spec:
+  # Run at 4:30 AM daily (after interest calculation)
+  schedule: "30 4 * * *"
+  timeZone: "America/New_York"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: carddemo
+        app.kubernetes.io/component: batch
+        app.kubernetes.io/instance: statement-generation
+    spec:
+      activeDeadlineSeconds: 5400  # 1.5-hour completion deadline
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: carddemo
+            app.kubernetes.io/component: batch
+            app.kubernetes.io/instance: statement-generation
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: carddemo-batch-sa
+          containers:
+          - name: statement-generation
+            image: carddemo/backend:v2.1.0
+            imagePullPolicy: IfNotPresent
+            command: ["java"]
+            args: [
+              "-jar", "/app/carddemo-backend.jar",
+              "--spring.batch.job.names=statementGenerationJob",
+              "--spring.profiles.active=batch",
+              "--logging.level.com.carddemo.batch=DEBUG"
+            ]
+            env:
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: carddemo-secret
+                  key: database-url
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-secret
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-secret
+                  key: password
+            - name: STATEMENT_DATE
+              value: "$(date +%Y-%m-%d)"
+            - name: OUTPUT_FORMAT
+              value: "BOTH"  # Generate both plain text and HTML formats
+            resources:
+              requests:
+                memory: "1Gi"
+                cpu: "500m"
+              limits:
+                memory: "2Gi"
+                cpu: "1000m"
+            volumeMounts:
+            - name: batch-data
+              mountPath: /app/data
+            - name: batch-logs
+              mountPath: /app/logs
+            - name: statement-output
+              mountPath: /app/statements
+          volumes:
+          - name: batch-data
+            persistentVolumeClaim:
+              claimName: batch-data-pvc
+          - name: batch-logs
+            persistentVolumeClaim:
+              claimName: batch-logs-pvc
+          - name: statement-output
+            persistentVolumeClaim:
+              claimName: statement-output-pvc
+          nodeSelector:
+            kubernetes.io/os: linux
+---
+# Report Generation Batch Job
+# Generates various management and regulatory reports
+# Runs after all other batch processing completes
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: report-generation-batch
+  namespace: carddemo-batch
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: batch
+    app.kubernetes.io/instance: report-generation
+    app.kubernetes.io/version: v2.1.0
+spec:
+  # Run at 5:30 AM daily (final job in processing window)
+  schedule: "30 5 * * *"
+  timeZone: "America/New_York"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: carddemo
+        app.kubernetes.io/component: batch
+        app.kubernetes.io/instance: report-generation
+    spec:
+      activeDeadlineSeconds: 1800  # 30-minute completion deadline
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: carddemo
+            app.kubernetes.io/component: batch
+            app.kubernetes.io/instance: report-generation
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: carddemo-batch-sa
+          containers:
+          - name: report-generation
+            image: carddemo/backend:v2.1.0
+            imagePullPolicy: IfNotPresent
+            command: ["java"]
+            args: [
+              "-jar", "/app/carddemo-backend.jar",
+              "--spring.batch.job.names=reportGenerationJob",
+              "--spring.profiles.active=batch",
+              "--logging.level.com.carddemo.batch=DEBUG"
+            ]
+            env:
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: carddemo-secret
+                  key: database-url
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-secret
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-secret
+                  key: password
+            - name: REPORT_DATE
+              value: "$(date +%Y-%m-%d)"
+            - name: REPORT_TYPES
+              value: "DAILY_SUMMARY,TRANSACTION_AUDIT,BALANCE_RECONCILIATION"
+            resources:
+              requests:
+                memory: "512Mi"
+                cpu: "250m"
+              limits:
+                memory: "1Gi"
+                cpu: "500m"
+            volumeMounts:
+            - name: batch-data
+              mountPath: /app/data
+            - name: batch-logs
+              mountPath: /app/logs
+            - name: report-output
+              mountPath: /app/reports
+          volumes:
+          - name: batch-data
+            persistentVolumeClaim:
+              claimName: batch-data-pvc
+          - name: batch-logs
+            persistentVolumeClaim:
+              claimName: batch-logs-pvc
+          - name: report-output
+            persistentVolumeClaim:
+              claimName: report-output-pvc
+          nodeSelector:
+            kubernetes.io/os: linux
+---
+# Batch Account Update Job (Monthly)
+# Updates account information and customer records
+# Equivalent to CBACT01C, CBACT02C, CBACT03C COBOL batch programs
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: account-update-batch
+  namespace: carddemo-batch
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: batch
+    app.kubernetes.io/instance: account-update
+    app.kubernetes.io/version: v2.1.0
+spec:
+  # Run first day of month at 1:00 AM (before daily processing)
+  schedule: "0 1 1 * *"
+  timeZone: "America/New_York"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: carddemo
+        app.kubernetes.io/component: batch
+        app.kubernetes.io/instance: account-update
+    spec:
+      activeDeadlineSeconds: 7200  # 2-hour completion deadline
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: carddemo
+            app.kubernetes.io/component: batch
+            app.kubernetes.io/instance: account-update
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: carddemo-batch-sa
+          containers:
+          - name: account-update
+            image: carddemo/backend:v2.1.0
+            imagePullPolicy: IfNotPresent
+            command: ["java"]
+            args: [
+              "-jar", "/app/carddemo-backend.jar",
+              "--spring.batch.job.names=accountUpdateJob",
+              "--spring.profiles.active=batch",
+              "--logging.level.com.carddemo.batch=DEBUG"
+            ]
+            env:
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: carddemo-secret
+                  key: database-url
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-secret
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-secret
+                  key: password
+            - name: UPDATE_DATE
+              value: "$(date +%Y-%m-%d)"
+            - name: BATCH_MODE
+              value: "MONTHLY"
+            resources:
+              requests:
+                memory: "2Gi"
+                cpu: "1000m"
+              limits:
+                memory: "4Gi"
+                cpu: "2000m"
+            volumeMounts:
+            - name: batch-data
+              mountPath: /app/data
+            - name: batch-logs
+              mountPath: /app/logs
+          volumes:
+          - name: batch-data
+            persistentVolumeClaim:
+              claimName: batch-data-pvc
+          - name: batch-logs
+            persistentVolumeClaim:
+              claimName: batch-logs-pvc
+          nodeSelector:
+            kubernetes.io/os: linux
+---
+# Customer Update Batch Job (Weekly)
+# Updates customer information and demographics
+# Equivalent to CBCUS01C COBOL batch program
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: customer-update-batch
+  namespace: carddemo-batch
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: batch
+    app.kubernetes.io/instance: customer-update
+    app.kubernetes.io/version: v2.1.0
+spec:
+  # Run every Sunday at 1:00 AM
+  schedule: "0 1 * * 0"
+  timeZone: "America/New_York"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: carddemo
+        app.kubernetes.io/component: batch
+        app.kubernetes.io/instance: customer-update
+    spec:
+      activeDeadlineSeconds: 3600  # 1-hour completion deadline
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: carddemo
+            app.kubernetes.io/component: batch
+            app.kubernetes.io/instance: customer-update
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: carddemo-batch-sa
+          containers:
+          - name: customer-update
+            image: carddemo/backend:v2.1.0
+            imagePullPolicy: IfNotPresent
+            command: ["java"]
+            args: [
+              "-jar", "/app/carddemo-backend.jar",
+              "--spring.batch.job.names=customerUpdateJob",
+              "--spring.profiles.active=batch",
+              "--logging.level.com.carddemo.batch=DEBUG"
+            ]
+            env:
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: carddemo-secret
+                  key: database-url
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-secret
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-secret
+                  key: password
+            - name: UPDATE_DATE
+              value: "$(date +%Y-%m-%d)"
+            - name: BATCH_MODE
+              value: "WEEKLY"
+            resources:
+              requests:
+                memory: "1Gi"
+                cpu: "500m"
+              limits:
+                memory: "2Gi"
+                cpu: "1000m"
+            volumeMounts:
+            - name: batch-data
+              mountPath: /app/data
+            - name: batch-logs
+              mountPath: /app/logs
+          volumes:
+          - name: batch-data
+            persistentVolumeClaim:
+              claimName: batch-data-pvc
+          - name: batch-logs
+            persistentVolumeClaim:
+              claimName: batch-logs-pvc
+          nodeSelector:
+            kubernetes.io/os: linux
+---
+# ServiceAccount for batch job execution with appropriate RBAC permissions
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: carddemo-batch-sa
+  namespace: carddemo-batch
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: batch
+---
+# Role for batch job operations
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: carddemo-batch-role
+  namespace: carddemo-batch
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: batch
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch"]
+---
+# RoleBinding to associate ServiceAccount with Role
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: carddemo-batch-rolebinding
+  namespace: carddemo-batch
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: batch
+subjects:
+- kind: ServiceAccount
+  name: carddemo-batch-sa
+  namespace: carddemo-batch
+roleRef:
+  kind: Role
+  name: carddemo-batch-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# PersistentVolumeClaim for batch data processing
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: batch-data-pvc
+  namespace: carddemo-batch
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: batch
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: fast-ssd
+---
+# PersistentVolumeClaim for batch logs
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: batch-logs-pvc
+  namespace: carddemo-batch
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: batch
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: standard
+---
+# PersistentVolumeClaim for statement output files
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: statement-output-pvc
+  namespace: carddemo-batch
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: batch
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: standard
+---
+# PersistentVolumeClaim for report output files
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: report-output-pvc
+  namespace: carddemo-batch
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: batch
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 30Gi
+  storageClassName: standard
+---
+# ConfigMap for batch job configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: batch-config
+  namespace: carddemo-batch
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: batch
+data:
+  # Spring Batch configuration
+  spring.batch.job.enabled: "false"  # Disable auto-start, use explicit job names
+  spring.batch.initialize-schema: "always"
+  spring.batch.table-prefix: "BATCH_"
+  
+  # Database configuration
+  spring.jpa.hibernate.ddl-auto: "validate"
+  spring.jpa.show-sql: "false"
+  spring.jpa.properties.hibernate.format_sql: "true"
+  spring.jpa.properties.hibernate.jdbc.batch_size: "1000"
+  spring.jpa.properties.hibernate.order_inserts: "true"
+  spring.jpa.properties.hibernate.order_updates: "true"
+  
+  # Connection pool configuration for batch processing
+  spring.datasource.hikari.maximum-pool-size: "50"
+  spring.datasource.hikari.minimum-idle: "10"
+  spring.datasource.hikari.connection-timeout: "60000"
+  spring.datasource.hikari.idle-timeout: "300000"
+  spring.datasource.hikari.max-lifetime: "1800000"
+  
+  # Batch processing parameters
+  chunk.size: "1000"
+  max.skip.count: "100"
+  retry.limit: "3"
+  
+  # File processing parameters
+  file.encoding: "UTF-8"
+  date.format: "yyyy-MM-dd"
+  decimal.precision: "2"
+  
+  # Logging configuration
+  logging.level.org.springframework.batch: "INFO"
+  logging.level.org.springframework.jdbc: "WARN"
+  logging.level.com.carddemo: "DEBUG"
+  logging.pattern.console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  logging.pattern.file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
+  
+  # Monitoring and metrics
+  management.endpoints.web.exposure.include: "health,info,metrics,prometheus"
+  management.endpoint.health.show-details: "always"
+  management.metrics.export.prometheus.enabled: "true"
+---
+# NetworkPolicy for secure batch job execution
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: carddemo-batch-netpol
+  namespace: carddemo-batch
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: batch
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: batch
+  policyTypes:
+  - Ingress
+  - Egress
+  egress:
+  # Allow access to PostgreSQL database in carddemo namespace
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: carddemo
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/component: database
+    ports:
+    - protocol: TCP
+      port: 5432
+  # Allow access to Redis in carddemo namespace  
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: carddemo
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/component: session-store
+    ports:
+    - protocol: TCP
+      port: 6379
+  # Allow DNS resolution
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+  # Allow HTTPS for Spring Boot Actuator health checks
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+  # No ingress traffic allowed (batch jobs don't serve traffic)
+  ingress: []
+---
+# Monitoring ServiceMonitor for Prometheus metrics collection
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: carddemo-batch-monitor
+  namespace: carddemo-batch
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: batch
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: batch
+  endpoints:
+  - port: actuator
+    path: /actuator/prometheus
+    interval: 30s
+    scrapeTimeout: 10s
+    honorLabels: true
+  namespaceSelector:
+    matchNames:
+    - carddemo-batch
+---
+# PodDisruptionBudget for batch jobs (allows minimal disruption during maintenance)
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: carddemo-batch-pdb
+  namespace: carddemo-batch
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: batch
+spec:
+  maxUnavailable: 0  # Batch jobs should not be disrupted once running
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: batch
+---
+# Batch Job Cleanup CronJob - removes old completed jobs and logs
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: batch-cleanup-job
+  namespace: carddemo-batch
+  labels:
+    app.kubernetes.io/name: carddemo
+    app.kubernetes.io/component: batch
+    app.kubernetes.io/instance: cleanup
+    app.kubernetes.io/version: v2.1.0
+spec:
+  # Run cleanup daily at 7:00 AM (after all batch processing)
+  schedule: "0 7 * * *"
+  timeZone: "America/New_York"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: carddemo
+        app.kubernetes.io/component: batch
+        app.kubernetes.io/instance: cleanup
+    spec:
+      activeDeadlineSeconds: 1800  # 30-minute completion deadline
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: carddemo
+            app.kubernetes.io/component: batch
+            app.kubernetes.io/instance: cleanup
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: carddemo-batch-sa
+          containers:
+          - name: batch-cleanup
+            image: carddemo/backend:v2.1.0
+            imagePullPolicy: IfNotPresent
+            command: ["java"]
+            args: [
+              "-jar", "/app/carddemo-backend.jar",
+              "--spring.batch.job.names=batchCleanupJob",
+              "--spring.profiles.active=batch",
+              "--logging.level.com.carddemo.batch=INFO"
+            ]
+            env:
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: carddemo-secret
+                  key: database-url
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-secret
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-secret
+                  key: password
+            - name: CLEANUP_DAYS_RETENTION
+              value: "30"  # Retain 30 days of batch execution history
+            - name: LOG_CLEANUP_ENABLED
+              value: "true"
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "100m"
+              limits:
+                memory: "512Mi"
+                cpu: "200m"
+            volumeMounts:
+            - name: batch-logs
+              mountPath: /app/logs
+          volumes:
+          - name: batch-logs
+            persistentVolumeClaim:
+              claimName: batch-logs-pvc
+          nodeSelector:
+            kubernetes.io/os: linux

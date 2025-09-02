@@ -1,0 +1,413 @@
+# ========================================================================
+# Batch Performance Test Configuration
+# CardDemo Application - COBOL to Java Migration
+# 
+# Purpose: Validate batch processing completion within 4-hour window
+# Requirements: Process 1M transactions and 100K account updates
+# Target: Sub-4-hour completion matching mainframe performance
+# ========================================================================
+
+# Global Test Configuration
+test_config:
+  name: "CardDemo Batch Performance Validation"
+  description: "Comprehensive batch performance testing to validate 4-hour processing window requirement"
+  version: "1.0"
+  target_completion_time_hours: 4
+  parallel_execution: true
+  max_threads: 4
+  environment: "performance"
+
+# Spring Batch Job Configurations
+batch_jobs:
+  
+  # Account Processing Job (derived from CBACT01C.cbl)
+  account_processing:
+    job_name: "compositeAccountProcessingJob"
+    description: "Sequential account file processing matching CBACT01C COBOL program"
+    enabled: true
+    
+    # Performance Parameters
+    chunk_size: 1000              # Records per chunk for optimal throughput
+    thread_pool_size: 2           # Parallel processing threads
+    throttle_limit: 500           # Transactions per second limit
+    skip_limit: 10                # Maximum allowable skips before job failure
+    
+    # Test Data Volumes
+    test_volumes:
+      small: 10000                # 10K records for smoke testing
+      medium: 50000               # 50K records for integration testing  
+      large: 100000               # 100K records for performance testing
+      production: 500000          # 500K records simulating production load
+    
+    # Performance Thresholds
+    performance_metrics:
+      max_processing_time_minutes: 45    # Maximum time for 100K accounts
+      target_throughput_rps: 350         # Records per second target
+      memory_threshold_mb: 512           # Maximum memory usage
+      cpu_threshold_percent: 70          # Maximum CPU utilization
+    
+    # Checkpoint and Recovery Configuration
+    checkpoint_config:
+      commit_interval: 1000              # Commit every 1000 records
+      restart_enabled: true              # Enable job restart capability
+      retry_limit: 3                     # Maximum retry attempts per chunk
+    
+    # File Processing Configuration  
+    file_config:
+      input_path: "/test/data/accounts"
+      output_path: "/test/results/accounts"
+      file_pattern: "ACCT*.dat"
+      expected_record_length: 300        # Bytes per account record
+      
+  # Daily Transaction Processing Job (derived from CBTRN01C.cbl)
+  transaction_processing:
+    job_name: "dailyTransactionProcessingJob"
+    description: "Daily transaction file processing with cross-reference lookups matching CBTRN01C"
+    enabled: true
+    
+    # Performance Parameters
+    chunk_size: 500               # Smaller chunks due to complex processing
+    thread_pool_size: 4           # Maximum parallel threads
+    throttle_limit: 200           # Transactions per second (complex processing)
+    skip_limit: 50                # Higher skip limit for validation failures
+    
+    # Test Data Volumes (Primary performance test)
+    test_volumes:
+      small: 50000                # 50K transactions for smoke testing
+      medium: 250000              # 250K transactions for integration
+      large: 1000000              # 1M transactions for performance testing
+      production: 2000000         # 2M transactions for stress testing
+    
+    # Performance Thresholds (Most critical job)
+    performance_metrics:
+      max_processing_time_minutes: 180   # 3 hours maximum for 1M transactions
+      target_throughput_rps: 150         # Transactions per second (with lookups)
+      memory_threshold_mb: 1024          # Higher memory for caching
+      cpu_threshold_percent: 80          # Higher CPU due to complexity
+      db_connection_pool_size: 20        # Database connections for lookups
+    
+    # Checkpoint and Recovery Configuration
+    checkpoint_config:
+      commit_interval: 500               # More frequent commits due to complexity
+      restart_enabled: true              # Critical for long-running jobs
+      retry_limit: 5                     # Higher retry for lookup failures
+      
+    # Database Lookup Configuration
+    lookup_config:
+      cache_enabled: true                # Enable lookup caching
+      cache_size: 10000                  # Cache up to 10K lookups
+      batch_fetch_size: 100              # Batch size for reference data
+      connection_timeout_seconds: 30     # Database connection timeout
+      
+    # File Processing Configuration
+    file_config:
+      input_path: "/test/data/transactions"
+      output_path: "/test/results/transactions"
+      file_pattern: "DALYTRAN*.dat"
+      expected_record_length: 350        # Bytes per transaction record
+      reference_files:
+        - "CUSTOMER.dat"
+        - "XREF.dat"
+        - "CARD.dat"
+        - "ACCOUNT.dat"
+
+  # Interest Calculation Job (high-volume batch processing)
+  interest_calculation:
+    job_name: "interestCalculationJob"
+    description: "Monthly interest calculation for all active accounts"
+    enabled: true
+    
+    # Performance Parameters
+    chunk_size: 2000              # Larger chunks for calculation-heavy processing
+    thread_pool_size: 3           # Moderate parallelization
+    throttle_limit: 400           # Higher throughput for calculations
+    skip_limit: 5                 # Low tolerance for calculation errors
+    
+    # Test Data Volumes
+    test_volumes:
+      small: 25000                # 25K accounts
+      medium: 100000              # 100K accounts
+      large: 250000               # 250K accounts  
+      production: 500000          # 500K accounts
+    
+    # Performance Thresholds
+    performance_metrics:
+      max_processing_time_minutes: 60    # 1 hour for 250K accounts
+      target_throughput_rps: 500         # Higher throughput for calculations
+      memory_threshold_mb: 768           # Moderate memory usage
+      cpu_threshold_percent: 85          # High CPU for calculations
+    
+    # Checkpoint and Recovery Configuration
+    checkpoint_config:
+      commit_interval: 2000              # Larger commit intervals
+      restart_enabled: true              # Enable restart capability
+      retry_limit: 2                     # Low retry for calculation precision
+
+# Overall Performance Test Suites
+test_suites:
+  
+  # Smoke Test Suite - Quick validation
+  smoke_test:
+    description: "Quick validation of all batch jobs with small data volumes"
+    enabled: true
+    max_duration_minutes: 15
+    parallel_execution: false
+    jobs:
+      - job: "account_processing"
+        volume: "small"
+      - job: "transaction_processing" 
+        volume: "small"
+      - job: "interest_calculation"
+        volume: "small"
+        
+  # Integration Test Suite - Medium volumes
+  integration_test:
+    description: "Integration testing with medium data volumes"
+    enabled: true
+    max_duration_minutes: 60
+    parallel_execution: true
+    jobs:
+      - job: "account_processing"
+        volume: "medium"
+      - job: "transaction_processing"
+        volume: "medium"
+      - job: "interest_calculation"
+        volume: "medium"
+        
+  # Performance Test Suite - Large volumes (PRIMARY TEST)
+  performance_test:
+    description: "Full performance validation with production-equivalent volumes"
+    enabled: true
+    max_duration_minutes: 240          # 4-hour window requirement
+    parallel_execution: true
+    jobs:
+      - job: "account_processing"
+        volume: "large"
+        priority: 2
+      - job: "transaction_processing"
+        volume: "large" 
+        priority: 1                     # Highest priority - most critical
+      - job: "interest_calculation"
+        volume: "large"
+        priority: 3
+        
+  # Stress Test Suite - Maximum volumes
+  stress_test:
+    description: "Stress testing with maximum production volumes"
+    enabled: false                      # Disabled by default
+    max_duration_minutes: 300          # 5-hour window for stress testing
+    parallel_execution: true
+    jobs:
+      - job: "account_processing"
+        volume: "production"
+      - job: "transaction_processing"
+        volume: "production"
+      - job: "interest_calculation"
+        volume: "production"
+
+# Resource Monitoring Configuration
+monitoring:
+  enabled: true
+  collection_interval_seconds: 30
+  
+  # System Resource Thresholds
+  system_thresholds:
+    max_memory_usage_percent: 80
+    max_cpu_usage_percent: 90
+    max_disk_io_mbps: 500
+    min_available_disk_gb: 10
+    
+  # Application Metrics
+  application_metrics:
+    - "batch.job.execution.time"
+    - "batch.job.read.count"  
+    - "batch.job.write.count"
+    - "batch.job.commit.count"
+    - "batch.job.rollback.count"
+    - "batch.job.skip.count"
+    - "batch.job.restart.count"
+    
+  # Database Metrics
+  database_metrics:
+    - "database.connection.active"
+    - "database.connection.max"
+    - "database.query.time"
+    - "database.transaction.time"
+    - "database.deadlock.count"
+    
+  # JVM Metrics
+  jvm_metrics:
+    - "jvm.memory.used"
+    - "jvm.memory.max"
+    - "jvm.gc.pause"
+    - "jvm.threads.live"
+    - "jvm.classes.loaded"
+
+# Database Configuration for Performance Testing
+database_config:
+  # Connection Pool Settings
+  connection_pool:
+    initial_size: 10
+    max_active: 50
+    max_idle: 20
+    min_idle: 5
+    max_wait_millis: 30000
+    
+  # Transaction Settings
+  transaction_config:
+    isolation_level: "READ_COMMITTED"
+    timeout_seconds: 300
+    read_only_optimization: false
+    
+  # Performance Tuning
+  performance_settings:
+    batch_size: 1000
+    fetch_size: 500
+    statement_cache_size: 100
+    prepared_statement_cache_sql_limit: 256
+
+# Test Data Generation Configuration  
+test_data:
+  generation_enabled: true
+  
+  # Account Data Generation
+  account_data:
+    base_account_count: 500000
+    account_id_range:
+      start: 1000000000
+      end: 1999999999
+    balance_range:
+      min: -5000.00
+      max: 50000.00
+    credit_limit_range:
+      min: 1000.00
+      max: 25000.00
+      
+  # Transaction Data Generation  
+  transaction_data:
+    transactions_per_account_range:
+      min: 1
+      max: 10
+    amount_range:
+      min: -2000.00
+      max: 5000.00
+    transaction_types:
+      - "PURCHASE"
+      - "PAYMENT" 
+      - "CASH_ADVANCE"
+      - "FEE"
+      - "INTEREST"
+
+# Reporting Configuration
+reporting:
+  enabled: true
+  output_formats: ["JSON", "XML", "HTML"]
+  output_directory: "/test/reports/performance"
+  
+  # Report Sections
+  include_sections:
+    - "execution_summary"
+    - "performance_metrics"
+    - "resource_utilization" 
+    - "error_analysis"
+    - "trend_analysis"
+    - "recommendations"
+    
+  # Thresholds for Pass/Fail Determination
+  pass_fail_criteria:
+    max_execution_time_hours: 4.0
+    min_throughput_percentage: 90
+    max_error_rate_percentage: 1.0
+    max_memory_usage_percentage: 85
+    max_cpu_usage_percentage: 90
+
+# Integration with Spring Boot Test Framework
+spring_test_config:
+  # Test Profile Configuration
+  active_profiles: ["test", "performance"]
+  
+  # Test Context Configuration
+  test_context:
+    cache_enabled: false
+    dirty_context: true
+    transaction_mode: "NEVER"
+    
+  # Test Execution Configuration
+  execution_config:
+    parallel_enabled: true
+    max_pool_size: 4
+    core_pool_size: 2
+    keep_alive_seconds: 60
+    queue_capacity: 100
+
+# Error Handling and Recovery
+error_handling:
+  # Skip Policy Configuration
+  skip_policy:
+    skip_limit: 100
+    skippable_exceptions:
+      - "org.springframework.dao.DataIntegrityViolationException"
+      - "java.text.ParseException"
+      - "com.carddemo.exception.ValidationException"
+      
+  # Retry Policy Configuration  
+  retry_policy:
+    max_attempts: 3
+    back_off_policy: "EXPONENTIAL"
+    initial_delay_millis: 1000
+    max_delay_millis: 30000
+    multiplier: 2.0
+    retryable_exceptions:
+      - "org.springframework.dao.TransientDataAccessException"
+      - "java.sql.SQLException"
+      - "org.springframework.transaction.TransactionException"
+      
+  # Job Restart Configuration
+  restart_policy:
+    restart_enabled: true
+    max_restart_attempts: 3
+    cleanup_on_restart: true
+
+# Validation Rules
+validation:
+  # Data Validation Rules
+  data_validation:
+    account_validation:
+      - "account_id_not_null"
+      - "account_id_numeric" 
+      - "balance_precision_check"
+      - "credit_limit_positive"
+      
+    transaction_validation:
+      - "transaction_id_not_null"
+      - "amount_precision_check"
+      - "card_number_format"
+      - "transaction_date_valid"
+      
+  # Business Rule Validation
+  business_rules:
+    - "account_balance_consistency"
+    - "transaction_amount_limits"
+    - "card_expiry_validation"
+    - "interest_calculation_accuracy"
+    
+# Performance Baseline Configuration
+baseline_config:
+  # Mainframe Performance Baselines (for comparison)
+  mainframe_benchmarks:
+    account_processing_rps: 300
+    transaction_processing_rps: 120
+    interest_calculation_rps: 450
+    total_batch_window_hours: 3.5
+    
+  # Target Performance Improvements
+  target_improvements:
+    throughput_improvement_percent: 10
+    memory_efficiency_improvement_percent: 15
+    cpu_efficiency_improvement_percent: 20
+    
+  # Acceptance Criteria
+  acceptance_criteria:
+    performance_degradation_threshold_percent: -5  # Max 5% performance degradation
+    reliability_threshold_percent: 99.5            # Min 99.5% success rate
+    scalability_factor: 2.0                        # Must scale to 2x current volume

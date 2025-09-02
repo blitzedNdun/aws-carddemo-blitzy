@@ -1,0 +1,70 @@
+# Expected Interest Calculation Output for CBACT04C.cbl Validation
+# This file contains reference calculation results for testing Java BigDecimal
+# precision against COBOL COMP-3 packed decimal calculations
+# Format: AccountID|BeginningBalance|InterestRate|CalculatedInterest|EndingBalance
+# All monetary amounts use 2 decimal places matching COBOL PIC S9(09)V99
+
+# Test Case 1: Standard interest calculation
+00012345678|1000.00|5.25|4.38|1004.38
+
+# Test Case 2: Higher balance with standard rate
+00012345679|2500.00|5.25|10.94|2510.94
+
+# Test Case 3: Lower rate calculation  
+00012345680|1500.00|3.75|4.69|1504.69
+
+# Test Case 4: High rate calculation
+00012345681|750.00|8.50|5.31|755.31
+
+# Test Case 5: Large balance calculation
+00012345682|10000.00|6.00|50.00|10050.00
+
+# Test Case 6: Small balance calculation
+00012345683|100.00|4.50|0.38|100.38
+
+# Test Case 7: Zero balance (should produce zero interest)
+00012345684|0.00|5.25|0.00|0.00
+
+# Test Case 8: Maximum rate scenario
+00012345685|5000.00|12.00|50.00|5050.00
+
+# Test Case 9: Minimum rate scenario  
+00012345686|3000.00|1.00|2.50|3002.50
+
+# Test Case 10: Precision test - complex calculation
+00012345687|1234.56|7.89|8.13|1242.69
+
+# Test Case 11: Another precision test
+00012345688|987.65|4.32|3.56|991.21
+
+# Test Case 12: High precision decimal balance
+00012345689|2345.67|6.78|13.25|2358.92
+
+# Test Case 13: Edge case - very small balance
+00012345690|0.01|5.25|0.00|0.01
+
+# Test Case 14: Edge case - very small rate
+00012345691|1000.00|0.01|0.01|1000.01
+
+# Test Case 15: Complex rounding scenario
+00012345692|1333.33|5.55|6.17|1339.50
+
+# Calculation Formula Used: Monthly Interest = (Balance * Annual Rate) / 1200
+# Where 1200 = 12 months * 100 (percentage conversion)
+# All calculations rounded to 2 decimal places using HALF_UP rounding
+# to match COBOL COMP-3 packed decimal behavior
+
+# Additional test scenarios for comprehensive validation
+00012345693|4567.89|9.25|35.19|4603.08
+00012345694|8901.23|2.75|20.40|8921.63
+00012345695|6789.01|11.50|65.10|6854.11
+00012345696|3456.78|3.25|9.35|3466.13
+00012345697|7890.12|7.75|50.95|7941.07
+
+# Edge cases for BigDecimal precision validation
+00012345698|9999.99|12.99|108.25|10108.24
+00012345699|0.99|0.99|0.00|0.99
+00012345700|12345.67|15.00|154.32|12499.99
+
+# Final validation record - comprehensive test
+00012345701|5555.55|6.66|30.83|5586.38
