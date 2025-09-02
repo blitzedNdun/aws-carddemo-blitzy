@@ -93,7 +93,6 @@ import java.time.format.DateTimeFormatter;
  * @since CardDemo v1.0
  */
 @Configuration
-@Profile("!test")
 @Component
 public class CardListJob {
 

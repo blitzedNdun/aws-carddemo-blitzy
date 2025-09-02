@@ -6,6 +6,9 @@ import com.carddemo.batch.DailyTransactionJob;
 import com.carddemo.batch.InterestCalculationJob;
 import com.carddemo.batch.StatementGenerationJob;
 import com.carddemo.batch.AccountProcessingJob;
+import com.carddemo.batch.AccountListJob;
+import com.carddemo.batch.CardListJob;
+import com.carddemo.batch.CrossReferenceListJob;
 import com.carddemo.batch.BatchTestUtils;
 import com.carddemo.config.MetricsConfig;
 import com.carddemo.config.ActuatorConfig;
@@ -39,6 +42,7 @@ import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.context.annotation.Import;
 
 import java.util.concurrent.TimeUnit;
 import java.util.List;
@@ -76,6 +80,7 @@ import java.lang.management.ThreadMXBean;
  * - Performance comparison with mainframe baselines
  */
 @SpringBootTest
+@Import({TestBatchConfig.class, TestDatabaseConfig.class, AccountProcessingJob.class, DailyTransactionJob.class, AccountListJob.class, CardListJob.class, CrossReferenceListJob.class, MetricsConfig.class, ActuatorConfig.class, BatchConfig.class})
 @TestPropertySource(locations = "classpath:application-test.properties")
 @ActiveProfiles("test")
 @TestMethodOrder(org.junit.jupiter.api.MethodOrderer.OrderAnnotation.class)
@@ -97,8 +102,8 @@ public class BatchPerformanceTest extends AbstractBaseTest {
     @Autowired
     private StatementGenerationJob statementGenerationJob;
     
-    @Autowired
-    private AccountProcessingJob accountProcessingJob;
+    // @Autowired - Configuration classes are not autowirable
+    // private AccountProcessingJob accountProcessingJob;
     
     @Autowired
     @Qualifier("compositeAccountProcessingJob")
@@ -290,8 +295,8 @@ public class BatchPerformanceTest extends AbstractBaseTest {
             .isLessThan(TestConstants.BATCH_PROCESSING_WINDOW_HOURS * 60L);
             
         // Record metrics for baseline comparison
-        performanceMetrics.put("accountProcessingJob.executionTime", executionTime.toSeconds());
-        performanceMetrics.put("accountProcessingJob.subJobCount", 3);
+        performanceMetrics.put("AccountProcessingJob.executionTime", executionTime.toSeconds());
+        performanceMetrics.put("AccountProcessingJob.subJobCount", 3);
         
         // Validate against mainframe baseline performance
         compareToMainframeBaseline("ACCOUNT_PROCESSING", executionTime.toSeconds());

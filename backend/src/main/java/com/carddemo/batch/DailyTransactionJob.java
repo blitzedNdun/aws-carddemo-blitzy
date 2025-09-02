@@ -42,6 +42,7 @@ import org.springframework.batch.item.file.transform.Range;
 import org.springframework.context.annotation.Bean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.FileSystemResource;
 
@@ -106,6 +107,7 @@ import jakarta.persistence.EntityManagerFactory;
  * @since 2024
  */
 @Configuration
+@Component
 public class DailyTransactionJob {
     
     private static final Logger logger = LoggerFactory.getLogger(DailyTransactionJob.class);

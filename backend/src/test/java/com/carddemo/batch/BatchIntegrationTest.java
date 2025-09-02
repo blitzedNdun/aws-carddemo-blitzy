@@ -49,6 +49,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.context.annotation.Import;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -94,6 +95,7 @@ import static org.assertj.core.api.Assertions.*;
  * @since 2024
  */
 @SpringBootTest
+@Import({TestBatchConfig.class, TestDatabaseConfig.class})
 @TestMethodOrder(OrderAnnotation.class)
 @ActiveProfiles("test")
 @TestPropertySource(properties = {

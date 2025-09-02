@@ -93,6 +93,7 @@ public class TransactionConfig {
      */
     @Bean({"transactionManager", "platformTransactionManager"})
     @Primary
+    @Profile("!test")
     public PlatformTransactionManager transactionManager(EntityManagerFactory entityManagerFactory) {
         JpaTransactionManager transactionManager = new JpaTransactionManager();
         transactionManager.setEntityManagerFactory(entityManagerFactory);

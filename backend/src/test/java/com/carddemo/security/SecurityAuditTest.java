@@ -40,6 +40,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 // Spring Boot Test imports for integration testing
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 
 // Mockito imports for mock object creation and verification
 import org.mockito.Mock;
@@ -59,6 +62,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.boot.test.mock.mockito.MockBean;
+
+// Spring Batch imports for JobRepository
+import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
+import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.launch.support.TaskExecutorJobLauncher;
+import org.springframework.batch.core.explore.JobExplorer;
+import org.springframework.batch.core.explore.support.JobExplorerFactoryBean;
+import org.springframework.batch.core.launch.JobOperator;
+import org.springframework.batch.core.launch.support.SimpleJobOperator;
+import org.springframework.batch.core.configuration.JobRegistry;
+import org.springframework.batch.core.configuration.support.MapJobRegistry;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.core.task.SyncTaskExecutor;
+
+import javax.sql.DataSource;
 
 // Java standard imports for test implementation
 import java.time.LocalDateTime;
@@ -107,7 +127,8 @@ import static org.mockito.ArgumentMatchers.*;
     "spring.datasource.password=",
     "spring.datasource.driver-class-name=org.h2.Driver",
     "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
-    "spring.jpa.hibernate.ddl-auto=create-drop"
+    "spring.jpa.hibernate.ddl-auto=create-drop",
+    "spring.batch.job.enabled=false"
 })
 public class SecurityAuditTest {
     
@@ -990,5 +1011,67 @@ public class SecurityAuditTest {
         result.put("archivalSuccess", true);
         result.put("cutoffDate", LocalDateTime.now().minusDays(2555));
         return result;
+    }
+    
+    /**
+     * Test configuration to provide JobRepository bean for batch components.
+     * This prevents UnsatisfiedDependencyException from batch job configurations.
+     */
+    @TestConfiguration
+    static class TestBatchJobConfiguration {
+        
+        @Bean
+        @Primary
+        public JobRepository testJobRepository(DataSource dataSource) throws Exception {
+            JobRepositoryFactoryBean factory = new JobRepositoryFactoryBean();
+            factory.setDataSource(dataSource);
+            factory.setTransactionManager(new DataSourceTransactionManager(dataSource));
+            factory.afterPropertiesSet();
+            return factory.getObject();
+        }
+        
+        @Bean
+        @Primary  
+        public PlatformTransactionManager testTransactionManager(DataSource dataSource) {
+            return new DataSourceTransactionManager(dataSource);
+        }
+        
+        @Bean
+        @Primary
+        public JobLauncher testJobLauncher(JobRepository jobRepository) {
+            TaskExecutorJobLauncher launcher = new TaskExecutorJobLauncher();
+            launcher.setJobRepository(jobRepository);
+            launcher.setTaskExecutor(new SyncTaskExecutor());
+            return launcher;
+        }
+        
+        @Bean
+        @Primary
+        public JobExplorer testJobExplorer(DataSource dataSource, PlatformTransactionManager transactionManager) throws Exception {
+            JobExplorerFactoryBean factory = new JobExplorerFactoryBean();
+            factory.setDataSource(dataSource);
+            factory.setTransactionManager(transactionManager);
+            factory.afterPropertiesSet();
+            return factory.getObject();
+        }
+        
+        @Bean
+        @Primary
+        public JobRegistry testJobRegistry() {
+            return new MapJobRegistry();
+        }
+        
+        @Bean
+        @Primary
+        public JobOperator testJobOperator(JobLauncher jobLauncher, JobRepository jobRepository, 
+                                         JobExplorer jobExplorer, JobRegistry jobRegistry) throws Exception {
+            SimpleJobOperator jobOperator = new SimpleJobOperator();
+            jobOperator.setJobLauncher(jobLauncher);
+            jobOperator.setJobRepository(jobRepository);
+            jobOperator.setJobExplorer(jobExplorer);
+            jobOperator.setJobRegistry(jobRegistry);
+            jobOperator.afterPropertiesSet();
+            return jobOperator;
+        }
     }
 }

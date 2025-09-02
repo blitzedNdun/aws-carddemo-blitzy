@@ -23,6 +23,7 @@ import org.springframework.batch.item.file.transform.LineAggregator;
 import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
 import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 import org.springframework.context.annotation.Profile;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -92,8 +93,8 @@ import java.io.File;
  * @version 1.0
  * @since CardDemo v1.0
  */
+@Configuration
 @Component
-@Profile("!test")
 public class CrossReferenceListJob {
 
     private static final Logger logger = LoggerFactory.getLogger(CrossReferenceListJob.class);

@@ -97,7 +97,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since CardDemo v1.0
  */
 @Configuration
-@Profile("!test")
+@Component
 public class AccountProcessingJob {
 
     private static final Logger logger = LoggerFactory.getLogger(AccountProcessingJob.class);
@@ -106,7 +106,7 @@ public class AccountProcessingJob {
     private static final String COMPOSITE_JOB_NAME = "accountProcessingCompositeJob";
     private static final String ACCOUNT_STEP_NAME = "executeAccountListStep";
     private static final String CARD_STEP_NAME = "executeCardListStep";
-    private static final String XREF_STEP_NAME = "executeCrossReferenceStep";
+    private static final String XREF_STEP_NAME = "executeCrossReferenceListStep";
     
     // Performance monitoring constants
     private static final long MAX_PROCESSING_TIME_HOURS = 4L;

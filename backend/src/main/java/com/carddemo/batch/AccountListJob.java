@@ -73,7 +73,7 @@ import java.time.temporal.ChronoUnit;
  * @since 2024
  */
 @Configuration
-@Profile("!test")
+@Profile({"!test", "!unit-test"})
 public class AccountListJob {
 
     // Batch processing constants matching COBOL program behavior

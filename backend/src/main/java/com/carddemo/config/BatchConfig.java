@@ -115,6 +115,7 @@ public class BatchConfig {
      * @throws Exception if JobRepositoryFactoryBean initialization fails
      */
     @Bean
+    @Profile("!test")
     public JobRepository jobRepository(DataSource dataSource, PlatformTransactionManager transactionManager) throws Exception {
         JobRepositoryFactoryBean factory = new JobRepositoryFactoryBean();
         
@@ -174,6 +175,7 @@ public class BatchConfig {
      * @throws Exception if JobLauncher initialization fails
      */
     @Bean
+    @Profile("!test")
     public JobLauncher jobLauncher(JobRepository jobRepository, ThreadPoolTaskExecutor taskExecutor) throws Exception {
         TaskExecutorJobLauncher jobLauncher = new TaskExecutorJobLauncher();
         
@@ -311,6 +313,7 @@ public class BatchConfig {
      * @return JobExplorer configured for comprehensive batch job monitoring
      */
     @Bean
+    @Profile("!test")
     public org.springframework.batch.core.explore.JobExplorer jobExplorer(DataSource dataSource, PlatformTransactionManager transactionManager) throws Exception {
         JobExplorerFactoryBean factory = new JobExplorerFactoryBean();
         factory.setDataSource(dataSource);
@@ -349,6 +352,7 @@ public class BatchConfig {
      * @return JobOperator configured for comprehensive batch job management
      */
     @Bean
+    @Profile("!test")
     public org.springframework.batch.core.launch.JobOperator jobOperator(
             JobRepository jobRepository,
             org.springframework.batch.core.explore.JobExplorer jobExplorer,
