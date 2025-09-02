@@ -41,10 +41,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.params.provider.CsvSource;
 
-// Testcontainers Infrastructure
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
+// Removed Testcontainers imports - using H2 in-memory database for testing
 
 // Java Standard Library
 import java.math.BigDecimal;
@@ -77,6 +74,7 @@ import com.carddemo.entity.DisclosureGroup;
 
 // Repository Interfaces for Data Access
 import com.carddemo.repository.AccountRepository;
+import com.carddemo.repository.CustomerRepository;
 import com.carddemo.repository.TransactionRepository;
 import com.carddemo.repository.TransactionCategoryBalanceRepository;
 import com.carddemo.repository.DisclosureGroupRepository;
@@ -160,14 +158,17 @@ import com.carddemo.exception.DataPrecisionException;
     TestDatabaseConfig.class
 })
 @SpringBatchTest
-@Testcontainers
 @ActiveProfiles({"test", "batch-test"})
 @TestPropertySource(properties = {
     "spring.batch.job.enabled=false",
     "logging.level.com.carddemo.batch=DEBUG",
     "spring.jpa.show-sql=false",
     "carddemo.batch.chunk-size=100",
-    "carddemo.batch.processing-window-hours=4"
+    "carddemo.batch.processing-window-hours=4",
+    "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1",
+    "spring.datasource.driver-class-name=org.h2.Driver",
+    "spring.datasource.username=sa",
+    "spring.datasource.password="
 })
 @Import({TestBatchConfig.class, TestDatabaseConfig.class})
 @Transactional
@@ -186,13 +187,7 @@ public class InterestCalculationJobTest {
     private static final String DEFAULT_GROUP_ID = "DEFAULT";
     private static final BigDecimal INTEREST_RATE_DIVISOR = new BigDecimal("1200");
 
-    // Testcontainers PostgreSQL for isolated database testing
-    @Container
-    static PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:15.4")
-            .withDatabaseName("carddemo_test")
-            .withUsername("carddemo")
-            .withPassword("test123")
-            .withInitScript("db/test-schema.sql");
+    // Using H2 in-memory database instead of PostgreSQL container for testing environment compatibility
 
     // Spring Batch Test Infrastructure
     @Autowired
@@ -210,6 +205,9 @@ public class InterestCalculationJobTest {
     private AccountRepository accountRepository;
 
     @Autowired
+    private CustomerRepository customerRepository;
+
+    @Autowired
     private TransactionRepository transactionRepository;
 
     @Autowired
@@ -224,15 +222,8 @@ public class InterestCalculationJobTest {
     @Autowired
     private TransactionTypeRepository transactionTypeRepository;
 
-    // Utility classes for COBOL equivalence validation
-    @Autowired
-    private CobolDataConverter cobolDataConverter;
-
-    @Autowired
-    private AmountCalculator amountCalculator;
-
-    @Autowired
-    private DateConversionUtil dateConversionUtil;
+    // Note: Utility classes (CobolDataConverter, AmountCalculator, DateConversionUtil) 
+    // are final classes with static methods - no autowiring needed
 
     // Logger for test execution tracking
     private static final Logger logger = LoggerFactory.getLogger(InterestCalculationJobTest.class);
@@ -274,11 +265,12 @@ public class InterestCalculationJobTest {
      */
     @AfterEach
     void tearDown() {
-        // Clear all test data
+        // Clear all test data (order matters due to foreign key constraints)
         transactionRepository.deleteAll();
         transactionCategoryBalanceRepository.deleteAll();
         disclosureGroupRepository.deleteAll();
         accountRepository.deleteAll();
+        customerRepository.deleteAll();
         
         // Clear job execution metadata
         jobRepositoryTestUtils.removeJobExecutions();
@@ -286,6 +278,18 @@ public class InterestCalculationJobTest {
         Duration testDuration = Duration.between(testStartTime, LocalDateTime.now());
         logger.info("InterestCalculationJobTest cleanup completed. Test duration: {} ms", 
                    testDuration.toMillis());
+    }
+
+    /**
+     * Helper method to create valid job parameters with required startDate and endDate.
+     * Matches TestBatchConfig validator requirements.
+     */
+    private JobParameters createValidJobParameters() {
+        return new JobParametersBuilder()
+                .addString("startDate", LocalDate.now().toString())
+                .addString("endDate", LocalDate.now().toString())
+                .addLong("timestamp", System.currentTimeMillis())
+                .toJobParameters();
     }
 
     /**
@@ -309,10 +313,7 @@ public class InterestCalculationJobTest {
             // Given: Valid test data is already set up in setUp()
             
             // When: Execute the interest calculation job
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("executionDate", LocalDate.now().toString())
-                    .addLong("executionTime", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
             
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
             
@@ -833,15 +834,25 @@ public class InterestCalculationJobTest {
      */
     private List<Account> createTestAccounts(int count) {
         List<Account> accounts = new ArrayList<>();
+        List<Customer> customers = new ArrayList<>();
         
+        // First, create and save all Customer entities
+        for (int i = 1; i <= count; i++) {
+            Customer customer = new Customer();
+            customer.setCustomerId((long) (100000000 + i));
+            customer.setFirstName("TestFirst" + i);
+            customer.setLastName("TestLast" + i);
+            customers.add(customer);
+        }
+        customerRepository.saveAll(customers);
+        
+        // Then create Account entities with saved Customer references
         for (int i = 1; i <= count; i++) {
             Account account = new Account();
             account.setAccountId((long) (10000000000L + i));
             
-            // Create Customer object for Account relationship
-            Customer customer = new Customer();
-            customer.setCustomerId(String.valueOf(100000000 + i));
-            account.setCustomer(customer);
+            // Use the saved Customer object for Account relationship
+            account.setCustomer(customers.get(i - 1));
             
             account.setCurrentBalance(new BigDecimal("1500.00"));
             account.setCreditLimit(new BigDecimal("5000.00"));

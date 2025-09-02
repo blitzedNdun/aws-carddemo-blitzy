@@ -19,6 +19,7 @@ import com.carddemo.entity.TransactionCategoryBalance;
 import com.carddemo.repository.AccountRepository;
 import com.carddemo.repository.CardRepository;
 import com.carddemo.repository.CardXrefRepository;
+import com.carddemo.repository.CustomerRepository;
 import com.carddemo.repository.DailyTransactionRepository;
 import com.carddemo.repository.TransactionRepository;
 import com.carddemo.repository.TransactionCategoryBalanceRepository;
@@ -39,9 +40,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+// Removed Testcontainers imports - using H2 in-memory database for testing
 import org.assertj.core.api.Assertions;
 import org.mockito.MockitoAnnotations;
 
@@ -93,9 +92,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
     "spring.batch.job.enabled=false",
     "spring.jpa.hibernate.ddl-auto=create-drop",
     "logging.level.org.springframework.batch=DEBUG",
-    "logging.level.com.carddemo.batch=DEBUG"
+    "logging.level.com.carddemo.batch=DEBUG",
+    "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1",
+    "spring.datasource.driver-class-name=org.h2.Driver",
+    "spring.datasource.username=sa",
+    "spring.datasource.password="
 })
-@Testcontainers
 public class DailyTransactionJobTest {
 
     // Constants for test data precision and validation matching COBOL COMP-3 behavior
@@ -107,12 +109,7 @@ public class DailyTransactionJobTest {
     private static final int CHUNK_SIZE = 1000;
     private static final BigDecimal PRECISION_TOLERANCE = new BigDecimal("0.01");
 
-    @Container
-    static PostgreSQLContainer<?> postgresqlContainer = new PostgreSQLContainer<>("postgres:15-alpine")
-            .withDatabaseName("carddemo_test")
-            .withUsername("testuser")
-            .withPassword("testpass")
-            .withExposedPorts(5432);
+    // Using H2 in-memory database instead of PostgreSQL container for testing environment compatibility
 
     @Autowired
     private JobLauncherTestUtils jobLauncherTestUtils;
@@ -134,6 +131,9 @@ public class DailyTransactionJobTest {
 
     @Autowired
     private TransactionCategoryBalanceRepository transactionCategoryBalanceRepository;
+
+    @Autowired
+    private CustomerRepository customerRepository;
 
     private AutoCloseable mockitoCloseable;
 
@@ -167,6 +167,7 @@ public class DailyTransactionJobTest {
         cardXrefRepository.deleteAll();
         cardRepository.deleteAll();
         accountRepository.deleteAll();
+        customerRepository.deleteAll();
     }
 
     /**
@@ -179,6 +180,7 @@ public class DailyTransactionJobTest {
         testCustomer.setCustomerId("10001");
         testCustomer.setFirstName("Test");
         testCustomer.setLastName("Customer");
+        testCustomer = customerRepository.save(testCustomer);
         
         // Create test account with precise BigDecimal values matching COBOL COMP-3
         Account testAccount = new Account();
@@ -258,6 +260,18 @@ public class DailyTransactionJobTest {
         return transaction;
     }
 
+    /**
+     * Helper method to create valid job parameters with required startDate and endDate.
+     * Matches TestBatchConfig validator requirements.
+     */
+    private JobParameters createValidJobParameters() {
+        return new JobParametersBuilder()
+                .addString("startDate", LocalDate.now().toString())
+                .addString("endDate", LocalDate.now().toString())
+                .addLong("timestamp", System.currentTimeMillis())
+                .toJobParameters();
+    }
+
     @Nested
     @DisplayName("Successful Transaction Processing Tests - CBTRN02C Logic")
     class SuccessfulTransactionProcessingTests {
@@ -274,10 +288,7 @@ public class DailyTransactionJobTest {
             BigDecimal originalBalance = originalAccount.getCurrentBalance();
 
             // Prepare job parameters
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute the batch job
             long startTime = System.currentTimeMillis();
@@ -323,10 +334,7 @@ public class DailyTransactionJobTest {
             Account originalAccount = accountRepository.findById(1000001L).orElse(null);
             BigDecimal originalBalance = originalAccount.getCurrentBalance();
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -362,10 +370,7 @@ public class DailyTransactionJobTest {
             DailyTransaction dailyTxn = createValidDailyTransaction();
             dailyTransactionRepository.save(dailyTxn);
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -392,10 +397,7 @@ public class DailyTransactionJobTest {
             DailyTransaction invalidTxn = createInvalidDailyTransaction("INVALID_CARD");
             dailyTransactionRepository.save(invalidTxn);
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -426,10 +428,7 @@ public class DailyTransactionJobTest {
             
             dailyTransactionRepository.save(dailyTxn);
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -460,10 +459,7 @@ public class DailyTransactionJobTest {
             dailyTxn.setTransactionAmount(new BigDecimal("123.45").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
             dailyTransactionRepository.save(dailyTxn);
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -493,10 +489,7 @@ public class DailyTransactionJobTest {
             Account originalAccount = accountRepository.findById(1000001L).orElse(null);
             BigDecimal originalCycleDebit = originalAccount.getCurrentCycleDebit();
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -522,10 +515,7 @@ public class DailyTransactionJobTest {
             Account originalAccount = accountRepository.findById(1000001L).orElse(null);
             BigDecimal originalCycleCredit = originalAccount.getCurrentCycleCredit();
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -554,10 +544,7 @@ public class DailyTransactionJobTest {
             Account originalAccount = accountRepository.findById(1000001L).orElse(null);
             BigDecimal originalBalance = originalAccount.getCurrentBalance();
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -589,10 +576,7 @@ public class DailyTransactionJobTest {
             boundaryTxn.setTransactionAmount(new BigDecimal("3000.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE)); // Exactly at limit
             dailyTransactionRepository.save(boundaryTxn);
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -624,10 +608,7 @@ public class DailyTransactionJobTest {
             Account originalAccount = accountRepository.findById(1000001L).orElse(null);
             BigDecimal originalBalance = originalAccount.getCurrentBalance();
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -660,10 +641,7 @@ public class DailyTransactionJobTest {
             DailyTransaction validTxn = createValidDailyTransaction();
             dailyTransactionRepository.save(validTxn);
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -701,10 +679,7 @@ public class DailyTransactionJobTest {
             overlimit.setTransactionId("9000003");
             dailyTransactionRepository.save(overlimit);
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -741,10 +716,7 @@ public class DailyTransactionJobTest {
             invalidTxn.setTransactionId("9000002");
             dailyTransactionRepository.save(invalidTxn);
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -778,10 +750,7 @@ public class DailyTransactionJobTest {
                 dailyTransactionRepository.save(txn);
             }
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job with timing
             long startTime = System.currentTimeMillis();
@@ -811,10 +780,7 @@ public class DailyTransactionJobTest {
                 dailyTransactionRepository.save(txn);
             }
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -842,10 +808,7 @@ public class DailyTransactionJobTest {
             DailyTransaction inactiveTxn = createInvalidDailyTransaction("INACTIVE_ACCOUNT");
             dailyTransactionRepository.save(inactiveTxn);
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -873,10 +836,7 @@ public class DailyTransactionJobTest {
                 dailyTransactionRepository.save(txn);
             }
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute job to completion first
             JobExecution initialExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -906,10 +866,7 @@ public class DailyTransactionJobTest {
             existingTxn.setTransactionDate(LocalDate.now());
             transactionRepository.save(existingTxn);
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act & Assert: Verify error handling
             // The job should handle constraint violations gracefully
@@ -934,10 +891,7 @@ public class DailyTransactionJobTest {
             txn.setOriginalTimestamp(specificTime);
             dailyTransactionRepository.save(txn);
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -965,10 +919,7 @@ public class DailyTransactionJobTest {
             midnightTxn.setOriginalTimestamp(LocalDateTime.of(2024, 3, 15, 23, 59, 59));
             dailyTransactionRepository.save(midnightTxn);
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -1006,10 +957,7 @@ public class DailyTransactionJobTest {
             gasTxn.setTransactionAmount(new BigDecimal("75.50").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
             dailyTransactionRepository.save(gasTxn);
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -1050,10 +998,7 @@ public class DailyTransactionJobTest {
                 dailyTransactionRepository.save(txn);
             }
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -1096,10 +1041,7 @@ public class DailyTransactionJobTest {
             account.setCurrentCycleDebit(new BigDecimal("500.00").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
             accountRepository.save(account);
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -1134,10 +1076,7 @@ public class DailyTransactionJobTest {
             edgeTxn.setTransactionAmount(new BigDecimal("0.02").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
             dailyTransactionRepository.save(edgeTxn);
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -1180,10 +1119,7 @@ public class DailyTransactionJobTest {
             BigDecimal originalBalance = originalAccount.getCurrentBalance();
             long originalTransactionCount = transactionRepository.countByAccountId(1000001L);
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute complete workflow
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -1239,10 +1175,7 @@ public class DailyTransactionJobTest {
             BigDecimal originalCycleDebit = originalAccount.getCurrentCycleDebit();
             BigDecimal originalCycleCredit = originalAccount.getCurrentCycleCredit();
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -1292,10 +1225,7 @@ public class DailyTransactionJobTest {
                 dailyTransactionRepository.save(txn);
             }
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute reader step only
             JobExecution stepExecution = jobLauncherTestUtils.launchStep("dailyTransactionStep", jobParameters);
@@ -1318,10 +1248,7 @@ public class DailyTransactionJobTest {
             invalidTxn.setTransactionId(String.valueOf(9000002L));
             dailyTransactionRepository.save(invalidTxn);
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute processor step
             JobExecution stepExecution = jobLauncherTestUtils.launchStep("dailyTransactionStep", jobParameters);
@@ -1342,10 +1269,7 @@ public class DailyTransactionJobTest {
             DailyTransaction txn = createValidDailyTransaction();
             dailyTransactionRepository.save(txn);
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute writer step
             JobExecution stepExecution = jobLauncherTestUtils.launchStep("dailyTransactionStep", jobParameters);
@@ -1373,10 +1297,7 @@ public class DailyTransactionJobTest {
             precisionTxn.setTransactionAmount(new BigDecimal("123.456789").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE)); // Should round to 123.46
             dailyTransactionRepository.save(precisionTxn);
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -1402,10 +1323,7 @@ public class DailyTransactionJobTest {
             specialTxn.setMerchantName("MERCHANT NAME WITH APOSTROPHE'S & AMPERSAND");
             dailyTransactionRepository.save(specialTxn);
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -1436,10 +1354,7 @@ public class DailyTransactionJobTest {
             yesterdayTxn.setOriginalTimestamp(LocalDateTime.now().minusDays(1));
             dailyTransactionRepository.save(yesterdayTxn);
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -1485,10 +1400,7 @@ public class DailyTransactionJobTest {
             long setupEndTime = System.currentTimeMillis();
             System.out.println("Test data setup time: " + (setupEndTime - setupStartTime) + "ms");
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job with performance monitoring
             long jobStartTime = System.currentTimeMillis();
@@ -1531,10 +1443,7 @@ public class DailyTransactionJobTest {
             Runtime runtime = Runtime.getRuntime();
             long memoryBefore = runtime.totalMemory() - runtime.freeMemory();
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -1575,10 +1484,7 @@ public class DailyTransactionJobTest {
             edgeTxn.setTransactionAmount(new BigDecimal("0.03").setScale(COBOL_DECIMAL_SCALE, COBOL_ROUNDING_MODE));
             dailyTransactionRepository.save(edgeTxn);
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -1613,10 +1519,7 @@ public class DailyTransactionJobTest {
             Account originalAccount = accountRepository.findById(1000001L).orElse(null);
             BigDecimal originalBalance = originalAccount.getCurrentBalance();
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
@@ -1648,10 +1551,7 @@ public class DailyTransactionJobTest {
                 dailyTransactionRepository.save(txn);
             }
 
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("inputDate", LocalDate.now().toString())
-                    .addLong("timestamp", System.currentTimeMillis())
-                    .toJobParameters();
+            JobParameters jobParameters = createValidJobParameters();
 
             // Act: Execute batch job
             JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
