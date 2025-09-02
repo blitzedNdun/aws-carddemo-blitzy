@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.io.IOException;
 import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import com.carddemo.security.SecurityConstants;
 import com.carddemo.security.JwtTokenService;
@@ -61,7 +62,8 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
     private static final String AUTH_LOGIN_ENDPOINT = "/api/auth/login";
 
     @Autowired
-    public CustomAuthenticationEntryPoint(JwtTokenService jwtTokenService, ObjectMapper objectMapper) {
+    public CustomAuthenticationEntryPoint(JwtTokenService jwtTokenService, 
+                                        @Qualifier("objectMapper") ObjectMapper objectMapper) {
         this.jwtTokenService = jwtTokenService;
         this.objectMapper = objectMapper;
     }
