@@ -16,6 +16,7 @@ import com.carddemo.dto.ApiRequest;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Profile;
 import org.springframework.batch.core.JobParametersBuilder;
 import java.time.Duration;
 import org.slf4j.Logger;
@@ -75,6 +76,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @since CardDemo v1.0
  */
 @Component
+@Profile({"!test", "!unit-test"})
 public class BatchJobScheduler {
 
     private static final Logger logger = LoggerFactory.getLogger(BatchJobScheduler.class);

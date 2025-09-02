@@ -108,6 +108,7 @@ import jakarta.persistence.EntityManagerFactory;
  */
 @Configuration
 @Component
+@Profile({"!test", "!unit-test"})
 public class DailyTransactionJob {
     
     private static final Logger logger = LoggerFactory.getLogger(DailyTransactionJob.class);

@@ -10,6 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.annotation.Commit;
 
 // Spring Batch Testing Framework
 import org.springframework.batch.test.JobLauncherTestUtils;
@@ -25,6 +26,10 @@ import org.springframework.batch.core.StepExecution;
 // Spring Framework Dependencies  
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+
+// JPA EntityManager for entity state management
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 // JUnit 5 Testing Framework
 import org.junit.jupiter.api.Test;
@@ -47,6 +52,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.List;
@@ -171,7 +177,7 @@ import com.carddemo.exception.DataPrecisionException;
     "spring.datasource.password="
 })
 @Import({TestBatchConfig.class, TestDatabaseConfig.class})
-@Transactional
+@Transactional(readOnly = false)
 public class InterestCalculationJobTest {
 
     // COBOL precision constants matching CBACT04C program specifications
@@ -222,6 +228,10 @@ public class InterestCalculationJobTest {
     @Autowired
     private TransactionTypeRepository transactionTypeRepository;
 
+    // JPA EntityManager for entity state management
+    @PersistenceContext
+    private EntityManager entityManager;
+
     // Note: Utility classes (CobolDataConverter, AmountCalculator, DateConversionUtil) 
     // are final classes with static methods - no autowiring needed
 
@@ -251,8 +261,7 @@ public class InterestCalculationJobTest {
         // Configure JobLauncherTestUtils with the InterestCalculationJob
         jobLauncherTestUtils.setJob(interestCalculationJob.interestCalculationJob());
         
-        // Initialize test data with COBOL-equivalent structures
-        initializeTestData();
+        // Test data will be initialized within each test method for proper transaction handling
         
         logger.info("InterestCalculationJobTest setup completed at: {}", testStartTime);
     }
@@ -296,6 +305,7 @@ public class InterestCalculationJobTest {
      * Unit tests focusing on individual component validation and business logic verification.
      */
     @Nested
+    @Transactional(readOnly = false)
     @DisplayName("Unit Tests - Individual Component Validation")
     @Tag("unit")
     class UnitTests {
@@ -308,9 +318,12 @@ public class InterestCalculationJobTest {
          * interest transactions and account balance updates.
          */
         @Test
+        @Transactional
+        @Commit
         @DisplayName("Should execute interest calculation job successfully with valid data")
         void testSuccessfulJobExecution() throws Exception {
-            // Given: Valid test data is already set up in setUp()
+            // Given: Initialize test data within transaction boundary
+            initializeTestData();
             
             // When: Execute the interest calculation job
             JobParameters jobParameters = createValidJobParameters();
@@ -372,9 +385,12 @@ public class InterestCalculationJobTest {
          * account group rates are not available.
          */
         @Test
+        @Transactional
+        @Commit
         @DisplayName("Should lookup interest rates with DEFAULT group fallback")
         void testInterestRateLookupWithDefaultFallback() throws Exception {
-            // Given: Account without specific disclosure group, but DEFAULT group exists
+            // Given: Initialize test data and account without specific disclosure group
+            initializeTestData();
             Account testAccount = testAccounts.get(0);
             testAccount.setGroupId("MISSING_GROUP");
             accountRepository.save(testAccount);
@@ -465,7 +481,8 @@ public class InterestCalculationJobTest {
     /**
      * Integration tests focusing on complete job execution and system interaction validation.
      */
-    @Nested  
+    @Nested
+    @Transactional(readOnly = false)
     @DisplayName("Integration Tests - Complete Job Execution Validation")
     @Tag("integration")
     class IntegrationTests {
@@ -478,9 +495,11 @@ public class InterestCalculationJobTest {
          * 1050-UPDATE-ACCOUNT paragraph logic.
          */
         @Test
+        @Transactional
         @DisplayName("Should process accounts sequentially with interest accumulation") 
         void testCompleteJobExecutionWithAccountGrouping() throws Exception {
-            // Given: Multiple transaction category balances for same account
+            // Given: Initialize test data and multiple transaction category balances for same account
+            initializeTestData();
             Account testAccount = testAccounts.get(0);
             List<TransactionCategoryBalance> accountBalances = createMultipleBalancesForAccount(
                     testAccount.getAccountId(), 3);
@@ -517,9 +536,11 @@ public class InterestCalculationJobTest {
          * descriptions, and timestamps.
          */
         @Test
+        @Transactional
         @DisplayName("Should generate interest transaction records with COBOL field mapping")
         void testInterestTransactionGeneration() throws Exception {
-            // Given: Valid test data setup
+            // Given: Initialize test data for transaction generation
+            initializeTestData();
             Account testAccount = testAccounts.get(0);
             TransactionCategoryBalance testBalance = testBalances.get(0);
             
@@ -564,9 +585,11 @@ public class InterestCalculationJobTest {
          * for large data volumes.
          */
         @Test
+        @Transactional
         @DisplayName("Should process records in configurable chunks for memory efficiency")
         void testChunkProcessingBehavior() throws Exception {
-            // Given: Large number of transaction category balances (> chunk size)
+            // Given: Initialize test data and large number of transaction category balances
+            initializeTestData();
             int totalRecords = 250; // More than default chunk size of 100
             List<TransactionCategoryBalance> largeDataSet = createLargeTestDataSet(totalRecords);
             
@@ -597,6 +620,8 @@ public class InterestCalculationJobTest {
          * compliance with mainframe processing schedules.
          */
         @Test
+        @Transactional
+        @Commit
         @DisplayName("Should complete within 4-hour processing window requirement")
         void testPerformanceWithinProcessingWindow() throws Exception {
             // Given: Performance test data set
@@ -629,6 +654,7 @@ public class InterestCalculationJobTest {
      * Error handling and edge case tests for comprehensive validation.
      */
     @Nested
+    @Transactional(readOnly = false)
     @DisplayName("Error Handling Tests - Exception Scenarios and Edge Cases")  
     @Tag("error-handling")
     class ErrorHandlingTests {
@@ -667,9 +693,11 @@ public class InterestCalculationJobTest {
          * when no rates are available.
          */
         @Test
+        @Transactional
         @DisplayName("Should handle missing disclosure groups with DEFAULT fallback")
         void testMissingDisclosureGroupHandling() throws Exception {
-            // Given: Account with group ID that has no disclosure group
+            // Given: Initialize test data and account with group ID that has no disclosure group
+            initializeTestData();
             Account testAccount = testAccounts.get(0);
             testAccount.setGroupId("NONEXISTENT_GROUP");
             accountRepository.save(testAccount);
@@ -738,6 +766,7 @@ public class InterestCalculationJobTest {
      * COBOL equivalence validation tests ensuring functional parity.
      */
     @Nested
+    @Transactional(readOnly = false)
     @DisplayName("COBOL Equivalence Tests - Functional Parity Validation")
     @Tag("cobol-equivalence") 
     class CobolEquivalenceTests {
@@ -813,9 +842,37 @@ public class InterestCalculationJobTest {
     private void initializeTestData() {
         logger.info("Initializing test data for InterestCalculationJob testing");
         
-        // Create test accounts
-        testAccounts = createTestAccounts(3);
-        accountRepository.saveAll(testAccounts);
+        // Create customers and accounts one-by-one to avoid entity state issues
+        testAccounts = new ArrayList<>();
+        List<Customer> customers = createTestCustomers(3);
+        
+        // First, save all customers to ensure they're persisted
+        List<Customer> savedCustomers = customerRepository.saveAll(customers);
+        
+        // Create accounts and set customer relationships using entity references
+        // This approach creates Account entities with explicit Customer entity references
+        for (int i = 0; i < savedCustomers.size(); i++) {
+            Customer customer = savedCustomers.get(i);
+            
+            Account account = new Account();
+            account.setAccountId(90000000000L + (i + 1));
+            
+            // Set customer relationship - use the saved customer or find refreshed version
+            Customer refreshedCustomer = customerRepository.findById(Long.valueOf(customer.getCustomerId())).orElse(customer);
+            account.setCustomer(refreshedCustomer);
+            
+            account.setCurrentBalance(new BigDecimal("1500.00"));
+            account.setCreditLimit(new BigDecimal("5000.00"));
+            account.setGroupId("GROUP_" + String.format("%02d", i + 1));
+            account.setCurrentCycleCredit(new BigDecimal("100.00"));
+            account.setCurrentCycleDebit(new BigDecimal("200.00"));
+            account.setActiveStatus("A");
+            account.setOpenDate(LocalDate.now().minusYears(2));
+            account.setExpirationDate(LocalDate.now().plusYears(3));
+            
+            Account savedAccount = accountRepository.save(account);
+            testAccounts.add(savedAccount);
+        }
         
         // Create disclosure groups with interest rates
         testDisclosureGroups = createTestDisclosureGroups();
@@ -825,31 +882,77 @@ public class InterestCalculationJobTest {
         testBalances = createTestTransactionCategoryBalances();
         transactionCategoryBalanceRepository.saveAll(testBalances);
         
-        logger.info("Test data initialization completed: {} accounts, {} disclosure groups, {} balances",
-                   testAccounts.size(), testDisclosureGroups.size(), testBalances.size());
+        logger.info("Test data initialization completed: {} customers, {} accounts, {} disclosure groups, {} balances",
+                   customers.size(), testAccounts.size(), testDisclosureGroups.size(), testBalances.size());
     }
 
     /**
-     * Creates test accounts with proper field configurations.
+     * Creates test customers with ID offset to avoid conflicts.
      */
-    private List<Account> createTestAccounts(int count) {
-        List<Account> accounts = new ArrayList<>();
+    private List<Customer> createTestCustomersWithIdOffset(int count, int idOffset) {
         List<Customer> customers = new ArrayList<>();
         
-        // First, create and save all Customer entities
         for (int i = 1; i <= count; i++) {
             Customer customer = new Customer();
-            customer.setCustomerId((long) (100000000 + i));
-            customer.setFirstName("TestFirst" + i);
-            customer.setLastName("TestLast" + i);
+            // Use unique test customer IDs with offset to avoid conflicts
+            customer.setCustomerId(String.valueOf(900000000L + idOffset + i));
+            customer.setFirstName("PerfTestFirst" + i);
+            customer.setLastName("PerfTestLast" + i);
+            customer.setDateOfBirth(LocalDate.of(1985, 1, 1).plusDays(i));
+            // Fix SSN to be exactly 9 digits with offset
+            customer.setSsn(String.format("54321%04d", 1000 + i));
+            // Fix phone number to be exactly 10 digits (validation requirement)
+            customer.setPhoneNumber1(String.format("555%07d", 1000000 + i));
+            customer.setPhoneNumber2(String.format("555%07d", 2000000 + i));
+            customer.setAddressLine1("456 Performance Test St");
+            customer.setAddressLine2("Suite " + i);
+            // Use valid US state code
+            customer.setStateCode("NY");
+            customer.setZipCode("54321");
             customers.add(customer);
         }
-        customerRepository.saveAll(customers);
         
-        // Then create Account entities with saved Customer references
+        return customers;
+    }
+
+    /**
+     * Creates test customers with proper field configurations.
+     */
+    private List<Customer> createTestCustomers(int count) {
+        List<Customer> customers = new ArrayList<>();
+        
         for (int i = 1; i <= count; i++) {
+            Customer customer = new Customer();
+            // Use unique test customer IDs starting from 900000000 to avoid conflicts
+            customer.setCustomerId(String.valueOf(900000000L + i));
+            customer.setFirstName("TestFirst" + i);
+            customer.setLastName("TestLast" + i);
+            customer.setDateOfBirth(LocalDate.of(1990, 1, 1).plusDays(i));
+            // Fix SSN to be exactly 9 digits
+            customer.setSsn(String.format("12345%04d", 1000 + i));
+            // Fix phone number to be exactly 10 digits
+            customer.setPhoneNumber1(String.format("555%07d", 1000000 + i));
+            customer.setAddressLine1("123 Test Street " + i);
+            customer.setStateCode("NY");
+            customer.setCountryCode("USA");
+            // Fix ZIP code to be exactly 5 digits
+            customer.setZipCode(String.format("%05d", 10000 + i));
+            customers.add(customer);
+        }
+        
+        return customers;
+    }
+    
+    /**
+     * Creates test accounts with proper field configurations and customer references.
+     */
+    private List<Account> createTestAccountsWithCustomers(List<Customer> customers) {
+        List<Account> accounts = new ArrayList<>();
+        
+        for (int i = 1; i <= customers.size(); i++) {
             Account account = new Account();
-            account.setAccountId((long) (10000000000L + i));
+            // Use unique test account IDs starting from 90000000000 to avoid conflicts
+            account.setAccountId(90000000000L + i);
             
             // Use the saved Customer object for Account relationship
             account.setCustomer(customers.get(i - 1));
@@ -859,10 +962,25 @@ public class InterestCalculationJobTest {
             account.setGroupId("GROUP_" + String.format("%02d", i));
             account.setCurrentCycleCredit(new BigDecimal("100.00"));
             account.setCurrentCycleDebit(new BigDecimal("200.00"));
+            account.setActiveStatus("A");
+            account.setOpenDate(LocalDate.now().minusYears(2));
+            account.setExpirationDate(LocalDate.now().plusYears(3));
             accounts.add(account);
         }
         
         return accounts;
+    }
+    
+    /**
+     * Creates test accounts with proper field configurations (legacy method for backward compatibility).
+     */
+    private List<Account> createTestAccounts(int count) {
+        // Create customers first
+        List<Customer> customers = createTestCustomers(count);
+        List<Customer> savedCustomers = customerRepository.saveAll(customers);
+        
+        // Create accounts with customer references (use saved entities with IDs)
+        return createTestAccountsWithCustomers(savedCustomers);
     }
 
     /**
@@ -991,8 +1109,18 @@ public class InterestCalculationJobTest {
      * Creates performance test data for processing window validation.
      */
     private void createPerformanceTestData() {
+        // Create additional customers with unique IDs to avoid conflicts  
+        List<Customer> perfCustomers = createTestCustomersWithIdOffset(10, 100); // Start from 900000101
+        List<Customer> savedPerfCustomers = customerRepository.saveAll(perfCustomers);
+        
         // Create additional accounts and balances for performance testing
-        List<Account> perfAccounts = createTestAccounts(10);
+        // Refresh customers to ensure they're in the database before creating accounts
+        List<Customer> refreshedPerfCustomers = new ArrayList<>();
+        for (Customer customer : savedPerfCustomers) {
+            Customer refreshed = customerRepository.findById(Long.valueOf(customer.getCustomerId())).orElse(customer);
+            refreshedPerfCustomers.add(refreshed);
+        }
+        List<Account> perfAccounts = createTestAccountsWithCustomers(refreshedPerfCustomers);
         accountRepository.saveAll(perfAccounts);
         
         List<TransactionCategoryBalance> perfBalances = new ArrayList<>();

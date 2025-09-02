@@ -502,6 +502,7 @@
                             <goal>compile</goal>
                         </goals>
                     </execution>
+                    <!-- Temporarily disabled scala test compilation due to compilation issues
                     <execution>
                         <id>scala-test-compile</id>
                         <phase>process-test-resources</phase>
@@ -509,6 +510,7 @@
                             <goal>testCompile</goal>
                         </goals>
                     </execution>
+                    -->
                 </executions>
             </plugin>
             

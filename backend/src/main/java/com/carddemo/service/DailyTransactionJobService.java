@@ -17,6 +17,7 @@ import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Profile;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -51,6 +52,7 @@ import org.slf4j.LoggerFactory;
  * @since 2024
  */
 @Service
+@Profile({"!test", "!unit-test"})
 public class DailyTransactionJobService {
 
     private static final Logger logger = LoggerFactory.getLogger(DailyTransactionJobService.class);

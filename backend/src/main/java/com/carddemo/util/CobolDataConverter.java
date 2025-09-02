@@ -302,10 +302,22 @@ public final class CobolDataConverter {
      * @param decimal input BigDecimal value
      * @param scale   required decimal places
      * @return BigDecimal with standardized precision and COBOL-compatible rounding
+     * @throws com.carddemo.exception.DataPrecisionException if input has excessive decimal places (more than 3 beyond target)
      */
     public static BigDecimal preservePrecision(BigDecimal decimal, int scale) {
         if (decimal == null) {
             return BigDecimal.ZERO.setScale(scale, COBOL_ROUNDING_MODE);
+        }
+
+        // Check if the input decimal has excessive precision that indicates data corruption
+        // Allow reasonable rounding (up to 2 extra decimal places), but throw exception for excessive precision
+        if (decimal.scale() > scale + 2) {
+            throw new com.carddemo.exception.DataPrecisionException(
+                "Input decimal precision exceeds maximum allowed for COBOL compatibility",
+                scale,
+                decimal.scale(),
+                decimal
+            );
         }
 
         return decimal.setScale(scale, COBOL_ROUNDING_MODE);

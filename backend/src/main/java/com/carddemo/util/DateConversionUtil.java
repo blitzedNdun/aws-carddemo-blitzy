@@ -445,16 +445,17 @@ public final class DateConversionUtil {
     /**
      * Formats a LocalDateTime as a timestamp string for batch processing.
      * Provides timestamp formatting for batch report generation and logging.
+     * Uses DB2-compliant format: YYYY-MM-DD-HH.MM.SS.nnnnnn
      *
      * @param dateTime the LocalDateTime to format
-     * @return formatted timestamp string
+     * @return formatted timestamp string in DB2 format
      */
     public static String formatTimestamp(LocalDateTime dateTime) {
         if (dateTime == null) {
             dateTime = LocalDateTime.now();
         }
         
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS");
         return formatter.format(dateTime);
     }
 

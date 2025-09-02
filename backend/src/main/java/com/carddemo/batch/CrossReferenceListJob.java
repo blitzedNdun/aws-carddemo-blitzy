@@ -95,6 +95,7 @@ import java.io.File;
  */
 @Configuration
 @Component
+@Profile({"!test", "!unit-test"})
 public class CrossReferenceListJob {
 
     private static final Logger logger = LoggerFactory.getLogger(CrossReferenceListJob.class);

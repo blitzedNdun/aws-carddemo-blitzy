@@ -18,6 +18,7 @@ import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.core.RedisTemplate;
 
 import io.micrometer.core.instrument.MeterRegistry;
@@ -76,6 +77,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @since CardDemo v1.0
  */
 @Configuration
+@Profile({"!test", "!unit-test"})
 public class ActuatorConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(ActuatorConfig.class);

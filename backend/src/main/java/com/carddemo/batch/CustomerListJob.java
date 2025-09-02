@@ -176,6 +176,7 @@ class FormattedCustomer {
  * @since 2024
  */
 @Configuration
+@Profile({"!test", "!unit-test"})
 public class CustomerListJob {
     
     private static final Logger logger = LoggerFactory.getLogger(CustomerListJob.class);

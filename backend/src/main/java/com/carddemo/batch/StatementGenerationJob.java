@@ -117,6 +117,7 @@ import org.slf4j.LoggerFactory;
  * @since 2024
  */
 @Component
+@Profile({"!test", "!unit-test"})
 public class StatementGenerationJob {
 
     private static final Logger logger = LoggerFactory.getLogger(StatementGenerationJob.class);

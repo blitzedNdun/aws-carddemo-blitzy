@@ -98,6 +98,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Configuration
 @Component
+@Profile({"!test", "!unit-test"})
 public class AccountProcessingJob {
 
     private static final Logger logger = LoggerFactory.getLogger(AccountProcessingJob.class);

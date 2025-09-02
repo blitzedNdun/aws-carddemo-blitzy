@@ -29,6 +29,7 @@ import org.springframework.batch.core.launch.JobOperator;
 import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.Job;
 import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Profile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.slf4j.LoggerFactory;
@@ -127,6 +128,7 @@ import org.slf4j.Logger;
 @RestController
 @RequestMapping("/api/batch")
 @Component
+@Profile({"!test", "!unit-test"})
 public class BatchJobLauncher {
 
     private static final Logger logger = LoggerFactory.getLogger(BatchJobLauncher.class);

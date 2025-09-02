@@ -94,6 +94,7 @@ import java.time.format.DateTimeFormatter;
  */
 @Configuration
 @Component
+@Profile({"!test", "!unit-test"})
 public class CardListJob {
 
     private static final Logger logger = LoggerFactory.getLogger(CardListJob.class);

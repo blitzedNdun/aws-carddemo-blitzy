@@ -1056,7 +1056,7 @@ public class BatchTestUtils {
         for (int i = 0; i < count; i++) {
             Customer customer = new Customer();
             
-            // Set customer ID
+            // Set customer ID  
             customer.setCustomerId(String.valueOf(baseCustomerId + i));
             
             // Generate name
