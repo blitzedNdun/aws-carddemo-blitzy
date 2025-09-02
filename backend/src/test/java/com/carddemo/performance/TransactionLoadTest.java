@@ -1002,7 +1002,7 @@ public class TransactionLoadTest {
             Map<String, Object> data = new HashMap<>();
             data.put("account", testDataGenerator.generateAccount());
             data.put("transaction", testDataGenerator.generateTransaction());
-            data.put("amount", testDataGenerator.generateComp3BigDecimal(7, 50000.0));
+            data.put("amount", testDataGenerator.generateComp3BigDecimal(2, 50000.0));
             testData.add(data);
         }
         return testData;
@@ -1014,7 +1014,7 @@ public class TransactionLoadTest {
     private Map<String, Object> generateUniqueTransactionData(int uniqueId) {
         Map<String, Object> transactionData = new HashMap<>();
         transactionData.put("accountId", "ACC" + String.format("%010d", uniqueId));
-        transactionData.put("amount", testDataGenerator.generateComp3BigDecimal(7, 50000.0));
+        transactionData.put("amount", testDataGenerator.generateComp3BigDecimal(2, 50000.0));
         transactionData.put("description", "Load Test Transaction " + uniqueId);
         transactionData.put("transactionType", "PURCHASE");
         transactionData.put("merchantName", "Test Merchant " + (uniqueId % 100));

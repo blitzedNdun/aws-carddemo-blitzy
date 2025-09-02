@@ -112,7 +112,7 @@ public class CardController {
      */
     @GetMapping("/{cardNumber}")
     public ResponseEntity<ApiResponse<CardResponse>> getCardDetails(
-            @PathVariable String cardNumber,
+            @PathVariable("cardNumber") String cardNumber,
             @RequestParam(value = "accountId", required = false) String accountId) {
         
         logger.info("Processing card detail request - cardNumber: {}, accountId: {}", 
@@ -182,7 +182,7 @@ public class CardController {
      */
     @PutMapping("/{cardNumber}")
     public ResponseEntity<ApiResponse<CardResponse>> updateCard(
-            @PathVariable String cardNumber,
+            @PathVariable("cardNumber") String cardNumber,
             @Valid @RequestBody CardRequest cardRequest) {
         
         logger.info("Processing card update request - cardNumber: {}", maskCardNumber(cardNumber));

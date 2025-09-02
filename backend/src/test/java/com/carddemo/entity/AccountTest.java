@@ -596,8 +596,8 @@ public class AccountTest extends AbstractBaseTest implements UnitTest {
         jakarta.persistence.JoinColumn disclosureJoin = disclosureGroupField.getAnnotation(jakarta.persistence.JoinColumn.class);
         assertThat(disclosureJoin.name()).isEqualTo("disclosure_group_id");
         
-        // Test getCustomerId() convenience method - Account returns Long, Customer returns String
-        assertThat(testAccount.getCustomerId()).isEqualTo(1L);  // Account.getCustomerId() returns Long
+        // Test getCustomerId() convenience method - Account returns String, Customer returns String
+        assertThat(testAccount.getCustomerId()).isEqualTo("000000001");  // Account.getCustomerId() returns String for COBOL compatibility
         assertThat(testCustomer.getCustomerId()).isEqualTo("000000001"); // Customer.getCustomerId() returns zero-padded 9-digit String
         
         // Test Card relationship through accountId foreign key

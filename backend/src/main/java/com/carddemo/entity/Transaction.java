@@ -66,7 +66,7 @@ import java.util.Objects;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(exclude = {"account", "card", "transactionType", "transactionCategory"})
+
 public class Transaction {
 
     // Constants for field constraints (matching COBOL PIC clauses)

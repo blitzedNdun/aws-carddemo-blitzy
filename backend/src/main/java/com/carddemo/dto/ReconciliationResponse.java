@@ -50,12 +50,14 @@ public class ReconciliationResponse {
      * Total number of transactions processed successfully
      */
     @JsonProperty("transactionCount")
+    @Builder.Default
     private Integer transactionCount = 0;
     
     /**
      * Number of transactions rejected during processing
      */
     @JsonProperty("rejectCount")
+    @Builder.Default
     private Integer rejectCount = 0;
     
     /**
@@ -63,6 +65,7 @@ public class ReconciliationResponse {
      * Values: NOT_STARTED, PROCESSING, COMPLETED, COMPLETED_WITH_REJECTIONS, ERROR, TIMEOUT
      */
     @JsonProperty("processingStatus")
+    @Builder.Default
     private String processingStatus = "NOT_STARTED";
     
     /**
@@ -96,24 +99,28 @@ public class ReconciliationResponse {
      * Total amount processed (sum of all valid transactions)
      */
     @JsonProperty("totalAmountProcessed")
+    @Builder.Default
     private BigDecimal totalAmountProcessed = BigDecimal.ZERO;
     
     /**
      * Total amount rejected (sum of all rejected transactions)
      */
     @JsonProperty("totalAmountRejected")
+    @Builder.Default
     private BigDecimal totalAmountRejected = BigDecimal.ZERO;
     
     /**
      * Number of accounts affected by the reconciliation
      */
     @JsonProperty("accountsAffected")
+    @Builder.Default
     private Integer accountsAffected = 0;
     
     /**
      * Clearing file generation status
      */
     @JsonProperty("clearingFileGenerated")
+    @Builder.Default
     private Boolean clearingFileGenerated = false;
     
     /**
@@ -126,6 +133,7 @@ public class ReconciliationResponse {
      * Clearing file record count
      */
     @JsonProperty("clearingFileRecordCount")
+    @Builder.Default
     private Integer clearingFileRecordCount = 0;
     
     /**

@@ -95,6 +95,7 @@ public class ReconciliationRequest {
      * Values: HIGH, NORMAL, LOW
      */
     @JsonProperty("processingPriority")
+    @Builder.Default
     private String processingPriority = "NORMAL";
     
     /**
@@ -102,17 +103,20 @@ public class ReconciliationRequest {
      * Used for performance control and memory management
      */
     @JsonProperty("maxTransactionCount")
+    @Builder.Default
     private Integer maxTransactionCount = 10000;
     
     /**
      * Timeout in seconds for batch processing operations
      */
     @JsonProperty("timeoutSeconds")
+    @Builder.Default
     private Integer timeoutSeconds = 3600; // 1 hour default
     
     /**
      * Flag to enable/disable detailed processing logging
      */
     @JsonProperty("enableDetailedLogging")
+    @Builder.Default
     private Boolean enableDetailedLogging = false;
 }

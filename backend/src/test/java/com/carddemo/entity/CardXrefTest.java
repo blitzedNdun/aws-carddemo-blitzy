@@ -415,7 +415,7 @@ public class CardXrefTest extends AbstractBaseTest implements UnitTest {
                 .satisfies(a -> {
                     assertThat(a.getAccountId()).isEqualTo(accountId);
                     assertThat(a.getCurrentBalance()).isEqualTo(java.math.BigDecimal.valueOf(1000.00));
-                    assertThat(a.getCustomerId()).isEqualTo(customerId);
+                    assertThat(a.getCustomerId()).isEqualTo(customerId.toString());
                 });
             
             logTestExecution("Relationship entity associations validation passed", null);

@@ -114,9 +114,9 @@ public class TestTransactionConfig {
      * @param dataSource DataSource for database connectivity in test environment
      * @return configured PlatformTransactionManager with test-specific behavior
      */
-    @Bean
-    @Primary
-    public PlatformTransactionManager testTransactionManager(DataSource dataSource) {
+    @Bean("testTransactionConfigManager")
+    @Profile({"transaction-test", "test"})
+    public PlatformTransactionManager testTransactionConfigManager(DataSource dataSource) {
         try {
             DataSourceTransactionManager transactionManager = new DataSourceTransactionManager();
             transactionManager.setDataSource(dataSource);
@@ -205,9 +205,9 @@ public class TestTransactionConfig {
      * @return configured TransactionTemplate for programmatic test transaction management
      */
     @Bean
-    public TransactionTemplate testTransactionTemplate(PlatformTransactionManager testTransactionManager) {
+    public TransactionTemplate testTransactionTemplate(PlatformTransactionManager testTransactionConfigManager) {
         try {
-            TransactionTemplate template = new TransactionTemplate(testTransactionManager);
+            TransactionTemplate template = new TransactionTemplate(testTransactionConfigManager);
             
             // Configure template for test environment with CICS-equivalent behavior
             template.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRED);

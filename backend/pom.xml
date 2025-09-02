@@ -26,6 +26,12 @@
         <jakarta-validation.version>3.0.2</jakarta-validation.version>
         <jakarta-persistence.version>3.1.0</jakarta-persistence.version>
         <postgresql.version>42.7.4</postgresql.version>
+        
+        <!-- Scala and Gatling versions for performance testing -->
+        <scala.version>2.13.12</scala.version>
+        <gatling.version>3.9.5</gatling.version>
+        <scala-maven-plugin.version>4.8.1</scala-maven-plugin.version>
+        <gatling-maven-plugin.version>4.3.7</gatling-maven-plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -387,6 +393,36 @@
             <version>1.37</version>
             <scope>test</scope>
         </dependency>
+        
+        <!-- Scala Language Support for Gatling -->
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>${scala.version}</version>
+            <scope>test</scope>
+        </dependency>
+        
+        <!-- Gatling Performance Testing Framework -->
+        <dependency>
+            <groupId>io.gatling.highcharts</groupId>
+            <artifactId>gatling-charts-highcharts</artifactId>
+            <version>${gatling.version}</version>
+            <scope>test</scope>
+        </dependency>
+        
+        <dependency>
+            <groupId>io.gatling</groupId>
+            <artifactId>gatling-core</artifactId>
+            <version>${gatling.version}</version>
+            <scope>test</scope>
+        </dependency>
+        
+        <dependency>
+            <groupId>io.gatling</groupId>
+            <artifactId>gatling-http</artifactId>
+            <version>${gatling.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -439,6 +475,72 @@
                     <!-- Prevent JVM warnings from cluttering output -->
                     <argLine>-XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false</argLine>
                 </configuration>
+            </plugin>
+            
+            <!-- Scala Maven Plugin for Scala compilation -->
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <version>${scala-maven-plugin.version}</version>
+                <configuration>
+                    <scalaVersion>${scala.version}</scalaVersion>
+                    <args>
+                        <arg>-deprecation</arg>
+                        <arg>-feature</arg>
+                    </args>
+                    <jvmArgs>
+                        <jvmArg>-Xms256m</jvmArg>
+                        <jvmArg>-Xmx2048m</jvmArg>
+                    </jvmArgs>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>scala-compile-first</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>scala-test-compile</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            
+            <!-- Gatling Maven Plugin for performance testing -->
+            <plugin>
+                <groupId>io.gatling</groupId>
+                <artifactId>gatling-maven-plugin</artifactId>
+                <version>${gatling-maven-plugin.version}</version>
+                <configuration>
+                    <simulationClass>com.carddemo.performance.GatlingSimulation</simulationClass>
+                    <configFolder>src/test/resources</configFolder>
+                    <dataFolder>src/test/resources/data</dataFolder>
+                    <resultsFolder>target/gatling/results</resultsFolder>
+                    <bodiesFolder>src/test/resources/gatling/bodies</bodiesFolder>
+                    <simulationsFolder>src/test/scala</simulationsFolder>
+                    <runMultipleSimulations>false</runMultipleSimulations>
+                    <jvmArgs>
+                        <jvmArg>-Xms1024m</jvmArg>
+                        <jvmArg>-Xmx2048m</jvmArg>
+                        <jvmArg>-XX:+UseG1GC</jvmArg>
+                    </jvmArgs>
+                    <systemProperties>
+                        <JAVA_OPTS>-XX:+EnableDynamicAgentLoading</JAVA_OPTS>
+                    </systemProperties>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

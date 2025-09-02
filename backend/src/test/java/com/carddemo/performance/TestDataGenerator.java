@@ -307,6 +307,16 @@ public class TestDataGenerator {
     }
 
     /**
+     * Generates BigDecimal values with COBOL COMP-3 equivalent precision using default parameters.
+     * This is a convenience method that generates monetary amounts with standard 2 decimal places.
+     * 
+     * @return BigDecimal with default COBOL COMP-3 precision (7 digits, 2 decimal places, max $50,000)
+     */
+    public BigDecimal generateComp3BigDecimal() {
+        return generateComp3BigDecimal(7, 2, 50000.0);
+    }
+
+    /**
      * Generates a list of Transaction entities for performance testing,
      * with realistic date ranges and amounts for batch processing validation.
      * 

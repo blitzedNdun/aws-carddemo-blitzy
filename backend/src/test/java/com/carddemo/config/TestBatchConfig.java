@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.Profile;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
@@ -32,7 +33,7 @@ import org.springframework.batch.core.configuration.JobLocator;
 import org.springframework.batch.core.configuration.ListableJobLocator;
 import org.springframework.batch.core.configuration.support.JobRegistryBeanPostProcessor;
 import org.springframework.batch.core.configuration.support.MapJobRegistry;
-import org.springframework.batch.core.launch.support.SimpleJobLauncher;
+import org.springframework.batch.core.launch.support.TaskExecutorJobLauncher;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.JobParameters;
@@ -71,6 +72,7 @@ import jakarta.persistence.EntityManagerFactory;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.jdbc.core.JdbcTemplate;
 import com.carddemo.service.AccountClosureBatchService;
 import com.carddemo.service.AccountMaintenanceBatchService;
 import com.carddemo.batch.StatementGenerationJob;
@@ -137,7 +139,11 @@ import java.util.Collections;
  */
 @TestConfiguration
 @EnableBatchProcessing
-@EnableJpaRepositories(basePackages = "com.carddemo.repository")
+@EnableJpaRepositories(
+    basePackages = "com.carddemo.repository",
+    entityManagerFactoryRef = "batchTestEntityManagerFactory",
+    transactionManagerRef = "testTransactionManager"
+)
 @ComponentScan(
     basePackages = {"com.carddemo.test", "com.carddemo.batch"},
     excludeFilters = @ComponentScan.Filter(
@@ -145,6 +151,7 @@ import java.util.Collections;
         pattern = "com\\.carddemo\\.security\\..*"
     )
 )
+@Profile({"batch-test", "test"})
 public class TestBatchConfig {
     
     private static final Logger logger = LoggerFactory.getLogger(TestBatchConfig.class);
@@ -162,8 +169,9 @@ public class TestBatchConfig {
      * 
      * @return DataSource configured with in-memory H2 database for test execution
      */
-    @Bean
-    public DataSource testDataSource() {
+    @Bean("batchTestDataSource")
+    @Profile({"batch-test", "test"})
+    public DataSource batchTestDataSource() {
         logger.info("Configuring shared test DataSource for batch testing");
         
         return new EmbeddedDatabaseBuilder()
@@ -181,9 +189,8 @@ public class TestBatchConfig {
      * 
      * @return DataSource configured with "dataSource" qualifier for batch job injection
      */
-    @Bean
-    @Qualifier("dataSource")
-    @Primary
+    @Bean("dataSource")
+    @Profile({"batch-test", "test"})
     public DataSource dataSource() {
         logger.info("Configuring primary dataSource for batch job configuration compatibility");
         
@@ -195,23 +202,24 @@ public class TestBatchConfig {
     }
 
     /**
-     * Configures EntityManagerFactory for JPA operations in test environment.
+     * Configures EntityManagerFactory for JPA operations in batch test environment.
      * 
-     * This method creates a LocalContainerEntityManagerFactoryBean configured for test scenarios
+     * This method creates a LocalContainerEntityManagerFactoryBean configured for batch test scenarios
      * with H2 in-memory database support. The configuration enables JPA entity operations
      * required for proper transaction management and data persistence testing.
      * 
-     * @return EntityManagerFactory for test JPA operations
+     * @param batchTestDataSource the test DataSource to use
+     * @return EntityManagerFactory for batch test JPA operations
      */
-    @Bean
-    @Primary
-    public EntityManagerFactory testEntityManagerFactory() {
+    @Bean("batchTestEntityManagerFactory")
+    @Profile({"batch-test", "test"})
+    public EntityManagerFactory batchTestEntityManagerFactory(@Qualifier("batchTestDataSource") DataSource batchTestDataSource) {
         logger.info("Configuring EntityManagerFactory for test JPA operations");
         
         LocalContainerEntityManagerFactoryBean factory = new LocalContainerEntityManagerFactoryBean();
         
         // Configure data source and entity scanning
-        factory.setDataSource(testDataSource());
+        factory.setDataSource(batchTestDataSource);
         factory.setPackagesToScan("com.carddemo.entity");
         
         // Configure Hibernate as JPA vendor
@@ -239,6 +247,39 @@ public class TestBatchConfig {
         
         logger.debug("Test EntityManagerFactory configured with H2 dialect");
         return factory.getObject();
+    }
+
+    /**
+     * Provides standard EntityManagerFactory for main application JPA repository compatibility.
+     * 
+     * The main application's @EnableJpaRepositories expects to find a standard EntityManagerFactory.
+     * This bean provides the test EntityManagerFactory under the standard name to satisfy
+     * Spring JPA repository scanning requirements.
+     * 
+     * @return EntityManagerFactory for main application repository compatibility
+     */
+    @Bean("entityManagerFactory")
+    @Primary
+    @Profile({"batch-test", "test"})
+    public EntityManagerFactory entityManagerFactory(@Qualifier("batchTestDataSource") DataSource batchTestDataSource) {
+        logger.info("Providing standard EntityManagerFactory for main application repository compatibility");
+        return batchTestEntityManagerFactory(batchTestDataSource);
+    }
+
+    /**
+     * Provides JdbcTemplate for JDBC operations in test environment.
+     * 
+     * Some batch job configurations require JdbcTemplate for direct SQL operations.
+     * This bean provides a JdbcTemplate instance configured with the test data source.
+     * 
+     * @return JdbcTemplate for test JDBC operations
+     */
+    @Bean
+    @Primary
+    @Profile({"batch-test", "test"})
+    public JdbcTemplate jdbcTemplate(@Qualifier("batchTestDataSource") DataSource batchTestDataSource) {
+        logger.info("Configuring JdbcTemplate for test JDBC operations");
+        return new JdbcTemplate(batchTestDataSource);
     }
 
     /**
@@ -317,19 +358,23 @@ public class TestBatchConfig {
      * <li>Comprehensive job parameter and context management for test scenarios</li>
      * </ul>
      * 
+     * @param batchTestDataSource the test DataSource to use
      * @return JobRepository configured with in-memory H2 database for test execution
      * @throws Exception if job repository factory initialization fails
      */
     @Bean("testJobRepository")
     @Primary
-    public JobRepository testJobRepository() throws Exception {
+    public JobRepository testJobRepository(@Qualifier("batchTestDataSource") DataSource batchTestDataSource) throws Exception {
         logger.info("Configuring in-memory JobRepository for batch testing");
         
         org.springframework.batch.core.repository.support.JobRepositoryFactoryBean factory = 
                 new org.springframework.batch.core.repository.support.JobRepositoryFactoryBean();
         
-        factory.setDataSource(testDataSource());
-        factory.setTransactionManager(testTransactionManager());
+        factory.setDataSource(batchTestDataSource);
+        
+        // Create a simple DataSourceTransactionManager for the JobRepository
+        DataSourceTransactionManager repoTransactionManager = new DataSourceTransactionManager(batchTestDataSource);
+        factory.setTransactionManager(repoTransactionManager);
         
         // Configure test-specific settings - use standard prefix for H2 compatibility
         // factory.setTablePrefix(TEST_TABLE_PREFIX);
@@ -349,19 +394,23 @@ public class TestBatchConfig {
      * job execution metadata, enabling comprehensive job status checking, execution history
      * analysis, and job parameter validation in test scenarios.
      * 
+     * @param batchTestDataSource the test DataSource to use
      * @return JobExplorer configured with test JobRepository
      * @throws Exception if JobExplorer initialization fails
      */
     @Bean("testJobExplorer")
     @Primary
-    public JobExplorer testJobExplorer(@Qualifier("testJobRepository") JobRepository jobRepository) throws Exception {
+    public JobExplorer testJobExplorer(@Qualifier("batchTestDataSource") DataSource batchTestDataSource) throws Exception {
         logger.info("Configuring JobExplorer for batch job metadata exploration");
         
         org.springframework.batch.core.explore.support.JobExplorerFactoryBean factory = 
                 new org.springframework.batch.core.explore.support.JobExplorerFactoryBean();
         
-        factory.setDataSource(testDataSource());
-        factory.setTransactionManager(testTransactionManager());
+        factory.setDataSource(batchTestDataSource);
+        
+        // Create a simple DataSourceTransactionManager for the JobExplorer
+        DataSourceTransactionManager explorerTransactionManager = new DataSourceTransactionManager(batchTestDataSource);
+        factory.setTransactionManager(explorerTransactionManager);
         // Use standard table prefix for H2 compatibility
         factory.setTablePrefix("BATCH_");
         
@@ -454,7 +503,7 @@ public class TestBatchConfig {
     public JobLauncher testJobLauncher(@Qualifier("testJobRepository") JobRepository jobRepository) throws Exception {
         logger.info("Configuring synchronous JobLauncher for deterministic test execution");
         
-        SimpleJobLauncher jobLauncher = new SimpleJobLauncher();
+        TaskExecutorJobLauncher jobLauncher = new TaskExecutorJobLauncher();
         jobLauncher.setJobRepository(jobRepository);
         
         // Configure synchronous task executor for deterministic behavior
@@ -499,18 +548,22 @@ public class TestBatchConfig {
      * <li>Restart and recovery transaction management for failed job testing</li>
      * </ul>
      * 
+     * @param batchTestEntityManagerFactory the test EntityManagerFactory to use
+     * @param batchTestDataSource the test DataSource to use
      * @return PlatformTransactionManager configured for test batch operations
      */
     @Bean
     @Primary
-    public PlatformTransactionManager testTransactionManager() {
+    public PlatformTransactionManager testTransactionManager(
+            @Qualifier("batchTestEntityManagerFactory") EntityManagerFactory batchTestEntityManagerFactory,
+            @Qualifier("batchTestDataSource") DataSource batchTestDataSource) {
         logger.info("Configuring JPA test transaction manager for batch operations");
         
         // Use JPA transaction manager to properly handle JPA entity persistence
         // This provides full JPA transaction support for entity operations in tests
         JpaTransactionManager jpaTransactionManager = new JpaTransactionManager();
-        jpaTransactionManager.setEntityManagerFactory(testEntityManagerFactory());
-        jpaTransactionManager.setDataSource(testDataSource());
+        jpaTransactionManager.setEntityManagerFactory(batchTestEntityManagerFactory);
+        jpaTransactionManager.setDataSource(batchTestDataSource);
         
         logger.debug("Test transaction manager configured with JPA EntityManagerFactory for proper entity persistence");
         return jpaTransactionManager;
@@ -646,12 +699,12 @@ public class TestBatchConfig {
      * @return JobRepositoryTestUtils configured for test environment management
      */
     @Bean
-    public JobRepositoryTestUtils jobRepositoryTestUtils() {
+    public JobRepositoryTestUtils jobRepositoryTestUtils(@Qualifier("testJobRepository") JobRepository jobRepository) {
         logger.info("Configuring JobRepositoryTestUtils for test environment management");
         
         try {
             JobRepositoryTestUtils testUtils = new JobRepositoryTestUtils();
-            testUtils.setJobRepository(testJobRepository());
+            testUtils.setJobRepository(jobRepository);
             
             logger.debug("JobRepositoryTestUtils configured for comprehensive test cleanup and validation");
             return testUtils;

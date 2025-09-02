@@ -41,8 +41,15 @@ public interface TransactionTypeRepository extends JpaRepository<TransactionType
      * @return TransactionType entity if found, null otherwise
      * @throws IllegalArgumentException if transactionTypeCode is null or empty
      */
-    @Cacheable(value = "transactionTypes", key = "#transactionTypeCode")
-    TransactionType findByTransactionTypeCode(String transactionTypeCode);
+    @Cacheable(value = "transactionTypes", key = "#transactionTypeCode", condition = "#transactionTypeCode != null && !#transactionTypeCode.isEmpty()")
+    TransactionType findByTransactionTypeCodeInternal(String transactionTypeCode);
+    
+    default TransactionType findByTransactionTypeCode(String transactionTypeCode) {
+        if (transactionTypeCode == null || transactionTypeCode.isEmpty()) {
+            throw new IllegalArgumentException("Transaction type code cannot be null or empty");
+        }
+        return findByTransactionTypeCodeInternal(transactionTypeCode);
+    }
 
     /**
      * Finds all transaction types with a specific debit/credit flag.
@@ -53,8 +60,15 @@ public interface TransactionTypeRepository extends JpaRepository<TransactionType
      * @return List of TransactionType entities matching the debit/credit flag
      * @throws IllegalArgumentException if debitCreditFlag is null
      */
-    @Cacheable(value = "transactionTypesByFlag", key = "#debitCreditFlag")
-    List<TransactionType> findByDebitCreditFlag(String debitCreditFlag);
+    @Cacheable(value = "transactionTypesByFlag", key = "#debitCreditFlag", condition = "#debitCreditFlag != null && !#debitCreditFlag.isEmpty()")
+    List<TransactionType> findByDebitCreditFlagInternal(String debitCreditFlag);
+    
+    default List<TransactionType> findByDebitCreditFlag(String debitCreditFlag) {
+        if (debitCreditFlag == null) {
+            throw new IllegalArgumentException("Debit credit flag cannot be null");
+        }
+        return findByDebitCreditFlagInternal(debitCreditFlag);
+    }
 
     /**
      * Searches for transaction types by partial description match (case-insensitive).
@@ -65,8 +79,15 @@ public interface TransactionTypeRepository extends JpaRepository<TransactionType
      * @return List of TransactionType entities with descriptions containing the search text
      * @throws IllegalArgumentException if description is null or empty
      */
-    @Cacheable(value = "transactionTypesByDescription", key = "#description.toLowerCase()")
-    List<TransactionType> findByTypeDescriptionContainingIgnoreCase(String description);
+    @Cacheable(value = "transactionTypesByDescription", key = "#description.toLowerCase()", condition = "#description != null && !#description.isEmpty()")
+    List<TransactionType> findByTypeDescriptionContainingIgnoreCaseInternal(String description);
+    
+    default List<TransactionType> findByTypeDescriptionContainingIgnoreCase(String description) {
+        if (description == null || description.isEmpty()) {
+            throw new IllegalArgumentException("Description cannot be null or empty");
+        }
+        return findByTypeDescriptionContainingIgnoreCaseInternal(description);
+    }
 
     /**
      * Retrieves all transaction types with caching support.
@@ -87,8 +108,15 @@ public interface TransactionTypeRepository extends JpaRepository<TransactionType
      * @param transactionTypeCode the transaction type code to check
      * @return true if the transaction type exists, false otherwise
      */
-    @Cacheable(value = "transactionTypeExists", key = "#transactionTypeCode")
-    boolean existsByTransactionTypeCode(String transactionTypeCode);
+    @Cacheable(value = "transactionTypeExists", key = "#transactionTypeCode", condition = "#transactionTypeCode != null && !#transactionTypeCode.isEmpty()")
+    boolean existsByTransactionTypeCodeInternal(String transactionTypeCode);
+    
+    default boolean existsByTransactionTypeCode(String transactionTypeCode) {
+        if (transactionTypeCode == null || transactionTypeCode.isEmpty()) {
+            throw new IllegalArgumentException("Transaction type code cannot be null or empty");
+        }
+        return existsByTransactionTypeCodeInternal(transactionTypeCode);
+    }
 
     /**
      * Counts the total number of transaction types.

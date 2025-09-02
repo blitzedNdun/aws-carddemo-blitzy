@@ -167,12 +167,12 @@ public class CardTest extends AbstractBaseTest implements UnitTest {
         // Test valid customer ID relationship
         Long customerId = Long.valueOf(testCustomer.getCustomerId());
         testCard.setCustomerId(customerId);
-        assertThat(testCard.getCustomerId()).isEqualTo(customerId);
+        assertThat(testCard.getCustomerId()).isEqualTo(String.format("%09d", customerId)); // getCustomerId() returns formatted String
         
         // Validate customer relationship
         testCard.setCustomer(testCustomer);
         assertThat(testCard.getCustomer()).isEqualTo(testCustomer);
-        assertThat(testCard.getCustomerId()).isEqualTo(Long.valueOf(testCustomer.getCustomerId()));
+        assertThat(testCard.getCustomerId()).isEqualTo(testCustomer.getCustomerId()); // Both return formatted String for COBOL compatibility
         
         logTestExecution("Customer ID relationship mapping validated", null);
     }
@@ -543,7 +543,7 @@ public class CardTest extends AbstractBaseTest implements UnitTest {
         // Test customer relationship setup
         testCard.setCustomer(testCustomer);
         assertThat(testCard.getCustomer()).isEqualTo(testCustomer);
-        assertThat(testCard.getCustomerId()).isEqualTo(Long.valueOf(testCustomer.getCustomerId()));
+        assertThat(testCard.getCustomerId()).isEqualTo(testCustomer.getCustomerId()); // Both return formatted String for COBOL compatibility
         
         // Test customer name access through relationship
         assertThat(testCard.getCustomer().getFirstName()).isEqualTo(testCustomer.getFirstName());

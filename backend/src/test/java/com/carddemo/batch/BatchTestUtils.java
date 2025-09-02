@@ -1636,8 +1636,7 @@ public class BatchTestUtils {
         
         try {
             // Initialize job repository and related infrastructure  
-            // Note: Spring context will automatically initialize @Bean methods
-            testBatchConfig.testJobRepository();
+            // Note: Spring context will automatically initialize @Bean methods through dependency injection
             
             // Clear any existing data
             cleanupTestData(repositories);
@@ -2591,7 +2590,8 @@ public class BatchTestUtils {
             Map<String, Object> jobBuilderConfig = new HashMap<>();
             jobBuilderConfig.put("jobName", jobName);
             jobBuilderConfig.put("testConfig", testBatchConfig);
-            jobBuilderConfig.put("jobRepository", testBatchConfig.testJobRepository());
+            // jobRepository will be initialized by Spring context automatically through dependency injection
+            jobBuilderConfig.put("jobRepository", "will_be_initialized_by_spring");
             // jobLauncher will be initialized by Spring context automatically
             jobBuilderConfig.put("jobLauncher", "will_be_initialized_by_spring");
             jobBuilderConfig.put("created", LocalDateTime.now());
