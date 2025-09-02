@@ -23,6 +23,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.context.annotation.Profile;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.context.annotation.Profile;
@@ -143,7 +144,7 @@ public class BatchJobListener implements JobExecutionListener {
     @Autowired
     public BatchJobListener(JobRepository jobRepository,
                            JobExplorer jobExplorer,
-                           TaskExecutor taskExecutor,
+                           @Qualifier("taskExecutor") TaskExecutor taskExecutor,
                            NotificationService notificationService,
                            MeterRegistry meterRegistry) {
         this.jobRepository = jobRepository;

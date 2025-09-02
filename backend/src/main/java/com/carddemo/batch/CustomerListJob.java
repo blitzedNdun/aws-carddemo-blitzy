@@ -27,6 +27,7 @@ import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.support.PassThroughItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -222,7 +223,7 @@ public class CustomerListJob {
      */
     @Autowired
     public CustomerListJob(JobRepository jobRepository,
-                          TaskExecutor taskExecutor,
+                          @Qualifier("taskExecutor") TaskExecutor taskExecutor,
                           PlatformTransactionManager transactionManager,
                           EntityManagerFactory entityManagerFactory,
                           CustomerRepository customerRepository,

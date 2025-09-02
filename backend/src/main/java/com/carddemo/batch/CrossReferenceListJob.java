@@ -26,6 +26,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 import org.springframework.context.annotation.Profile;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
@@ -131,7 +132,7 @@ public class CrossReferenceListJob {
     public CrossReferenceListJob(
             JobRepository jobRepository,
             PlatformTransactionManager transactionManager,
-            ThreadPoolTaskExecutor taskExecutor,
+            @Qualifier("taskExecutor") ThreadPoolTaskExecutor taskExecutor,
             EntityManagerFactory entityManagerFactory,
             CardXrefRepository cardXrefRepository,
             BatchJobListener batchJobListener) {

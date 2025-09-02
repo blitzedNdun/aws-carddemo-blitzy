@@ -23,6 +23,7 @@ import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.JpaPagingItemReader;
 import org.springframework.context.annotation.Bean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import jakarta.persistence.EntityManagerFactory;
 import java.util.List;
 import java.util.Optional;
@@ -88,6 +89,7 @@ public class AccountMaintenanceBatchService {
     private JobRepository jobRepository;
 
     @Autowired
+    @Qualifier("taskExecutor")
     private TaskExecutor taskExecutor;
 
     @Autowired
