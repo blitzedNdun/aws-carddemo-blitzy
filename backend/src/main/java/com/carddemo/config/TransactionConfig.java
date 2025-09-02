@@ -7,6 +7,7 @@ package com.carddemo.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
@@ -90,7 +91,8 @@ public class TransactionConfig {
      * @param entityManagerFactory JPA EntityManagerFactory for managing persistent entities
      * @return configured JpaTransactionManager for Spring transaction management
      */
-    @Bean
+    @Bean({"transactionManager", "platformTransactionManager"})
+    @Primary
     public PlatformTransactionManager transactionManager(EntityManagerFactory entityManagerFactory) {
         JpaTransactionManager transactionManager = new JpaTransactionManager();
         transactionManager.setEntityManagerFactory(entityManagerFactory);
@@ -150,31 +152,5 @@ public class TransactionConfig {
         return template;
     }
 
-    /**
-     * Provides the same PlatformTransactionManager bean with explicit naming for dependency injection.
-     * 
-     * This method creates an alias for the transactionManager bean to support components that require
-     * PlatformTransactionManager injection by specific bean name. This ensures compatibility with
-     * various Spring components and third-party integrations that may reference the transaction
-     * manager by the standard platform transaction manager bean name.
-     * 
-     * Bean Naming Convention:
-     * - Supports both "transactionManager" and "platformTransactionManager" bean names
-     * - Ensures compatibility with Spring Batch and other frameworks expecting standard naming
-     * - Provides flexibility for dependency injection scenarios requiring specific bean references
-     * - Maintains consistency with Spring Boot auto-configuration naming conventions
-     * 
-     * Integration Support:
-     * - Spring Batch JobRepository configuration requiring PlatformTransactionManager reference
-     * - Third-party frameworks using standard Spring transaction manager naming conventions
-     * - Custom components requiring explicit transaction manager dependency injection
-     * - Testing frameworks requiring specific transaction manager bean name references
-     * 
-     * @param entityManagerFactory JPA EntityManagerFactory for transaction manager configuration
-     * @return same JpaTransactionManager instance as transactionManager() method
-     */
-    @Bean(name = "platformTransactionManager")
-    public PlatformTransactionManager platformTransactionManager(EntityManagerFactory entityManagerFactory) {
-        return transactionManager(entityManagerFactory);
-    }
+
 }
